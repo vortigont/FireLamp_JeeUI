@@ -47,8 +47,7 @@ MP3PLAYERDEVICE *mp3 = nullptr;
 #endif
 
 void setup() {
-    //Serial.begin(115200);
-    Serial.begin(460800);
+    Serial.begin(115200);
 
 #ifdef PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED
     {
