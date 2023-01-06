@@ -42,7 +42,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #define register // keyword 'register' is banned with c++17
 #endif
 
-#include <Arduino.h>
 #include "EmbUI.h"
 
 #ifdef PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED

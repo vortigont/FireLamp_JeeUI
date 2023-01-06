@@ -46,6 +46,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "LList.h"
 #include "interface.h"
 #include "extra_tasks.h"
+#include "timerminim.hpp"
 
 #ifdef XY_EXTERN
 #include "XY.h"

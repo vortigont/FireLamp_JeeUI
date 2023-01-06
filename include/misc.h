@@ -46,66 +46,8 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include <umm_malloc/umm_heap_select.h>
 #endif
 
-#include <LittleFS.h>
-
 typedef enum : uint8_t {AT_NONE=0, AT_FIRST, AT_SECOND, AT_THIRD, AT_FOURTH, AT_FIFTH, AT_RANDOM, AT_RANDOMMP3} ALARM_SOUND_TYPE; // виды будильников (8 вариантов максимум)
 typedef enum : uint8_t {TS_NONE=0, TS_VER1, TS_VER2} TIME_SOUND_TYPE; // виды озвучки времени (8 вариантов максимум)
-
-//----------------------------------------------------
-// мини-класс таймера, версия 1.0
-
-class timerMinim
-{
-  public:
-	timerMinim() {_interval = 0;} // по дефолту - отключен
-
-    timerMinim(uint32_t interval)				                  // объявление таймера с указанием интервала
-    {
-      _interval = interval;
-      _timer = millis();
-    }
-
-    uint32_t getInterval()	                  						 // получение интервала работы таймера
-    {
-    	return _interval;
-    }
-
-    void setInterval(uint32_t interval)	                   // установка интервала работы таймера
-    {
-      _interval = interval;
-    }
-
-    bool isReady()						                             // возвращает true, когда пришло время. Сбрасывается в false сам (AUTO) или вручную (MANUAL)
-    {
-      if ((uint32_t)millis() - _timer >= _interval && _interval!=0){
-        _timer = millis();
-        return true;
-      }
-      else {
-        return false;
-      }
-    }
-
-    bool isReadyManual()                                   // возвращает true, когда пришло время. Без сбороса
-    {
-      if ((uint32_t)millis() - _timer >= _interval && _interval!=0){
-        return true;
-      }
-      else {
-        return false;
-      }
-    }
-
-    void reset()							                              // ручной сброс таймера на установленный интервал
-    {
-      _timer = millis();
-    }
-
-  private:
-    uint32_t _timer = 0;
-    uint32_t _interval = 0;
-};
-
 
 //----------------------------------------------------
 #if defined(LOG)

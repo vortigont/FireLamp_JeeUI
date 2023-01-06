@@ -38,11 +38,11 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #ifndef __EFFECTWORKER_H
 #define __EFFECTWORKER_H
 
-#include <Arduino.h>
+#include "misc.h"
 #include "LList.h"
 #include <ArduinoJson.h>
-#include "misc.h"
 #include "effects_types.h"
+#include <LittleFS.h>
 
 #ifdef MIC_EFFECTS
 #include "micFFT.h"
