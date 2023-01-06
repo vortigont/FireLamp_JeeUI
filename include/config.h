@@ -42,13 +42,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #  endif
 #endif
 
-#define SF(s) __SFSTR(s)
-#define __SFSTR(s) #s
-//#define SF(...) #__VA_ARGS__
-
-#include <GyverButton.h>
-#include <FastLED.h>
-
 //-----------------------------------
 //#define ESP_USE_BUTTON                                      // если строка не закомментирована, должна быть подключена кнопка (иначе ESP может регистрировать "фантомные" нажатия и некорректно устанавливать яркость)
 //#define LAMP_DEBUG                                          // режим отладки, можно также включать в platformio.ini

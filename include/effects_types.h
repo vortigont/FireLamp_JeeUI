@@ -41,6 +41,10 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "config.h"
 #include LANG_FILE                //"text_res.h"
 
+#define SF(s) __SFSTR(s)
+#define __SFSTR(s) #s
+//#define SF(...) #__VA_ARGS__
+
 
 /*
  * Aurora: https://github.com/pixelmatix/aurora
