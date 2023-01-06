@@ -1,18 +1,7 @@
 
 #include "events.h"
 
-#ifdef ESP8266
- #include <LittleFS.h>
-#endif
-
-#ifdef ESP32
- #include <LITTLEFS.h>
- #define FORMAT_LITTLEFS_IF_FAILED true
- #define LittleFS LITTLEFS
-#endif
-
-
-void EVENT_MANAGER::check_event(EVENT *event)
+void EVENT_MANAGER::check_event(DEV_EVENT *event)
 {
     if(!event->isEnabled || cb_func==nullptr) return;
     if(event->unixtime > *TimeProcessor::now() ) return;
@@ -65,88 +54,44 @@ void EVENT_MANAGER::check_event(EVENT *event)
     }
 }
 
-EVENT *EVENT_MANAGER::addEvent(const EVENT&event)
+DEV_EVENT *EVENT_MANAGER::addEvent(const DEV_EVENT&event)
 {
-    EVENT *next=root;
-    EVENT *new_event = new EVENT(event);
-    if(event.message!=nullptr){
-        new_event->message = (char *)malloc(strlen(event.message)+1);
-        strcpy(new_event->message, event.message);
-    }
-    if(next!=nullptr){
-        while(next->next!=nullptr){
-            next=next->next;
-        }
-        next->next = new_event;
-    }
-    else {
-        root = new_event;
-    }
+    DEV_EVENT *new_event = new DEV_EVENT(event);
+    events->add(new_event);
     return new_event;
 }
 
-void EVENT_MANAGER::delEvent(const EVENT&event) {
-    EVENT *next=root;
-    EVENT *prev=root;
-    if(next!=nullptr){
-        while(next){
-            EVENT *tmp_next = next->next;
-            if(*next==event){
-                if(next->message!=nullptr)
-                    free(next->message);
-                delete next;
-                if(next==root) root=tmp_next; else prev->next=tmp_next;
-            } else {
-                prev = next;
-            }
-            next=tmp_next;
+void EVENT_MANAGER::delEvent(const DEV_EVENT&event) {
+    for(int i=0;i<events->size();i++){
+        if(*((*events)[i])==event){
+            events->remove(i); // удаляет из списка и чистит память
         }
     }
 }
 
-bool EVENT_MANAGER::isEnumerated(const EVENT&event) {
-    EVENT *next=root;
-    bool res = false;
-    if(next!=nullptr){
-        while(next){
-            EVENT *tmp_next = next->next;
-            if(*next==event){
-                res = true;
-                break;
-            }
-            next=tmp_next;
+bool EVENT_MANAGER::isEnumerated(const DEV_EVENT&event) {
+    for(int i=0;i<events->size();i++){
+        if(*((*events)[i])==event){
+            return true;
         }
     }
-    return res;
+    return false;
 }
 
 void EVENT_MANAGER::events_handle()
 {
-  // пропускаем все ненулевые секунды
-  if(!TimeProcessor::seconds00())
-    return;
+    // пропускаем все ненулевые секунды
+    if(!TimeProcessor::seconds00())
+        return;
 
-    EVENT *next = getNextEvent(nullptr);
-    while (next!=nullptr)
-    {
-        check_event(next);
-        next = getNextEvent(next);
+    for(int i=0;i<events->size();i++){
+        check_event((*events)[i]);
     }
 }
 
 void EVENT_MANAGER::clear_events()
 {
-    EVENT *next = root;
-    EVENT *cur = root;
-    while (next!=nullptr)
-    {
-        next=next->next;
-        if(cur->message)
-            free(cur->message);
-        delete cur;
-        cur=next;
-    }
-    root = nullptr;
+    events->clear();
 }
 
 /**
@@ -189,18 +134,19 @@ void EVENT_MANAGER::loadConfig(const char *cfg)
             return;
         }
         JsonArray arr = doc.as<JsonArray>();
-        EVENT event;
+        DEV_EVENT event;
         for (size_t i=0; i<arr.size(); i++) {
             JsonObject item = arr[i];
             event.raw_data = item[F("raw")].as<int>();
-            event.unixtime = item[F("ut")].as<unsigned long>();
+            event.unixtime = item[F("ut")].as<time_t>();
             event.event = (EVENT_TYPE)(item[F("ev")].as<int>());
             event.repeat = item[F("rp")].as<int>();
             event.stopat = item[F("sa")].as<int>();
-            event.message = (char *)item[F("msg")].as<const char *>();
-            EVENT *new_event = addEvent(event);
-            //LOG(printf_P, PSTR("[%u - %ld - %u - %u - %u - %s]\n"), new_event->raw_data, new_event->unixtime, new_event->event, new_event->repeat, new_event->stopat, new_event->message);
-            LOG(printf_P, PSTR("[%u - %ld - %u - %u - %u - ]\n"), new_event->raw_data, new_event->unixtime, new_event->event, new_event->repeat, new_event->stopat);
+            event.message = item[F("msg")].as<String>();
+            DEV_EVENT *new_event = addEvent(event);
+            if(new_event){
+                LOG(printf_P, PSTR("[%u - %llu - %u - %u - %u - %s]\n"), new_event->raw_data, (unsigned long long)new_event->unixtime, new_event->event, new_event->repeat, new_event->stopat, new_event->message.c_str());
+            }
         }
 
         LOG(println, F("Events config loaded"));
@@ -217,18 +163,18 @@ void EVENT_MANAGER::saveConfig(const char *cfg)
         else
             configFile = LittleFS.open(cfg, "w"); // PSTR("w") использовать нельзя, будет исключение!
         configFile.print("[");
-        EVENT *next=root;
-        int i=1;
-        while(next!=nullptr){
-            configFile.printf_P(PSTR("%s{\"raw\":%u,\"ut\":%ld,\"ev\":%u,\"rp\":%u,\"sa\":%u,\"msg\":\"%s\"}"),
-                (char*)(i>1?F(","):F("")), next->raw_data, next->unixtime, next->event, next->repeat, next->stopat,
-                ((next->message!=nullptr)?next->message : ""));
-            LOG(printf_P, PSTR("%s{\"raw\":%u,\"ut\":%ld,\"ev\":%u,\"rp\":%u,\"sa\":%u,\"msg\":\"%s\"}"),
-                (char*)(i>1?F(","):F("")), next->raw_data, next->unixtime, next->event, next->repeat, next->stopat,
-                ((next->message!=nullptr)?next->message:(char*)F("")));
-            i++;
-            next=next->next;
-        }     
+        
+        LOG(println, F("Save events config"));
+        bool firstLine=true;
+        DEV_EVENT *next;
+        for(int i=0;i<events->size();i++){
+            next = (*events)[i];
+            LOG(printf_P, PSTR("%s{\"raw\":%u,\"ut\":%llu,\"ev\":%u,\"rp\":%u,\"sa\":%u,\"msg\":\"%s\"}"),
+                (!firstLine?",":""), next->raw_data, (unsigned long long)next->unixtime, next->event, next->repeat, next->stopat, next->message.c_str());
+            configFile.printf_P(PSTR("%s{\"raw\":%u,\"ut\":%llu,\"ev\":%u,\"rp\":%u,\"sa\":%u,\"msg\":\"%s\"}"),
+                (!firstLine?",":""), next->raw_data, (unsigned long long)next->unixtime, next->event, next->repeat, next->stopat, next->message.c_str());
+            firstLine=false;
+        }
         configFile.print("]");
         configFile.flush();
         configFile.close();

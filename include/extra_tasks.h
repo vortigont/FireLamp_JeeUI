@@ -43,6 +43,118 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 // TaskScheduler
 extern Scheduler ts;
 
+//-----------------------------------------------
+
+typedef enum _GAUGETYPE {
+    GT_NONE = 0,    // пустой
+    GT_VERT,        // вертикальный
+    GT_HORIZ        // горизонтальный
+} GAUGETYPE;
+
+class GAUGE : public Task {
+private:
+    static GAUGE *gauge; // статический объект индикатора
+
+    uint16_t xStep; uint16_t xCol; uint16_t yStep; uint16_t yCol; // для индикатора
+    unsigned long gauge_time = 0;
+    unsigned gauge_val = 0;
+    unsigned gauge_max = 0;
+    uint8_t gauge_hue = 0;
+    CRGB gauge_color = 0;
+    GAUGE() = delete;
+public:
+    INLINE GAUGE(unsigned val, unsigned max, uint8_t hue = 0)
+    : Task(3*TASK_SECOND, TASK_ONCE, []() {TASK_RECYCLE; gauge = nullptr;}, &ts, false){
+        GAUGE::gauge = this;
+
+        gauge_time = millis();
+        gauge_val = val;
+        gauge_max = max;
+        gauge_hue = hue;
+
+        xStep = WIDTH / 4;
+        xCol = 4;
+        if(xStep<2) {
+          xStep = WIDTH / 3;
+          xCol = 3;
+        } else if(xStep<2) {
+          xStep = WIDTH / 2;
+          xCol = 2;
+        } else if(xStep<2) {
+          xStep = 1;
+          xCol = 1;
+        }
+
+        yStep = HEIGHT / 4;
+        yCol = 4;
+        if(yStep<2) {
+          yStep = HEIGHT / 3;
+          yCol = 3;
+        } else if(yStep<2) {
+          yStep = HEIGHT / 2;
+          yCol = 2;
+        } else if(yStep<2) {
+          yStep = 1;
+          yCol = 1;
+        }
+
+        this->enableDelayed();
+    };
+    ~GAUGE() {GAUGE::gauge = nullptr;}
+
+    void GaugeMix(GAUGETYPE type = GAUGETYPE::GT_NONE) {
+        if(GAUGE::gauge==nullptr) return;
+        if (gauge_time + 3000 < millis() || millis()<5000) return; // в первые 5 секунд после перезагрузки не показываем :)
+
+        if(type==GAUGETYPE::GT_VERT){
+            /*
+            uint8_t ind = (uint8_t)((gauge_val + 1) * HEIGHT / (float)gauge_max + 1);
+            for (uint8_t x = 0; x <= xCol * (xStep - 1); x += xStep) {
+                for (uint8_t y = 0; y < HEIGHT ; y++) {
+                if (ind > y)
+                    EffectMath::drawPixelXY(x, y, CHSV(gauge_hue, 255, 255));
+                else
+                    EffectMath::drawPixelXY(x, y,  0);
+                }
+            }
+            */
+            for (uint8_t x = 0; x <= xCol * (xStep - 1); x += xStep) {
+                EffectMath::drawLine(x, 0, x, HEIGHT, 0);
+                EffectMath::drawLineF(x, 0, x, EffectMath::fmap(gauge_val, 0, gauge_max, 0, HEIGHT), (gauge_hue ? CHSV(gauge_hue, 255, 255) : CRGB(gauge_color)));
+            }
+        } else {
+            uint8_t ind = (uint8_t)((gauge_val + 1) * WIDTH / (float)gauge_max + 1);
+            for (uint8_t y = 0; y <= yCol * (yStep - 1) ; y += yStep) {
+                for (uint8_t x = 0; x < WIDTH ; x++) {
+                if (ind > x)
+                    EffectMath::drawPixelXY((x + y) % WIDTH, y, CHSV(gauge_hue, 255, 255));
+                else
+                    EffectMath::drawPixelXY((x + y) % WIDTH, y,  0);
+                }
+            }
+        }
+    }
+
+    static GAUGE *GetGaugeInstance() {
+        return GAUGE::gauge;
+    }
+
+    static void GaugeShow(unsigned val, unsigned max, uint8_t hue = 0) {
+        if(GAUGE::gauge==nullptr){
+            GAUGE::gauge = new GAUGE(val,max,hue);
+        } else {
+            GetGaugeInstance()->gauge_time = millis();
+            GetGaugeInstance()->gauge_val = val;
+            GetGaugeInstance()->gauge_max = max;
+            GetGaugeInstance()->gauge_hue = hue;
+            GetGaugeInstance()->restartDelayed();
+        }
+    }
+    void setGaugeTypeColor(CRGB color) { if(GetGaugeInstance()!=nullptr) GetGaugeInstance()->gauge_color = color;}
+};
+
+//-----------------------------------------------
+
 class StringTask : public Task {
     char *_data = nullptr;
     INLINE char *makeCopy(const char *data) {
@@ -65,6 +177,8 @@ public:
     ~StringTask() {if(_data) delete[] _data;}
 };
 
+//-----------------------------------------------
+
 class WarningTask : public StringTask {
     CRGB _warn_color;
     uint32_t _warn_duration;
@@ -79,6 +193,8 @@ public:
       //LOG(println, F("WarningTask constructor"));
     }
 };
+
+//-----------------------------------------------
 
 class CtrlsTask : public Task {
     DynamicJsonDocument *_data = nullptr;
@@ -115,5 +231,7 @@ public:
     }
     ~CtrlsTask() {if(_data) delete _data;}
 };
+
+//-----------------------------------------------
 
 #endif

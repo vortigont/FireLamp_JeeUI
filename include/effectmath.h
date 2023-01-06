@@ -153,6 +153,11 @@ public:
     static void drawPixelXYF(float x, float y, const CRGB &color, uint8_t darklevel=25); // darklevel - насколько затемнять картинку
     static void drawPixelXYF_Y(int16_t x, float y, const CRGB &color, uint8_t darklevel=50);
     static void drawPixelXYF_X(float x, int16_t y, const CRGB &color, uint8_t darklevel=50);
+    
+    // Вариант субпикселя от @stepko, в некоторых случаях работает лучше, но в некоторых хуже
+    static void sDrawPixelXYF(float x, float y, const CRGB &color); 
+    static void sDrawPixelXYF_Y(int16_t x, float y, const CRGB &color);
+    static void sDrawPixelXYF_X(float x, int16_t y, const CRGB &color);
 
     static CRGB getPixColorXYF_X(float x, int16_t y);
     static CRGB getPixColorXYF_Y(int16_t x, float y);
@@ -163,6 +168,7 @@ public:
 	static void drawSquareF(float x, float y, float leg, CRGB color);
     static void drawCircle(int x0, int y0, int radius, const CRGB &color);
     static void drawCircleF(float x0, float y0, float radius, const CRGB &color, float step = 0.25);
+    static void fill_circleF(float cx, float cy, float radius, CRGB col);
     //static void setLedsfadeToBlackBy(uint16_t idx, uint8_t val);
     static void setLedsNscale8(uint16_t idx, uint8_t val);
     static void dimAll(uint8_t value);

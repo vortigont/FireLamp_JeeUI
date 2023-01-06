@@ -47,20 +47,12 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 //#define SF(...) #__VA_ARGS__
 
 #include <GyverButton.h>
-// переместил в platformio.ini
-// #ifdef ESP8266
-// #define FASTLED_USE_PROGMEM             (1)
-// #endif
-#define FASTLED_INTERRUPT_RETRY_COUNT   (0)                 // default: 2; // Use this to determine how many times FastLED will attempt to re-transmit a frame if interrupted for too long by interrupts
-#define FASTLED_ESP8266_RAW_PIN_ORDER                       // FASTLED_ESP8266_RAW_PIN_ORDER, FASTLED_ESP8266_D1_PIN_ORDER or FASTLED_ESP8266_NODEMCU_PIN_ORDER
-//#define FASTLED_ALLOW_INTERRUPTS      (0)                   // default: 1; // Use this to force FastLED to allow interrupts in the clockless chipsets (or to force it to disallow), overriding the default on platforms that support this. Set the value to 1 to allow interrupts or 0 to disallow them.
 #include <FastLED.h>
 
 //-----------------------------------
 //#define ESP_USE_BUTTON                                      // если строка не закомментирована, должна быть подключена кнопка (иначе ESP может регистрировать "фантомные" нажатия и некорректно устанавливать яркость)
 //#define LAMP_DEBUG                                          // режим отладки, можно также включать в platformio.ini
 //#define DEBUG_TELNET_OUTPUT  (true)                         // true - отладочные сообщения будут выводиться в telnet вместо Serial порта (для удалённой отладки без подключения usb кабелем) // Deprecated
-//#define USE_FTP                                             // доступ к LittleFS по FTP, логин/пароль: esp8266
 //#define OTA                                                 // Обновление по ОТА
 //#define MIC_EFFECTS                                         // Включить использование микрофона для эффектов
 //#define MP3PLAYER                                           // Включить использование MP3 плеера (DF Player)
@@ -70,10 +62,6 @@ typedef enum {NR_NONE,BIT_1,BIT_2,BIT_3,BIT_4} MIC_NOISE_REDUCE_LEVEL;
 //-----------------------------------
 #ifndef LANG_FILE
 #define LANG_FILE                  "text_res-RUS.h"           // Языковой файл по дефолту
-#endif
-
-#ifdef EMBUI_USE_FTP                                       // если включен FTP на уровне фреймворка, то не используем тот что на уровне лампы
-#undef USE_FTP                                             // доступ к LittleFS по FTP, логин/пароль: esp8266
 #endif
 
 #ifdef RTC
@@ -219,7 +207,6 @@ typedef enum {NR_NONE,BIT_1,BIT_2,BIT_3,BIT_4} MIC_NOISE_REDUCE_LEVEL;
 #define SEGMENTS              (1U)                          // диодов в одном "пикселе" (для создания матрицы из кусков ленты)
 #endif
 
-//#define VERTGAUGE             (1U)                          // вертикальный/горизонтальный(1/0) индикатор, закомментировано - отключен
 #ifndef NUMHOLD_TIME
 #define NUMHOLD_TIME          (3000U)                       // время запоминания последней комбинации яркости/скорости/масштаба в мс
 #endif

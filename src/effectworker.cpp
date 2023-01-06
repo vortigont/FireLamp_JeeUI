@@ -51,6 +51,10 @@ void EffectWorker::workerset(uint16_t effect, const bool isCfgProceed){
   if(worker)
      worker.reset(); // освободим явно, т.к. 100% здесь будем пересоздавать
 
+#if defined(PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED)
+  HeapSelectIram ephemeral;
+#endif
+
   switch (static_cast<EFF_ENUM>(effect%256)) // номер может быть больше чем ENUM из-за копирований, находим эффект по модулю
   {
   case EFF_ENUM::EFF_TIME :
@@ -68,9 +72,6 @@ void EffectWorker::workerset(uint16_t effect, const bool isCfgProceed){
   case EFF_ENUM::EFF_PRIZMATA :
     worker = std::unique_ptr<EffectPrismata>(new EffectPrismata());
     break;
-  case EFF_ENUM::EFF_PILE :
-    worker = std::unique_ptr<EffectPile>(new EffectPile());
-    break;
   case EFF_ENUM::EFF_SPIRO :
     worker = std::unique_ptr<EffectSpiro>(new EffectSpiro());
     break;
@@ -85,9 +86,6 @@ void EffectWorker::workerset(uint16_t effect, const bool isCfgProceed){
     break;
   case EFF_ENUM::EFF_PAINTBALL :
     worker = std::unique_ptr<EffectLightBalls>(new EffectLightBalls());
-    break;
-  case EFF_ENUM::EFF_FIRE :
-    worker = std::unique_ptr<EffectFire2020>(new EffectFire2020());
     break;
   case EFF_ENUM::EFF_PULSE :
     worker = std::unique_ptr<EffectPulse>(new EffectPulse());
@@ -122,23 +120,14 @@ void EffectWorker::workerset(uint16_t effect, const bool isCfgProceed){
   case EFF_ENUM::EFF_SNOWSTORMSTARFALL :
     worker = std::unique_ptr<EffectStarFall>(new EffectStarFall());
     break;
-  case EFF_ENUM::EFF_DNA2 :
-    worker = std::unique_ptr<EffectDNA2>(new EffectDNA2());
-    break;
   case EFF_ENUM::EFF_3DNOISE :
     worker = std::unique_ptr<Effect3DNoise>(new Effect3DNoise());
     break;
   case EFF_ENUM::EFF_CELL :
     worker = std::unique_ptr<EffectCell>(new EffectCell());
     break;
-  case EFF_ENUM::EFF_F_LYING :
-    worker = std::unique_ptr<EffectF_lying>(new EffectF_lying());
-    break;
   case EFF_ENUM::EFF_T_LEND :
     worker = std::unique_ptr<EffectTLand>(new EffectTLand());
-    break;
-  case EFF_ENUM::EFF_LDIRKO :
-    worker = std::unique_ptr<EffectLLand>(new EffectLLand());
     break;
   case EFF_ENUM::EFF_OSCIL :
     worker = std::unique_ptr<EffectOscilator>(new EffectOscilator());
@@ -182,9 +171,6 @@ void EffectWorker::workerset(uint16_t effect, const bool isCfgProceed){
     break;
   case EFF_ENUM::EFF_CUBE2 :
     worker = std::unique_ptr<EffectCube2d>(new EffectCube2d());
-    break;
-  case EFF_ENUM::EFF_DNA :
-    worker = std::unique_ptr<EffectDNA>(new EffectDNA());
     break;
   case EFF_ENUM::EFF_PICASSO :
   case EFF_ENUM::EFF_PICASSO4 :
@@ -256,9 +242,6 @@ void EffectWorker::workerset(uint16_t effect, const bool isCfgProceed){
   case EFF_ENUM::EFF_POLARL :
     worker = std::unique_ptr<EffectPolarL>(new EffectPolarL());
     break;
-  case EFF_ENUM::EFF_FLOWER :
-    worker = std::unique_ptr<EffectFlower>(new EffectFlower());
-    break;
   case EFF_ENUM::EFF_TEST :
     worker = std::unique_ptr<EffectTest>(new EffectTest());
     break;
@@ -268,23 +251,36 @@ void EffectWorker::workerset(uint16_t effect, const bool isCfgProceed){
    case EFF_ENUM::EFF_RACER :
     worker = std::unique_ptr<EffectRacer>(new EffectRacer());
     break;
-   case EFF_ENUM::EFF_SMOKER :
-    worker = std::unique_ptr<EffectSmoker>(new EffectSmoker());
-    break;
    case EFF_ENUM::EFF_MAGMA :
     worker = std::unique_ptr<EffectMagma>(new EffectMagma());
     break;
    case EFF_ENUM::EFF_FIRE2021 :
     worker = std::unique_ptr<EffectFire2021>(new EffectFire2021());
     break;
-   case EFF_ENUM::EFF_TEST1 :
-    worker = std::unique_ptr<EffectTest1>(new EffectTest1());
+   case EFF_ENUM::EFF_PUZZLES :
+    worker = std::unique_ptr<EffectPuzzles>(new EffectPuzzles());
     break;
-#ifdef USE_E131
-   case EFF_ENUM::EFF_ARTNET :
-    worker = std::unique_ptr<EffectARTNET>(new EffectARTNET());
+   case EFF_ENUM::EFF_PILE :
+    worker = std::unique_ptr<EffectPile>(new EffectPile());
     break;
-#endif
+   case EFF_ENUM::EFF_DNA :
+    worker = std::unique_ptr<EffectDNA>(new EffectDNA());
+    break;
+   case EFF_ENUM::EFF_SMOKER :
+    worker = std::unique_ptr<EffectSmoker>(new EffectSmoker());
+    break;
+  case EFF_ENUM::EFF_MIRAGE :
+    worker = std::unique_ptr<EffectMirage>(new EffectMirage());
+    break;
+  case EFF_ENUM::EFF_WATERCOLORS :
+    worker = std::unique_ptr<EffectWcolor>(new EffectWcolor());
+    break;
+  case EFF_ENUM::EFF_FIRE :
+    worker = std::unique_ptr<EffectRadialFire>(new EffectRadialFire());
+    break;
+  case EFF_ENUM::EFF_SPBALS :
+    worker = std::unique_ptr<EffectSplashBals>(new EffectSplashBals());
+    break;
 #ifdef MIC_EFFECTS
   case EFF_ENUM::EFF_VU :
     worker = std::unique_ptr<EffectVU>(new EffectVU());
@@ -292,6 +288,7 @@ void EffectWorker::workerset(uint16_t effect, const bool isCfgProceed){
   case EFF_ENUM::EFF_OSC :
     worker = std::unique_ptr<EffectOsc>(new EffectOsc());
     break;
+
 #endif
 
   default:
@@ -643,29 +640,39 @@ String EffectWorker::getfseffconfig(uint16_t nb)
   return cfg_str;
 }
 
-
 String EffectWorker::geteffconfig(uint16_t nb, uint8_t replaceBright)
 {
   // конфиг текущего эффекта
   DynamicJsonDocument doc(2048);
   EffectListElem *eff = getEffect(nb);
+  EffectWorker *tmp=this;
+  bool isFader = (curEff != nb);
+  if(isFader){ // работает фейдер, нужен новый экземпляр
+#if defined(PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED)
+    HeapSelectIram ephemeral;
+#endif
+    tmp=new EffectWorker(eff);
+  }
+
   doc[F("nb")] = nb;
   doc[F("flags")] = eff ? eff->flags.mask : SET_ALL_EFFFLAGS;
-  doc[F("name")] = effectName;
-  doc[F("ver")] = version;
-  doc[F("snd")] = soundfile;
+  doc[F("name")] = tmp->effectName;
+  doc[F("ver")] = tmp->version;
+  doc[F("snd")] = tmp->soundfile;
   JsonArray arr = doc.createNestedArray(F("ctrls"));
-  for (int i = 0; i < controls.size(); i++)
-      {
-          JsonObject var = arr.createNestedObject();
-          var[F("id")]=controls[i]->getId();
-          var[F("type")]=controls[i]->getType();
-          var[F("name")]=controls[i]->getName();
-          var[F("val")]=(controls[i]->getId()==0 && replaceBright) ? String(replaceBright) : controls[i]->getVal();
-          var[F("min")]=controls[i]->getMin();
-          var[F("max")]=controls[i]->getMax();
-          var[F("step")]=controls[i]->getStep();
-      }
+  for (int i = 0; i < tmp->controls.size(); i++) {
+    JsonObject var = arr.createNestedObject();
+    var[F("id")]=tmp->controls[i]->getId();
+    var[F("type")]=tmp->controls[i]->getType();
+    var[F("name")]=tmp->controls[i]->getName();
+    var[F("val")]=(tmp->controls[i]->getId()==0 && replaceBright) ? String(replaceBright) : tmp->controls[i]->getVal();
+    var[F("min")]=tmp->controls[i]->getMin();
+    var[F("max")]=tmp->controls[i]->getMax();
+    var[F("step")]=tmp->controls[i]->getStep();
+  }
+  if(isFader)
+    delete tmp;
+
   String cfg_str;
   serializeJson(doc, cfg_str);
   doc.clear();
@@ -686,16 +693,6 @@ void EffectWorker::saveeffconfig(uint16_t nb, char *folder){
   configFile.close();
 }
 
-#if !defined(MIC_EFFECTS) and !defined(USE_E131)
-    #define SKIP_EFF if (i>EFF_ENUM::EFF_TIME) continue; // пропускаем эффекты для микрофона, если отключен микрофон
-#elif defined(USE_E131) and !defined(MIC_EFFECTS)
-    #define SKIP_EFF if (i>EFF_ENUM::EFF_ARTNET) continue;
-#elif !defined(USE_E131) and defined(MIC_EFFECTS)
-    #define SKIP_EFF if (i==251) continue;
-#else
-    #define SKIP_EFF 
-#endif
-
 /**
  * проверка на существование "дефолтных" конфигов для всех статичных эффектов
  *
@@ -705,7 +702,9 @@ void EffectWorker::chckdefconfigs(const char *folder){
     if (!strlen_P(T_EFFNAMEID[i]) && i!=0)   // пропускаем индексы-"пустышки" без названия, кроме EFF_NONE
       continue;
 
-    SKIP_EFF
+#ifndef MIC_EFFECTS
+    if(i>EFF_ENUM::EFF_TIME) continue; // пропускаем эффекты для микрофона, если отключен микрофон
+#endif
 
     String cfgfilename = geteffectpathname(i, folder);
     if(!LittleFS.exists(cfgfilename)){ // если конфига эффекта не существует, создаем дефолтный
@@ -826,7 +825,9 @@ void EffectWorker::makeIndexFile(const char *folder)
     if (!strlen_P(T_EFFNAMEID[i]) && i!=0)   // пропускаем индексы-"пустышки" без названия, кроме 0 "EFF_NONE"
       continue;
 
-      SKIP_EFF
+#ifndef MIC_EFFECTS
+    if(i>EFF_ENUM::EFF_TIME) continue; // пропускаем эффекты для микрофона, если отключен микрофон
+#endif
 
     eff = getEffect(i);
     if(eff)
@@ -852,11 +853,12 @@ void EffectWorker::removeLists(){
   listsuffix = time(NULL);
 }
 
-void EffectWorker::makeIndexFileFromList(const char *folder)
+void EffectWorker::makeIndexFileFromList(const char *folder, bool forceRemove)
 {
   File indexFile;
 
-  removeLists();
+  if(forceRemove)
+    removeLists();
 
   openIndexFile(indexFile, folder);
   effectsReSort(SORT_TYPE::ST_IDX); // сброс сортировки перед записью
@@ -1150,6 +1152,9 @@ void EffectWorker::setSelected(uint16_t effnb)
 
   selEff = effnb;
   //LOG(println,F("Читаю список контроллов выбранного эффекта:"));
+#if defined(PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED)
+  HeapSelectIram ephemeral;
+#endif
   EffectWorker *tmpEffect = new EffectWorker(effnb);
   LList<UIControl *> fake;
   this->selcontrols = tmpEffect->controls; // копирую список контроллов, освобождать будет другой объект

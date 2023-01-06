@@ -41,17 +41,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include <Arduino.h>
 #include "LList.h"
 #include <ArduinoJson.h>
-
-#ifdef ESP8266
- #include <LittleFS.h>
-#endif
-
-#ifdef ESP32
- #include <LITTLEFS.h>
- #define FORMAT_LITTLEFS_IF_FAILED true
- #define LittleFS LITTLEFS
-#endif
-
+#include "misc.h"
 #include "effects_types.h"
 
 #ifdef MIC_EFFECTS
@@ -165,7 +155,7 @@ public:
         switch(getType()&0x0F){
             case CONTROL_TYPE::RANGE:
             case CONTROL_TYPE::CHECKBOX:
-                val=constrain(_val.toInt(),getMin().toInt(),getMax().toInt());
+                val=String(constrain(_val.toInt(),getMin().toInt(),getMax().toInt()));
                 break;
             default:
                 val=_val;
@@ -446,7 +436,7 @@ public:
 
 class EffectWorker {
 private:
-    time_t listsuffix = 0; // суффикс использемый для обновления списков
+    time_t listsuffix = 0; // суффикс используемый для обновления списков
     LAMPSTATE *lampstate; // ссылка на состояние лампы
     SORT_TYPE effSort; // порядок сортировки в UI
 
@@ -580,7 +570,7 @@ public:
     // удалить конфиг переданного эффекта
     void removeConfig(const uint16_t nb, const char *folder=NULL);
     // пересоздает индекс с текущего списка эффектов
-    void makeIndexFileFromList(const char *folder = NULL);
+    void makeIndexFileFromList(const char *folder = NULL, bool forceRemove = true);
     // пересоздает индекс с конфигов в ФС
     void makeIndexFileFromFS(const char *fromfolder = NULL, const char *tofolder = NULL);
 

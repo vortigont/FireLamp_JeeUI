@@ -53,18 +53,18 @@ static const char TEFF_004[] PROGMEM = "Конфеті";
 static const char TEFF_005[] PROGMEM = "Кольорові драже";
 static const char TEFF_006[] PROGMEM = "Хурделиця, Зіркопад, Метеори";
 static const char TEFF_007[] PROGMEM = "Матриця";
-static const char TEFF_008[] PROGMEM = "ДНК Варіант";
+static const char TEFF_008[] PROGMEM = "Акварель";
 static const char TEFF_009[] PROGMEM = "Світлячки зі шлейфом";
 static const char TEFF_010[] PROGMEM = "Блукаючий кубик";
 static const char TEFF_011[] PROGMEM = "Пульс";
 static const char TEFF_012[] PROGMEM = "Ефектопад";
-static const char TEFF_013[] PROGMEM = "Вогняна Лампа"; 
+static const char TEFF_013[] PROGMEM = "Неопаліма купина"; 
 static const char TEFF_014[] PROGMEM = "Пейнтбол";
 static const char TEFF_015[] PROGMEM = "Шум 3D";
 static const char TEFF_016[] PROGMEM = "Клітинки-Ялинки";
-static const char TEFF_017[] PROGMEM = "Геометричний Вальс";
+static const char TEFF_017[] PROGMEM = "П'ятнашки";
 static const char TEFF_018[] PROGMEM = "Тіксі Ленд";
-static const char TEFF_019[] PROGMEM = "LDIRKO Ленд";
+static const char TEFF_019[] PROGMEM = "Н.Тесла";
 static const char TEFF_020[] PROGMEM = "Осцилятор";
 static const char TEFF_021[] PROGMEM = "Шторм";
 static const char TEFF_022[] PROGMEM = "Фея";
@@ -120,10 +120,9 @@ static const char TEFF_071[] PROGMEM = "Метабульки";
 static const char TEFF_072[] PROGMEM = "Лавова Лампа";
 static const char TEFF_073[] PROGMEM = "Космо-Рейсер";
 static const char TEFF_074[] PROGMEM = "Дим";
-static const char TEFF_075[] PROGMEM = "Вогонь 2021";
-static const char TEFF_076[] PROGMEM = "Test";
+static const char TEFF_075[] PROGMEM = "Вогняна Лампа";
+static const char TEFF_076[] PROGMEM = "Міраж";
 static const char TEFF_250[] PROGMEM = "Годинник";
-static const char TEFF_251[] PROGMEM = "E1.31 ресівер";
 static const char TEFF_254[] PROGMEM = "Частотний аналізатор";
 static const char TEFF_255[] PROGMEM = "Осцилограф";
 
@@ -149,7 +148,7 @@ static const char TEFF_255[] PROGMEM = "Осцилограф";
 #define DFTINTF_0DF "Порхання"
 #define DFTINTF_0E0 "Нічник"
 #define DFTINTF_0E1 "Кільця"
-#define DFTINTF_0E2 "Відблиски (0: Вимкнути. 1: Випадково)"
+#define DFTINTF_0E2 "Відблиски (0: Вимкнути)"
 #define DFTINTF_0E3 "Режим"
 #define DFTINTF_0E4 "Лінійна швидкість"
 #define DFTINTF_0E5 "Режим (1: випадковий)"
@@ -203,6 +202,7 @@ static const char TEFF_255[] PROGMEM = "Осцилограф";
 #define DFTINTF_116 "Переміщення по синусу"
 #define DFTINTF_117 "Напрямок (0: циклічно)"
 #define DFTINTF_118 "Поріг сигналу"
+#define DFTINTF_11A "Колір (1 = циклічно)"
 
 
 /** набор строк с текстовыми константами интерфейса
@@ -305,7 +305,7 @@ static const char TINTF_05E[] PROGMEM = "Активно";
 static const char TINTF_05F[] PROGMEM = "Тип події";
 static const char TINTF_060[] PROGMEM = "Увімкнути лампу";
 static const char TINTF_061[] PROGMEM = "Вимкнути лампу";
-static const char TINTF_062[] PROGMEM = "Увімкнути DEMO";
+static const char TINTF_062[] PROGMEM = "Режим DEMO";
 static const char TINTF_063[] PROGMEM = "Будильник";
 static const char TINTF_064[] PROGMEM = "Завантажити конфіг лампи";
 static const char TINTF_065[] PROGMEM = "Завантажити конфіг ефектів";
@@ -336,10 +336,14 @@ static const char TINTF_07D[] PROGMEM = "Утримання";
 static const char TINTF_07E[] PROGMEM = "Натискання";
 static const char TINTF_07F[] PROGMEM = "Одноразово";
 static const char TINTF_080[] PROGMEM = "Вогняна Лампа";
-#ifdef EMBUI_USE_FTP
+#if defined(EMBUI_USE_FTP) && defined(EMBUI_USE_MQTT)
 static const char TINTF_081[] PROGMEM = "WiFi, MQTT & FTP";
-#else
+#elif defined(EMBUI_USE_MQTT)
 static const char TINTF_081[] PROGMEM = "WiFi & MQTT";
+#elif defined(EMBUI_USE_FTP)
+static const char TINTF_081[] PROGMEM = "WiFi & FTP";
+#else
+static const char TINTF_081[] PROGMEM = "WiFi";
 #endif
 static const char TINTF_082[] PROGMEM = "Інші";
 static const char TINTF_083[] PROGMEM = "Очищувати лампу при зміні ефектів";
@@ -432,11 +436,26 @@ static const char TINTF_0D9[] PROGMEM = "Очистити";
 static const char TINTF_0DA[] PROGMEM = "Сканувати";
 static const char TINTF_0DB[] PROGMEM = "FTP";
 static const char TINTF_0DC[] PROGMEM = "Управління";
-static const char TINTF_0DD[] PROGMEM = "Верт. шкала";
+static const char TINTF_0DD[] PROGMEM = "Тип шкали";
 static const char TINTF_0DE[] PROGMEM = "Колір шкали";
 static const char TINTF_0DF[] PROGMEM = "Колір тексту";
 static const char TINTF_0E0[] PROGMEM = "Показувати температуру";
 static const char TINTF_0E1[] PROGMEM = "Впевнені?";
+static const char TINTF_0E2[] PROGMEM = "Трансляція";
+static const char TINTF_0E3[] PROGMEM = "Режим";
+static const char TINTF_0E4[] PROGMEM = "E1.31";
+static const char TINTF_0E5[] PROGMEM = "SoulMate";
+static const char TINTF_0E6[] PROGMEM = "Блок.Ефект";
+static const char TINTF_0E7[] PROGMEM = "Розмітка";
+static const char TINTF_0E8[] PROGMEM = "Початковий Universe";
+static const char TINTF_0E9[] PROGMEM = "Завантажити конфіг кнопок";
+static const char TINTF_0EA[] PROGMEM = "Нічник";
+static const char TINTF_0EB[] PROGMEM = "Світильник";
+static const char TINTF_0EC[] PROGMEM = "У будь-якому випадку";
+static const char TINTF_0ED[] PROGMEM = "Промовити час";
+static const char TINTF_0EE[] PROGMEM = "Відключено";
+static const char TINTF_0EF[] PROGMEM = "Вертикальна";
+static const char TINTF_0F0[] PROGMEM = "Горизонтальна";
 
 static const char NY_MDG_STRING1[] PROGMEM = "До нового року залишилось %d %s";
 static const char NY_MDG_STRING2[] PROGMEM = "З новим %d роком!";
