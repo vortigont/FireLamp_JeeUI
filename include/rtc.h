@@ -1,7 +1,6 @@
 #ifndef _RTC_H
 #define _RTC_H
 
-#include "config.h"
 #include "iarduino_RTC.h"
 #include "main.h"
 #ifdef TM1637_CLOCK

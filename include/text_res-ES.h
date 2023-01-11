@@ -53,18 +53,18 @@ static const char TEFF_004 [] PROGMEM = "Confeti";
 static const char TEFF_005 [] PROGMEM = "M&M`s";
 static const char TEFF_006 [] PROGMEM = "Ventisca, Estrellas fugaces, Meteoritos";
 static const char TEFF_007 [] PROGMEM = "Nuevo Matriz";
-static const char TEFF_008 [] PROGMEM = "DNA Variacion";
+static const char TEFF_008 [] PROGMEM = "Acuarela";
 static const char TEFF_009 [] PROGMEM = "Luciérnagas con rastro";
 static const char TEFF_010 [] PROGMEM = "Cubo errante";
 static const char TEFF_011 [] PROGMEM = "Pulso";
 static const char TEFF_012 [] PROGMEM = "Efecto-caida";
-static const char TEFF_013 [] PROGMEM = "Lámpara de Fuego";
+static const char TEFF_013 [] PROGMEM = "Zarza ardiente";
 static const char TEFF_014 [] PROGMEM = "Paintball";
 static const char TEFF_015 [] PROGMEM = "Efectos de Ruido 3D";
 static const char TEFF_016 [] PROGMEM = "Celdas y mas";
-static const char TEFF_017 [] PROGMEM = "Vals geométrico";
+static const char TEFF_017 [] PROGMEM = "Quince Fichas";
 static const char TEFF_018 [] PROGMEM = "Tixy Land";
-static const char TEFF_019 [] PROGMEM = "LDIRKO Land";
+static const char TEFF_019 [] PROGMEM = "N.Tesla";
 static const char TEFF_020 [] PROGMEM = "Oscilador";
 static const char TEFF_021 [] PROGMEM = "Viento y Lluvia";
 static const char TEFF_022 [] PROGMEM = "Hada";
@@ -110,7 +110,7 @@ static const char TEFF_061 [] PROGMEM = "Bolas salvajes";
 static const char TEFF_062 [] PROGMEM = "Atracción";
 static const char TEFF_063 [] PROGMEM = "Serpientes";
 static const char TEFF_064 [] PROGMEM = "Nexus";
-static const char TEFF_065 [] PROGMEM = "Laberinto (Test)";
+static const char TEFF_065 [] PROGMEM = "Laberinto";
 static const char TEFF_066 [] PROGMEM = "Colores rizados";
 static const char TEFF_067 [] PROGMEM = "Aurora boreal";
 static const char TEFF_068 [] PROGMEM = "Florece";
@@ -120,10 +120,9 @@ static const char TEFF_071 [] PROGMEM = "Metabolas";
 static const char TEFF_072 [] PROGMEM = "Lámpara de lava";
 static const char TEFF_073 [] PROGMEM = "Corredor Espacial";
 static const char TEFF_074 [] PROGMEM = "Humo";
-static const char TEFF_075 [] PROGMEM = "Fuego 2021";
-static const char TEFF_076[] PROGMEM = "Test";
+static const char TEFF_075 [] PROGMEM = "Lampara de Fuego";
+static const char TEFF_076 [] PROGMEM = "Espejismo";
 static const char TEFF_250 [] PROGMEM = "Reloj";
-static const char TEFF_251[] PROGMEM = "E1.31 Receptor";
 static const char TEFF_254 [] PROGMEM = "Analizador de frecuencia";
 static const char TEFF_255 [] PROGMEM = "Osciloscopio";
 
@@ -151,7 +150,7 @@ static const char TEFF_255 [] PROGMEM = "Osciloscopio";
 #define DFTINTF_0DF "Flutter"
 #define DFTINTF_0E0 "Luz nocturna"
 #define DFTINTF_0E1 "Anillos"
-#define DFTINTF_0E2 "Deslumbramiento (0: Apag. 1: Aleat.)"
+#define DFTINTF_0E2 "Deslumbramiento (0: Apagado)"
 #define DFTINTF_0E3 "Modo"
 #define DFTINTF_0E4 "Velocidad lineal"
 #define DFTINTF_0E5 "Modo (1: aleatorio)"
@@ -205,6 +204,7 @@ static const char TEFF_255 [] PROGMEM = "Osciloscopio";
 #define DFTINTF_116 "Desplazamiento sinusoidal"
 #define DFTINTF_117 "Direccion (0: cíclico)"
 #define DFTINTF_118 "Umbral de señal"
+#define DFTINTF_11A "Color (1: cíclico)"
 
 /** набор строк с текстовыми константами интерфейса
  */
@@ -306,7 +306,7 @@ static const char TINTF_05E[] PROGMEM = "Activado";
 static const char TINTF_05F[] PROGMEM = "Tipo de Evento";
 static const char TINTF_060[] PROGMEM = "Encender Lampara";
 static const char TINTF_061[] PROGMEM = "Apagar Lampara";
-static const char TINTF_062[] PROGMEM = "Encender DEMO";
+static const char TINTF_062[] PROGMEM = "Modo DEMO";
 static const char TINTF_063[] PROGMEM = "Despertador";
 static const char TINTF_064[] PROGMEM = "Cargar Config. Lampara";
 static const char TINTF_065[] PROGMEM = "Cargar Config. Efectos";
@@ -337,10 +337,14 @@ static const char TINTF_07D[] PROGMEM = "Retener";
 static const char TINTF_07E[] PROGMEM = "Presionar"; 
 static const char TINTF_07F[] PROGMEM = "Una vez"; 
 static const char TINTF_080[] PROGMEM = "Lampara de Fuego"; 
-#ifdef EMBUI_USE_FTP
+#if defined(EMBUI_USE_FTP) && defined(EMBUI_USE_MQTT)
 static const char TINTF_081[] PROGMEM = "WiFi, MQTT & FTP";
-#else
+#elif defined(EMBUI_USE_MQTT)
 static const char TINTF_081[] PROGMEM = "WiFi & MQTT";
+#elif defined(EMBUI_USE_FTP)
+static const char TINTF_081[] PROGMEM = "WiFi & FTP";
+#else
+static const char TINTF_081[] PROGMEM = "WiFi";
 #endif
 static const char TINTF_082[] PROGMEM = "Otros";
 static const char TINTF_083[] PROGMEM = "Cambiando, no superponer efectos";
@@ -433,11 +437,26 @@ static const char TINTF_0D9[] PROGMEM = "Claro";
 static const char TINTF_0DA[] PROGMEM = "Escanear";
 static const char TINTF_0DB[] PROGMEM = "FTP";
 static const char TINTF_0DC[] PROGMEM = "Control";
-static const char TINTF_0DD[] PROGMEM = "Escala vertical";
+static const char TINTF_0DD[] PROGMEM = "Tipo de escala";
 static const char TINTF_0DE[] PROGMEM = "Escala color";
 static const char TINTF_0DF[] PROGMEM = "Texto color";
 static const char TINTF_0E0[] PROGMEM = "Mostrar temperatura";
 static const char TINTF_0E1[] PROGMEM = "¿Está seguro?";
+static const char TINTF_0E2[] PROGMEM = "Transmisión";
+static const char TINTF_0E3[] PROGMEM = "Modo";
+static const char TINTF_0E4[] PROGMEM = "E1.31";
+static const char TINTF_0E5[] PROGMEM = "SoulMate";
+static const char TINTF_0E6[] PROGMEM = "Efecto bloque";
+static const char TINTF_0E7[] PROGMEM = "Mapang";
+static const char TINTF_0E8[] PROGMEM = "Universo primero";
+static const char TINTF_0E9[] PROGMEM = "Cargar Config. Botons";
+static const char TINTF_0EA[] PROGMEM = "Luz de noche";
+static const char TINTF_0EB[] PROGMEM = "Lámpara brillante";
+static const char TINTF_0EC[] PROGMEM = "De todos modos";
+static const char TINTF_0ED[] PROGMEM = "Dice el tiempo";
+static const char TINTF_0EE[] PROGMEM = "Discapacitada";
+static const char TINTF_0EF[] PROGMEM = "Vertical";
+static const char TINTF_0F0[] PROGMEM = "Horizontal";
 
 static const char NY_MDG_STRING1[] PROGMEM = "Hasta que se quede el año nuevo %d %s";
 static const char NY_MDG_STRING2[] PROGMEM = "Feliz año nuevo %d!";

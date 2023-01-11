@@ -2,13 +2,10 @@
 .pio
 .vscode
 eff
-data/*.json
-include/user_config.h
 user_*.ini
 .vscode/extensions.json
 .vscode/settings.json
 .vscode/c_cpp_properties.json
-/Bin/*.*
-/resources/embui.zip
-/resources/wget.*
-Uploader*.bat
+include/user_config.h
+resources/embui.zip
+/data/*.json
