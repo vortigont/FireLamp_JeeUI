@@ -35,65 +35,64 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
    <https://www.gnu.org/licenses/>.)
 */
 
-#pragma once
-#include <Arduino.h>
-#include "JeeUI2.h"
-#include "config.h"
-#include "lamp.h"
+#ifndef __MAIN_H_
+#define __MAIN_H_
 
-#if (PULL_MODE == LOW_PULL)
-#define BUTTON_PRESS_TRANSITION RISING
-#define BUTTON_RELEASE_TRANSITION FALLING
-#else
-#define BUTTON_PRESS_TRANSITION FALLING
-#define BUTTON_RELEASE_TRANSITION RISING
+#if __cplusplus >= 201703L
+#define register // keyword 'register' is banned with c++17
 #endif
 
-class INTRFACE_GLOBALS{
-public:
-#pragma pack(push,1)
- struct { // набор глобальных флагов
-    bool isSetup:1;
-    bool isTmSetup:1;
-    bool isAddSetup:1;
-    bool isEdEvent:1;
-    bool isMicCal:1;
-    bool pinTransition:1;  // ловим "нажатие" кнопки
-    bool isAPMODE:1; // в случае режима AP один раз до нажатия "Выйти из настроек" форсируем переключение на вкладку WiFi, дальше этого не делаем
- };
- #pragma pack(pop)
- uint8_t addSList = 1;
- EFFECT *prevEffect = nullptr;
- int mqtt_int; // интервал отправки данных по MQTT в секундах 
- INTRFACE_GLOBALS() { // инициализация значениями по умолчанию
-    isSetup = false;
-    isTmSetup = false;
-    isAddSetup = false;
-    isEdEvent = false;
-    isMicCal = false;
-    pinTransition = true;
-    isAPMODE = false;
-}
-};
+#include <Arduino.h>
+#include <SPIFFSEditor.h>
+
+#include "config.h"
+#include "EmbUI.h"
+#include "lamp.h"
+#include "buttons.h"
+
+
+#ifdef USE_FTP
+  #include "ftpSrv.h"
+#endif
+#ifdef TM1637_CLOCK
+  #include "tm.h"
+#endif
+
+#ifdef ENCODER
+  #include "enc.h"
+#endif
+
+#ifdef RTC
+  #include "rtc.h"
+#endif
+
+// TaskScheduler
+extern Scheduler ts;
 
 // глобальные переменные для работы с ними в программе
-extern SHARED_MEM GSHMEM; // Глобальная разделяемая память эффектов
-extern INTRFACE_GLOBALS iGLOBAL; // объект глобальных переменных интерфейса
-extern jeeui2 jee; // Создаем объект класса для работы с JeeUI2 фреймворком
 extern LAMP myLamp; // Объект лампы
 #ifdef ESP_USE_BUTTON
+extern Buttons *myButtons;
 extern GButton touch;
+#endif
+#ifdef MP3PLAYER
+#include "mp3player.h"
+extern MP3PLAYERDEVICE *mp3;
+#endif
+#ifdef DS18B20
+#include "DS18B20.h"
+#endif
+
+#ifdef ENCODER
+#include "enc.h"
 #endif
 
 void mqttCallback(const String &topic, const String &payload);
 void sendData();
-void update();
-void interface();
+
 void create_parameters();
-void updateParm();
-void jeebuttonshandle();
+void sync_parameters();
 void event_worker(const EVENT *);
-void httpCallback(const char *param, const char *value);
-void setEffectParams(EFFECT *curEff);
-ICACHE_RAM_ATTR void buttonpinisr();    // обработчик прерываний пина кнопки
-void buttonhelper(bool state);
+bool notfound_handle(AsyncWebServerRequest *request, const String& req); // кастомный обработчик, для поддержки приложения WLED APP ( https://play.google.com/store/apps/details?id=com.aircoookie.WLED )
+
+#endif

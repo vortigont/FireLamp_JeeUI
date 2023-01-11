@@ -42,12 +42,15 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #  endif
 #endif
 
+#define SF(s) __SFSTR(s)
+#define __SFSTR(s) #s
+//#define SF(...) #__VA_ARGS__
 
 #include <GyverButton.h>
-
-#ifdef ESP8266
-#define FASTLED_USE_PROGMEM             (1)
-#endif
+// переместил в platformio.ini
+// #ifdef ESP8266
+// #define FASTLED_USE_PROGMEM             (1)
+// #endif
 #define FASTLED_INTERRUPT_RETRY_COUNT   (0)                 // default: 2; // Use this to determine how many times FastLED will attempt to re-transmit a frame if interrupted for too long by interrupts
 #define FASTLED_ESP8266_RAW_PIN_ORDER                       // FASTLED_ESP8266_RAW_PIN_ORDER, FASTLED_ESP8266_D1_PIN_ORDER or FASTLED_ESP8266_NODEMCU_PIN_ORDER
 //#define FASTLED_ALLOW_INTERRUPTS      (0)                   // default: 1; // Use this to force FastLED to allow interrupts in the clockless chipsets (or to force it to disallow), overriding the default on platforms that support this. Set the value to 1 to allow interrupts or 0 to disallow them.
@@ -56,13 +59,59 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 //-----------------------------------
 //#define ESP_USE_BUTTON                                      // если строка не закомментирована, должна быть подключена кнопка (иначе ESP может регистрировать "фантомные" нажатия и некорректно устанавливать яркость)
 //#define LAMP_DEBUG                                          // режим отладки, можно также включать в platformio.ini
-//#define DEBUG_TELNET_OUTPUT  (true)                         // true - отладочные сообщения будут выводиться в telnet вместо Serial порта (для удалённой отладки без подключения usb кабелем)
-//#define USE_FTP                                             // доступ к SPIFFS по FTP, логин/пароль: esp8266
+//#define DEBUG_TELNET_OUTPUT  (true)                         // true - отладочные сообщения будут выводиться в telnet вместо Serial порта (для удалённой отладки без подключения usb кабелем) // Deprecated
+//#define USE_FTP                                             // доступ к LittleFS по FTP, логин/пароль: esp8266
 //#define OTA                                                 // Обновление по ОТА
 //#define MIC_EFFECTS                                         // Включить использование микрофона для эффектов
-
-typedef enum {NONE,BIT_1,BIT_2,BIT_3,BIT_4} MIC_NOISE_REDUCE_LEVEL;
+//#define MP3PLAYER                                           // Включить использование MP3 плеера (DF Player)
+//#define SHOWSYSCONFIG                                       // Показывать системное меню
+//#define DISABLE_LED_BUILTIN                                 // Отключить встроенный в плату светодиод, если нужно чтобы светил - закомментировать строку
+typedef enum {NR_NONE,BIT_1,BIT_2,BIT_3,BIT_4} MIC_NOISE_REDUCE_LEVEL;
 //-----------------------------------
+#ifndef LANG_FILE
+#define LANG_FILE                  "text_res-RUS.h"           // Языковой файл по дефолту
+#endif
+
+#ifdef EMBUI_USE_FTP                                       // если включен FTP на уровне фреймворка, то не используем тот что на уровне лампы
+#undef USE_FTP                                             // доступ к LittleFS по FTP, логин/пароль: esp8266
+#endif
+
+#ifdef RTC
+  #ifndef RTC_MODULE
+  #define RTC_MODULE          (2U)                          // Поддерживаются модули DS1302 = (1U),  DS1307 = (2U), DS3231 = (3U)
+  #endif
+  #ifndef RTC_SYNC_PERIOD
+  #define RTC_SYNC_PERIOD     (24U)                         // Период синхронизации RTC c ntp (часы)
+  #endif
+  #if RTC_MODULE > (1U)                                     // Если выбран модуль с I2C (DS1307 или DS3231)
+    #ifdef TM1637_CLOCK                                     // Если есть дисплей TM1637, то можем использовать его пины для RTC (но RTC модуль работает не на всех пинах)
+      #ifndef pin_SW_SDA
+      #define pin_SW_SDA        (TM_CLK_PIN)                // Пин SDA RTC модуля подключаем к CLK пину дисплея
+      #endif
+      #ifndef pin_SW_SCL
+      #define pin_SW_SCL        (TM_DIO_PIN)                // Пин SCL RTC модуля подключаем к DIO пину дисплея
+      #endif
+    #else                                                   // Пины подбирать экспериментальным путем, точно работает на D2 и D4
+      #ifndef pin_SW_SDA
+      #define pin_SW_SDA        (D2)                        // Назначаем вывод для работы в качестве линии SDA программной шины I2C.
+      #endif
+      #ifndef pin_SW_SCL
+      #define pin_SW_SCL        (D4)                        // Назначаем вывод для работы в качестве линии SCL программной шины I2C.
+      #endif
+    #endif
+    #if RTC_MODULE == (1U)                                    // Если выбран модуль DS1302.
+      #ifndef pin_RST
+      #define pin_RST             (D8)                        // Назначаем вывод RST.
+      #endif
+      #ifndef pin_DAT
+      #define pin_DAT             (D3)                        // Назначаем вывод DAT.
+      #endif
+      #ifndef pin_DAT
+      #define pin_CLK             (D4)                        // Назначаем вывод CLK.
+      #endif
+    #endif
+  #endif
+#endif
 
 #ifndef MIC_PIN
 #ifdef ESP8266
@@ -77,8 +126,14 @@ typedef enum {NONE,BIT_1,BIT_2,BIT_3,BIT_4} MIC_NOISE_REDUCE_LEVEL;
 #define MIC_POLLRATE          (50U)                         // как часто опрашиваем микрофон, мс
 #endif
 
+#ifndef HIGH_MAP_FREQ
+#define HIGH_MAP_FREQ         (20000U)                      // верхняя граница слышимого диапазона, используется для мапинга, дефолтное и общепринятое значение 20000Гц
+#endif
+
 #ifdef FAST_ADC_READ
+#ifndef SAMPLING_FREQ
 #define SAMPLING_FREQ         (18000U*2U)
+#endif
 #else
 #define SAMPLING_FREQ         (5000U*2U)
 #endif
@@ -95,24 +150,39 @@ typedef enum {NONE,BIT_1,BIT_2,BIT_3,BIT_4} MIC_NOISE_REDUCE_LEVEL;
 #define MIN_PEAK_LEVEL        (50U)                         // Минимальный амплитудный уровень, для эффектов зависящих от микрофона
 #endif
 
-#ifndef LAMP_PIN
-//#define LAMP_PIN              (2U)                          // пин ленты                (D4)
-#ifdef ESP8266
-#define LAMP_PIN              (D3)                          // пин ленты                (D3)
+#ifdef MP3PLAYER
+// #ifdef ESP32
+//  #error ESP32 with DfPlayer is not (yet) supported due to softwareserial dependency (to be fixed)
+// #endif
+#ifndef MP3_TX_PIN
+#define MP3_TX_PIN            (D5)                         // TX mp3 player RX (D5)
 #endif
+#ifndef MP3_RX_PIN
+#define MP3_RX_PIN            (D6)                         // RX mp3 player TX (D6)
+#endif
+#ifndef MP3_SERIAL_TIMEOUT
+#define MP3_SERIAL_TIMEOUT    (300U)                       // 300мс по умолчанию, диапазон 200...1000, подбирается экспериментально, не желательно сильно повышать
+#endif
+#ifndef DFPALYER_START_DELAY
+#define DFPALYER_START_DELAY  (500U)                       // 500мс по умолчанию, диапазон 10...1000, подбирается экспериментально, не желательно сильно повышать, безусловная задержка до инициализации
+#endif
+#endif
+
+#ifndef LAMP_PIN
+#define LAMP_PIN              (D3)                          // пин ленты                (D3)
 #endif
 
 #ifndef BTN_PIN
-#define BTN_PIN               (4U)                          // пин кнопки               (D2)
+#define BTN_PIN               (D1)                          // пин кнопки               (D1)
 //#define BTN_PIN               (0U)                          // пин кнопки "FLASH" NodeMCU (ОТЛАДКА!!!) , подтяжка должна быть PULL_MODE=HIGH_PULL
 #endif
-
+/*
 #ifndef MOSFET_PIN
-#define MOSFET_PIN            (5U)                          // пин MOSFET транзистора   (D1) - может быть использован для управления питанием матрицы/ленты
-#endif
-#ifndef ALARM_PIN
-#define ALARM_PIN             (16U)                         // пин состояния будильника (D0) - может быть использован для управления каким-либо внешним устройством на время работы будильника
-#endif
+#define MOSFET_PIN            (D2)                          // пин MOSFET транзистора   (D2) - может быть использован для управления питанием матрицы/ленты
+#endif*/
+/*#ifndef ALARM_PIN                                        
+#define ALARM_PIN             (D8)                         // пин состояния будильника (D0) - может быть использован для управления каким-либо внешним устройством на время работы будильника
+#endif*/
 #ifndef MOSFET_LEVEL
 #define MOSFET_LEVEL          (HIGH)                        // логический уровень, в который будет установлен пин MOSFET_PIN, когда матрица включена - HIGH или LOW
 #endif
@@ -157,13 +227,15 @@ typedef enum {NONE,BIT_1,BIT_2,BIT_3,BIT_4} MIC_NOISE_REDUCE_LEVEL;
 #ifndef BRIGHTNESS
 #define BRIGHTNESS            (255U)                        // стандартная максимальная яркость (0-255)
 #endif
+
+#ifndef OFF_BRIGHTNESS
+#define OFF_BRIGHTNESS          (2U)                        // яркость вывода текста в случае выключенной лампы
+#endif
+
 #ifndef CURRENT_LIMIT
 #define CURRENT_LIMIT         (2000U)                       // лимит по току в миллиамперах, автоматически управляет яркостью (пожалей свой блок питания!) 0 - выключить лимит
 #endif
 
-#ifndef FADE
-#define FADE                  true                          // fade by default on brightness change
-#endif
 #ifndef FADE_STEPTIME
 #define FADE_STEPTIME         (50U)                         // default time between fade steps, ms (2 seconds with max steps)
 #endif
@@ -177,20 +249,20 @@ typedef enum {NONE,BIT_1,BIT_2,BIT_3,BIT_4} MIC_NOISE_REDUCE_LEVEL;
 #define FADE_MINCHANGEBRT     (30U)                         // Minimal brightness for effects changer
 #endif
 
-#ifndef RANDOM_DEMO
-#define RANDOM_DEMO           (1)                           // 0,1 - последовательный (0)/рандомный (1) выбор режима демо
-#endif
-#ifndef DEMO_TIMEOUT
-#define DEMO_TIMEOUT          (33)                          // время в секундах для смены режима DEMO
-#endif
-#ifndef USELEDBUF
-#define USELEDBUF                                           // буфер под эффекты, можно закомментировать, в случае если нужно сэкономить память, но будут артефакты обработки
-#endif
 #ifndef MAX_FPS
 #define MAX_FPS               (60U)                         // Максимальное число обсчитываемых и выводимых кадров в секунду
 #endif
 
+#ifndef SPEED_ADJ
+#define SPEED_ADJ (float)NUM_LEDS/256                         // Поправка скорости риал-тайм эффектов относительно размеров метрицы.
+#endif
+
 #define EFFECTS_RUN_TIMER   (uint16_t)(1000 / MAX_FPS)     // период обработки эффектов - при 10 это 10мс, т.е. 1000/10 = 100 раз в секунду, при 20 = 50 раз в секунду, желательно использовать диапазон 10...40
+
+#ifndef DEFAULT_DEMO_TIMER
+  #define DEFAULT_DEMO_TIMER  (60U)                         // интервал смены демо по-умолчанию
+#endif
+
 
 // настройка кнопки, если разрешена
 #ifdef ESP_USE_BUTTON
@@ -211,13 +283,15 @@ typedef enum {NONE,BIT_1,BIT_2,BIT_3,BIT_4} MIC_NOISE_REDUCE_LEVEL;
 #endif
 #endif
 
-#ifndef TIME_SYNC_INTERVAL
-#define TIME_SYNC_INTERVAL    (60*60*1000)                  // интервал синхронизации времени, 60*60*1000 => раз в час
+
+// настройки времени
+#ifndef HTTPTIME_SYNC_INTERVAL
+ #define HTTPTIME_SYNC_INTERVAL    (4)                           // интервал синхронизации времени по http, час
 #endif
-#ifndef NTPADDRESS
-#define NTPADDRESS            ("ntp2.colocall.net")         // сервер времени для NTP (альтернативный метод), можно также попробовать "ntp2.colocall.net, pool.ntp.org, europe.pool.ntp.org" и т.д.
+
+#ifndef CFG_AUTOSAVE_TIMEOUT
+#define CFG_AUTOSAVE_TIMEOUT       (20*1000U)                   // таймаут сохранения конфигурации эффекта, по умолчанию - 20 секунд
 #endif
-const char NTP_ADDRESS[] PROGMEM = NTPADDRESS;
 
 #ifndef TEXT_OFFSET
 #define TEXT_OFFSET           (4U)                          // высота, на которой бежит текст (от низа матрицы)
@@ -248,7 +322,7 @@ const char NTP_ADDRESS[] PROGMEM = NTPADDRESS;
 #ifndef DAWN_TIMEOUT
 #define DAWN_TIMEOUT          (1U)                          // сколько рассвет светит после времени будильника, минут
 #endif
-//#define PRINT_ALARM_TIME                                    // нужен ли вывод времени для будильника
+//#define PRINT_ALARM_TIME                                    // нужен ли вывод времени для будильника, если пустая строка в событии будильника
 
 // ************* НАСТРОЙКА МАТРИЦЫ *****
 #if (CONNECTION_ANGLE == 0 && STRIP_DIRECTION == 0)
@@ -301,6 +375,21 @@ const char NTP_ADDRESS[] PROGMEM = NTPADDRESS;
 #define THIS_Y y
 #pragma message "Wrong matrix parameters! Set to default"
 
+#endif
+
+#ifdef TM1637
+#ifndef TM_CLK_PIN
+  #define TM_CLK_PIN D0 
+#endif
+#ifndef TM_DIO_PIN
+  #define TM_DIO_PIN D7
+#endif
+#ifndef TM_BRIGHTNESS
+  #define TM_BRIGHTNESS 7U //яркость дисплея, 0..7
+#endif
+#ifndef TM_SHOW_BANNER
+  #define TM_SHOW_BANNER 0
+#endif
 #endif
 
 #endif

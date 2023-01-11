@@ -49,19 +49,14 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 */
 
 #include "config.h"
-#include "JeeUI2.h"
+#include "EmbUI.h"
 #ifdef OTA
 #include <ArduinoOTA.h>
-//#include <ESP8266WiFi.h>
-//#include <ESP8266mDNS.h>
-//#include <WiFiUdp.h>
 
 #define ESP_OTA_PORT          (3232U)                       // номер порта, который будет "прослушиваться" в ожидании команды прошивки по воздуху 8266U/3232U
 #define CONFIRMATION_TIMEOUT  (30U)                         // время в сеундах, в течение которого нужно дважды подтвердить старт обновлениЯ по воздуху (иначе сброс в None)
 #define ESP_CONF_TIMEOUT      (120U)                        // время ожидания ОТА
 #define OTA_PASS "12345"
-typedef void (*ShowWarningDelegate)(CRGB color, uint32_t duration, uint16_t blinkHalfPeriod);
-//extern void showWarning(CRGB color,uint32_t duration,uint16_t blinkHalfPeriod);
 
 enum OtaPhase                                               // определение стадий процесса обновления по воздуху: нет, получено первое подтверждение, получено второе подтверждение, получено второе подтверждение - в процессе, обновление окончено
 {
@@ -78,9 +73,8 @@ class OtaManager
     OtaPhase OtaFlag = OtaPhase::None;
   public:
 
-    OtaManager(ShowWarningDelegate showWarningDelegate)
+    OtaManager()
     {
-      this->showWarningDelegate = showWarningDelegate;
     }
 
     bool RequestOtaUpdate()                                 // пользователь однократно запросил обновление по воздуху; возвращает true, когда переходит в режим обновления - startOtaUpdate()
@@ -101,9 +95,6 @@ class OtaManager
         momentOfOtaStart = millis();
 
         LOG(print,F("Получено второе подтверждение обновления по воздуху\nСтарт режима обновления\n"));
-
-        showWarningDelegate(CRGB::Yellow, 2000U, 500U);     // мигание жёлтым цветом 2 секунды (2 раза) - готовность к прошивке
-        startOtaUpdate();
         return true;
       }
 
@@ -132,8 +123,6 @@ class OtaManager
         LOG(print,F("Таймаут ожидания прошивки по воздуху превышен\nСброс флага в исходное состояние\nПерезагрузка\n"));
         delay(500);
 
-        showWarningDelegate(CRGB::Red, 2000U, 500U);        // мигание красным цветом 2 секунды (2 раза) - ожидание прошивки по воздуху прекращено, перезагрузка
-
         ESP.restart();
         return;
       }
@@ -144,13 +133,7 @@ class OtaManager
       }
     }
 
-  private:
-    uint64_t momentOfFirstConfirmation = 0;                 // момент времени, когда получено первое подтверждение и с которого начинается отсчёт ожидания второго подтверждения
-    uint64_t momentOfOtaStart = 0;                          // момент времени, когда развёрнута WiFi точка доступа для обновления по воздуху
-    ShowWarningDelegate showWarningDelegate;
-
-    void startOtaUpdate()
-    {
+    void startOtaUpdate() {
       char espHostName[65];
       String id = WiFi.softAPmacAddress();
       id.replace(F(":"), F(""));
@@ -168,12 +151,12 @@ class OtaManager
         {
           strcpy_P(type, PSTR("sketch"));
         }
-        else // U_SPIFFS
+        else // U_LittleFS
         {
           strcpy_P(type, PSTR("filesystem"));
         }
 
-        // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
+        // NOTE: if updating LittleFS this would be the place to unmount LittleFS using LittleFS.end()
 
         LOG(printf_P,PSTR("Start updating %s\n"), type);
       });
@@ -228,6 +211,7 @@ class OtaManager
       ArduinoOTA.setRebootOnSuccess(true);
       ArduinoOTA.begin();
       OtaFlag = OtaPhase::InProgress;
+      momentOfOtaStart = millis();
 
       LOG(printf_P,PSTR("Для обновления в Arduino IDE выберите пункт меню Инструменты - Порт - '%s at "), espHostName);
       LOG(print,WiFi.localIP());
@@ -235,6 +219,10 @@ class OtaManager
       LOG(printf_P,PSTR("Затем нажмите кнопку 'Загрузка' в течение %u секунд и по запросу введите пароль '%s'\n"), ESP_CONF_TIMEOUT, OTA_PASS);
       LOG(println,F("Устройство с Arduino IDE должно быть в одной локальной сети с модулем ESP!"));
     }
+
+    private:
+    uint64_t momentOfFirstConfirmation = 0;                 // момент времени, когда получено первое подтверждение и с которого начинается отсчёт ожидания второго подтверждения
+    uint64_t momentOfOtaStart = 0;                          // момент времени, когда развёрнута WiFi точка доступа для обновления по воздуху
 };
 
 #endif

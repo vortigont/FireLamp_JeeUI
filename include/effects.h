@@ -38,689 +38,2269 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #ifndef _EFFECTS_H
 #define _EFFECTS_H
 
-#include <Arduino.h>
-#include <ArduinoJson.h>
-#include <string.h>
-//#include <FastLed.h>
-#ifdef ESP8266
-#include <ESP8266WiFi.h>
-#elif defined ESP32
-#include <WiFi.h>
-#include "SPIFFS.h"
-#endif
-#include "effects_types.h"
+#include "color_palette.h"
+#include "effectworker.h"
+#include "effectmath.h"
 
-
-typedef enum _EFF_ENUM {
-EFF_NONE = (0U),                              // Специальный служебный эффект, не комментировать и индекс не менять константу!
-EFF_WHITE_COLOR,                              // Белый свет
-EFF_COLORS,                                   // Смена цвета
-EFF_RAINBOW_2D,                               // Радуга универсальная
-EFF_SPARKLES,                                 // Конфетти
-EFF_SNOW,                                     // Снегопад
-EFF_SNOWSTORMSTARFALL,                        // Метель + Звездопад
-EFF_MATRIX,                                   // Матрица
-EFF_LIGHTERS,                                 // Светлячки
-EFF_LIGHTER_TRACES,                           // Светлячки со шлейфом
-EFF_CUBE,                                     // Блуждающий кубик
-EFF_PULSE,                                    // Пульс
-EFF_EVERYTHINGFALL,                           // Водо/огне/лава/радуга/хренопад
-EFF_FIRE,                                     // Огонь
-EFF_PAINTBALL,                                // Пейнтбол
-EFF_MADNESS,                                  // Безумие 3D
-EFF_CLOUDS,                                   // Облака 3D
-EFF_LAVA,                                     // Лава 3D
-EFF_PLASMA,                                   // Плазма 3D
-EFF_RAINBOW,                                  // Радуга 3D
-EFF_RAINBOW_STRIPE,                           // Павлин 3D
-EFF_ZEBRA,                                    // Зебра 3D
-EFF_FOREST,                                   // Лес 3D
-EFF_OCEAN,                                    // Океан 3D
-EFF_BBALS,                                    // Прыгающие мячики
-EFF_SINUSOID3,                                // Синусоид 3
-EFF_METABALLS,                                // Метасферы
-EFF_SPIRO,                                    // Спираль
-EFF_RAINBOWCOMET,                             // Радужная комета
-EFF_RAINBOWCOMET3,                            // 3 кометы
-EFF_PRIZMATA,                                 // Призмата
-EFF_FLOCK,                                    // Стая
-EFF_SWIRL,                                    // Водоворот
-EFF_DRIFT,                                    // Дрифт
-EFF_DRIFT2,                                   // Дрифт2
-EFF_TWINKLES,                                 // Мерцание
-EFF_RADAR,                                    // Радар
-EFF_WAVES,                                    // Волны
-EFF_FIRE2012,                                 // Огонь 2012
-EFF_RAIN,                                     // Дождь
-EFF_COLORRAIN,                                // Цветной дождь
-EFF_STORMYRAIN,                               // Тучка в банке
-EFF_FIRE2018,                                 // Огонь 2018
-EFF_RINGS,                                    // Кодовый замок
-EFF_CUBE2,                                    // Куб 2D
-EFF_SMOKE,                                    // Дым
-EFF_TIME = (98)                               // Часы (служебный, смещаем в конец)
-#ifdef MIC_EFFECTS
-,EFF_FREQ = (99U)                             // Частотный анализатор (служебный, смещаем в конец)
-#endif
-} EFF_ENUM;
-
-void sparklesRoutine(CRGB*, const char*);
-void fireRoutine(CRGB*, const char*);
-void whiteColorStripeRoutine(CRGB*, const char*);
-void fire2012WithPalette(CRGB*, const char*);
-void pulseRoutine(CRGB*, const char*);
-void rainbowDiagonalRoutine(CRGB*, const char*);
-void colorsRoutine(CRGB*, const char*);
-void matrixRoutine(CRGB*, const char*);
-void snowRoutine(CRGB*, const char*);
-void snowStormStarfallRoutine(CRGB*, const char*);
-void lightersRoutine(CRGB*, const char*);
-void ballsRoutine(CRGB*, const char*);
-void lightBallsRoutine(CRGB*, const char*);
-void ballRoutine(CRGB*, const char*);
-void madnessNoiseRoutine(CRGB*, const char*);
-void rainbowNoiseRoutine(CRGB*, const char*);
-void rainbowStripeNoiseRoutine(CRGB*, const char*);
-void zebraNoiseRoutine(CRGB*, const char*);
-void forestNoiseRoutine(CRGB*, const char*);
-void oceanNoiseRoutine(CRGB*, const char*);
-void plasmaNoiseRoutine(CRGB*, const char*);
-void cloudsNoiseRoutine(CRGB*, const char*);
-void lavaNoiseRoutine(CRGB*, const char*);
-void BBallsRoutine(CRGB*, const char*);
-void Sinusoid3Routine(CRGB*, const char*);
-void metaBallsRoutine(CRGB*, const char*);
-void spiroRoutine(CRGB*, const char*);
-void rainbowCometRoutine(CRGB*, const char*);
-void rainbowComet3Routine(CRGB*, const char*);
-void prismataRoutine(CRGB*, const char*);
-void flockRoutine(CRGB*, const char*);
-void swirlRoutine(CRGB*, const char*);
-void incrementalDriftRoutine(CRGB*, const char*);
-void incrementalDriftRoutine2(CRGB*, const char*);
-void twinklesRoutine(CRGB*, const char*);
-void radarRoutine(CRGB*, const char*);
-void wavesRoutine(CRGB*, const char*);
-void fire2012Routine(CRGB*, const char*);
-void coloredRainRoutine(CRGB*, const char*);
-void simpleRainRoutine(CRGB*, const char*);
-void stormyRainRoutine(CRGB*, const char*);
-void fire2018Routine(CRGB*, const char*);
-void ringsRoutine(CRGB*, const char*);
-void cube2dRoutine(CRGB*, const char *);
-void multipleStreamSmokeRoutine(CRGB*, const char *);
-#ifdef MIC_EFFECTS
-void freqAnalyseRoutine(CRGB*, const char*);
-#endif
-void timePrintRoutine(CRGB*, const char *);
-//-------------------------------------------------
-const char _R255[] PROGMEM = "[{'R':'127'}]";
-
-#pragma pack(push,1)
-typedef struct _EFFECT {
-    bool canBeSelected:1;
-    bool isFavorite:1;
-    byte brightness;
-    byte speed;
-    byte scale;
-    EFF_ENUM eff_nb;
-    const char *eff_name;
-    void (*func)(CRGB*,const char*);
-    char *param;
-    void setNone(){ eff_nb=EFF_NONE; eff_name=nullptr; brightness=127; speed=127; scale=127; canBeSelected=false; isFavorite=false; func=nullptr; param=nullptr; }
-    String getParam() {
-        if(param!=nullptr){
-            size_t slen = strlen_P(param);
-            char buffer[slen+4]; memset(buffer,0,slen+4);
-            strcpy_P(buffer, param); // Обход Exeption 3, это шаманство из-за корявого использования указателя, он одновременно может быть и на PROGMEM, и на RAM
-            String tmp = buffer;
-            return tmp;
-        } else
-            return String(); // empty
-    }
-
-    void updateParam(const char *str) {
-        if(param!=nullptr && param!=_R255) // херовая проверка, надобно будет потом выяснить как безопасно разпознать указатель на PROGMEM или на RAM
-            delete [] param;
-        param = new char[strlen(str)+1];
-        strcpy(param, str);
-    }
-    String getValue(const char *src, const _PTR type){
-        if(src==nullptr)
-            return String(); // empty
-        //LOG(printf_P, PSTR("TEST: %s\n"),src);
-        DynamicJsonDocument doc(128);
-        String tmp(FPSTR(src));
-        tmp.replace(F("'"),F("\"")); // так делать не красиво, но шопаделаешь...
-        deserializeJson(doc,tmp);
-        JsonArray arr = doc.as<JsonArray>();
-        for (size_t i=0; i<arr.size(); i++) {
-            JsonObject item = arr[i];
-            if(item.containsKey(FPSTR(type))){
-                return item[FPSTR(type)].as<String>();
-            }
-        }
-        return String(); // empty
-    }
-    void setValue(const char *src, const _PTR type, const _PTR val){
-        DynamicJsonDocument doc(128);
-        deserializeJson(doc,String(FPSTR(src)));
-        JsonArray arr = doc.as<JsonArray>();
-        for (size_t i=0; i<arr.size(); i++) {
-            JsonObject item = arr[i];
-            if(item.containsKey(FPSTR(type))){
-                item[FPSTR(type)]=FPSTR(val);
-            }
-        }
-        String tmp;
-        serializeJson(doc,tmp);
-        tmp.replace(F("\""),F("'")); // так делать не красиво, но шопаделаешь...
-        //LOG(println, tmp);
-        updateParam(tmp.c_str());
-    }
-} EFFECT;
-#pragma pack(pop)
-
-const char T_SPARKLES[] PROGMEM = "Конфетти";
-const char T_FIRE[] PROGMEM = "Огненная лампа";
-const char T_EVERYTHINGFALL[] PROGMEM = "Эффектопад";
-const char T_RAINBOW_2D[] PROGMEM = "Радуга 2D";
-const char T_COLORS[] PROGMEM = "Цвета";
-const char T_PULSE[] PROGMEM = "Пульс";
-const char T_MATRIX[] PROGMEM = "Матрица";
-const char T_SNOW[] PROGMEM = "Снегопад";
-const char T_SNOWSTORMSTARFALL[] PROGMEM = "Метель + Звездопад";
-const char T_LIGHTERS[] PROGMEM = "Светлячки";
-const char T_LIGHTER_TRACES[] PROGMEM = "Светлячки со шлейфом";
-const char T_PAINTBALL[] PROGMEM = "Пейнтбол";
-const char T_CUBE[] PROGMEM = "Блуждающий кубик";
-const char T_BBALS[] PROGMEM = "Прыгающие мячики";
-const char T_MADNESS[] PROGMEM = "Безумие 3D";
-const char T_RAINBOW[] PROGMEM = "Радуга 3D";
-const char T_RAINBOW_STRIPE[] PROGMEM = "Павлин 3D";
-const char T_ZEBRA[] PROGMEM = "Зебра 3D";
-const char T_FOREST[] PROGMEM = "Лес 3D";
-const char T_OCEAN[] PROGMEM = "Океан 3D";
-const char T_PLASMA[] PROGMEM = "Плазма 3D";
-const char T_CLOUDS[] PROGMEM = "Облака 3D";
-const char T_LAVA[] PROGMEM = "Лава 3D";
-const char T_SINUSOID3[] PROGMEM = "Синусоид 3";
-const char T_METABALLS[] PROGMEM = "Метасферы";
-const char T_SPIRO[] PROGMEM = "Спираль";
-const char T_RAINBOWCOMET[] PROGMEM = "Радужная комета";
-const char T_RAINBOWCOMET3[] PROGMEM = "Три кометы";
-const char T_WHITE_COLOR[] PROGMEM = "Белая лампа";
-const char T_PRIZMATA[] PROGMEM = "Призмата";
-const char T_FLOCK[] PROGMEM = "Стая";
-const char T_SWIRL[] PROGMEM = "Водоворот";
-const char T_DRIFT[] PROGMEM = "Дрифт";
-const char T_DRIFT2[] PROGMEM = "Дрифт 2";
-const char T_TWINKLES[] PROGMEM = "Мерцание";
-const char T_RADAR[] PROGMEM = "Радар";
-const char T_WAVES[] PROGMEM = "Волны";
-const char T_FIRE2012[] PROGMEM = "Огонь 2012";
-const char T_RAIN[] PROGMEM = "Дождь";
-const char T_COLORRAIN[] PROGMEM = "Цветной дождь";
-const char T_STORMYRAIN[] PROGMEM = "Тучка в банке";
-const char T_FIRE2018[] PROGMEM = "Огонь 2018";
-const char T_RINGS[] PROGMEM = "Кодовый замок";
-const char T_CUBE2[] PROGMEM = "Куб 2D";
-const char T_TIME[] PROGMEM = "Часы";
-const char T_SMOKE[] PROGMEM = "Дым";
-
-#ifdef MIC_EFFECTS
-const char T_FREQ[] PROGMEM = "Частотный анализатор";
+#ifdef USE_E131
+    #include <E131.h>
 #endif
 
-static EFFECT _EFFECTS_ARR[] = {
-    {false, false, 127, 127, 127, EFF_NONE, nullptr, nullptr, nullptr},
-    {true, true, 127, 127, 127, EFF_WHITE_COLOR, T_WHITE_COLOR, whiteColorStripeRoutine, nullptr},
+const byte maxDim = max(WIDTH, HEIGHT);
+const byte minDim = min(WIDTH, HEIGHT);
+const byte width_adj = (WIDTH < HEIGHT ? (HEIGHT - WIDTH) /2 : 0);
+const byte height_adj = (HEIGHT < WIDTH ? (WIDTH - HEIGHT) /2: 0);
 
-    {true, true, 127, 127, 127, EFF_COLORS, T_COLORS, colorsRoutine, nullptr},
-    {true, true, 127, 127, 127, EFF_RAINBOW_2D, T_RAINBOW_2D, rainbowDiagonalRoutine, nullptr},
-    {true, true, 127, 127, 127, EFF_SPARKLES, T_SPARKLES, sparklesRoutine, nullptr},
-    {true, true, 127, 127, 127, EFF_SNOW, T_SNOW, snowRoutine, nullptr},    
-    {true, true, 127, 127, 127, EFF_SNOWSTORMSTARFALL, T_SNOWSTORMSTARFALL, snowStormStarfallRoutine, nullptr},
-    {true, true, 127, 127, 127, EFF_MATRIX, T_MATRIX, matrixRoutine, nullptr},
-    {true, true, 127, 127, 127, EFF_LIGHTERS, T_LIGHTERS, lightersRoutine, nullptr},
-    {true, true, 127, 127, 127, EFF_LIGHTER_TRACES, T_LIGHTER_TRACES, ballsRoutine, nullptr},
-    {true, true, 127, 127, 127, EFF_CUBE, T_CUBE, ballRoutine, nullptr},
-    {true, true, 127, 127, 127, EFF_PULSE, T_PULSE, pulseRoutine, nullptr},
-    {true, true, 127, 127, 127, EFF_EVERYTHINGFALL, T_EVERYTHINGFALL, fire2012WithPalette, nullptr},
-    {true, true, 127, 127, 127, EFF_FIRE, T_FIRE, fireRoutine, nullptr},
-    {true, true, 127, 127, 127, EFF_PAINTBALL, T_PAINTBALL, lightBallsRoutine, nullptr},
 
-    {true, true, 127, 127, 127, EFF_MADNESS, T_MADNESS, madnessNoiseRoutine, nullptr},
-    {true, true, 127, 127, 127, EFF_CLOUDS, T_CLOUDS, cloudsNoiseRoutine, nullptr},
-    {true, true, 127, 127, 127, EFF_LAVA, T_LAVA, lavaNoiseRoutine, nullptr},
-    {true, true, 127, 127, 127, EFF_PLASMA, T_PLASMA, plasmaNoiseRoutine, nullptr},
-    {true, true, 127, 127, 127, EFF_RAINBOW, T_RAINBOW, rainbowNoiseRoutine, nullptr},
-    {true, true, 127, 127, 127, EFF_RAINBOW_STRIPE, T_RAINBOW_STRIPE, rainbowStripeNoiseRoutine, nullptr},
-    {true, true, 127, 127, 127, EFF_ZEBRA, T_ZEBRA, zebraNoiseRoutine, nullptr},
-    {true, true, 127, 127, 127, EFF_FOREST, T_FOREST, forestNoiseRoutine, nullptr},
-    {true, true, 127, 127, 127, EFF_OCEAN, T_OCEAN, oceanNoiseRoutine, nullptr},
-
-    {true, true, 127, 127, 127, EFF_BBALS, T_BBALS, BBallsRoutine, nullptr}, 
-    {true, true, 127, 127, 127, EFF_SINUSOID3, T_SINUSOID3, Sinusoid3Routine, nullptr},
-    {true, true, 127, 127, 127, EFF_METABALLS, T_METABALLS, metaBallsRoutine, nullptr},
-    {true, true, 127, 127, 127, EFF_SPIRO, T_SPIRO, spiroRoutine, nullptr},
-    {true, true, 127, 127, 127, EFF_RAINBOWCOMET, T_RAINBOWCOMET, rainbowCometRoutine, nullptr},
-    {true, true, 127, 127, 127, EFF_RAINBOWCOMET3, T_RAINBOWCOMET3, rainbowComet3Routine, nullptr},
-    {true, true, 127, 127, 127, EFF_PRIZMATA, T_PRIZMATA, prismataRoutine, nullptr},
-    {true, true, 127, 127, 127, EFF_FLOCK, T_FLOCK, flockRoutine, nullptr},
-    {true, true, 127, 127, 127, EFF_SWIRL, T_SWIRL, swirlRoutine, nullptr},
-    {true, true, 127, 127, 127, EFF_DRIFT, T_DRIFT, incrementalDriftRoutine, nullptr},
-    {true, true, 127, 127, 127, EFF_DRIFT2, T_DRIFT2, incrementalDriftRoutine2, nullptr},
-    {true, true, 127, 127, 127, EFF_TWINKLES, T_TWINKLES, twinklesRoutine, ((char *)_R255)}, // очень хреновое приведение типов, но дальше это разрулим :)
-    {true, true, 127, 127, 127, EFF_RADAR, T_RADAR, radarRoutine, nullptr},
-    {true, true, 127, 127, 127, EFF_WAVES, T_WAVES, wavesRoutine, nullptr},
-    {true, true, 127, 127, 127, EFF_FIRE2012, T_FIRE2012, fire2012Routine, nullptr},
-    {true, true, 127, 127, 127, EFF_RAIN, T_RAIN, simpleRainRoutine, nullptr},
-    {true, true, 127, 127, 127, EFF_COLORRAIN, T_COLORRAIN, coloredRainRoutine, nullptr},
-    {true, true, 127, 127, 127, EFF_STORMYRAIN, T_STORMYRAIN, stormyRainRoutine, nullptr},
-    {true, true, 127, 127, 127, EFF_FIRE2018, T_FIRE2018, fire2018Routine, nullptr},
-    {true, true, 127, 127, 127, EFF_RINGS, T_RINGS, ringsRoutine, nullptr},
-    {true, true, 127, 127, 127, EFF_CUBE2, T_CUBE2, cube2dRoutine, nullptr},
-    {true, true, 127, 127, 127, EFF_SMOKE, T_SMOKE, multipleStreamSmokeRoutine, ((char *)_R255)},  // очень хреновое приведение типов, но дальше это разрулим :)
-    
-
-    {true, true, 127, 127, 127, EFF_TIME, T_TIME, timePrintRoutine, nullptr}
-#ifdef MIC_EFFECTS
-    ,{true, true, 127, 127, 127, EFF_FREQ, T_FREQ, freqAnalyseRoutine, ((char *)_R255)} // очень хреновое приведение типов, но дальше это разрулим :)
-#endif
-};
-
-#define bballsMaxNUM_BALLS     (16U)                // максимальное количество мячиков прикручено при адаптации для бегунка Масштаб
-#define BALLS_AMOUNT           (7U)                 // максимальное количество "шариков"
-#define LIGHTERS_AM            (64U)                // светлячки
-#define NUM_LAYERS             (1U)                 // The coordinates for 3 16-bit noise spaces.
-#define NUM_LAYERS2            (2U)                 // The coordinates for 3 16-bit noise spaces.
-#define AVAILABLE_BOID_COUNT   (10U)                // стая, кол-во птиц
-class SHARED_MEM {
-public:
-    union {
-		struct { // spiroRoutine
-            boolean spiroincrement;
-            boolean spirohandledChange;
-            byte spirohueoffset;
-            uint8_t spirocount;
-            float spirotheta1;
-            float spirotheta2;
-		};
-        struct { // BouncingBalls2014
-            uint8_t bballsCOLOR[bballsMaxNUM_BALLS] ;                   // прикручено при адаптации для разноцветных мячиков
-            uint8_t bballsX[bballsMaxNUM_BALLS] ;                       // прикручено при адаптации для распределения мячиков по радиусу лампы
-            int   bballsPos[bballsMaxNUM_BALLS] ;                       // The integer position of the dot on the strip (LED index)
-            float bballsHi ;                         // An array of heights
-            float bballsVImpact[bballsMaxNUM_BALLS] ;                   // As time goes on the impact velocity will change, so make an array to store those values
-            float bballsTCycle ;                    // The time since the last time the ball struck the ground
-            float bballsCOR[bballsMaxNUM_BALLS] ;                       // Coefficient of Restitution (bounce damping)
-            long  bballsTLast[bballsMaxNUM_BALLS] ;                     // The clock time of the last ground strike
-            float bballsShift[bballsMaxNUM_BALLS];
-		};
-        struct {
-            //-- 3D Noise эффектцы --------------
-            uint8_t ihue;
-            uint8_t colorLoop;
-            uint16_t speed;                                        // speed is set dynamically once we've started up
-            uint16_t scale;                                        // scale is set dynamically once we've started up
-            uint16_t x;
-            uint16_t y;
-            uint16_t z;
-            #if (WIDTH > HEIGHT)
-            uint8_t noise[2*HEIGHT][WIDTH];
-            #else
-            uint8_t noise[2*WIDTH][HEIGHT];
-            #endif
-            char currentPalette[sizeof(CRGBPalette16)];
-		};
-        struct {
-            int16_t ballColor;
-            int8_t vectorB[2U];
-            float coordB[2U];
-		};
-        struct {
-            int8_t vector[BALLS_AMOUNT][2U];
-            float coord[BALLS_AMOUNT][2U];
-		};
-        struct {
-            uint16_t lightersIdx;
-            int8_t lightersSpeed[2U][LIGHTERS_AM];
-            uint8_t lightersColor[LIGHTERS_AM];
-            float lightersPos[2U][LIGHTERS_AM];
-		};
-        struct { // радуги
-            uint8_t hue;
-		};
-        struct { // pulse
-            uint8_t pulse_hue;
-            uint8_t pulse_step;
-		};
-        struct {
-            // Array of temperature readings at each simulation cell
-            byte heat[WIDTH][HEIGHT];
-		};
-        struct { // Огонь
-            uint8_t pcnt;
-            uint8_t shiftHue[HEIGHT];                              // массив дороожки горизонтального смещения пламени (hueMask)
-            uint8_t line[WIDTH];
-            uint8_t shiftValue[HEIGHT];                            // массив дороожки горизонтального смещения пламени (hueValue)
-            unsigned char matrixValue[8][16];
-		};
-        struct { // радужная комета
-            uint8_t eNs_noisesmooth;
-            uint8_t rhue;
-            uint8_t smokeHue;
-            float xSmokePos;
-            float xSmokePos2;
-            uint16_t noiseX;
-            uint16_t noiseY;
-            uint16_t noiseZ;
-            uint8_t nline[WIDTH];
-
-            uint32_t e_x[NUM_LAYERS];
-            uint32_t e_y[NUM_LAYERS];
-            uint32_t e_z[NUM_LAYERS];
-            uint32_t e_scaleX[NUM_LAYERS];
-            uint32_t e_scaleY[NUM_LAYERS];
-            uint8_t noise3d[NUM_LAYERS][WIDTH][HEIGHT];
-            //uint8_t ledsbuff[sizeof(CRGB)* NUM_LEDS];
-        };
-        struct { // стая
-            bool predatorPresent;
-            uint8_t hueoffset;
-            char predator[sizeof(Boid)];
-            char wind[sizeof(PVector)];
-            char boids[sizeof(Boid)*AVAILABLE_BOID_COUNT];
-		};
-        struct { // будильник "рассвет"
-            uint8_t dawnCounter;                                           // счётчик первых шагов будильника
-            time_t startmillis;
-            CHSV dawnColorMinus[6];
-		};
-        struct { // дрифты
-            uint8_t dri_phase;
-		};
-        struct { // мерцание
-            uint8_t thue;
-            CRGB ledsbuff[NUM_LEDS];
-		};
-        struct { // радар
-            uint8_t eff_offset;        // глобальная переменная для работы эффектов (обычно применяется для циклического пересчета hue, количества кадров и др...)
-            uint8_t eff_theta;         // глобальная переменная угла для работы эффектов
-		};
-        struct { // волны
-            uint8_t whue;
-            uint8_t waveTheta;
-		};
-        struct {
-            int8_t peakX[2][WIDTH];
-        };
-        struct { // огонь2018
-            uint32_t noise32_x[NUM_LAYERS2];
-            uint32_t noise32_y[NUM_LAYERS2];
-            uint32_t noise32_z[NUM_LAYERS2];
-            uint32_t scale32_x[NUM_LAYERS2];
-            uint32_t scale32_y[NUM_LAYERS2];
-            uint8_t fire18heat[NUM_LEDS];
-            uint8_t noise3dx[NUM_LAYERS2][WIDTH][HEIGHT];
-        };
-        struct { // кодовый замок
-            uint8_t ringColor[HEIGHT]; // начальный оттенок каждого кольца (оттенка из палитры) 0-255
-            uint8_t huePos[HEIGHT]; // местоположение начального оттенка кольца 0-WIDTH-1
-            uint8_t shiftHueDir[HEIGHT]; // 4 бита на ringHueShift, 4 на ringHueShift2
-            ////ringHueShift[ringsCount]; // шаг градиета оттенка внутри кольца -8 - +8 случайное число
-            ////ringHueShift2[ringsCount]; // обычная скорость переливания оттенка всего кольца -8 - +8 случайное число
-            uint8_t currentRing; // кольцо, которое в настоящий момент нужно провернуть
-            uint8_t stepCount; // оставшееся количество шагов, на которое нужно провернуть активное кольцо - случайное от WIDTH/5 до WIDTH-3            
-        };
-        struct { // cube2d
-            bool direction; // направление вращения в данный момент
-            uint8_t pauseSteps; // осталось шагов паузы
-            uint8_t currentStep; // текущий шаг сдвига (от 0 до GSHMEM.shiftSteps-1)
-            uint8_t shiftSteps; // всего шагов сдвига (от 3 до 4)
-            uint8_t gX, gY; // глобальный X и глобальный Y нашего "кубика"
-            int8_t globalShiftX, globalShiftY; // нужно ли сдвинуть всё поле по окончаии цикла и в каком из направлений (-1, 0, +1)
-            uint8_t storage[WIDTH][HEIGHT];
-        };
-        struct { // time
-            bool timeShiftDir; // направление сдвига
-            float curTimePos; // текущая позиция вывода
-            CRGB hColor[1]; // цвет часов и минут
-            CRGB mColor[1]; // цвет часов и минут
-        };
-        struct { // snow
-            float snowShift; // сдвиг снега
-        };
-		//uint8_t raw[1024];
-	};
-};
-
-class EffectWorker {
+//-------------- Специально обученный пустой эффект :)
+class EffectNone : public EffectCalc {
 private:
-    const int MODE_AMOUNT = sizeof(_EFFECTS_ARR)/sizeof(EFFECT);     // количество режимов
-    const uint8_t maxDim = ((WIDTH>HEIGHT)?WIDTH:HEIGHT);
-
-    EFF_ENUM curEff = EFF_NONE;
-    unsigned int arrIdx = 0;
-    unsigned int storedIdx = 0; // предыдущий эффект
-    EFFECT* effects = _EFFECTS_ARR;
-
-    EffectWorker(const EffectWorker&);  // noncopyable
-    EffectWorker& operator=(const EffectWorker&);  // noncopyable
+    void load() override { FastLED.clear(); };
 public:
-    EffectWorker() {
-        //loadConfig();       
-    }
-
-    ~EffectWorker() {}
-
-    void loadConfig(const char *cfg = nullptr) {
-        if(SPIFFS.begin()){
-            File configFile;
-            if(cfg == nullptr)
-                configFile = SPIFFS.open(F("/eff_config.json"), "r"); // PSTR("r") использовать нельзя, будет исключение!
-            else
-                configFile = SPIFFS.open(cfg, "r"); // PSTR("r") использовать нельзя, будет исключение!
-            String cfg_str = configFile.readString();
-
-            if (cfg_str == F("")){
-                LOG(println, F("Failed to open effects config file"));
-                saveConfig();
-                return;
-            }
-
-            LOG(println, F("\nStart desialization of effects\n\n"));
-
-            DynamicJsonDocument doc(8192);
-            DeserializationError error = deserializeJson(doc, cfg_str);
-            if (error) {
-                LOG(print, F("deserializeJson error: "));
-                LOG(println, error.code());
-                return;
-            }
-
-            JsonArray arr = doc.as<JsonArray>();
-            EFFECT *eff;
-            for (size_t i=0; i<arr.size(); i++) {
-                JsonObject item = arr[i];
-
-                EFF_ENUM nb = (EFF_ENUM)(item[F("nb")].as<int>());
-                eff = getEffectBy(nb);
-                if(eff->eff_nb!=EFF_NONE){
-                    eff->brightness = item[F("br")].as<int>();
-                    eff->speed = item[F("sp")].as<int>();
-                    eff->scale = item[F("sc")].as<int>();
-                    eff->isFavorite = (bool)(item[F("isF")].as<int>());
-                    eff->canBeSelected = (bool)(item[F("cbS")].as<int>());
-                    String tmp = item[F("prm")];
-                    if(eff->param!=nullptr && cfg != nullptr) // так некрасиво, но сойдет пока что... (т.е. не освобождаем память, если читаем основной конфиг, чтобы не грохнуть PROGMEM указатели)
-                        delete [] eff->param;
-                    eff->param = new char[tmp.length()+1];
-                    strcpy(eff->param, tmp.c_str());
-                }
-                LOG(printf_P, PSTR("(%d - %d - %d - %d - %d - %d - %s)\n"), nb, eff->brightness, eff->speed, eff->scale, eff->isFavorite, eff->canBeSelected, eff->param!=nullptr?FPSTR(eff->param):FPSTR(F("")));
-            }
-            // JsonArray::iterator it;
-            // for (it=arr.begin(); it!=arr.end(); ++it) {
-            //     const JsonObject& elem = *it;
-            // }
-            LOG(println, F("Effects config loaded"));
-            doc.clear();
-        }
-    }
-
-    void saveConfig(const char *cfg = nullptr) {
-        if(SPIFFS.begin()){
-            File configFile;
-            if(cfg == nullptr)
-                configFile = SPIFFS.open(F("/eff_config.json"), "w"); // PSTR("w") использовать нельзя, будет исключение!
-            else
-                configFile = SPIFFS.open(cfg, "w"); // PSTR("w") использовать нельзя, будет исключение!
-            EFFECT *cur_eff;
-
-            configFile.print("[");
-            for(int i=1; i<MODE_AMOUNT; i++){ // EFF_NONE не сохраняем
-                cur_eff = &(effects[i]);
-                configFile.printf_P( PSTR("%s{\"nb\":%d,\"br\":%d,\"sp\":%d,\"sc\":%d,\"isF\":%d,\"cbS\":%d,\"prm\":\"%s\"}"),
-                    (char*)(i>1?F(","):F("")), cur_eff->eff_nb, cur_eff->brightness, cur_eff->speed, cur_eff->scale, (int)cur_eff->isFavorite, (int)cur_eff->canBeSelected,
-                    ((cur_eff->param!=nullptr)?FPSTR(cur_eff->param):FPSTR(F(""))));
-                LOG(printf_P, PSTR("%s{\"nb\":%d,\"br\":%d,\"sp\":%d,\"sc\":%d,\"isF\":%d,\"cbS\":%d,\"prm\":\"%s\"}"),
-                    (char*)(i>1?F(","):F("")), cur_eff->eff_nb, cur_eff->brightness, cur_eff->speed, cur_eff->scale, (int)cur_eff->isFavorite, (int)cur_eff->canBeSelected,
-                    ((cur_eff->param!=nullptr)?FPSTR(cur_eff->param):FPSTR(F(""))));
-            }     
-            configFile.print("]");
-            configFile.flush();
-            configFile.close();
-            LOG(println, F("\nSave effects config"));
-        }
-    }
-
-    bool autoSaveConfig() {
-        static unsigned long i;
-        if(i + (30 * 1000) > millis()){  // если не пришло время - выходим из функции и сбрасываем счетчик (ожидаем бездействия в 30 секунд относительно последней записи)
-            i = millis();
-            return false;
-        }
-        saveConfig();
-        i = millis();
-        return true; // сохранились
-    }
-
-    void setBrightness(byte val) {effects[arrIdx].brightness = val;}
-    void setSpeed(byte val) {effects[arrIdx].speed = val;}
-    void setScale(byte val) {effects[arrIdx].scale = val;}
-    byte getBrightness() { return effects[arrIdx].brightness; }
-    byte getSpeed() { return effects[arrIdx].speed; }
-    byte getScale() { return effects[arrIdx].scale; }
-    byte getModeAmount() {return MODE_AMOUNT;}
-    const char *getName() {return effects[arrIdx].eff_name;}
-    const EFF_ENUM getEn() {return effects[arrIdx].eff_nb;}
-    
-    void moveNext() // следующий эффект, кроме canBeSelected==false
-    {
-        int i;
-
-        for(i=arrIdx+1; i<MODE_AMOUNT; i++){
-            if(effects[i].canBeSelected){
-                arrIdx = i;
-                curEff = effects[i].eff_nb;
-                return;
-            }
-        }
-        i = 1;
-        for(; i<MODE_AMOUNT; i++){
-            if(effects[i].canBeSelected){
-                arrIdx = i;
-                curEff = effects[i].eff_nb;
-                return;
-            }
-        }
-    }
-
-    void movePrev() // предыдущий эффект, кроме canBeSelected==false
-    { 
-        int i;
-
-        for(i=arrIdx-1; i>0; i--){
-            if(effects[i].canBeSelected){
-                arrIdx = i;
-                curEff = effects[i].eff_nb;
-                return;
-            }
-        }
-        i = MODE_AMOUNT-1;
-        for(; i>=0; i--){
-            if(effects[i].canBeSelected){
-                arrIdx = i;
-                curEff = effects[i].eff_nb;
-                return;
-            }
-        }
-    }
-
-    void moveBy(EFF_ENUM select){ // перейти по перечислению
-        for(int i=MODE_AMOUNT-1; i>=0; i--){
-            if(effects[i].eff_nb == select){
-                arrIdx = i;
-                curEff = effects[i].eff_nb;
-            }
-        }
-    }
-
-    void moveBy(byte cnt){ // перейти на количество шагов, к ближайшему большему (для DEMO)
-        while(cnt){
-            for(int i=arrIdx; i<MODE_AMOUNT; i++){
-                if(cnt>0)
-                    cnt--;
-                if(effects[i].isFavorite && cnt==0){
-                    arrIdx = i;
-                    curEff = effects[i].eff_nb;
-                    return;
-                }
-            }
-            if(arrIdx == 0){ return; }
-            else {
-                arrIdx = 0;
-                curEff = effects[0].eff_nb;
-            }
-        }
-    }
-
-    EFFECT *enumNextEffect(EFFECT *current){
-        for(int i=0; i<MODE_AMOUNT; i++){
-            if(effects[i].eff_nb == current->eff_nb){
-                if((i+1)!=MODE_AMOUNT)
-                    return &effects[i+1];
-                else
-                    return &effects[0]; // NONE
-            }
-        }
-        return &effects[0]; // NONE
-    }
-
-    EFFECT *getEffectBy(EFF_ENUM select){
-        for(int i=MODE_AMOUNT-1; i>=0; i--){
-            if(effects[i].eff_nb == select){
-                return &(effects[i]);
-            }
-        }
-        return &(effects[0]); // NONE
-    }
-
-    EFFECT *getCurrent(){ // вернуть текущий
-        return &(effects[arrIdx]);
-    }
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override {return true;};
 };
 
-typedef enum _PERIODICTIME {
-  PT_NOT_SHOW = 1,
-  PT_EVERY_60,
-  PT_EVERY_30,
-  PT_EVERY_15,
-  PT_EVERY_10,
-  PT_EVERY_5,
-  PT_EVERY_1,
-} PERIODICTIME;
+//-------------- Эффект "Часы"
+class EffectTime : public EffectCalc {
+private:
+    bool timeShiftDir; // направление сдвига
+    float curTimePos; // текущая позиция вывода
+    float color_idx; // индекс цвета
+    CRGB hColor[1]; // цвет часов и минут
+    CRGB mColor[1]; // цвет часов и минут
+    uint32_t lastrun=0;     /**< счетчик времени для эффектов с "задержкой" */
+    bool isMinute=false;
+
+    bool timePrintRoutine(CRGB *leds, EffectWorker *param);
+    bool palleteTest(CRGB *leds, EffectWorker *param);
+    void load() override;
+public:
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+/*
+ ***** METABALLS / МЕТАСФЕРЫ *****
+Metaballs proof of concept by Stefan Petrick 
+https://gist.github.com/StefanPetrick/170fbf141390fafb9c0c76b8a0d34e54
+*/
+class EffectMetaBalls : public EffectCalc {
+private:
+	float speedFactor;
+	const float hormap = (256 / WIDTH);
+    const float vermap = (256 / HEIGHT);
+	String setDynCtrl(UIControl*_val) override;
+    void load() override;
+public:
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// ***** SINUSOID3 / СИНУСОИД3 *****
+/*
+  Sinusoid3 by Stefan Petrick (mod by Palpalych for GyverLamp 27/02/2020)
+  read more about the concept: https://www.youtube.com/watch?v=mubH-w_gwdA
+*/
+class EffectSinusoid3 : public EffectCalc {
+private:
+	const uint8_t semiHeightMajor =  HEIGHT / 2 + (HEIGHT % 2);
+	const uint8_t semiWidthMajor =  WIDTH / 2  + (WIDTH % 2);
+	float e_s3_speed;
+	float e_s3_size;
+	uint8_t _scale;
+	uint8_t type;
+	
+	String setDynCtrl(UIControl*_val) override;
+
+public:
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+
+
+//----- Эффект "Прыгающие Мячики"
+// перевод на субпиксельную графику kostyamat
+class EffectBBalls : public EffectCalc {
+private:
+    // можно переписать на динамческую память
+    uint8_t bballsNUM_BALLS;                            // Number of bouncing balls you want (recommend < 7, but 20 is fun in its own way) ... количество мячиков теперь задаётся бегунком, а не константой
+    byte bballsCOLOR[bballsMaxNUM_BALLS] ;              // прикручено при адаптации для разноцветных мячиков
+    byte bballsBri[bballsMaxNUM_BALLS];                 // --- // ---
+    int8_t bballsX[bballsMaxNUM_BALLS] ;                // прикручено при адаптации для распределения мячиков по радиусу лампы
+    float bballsPos[bballsMaxNUM_BALLS] ;               // The integer position of the dot on the strip (LED index)
+    float bballsHi = 0.0;                               // An array of heights
+    float bballsVImpact[bballsMaxNUM_BALLS] ;           // As time goes on the impact velocity will change, so make an array to store those values
+    uint32_t bballsTCycle = 0;                        // The time since the last time the ball struck the ground
+    float bballsCOR[bballsMaxNUM_BALLS] ;               // Coefficient of Restitution (bounce damping)
+    long  bballsTLast[bballsMaxNUM_BALLS] ;             // The clock time of the last ground strike
+    float bballsShift[bballsMaxNUM_BALLS];
+    float hue;
+    bool halo = false;                                  // ореол
+    uint8_t _scale=1;
+    uint16_t _speed;
+    bool bBallsRoutine(CRGB *leds, EffectWorker *param);
+    void regen();
+    void load() override;
+	String setDynCtrl(UIControl*_val) override;
+public:
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// ------------- Эффект "Пейнтбол" -------------
+class EffectLightBalls : public EffectCalc {
+private:
+	#define BORDERTHICKNESS       (1U)   // глубина бордюра для размытия яркой частицы: 0U - без границы (резкие края); 1U - 1 пиксель (среднее размытие) ; 2U - 2 пикселя (глубокое размытие)
+	const uint8_t paintWidth = WIDTH - BORDERTHICKNESS * 2;
+	const uint8_t paintHeight = HEIGHT - BORDERTHICKNESS * 2;
+	float speedFactor;
+	
+	String setDynCtrl(UIControl*_val) override;
+
+public:
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// ------- Эффект "Пульс"
+class EffectPulse : public EffectCalc {
+private:
+    uint8_t pulse_hue;
+    float pulse_step = 0;
+    uint8_t centerX = random8(WIDTH - 5U) + 3U;
+    uint8_t centerY = random8(HEIGHT - 5U) + 3U;
+    uint8_t currentRadius = 4;
+    float _pulse_hue = 0;
+    uint8_t _pulse_hueall = 0;
+    float speedFactor;
+    String setDynCtrl(UIControl*_val) override;
+public:
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// ------------- эффект "Блуждающий кубик" -------------
+class EffectBall : public EffectCalc {
+private:
+    uint8_t ballSize;
+    CRGB ballColor;
+    float vectorB[2U];
+    float coordB[2U];
+	bool flag[2] = {true, true};
+	float speedFactor;
+
+	String setDynCtrl(UIControl*_val);
+	
+public:
+    void load();
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// -------- Эффект "Светлячки со шлейфом"
+#define _AMOUNT 16U
+class EffectLighterTracers : public EffectCalc {
+private:
+    uint8_t cnt = 1;
+    float vector[_AMOUNT][2U];
+    float coord[_AMOUNT][2U];
+    int16_t ballColors[_AMOUNT];
+    byte light[_AMOUNT];
+    float speedFactor;
+    bool lighterTracersRoutine(CRGB *leds, EffectWorker *param);
+
+public:
+    void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    String setDynCtrl(UIControl*_val) override;
+};
+
+class EffectRainbow : public EffectCalc {
+private:
+    float hue; // вещественное для малых скоростей, нужно приведение к uint8_t по месту
+    float twirlFactor;
+    float micCoef;
+
+    bool rainbowHorVertRoutine(bool isVertical);
+    bool rainbowDiagonalRoutine();
+
+public:
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+class EffectColors : public EffectCalc {
+private:
+    uint8_t ihue;
+    uint8_t mode;
+    uint8_t modeColor;
+
+    bool colorsRoutine(CRGB *leds, EffectWorker *param);
+    //void setscl(const byte _scl) override;
+    String setDynCtrl(UIControl*_val) override;
+public:
+    void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// ------ Эффект "Белая Лампа"
+class EffectWhiteColorStripe : public EffectCalc {
+private:
+    uint8_t shift=0;
+    bool whiteColorStripeRoutine(CRGB *leds, EffectWorker *param);
+    String setDynCtrl(UIControl*_val) override;
+public:
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// ---- Эффект "Конфетти"
+class EffectSparcles : public EffectCalc {
+private:
+    uint8_t eff = 1;
+    bool sparklesRoutine(CRGB *leds, EffectWorker *param);
+
+public:
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    String setDynCtrl(UIControl*_val) override;
+};
+
+// ========== Эффект "Эффектопад"
+// совместное творчество юзеров форума https://community.alexgyver.ru/
+class EffectEverythingFall : public EffectCalc {
+private:
+    byte heat[WIDTH][HEIGHT];
+
+public:
+    void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// ============= FIRE 2012 /  ОГОНЬ 2012 ===============
+// based on FastLED example Fire2012WithPalette: https://github.com/FastLED/FastLED/blob/master/examples/Fire2012WithPalette/Fire2012WithPalette.ino
+// v1.0 - Updating for GuverLamp v1.7 by SottNick 17.04.2020
+/*
+ * Эффект "Огонь 2012"
+ */
+class EffectFire2012 : public EffectCalc {
+private:
+#define NUMPALETTES 10
+
+  // COOLING: How much does the air cool as it rises?
+  // Less cooling = taller flames.  More cooling = shorter flames.
+    uint8_t cooling = 80U; // 70
+  // SPARKING: What chance (out of 255) is there that a new spark will be lit?
+  // Higher chance = more roaring fire.  Lower chance = more flickery fire.
+     uint8_t sparking = 90U; // 130
+  // SMOOTHING; How much blending should be done between frames
+  // Lower = more blending and smoother flames. Higher = less blending and flickery flames
+    uint8_t _scale = 1;
+    const uint8_t fireSmoothing = 60U; // 90
+    uint8_t noise3d[NUM_LAYERS][WIDTH][HEIGHT];
+    bool fire2012Routine(CRGB *leds, EffectWorker *param);
+    String setDynCtrl(UIControl*_val) override;
+public:
+    void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// ------------- класс Светлячки -------------
+// нужен для некоторых эффектов
+class EffectLighters : public EffectCalc {
+protected:
+    uint8_t cnt = 1;
+    bool subPix = false;
+    uint16_t lightersIdx;
+    float lightersSpeed[2U][LIGHTERS_AM];
+    uint8_t lightersColor[LIGHTERS_AM];
+    float lightersPos[2U][LIGHTERS_AM];
+    byte light[LIGHTERS_AM];
+    float speedFactor;
+private:
+    String setDynCtrl(UIControl*_val) override;
+public:
+    void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// ------------- "ДНК Вариант" -------------
+//Yaroslaw Turbin 08.12.2020
+//https://vk.com/ldirko
+//https://www.reddit.com/user/ldirko/
+//updated & adopted by kostyamat
+class EffectDNA2 : public EffectCalc {
+protected:
+    const uint8_t freq = 6;
+    byte hue = 0;
+    uint16_t ms;
+    uint8_t speeds;
+    bool rotate = true;
+    bool dots = true;
+
+private:
+    String setDynCtrl(UIControl*_val) override;
+
+public:
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// ------------- Эффект "New Матрица" ---------------
+class EffectMatrix : public EffectLighters {
+private:
+    bool matrixRoutine(CRGB *leds, EffectWorker *param);
+    uint8_t _scale = 1;
+    byte gluk = 1;
+    uint8_t hue, _hue;
+    bool randColor = false;
+    bool white = false;
+    float count;
+    float speedFactor;
+    String setDynCtrl(UIControl*_val) override;
+public:
+    void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// ------------- звездопад/метель -------------
+class EffectStarFall : public EffectLighters {
+private:
+    uint8_t _scale = 1;
+    uint8_t effId = 1;
+    bool isNew = true;
+    float fade;
+    float speedFactor;
+    bool snowStormStarfallRoutine(CRGB *leds, EffectWorker *param);
+    String setDynCtrl(UIControl*_val) override;
+
+public:
+    void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// ----------- Эффекты "Лава, Зебра, etc"
+class Effect3DNoise : public EffectCalc {
+private:
+    void fillNoiseLED();
+    void fillnoise8();
+
+    uint8_t ihue;
+    bool colorLoop;
+	bool blurIm;
+    float _speed;             // speed is set dynamically once we've started up
+    float _scale;             // scale is set dynamically once we've started up
+    float x;
+    float y;
+    float z;
+    #if (WIDTH > HEIGHT)
+    uint8_t noise[2*HEIGHT][WIDTH];
+    #else
+    uint8_t noise[2*WIDTH][HEIGHT];
+    #endif
+
+public:
+    void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    String setDynCtrl(UIControl*_val) override;
+};
+
+// ***** Эффект "Спираль"     ****
+/*
+ * Aurora: https://github.com/pixelmatix/aurora
+ * https://github.com/pixelmatix/aurora/blob/sm3.0-64x64/PatternSpiro.h
+ * Copyright (c) 2014 Jason Coon
+ * Неполная адаптация SottNick
+ */
+class EffectSpiro : public EffectCalc {
+private:
+  const uint8_t spiroradiusx = WIDTH /4; //((!WIDTH & 1) ? (WIDTH -1) : WIDTH) / 4;
+  const uint8_t spiroradiusy = HEIGHT /4;//(!(HEIGHT & 1) ? (HEIGHT-1) : HEIGHT) / 4;
+
+  const uint8_t spirocenterX = WIDTH /2; //(!(WIDTH & 1) ? (WIDTH -1) : WIDTH) / 2;
+  const uint8_t spirocenterY = HEIGHT /2; //(!(HEIGHT & 1) ? (HEIGHT-1) : HEIGHT) / 2;
+
+  const uint8_t spirominx = spirocenterX - spiroradiusx;
+  const uint8_t spiromaxx = spirocenterX + spiroradiusx - (WIDTH%2 == 0 ? 1:0);// + 1;
+  const uint8_t spirominy = spirocenterY - spiroradiusy;
+  const uint8_t spiromaxy = spirocenterY + spiroradiusy - (HEIGHT%2 == 0 ? 1:0); // + 1;
+
+  bool spiroincrement = false;
+  bool spirohandledChange = false;
+  float spirohueoffset = 0;
+  uint8_t spirocount = 1;
+  float spirotheta1 = 0;
+  float spirotheta2 = 0;
+  uint8_t internalCnt = 0;
+  float speedFactor;
+
+  String setDynCtrl(UIControl*_val) override;
+
+public:
+    void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// ============= ЭФФЕКТ ПРИЗМАТА ===============
+// Prismata Loading Animation
+class EffectPrismata : public EffectCalc {
+private:
+    byte spirohueoffset = 0;
+    uint8_t fadelvl=1;
+	float speedFactor;
+    
+    String setDynCtrl(UIControl*_val) override;
+public:
+    void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// ============= ЭФФЕКТ СТАЯ ===============
+// Адаптация от (c) SottNick
+class EffectFlock : public EffectCalc {
+private:
+  Boid boids[AVAILABLE_BOID_COUNT];
+  Boid predator;
+  PVector wind;
+  float speedFactor;
+
+  bool predatorPresent;
+  float hueoffset;
+
+  bool flockRoutine(CRGB *leds, EffectWorker *param);
+  String setDynCtrl(UIControl*_val) override;
+  //void setspd(const byte _spd) override;
+public:
+    void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// ***** RAINBOW COMET / РАДУЖНАЯ КОМЕТА *****
+// ***** Парящий огонь, Кровавые Небеса, Радужный Змей и т.п.
+// базис (c) Stefan Petrick
+class EffectComet : public EffectCalc {
+private:
+    byte hue;
+    byte hue2;
+    uint8_t eNs_noisesmooth;
+    uint32_t e_x[NUM_LAYERS];
+    uint32_t e_y[NUM_LAYERS];
+    uint32_t e_z[NUM_LAYERS];
+    uint32_t e_scaleX[NUM_LAYERS];
+    uint32_t e_scaleY[NUM_LAYERS];
+    uint8_t noise3d[NUM_LAYERS][WIDTH][HEIGHT];
+    uint8_t count;
+    uint8_t speedy;
+    float spiral;
+    float spiral2;
+    float speedFactor;
+    uint8_t _scale = 1;
+    uint8_t effId = 1;      // 2, 1-6
+    uint8_t colorId;        // 3, 1-255
+    uint8_t smooth = 1;     // 4, 1-12
+    uint8_t blur;           // 5, 1-64
+
+    const uint8_t e_centerX =  (WIDTH / 2) -  ((WIDTH - 1) & 0x01);
+    const uint8_t e_centerY = (HEIGHT / 2) - ((HEIGHT - 1) & 0x01);
+
+    void drawFillRect2_fast(int8_t x1, int8_t y1, int8_t x2, int8_t y2, CRGB color);
+    void FillNoise(int8_t layer);
+
+    bool rainbowCometRoutine(CRGB *leds, EffectWorker *param);
+    bool rainbowComet3Routine(CRGB *leds, EffectWorker *param);
+    bool firelineRoutine(CRGB *leds, EffectWorker *param);
+    bool fractfireRoutine(CRGB *leds, EffectWorker *param);
+    bool flsnakeRoutine(CRGB *leds, EffectWorker *param);
+    bool smokeRoutine(CRGB *leds, EffectWorker *param);
+    String setDynCtrl(UIControl*_val) override;
+
+public:
+    void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// ============= SWIRL /  ВОДОВОРОТ ===============
+// https://gist.github.com/kriegsman/5adca44e14ad025e6d3b
+// Copyright (c) 2014 Mark Kriegsman
+class EffectSwirl : public EffectCalc {
+private:
+    bool swirlRoutine(CRGB *leds, EffectWorker *param);
+
+public:
+    void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// ============= DRIFT / ДРИФТ ===============
+// v1.0 - Updating for GuverLamp v1.7 by SottNick 12.04.2020
+// v1.1 - +dither, +phase shifting by PalPalych 12.04.2020
+// https://github.com/pixelmatix/aurora/blob/master/PatternIncrementalDrift.h
+class EffectDrift : public EffectCalc {
+private:
+	const byte maxDim_steps = 256 / max(WIDTH, HEIGHT);
+	uint8_t dri_phase;
+	float _dri_speed;
+	uint8_t _dri_delta;
+	byte driftType = 0;
+
+	String setDynCtrl(UIControl*_val) override;
+	bool incrementalDriftRoutine(CRGB *leds, EffectWorker *param);
+	bool incrementalDriftRoutine2(CRGB *leds, EffectWorker *param);
+
+public:
+    void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// ------------------------------ ЭФФЕКТ МЕРЦАНИЕ ----------------------
+// (c) SottNick
+class EffectTwinkles : public EffectCalc {
+private:
+  uint8_t thue = 0U;
+  uint8_t tnum;
+  CRGB ledsbuff[NUM_LEDS];
+  float speedFactor;
+  bool twinklesRoutine(CRGB *leds, EffectWorker *param);
+  String setDynCtrl(UIControl*_val) override;
+  //void setscl(const byte _scl) override;
+public:
+    void load() override;
+    void setup();
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+class EffectWaves : public EffectCalc {
+private:
+  float whue;
+  float waveTheta;
+  uint8_t _scale=1;
+  float speedFactor;
+  bool wavesRoutine(CRGB *leds, EffectWorker *param);
+  String setDynCtrl(UIControl*_val) override;
+public:
+    void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// ============= RADAR / РАДАР ===============
+// Aurora : https://github.com/pixelmatix/aurora/blob/master/PatternRadar.h
+// Copyright(c) 2014 Jason Coon
+class EffectRadar : public EffectCalc {
+private:
+    float eff_offset; 
+    float eff_theta;  // глобальная переменная угла для работы эффектов
+    bool subPix = false;
+    byte hue;
+    const float width_adj_f = (float)(WIDTH < HEIGHT ? (HEIGHT - WIDTH) / 2. : 0);
+    const float height_adj_f= (float)(HEIGHT < WIDTH ? (WIDTH - HEIGHT) / 2. : 0);
+    bool radarRoutine(CRGB *leds, EffectWorker *param);
+    String setDynCtrl(UIControl *_val) override;
+
+public:
+    void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+class EffectFire2018 : public EffectCalc {
+private:
+  const uint8_t CentreY = HEIGHT / 2 + (HEIGHT % 2);
+  const uint8_t CentreX = WIDTH / 2 + (WIDTH % 2);
+  bool isLinSpeed = true;
+
+  uint32_t noise32_x[NUM_LAYERS2];
+  uint32_t noise32_y[NUM_LAYERS2];
+  uint32_t noise32_z[NUM_LAYERS2];
+  uint32_t scale32_x[NUM_LAYERS2];
+  uint32_t scale32_y[NUM_LAYERS2];
+  uint8_t fire18heat[NUM_LEDS];
+  uint8_t noise3dx[NUM_LAYERS2][WIDTH][HEIGHT];
+
+  String setDynCtrl(UIControl*_val) override;
+
+public:
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// -------------- Эффект "Кодовый замок"
+// (c) SottNick
+class EffectRingsLock : public EffectCalc {
+private:
+  uint8_t ringWidth; // максимальне количество пикселей в кольце (толщина кольца) от 1 до height / 2 + 1
+  uint8_t ringNb; // количество колец от 2 до height
+  uint8_t downRingHue, upRingHue; // количество пикселей в нижнем (downRingHue) и верхнем (upRingHue) кольцах
+
+  uint8_t ringColor[HEIGHT]; // начальный оттенок каждого кольца (оттенка из палитры) 0-255
+  uint8_t huePos[HEIGHT]; // местоположение начального оттенка кольца 0-WIDTH-1
+  uint8_t shiftHueDir[HEIGHT]; // 4 бита на ringHueShift, 4 на ringHueShift2
+  ////ringHueShift[ringsCount]; // шаг градиета оттенка внутри кольца -8 - +8 случайное число
+  ////ringHueShift2[ringsCount]; // обычная скорость переливания оттенка всего кольца -8 - +8 случайное число
+  uint8_t currentRing; // кольцо, которое в настоящий момент нужно провернуть
+  uint8_t stepCount; // оставшееся количество шагов, на которое нужно провернуть активное кольцо - случайное от WIDTH/5 до WIDTH-3
+  void ringsSet();
+  bool ringsRoutine(CRGB *leds, EffectWorker *param);
+  String setDynCtrl(UIControl*_val) override;
+public:
+    void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// ------------------------------ ЭФФЕКТ КУБИК 2D ----------------------
+// (c) SottNick
+// refactored by Vortigont
+class EffectCube2d : public EffectCalc {
+private:
+  bool classic = false;
+  uint8_t sizeX, sizeY; // размеры ячеек по горизонтали / вертикали
+  uint8_t cntX, cntY; // количество ячеек по горизонтали / вертикали
+  uint8_t fieldX, fieldY; // размер всего поля блоков по горизонтали / вертикали (в том числе 1 дополнительная пустая дорожка-разделитель с какой-то из сторон)
+  uint8_t currentStep;
+  uint8_t pauseSteps; // осталось шагов паузы
+  uint8_t shiftSteps; // всего шагов сдвига
+  std::vector<int8_t> moveItems;     // индекс перемещаемого элемента
+  //bool movedirection;   // направление смещения
+  bool direction; // направление вращения в текущем цикле (вертикаль/горизонталь)
+  uint8_t storage[WIDTH][HEIGHT];
+  int8_t globalShiftX, globalShiftY;
+  uint8_t gX, gY;
+  bool seamlessX = true;
+
+  std::vector<CRGB> ledbuff;
+
+  void swapBuff();
+  void cubesize();
+  bool cube2dRoutine(CRGB *leds, EffectWorker *param);
+  bool cube2dClassicRoutine(CRGB *leds, EffectWorker *param);
+  void cube2dmoveCols(uint8_t moveItem, bool movedirection);
+  void cube2dmoveRows(uint8_t moveItem, bool movedirection);
+  String setDynCtrl(UIControl*_val) override;
+  //void setscl(const byte _scl) override;
+
+public:
+    void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// ------ Эффекты "Пикассо"
+// (c) obliterator
+class EffectPicasso : public EffectCalc {
+    typedef struct Particle{
+        float position_x = 0;
+        float position_y = 0;
+        float speed_x = 0;
+        float speed_y = 0;
+        CHSV color;
+        uint8_t hue_next = 0;
+        int8_t hue_step = 0;
+    } Particle;
+private:
+    uint8_t effId=0;
+    uint8_t pidx = 0;
+    Particle particles[20];
+    unsigned numParticles = 0;
+	float speedFactor;
+    void generate(bool reset = false);
+    void position();
+    bool picassoRoutine(CRGB *leds, EffectWorker *param);
+    /*
+    bool picassoRoutine2(CRGB *leds, EffectWorker *param);
+    bool picassoRoutine3(CRGB *leds, EffectWorker *param);
+    */
+    bool metaBallsRoutine(CRGB *leds, EffectWorker *param);
+    GradientPaletteList *palettes;
+public:
+    EffectPicasso() {
+        palettes = new GradientPaletteList();
+        palettes->add(MBVioletColors_gp, 0, 16); // будет заменен генератором
+        palettes->add(MBVioletColors_gp, 0, 16);
+
+        palettes->add(ib_jul01_gp, 60, 16, 200);
+
+        palettes->add(es_pinksplash_08_gp, 125, 16);
+
+        palettes->add(departure_gp, 0);
+        palettes->add(departure_gp, 140, 16, 220);
+
+        palettes->add(es_landscape_64_gp, 25, 16, 250);
+        palettes->add(es_landscape_64_gp, 125);
+        palettes->add(es_landscape_64_gp, 175, 50, 220);
+
+        palettes->add(es_ocean_breeze_036_gp, 0);
+
+        palettes->add(es_landscape_33_gp, 0);
+        palettes->add(es_landscape_33_gp, 50);
+        palettes->add(es_landscape_33_gp, 50, 50);
+
+        palettes->add(GMT_drywet_gp, 0);
+        palettes->add(GMT_drywet_gp, 75);
+        palettes->add(GMT_drywet_gp, 150, 0, 200);
+
+        palettes->add(fire_gp, 175);
+
+        palettes->add(Pink_Purple_gp, 25);
+        palettes->add(Pink_Purple_gp, 175, 0, 220);
+
+        palettes->add(Sunset_Real_gp, 25, 0, 200);
+        palettes->add(Sunset_Real_gp, 50, 0, 220);
+
+        palettes->add(BlacK_Magenta_Red_gp, 25);
+    }
+    ~EffectPicasso() { delete palettes; }
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    String setDynCtrl(UIControl*_val) override;
+};
+
+// ------ Эффект "Прыгуны" (c) obliterator
+class EffectLeapers : public EffectCalc {
+    typedef struct Leaper{
+        float x, y;
+        float xd, yd;
+        byte color;
+    } Leaper;
+private:
+    Leaper leapers[20];
+    unsigned numParticles = 0;
+    uint8_t _rv;
+	uint8_t num;
+	float speedFactor;
+    void generate(bool reset = false);
+    void restart_leaper(Leaper * l);
+    void move_leaper(Leaper * l);
+	String setDynCtrl(UIControl*_val) override;
+public:
+	void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+
+};
+
+// ------ Эффект "Лавовая Лампа"
+// (c) obliterator
+class EffectLiquidLamp : public EffectCalc {
+    typedef struct Particle{
+        float position_x = 0;
+        float position_y = 0;
+        float speed_x = 0;
+        float speed_y = 0;
+        float rad = 0;
+        float hot = 0;
+        float spf = 0;
+        int mass = 0;
+        unsigned mx = 0;
+        unsigned sc = 0;
+        unsigned tr = 0;
+    } Particle;
+private:
+    unsigned MASS_MIN = 10;
+    unsigned MASS_MAX = 50;
+    Particle particles[20];
+    uint8_t buff[WIDTH][HEIGHT];
+    float buff2[WIDTH][HEIGHT];
+    uint8_t pidx = 0;
+    unsigned numParticles = 0;
+    unsigned physic_on = 1;
+    unsigned filter = 0;
+	float speedFactor;
+    void generate(bool reset = false);
+    void position();
+    void physic();
+    bool Routine(CRGB *leds, EffectWorker *param);
+
+    GradientPaletteList *palettes;
+public:
+    EffectLiquidLamp() {
+        palettes = new GradientPaletteList();
+        palettes->add(MBVioletColors_gp, 0, 16);
+        // эта политра создана под эффект
+        palettes->add(MBVioletColors_gp, 0, 16);
+        // палитры частично подогнаные под эффект
+        palettes->add(ib_jul01_gp, 60, 16, 200);
+        palettes->add(Sunset_Real_gp, 25, 0, 200);
+
+        palettes->add(es_landscape_33_gp, 50, 50);
+
+        palettes->add(es_pinksplash_08_gp, 125, 16);
+
+        palettes->add(es_landscape_64_gp, 175, 50, 220);
+        palettes->add(es_landscape_64_gp, 25, 16, 250);
+
+        palettes->add(es_ocean_breeze_036_gp, 0);
+
+        palettes->add(es_landscape_33_gp, 0);
+
+        palettes->add(GMT_drywet_gp, 0);
+        palettes->add(GMT_drywet_gp, 75);
+        palettes->add(GMT_drywet_gp, 150, 0, 200);
+
+        palettes->add(fire_gp, 175);
+
+        palettes->add(Pink_Purple_gp, 25);
+        palettes->add(Pink_Purple_gp, 175, 0, 220);
+
+        palettes->add(Sunset_Real_gp, 50, 0, 220);
+
+        palettes->add(BlacK_Magenta_Red_gp, 25);
+    }
+    ~EffectLiquidLamp() { delete palettes; }
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    String setDynCtrl(UIControl*_val) override;
+};
+
+// ------- Эффект "Вихри"
+// Based on Aurora : https://github.com/pixelmatix/aurora/blob/master/PatternFlowField.h
+// Copyright(c) 2014 Jason Coon
+//адаптация SottNick
+class EffectWhirl : public EffectCalc {
+private:
+    float ff_x;
+    float ff_y;
+    float ff_z;
+    float hue;
+    Boid boids[AVAILABLE_BOID_COUNT];
+    uint8_t micPick = 0;
+	float speedFactor;
+
+    const uint8_t ff_speed = 1; // чем выше этот параметр, тем короче переходы (градиенты) между цветами. 1 - это самое красивое
+    const uint8_t ff_scale = 26; // чем больше этот параметр, тем больше "языков пламени" или как-то так. 26 - это норм
+
+    bool whirlRoutine(CRGB *leds, EffectWorker *param);
+    String setDynCtrl(UIControl*_val) override;
+public:
+    void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// ------------- Эффект "Блики на воде Цвета"
+// Идея SottNick
+// переписал на программные блики + паттерны - (c) kostyamat
+// Генератор бликов (c) stepko
+class EffectAquarium : public EffectCalc {
+private:
+#define MAX_DIMENSION max(WIDTH, HEIGHT)
+    CRGBPalette16 currentPalette;
+    const uint8_t _scale = 25;
+    const uint8_t _speed = 3;
+
+    float hue = 0.;
+    uint16_t x;
+    uint16_t y;
+    uint16_t z;
+    byte ledbuff[WIDTH*2 * HEIGHT*2];
+#define amountDrops ((HEIGHT + WIDTH) / 6)
+    const uint8_t maxRadius = WIDTH + HEIGHT;
+    uint8_t posX[amountDrops];
+    uint8_t posY[amountDrops];
+    float radius[amountDrops];
+    uint8_t satur;
+    uint8_t glare = 0;
+    uint8_t iconIdx = 0;
+	float speedFactor;
+
+    void nGlare(uint8_t bri);
+    void nDrops(uint8_t bri);
+    void fillNoiseLED(CRGB *leds);
+
+public:
+    void load() override;
+    String setDynCtrl(UIControl*_val) override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+
+// ----------- Эффект "Звезды"
+// (c) SottNick
+#define STARS_NUM (16)
+class EffectStar : public EffectCalc {
+private:
+    float driftx;
+    float drifty;
+    float cangle;
+    float sangle;
+    float radius2;
+    uint8_t stars_count;
+    float color[STARS_NUM] ;                        // цвет звезды
+    uint8_t points[STARS_NUM] ;                       // количество углов в звезде
+    unsigned int delay[STARS_NUM] ;                   // задержка пуска звезды относительно счётчика
+    float counter = 0;                                // счетчик для реализации смещений, наростания и т.д.
+	float speedFactor;
+	float _speed;
+    bool setup = true;
+    uint8_t micPick = 0;
+    const uint8_t spirocenterX = WIDTH / 2;
+    const uint8_t spirocenterY = HEIGHT / 2;
+    void drawStar(float xlocl, float ylocl, float biggy, float little, int16_t points, float dangle, uint8_t koler);
+	String setDynCtrl(UIControl*_val) override;
+
+public:
+    void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+//---------- Эффект "Фейерверк"
+//адаптация и переписал - kostyamat
+//https://gist.github.com/jasoncoon/0cccc5ba7ab108c0a373
+class EffectFireworks : public EffectCalc {
+private:
+    DOTS_STORE store;
+    uint16_t launchcountdown[SPARK];
+    byte dim;
+    uint8_t valDim;
+    uint8_t cnt;
+    bool flashing = false;
+    bool fireworksRoutine(CRGB *leds, EffectWorker *param);
+    void sparkGen();
+    Dot gDot[SPARK];
+    Dot gSparks[NUM_SPARKS];
+    String setDynCtrl(UIControl*_val) override;
+
+public:
+    //void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// ------------ Эффект "Тихий Океан"
+//  "Pacifica" перенос кода kostyamat
+//  Gentle, blue-green ocean waves.
+//  December 2019, Mark Kriegsman and Mary Corey March.
+//  For Dan.
+// https://raw.githubusercontent.com/FastLED/FastLED/master/examples/Pacifica/Pacifica.ino
+class EffectPacific : public EffectCalc {
+private:
+	uint32_t speedFactor;
+	void pacifica_one_layer(const TProgmemRGBPalette16& p, uint16_t cistart, uint16_t wavescale, uint8_t bri, uint16_t ioff);
+	void pacifica_deepen_colors();
+	void pacifica_add_whitecaps();
+	String setDynCtrl(UIControl*_val) override;
+
+public:
+    //void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+#ifdef MIC_EFFECTS
+//----- Эффект "Осциллограф" 
+// (c) kostyamat
+class EffectOsc : public EffectCalc {
+private:
+    byte oscHV;
+    byte oscilLimit;
+    float pointer;
+    CRGB color;
+    float div;
+    byte gain;
+    float y[2] = {0., 0.};
+    String setDynCtrl(UIControl*_val) override;
+    
+
+public:
+    //void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+#endif
+
+// ------ Эффект "Вышиванка" 
+// (с) проект Aurora "Munch"
+class EffectMunch : public EffectCalc {
+private:
+    byte count = 0;
+    int8_t dir = 1;
+    byte flip = 0;
+    byte generation = 0;
+    byte mic[2];
+    byte rand;
+    bool flag = false;
+    uint8_t minDimLocal = maxDim > 32 ? 32 : 16;
+
+    String setDynCtrl(UIControl*_val) override;
+    bool munchRoutine(CRGB *leds, EffectWorker *param);
+
+public:
+    void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// ------ Эффект "Цветной шум" 
+// (с) https://gist.github.com/StefanPetrick/c856b6d681ec3122e5551403aabfcc68
+class EffectNoise : public EffectCalc {
+private:
+
+    uint8_t CentreX =  (WIDTH / 2) - 1;
+    uint8_t CentreY = (HEIGHT / 2) - 1;
+    uint32_t x[NUM_LAYERS];
+    uint32_t y[NUM_LAYERS];
+    uint32_t z[NUM_LAYERS];
+    uint32_t scale_x[NUM_LAYERS];
+    uint32_t scale_y[NUM_LAYERS];
+    uint8_t  noise[NUM_LAYERS][WIDTH][HEIGHT];
+	uint8_t speedFactor;
+    bool type = false;
+
+	String setDynCtrl(UIControl*_val) override;
+
+public:
+    void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// ---- Эффект "Мотыльки"
+// (с) SottNick, https://community.alexgyver.ru/threads/wifi-lampa-budilnik-obsuzhdenie-proekta.1411/post-49262
+class EffectButterfly : public EffectCalc {
+private:
+    float butterflysPosX[BUTTERFLY_MAX_COUNT];
+    float butterflysPosY[BUTTERFLY_MAX_COUNT];
+    float butterflysSpeedX[BUTTERFLY_MAX_COUNT];
+    float butterflysSpeedY[BUTTERFLY_MAX_COUNT];
+    float butterflysTurn[BUTTERFLY_MAX_COUNT];
+    uint8_t butterflysColor[BUTTERFLY_MAX_COUNT];
+    uint8_t butterflysBrightness[BUTTERFLY_MAX_COUNT];
+    uint8_t deltaValue;
+    uint8_t deltaHue;
+    uint8_t hue;
+    uint8_t hue2;
+    byte step = 0;
+    byte csum = 0;
+    uint8_t cnt;
+    bool wings = false;
+    bool isColored = true;
+	float speedFactor;
+	String setDynCtrl(UIControl*_val) override;
+
+public:
+    void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// ---- Эффект "Тени"
+// https://github.com/vvip-68/GyverPanelWiFi/blob/master/firmware/GyverPanelWiFi_v1.02/effects.ino
+class EffectShadows : public EffectCalc {
+private:
+    uint16_t sPseudotime = 0;
+    uint16_t sLastMillis = 0;
+    uint16_t sHue16 = 0;
+
+public:
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// ---- Эффект "Узоры"
+// (c) kostyamat (Kostyantyn Matviyevskyy) 2020
+// переделано kDn
+// идея отсюда https://github.com/vvip-68/GyverPanelWiFi/
+class EffectPatterns : public EffectCalc {
+private:
+    int8_t patternIdx = -1;
+    int8_t lineIdx = 0;
+    bool _subpixel = false;
+    bool _sinMove = false;
+    int8_t _speed = 1, _scale = 1;
+    bool dir = false;
+    byte csum = 0;
+    byte _bri = 255U;
+    byte buff[20 * 20];
+    float xsin, ysin;
+    unsigned long lastrun2;
+    byte _sc = 0;
+    float _speedX, _speedY;
+
+    CHSV colorMR[12] = {
+        CHSV(0, 0, 0),              // 0 - Black
+        CHSV(HUE_RED, 255, 255),    // 1 - Red
+        CHSV(HUE_GREEN , 255, 255),  // 2 - Green
+        CHSV(HUE_BLUE, 255, 255),   // 3 - Blue
+        CHSV(HUE_YELLOW, 255, 255), // 4 - Yellow
+        CHSV(0, 0, 220),            // 5 - White
+        CHSV(0, 255, 255),              // 6 - плавно меняеться в цикле (фон)
+        CHSV(0, 255, 255),              // 7 - цвет равен 6 но +64
+        CHSV(HUE_ORANGE, 255, 255),
+        CHSV(HUE_PINK, 255, 255),
+        CHSV(HUE_PURPLE, 255, 255),
+        CHSV(HUE_AQUA, 255, 255),
+    };
+
+    String setDynCtrl(UIControl*_val) override;
+    void drawPicture_XY();
+    bool patternsRoutine(CRGB *leds, EffectWorker *param);
+
+public:
+    void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+
+// ***************************** "Стрелки" *****************************
+// взято отсюда https://github.com/vvip-68/GyverPanelWiFi/
+class EffectArrows : public EffectCalc {
+private:
+    float arrow_x[4], arrow_y[4], stop_x[4], stop_y[4];
+    byte arrow_direction;             // 0x01 - слева направо; 0x02 - снизу вверх; 0х04 - справа налево; 0х08 - сверху вниз
+    byte arrow_mode, arrow_mode_orig; // 0 - по очереди все варианты
+                                      // 1 - по очереди от края до края экрана;
+                                      // 2 - одновременно по горизонтали навстречу к ентру, затем одновременно по вертикали навстречу к центру
+                                      // 3 - одновременно все к центру
+                                      // 4 - по два (горизонталь / вертикаль) все от своего края к противоположному, стрелки смещены от центра на 1/3
+                                      // 5 - одновременно все от своего края к противоположному, стрелки смещены от центра на 1/3
+    bool arrow_complete, arrow_change_mode;
+    byte arrow_hue[4];
+    byte arrow_play_mode_count[6];      // Сколько раз проигрывать полностью каждый режим если вариант 0 - текущий счетчик
+    byte arrow_play_mode_count_orig[6]; // Сколько раз проигрывать полностью каждый режим если вариант 0 - исходные настройки
+    uint8_t _scale;
+    float speedFactor;
+    void arrowSetupForMode(byte mode, bool change);
+    void arrowSetup_mode1();
+    void arrowSetup_mode2();
+    //void arrowSetup_mode3(;)
+    void arrowSetup_mode4();
+
+    String setDynCtrl(UIControl*_val) override;
+public:
+    void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// ------ Эффект "Дикие шарики"
+// (с) https://gist.github.com/bonjurroughs/9c107fa5f428fb01d484#file-noise-balls
+class EffectNBals : public EffectCalc {
+private:
+    uint8_t lastSecond = 99;
+    uint16_t speedy;// speed is set dynamically once we've started up
+    uint16_t _scale;
+    byte beat1, beat2 = 0;
+    byte balls = 4;
+    void balls_timer();
+    void blur(CRGB *leds);
+    bool nballsRoutine(CRGB *leds, EffectWorker *param);
+
+    String setDynCtrl(UIControl*_val) override;
+
+public:
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// ------ Эффект "Притяжение"
+// project Aurora
+// доведено до ума - kostyamat
+class EffectAttract : public EffectCalc {
+private:
+    const uint8_t spirocenterX = WIDTH / 2;
+    const uint8_t spirocenterY = HEIGHT / 2;
+    float speedFactor;
+    float mass;    // Mass, tied to size
+    float G;       // Gravitational Constant
+    uint8_t _mass = 127;
+    uint8_t _energy = 127;
+    static const uint8_t count = HEIGHT *2 - WIDTH /2;
+    bool loadingFlag = true;
+    byte csum = 0;
+    //Boid boids[AVAILABLE_BOID_COUNT];
+    Boid boids[count];
+    PVector location;   // Location
+    String setDynCtrl(UIControl*_val) override;
+    void setup();
+
+
+    PVector attract(Boid m) {
+        PVector force = location - m.location;   // Calculate direction of force
+        float d = force.mag();                              // Distance between objects
+        d = constrain(d, 5.0f, 32.0f);                        // Limiting the distance to eliminate "extreme" results for very close or very far objects
+        force.normalize();                                  // Normalize vector (distance doesn't matter here, we just want this vector for direction)
+        float strength = (G * mass * m.mass) / (d * d);      // Calculate gravitional force magnitude
+        force *= strength;                                  // Get force vector --> magnitude * direction
+        return force;
+    }
+
+public:
+    EffectAttract() {
+        location = PVector(spirocenterX, spirocenterY);
+        mass = 10;
+        G = .5;
+    }
+    void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+//------------ Эффект "Змейки"
+// вариант субпикселя и поведения от kDn
+class EffectSnake : public EffectCalc {
+private:
+    float hue;
+    float speedFactor;
+    int snakeCount;
+    bool subPix = false;
+    bool onecolor = false;
+    enum Direction
+{
+  UP,
+  DOWN,
+  LEFT,
+  RIGHT
+};
+
+struct Pixel
+{
+    float x;
+    float y;
+};
+
+CRGB colors[SNAKE_LENGTH];
+struct Snake
+{
+  float internal_counter = 0.0;
+  float internal_speedf = 1.0;
+  Pixel pixels[SNAKE_LENGTH];
+
+  Direction direction;
+
+  void newDirection()
+  {
+    switch (direction)
+    {
+    case UP:
+    case DOWN:
+      direction = random(0, 2) == 1 ? RIGHT : LEFT;
+      break;
+
+    case LEFT:
+    case RIGHT:
+      direction = random(0, 2) == 1 ? DOWN : UP;
+
+    default:
+      break;
+    }
+  };
+
+  void shuffleDown(float speedy, bool subpix)
+  {
+    internal_counter+=speedy*internal_speedf;
+
+    if(internal_counter>1.0){
+        for (byte i = (byte)SNAKE_LENGTH - 1; i > 0; i--)
+        {
+            if(subpix)
+                pixels[i] = pixels[i - 1];
+            else {
+                pixels[i].x = (uint8_t)pixels[i - 1].x;
+                pixels[i].y = (uint8_t)pixels[i - 1].y;
+            }
+        }
+        double f;
+        internal_counter=modf(internal_counter, &f);
+    }
+  }
+
+  void reset()
+  {
+    direction = UP;
+    for (int i = 0; i < (int)SNAKE_LENGTH; i++)
+    {
+      pixels[i].x = 0;
+      pixels[i].y = 0;
+    }
+  }
+
+  void move(float speedy)
+  {
+    float inc = speedy*internal_speedf;
+
+    switch (direction)
+    {
+    case UP:
+      pixels[0].y = pixels[0].y >= HEIGHT ? inc : (pixels[0].y + inc);
+      break;
+    case LEFT:
+      pixels[0].x = pixels[0].x >= WIDTH ? inc : (pixels[0].x + inc);
+      break;
+    case DOWN:
+      pixels[0].y = pixels[0].y <= 0 ? HEIGHT - inc : pixels[0].y - inc;
+      break;
+    case RIGHT:
+      pixels[0].x = pixels[0].x <= 0 ? WIDTH - inc : pixels[0].x - inc;
+      break;
+    }
+  }
+
+  void draw(CRGB colors[SNAKE_LENGTH], int snakenb, bool subpix, bool isDebug=false);
+};
+
+    Snake snakes[MAX_SNAKES];
+    String setDynCtrl(UIControl*_val) override;
+public:
+    void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+//------------ Эффект "Nexus"
+// База паттерн "Змейка" из проекта Аврора, 
+// перенос и переписан - kostyamat
+#define NEXUS (WIDTH)
+
+class EffectNexus: public EffectCalc {
+  private:
+    float dotPosX[NEXUS];
+    float dotPosY[NEXUS];
+    int8_t dotDirect[NEXUS];       // направление точки 
+    CRGB dotColor[NEXUS];          // цвет точки
+    float dotAccel[NEXUS];         // персональное ускорение каждой точки
+    bool white = false;
+    byte type = 1;
+    uint8_t _scale = 1;
+    bool randColor = false;
+    float windProgress;
+	float speedFactor;
+    
+
+    void reload();
+    void resetDot(uint8_t idx);
+    String setDynCtrl(UIControl*_val) override;
+
+  public:
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    void load() override;
+};
+
+
+// --------------  Эффект "Цветение"
+//Yaroslaw Turbin
+//https://vk.com/ldirko
+//https://www.reddit.com/user/ldirko/
+class EffectFlower : public EffectCalc {
+private:
+    float c = 0.5;   //diameter
+    float angle = 1.;
+    float  counter = 0.;
+    CHSV color;
+	float speedFactor;
+
+    String setDynCtrl(UIControl*_val) override;
+
+public:
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// ----------- Эфеект "ДНК"
+// Yaroslaw Turbin 04.09.2020
+// https://vk.com/ldirko
+// https://pastebin.com/jwvC1sNF
+// адаптация и доработки kostyamat
+class EffectDNA : public EffectCalc {
+private:
+    double freq = 3000;
+    float mn =255.0/13.8;
+    uint8_t speeds = 30;
+    bool rotate = false;
+
+    String setDynCtrl(UIControl*_val) override;
+
+public:
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// ----------- Эффект "Огненная Лампа"
+// Yaroslaw Turbin, 22.06.2020 
+// https://vk.com/ldirko
+// https://pastebin.com/eKqe4zzA
+// переделака на субпиксель и доработки - kostyamat
+class EffectFire2020 : public EffectCalc {
+private:
+    #define NOISE_HEIGHT  (HEIGHT * 3U)
+    uint16_t noises[WIDTH * NOISE_HEIGHT];   //precalculated noise table
+    byte colorfade[HEIGHT];                   //simple colorfade table for speedup
+    float a = 0;
+    byte _pal = 8;
+    byte _scale = 60;
+	float speedFactor;
+
+    String setDynCtrl(UIControl*_val) override;
+    //void palettemap(std::vector<PGMPalette*> &_pals, const uint8_t _val, const uint8_t _min, const uint8_t _max) override;
+    void palettesload() override;
+    void regenNoise();
+
+public:
+    void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// ----------- Эфеект "Змеиный Остров"
+// (c) Сотнег
+// База https://community.alexgyver.ru/threads/wifi-lampa-budilnik-obsuzhdenie-proekta.1411/post-53132
+// адаптация и доработки kostyamat
+class EffectTest : public EffectCalc {
+private:
+//#define MAX_SNAKES    (WIDTH * 2)          // максимальное количество червяков
+    uint8_t SnakeNum;                        // выбранное количество червяков
+    long  snakeLast[MAX_SNAKES] ;            // тут будет траектория тела червяка
+    float snakePosX[MAX_SNAKES];             // тут будет позиция головы
+    float snakePosY[MAX_SNAKES];             // тут будет позиция головы
+    float snakeSpeedX[MAX_SNAKES];           // тут будет скорость червяка
+    float snakeSpeedY[MAX_SNAKES];           // тут будет дробная часть позиции головы
+    //float snakeTurn[MAX_SNAKES];           //не пригодилось пока что
+    uint8_t snakeColor[MAX_SNAKES];          // тут будет начальный цвет червяка
+    uint8_t snakeDirect[MAX_SNAKES];         //тут будет направление червяка
+	float speedFactor;
+
+    String setDynCtrl(UIControl*_val) override;
+    void regen();
+
+public:
+    void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// ----------- Эфеект "Попкорн"
+// (C) Aaron Gotwalt (Soulmate)
+// адаптация и доработки kostyamat
+class EffectPopcorn : public EffectCalc {
+private:
+    uint8_t numRockets = 10;
+    bool blurred = false;
+    bool revCol = false;
+    //bool tiltDirec;
+    float speedFactor;
+    float center = (float)WIDTH / 2.;
+
+    typedef struct
+    {
+        float x, y, xd, yd;
+        byte hue;
+    } Rocket;
+
+    std::vector<Rocket> rockets;
+
+    void restart_rocket(uint8_t r);
+    void reload();
+
+    String setDynCtrl(UIControl*_val) override;
+    //void setscl(const byte _scl) override; // перегрузка для масштаба
+
+public:
+    void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+//-------- Эффект "Детские сны"
+// (c) Stepko https://editor.soulmatelights.com/gallery/505
+#define WAVES_AMOUNT WIDTH
+class EffectSmokeballs: public EffectCalc {
+  private:
+    uint8_t _scale = 1;
+    uint16_t reg[WAVES_AMOUNT];
+    uint16_t pos[WAVES_AMOUNT];
+    float sSpeed[WAVES_AMOUNT];
+    uint8_t maxMin[WAVES_AMOUNT];
+    float speedFactor;
+    uint8_t waveColors[WAVES_AMOUNT];
+    void shiftUp();
+    void regen();
+    String setDynCtrl(UIControl*_val) override;
+  public:
+    void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// ----------- Эффект "Ёлки-Палки"
+// "Cell" (C) Elliott Kember из примеров программы Soulmate
+// Spaider и Spruce (c) stepko
+// RGBPattern (c) ldir https://editor.soulmatelights.com/gallery/810-rgb-pattern1
+class EffectCell: public EffectCalc {
+  private:
+    const uint8_t Lines = 5;
+	const bool glitch = abs((int)WIDTH-(int)HEIGHT) >= minDim/4;
+	const byte density = 50;
+    uint8_t Scale = 6;
+    uint8_t _scale = 1;
+    int16_t offsetX = 0;
+    int16_t offsetY = 0;
+    float x;
+    uint8_t effId = 1;
+    uint8_t hue;
+    int16_t a;
+
+	float speedFactor;
+    void cell(CRGB *leds);
+    void spider(CRGB *leds);
+    void spruce(CRGB *leds);
+    void vals(CRGB *leds);
+    void RGBPattern(CRGB *leds);
+
+  public:
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    String setDynCtrl(UIControl*_val) override;
+};
+
+// ----------- Эффект "Геометрический Вальс"
+//F_lying 
+//Fastled 16x16 rgb led matrix demo
+//Yaroslaw Turbin, 27.10.2020 
+//https://vk.com/ldirko
+//https://www.reddit.com/user/ldirko/
+
+//https://www.reddit.com/r/FastLED/comments/jj4oc9/new_fastled_matrix_example_f_lying_code_in
+//code for arduino: https://wokwi.com/arduino/projects/280541577702539789
+//                  https://wokwi.com/arduino/projects/280607115091902988
+class EffectF_lying: public EffectCalc {
+  private:
+    byte hue = 0;
+    uint8_t _blur = 1;
+    void mydrawLine(CRGB *leds, float x, float y, float x1, float y1, byte hueLamda);
+	float speedFactor;
+    String setDynCtrl(UIControl*_val);
+#ifdef BIGMATRIX
+    const float deviator = 2.;
+#else
+    const float deviator = 4;
+#endif
+    bool type = false;
+  public:
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    void load() override;
+};
+
+// ---------- Эффект "Тикси Ленд"
+// (c)  Martin Kleppe @aemkei, https://github.com/owenmcateer/tixy.land-display
+class EffectTLand: public EffectCalc {
+  private:
+    bool isSeq = false;
+    byte animation = 0;
+    bool ishue;
+    bool ishue2;
+    byte hue = 0;
+    byte hue2 = 128;
+    byte shift = 0;
+    byte fine = 1;
+    double t;
+    void processFrame(CRGB *leds, double t, double x, double y);
+    float code(double i, double x, double y);
+    String setDynCtrl(UIControl*_val);
+  public:
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// -------- "LDIRKO Ленд"
+//simple playground for fasled
+//best use with 16x16 matrix and bigger
+//like tixy.land ))
+//...ldir... Yaroslaw Turbin, 18.11.2020 
+//https://vk.com/ldirko
+//https://www.reddit.com/user/ldirko/
+class EffectLLand: public EffectCalc {
+  private:
+    const byte effects = 10; //how many effects
+    byte effnumber = 0; //start effect
+    uint8_t _scale = 1;
+    float t;
+    uint16_t code(byte x, byte y, uint16_t i, float t);
+    String setDynCtrl(UIControl*_val) override;
+    bool select = false;
+    bool randColor = false;
+    float hue = 0;
+  public:
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    void load() override;
+};
+
+// ----------- Эффект "Осцилятор"
+// (c) Сотнег (SottNick)
+class EffectOscilator: public EffectCalc {
+  private:
+    uint8_t hue, hue2;                                 // постепенный сдвиг оттенка или какой-нибудь другой цикличный счётчик
+    uint8_t deltaHue, deltaHue2;                       // ещё пара таких же, когда нужно много
+    uint8_t step;                                      // какой-нибудь счётчик кадров или последовательностей операций
+    uint8_t deltaValue;  
+    unsigned long timer;
+
+    class oscillatingCell {
+        public:
+        byte red;
+        byte blue;
+        byte green;
+        byte color;
+    };
+
+    oscillatingCell oscillatingWorld[WIDTH][HEIGHT];
+
+    void drawPixelXYFseamless(float x, float y, CRGB color);
+    int redNeighbours(uint8_t x, uint8_t y);
+    int blueNeighbours(uint8_t x, uint8_t y);
+    int greenNeighbours(uint8_t x, uint8_t y);
+    void setCellColors(uint8_t x, uint8_t y);
+    //String setDynCtrl(UIControl*_val) override;
+  public:
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    void load() override;
+};
+
+//------------ Эффект "Шторм" 
+// (с) kostyamat 1.12.2020
+#define counts  (WIDTH*3)
+
+class EffectWrain: public EffectCalc {
+  private:
+    static const uint8_t cloudHeight = HEIGHT / 5 + 1;
+    float dotPosX[counts];
+    float dotPosY[counts];
+    float dotChaos;         // сила ветра
+    int8_t dotDirect;       // направление ветра 
+    byte dotColor[counts];  // цвет капли
+    float dotAccel[counts]; // персональное ускорение каждой капли
+    byte dotBri[counts];    // яркость капли
+    bool clouds = false;
+    bool storm = false;
+    bool white = false;
+    uint8_t _scale=1;
+    byte type = 1;
+    bool _flash;
+    bool randColor = false;
+    float windProgress;
+	float speedFactor;
+    uint8_t *_noise = (uint8_t *)malloc(WIDTH * cloudHeight);
+    uint8_t *lightning = (uint8_t *)malloc(WIDTH * HEIGHT);  
+    uint32_t timer = 0;
+    
+
+    void reload();
+    String setDynCtrl(UIControl*_val) override;
+    bool Lightning(uint16_t chanse);
+    void Clouds(bool flash);
+
+  public:
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    void load() override;
+};
+
+// ------------- Эффект "Цветные драже"
+//Simple sand automata
+//fastled 16x16 matrix demo https://editor.soulmatelights.com/gallery/560-sand-automata-16x16
+//Yaroslaw Turbin 14.12.2020
+//https://vk.com/ldirko
+//https://www.reddit.com/user/ldirko/
+class EffectPile : public EffectCalc {
+private:
+    bool behavior;
+    byte density;
+    byte sc;
+    void randomdot();
+    void updatesand();
+    void randomdel();
+    void falldown();
+  String setDynCtrl(UIControl*_val) override;
+  
+public:
+    void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    
+};
+
+//-------- по мотивам Эффектов Particle System -------------------------
+// https://github.com/fuse314/arduino-particle-sys
+// https://github.com/giladaya/arduino-particle-sys
+// https://www.youtube.com/watch?v=S6novCRlHV8&t=51s
+//при попытке вытащить из этой библиотеки только минимально необходимое выяснилось, что там очередной (третий) вариант реализации субпиксельной графики.
+//ну его нафиг. лучше будет повторить визуал имеющимися в прошивке средствами.
+
+// ============= ЭФФЕКТ Фея/Источник ===============
+// (c) SottNick
+
+#define trackingOBJECT_MAX_COUNT    (WIDTH * 3)  // максимальное количество отслеживаемых объектов (очень влияет на расход памяти)
+#define enlargedOBJECT_MAX_COUNT    (WIDTH * 3) // максимальное количество сложных отслеживаемых объектов (меньше, чем trackingOBJECT_MAX_COUNT)
+
+class EffectFairy : public EffectCalc {
+private:
+    float   trackingObjectPosX[trackingOBJECT_MAX_COUNT];
+    float   trackingObjectPosY[trackingOBJECT_MAX_COUNT];
+    float   trackingObjectSpeedX[trackingOBJECT_MAX_COUNT];
+    float   trackingObjectSpeedY[trackingOBJECT_MAX_COUNT];
+    float   trackingObjectShift[trackingOBJECT_MAX_COUNT];
+    uint8_t trackingObjectHue[trackingOBJECT_MAX_COUNT];
+    float   trackingObjectState[trackingOBJECT_MAX_COUNT];
+    bool    trackingObjectIsShift[trackingOBJECT_MAX_COUNT];
+    uint8_t enlargedObjectNUM;                                       // используемое в эффекте количество объектов
+
+    Boid boids[2];
+
+    uint8_t hue;
+    uint8_t hue2;
+    uint8_t step;
+    uint8_t deltaValue;
+    uint8_t deltaHue;
+    uint8_t deltaHue2;
+    float speedFactor;
+    byte type = false;
+    byte blur;
+    uint8_t _video = 255;
+    uint8_t gain;
+
+    void particlesUpdate(uint8_t i);
+    void fairyEmit(uint8_t i);
+    void fountEmit(uint8_t i);
+    bool fairy(CRGB *leds);
+    void fount(CRGB *leds);
+    //void setscl(const byte _scl) override; // перегрузка для масштаба
+    String setDynCtrl(UIControl*_val) override;
+
+public:
+    void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// ---------- Эффект "Бульбулятор"
+// "Circles" (C) Elliott Kember https://editor.soulmatelights.com/gallery/11
+// адаптация и переделка - kostyamat
+#define NUMBER_OF_CIRCLES (NUM_LEDS / 16U)
+class EffectCircles : public EffectCalc {
+private:
+    byte color;
+    byte count;
+    float speedFactor;
+    byte _video = 255;
+    byte gain;
+    class Circle
+    {
+    public:
+        //uint16_t offset;
+        int16_t centerX;
+        int16_t centerY;
+        byte hue;
+        float bpm = random(0, 255);
+
+        void move() {
+            centerX = random(0, WIDTH-1);
+            centerY = random(0, HEIGHT-1);
+        }
+        
+        void reset() {
+            centerX = random(0, WIDTH-1);
+            centerY = random(0, HEIGHT-1);
+            hue = random(0, 255);
+        }
+
+        float radius() {
+            float radius = EffectMath::fmap(triwave8(bpm), 0, 254, 0, 5); //beatsin16(bpm, 0, 500, 0, offset) / 100.0;
+            return radius;
+        }
+    };
+
+    Circle circles[NUMBER_OF_CIRCLES] = {};
+
+    void drawCircle(CRGB *leds, Circle circle);
+    String setDynCtrl(UIControl*_val) override;
+
+public:
+    void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+
+}; 
+
+// ----------- Эффект "Бенгальские Огни"
+// (c) stepko https://wokwi.com/arduino/projects/289797125785520649
+// 06.02.2021
+class EffectBengalL : public EffectCalc {
+private:
+    #define sparksNum  WIDTH*4
+
+    float sparksPos[2][sparksNum];
+    float sparksSpeed[2][sparksNum];
+    byte sparksColor[sparksNum];
+    float sparksSat[sparksNum];
+    float sparksFade[sparksNum];
+    uint8_t gPos[2];
+
+    bool centerRun = true;
+    byte period = 10;
+    byte _x = WIDTH/2;
+    byte _y = HEIGHT/2;
+    float speedFactor;
+
+    void regen(byte id);
+    void phisics(byte id);
+    String setDynCtrl(UIControl*_val) override;
+
+
+public:
+    void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// ----------- Эффект "Шары"
+// (c) stepko and kostyamat https://wokwi.com/arduino/projects/289839434049782281
+// 07.02.2021
+class EffectBalls : public EffectCalc {
+private:
+#if WIDTH >= HEIGHT
+    #define ballsAmount WIDTH
+#else
+    #define ballsAmount HEIGHT
+#endif
+    float ball[ballsAmount][4]; //0-PosY 1-PosX 2-SpeedY 3-SpeedX
+    float radius[ballsAmount];
+    bool rrad[ballsAmount];
+    byte color[ballsAmount];
+    const float radiusMax = (float)ballsAmount /5;
+
+    float speedFactor;
+    void fill_circle(float cx, float cy, float radius, CRGB col);
+    //void setspd(const byte _spd) override;
+    String setDynCtrl(UIControl*_val) override;
+
+
+public:
+    void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// ---------- Эффект-игра "Лабиринт"
+class EffectMaze : public EffectCalc {
+private:
+    const uint16_t maxSolves = MAZE_WIDTH * MAZE_WIDTH * 5;
+    char *maze = (char*)malloc(MAZE_WIDTH * MAZE_HEIGHT * sizeof(char));
+    int8_t playerPos[2];
+    uint32_t labTimer;
+    bool mazeMode = false;
+    bool mazeStarted = false;
+    uint8_t hue;
+    CRGB color;
+    CRGB playerColor = CRGB::White;
+
+    bool loadingFlag = true;
+    bool gameOverFlag = false;
+    bool gameDemo = true;
+    bool gamePaused = false;
+    bool track = random8(0,2);  // будет ли трек игрока
+    uint8_t buttons;
+
+    unsigned long timer = millis(), gameTimer = 200;         // Таймер скорости игр
+
+    void newGameMaze();
+    void buttonsTickMaze();
+    void movePlayer(int8_t nowX, int8_t nowY, int8_t prevX, int8_t prevY);
+    void demoMaze();
+    bool checkPath(int8_t x, int8_t y);
+    void CarveMaze(char *maze, int width, int height, int x, int y);
+    void GenerateMaze(char *maze, int width, int height);
+    void SolveMaze(char *maze, int width, int height);
+
+    bool checkButtons()
+    {
+        if (buttons != 4)
+            return true;
+        return false;
+    }
+
+    String setDynCtrl(UIControl*_val) override;
+    //void setspd(const byte _spd) override; // перегрузка для скорости
+public:
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+
+}; 
+
+// --------- Эффект "Вьющийся Цвет"
+// (c) Stepko https://wokwi.com/arduino/projects/283705656027906572
+class EffectFrizzles : public EffectCalc {
+private:
+    float _speed;
+    float _scale;
+    //String setDynCtrl(UIControl*_val) override;
+
+public:
+    //void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// --------- Эффект "Северное Сияние"
+// (c) kostyamat 05.02.2021
+// идеи подсмотрены тут https://www.reddit.com/r/FastLED/comments/jyly1e/challenge_fastled_sketch_that_fits_entirely_in_a/
+// особая благодарность https://www.reddit.com/user/ldirko/ Yaroslaw Turbin aka ldirko
+
+// Палитры, специально созданные под этот эффект, огромная благодарность @Stepko
+static const TProgmemRGBPalette16 GreenAuroraColors_p FL_PROGMEM ={0x000000, 0x003300, 0x006600, 0x009900, 0x00cc00,0x00ff00, 0x33ff00, 0x66ff00, 0x99ff00,0xccff00, 0xffff00, 0xffcc00, 0xff9900, 0xff6600, 0xff3300, 0xff0000};
+static const TProgmemRGBPalette16 BlueAuroraColors_p FL_PROGMEM ={0x000000, 0x000033, 0x000066, 0x000099, 0x0000cc,0x0000ff, 0x3300ff, 0x6600ff, 0x9900ff,0xcc00ff, 0xff00ff, 0xff33ff, 0xff66ff, 0xff99ff, 0xffccff, 0xffffff};
+static const TProgmemRGBPalette16 NeonAuroraColors_p FL_PROGMEM ={0x000000, 0x003333, 0x006666, 0x009999, 0x00cccc,0x00ffff, 0x33ffff, 0x66ffff, 0x99ffff,0xccffff, 0xffffff, 0xffccff, 0xff99ff, 0xff66ff, 0xff33ff, 0xff00ff};
+
+class EffectPolarL : public EffectCalc {
+private:
+    const byte numpalettes = 14;
+    unsigned long timer;
+    float adjastHeight;
+    uint16_t adjScale;
+    byte pal;
+    uint16_t _scale;
+    byte flag;
+	byte _speed;
+
+    //void setscl(const byte _scl) override;
+    String setDynCtrl(UIControl*_val) override;
+    void palettemap(std::vector<PGMPalette*> &_pals, const uint8_t _val, const uint8_t _min, const uint8_t _max) override;
+    void palettesload() override;
+
+public:
+    void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// --------- Эффект "Космо-Гонщик"
+// (c) Stepko + kostyamat https://editor.soulmatelights.com/my-patterns/655
+class EffectRacer: public EffectCalc {
+private:
+    float posX = random(0, WIDTH-1);
+    float posY = random(0, HEIGHT-1);
+    uint8_t aimX = random(0, WIDTH)-1;
+    uint8_t aimY = random(0, HEIGHT-1);
+    float radius = 0;
+    byte hue = millis()>>1; //random(0, 255);
+    CRGB color;
+    float speedFactor;
+    float addRadius;
+    float angle;
+    byte starPoints = random(3, 7);
+
+    const float _speed = (float)NUM_LEDS / 256; // Нормализация скорости для разных размеров матриц
+    const float _addRadius = (float)NUM_LEDS / 4000;   // Нормализация скорости увеличения радиуса круга для разных матриц
+
+
+    void aimChange();
+    void drawStarF(float x, float y, float biggy, float little, int16_t points, float dangle, CRGB color);
+    //void setspd(const byte _spd) override;
+    String setDynCtrl(UIControl*_val) override;
+
+public:
+    void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// ------------  Эффект "Дым"
+// https://wokwi.com/arduino/projects/286246948457939464
+// (c) ldir + sutaburosu
+class EffectSmoker: public EffectCalc {
+private:
+    float timer;
+    byte bump[NUM_LEDS];
+    byte sat;
+	float speedFactor;
+
+    void generatebump ();
+    void Bumpmap(CRGB *leds, int8_t lightx, int8_t lighty);
+    String setDynCtrl(UIControl*_val) override;
+
+public:
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// ----------------- Эффект "Магма"
+// (c) Сотнег (SottNick) 2021
+// адаптация и доводка до ума - kostyamat
+class EffectMagma: public EffectCalc {
+private:
+    //uint16_t ff_x;
+    float ff_y, ff_z;                         // большие счётчики
+    //control magma bursts
+    const byte deltaValue = 6U; // 2-12 
+    const byte deltaHue = 8U; // высота языков пламени должна уменьшаться не так быстро, как ширина
+    const float Gravity = 0.1;
+    uint8_t step, ObjectNUM = WIDTH; 
+    uint8_t shiftHue[HEIGHT];
+    float trackingObjectPosX[enlargedOBJECT_MAX_COUNT];
+    float trackingObjectPosY[enlargedOBJECT_MAX_COUNT];
+    uint8_t trackingObjectHue[enlargedOBJECT_MAX_COUNT];
+    float trackingObjectSpeedX[enlargedOBJECT_MAX_COUNT];
+    float trackingObjectShift[enlargedOBJECT_MAX_COUNT];
+    float speedFactor;
+
+    void palettesload();
+    void regen();
+    void LeapersMove_leaper(uint8_t l);
+    void LeapersRestart_leaper(uint8_t l);
+    String setDynCtrl(UIControl*_val) override;
+
+public:
+    void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// ------------- Эффект "Флаги"
+// (c) Stepko + kostyamat
+// 17.03.21
+// https://editor.soulmatelights.com/gallery/739-flags
+class EffectFlags: public EffectCalc {
+private:
+    const float DEVIATOR = 512. / WIDTH;
+    float counter;
+    uint8_t flag = 0;
+    uint8_t _flag;
+    uint8_t count;
+    uint8_t _speed; // 1 - 16
+    const uint8_t CHANGE_FLAG = 30; // >= 10 Autochange
+
+    uint8_t thisVal;
+    uint8_t thisMax;
+
+    //Germany
+    void germany(uint8_t i)
+    {
+        for (uint8_t j = 0; j < HEIGHT; j++)
+        {
+            EffectMath::getPixel(i, j) += 
+            (j < thisMax - HEIGHT / 4) ? CHSV(68, 255, thisVal) : (j < thisMax + HEIGHT / 4) ? CHSV(0, 255, thisVal)
+            : CHSV(0, 0, thisVal / 2.5);
+        }
+    }
+
+    //Ukraine
+    void ukraine(uint8_t i)
+    {
+        for (uint8_t j = 0; j < HEIGHT; j++)
+        {
+            EffectMath::getPixel(i, j) += 
+            (j < thisMax) ? CHSV(50, 255, thisVal) : CHSV(150, 255, thisVal);
+        }
+    }
+
+    //Belarus
+    void belarus(uint8_t i)
+    {
+        for (uint8_t j = 0; j < HEIGHT; j++)
+        {
+            EffectMath::getPixel(i, j) += 
+            (j < thisMax - HEIGHT / 4) ? CHSV(0, 224, thisVal) : (j < thisMax + HEIGHT / 4) ? CHSV(0, 0, thisVal)
+            : CHSV(0, 224, thisVal);
+        }
+    }
+
+    //Russia
+    void russia(uint8_t i)
+    {
+        for (uint8_t j = 0; j < HEIGHT; j++)
+        {
+            EffectMath::getPixel(i, j) += 
+            (j < thisMax - HEIGHT / 4) ? CHSV(0, 255, thisVal) : (j < thisMax + HEIGHT / 4) ? CHSV(150, 255, thisVal)
+            : CHSV(0, 0, thisVal);
+        }
+    }
+
+    //Poland
+    void poland(uint8_t i)
+    {
+        for (uint8_t j = 0; j < HEIGHT; j++)
+        {
+            EffectMath::getPixel(i, j) += 
+            (j < thisMax + 1) ? CHSV(248, 214, (float)thisVal * 0.83) : CHSV(25, 3, (float)thisVal * 0.91);
+        }
+    }
+
+    //The USA
+    void usa(uint8_t i)
+    {
+        for (uint8_t j = 0; j < HEIGHT; j++)
+        {
+            EffectMath::getPixel(i, j) +=
+            ((i <= WIDTH / 2) && (j + thisMax > HEIGHT - 1 + HEIGHT / 16)) ? 
+            ((i % 2 && ((int)j - HEIGHT / 16 + thisMax) % 2) ? 
+            CHSV(160, 0, thisVal) : CHSV(160, 255, thisVal)) 
+            : ((j + 1 + thisMax) % 6 < 3 ? CHSV(0, 0, thisVal) : CHSV(0, 255, thisVal));
+        }
+    }
+
+    //Italy
+    void italy(uint8_t i)
+    {
+        for (uint8_t j = 0; j < HEIGHT; j++)
+        {
+            EffectMath::getPixel(i, j) += 
+            (i < WIDTH / 3) ? CHSV(90, 255, thisVal) : (i < WIDTH - 1 - WIDTH / 3) ? CHSV(0, 0, thisVal)
+            : CHSV(0, 255, thisVal);
+        }
+    }
+
+    //France
+    void france(uint8_t i)
+    {
+        for (uint8_t j = 0; j < HEIGHT; j++)
+        {
+            EffectMath::getPixel(i, j) += 
+            (i < WIDTH / 3) ? CHSV(160, 255, thisVal) : (i < WIDTH - 1 - WIDTH / 3) ? CHSV(0, 0, thisVal)
+            : CHSV(0, 255, thisVal);
+        }
+    }
+
+    //UK
+    void uk(uint8_t i)
+    {
+        for (uint8_t j = 0; j < HEIGHT; j++)
+        {
+            EffectMath::getPixel(i, j) += 
+            (
+                (
+                    (i > WIDTH / 2 + 1 || i < WIDTH / 2 - 2) && ((i - (int)(j + thisMax - (HEIGHT * 2 - WIDTH) / 2) > -2) && (i - (j + thisMax - (HEIGHT * 2 - WIDTH) / 2) < 2))
+                )
+                    ||
+                (
+                    (i > WIDTH / 2 + 1 || i < WIDTH / 2 - 2) && ( (((int)WIDTH - 1 - i - ((int)j + thisMax - (int)(HEIGHT * 2 - WIDTH) / 2) > -2) && (WIDTH - 1 - i - (int)(j + thisMax - (HEIGHT * 2 - WIDTH) / 2) < 2)) )
+                )
+            || 
+            (WIDTH / 2 - i == 0) || (WIDTH / 2 - 1 - i == 0) 
+            || 
+            ((HEIGHT - (j + thisMax)) == 0) || ((HEIGHT - 1 - (j + thisMax)) == 0)) ? 
+            CHSV(0, 255, thisVal) 
+            : 
+            (((i - (int)(j + thisMax - (HEIGHT * 2 - WIDTH) / 2) > -4) 
+            && (i - (j + thisMax - (HEIGHT * 2 - WIDTH) / 2) < 4)) 
+            || 
+            (((int)WIDTH - 1 - i - (int)(j + thisMax - (HEIGHT * 2 - WIDTH) / 2) > -4) 
+            && (WIDTH - 1 - i - (int)(j + thisMax - (HEIGHT * 2 - WIDTH) / 2) < 4)) 
+            || (WIDTH / 2 + 1 - i == 0) || (WIDTH / 2 - 2 - i == 0) 
+            || (HEIGHT + 1 - (j + thisMax) == 0) || (HEIGHT - 2 - (int)(j + thisMax) == 0)) ? 
+            CHSV(0, 0, thisVal)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  : CHSV(150, 255, thisVal);
+        }
+    }
+
+    //Spain
+    void spain(uint8_t i)
+    {
+        for (uint8_t j = 0; j < HEIGHT; j++)
+        {
+            EffectMath::getPixel(i, j) += 
+            (j < thisMax - HEIGHT / 3) ? 
+            CHSV(250, 224, (float)thisVal * 0.68) : (j < thisMax + HEIGHT / 3) ? CHSV(64, 255, (float)thisVal * 0.98)
+            : CHSV(250, 224, (float)thisVal * 0.68);
+        }
+    }
+
+
+    void changeFlags();
+    String setDynCtrl(UIControl*_val) override;
+
+public:
+    //void load () override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// --------------------- Эффект "Звездный Десант"
+// Starship Troopers https://editor.soulmatelights.com/gallery/839-starship-troopers
+// Based on (c) stepko`s codes https://editor.soulmatelights.com/gallery/639-space-ships
+// reworked (c) kostyamat (subpixel, shift speed control, etc) 08.04.2021
+class EffectStarShips: public EffectCalc {
+private:
+    byte _scale = 8;
+    const byte DIR_CHARGE = 2; // Chance to change direction 1-5
+    uint16_t chance = 4096;
+
+    byte dir = 3;
+    byte _dir;
+    byte count = 0;
+    uint8_t _fade;
+
+	float speedFactor;
+
+    void draw(float x, float y, CRGB color);
+    String setDynCtrl(UIControl*_val) override;
+
+public:
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    void load() override;
+};
+#ifdef MIC_EFFECTS
+/* -------------- эффект "VU-meter"
+    (c) G6EJD, https://www.youtube.com/watch?v=OStljy_sUVg&t=0s
+    reworked by s-marley https://github.com/s-marley/ESP32_FFT_VU
+    adopted for FireLamp_jeeUI by kostyamat, kDn
+    reworked and updated (c) kostyamat 24.04.2021
+*/
+class EffectVU: public EffectCalc {
+private:
+    CRGBPalette16 gradPal[5] = { 
+    purple_gp,    rainbowsherbet_gp, 
+    redyellow_gp, Colorfull_gp, es_ocean_breeze_068_gp
+    };
+    uint8_t NUM_BANDS = WIDTH;
+    uint8_t BAR_WIDTH =  (WIDTH  / (NUM_BANDS - 1));
+    uint8_t calcArray = 1; // уменьшение частоты пересчета массива
+    uint8_t colorTimer = 0;
+    const uint8_t colorDev = 256/TOP;
+    // Sampling and FFT stuff
+    float peak[WIDTH];              // The length of these arrays must be >= NUM_BANDS
+    float oldBarHeights[WIDTH];
+    float bandValues[WIDTH];
+
+    float samp_freq;
+    double last_freq = 0;
+    uint8_t last_min_peak, last_max_peak;
+    float maxVal;
+    float threshold;
+    byte tickCounter;
+    byte colorType;
+
+    float amplitude = 1.0;
+    int effId = 0;
+    bool type = false;
+    bool colorShifting = false;
+    const float speedFactorVertical = (float)HEIGHT / 16;
+    bool averaging = true;
+
+    String setDynCtrl(UIControl*_val) override;
+    void horizontalColoredBars(uint8_t band, float barHeight, uint8_t type = 0, uint8_t colorShift = 0);
+    void paletteBars(uint8_t band, float barHeight, CRGBPalette16& palette, uint8_t colorShift = 0);
+    void verticalColoredBars(uint8_t band, float barHeight, uint8_t type = 0, uint8_t colorShift = 0);
+    void centerBars(uint8_t band, float barHeight, CRGBPalette16& palette, uint8_t colorShift = 0);
+    void whitePeak(uint8_t band);
+    void outrunPeak(uint8_t band, CRGBPalette16& palette, uint8_t colorShift = 0);
+    void waterfall(uint8_t band, uint8_t barHeight);
+
+public:
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    void load() override;
+};
+#endif
+
+// ----------- Эффект "Огонь 2021"
+// https://editor.soulmatelights.com/gallery/546-fire
+// (c) Stepko 17.06.21
+class EffectFire2021 : public EffectCalc {
+private:
+    byte _pal = 8;
+    byte _scale = 32;
+	byte speedFactor;
+    uint32_t t;
+
+    String setDynCtrl(UIControl*_val) override;
+    void palettesload() override;
+
+public:
+    void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+// ----------- Эффект "Тест"
+//Fire comets
+//https://editor.soulmatelights.com/gallery/1097-fire-comets
+//Yaroslaw Turbin 12-06-2021
+//https://twitter.com/ldir_ko
+//https://vk.com/ldirko
+//https://www.youtube.com/c/ldirldir
+//https://www.reddit.com/user/ldirko/
+// переделан под свои нужды by kostyamat 12.10.2021
+class EffectTest1: public EffectCalc {
+private:
+
+	float speedFactor;
+    byte buff[(WIDTH+2)*(HEIGHT+2)], bright = 255;
+    
+
+    String setDynCtrl(UIControl*_val) override;
+    void fadecenter();
+    uint16_t buffXY(uint8_t x, uint8_t y);
+    void toLeds();
+    void balls();
+
+public:
+    //void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+
+#ifdef USE_E131
+class EffectARTNET: public EffectCalc {
+private:
+    E131 e131;
+    String setDynCtrl(UIControl*_val) override;
+    uint8_t firstUniverse = 1U;  // 1 - 15
+    const uint8_t lineQt = (512U / (WIDTH * 3));
+    CRGB bufLeds[NUM_LEDS];
+    const uint8_t universeQt = ceil((float)HEIGHT / lineQt);  // 1 - 15
+    const uint8_t UNIVERSE_SIZE = WIDTH * lineQt;
+    uint16_t getPixelNum(uint16_t x, uint16_t y);
+    uint32_t connectError = 0;
+
+public:
+    
+    void load() override;
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+};
+// --------- конец секции эффектов
+#endif
 
 #endif

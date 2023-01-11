@@ -35,6 +35,10 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
    <https://www.gnu.org/licenses/>.)
 */
 
+
+#include "config.h"
+
+#ifdef MIC_EFFECTS
 #include "micFFT.h"
 #ifdef ESP8266
 #include "user_interface.h"
@@ -59,7 +63,7 @@ void MICWORKER::read_data()
   //   vImag[i] = 0.0; //Imaginary part must be zeroed in case of looping to avoid wrong calculations and overflows
   // }
 
-// #ifdef ESP8266  
+// #ifdef ESP8266
 //   system_adc_read_fast(adc_addr, samples, adc_clk_div);
 //   if(!useFixedFreq)
 //     samplingFrequency = ((1000UL*1000UL)/(micros()-_m))*(samples)*1;
@@ -142,7 +146,7 @@ double MICWORKER::process(MIC_NOISE_REDUCE_LEVEL level)
     vReal[i]*=scale; // нормализация
     switch (level)
     {
-    case MIC_NOISE_REDUCE_LEVEL::NONE:
+    case MIC_NOISE_REDUCE_LEVEL::NR_NONE:
       vReal[i] = map(vReal[i], 0, RESOLUTION, -128, 127); // без преобразований
       break;
     case MIC_NOISE_REDUCE_LEVEL::BIT_1:
@@ -166,15 +170,19 @@ double MICWORKER::process(MIC_NOISE_REDUCE_LEVEL level)
     }
     minVal = min(minVal,abs((int)vReal[i]));
     maxVal = max(maxVal,abs((int)vReal[i]));
-    vImag[i] = 0.0; // обнулить массив предыдущих измерений
   }
   minPeak = minVal; // минимальное амплитудное
   maxPeak = maxVal; // максимальное амплитудное
+  curVal = vReal[0];
   return samplingFrequency; // частота семплирования
 }
 
 double MICWORKER::analyse()
 {
+  //memset(vImag,0,sizeof(samples*sizeof(*vImag))); // обнулить массив предыдущих измерений (так нельзя, ломает float)
+  for(uint16_t i=0; i<samples; i++)
+    vImag[i] = 0.0f;
+  
   FFT.windowing(FFTWindow::Hamming, FFTDirection::Forward);	/* Weigh data */
   FFT.compute(FFTDirection::Forward); /* Compute FFT */
   FFT.complexToMagnitude(); /* Compute magnitudes */
@@ -182,34 +190,56 @@ double MICWORKER::analyse()
   return signalFrequency; // измеренная частота главной гармоники
 }
 
-float MICWORKER::fillSizeScaledArray(float *arr, size_t size) // массив должен передаваться на 1 ед. большего размера
+float MICWORKER::fillSizeScaledArray(float *arr, size_t size, bool bound) // bound - ограничивать частотный диапазон или использовать 20-20000, по умолчанию - ограничивать
 {
-  FFT.windowing(FFTWindow::Hamming, FFTDirection::Forward);	/* Weigh data */
-  FFT.compute(FFTDirection::Forward); /* Compute FFT */
-  FFT.complexToMagnitude(); /* Compute magnitudes */  
-  
-  // for(uint8_t i=0; i<(samples >> 1); i++){
-  //   maxVal = max(maxVal,(float)(20 * log10(vReal[i])));
-  //   //LOG(printf_P, PSTR("%3d "),(uint8_t)vReal[i]);
-  //   //LOG(printf_P, PSTR("%5.2f "),(20 * log10(vReal[i])));
-  // }
-  // //LOG(println, FFT.majorPeak()); 
-
-  float minFreq=(log((float)samplingFrequency*2/samples));
-  float scale = size/(log(20000.0)-minFreq);
-  //log(125) = 4,8283137373023011238022779996786 (0)
-  //log(20000) = 9,9034875525361280454891979401956 (15)  9.90 / 16 = x / 1
-  for(uint8_t i=0; i<(samples>>1); i++){
-    float idx_freq=(((float)samplingFrequency/samples)*(i+1));
-    uint8_t idx=(log(idx_freq)-minFreq)*scale;
-
-    float tmp = (float)(20 * log10(vReal[i]));
-    arr[idx]=(tmp<0?0:tmp+arr[idx])/2.0; // усредняем
+  float prevdata[size];
+  for(size_t i=0; i<size; i++){
+    prevdata[i] = arr[i];
+    arr[i] = 0.0;
   }
-  float maxVal=0; // ищем максимум
-  for(uint8_t i=0;i<size;i++)
+  
+  signalFrequency = (float)analyse(); // сюда запишем частоту главной гармоники
+
+  // т.к. samplingFrequency удвоенная от реальной, то делим на 2, т.е -> samplingFrequency>>1
+  float maxFreq = bound?log((samplingFrequency>>1)):log(20000);
+  float minFreq = bound?log((samplingFrequency>>1)/samples):log(20);
+  float scale = (size)/(maxFreq-minFreq);
+  float step = samplingFrequency/samples;
+
+  // EVERY_N_SECONDS(5){
+  //   for(uint16_t i=0; i<samples; i++){
+  //     LOG(printf_P, PSTR("x[%d]=%5.1f "),i, vReal[i]);
+  //   }
+  //   LOG(println);LOG(println);
+  // }
+
+  int16_t idx=0;
+  for(uint16_t i=0; i<samples; i++){
+    float idx_freq=step*(i+1);
+    idx=(logf(idx_freq)-minFreq)*scale;
+    idx=(idx<0?0:(idx>=(int16_t)size?size-1:(i<idx?i:idx)));
+    arr[idx]+=(vReal[i]<0.0 ? 0.0 : vReal[i]);
+  }
+
+  // придушить ВЧ
+  if(signalFrequency<(samplingFrequency>>1))
+    arr[size-1]/=10.0;
+  else if(signalFrequency<(samplingFrequency>>2))
+    arr[size-1]/=20.0;
+  
+  float maxVal=0; // ищем максимум и усредняем с предыдущим измерением
+  for(uint16_t i=0;i<size;i++){
+    arr[i]=(arr[i]+prevdata[i])/2.0; // усредняем c предыдущим
     maxVal=max(maxVal,arr[i]);
-  arr[size] = FFT.majorPeak(); // сюда запишем частоту главной гармоники
+  }
+
+  // EVERY_N_SECONDS(1){
+  //   for(uint16_t i=0;i<size;i++){
+  //     LOG(printf_P, PSTR("x[%d]=%5.1f "),i, arr[i]);
+  //   }
+  //   LOG(println);
+  // }
+
   return maxVal<0?0:maxVal;
 }
 
@@ -229,7 +259,7 @@ void MICWORKER::debug()
 
   // LOG(println, F("Computed Imaginary values:"));
   // PrintVector(vImag, samples, SCL_INDEX);
-  
+
   FFT.complexToMagnitude(); /* Compute magnitudes */
   LOG(println, F("Computed magnitudes:"));
   // PrintVector(vReal, (samples >> 1), SCL_FREQUENCY);
@@ -305,3 +335,5 @@ void MICWORKER::calibrate()
     LOG(print, F("AVG=")); LOG(print, sum/count); LOG(print, F(", noise=")); LOG(println, sum2/count2);
   }
 }
+
+#endif  //def MIC_EFFECTS
