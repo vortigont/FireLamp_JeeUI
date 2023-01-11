@@ -1,10 +1,9 @@
 #pragma once
 #include "config.h" // подключаем эффекты, там же их настройки
-#ifdef ESP_USE_BUTTON
-#include "misc.h"
 #include <FunctionalInterrupt.h>
 #include "ts.h"
 #include "LList.h"
+#include "GyverButton.h"
 
 typedef enum _button_action {
 	BA_NONE,
@@ -28,9 +27,6 @@ typedef enum _button_action {
 } BA;
 
 const char *btn_get_desc(BA action);
-
-// TaskScheduler
-extern Scheduler ts;
 
 class Button{
 	typedef union _bflags {
@@ -122,4 +118,3 @@ class Buttons {
 	GButton touch;
 	void buttonTick(); // "дергатель" проверки гайвер-кнопки
 };
-#endif

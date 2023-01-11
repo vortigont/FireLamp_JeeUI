@@ -78,7 +78,6 @@ extern Scheduler ts;
 extern LAMP myLamp; // Объект лампы
 #ifdef ESP_USE_BUTTON
 extern Buttons *myButtons;
-extern GButton touch;
 #endif
 #ifdef MP3PLAYER
 #include "mp3player.h"

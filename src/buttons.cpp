@@ -1,5 +1,3 @@
-#include "buttons.h"
-#ifdef ESP_USE_BUTTON
 #include "main.h"
 
 const char *btn_get_desc(BA action){
@@ -335,5 +333,3 @@ void Buttons::setButtonOn(bool flag) {
 		LOG(println,F("Button watch disabled"));
 	}
 }
-
-#endif
