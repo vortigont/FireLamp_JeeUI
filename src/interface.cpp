@@ -1209,21 +1209,6 @@ void set_demoflag(Interface *interf, JsonObject *data){
 #endif
 }
 
-#ifdef OTA
-void set_otaflag(Interface *interf, JsonObject *data){
-    //if (!data) return;
-    //myLamp.startOTAUpdate();
-    remote_action(RA_OTA, NULL, NULL);
-
-    interf->json_frame_interface();
-    interf->json_section_content();
-    interf->button(FPSTR(TCONST_0027), FPSTR(TINTF_017), FPSTR(P_GRAY));
-    interf->json_section_end();
-    interf->json_frame_flush();
-    embui.publish(String(FPSTR(TCONST_008B)) + FPSTR(TCONST_0021), String(myLamp.getMode()), true);
-}
-#endif
-
 #ifdef AUX_PIN
 void set_auxflag(Interface *interf, JsonObject *data){
     if (!data) return;
@@ -2013,14 +1998,6 @@ void set_settings_time(Interface *interf, JsonObject *data){
 void block_settings_update(Interface *interf, JsonObject *data){
     if (!interf) return;
     interf->json_section_hidden(FPSTR(T_DO_OTAUPD), FPSTR(TINTF_056));
-#ifdef OTA
-    interf->spacer(FPSTR(TINTF_057));
-    if (myLamp.getMode() != LAMPMODE::MODE_OTA) {
-        interf->button(FPSTR(TCONST_0027), FPSTR(TINTF_058), FPSTR(TCONST_005B));
-    } else {
-        interf->button(FPSTR(TCONST_0027), FPSTR(TINTF_017), FPSTR(P_GRAY));
-    }
-#endif
     interf->spacer(FPSTR(TINTF_059));
     interf->file(FPSTR(T_DO_OTAUPD), FPSTR(T_DO_OTAUPD), FPSTR(TINTF_05A));
     interf->button_confirm(FPSTR(T_REBOOT), FPSTR(TINTF_096), FPSTR(TINTF_0E1), !data?String(FPSTR(P_RED)):String(""));       // кнопка перехода в настройки времени
@@ -3099,9 +3076,6 @@ void create_parameters(){
     embui.section_handle_add(FPSTR(TCONST_001A), set_onflag);
     embui.section_handle_add(FPSTR(TCONST_001B), set_demoflag);
     embui.section_handle_add(FPSTR(TCONST_001C), set_gbrflag);
-#ifdef OTA
-    embui.section_handle_add(FPSTR(TCONST_0027), set_otaflag);
-#endif
 #ifdef AUX_PIN
     embui.section_handle_add(FPSTR(TCONST_000E), set_auxflag);
 #endif
@@ -3547,9 +3521,6 @@ void default_buttons(){
     myButtons->add(new Button(true, false, 1, true, BA::BA_OFF)); // 1 клик - OFF
     myButtons->add(new Button(true, false, 2, true, BA::BA_EFF_NEXT)); // 2 клика - след эффект
     myButtons->add(new Button(true, false, 3, true, BA::BA_EFF_PREV)); // 3 клика - пред эффект
-#ifdef OTA
-    myButtons->add(new Button(true, false, 4, true, BA::BA_OTA)); // 4 клика - OTA
-#endif
     myButtons->add(new Button(true, false, 5, true, BA::BA_SEND_IP)); // 5 клика - показ IP
     myButtons->add(new Button(true, false, 6, true, BA::BA_SEND_TIME)); // 6 клика - показ времени
     myButtons->add(new Button(true, false, 7, true, BA::BA_EFFECT, String(F("253")))); // 7 кликов - эффект часы
@@ -3899,11 +3870,6 @@ void remote_action(RA action, ...){
             myLamp.periodicTimeHandle(value, true);
             //myLamp.sendString(String(F("%TM")).c_str(), CRGB::Green);
             break;
-#ifdef OTA
-        case RA::RA_OTA:
-            myLamp.startOTAUpdate();
-            break;
-#endif
 #ifdef AUX_PIN
         case RA::RA_AUX_ON:
             obj[FPSTR(TCONST_000E)] = true;
@@ -4126,9 +4092,6 @@ String httpCallback(const String &param, const String &value, bool isset){
 #endif
             return result;
         }
-#ifdef OTA
-        else if (upperParam == FPSTR(CMD_TCONST_001E)) action = RA_OTA;
-#endif
 #ifdef AUX_PIN
         else if (upperParam == FPSTR(CMD_TCONST_001F)) action = RA_AUX_ON;
         else if (upperParam == FPSTR(CMD_TCONST_0020))  action = RA_AUX_OFF;

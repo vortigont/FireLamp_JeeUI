@@ -2,6 +2,7 @@
 #ifndef __INTERFACE_H
 #define __INTERFACE_H
 
+#include "EmbUI.h"
 typedef enum _remote_action {
     RA_UNKNOWN,
     RA_ON,
@@ -20,9 +21,6 @@ typedef enum _remote_action {
     RA_AUX_ON,
     RA_AUX_OFF,
     RA_AUX_TOGLE,
-#endif
-#ifdef OTA
-    RA_OTA,
 #endif
     RA_REBOOT,
     RA_EFF_NEXT,

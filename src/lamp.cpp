@@ -142,10 +142,6 @@ void LAMP::handle()
   newYearMessageHandle();
   //ConfigSaveCheck(); // для взведенного таймера автосохранения настроек
 
-#ifdef OTA
-  otaManager.HandleOtaUpdate();                       // ожидание и обработка команды на обновление прошивки по воздуху
-#endif
-
   // обработчик событий (пока не выкину в планировщик)
   if (flags.isEventsHandled) {
     events.events_handle();
@@ -257,11 +253,7 @@ GAUGE *GAUGE::gauge = nullptr; // объект индикатора
 LEDFader *LEDFader::fader = nullptr; // объект фейдера
 ALARMTASK *ALARMTASK::alarmTask = nullptr; // объект будильника
 
-LAMP::LAMP() : tmStringStepTime(DEFAULT_TEXT_SPEED), tmNewYearMessage(0)
-#ifdef OTA
-    , otaManager()
-#endif
-    , effects(&lampState)
+LAMP::LAMP() : tmStringStepTime(DEFAULT_TEXT_SPEED), tmNewYearMessage(0), effects(&lampState)
     {
       lampState.isOptPass = false; // введен ли пароль для опций
       lampState.isInitCompleted = false; // завершилась ли инициализация лампы
@@ -422,20 +414,6 @@ void LAMP::startNormalMode(bool forceOff)
   demoTimer(T_DISABLE);
   restoreStored();
 }
-#ifdef OTA
-void LAMP::startOTAUpdate()
-{
-  if (mode == LAMPMODE::MODE_OTA) return;
-  storedMode = mode;
-  mode = LAMPMODE::MODE_OTA;
-
-  effects.directMoveBy(EFF_MATRIX); // принудительное включение режима "Матрица" для индикации перехода в режим обновления по воздуху
-  FastLED.clear();
-  changePower(true);
-  sendString(String(PSTR("- OTA UPDATE ON -")).c_str(), CRGB::Green);
-  otaManager.startOtaUpdate();
-}
-#endif
 
 typedef enum {FIRSTSYMB=1,LASTSYMB=2} SYMBPOS;
 

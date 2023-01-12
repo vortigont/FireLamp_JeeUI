@@ -387,11 +387,6 @@ void myClicks() {
     toggleAUX();
     break;
 #endif
-#if defined(OTA) && defined(ENC_OTA_CLICK)
-  case ENC_OTA_CLICK:
-    remote_action(RA::RA_OTA, NULL);
-    break;
-#endif
   default:
     LOG(printf_P, PSTR("Enc: Click: %d\n"), enc.clicks);
     break;

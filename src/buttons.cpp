@@ -83,9 +83,6 @@ bool Button::activate(btnflags& flg, bool reverse){
 #ifdef AUX_PIN
 			case BA_AUX_TOGLE: ract = RA_AUX_TOGLE; break;
 #endif
-#ifdef OTA
-			case BA_OTA: ract = RA_OTA; break;
-#endif
 			case BA_EFF_NEXT: ract = RA_EFF_NEXT; break;
 			case BA_EFF_PREV: ract = RA_EFF_PREV; break;
 			case BA_SEND_TIME: ract = RA_SEND_TIME; break;

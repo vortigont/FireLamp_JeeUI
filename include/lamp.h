@@ -41,7 +41,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "misc.h"
 #include "config.h" // подключаем эффекты, там же их настройки
 #include "effects.h"
-#include "OTA.h"
 #include "events.h"
 #include "LList.h"
 #include "interface.h"
@@ -229,9 +228,6 @@ private:
 
     void effectsTick(); // обработчик эффектов
 
-#ifdef OTA
-    OtaManager otaManager;
-#endif
     String &prepareText(String &source);
     void doPrintStringToLamp(const char* text = nullptr,  const CRGB &letterColor = CRGB::Black, const int8_t textOffset = -128, const int16_t fixedPos = 0);
     bool fillStringManual(const char* text,  const CRGB &letterColor, bool stopText = false, bool isInverse = false, int32_t pos = 0, int8_t letSpace = LET_SPACE, int8_t txtOffset = TEXT_OFFSET, int8_t letWidth = LET_WIDTH, int8_t letHeight = LET_HEIGHT); // -2147483648
@@ -455,9 +451,6 @@ void setTempDisp(bool flag) {flags.isTempOn = flag;}
     void startNormalMode(bool forceOff=false);
     void restoreStored();
     void storeEffect();
-#ifdef OTA
-    void startOTAUpdate();
-#endif
     void newYearMessageHandle();
     void setBFade(uint8_t val){ BFade = val; }
     uint8_t getBFade(){ return BFade; }
