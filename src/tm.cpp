@@ -35,13 +35,12 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
    <https://www.gnu.org/licenses/>.)
 */
 
-#include "config.h"
-#ifdef TM1637_CLOCK
 #include "tm.h"
+#include "lamp.h"
 
-TMCLOCK tm1637;
+extern LAMP myLamp;
 
-// static bool showPoints;
+
 #if TM_SHOW_BANNER
 // String welcome_banner = "FIRE_START"; // Список букв для вывода A Bb Cc Dd Ee F G Hh Ii J K Ll m Nn Oo P q r S t U v w x Y Z
 /* Указывать можно в любом регистре, разделять лучше нижним подчеркиванием "_", если поставить пробел, то слова разделятся и будут отображаться по очереди, например сначала заскроллится "FIRE",
@@ -59,7 +58,8 @@ void TMCLOCK::tm_setup() {
 
 
 void TMCLOCK::tm_loop() {
-
+// this is so ugly!!!
+#ifdef TM1637
   setBrightness((myLamp.isLampOn()) ? myLamp.getBrightOn() : myLamp.getBrightOff());         // Чекаем статус лампы и меняем яркость
 
   #if TM_SHOW_BANNER
@@ -91,6 +91,7 @@ void TMCLOCK::tm_loop() {
     myLamp.isTmZero() ? display(String(dispTime)) : ((t->tm_hour < 10 || (!myLamp.isTm24() && t->tm_hour > 12 && t->tm_hour < 22)) ? display(String(dispTime), true, false, 1) : display(String(dispTime)));
   }
   switchShowPoints();
+#endif
 }
 
 #if TM_SHOW_BANNER
@@ -162,5 +163,3 @@ String TMCLOCK::formatIp(String inArr[], String dlm)
 
   return output;
 }
-
-#endif

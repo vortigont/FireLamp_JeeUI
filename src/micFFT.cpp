@@ -38,7 +38,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 #include "config.h"
 
-#ifdef MIC_EFFECTS
 #include "micFFT.h"
 #ifdef ESP8266
 #include "user_interface.h"
@@ -335,5 +334,3 @@ void MICWORKER::calibrate()
     LOG(print, F("AVG=")); LOG(print, sum/count); LOG(print, F(", noise=")); LOG(println, sum2/count2);
   }
 }
-
-#endif  //def MIC_EFFECTS

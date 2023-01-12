@@ -46,6 +46,10 @@ Buttons *myButtons;
 MP3PLAYERDEVICE *mp3 = nullptr;
 #endif
 
+#ifdef TM1637_CLOCK
+TMCLOCK tm1637(TM_CLK_PIN, TM_DIO_PIN);
+#endif
+
 void setup() {
     Serial.begin(115200);
 

@@ -38,19 +38,23 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #ifndef _TM_H
 #define _TM_H
 
-#ifdef TM1637_CLOCK
 #include "TM1637.h"
-#include "misc.h"
-#include "main.h"
 #include "config.h"
-#include "enc.h"
+
 #ifndef TM_TIME_DELAY
   #define TM_TIME_DELAY 3U
 #endif
 
+#ifndef TM_BRIGHTNESS
+  #define TM_BRIGHTNESS 7U //яркость дисплея, 0..7
+#endif
+#ifndef TM_SHOW_BANNER
+  #define TM_SHOW_BANNER 0
+#endif
+
 class TMCLOCK : public TM1637 {
 public:
-  TMCLOCK(uint8_t clkPin=TM_CLK_PIN, uint8_t dataPin=TM_DIO_PIN) : TM1637 (clkPin, dataPin) {};
+  TMCLOCK(uint8_t clkPin, uint8_t dataPin) : TM1637 (clkPin, dataPin) {};
   uint8_t& getSetDelay();  // Задержка, для отображения с других плагинов
   void tm_setup();
   void tm_loop();
@@ -71,6 +75,4 @@ private:
   String formatIp(String inArr[], String dlm);    // Функция форматирования
 };
 
-extern TMCLOCK tm1637;
-#endif
 #endif

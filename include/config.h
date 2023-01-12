@@ -357,7 +357,7 @@ typedef enum {NR_NONE,BIT_1,BIT_2,BIT_3,BIT_4} MIC_NOISE_REDUCE_LEVEL;
 
 #endif
 
-#ifdef TM1637
+#ifdef TM1637_CLOCK
 #ifndef TM_CLK_PIN
   #define TM_CLK_PIN D0 
 #endif

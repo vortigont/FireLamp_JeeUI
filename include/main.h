@@ -53,7 +53,9 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 #include "config.h"
 #include "lamp.h"
+#ifdef ESP_USE_BUTTON
 #include "buttons.h"
+#endif
 
 #ifdef TM1637_CLOCK
   #include "tm.h"
