@@ -40,6 +40,9 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #ifdef TM1637_CLOCK
 #include "tm.h"
 #endif
+#ifdef DS18B20
+#include "DS18B20.h"
+#endif
 
 uint8_t currDynCtrl;        // текущий контрол, с которым работаем
 uint8_t currAction;         // идент текущей операции: 0 - ничего, 1 - крутим яркость, 2 - меняем эффекты, 3 - меняем динамические контролы
@@ -506,7 +509,7 @@ void encDisplay(uint16_t value, String type) {
   tm1637.display(type);
 #endif
 }
-
+/*
 void encDisplay(float value) {
 #ifdef TM1637_CLOCK
   tm1637.getSetDelay() = TM_TIME_DELAY;
@@ -514,7 +517,7 @@ void encDisplay(float value) {
   tm1637.display(value, false, true); //, true, false, value >= 100 ? 1 : (value >= 10 ? 2 : 3) );  
 #endif
 }
-
+*/
 void encDisplay(String str) {
 #ifdef TM1637_CLOCK
   tm1637.getSetDelay() = TM_TIME_DELAY;

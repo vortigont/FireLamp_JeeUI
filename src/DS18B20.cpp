@@ -45,7 +45,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #ifdef TM1637_CLOCK
 #include "tm.h"
 #endif
-#ifdef ENCODR
+#ifdef ENCODER
 #include "enc.h"
 #endif
 

@@ -78,7 +78,7 @@ void encSetBri(int val);
 void encSetEffect(int val);
 void encSetDynCtrl(int val);
 void encDisplay(uint16_t value, String type = "");
-void encDisplay(float value);
+//void encDisplay(float value);
 void encDisplay(String str);
 void resetTimers();
 void exitSettings();

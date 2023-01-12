@@ -43,7 +43,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "events.h"
 #ifdef TM1637_CLOCK
     #include "tm.h"				// Подключаем функции
-    extern TMCLOCK tm1637;
 #endif
 #ifdef DS18B20
 #include "DS18B20.h"			// термодатчик даллас
