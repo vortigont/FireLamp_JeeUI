@@ -1,5 +1,10 @@
 #include "rtc.h"
 #ifdef RTC
+#include "EmbUI.h"
+#ifdef TM1637_CLOCK
+#include "tm.h"
+extern TMCLOCK tm1637;
+#endif
 
 
 Rtc rtc;

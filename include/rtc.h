@@ -1,11 +1,9 @@
 #ifndef _RTC_H
 #define _RTC_H
 
+#include "Arduino.h"
+#include "config.h"
 #include "iarduino_RTC.h"
-#include "main.h"
-#ifdef TM1637_CLOCK
-#include "tm.h"
-#endif
 
 class Rtc : public iarduino_RTC {
 
