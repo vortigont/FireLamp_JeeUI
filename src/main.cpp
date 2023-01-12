@@ -36,6 +36,10 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 */
 #include "main.h"
 
+#ifdef DS18B20
+#include "DS18B20.h"
+#endif
+
 // глобальные переменные для работы с ними в программе
 LAMP myLamp;
 #ifdef ESP_USE_BUTTON
@@ -49,6 +53,8 @@ MP3PLAYERDEVICE *mp3 = nullptr;
 #ifdef TM1637_CLOCK
 TMCLOCK tm1637(TM_CLK_PIN, TM_DIO_PIN);
 #endif
+
+
 
 void setup() {
     Serial.begin(115200);

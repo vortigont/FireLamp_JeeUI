@@ -35,18 +35,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
    <https://www.gnu.org/licenses/>.)
 */
 
-#ifndef _DS18B20_H
-#define _DS18B20_H
-
-#ifdef DS18B20
-
-#include "misc.h"
-#include "main.h"
-#include "config.h"
-#include "microDS18B20.h"
-#include "tm.h"
-
-
+#pragma once
 
 void ds_setup();
 void ds_loop();
@@ -54,6 +43,3 @@ int16_t getTemp();
 void tempToSpeed(int16_t& currentTemp);
 bool& canDisplayTemp();
 void ds_display(int16_t value);
-
-#endif 
-#endif

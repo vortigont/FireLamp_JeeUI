@@ -85,9 +85,6 @@ extern Buttons *myButtons;
 #include "mp3player.h"
 extern MP3PLAYERDEVICE *mp3;
 #endif
-#ifdef DS18B20
-#include "DS18B20.h"
-#endif
 
 #ifdef ENCODER
 #include "enc.h"

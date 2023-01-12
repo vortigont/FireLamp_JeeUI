@@ -44,9 +44,9 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #ifdef TM1637_CLOCK
     #include "tm.h"				// Подключаем функции
     extern TMCLOCK tm1637;
-    #ifdef DS18B20
-        #include "DS18B20.h"				// Подключаем функции
-    #endif
+#endif
+#ifdef DS18B20
+#include "DS18B20.h"			// термодатчик даллас
 #endif
 #ifdef ENCODER
     #include "enc.h"
@@ -55,6 +55,10 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
     #include "rtc.h"
 #endif
 #include LANG_FILE                  //"text_res.h"
+
+#ifdef DS18B20
+#include "DS18B20.h"
+#endif
 
 /**
  * можно нарисовать свой собственный интефейс/обработчики с нуля, либо

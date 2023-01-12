@@ -35,9 +35,13 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
    <https://www.gnu.org/licenses/>.)
 */
 
+#include "misc.h"
 #include "config.h"
 #ifdef DS18B20
+#include "microDS18B20.h"
 #include "DS18B20.h"
+#include "lamp.h"
+
 #ifdef TM1637_CLOCK
 #include "tm.h"
 #endif
@@ -47,6 +51,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 
 MicroDS18B20 dallas(DS18B20_PIN);
+extern LAMP myLamp;
 
 bool canBeDisplayed;
 
@@ -122,10 +127,11 @@ void ds_loop() {
     static uint8_t delayCounter = 0;
     delayCounter++;
 #if COOLER_PIN_TYPE
-    if (delayCounter%COOLING_FAIL == 0 && curTemp > (int)TEMP_MAX) { // троттлинг по максимальной температуре (ШИМ)
+    if (delayCounter%COOLING_FAIL == 0 && curTemp > (int)TEMP_MAX)   // троттлинг по максимальной температуре (ШИМ)
 #else
-    if (delayCounter%COOLING_FAIL == 0 && curTemp > (int)(TEMP_DEST+TEMP_DEST/10U)) {  // троттлинг по желаемой рабочей + 10% (Дискретный)
+    if (delayCounter%COOLING_FAIL == 0 && curTemp > (int)(TEMP_DEST+TEMP_DEST/10U))   // троттлинг по желаемой рабочей + 10% (Дискретный)
 #endif
+    {
       uint16_t myCurrlimit = myLamp.getcurLimit();
       myCurrlimit -= myCurrlimit/100*CURRENT_LIMIT_STEP;
       myLamp.setcurLimit(myCurrlimit);
