@@ -35,17 +35,11 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
    <https://www.gnu.org/licenses/>.)
 */
 
-#include "config.h"
-#ifdef ENCODER
 #include "enc.h"
+#ifdef ENCODER
 #ifdef TM1637_CLOCK
 #include "tm.h"
 #endif
-#include "interface.h"
-#include "effects.h"
-#include "ui.h"
-#include "DS18B20.h"
-#include "extra_tasks.h"
 
 uint8_t currDynCtrl;        // текущий контрол, с которым работаем
 uint8_t currAction;         // идент текущей операции: 0 - ничего, 1 - крутим яркость, 2 - меняем эффекты, 3 - меняем динамические контролы

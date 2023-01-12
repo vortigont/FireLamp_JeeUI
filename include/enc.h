@@ -38,15 +38,11 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #ifndef _ENC_H
 #define _ENC_H
 
+#include <Arduino.h>
 #include "config.h"
 
 #ifdef ENCODER
-#include "misc.h"
-#include "main.h"
-#include "tm.h"
-#include "interface.h"
-#include "effects.h"
-#include "ui.h"
+#include "lamp.h"
 
 // Опциональные настройки (показаны по умолчанию)
 //#define EB_FAST 30     // таймаут быстрого поворота, мс
@@ -56,6 +52,8 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 //#define EB_CLICK 400   // таймаут накликивания, мс
 
 #include "EncButton.h"
+
+extern LAMP myLamp;
 
 static EncButton<EB_CALLBACK, DT, CLK, SW> enc;   // энкодер с кнопкой <A, B, KEY>
 
@@ -89,7 +87,7 @@ void encSendStringNumEff(String str, CRGB color);
 bool validControl(const CONTROL_TYPE ctrlCaseType);
 
 void enc_setup(); 
-extern void encLoop();
+void encLoop();
 uint8_t getEncTxtDelay();
 void setEncTxtDelay(const uint8_t speed);
 CRGB getEncTxtColor();

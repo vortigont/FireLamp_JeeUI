@@ -1,9 +1,25 @@
 #pragma once
+#include "GyverButton.h"
 #include "config.h" // подключаем эффекты, там же их настройки
 #include <FunctionalInterrupt.h>
 #include "ts.h"
 #include "LList.h"
-#include "GyverButton.h"
+
+#ifndef BUTTON_DEBOUNCE
+#define BUTTON_DEBOUNCE       (30U)                         // Button debounce time, ms
+#endif
+#ifndef PULL_MODE
+#define PULL_MODE             (LOW_PULL)                    // подтяжка кнопки к нулю (для сенсорных кнопок на TP223) - LOW_PULL, подтяжка кнопки к питанию (для механических кнопок НО, на массу) - HIGH_PULL
+#endif
+#ifndef BUTTON_STEP_TIMEOUT
+#define BUTTON_STEP_TIMEOUT   (75U)                         // каждые BUTTON_STEP_TIMEOUT мс будет генерироваться событие удержания кнопки (для регулировки яркости)
+#endif
+#ifndef BUTTON_CLICK_TIMEOUT
+#define BUTTON_CLICK_TIMEOUT  (500U)                        // максимальное время между нажатиями кнопки в мс, до достижения которого считается серия последовательных нажатий
+#endif
+#ifndef BUTTON_TIMEOUT
+#define BUTTON_TIMEOUT        (500U)                        // с какого момента начинает считаться, что кнопка удерживается в мс
+#endif
 
 typedef enum _button_action {
 	BA_NONE,
