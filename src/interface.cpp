@@ -807,7 +807,7 @@ void set_effects_list(Interface *interf, JsonObject *data){
 
     show_effects_param(interf, data);
 #ifdef EMBUI_USE_MQTT
-    embui.publish(String(FPSTR(TCONST_008B)) + FPSTR(CMD_TCONST_0009), String(eff->eff_nb), true);
+    embui.publish(String(FPSTR(TCONST_008B)) + FPSTR(CMD_EFFECT), String(eff->eff_nb), true);
     embui.publish(String(FPSTR(TCONST_008B)) + FPSTR(TCONST_00AE), myLamp.effects.geteffconfig(String(eff->eff_nb).toInt(), myLamp.getNormalizedLampBrightness()), true); // publish_ctrls_vals
 #endif
 }
@@ -949,8 +949,8 @@ void block_main_flags(Interface *interf, JsonObject *data){
 #ifdef MP3PLAYER
     interf->json_section_line(F("line124")); // спец. имя - разбирается внутри html
     if(mp3->isMP3Mode()){
-        interf->button(FPSTR(CMD_TCONST_0006), FPSTR(TINTF_0BD), FPSTR(P_GRAY));
-        interf->button(FPSTR(CMD_TCONST_0007), FPSTR(TINTF_0BE), FPSTR(P_GRAY));
+        interf->button(FPSTR(CMD_MP3_PREV), FPSTR(TINTF_0BD), FPSTR(P_GRAY));
+        interf->button(FPSTR(CMD_MP3_NEXT), FPSTR(TINTF_0BE), FPSTR(P_GRAY));
         interf->button(FPSTR(TCONST_00C0), FPSTR(TINTF_0BF), FPSTR(P_GRAY));
         interf->button(FPSTR(TCONST_00C1), FPSTR(TINTF_0C0), FPSTR(P_GRAY));
     }
@@ -2572,9 +2572,9 @@ void set_mp3_player(Interface *interf, JsonObject *data){
 
     if(!myLamp.isONMP3()) return;
     uint16_t cur_palyingnb = mp3->getCurPlayingNb();
-    if(data->containsKey(FPSTR(CMD_TCONST_0006))){
+    if(data->containsKey(FPSTR(CMD_MP3_PREV))){
         mp3->playEffect(cur_palyingnb-1,"");
-    } else if(data->containsKey(FPSTR(CMD_TCONST_0007))){
+    } else if(data->containsKey(FPSTR(CMD_MP3_NEXT))){
         mp3->playEffect(cur_palyingnb+1,"");
     } else if(data->containsKey(FPSTR(TCONST_00C0))){
         mp3->playEffect(cur_palyingnb-5,"");
@@ -3161,8 +3161,8 @@ void create_parameters(){
     embui.section_handle_add(FPSTR(TCONST_009F), show_settings_mp3);
     embui.section_handle_add(FPSTR(TCONST_00A0), set_settings_mp3);
 
-    embui.section_handle_add(FPSTR(CMD_TCONST_0006), set_mp3_player);
-    embui.section_handle_add(FPSTR(CMD_TCONST_0007), set_mp3_player);
+    embui.section_handle_add(FPSTR(CMD_MP3_PREV), set_mp3_player);
+    embui.section_handle_add(FPSTR(CMD_MP3_NEXT), set_mp3_player);
     embui.section_handle_add(FPSTR(TCONST_00C0), set_mp3_player);
     embui.section_handle_add(FPSTR(TCONST_00C1), set_mp3_player);
 #endif
@@ -3904,38 +3904,38 @@ String httpCallback(const String &param, const String &value, bool isset){
 
     if(!isset) {
         LOG(println, F("GET"));
-        if (upperParam == FPSTR(CMD_TCONST_0000))
+        if (upperParam == FPSTR(CMD_ON))
             { result = myLamp.isLampOn() ? "1" : "0"; }
-        else if (upperParam == FPSTR(CMD_TCONST_0001))
+        else if (upperParam == FPSTR(CMD_OFF))
             { result = !myLamp.isLampOn() ? "1" : "0"; }
-        else if (upperParam == FPSTR(CMD_TCONST_0002))
+        else if (upperParam == FPSTR(CMD_G_BRIGHT))
             { result = myLamp.IsGlobalBrightness() ? "1" : "0"; }
-        else if (upperParam == FPSTR(CMD_TCONST_0003))
+        else if (upperParam == FPSTR(CMD_DEMO))
             { result = myLamp.getMode() == LAMPMODE::MODE_DEMO ? "1" : "0"; }
 #ifdef MP3PLAYER
-        else if (upperParam == FPSTR(CMD_TCONST_0004)) 
+        else if (upperParam == FPSTR(CMD_PLAYER)) 
             { result = myLamp.isONMP3() ? "1" : "0"; }
-        else if (upperParam == FPSTR(CMD_TCONST_0005)) 
+        else if (upperParam == FPSTR(CMD_MP3_SOUND)) 
             { result = String(mp3->getCurPlayingNb()); }
-        else if (upperParam == FPSTR(CMD_TCONST_0006)) { action = RA_MP3_PREV; remote_action(action, "1", NULL); }
-        else if (upperParam == FPSTR(CMD_TCONST_0007)) { action = RA_MP3_NEXT; remote_action(action, "1", NULL); }
+        else if (upperParam == FPSTR(CMD_MP3_PREV)) { action = RA_MP3_PREV; remote_action(action, "1", NULL); }
+        else if (upperParam == FPSTR(CMD_MP3_NEXT)) { action = RA_MP3_NEXT; remote_action(action, "1", NULL); }
 #endif
 #ifdef MIC_EFFECTS
-        else if (upperParam == FPSTR(CMD_TCONST_0008)) 
+        else if (upperParam == FPSTR(CMD_MIC)) 
             { result = myLamp.isMicOnOff() ? "1" : "0"; }
 #endif
-        else if (upperParam == FPSTR(CMD_TCONST_0009))
+        else if (upperParam == FPSTR(CMD_EFFECT))
             { result = String(myLamp.effects.getCurrent());  }
-        else if (upperParam == FPSTR(CMD_TCONST_000A))
+        else if (upperParam == FPSTR(CMD_WARNING))
             { myLamp.showWarning(CRGB::Orange,5000,500); }
-        else if (upperParam == FPSTR(CMD_TCONST_000B)) {
+        else if (upperParam == FPSTR(CMD_EFF_CONFIG)) {
                 String result = myLamp.effects.geteffconfig(myLamp.effects.getCurrent(), myLamp.getNormalizedLampBrightness());
 #ifdef EMBUI_USE_MQTT
                 embui.publish(String(FPSTR(TCONST_008B)) + FPSTR(TCONST_00AE), result, true);
 #endif
                 return result;
             }
-        else if (upperParam == FPSTR(CMD_TCONST_000C)) {
+        else if (upperParam == FPSTR(CMD_CONTROL)) {
             LList<UIControl*>&controls = myLamp.effects.getControls();
             for(int i=0; i<controls.size();i++){
                 if(value == String(controls[i]->getId())){
@@ -3947,7 +3947,7 @@ String httpCallback(const String &param, const String &value, bool isset){
                 }
             }
         }
-        else if (upperParam == FPSTR(CMD_TCONST_000F))  {
+        else if (upperParam == FPSTR(CMD_LIST))  {
             result = F("[");
             bool first=true;
             EffectListElem *eff = nullptr;
@@ -3958,7 +3958,7 @@ String httpCallback(const String &param, const String &value, bool isset){
             }
             result = result + F("]");
         }
-        else if (upperParam == FPSTR(CMD_TCONST_0010))  {
+        else if (upperParam == FPSTR(CMD_SHOWLIST))  {
             result = F("[");
             bool first=true;
             EffectListElem *eff = nullptr;
@@ -3971,7 +3971,7 @@ String httpCallback(const String &param, const String &value, bool isset){
             }
             result = result + F("]");
         }
-        else if (upperParam == FPSTR(CMD_TCONST_0011))  {
+        else if (upperParam == FPSTR(CMD_DEMOLIST))  {
             result = F("[");
             bool first=true;
             EffectListElem *eff = nullptr;
@@ -3984,62 +3984,62 @@ String httpCallback(const String &param, const String &value, bool isset){
             }
             result = result + F("]");
         }
-        else if (upperParam == FPSTR(CMD_TCONST_0012))  {
+        else if (upperParam == FPSTR(CMD_EFF_NAME))  {
             String effname((char *)0);
             uint16_t effnum = String(value).toInt();
             effnum = effnum ? effnum : myLamp.effects.getCurrent();
             myLamp.effects.loadeffname(effname, effnum);
             result = String(F("["))+effnum+String(",\"")+effname+String("\"]");
         }
-        else if (upperParam == FPSTR(CMD_TCONST_0013))  {
+        else if (upperParam == FPSTR(CMD_EFF_ONAME))  {
             String effname((char *)0);
             uint16_t effnum = String(value).toInt();
             effnum = effnum ? effnum : myLamp.effects.getCurrent();
             effname = FPSTR(T_EFFNAMEID[(uint8_t)effnum]);
             result = String(F("["))+effnum+String(",\"")+effname+String("\"]");
         }
-        else if (upperParam == FPSTR(CMD_TCONST_0014)) { action = RA_EFF_NEXT;  remote_action(action, value.c_str(), NULL); }
-        else if (upperParam == FPSTR(CMD_TCONST_0015)) { action = RA_EFF_PREV;  remote_action(action, value.c_str(), NULL); }
-        else if (upperParam == FPSTR(CMD_TCONST_0016)) { action = RA_EFF_RAND;  remote_action(action, value.c_str(), NULL); }
-        else if (upperParam == FPSTR(CMD_TCONST_0017)) { action = RA_REBOOT;  remote_action(action, value.c_str(), NULL); }
-        else if (upperParam == FPSTR(CMD_TCONST_0018)) { result = myLamp.isAlarm() ? "1" : "0"; }
-        else if (upperParam == FPSTR(CMD_TCONST_0019)) { char buf[32]; sprintf_P(buf, PSTR("[%d,%d]"), WIDTH, HEIGHT);  result = buf; }
+        else if (upperParam == FPSTR(CMD_MOVE_NEXT)) { action = RA_EFF_NEXT;  remote_action(action, value.c_str(), NULL); }
+        else if (upperParam == FPSTR(CMD_MOVE_PREV)) { action = RA_EFF_PREV;  remote_action(action, value.c_str(), NULL); }
+        else if (upperParam == FPSTR(CMD_MOVE_RND)) { action = RA_EFF_RAND;  remote_action(action, value.c_str(), NULL); }
+        else if (upperParam == FPSTR(CMD_REBOOT)) { action = RA_REBOOT;  remote_action(action, value.c_str(), NULL); }
+        else if (upperParam == FPSTR(CMD_ALARM)) { result = myLamp.isAlarm() ? "1" : "0"; }
+        else if (upperParam == FPSTR(CMD_MATRIX)) { char buf[32]; sprintf_P(buf, PSTR("[%d,%d]"), WIDTH, HEIGHT);  result = buf; }
 #ifdef EMBUI_USE_MQTT        
         embui.publish(String(FPSTR(TCONST_008B)) + upperParam, result, true);
 #endif
         return result;
     } else {
         LOG(println, F("SET"));
-        if (upperParam == FPSTR(CMD_TCONST_0000)) { action = (value!="0" ? RA_ON : RA_OFF); remote_action(action, NULL, NULL); return result; }
-        else if (upperParam == FPSTR(CMD_TCONST_0001)) { action = (value!="0" ? RA_OFF : RA_ON); remote_action(action, NULL, NULL); return result; }
-        else if (upperParam == FPSTR(CMD_TCONST_0003)) action = RA_DEMO;
-        else if (upperParam == FPSTR(CMD_TCONST_001A)) action = RA_SEND_TEXT;
-        else if (upperParam == FPSTR(CMD_TCONST_0009)) action = RA_EFFECT;
-        else if (upperParam == FPSTR(CMD_TCONST_0014)) action = RA_EFF_NEXT;
-        else if (upperParam == FPSTR(CMD_TCONST_0015)) action = RA_EFF_PREV;
-        else if (upperParam == FPSTR(CMD_TCONST_0016)) action = RA_EFF_RAND;
-        else if (upperParam == FPSTR(CMD_TCONST_0017)) action = RA_REBOOT;
-        else if (upperParam == FPSTR(CMD_TCONST_0018)) action = RA_ALARM;
-        else if (upperParam == FPSTR(CMD_TCONST_0002)) action = RA_GLOBAL_BRIGHT;
-        else if (upperParam == FPSTR(CMD_TCONST_000A)) action = RA_WARNING;
-        else if (upperParam == FPSTR(CMD_TCONST_001B)) action = RA_DRAW;
-        else if (upperParam == FPSTR(CMD_TCONST_001D)) action = RA_FILLMATRIX;
-        else if (upperParam == FPSTR(CMD_TCONST_000D)) action = RA_RGB;
+        if (upperParam == FPSTR(ON)) { action = (value!="0" ? RA_ON : RA_OFF); remote_action(action, NULL, NULL); return result; }
+        else if (upperParam == FPSTR(CMD_OFF)) { action = (value!="0" ? RA_OFF : RA_ON); remote_action(action, NULL, NULL); return result; }
+        else if (upperParam == FPSTR(CMD_DEMO)) action = RA_DEMO;
+        else if (upperParam == FPSTR(CMD_MSG)) action = RA_SEND_TEXT;
+        else if (upperParam == FPSTR(CMD_EFFECT)) action = RA_EFFECT;
+        else if (upperParam == FPSTR(CMD_MOVE_NEXT)) action = RA_EFF_NEXT;
+        else if (upperParam == FPSTR(CMD_MOVE_PREV)) action = RA_EFF_PREV;
+        else if (upperParam == FPSTR(CMD_MOVE_RND)) action = RA_EFF_RAND;
+        else if (upperParam == FPSTR(CMD_REBOOT)) action = RA_REBOOT;
+        else if (upperParam == FPSTR(CMD_ALARM)) action = RA_ALARM;
+        else if (upperParam == FPSTR(CMD_G_BRIGHT)) action = RA_GLOBAL_BRIGHT;
+        else if (upperParam == FPSTR(CMD_WARNING)) action = RA_WARNING;
+        else if (upperParam == FPSTR(CMD_DRAW)) action = RA_DRAW;
+        else if (upperParam == FPSTR(CMD_FILL_MATRIX)) action = RA_FILLMATRIX;
+        else if (upperParam == FPSTR(CMD_RGB)) action = RA_RGB;
 #ifdef MP3PLAYER
-        else if (upperParam == FPSTR(CMD_TCONST_0006)) action = RA_MP3_PREV;
-        else if (upperParam == FPSTR(CMD_TCONST_0007)) action = RA_MP3_NEXT;
-        else if (upperParam == FPSTR(CMD_TCONST_0005)) action = RA_MP3_SOUND;
-        else if (upperParam == FPSTR(CMD_TCONST_0004)) action = RA_PLAYERONOFF;
+        else if (upperParam == FPSTR(CMD_MP3_PREV)) action = RA_MP3_PREV;
+        else if (upperParam == FPSTR(CMD_MP3_NEXT)) action = RA_MP3_NEXT;
+        else if (upperParam == FPSTR(CMD_MP3_SOUND)) action = RA_MP3_SOUND;
+        else if (upperParam == FPSTR(CMD_PLAYER)) action = RA_PLAYERONOFF;
         else if (upperParam == FPSTR(CMD_MP3_VOLUME)) { action = RA_MP3_VOL; remote_action(action, value.c_str(), NULL); return result; }
 #endif
 #ifdef MIC_EFFECTS
-        else if (upperParam == FPSTR(CMD_TCONST_0008)) action = RA_MICONOFF;
+        else if (upperParam == FPSTR(CMD_MIC)) action = RA_MICONOFF;
 #endif
         //else if (upperParam.startsWith(FPSTR(TCONST_0015))) { action = RA_CONTROL; remote_action(action, upperParam.c_str(), value.c_str(), NULL); return result; }
-        else if (upperParam == FPSTR(CMD_TCONST_000B)) {
+        else if (upperParam == FPSTR(CMD_EFF_CONFIG)) {
             return httpCallback(upperParam, "", false); // set пока не реализована
         }
-        else if (upperParam == FPSTR(CMD_TCONST_000C) || upperParam == FPSTR(CMD_TCONST_001C)) {
+        else if (upperParam == FPSTR(CMD_CONTROL) || upperParam == FPSTR(CMD_INC_CONTROL)) {
             String str=value;
             DynamicJsonDocument doc(256);
             deserializeJson(doc,str);
@@ -4048,12 +4048,12 @@ String httpCallback(const String &param, const String &value, bool isset){
             String val="";
 
             if(arr.size()<2){ // мало параметров, т.е. это GET команда, возвращаем состояние контрола
-                return httpCallback(FPSTR(CMD_TCONST_000C), value, false);
+                return httpCallback(FPSTR(CMD_CONTROL), value, false);
             }
 
-            if(upperParam == FPSTR(CMD_TCONST_001C)){ // это команда увеличения контрола на значение, соотвественно получаем текущее
+            if(upperParam == FPSTR(CMD_INC_CONTROL)){ // это команда увеличения контрола на значение, соотвественно получаем текущее
                 val = arr[1].as<String>().toInt();
-                str = httpCallback(FPSTR(CMD_TCONST_000C), arr[0], false);
+                str = httpCallback(FPSTR(CMD_CONTROL), arr[0], false);
                 doc.clear(); doc.garbageCollect();
                 deserializeJson(doc,str);
                 arr = doc.as<JsonArray>();
@@ -4074,9 +4074,9 @@ String httpCallback(const String &param, const String &value, bool isset){
             //result = String(F("[")) + String(id) + String(F(",\"")) + val + String(F("\"]"));
             //embui.publish(String(FPSTR(TCONST_008B)) + FPSTR(TCONST_00D0), result, true);
 
-            return httpCallback(FPSTR(CMD_TCONST_000C), String(id), false); // т.к. отложенный вызов, то иначе обрабатыаем
+            return httpCallback(FPSTR(CMD_CONTROL), String(id), false); // т.к. отложенный вызов, то иначе обрабатыаем
         }
-        else if (upperParam == FPSTR(CMD_TCONST_0012))  {
+        else if (upperParam == FPSTR(CMD_EFF_NAME))  {
             String effname((char *)0);
             uint16_t effnum=String(value).toInt();
             myLamp.effects.loadeffname(effname, effnum);
@@ -4086,7 +4086,7 @@ String httpCallback(const String &param, const String &value, bool isset){
 #endif
             return result;
         }
-        else if (upperParam == FPSTR(CMD_TCONST_0013))  {
+        else if (upperParam == FPSTR(CMD_EFF_ONAME))  {
             String effname((char *)0);
             uint16_t effnum=String(value).toInt();
             effname = FPSTR(T_EFFNAMEID[(uint8_t)effnum]);
@@ -4097,9 +4097,9 @@ String httpCallback(const String &param, const String &value, bool isset){
             return result;
         }
 #ifdef AUX_PIN
-        else if (upperParam == FPSTR(CMD_TCONST_001F)) action = RA_AUX_ON;
-        else if (upperParam == FPSTR(CMD_TCONST_0020))  action = RA_AUX_OFF;
-        else if (upperParam == FPSTR(CMD_TCONST_0021))  action = RA_AUX_TOGLE;
+        else if (upperParam == FPSTR(CMD_AUX_ON)) action = RA_AUX_ON;
+        else if (upperParam == FPSTR(CMD_AUX_OFF))  action = RA_AUX_OFF;
+        else if (upperParam == FPSTR(CMD_AUX_TOGGLE))  action = RA_AUX_TOGLE;
 #endif
         remote_action(action, value.c_str(), NULL);
     }

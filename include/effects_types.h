@@ -315,49 +315,43 @@ static const char TCONST_00ED[] PROGMEM = "Other";
 /** набор служебных текстовых констант (HTTP/MQTT запросы)
  */
 
-static const char CMD_TCONST_0000[] PROGMEM = "ON";   // Без параметров - возвращает 1/0 в зависимости вкл/выкл лампа, принимает параметр - 1/0 (вкл/выкл лампу)
-static const char CMD_TCONST_0001[] PROGMEM = "OFF";  // Без параметров - возвращает 1/0 в зависимости выкл/вкл лампа, принимает параметр - 1/0 (выкл/вкл лампу)
-static const char CMD_TCONST_0002[] PROGMEM = "G_BRIGHT"; // Без параметров - возвращает 1/0 в зависимости вкл/выкл глобальная яркость, принимает параметр - 1/0 (вкл/выкл глобальная яркость)
-static const char CMD_TCONST_0003[] PROGMEM = "DEMO"; // Без параметров - возвращает 1/0 в зависимости вкл/выкл глобальная яркость, принимает параметр - 1/0 (вкл/выкл глобальная яркость)
-static const char CMD_TCONST_0004[] PROGMEM = "PLAYER"; // Без параметров - возвращает 1/0 в зависимости вкл/выкл плеер, принимает параметр - 1/0 (вкл/выкл плеер)
-static const char CMD_TCONST_0005[] PROGMEM = "MP3_SOUND";  // Без параметров - возвращает 1/0 в зависимости вкл/выкл проигрывание MP3, принимает параметр - 1/0 (вкл/выкл проигрывание MP3)
-static const char CMD_TCONST_0006[] PROGMEM = "MP3_PREV";   // Без параметров - переключает трек на 1 назад, принимает числовой параметр, на сколько треков вернуть назад
-static const char CMD_TCONST_0007[] PROGMEM = "MP3_NEXT";   // Без параметров - переключает трек на 1 назад, принимает числовой параметр, на сколько треков вернуть назад
-static const char CMD_MP3_VOLUME[] PROGMEM = "MP3_VOL";     // принимает числовой параметр - установить громкость mp3 плеера
-static const char CMD_TCONST_0008[] PROGMEM = "MIC";        // Без параметров - возвращает 1/0 в зависимости вкл/выкл микрофон, принимает параметр - 1/0 (вкл/выкл микрофон)
-static const char CMD_TCONST_0009[] PROGMEM = "EFFECT";     // Без параметров - возвращает номер текущего эффекта, принимает числовой параметр - включить заданный эффект
-static const char CMD_TCONST_000A[] PROGMEM = "WARNING";    // Без параметров - мигает желтым 5 раз (1 раз в сек), принимает параметры /cmd?warning=[16777215,5000,500,1] - неблокирующий вывод мигалки поверх эффекта (выдача предупреждений), первое число - цвет, второе - полный период, третье - полупериод мигания, четвертое - тип уведомления (0 - цвет, 1-2 - цвет и счетчик, 3 - счетчик)
-static const char CMD_TCONST_000B[] PROGMEM = "EFF_CONFIG"; // Без параметров - возвращает ВСЕ настройки текущего эффекта, с параметрами - не реализовано пока
-static const char CMD_TCONST_000C[] PROGMEM = "CONTROL";    // Только с параметрами - принимает числовой параметр (номер контрола) и возвращает его текущие настройки, также принимает массив /cmd?control=[N,val] где - N - номер контрола, val - нужное значение
-static const char CMD_TCONST_000D[] PROGMEM = "RGB"; // RGB = r,g,b т.е. к примеру для красного 255,0,0
-// static const char CMD_TCONST_000E[] PROGMEM = "";
-static const char CMD_TCONST_000F[] PROGMEM = "LIST";  // Без параметров - возвращает полный список эффектов (их номера)
-static const char CMD_TCONST_0010[] PROGMEM = "SHOWLIST";  // Без параметров - возвращает список отображаемых эффектов (их номера)
-static const char CMD_TCONST_0011[] PROGMEM = "DEMOLIST";   // Без параметров - возвращает список отображаемых эффектов (их номера) в DEMO режиме
-static const char CMD_TCONST_0012[] PROGMEM = "EFF_NAME";   // Без параметров - возвращает из конфига имя текущего эффекта, принимает числовой параметр (номер эффекта) и возвращает имя этого эффекта
-static const char CMD_TCONST_0013[] PROGMEM = "EFF_ONAME";  // Без параметров - возвращает из внутренней памяти имя текущего эффекта, принимает числовой параметр (номер эффекта) и возвращает имя этого эффекта
-static const char CMD_TCONST_0014[] PROGMEM = "MOVE_NEXT";  // Без параметров - переключает на следующий эффект
-static const char CMD_TCONST_0015[] PROGMEM = "MOVE_PREV";  // Без параметров - переключает на предыдущий эффект
-static const char CMD_TCONST_0016[] PROGMEM = "MOVE_RND";   // Без параметров - переключает на рандомный эффект
-static const char CMD_TCONST_0017[] PROGMEM = "REBOOT";     // Без параметров - перезагружает лампу
-static const char CMD_TCONST_0018[] PROGMEM = "ALARM";      // Без параметров - возвращает 1/0 в зависимости включен ли сейчас будильник рассвет, принимает параметры "cmd?alarm={alarmP=N,alarmT=N,msg="Message",lV=N, afS=N, sT=N}", где alarmP длительность рассвета, alarmT - светить после рассвета, msg - сообщение, lV - уровень громкости будильника, afS - стандартная ли мелодия будильника, sT - мелодия будильника (от 0 до 7), все комманды указывать не обязательно
-static const char CMD_TCONST_0019[] PROGMEM = "MATRIX";   // Возвращает размер матрицы в формате [X, Y]
-static const char CMD_TCONST_001A[] PROGMEM = "MSG";      // Только с параметрами - выводит сообщение на лампу
-static const char CMD_TCONST_001B[] PROGMEM = "DRAW";     // Только с параметрами =[цвет,X,Y] - закрашивает пиксель указанным цветом (если включено рисование)
-static const char CMD_TCONST_001C[] PROGMEM = "INC_CONTROL";  // Только с параметрами =[N,val] - увеличивает\уменьшает контрол N на значение val
-static const char CMD_TCONST_001D[] PROGMEM = "FILL_MATRIX";  // Только с параметрами - закрашивает матрицу указанным цветом (если включено рисование)
-static const char CMD_TCONST_001E[] PROGMEM = "OTA";          // Запускает OTA режим
-static const char CMD_TCONST_001F[] PROGMEM = "AUX_ON";       // Включает AUX пин
-static const char CMD_TCONST_0020[] PROGMEM = "AUX_OFF";      // Выключает AUX пин
-static const char CMD_TCONST_0021[] PROGMEM = "AUX_TOGGLE";   // Переключает AUX пин
-static const char CMD_TCONST_0022[] PROGMEM = "DRAWING";      // Без параметров - возвращает 1/0 в зависимости вкл/выкл рисование, принимает параметр - 1/0 (вкл/выкл рисование)
+static const char CMD_ON[] PROGMEM = "ON";                    // Без параметров - возвращает 1/0 в зависимости вкл/выкл лампа, принимает параметр - 1/0 (вкл/выкл лампу)
+static const char CMD_OFF[] PROGMEM = "OFF";                  // Без параметров - возвращает 1/0 в зависимости выкл/вкл лампа, принимает параметр - 1/0 (выкл/вкл лампу)
+static const char CMD_G_BRIGHT[] PROGMEM = "G_BRIGHT";        // Без параметров - возвращает 1/0 в зависимости вкл/выкл глобальная яркость, принимает параметр - 1/0 (вкл/выкл глобальная яркость)
+static const char CMD_DEMO[] PROGMEM = "DEMO";                // Без параметров - возвращает 1/0 в зависимости вкл/выкл глобальная яркость, принимает параметр - 1/0 (вкл/выкл глобальная яркость)
+static const char CMD_PLAYER[] PROGMEM = "PLAYER";            // Без параметров - возвращает 1/0 в зависимости вкл/выкл плеер, принимает параметр - 1/0 (вкл/выкл плеер)
+static const char CMD_MP3_SOUND[] PROGMEM = "MP3_SOUND";      // Без параметров - возвращает 1/0 в зависимости вкл/выкл проигрывание MP3, принимает параметр - 1/0 (вкл/выкл проигрывание MP3)
+static const char CMD_MP3_PREV[] PROGMEM = "MP3_PREV";        // Без параметров - переключает трек на 1 назад, принимает числовой параметр, на сколько треков вернуть назад
+static const char CMD_MP3_NEXT[] PROGMEM = "MP3_NEXT";        // Без параметров - переключает трек на 1 назад, принимает числовой параметр, на сколько треков вернуть назад
+static const char CMD_MP3_VOLUME[] PROGMEM = "MP3_VOL";       // принимает числовой параметр - установить громкость mp3 плеера
+static const char CMD_MIC[] PROGMEM = "MIC";                  // Без параметров - возвращает 1/0 в зависимости вкл/выкл микрофон, принимает параметр - 1/0 (вкл/выкл микрофон)
+static const char CMD_EFFECT[] PROGMEM = "EFFECT";            // Без параметров - возвращает номер текущего эффекта, принимает числовой параметр - включить заданный эффект
+static const char CMD_WARNING[] PROGMEM = "WARNING";          // Без параметров - мигает желтым 5 раз (1 раз в сек), принимает параметры /cmd?warning=[16777215,5000,500,1] - неблокирующий вывод мигалки поверх эффекта (выдача предупреждений), первое число - цвет, второе - полный период, третье - полупериод мигания, четвертое - тип уведомления (0 - цвет, 1-2 - цвет и счетчик, 3 - счетчик)
+static const char CMD_EFF_CONFIG[] PROGMEM = "EFF_CONFIG";    // Без параметров - возвращает ВСЕ настройки текущего эффекта, с параметрами - не реализовано пока
+static const char CMD_CONTROL[] PROGMEM = "CONTROL";          // Только с параметрами - принимает числовой параметр (номер контрола) и возвращает его текущие настройки, также принимает массив /cmd?control=[N,val] где - N - номер контрола, val - нужное значение
+static const char CMD_RGB[] PROGMEM = "RGB";                  // RGB = r,g,b т.е. к примеру для красного 255,0,0
+static const char CMD_LIST[] PROGMEM = "LIST";                // Без параметров - возвращает полный список эффектов (их номера)
+static const char CMD_SHOWLIST[] PROGMEM = "SHOWLIST";        // Без параметров - возвращает список отображаемых эффектов (их номера)
+static const char CMD_DEMOLIST[] PROGMEM = "DEMOLIST";        // Без параметров - возвращает список отображаемых эффектов (их номера) в DEMO режиме
+static const char CMD_EFF_NAME[] PROGMEM = "EFF_NAME";        // Без параметров - возвращает из конфига имя текущего эффекта, принимает числовой параметр (номер эффекта) и возвращает имя этого эффекта
+static const char CMD_EFF_ONAME[] PROGMEM = "EFF_ONAME";      // Без параметров - возвращает из внутренней памяти имя текущего эффекта, принимает числовой параметр (номер эффекта) и возвращает имя этого эффекта
+static const char CMD_MOVE_NEXT[] PROGMEM = "MOVE_NEXT";      // Без параметров - переключает на следующий эффект
+static const char CMD_MOVE_PREV[] PROGMEM = "MOVE_PREV";      // Без параметров - переключает на предыдущий эффект
+static const char CMD_MOVE_RND[] PROGMEM = "MOVE_RND";        // Без параметров - переключает на рандомный эффект
+static const char CMD_REBOOT[] PROGMEM = "REBOOT";            // Без параметров - перезагружает лампу
+static const char CMD_ALARM[] PROGMEM = "ALARM";              // Без параметров - возвращает 1/0 в зависимости включен ли сейчас будильник рассвет, принимает параметры "cmd?alarm={alarmP=N,alarmT=N,msg="Message",lV=N, afS=N, sT=N}", где alarmP длительность рассвета, alarmT - светить после рассвета, msg - сообщение, lV - уровень громкости будильника, afS - стандартная ли мелодия будильника, sT - мелодия будильника (от 0 до 7), все комманды указывать не обязательно
+static const char CMD_MATRIX[] PROGMEM = "MATRIX";            // Возвращает размер матрицы в формате [X, Y]
+static const char CMD_MSG[] PROGMEM = "MSG";                  // Только с параметрами - выводит сообщение на лампу
+static const char CMD_DRAW[] PROGMEM = "DRAW";                // Только с параметрами =[цвет,X,Y] - закрашивает пиксель указанным цветом (если включено рисование)
+static const char CMD_INC_CONTROL[] PROGMEM = "INC_CONTROL";  // Только с параметрами =[N,val] - увеличивает\уменьшает контрол N на значение val
+static const char CMD_FILL_MATRIX[] PROGMEM = "FILL_MATRIX";  // Только с параметрами - закрашивает матрицу указанным цветом (если включено рисование)
+static const char CMD_AUX_ON[] PROGMEM = "AUX_ON";            // Включает AUX пин
+static const char CMD_AUX_OFF[] PROGMEM = "AUX_OFF";          // Выключает AUX пин
+static const char CMD_AUX_TOGGLE[] PROGMEM = "AUX_TOGGLE";    // Переключает AUX пин
+static const char CMD_DRAWING[] PROGMEM = "DRAWING";          // Без параметров - возвращает 1/0 в зависимости вкл/выкл рисование, принимает параметр - 1/0 (вкл/выкл рисование)
 
 
-/*
-заменено на "0" и "1" глобально с поддержкой в .js фреймворка
-static const char TCONST_FFFE[] PROGMEM = "0";
-static const char TCONST_FFFF[] PROGMEM = "1";
-*/
+
 
 typedef enum : uint8_t {
 EFF_NONE = (0U),                              // Специальный служебный эффект, не комментировать и индекс не менять константу!
