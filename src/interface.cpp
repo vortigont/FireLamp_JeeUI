@@ -1586,7 +1586,6 @@ void set_settings_mp3(Interface *interf, JsonObject *data){
     myLamp.setLimitAlarmVolume((*data)[FPSTR(TCONST_00AF)]=="1");
 
     SETPARAM(FPSTR(TCONST_00A9), mp3->setMP3count((*data)[FPSTR(TCONST_00A9)].as<int>())); // кол-во файлов в папке мп3
-    //SETPARAM(FPSTR(TCONST_00A2), mp3->setVolume((*data)[FPSTR(TCONST_00A2)].as<int>()));
     SETPARAM(FPSTR(TCONST_00A2)); // тоже пишет в плеер, разносим во времени
 
     save_lamp_flags();
@@ -3656,6 +3655,11 @@ void remote_action(RA action, ...){
             obj[FPSTR(TCONST_00D5)] = "0"; // не озвучивать время
             CALL_INTF(FPSTR(TCONST_009D), value, set_mp3flag);
             break;
+        case RA::RA_MP3_VOL:
+            if(!myLamp.isONMP3()) return;
+            obj[FPSTR(TCONST_00A2)] = atoi(value);
+            set_mp3volume(nullptr, &obj);
+            break;
 #endif
 #ifdef MIC_EFFECTS
         case RA::RA_MIC:
@@ -4026,6 +4030,7 @@ String httpCallback(const String &param, const String &value, bool isset){
         else if (upperParam == FPSTR(CMD_TCONST_0007)) action = RA_MP3_NEXT;
         else if (upperParam == FPSTR(CMD_TCONST_0005)) action = RA_MP3_SOUND;
         else if (upperParam == FPSTR(CMD_TCONST_0004)) action = RA_PLAYERONOFF;
+        else if (upperParam == FPSTR(CMD_MP3_VOLUME)) { action = RA_MP3_VOL; remote_action(action, value.c_str(), NULL); return result; }
 #endif
 #ifdef MIC_EFFECTS
         else if (upperParam == FPSTR(CMD_TCONST_0008)) action = RA_MICONOFF;
