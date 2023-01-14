@@ -34,12 +34,26 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
    вместе с этой программой. Если это не так, см.
    <https://www.gnu.org/licenses/>.)
 */
-#ifndef __CONFIG_H
-#define __CONFIG_H
-#if defined __has_include
+
+/*
+  !!! ВНОСИТЬ ИЗМЕНЕНИЯ В ЭТОЙ ФАЙЛ НЕЛЬЗЯ !!!
+  переименуйте "user_config.h.default" в "user_config.h" и вносите свои правки там
+
+  !!! NEVER EVER CHANGE THIS FILE !!!
+  rename "user_config.h.default" into "user_config.h" and adjust to your needs
+*/
+
+
+#pragma once
+
+#if defined CUSTOM_CFG
+# include CUSTOM_CFG
+#else
+# if defined __has_include
 #  if __has_include("user_config.h")
-#    include "user_config.h" // <- пользовательские настройки, пожалуйста меняйте все что требуется там, ЭТОТ ФАЙЛ (config.h) НЕ МЕНЯЙТЕ
+#   include "user_config.h"
 #  endif
+# endif
 #endif
 
 //-----------------------------------
@@ -50,10 +64,14 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 //#define MP3PLAYER                                           // Включить использование MP3 плеера (DF Player)
 //#define SHOWSYSCONFIG                                       // Показывать системное меню
 //#define DISABLE_LED_BUILTIN                                 // Отключить встроенный в плату светодиод, если нужно чтобы светил - закомментировать строку
-typedef enum {NR_NONE,BIT_1,BIT_2,BIT_3,BIT_4} MIC_NOISE_REDUCE_LEVEL;
 //-----------------------------------
 #ifndef LANG_FILE
 #define LANG_FILE                  "text_res-RUS.h"           // Языковой файл по дефолту
+#endif
+
+// Disable built-in LED operations if there is no LED :)
+#ifndef LED_BUILTIN
+#define DISABLE_LED_BUILTIN
 #endif
 
 #ifdef RTC
@@ -73,21 +91,21 @@ typedef enum {NR_NONE,BIT_1,BIT_2,BIT_3,BIT_4} MIC_NOISE_REDUCE_LEVEL;
       #endif
     #else                                                   // Пины подбирать экспериментальным путем, точно работает на D2 и D4
       #ifndef pin_SW_SDA
-      #define pin_SW_SDA        (D2)                        // Назначаем вывод для работы в качестве линии SDA программной шины I2C.
+      #define pin_SW_SDA        (4)                         // Назначаем вывод для работы в качестве линии SDA программной шины I2C, D2 on wemos
       #endif
       #ifndef pin_SW_SCL
-      #define pin_SW_SCL        (D4)                        // Назначаем вывод для работы в качестве линии SCL программной шины I2C.
+      #define pin_SW_SCL        (2)                         // Назначаем вывод для работы в качестве линии SCL программной шины I2C, D4 on wemos
       #endif
     #endif
-    #if RTC_MODULE == (1U)                                    // Если выбран модуль DS1302.
+    #if RTC_MODULE == (1U)                                  // Если выбран модуль DS1302.
       #ifndef pin_RST
-      #define pin_RST             (D8)                        // Назначаем вывод RST.
+      #define pin_RST             (15)                      // Назначаем вывод RST, D8 on wemos
       #endif
       #ifndef pin_DAT
-      #define pin_DAT             (D3)                        // Назначаем вывод DAT.
+      #define pin_DAT             (0)                       // Назначаем вывод DAT, D3 on wemos
       #endif
       #ifndef pin_DAT
-      #define pin_CLK             (D4)                        // Назначаем вывод CLK.
+      #define pin_CLK             (2)                       // Назначаем вывод CLK, D4 on wemos
       #endif
     #endif
   #endif
@@ -135,10 +153,10 @@ typedef enum {NR_NONE,BIT_1,BIT_2,BIT_3,BIT_4} MIC_NOISE_REDUCE_LEVEL;
 //  #error ESP32 with DfPlayer is not (yet) supported due to softwareserial dependency (to be fixed)
 // #endif
 #ifndef MP3_TX_PIN
-#define MP3_TX_PIN            (D5)                         // TX mp3 player RX (D5)
+#define MP3_TX_PIN            (14)                         // TX mp3 player RX (D5)
 #endif
 #ifndef MP3_RX_PIN
-#define MP3_RX_PIN            (D6)                         // RX mp3 player TX (D6)
+#define MP3_RX_PIN            (12)                         // RX mp3 player TX (D6)
 #endif
 #ifndef MP3_SERIAL_TIMEOUT
 #define MP3_SERIAL_TIMEOUT    (300U)                       // 300мс по умолчанию, диапазон 200...1000, подбирается экспериментально, не желательно сильно повышать
@@ -149,13 +167,38 @@ typedef enum {NR_NONE,BIT_1,BIT_2,BIT_3,BIT_4} MIC_NOISE_REDUCE_LEVEL;
 #endif
 
 #ifndef LAMP_PIN
-#define LAMP_PIN              (D3)                          // пин ленты                (D3)
+#define LAMP_PIN              (0)                          // пин ленты                (D3)
 #endif
 
 #ifndef BTN_PIN
-#define BTN_PIN               (0U)                          // пин кнопки               (D1)
-//#define BTN_PIN               (0U)                          // пин кнопки "FLASH" NodeMCU (ОТЛАДКА!!!) , подтяжка должна быть PULL_MODE=HIGH_PULL
+#define BTN_PIN               (5U)                          // пин кнопки               (D1)
+#if BTN_PIN == 0
+#define PULL_MODE             (HIGH_PULL)                   // пин кнопки "FLASH" NodeMCU, подтяжка должна быть PULL_MODE=HIGH_PULL
 #endif
+#endif
+
+#ifndef DS18B20_PIN
+#define DS18B20_PIN           (13)                        // D7 Пин подключения датчика DS18b20. При использовании энкодара, датчик можно назначить на пин кнопки (SW) энкодера. И поставить резистор подтяжки к +3.3в.
+#endif
+#ifndef DS18B_READ_DELAY
+#define DS18B_READ_DELAY      (10U)                       // Секунд - периодичность опроса датчика. Чаще не надо, возможно лучше реже. С учетом теплоемкости датчика, воздуха и подложки матрицы - смысла нет
+#endif
+#ifndef COOLER_PIN
+#define COOLER_PIN            (-1)                        // Пин для управления вентилятором охлаждения лампы. (-1) если управление вентилятором не нужно. 
+#endif
+#ifndef COOLER_PIN_TYPE
+#define COOLER_PIN_TYPE       (0U)                        // 0-дискретный вкл\выкл, 1 - ШИМ (для 4-х пиновых вентиляторов). Убедитесь, что вывод COOLER_PIN поддерживает PWM.
+#endif
+#ifndef COOLING_FAIL
+#define COOLING_FAIL          (6U)                        // Количество циклов DS18B_READ_DELAY. Если за это время снизить температуру до TEMP_DEST (Дискретный режим выхода вентилятора), или TEMP_MAX (ШИМ),  
+#endif
+#ifndef CURRENT_LIMIT_STEP
+#define CURRENT_LIMIT_STEP    (0U)
+#endif
+#ifndef TEMP_DEST
+#define TEMP_DEST         (50U)
+#endif
+
 /*
 #ifndef MOSFET_PIN
 #define MOSFET_PIN            (D2)                          // пин MOSFET транзистора   (D2) - может быть использован для управления питанием матрицы/ленты
@@ -338,10 +381,10 @@ typedef enum {NR_NONE,BIT_1,BIT_2,BIT_3,BIT_4} MIC_NOISE_REDUCE_LEVEL;
 
 #ifdef TM1637_CLOCK
 #ifndef TM_CLK_PIN
-  #define TM_CLK_PIN D0 
+  #define TM_CLK_PIN 16   // D0
 #endif
 #ifndef TM_DIO_PIN
-  #define TM_DIO_PIN D7
+  #define TM_DIO_PIN 13   // D7
 #endif
 #ifndef TM_BRIGHTNESS
   #define TM_BRIGHTNESS 7U //яркость дисплея, 0..7
@@ -351,4 +394,4 @@ typedef enum {NR_NONE,BIT_1,BIT_2,BIT_3,BIT_4} MIC_NOISE_REDUCE_LEVEL;
 #endif
 #endif
 
-#endif
+typedef enum {NR_NONE,BIT_1,BIT_2,BIT_3,BIT_4} MIC_NOISE_REDUCE_LEVEL;
