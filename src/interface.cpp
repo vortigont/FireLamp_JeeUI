@@ -41,6 +41,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "ui.h"
 #include "extra_tasks.h"
 #include "events.h"
+
 #ifdef TM1637_CLOCK
     #include "tm.h"				// Подключаем функции
 #endif
@@ -66,10 +67,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
  * Список имен системных переменных можно найти в файле "constants.h"
  */
 #include "basicui.h"
-
-#ifdef ESP32
-    #include "esp_littlefs.h"
-#endif
 
 namespace INTERFACE {
 // ------------- глобальные переменные построения интерфейса
@@ -4010,7 +4007,7 @@ String httpCallback(const String &param, const String &value, bool isset){
         return result;
     } else {
         LOG(println, F("SET"));
-        if (upperParam == FPSTR(ON)) { action = (value!="0" ? RA_ON : RA_OFF); remote_action(action, NULL, NULL); return result; }
+        if (upperParam == FPSTR(CMD_ON)) { action = (value!="0" ? RA_ON : RA_OFF); remote_action(action, NULL, NULL); return result; }
         else if (upperParam == FPSTR(CMD_OFF)) { action = (value!="0" ? RA_OFF : RA_ON); remote_action(action, NULL, NULL); return result; }
         else if (upperParam == FPSTR(CMD_DEMO)) action = RA_DEMO;
         else if (upperParam == FPSTR(CMD_MSG)) action = RA_SEND_TEXT;

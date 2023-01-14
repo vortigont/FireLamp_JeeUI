@@ -153,7 +153,7 @@ typedef enum {NR_NONE,BIT_1,BIT_2,BIT_3,BIT_4} MIC_NOISE_REDUCE_LEVEL;
 #endif
 
 #ifndef BTN_PIN
-#define BTN_PIN               (D1)                          // пин кнопки               (D1)
+#define BTN_PIN               (0U)                          // пин кнопки               (D1)
 //#define BTN_PIN               (0U)                          // пин кнопки "FLASH" NodeMCU (ОТЛАДКА!!!) , подтяжка должна быть PULL_MODE=HIGH_PULL
 #endif
 /*
