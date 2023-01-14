@@ -1,0 +1,114 @@
+# CI Build runner with Platformio
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+# https://docs.platformio.org/en/latest/integration/ci/github-actions.html
+
+name: PlatformIO CI
+
+on:
+  workflow_dispatch:      # Manual start
+  push:
+    branches: [ master, feat ]
+    paths:
+      - '**.c'
+      - '**.cpp'
+      - '**.h'
+      - '**.hpp'
+      - '**.ini'
+      #- '**.yml'
+  pull_request:
+    branches: [ master]
+    paths:
+      - '**.cpp'
+      - '**.hpp'
+      - '**.h'
+      - '**.c'
+    #paths-ignore:
+    #  - '.github/**'
+
+# one task per branch/env at a time
+concurrency:
+  group: environment-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  esp8266:
+    runs-on: ubuntu-latest
+    if: github.repository == 'vortigont/FireLamp_JeeUI'
+    continue-on-error: true
+    strategy:
+      matrix:
+        variant:
+          - esp8266
+          - esp8266dev
+          - esp8266full
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: PIO Cache
+        id: cache-pio
+        uses: actions/cache@v3
+        env:
+          cache-name: cache-pio-pkgs
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.platformio/.cache
+          key: ${{ runner.os }}-pio-${{env.cache-name}}
+          restore-keys: |
+            ${{ runner.os }}-pio-
+            ${{ runner.os }}-
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+      - name: Install Platformio
+        run: |
+          python -m pip install --upgrade pip
+          pip install --upgrade platformio
+          #platformio pkg update
+      - name: Run PlatformIO build
+        run: |
+          platformio run -e ${{ matrix.variant }}
+#      env: 
+#        PLATFORMIO_CI_SRC: ${{ matrix.code }}
+#      run: |
+#        pio ci -c ${{ matrix.code }}/platformio.ini
+
+  esp32:
+    runs-on: ubuntu-latest
+    if: github.repository == 'vortigont/FireLamp_JeeUI'
+    continue-on-error: true
+    strategy:
+      matrix:
+        variant:
+          - esp32
+          - esp32debug
+          - esp32full
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: PIO Cache
+        id: cache-pio
+        uses: actions/cache@v3
+        env:
+          cache-name: cache-pio-pkgs
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.platformio/.cache
+          key: ${{ runner.os }}-pio-${{env.cache-name}}
+          restore-keys: |
+            ${{ runner.os }}-pio-
+            ${{ runner.os }}-
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+      - name: Install Platformio
+        run: |
+          python -m pip install --upgrade pip
+          pip install --upgrade platformio
+          #platformio pkg update
+      - name: Run PlatformIO build
+        run: |
+          platformio run -e ${{ matrix.variant }}
