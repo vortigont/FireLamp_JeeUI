@@ -47,6 +47,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "extra_tasks.h"
 #include "timerminim.hpp"
 #include "char_const.h"
+#include "mp3player.h"
 
 #ifdef XY_EXTERN
 #include "XY.h"

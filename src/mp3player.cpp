@@ -34,9 +34,10 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
    вместе с этой программой. Если это не так, см.
    <https://www.gnu.org/licenses/>.)
 */
-#include "mp3player.h"
 #include "main.h"
 #ifdef MP3PLAYER
+#include "mp3player.h"
+
 MP3PLAYERDEVICE::MP3PLAYERDEVICE(const uint8_t rxPin, const uint8_t txPin) : mp3player(rxPin, txPin) // RX, TX
 {
   flags = 0;
@@ -353,4 +354,30 @@ void MP3PLAYERDEVICE::ReStartAlarmSound(ALARM_SOUND_TYPE val){
     break;
   }
 }
+
+void MP3PLAYERDEVICE::setVolume(uint8_t vol) {
+  cur_volume=vol;
+  if(ready){
+    int tcnt = 5;
+    do {
+      tcnt--;
+      if(readVolume()!=vol)
+        volume(vol);
+    } while(!readType() && tcnt);
+  }
+  LOG(printf_P, PSTR("DFplayer: Set volume: %d\n"), cur_volume);
+}
+
+void MP3PLAYERDEVICE::setTempVolume(uint8_t vol) {
+  if(ready){
+    int tcnt = 5;
+    do {
+      tcnt--;
+      if(readVolume()!=vol)
+        volume(vol);
+    } while(!readType() && tcnt);
+  }
+  LOG(printf_P, PSTR("DFplayer: Set temp volume: %d\n"), vol);
+}
+
 #endif

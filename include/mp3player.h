@@ -34,12 +34,16 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
    вместе с этой программой. Если это не так, см.
    <https://www.gnu.org/licenses/>.)
 */
+#pragma once
+typedef enum : uint8_t {TS_NONE=0, TS_VER1, TS_VER2} TIME_SOUND_TYPE; // виды озвучки времени (8 вариантов максимум)
+typedef enum : uint8_t {AT_NONE=0, AT_FIRST, AT_SECOND, AT_THIRD, AT_FOURTH, AT_FIFTH, AT_RANDOM, AT_RANDOMMP3} ALARM_SOUND_TYPE; // виды будильников (8 вариантов максимум)
 
 #ifdef MP3PLAYER
 #ifndef __MP3_PLAYER_H
 #define __MP3_PLAYER_H
 #include <SoftwareSerial.h>
 #include "DFRobotDFPlayerMini.h"
+#include "ts.h"
 
 class MP3PLAYERDEVICE : protected DFRobotDFPlayerMini {
   private:
@@ -73,7 +77,7 @@ class MP3PLAYERDEVICE : protected DFRobotDFPlayerMini {
     void playFolder0(int filenb);
     void restartSound();
   public:
-    MP3PLAYERDEVICE(const uint8_t rxPin= MP3_RX_PIN, const uint8_t txPin=MP3_TX_PIN); // конструктор
+    MP3PLAYERDEVICE(const uint8_t rxPin, const uint8_t txPin); // конструктор
     uint16_t getCurPlayingNb() {return prev_effnb;} // вернуть предыдущий для смещения
     void setupplayer(uint16_t effnb, const String &_soundfile) {soundfile = _soundfile; cur_effnb=effnb;};
     bool isReady() {return ready;}
@@ -108,29 +112,8 @@ class MP3PLAYERDEVICE : protected DFRobotDFPlayerMini {
     void playEffect(uint16_t effnb, const String &_soundfile, bool delayed=false);
     void playName(uint16_t effnb);
     uint8_t getVolume() { return cur_volume; }
-    void setVolume(uint8_t vol) {
-      cur_volume=vol;
-      if(ready){
-        int tcnt = 5;
-        do {
-          tcnt--;
-          if(readVolume()!=vol)
-            volume(vol);
-        } while(!readType() && tcnt);
-      }
-      LOG(printf_P, PSTR("DFplayer: Set volume: %d\n"), cur_volume);
-    }
-    void setTempVolume(uint8_t vol) {
-      if(ready){
-        int tcnt = 5;
-        do {
-          tcnt--;
-          if(readVolume()!=vol)
-            volume(vol);
-        } while(!readType() && tcnt);
-      }
-      LOG(printf_P, PSTR("DFplayer: Set temp volume: %d\n"), vol);
-    }
+    void setVolume(uint8_t vol);
+    void setTempVolume(uint8_t vol);
     void setMP3count(uint16_t cnt) {mp3filescount = cnt;} // кол-во файлов в папке MP3
     uint16_t getMP3count() {return mp3filescount;}
     void setEqType(uint8_t val) { EQ(val); }
