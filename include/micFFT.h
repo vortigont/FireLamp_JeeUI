@@ -47,7 +47,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 #include "arduinoFFT.h"
 #include "config.h"
-#include "misc.h"
 
 class MICWORKER {
 private:
