@@ -35,9 +35,9 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
    <https://www.gnu.org/licenses/>.)
 */
 
-#include "main.h"
+#include "lamp.h"
 #include "patterns.h"
-#include "effectmath.h"
+#include "effects.h"
 
 // непустой дефолтный деструктор (если понадобится)
 // EffectCalc::~EffectCalc(){LOG(println, "Effect object destroyed");}

@@ -51,7 +51,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 
 MicroDS18B20<DS18B20_PIN> dallas;
-extern LAMP myLamp;
 
 bool canBeDisplayed;
 

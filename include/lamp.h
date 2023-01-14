@@ -40,12 +40,13 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 #include "misc.h"
 #include "config.h" // подключаем эффекты, там же их настройки
-#include "effects.h"
+#include "effectworker.h"
 #include "events.h"
 #include "LList.h"
 #include "interface.h"
 #include "extra_tasks.h"
 #include "timerminim.hpp"
+#include "char_const.h"
 
 #ifdef XY_EXTERN
 #include "XY.h"
@@ -791,5 +792,7 @@ public:
 
     }
 };
+
+extern LAMP myLamp; // Объект лампы
 
 #endif

@@ -41,7 +41,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #ifdef MATRIXx4
   #include "matrix4.h"
 #endif
-extern LAMP myLamp; // Объект лампы
 
 // Общий набор мат. функций и примитивов для обсчета эффектов
 

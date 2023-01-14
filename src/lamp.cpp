@@ -39,8 +39,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "effectmath.h"
 #include "fontHEX.h"
 
-extern LAMP myLamp; // Объект лампы
-
 void LAMP::lamp_init(const uint16_t curlimit)
 {
   setcurLimit(curlimit);

@@ -40,7 +40,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 #include "color_palette.h"
 #include "effectworker.h"
-#include "effectmath.h"
 
 const byte maxDim = max(WIDTH, HEIGHT);
 const byte minDim = min(WIDTH, HEIGHT);

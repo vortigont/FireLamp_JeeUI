@@ -77,7 +77,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 extern Scheduler ts;
 
 // глобальные переменные для работы с ними в программе
-extern LAMP myLamp; // Объект лампы
+
 #ifdef ESP_USE_BUTTON
 extern Buttons *myButtons;
 #endif

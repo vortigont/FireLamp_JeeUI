@@ -53,8 +53,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 #include "EncButton.h"
 
-extern LAMP myLamp;
-
 static EncButton<EB_CALLBACK, DT, CLK, SW> enc;   // энкодер с кнопкой <A, B, KEY>
 
 #ifndef EXIT_TIMEOUT
