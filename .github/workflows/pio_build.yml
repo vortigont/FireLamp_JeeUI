@@ -44,14 +44,25 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: PIO Cache
+      - name: PIP Cache
+        id: cache-pip
+        uses: actions/cache@v3
+        env:
+          cache-name: cache-pip-pkgs
+        with:
+          path: |
+            ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{env.cache-name}}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+            ${{ runner.os }}-
+      - name: Platformio Cache
         id: cache-pio
         uses: actions/cache@v3
         env:
           cache-name: cache-pio-pkgs
         with:
           path: |
-            ~/.cache/pip
             ~/.platformio/.cache
           key: ${{ runner.os }}-pio-${{env.cache-name}}
           restore-keys: |
@@ -87,14 +98,25 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: PIO Cache
+      - name: PIP Cache
+        id: cache-pip
+        uses: actions/cache@v3
+        env:
+          cache-name: cache-pip-pkgs
+        with:
+          path: |
+            ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{env.cache-name}}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+            ${{ runner.os }}-
+      - name: Platformio Cache
         id: cache-pio
         uses: actions/cache@v3
         env:
           cache-name: cache-pio-pkgs
         with:
           path: |
-            ~/.cache/pip
             ~/.platformio/.cache
           key: ${{ runner.os }}-pio-${{env.cache-name}}
           restore-keys: |
