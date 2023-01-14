@@ -53,14 +53,22 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 #include "EncButton.h"
 
-static EncButton<EB_CALLBACK, DT, CLK, SW> enc;   // энкодер с кнопкой <A, B, KEY>
-
-#ifndef EXIT_TIMEOUT
-#define EXIT_TIMEOUT 3U
+#ifndef ENC_EXIT_TIMEOUT
+#define ENC_EXIT_TIMEOUT 3U   // Таймаут выхода из настроек эффекта. Приблизительно равно (EXIT_TIMEOUT * 10 секунд)
 #endif
 
 #ifndef ENC_STRING_EFFNUM_DELAY
 #define ENC_STRING_EFFNUM_DELAY 17
+#endif
+
+#ifndef ENC_SW
+#define ENC_SW                  (14)                        // D5 Пин кнопки стандартного энкодера
+#endif
+#ifndef ENC_DT
+#define ENC_DT                  (5)                         // D1 Пин DT энкодера
+#endif
+#ifndef ENC_CLK
+#define ENC_CLK                 (4)                         // D2 Пин CLK энкодера
 #endif
 
 void callEncTick ();
@@ -97,5 +105,7 @@ void toggleMic();
 void toggleAUX();
 void sendTime();
 void sendIP();
+
+extern EncButton<EB_CALLBACK, ENC_DT, ENC_CLK, ENC_SW> enc;
 #endif
 #endif

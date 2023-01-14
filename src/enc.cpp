@@ -74,7 +74,7 @@ void encLoop() {
 #endif
     EVERY_N_SECONDS(10) {
       loops++;
-      if (inSettings && loops == EXIT_TIMEOUT) {  // timeout выхода из режима "Настройки эффекта"
+      if (inSettings && loops == ENC_EXIT_TIMEOUT) {  // timeout выхода из режима "Настройки эффекта"
         exitSettings();
         return;
       }
@@ -127,7 +127,7 @@ void encLoop() {
         printed = false;
       }
     }
-    if (!done && digitalRead(SW)) { // если эффект еще не меняли и кнопка уже отпущена - переключаем эффект
+    if (!done && digitalRead(ENC_SW)) { // если эффект еще не меняли и кнопка уже отпущена - переключаем эффект
       resetTimers();
       LOG(printf_P, PSTR("Enc: New effect number: %d\n"), currEffNum);
       myLamp.switcheffect(SW_SPECIFIC, myLamp.getFaderFlag(), currEffNum);
@@ -150,16 +150,16 @@ void IRAM_ATTR isrEnc() {
 
 // Функция запрещает прерывания от энкодера, на время других операций, чтобы не спамить контроллер
 void interrupt() {
-  attachInterrupt(digitalPinToInterrupt(DT), isrEnc, CHANGE);   // прерывание на DT пине
-  attachInterrupt(digitalPinToInterrupt(CLK), isrEnc, CHANGE);  // прерывание на CLK пине
-  attachInterrupt(digitalPinToInterrupt(SW), isrEnc, FALLING);   // прерывание на SW пине
+  attachInterrupt(digitalPinToInterrupt(ENC_DT), isrEnc, CHANGE);   // прерывание на DT пине
+  attachInterrupt(digitalPinToInterrupt(ENC_CLK), isrEnc, CHANGE);  // прерывание на CLK пине
+  attachInterrupt(digitalPinToInterrupt(ENC_SW), isrEnc, FALLING);   // прерывание на SW пине
 }
 
 // Функция восстанавливает прерывания энкодера
 void noInterrupt() {
-  detachInterrupt(DT);
-  detachInterrupt(CLK);
-  detachInterrupt(SW);
+  detachInterrupt(ENC_DT);
+  detachInterrupt(ENC_CLK);
+  detachInterrupt(ENC_SW);
 }
 
 // Функция обрабатывает повороты энкодера
@@ -602,4 +602,6 @@ void setEncTxtDelay(const uint8_t speed){ txtDelay = speed;}
 CRGB getEncTxtColor(){ return txtColor;}
 void setEncTxtColor(const CRGB color){ txtColor = color;}
 
+// экземпляр объекта энкодер с кнопкой <A, B, KEY>
+EncButton<EB_CALLBACK, ENC_DT, ENC_CLK, ENC_SW> enc;
 #endif
