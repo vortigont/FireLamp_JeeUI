@@ -39,7 +39,8 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #define __EXTRATASKS_H
 
 #include "EmbUI.h"
-#include <FastLED.h>
+#include "effectmath.h"
+
 // TaskScheduler
 extern Scheduler ts;
 

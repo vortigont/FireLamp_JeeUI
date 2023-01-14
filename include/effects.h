@@ -40,6 +40,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 #include "color_palette.h"
 #include "effectworker.h"
+#include "effectmath.h"
 
 const byte maxDim = max(WIDTH, HEIGHT);
 const byte minDim = min(WIDTH, HEIGHT);
@@ -901,7 +902,64 @@ public:
 //---------- Эффект "Фейерверк"
 //адаптация и переписал - kostyamat
 //https://gist.github.com/jasoncoon/0cccc5ba7ab108c0a373
+typedef struct _DOTS_STORE {
+    accum88 gBurstx;
+    accum88 gBursty;
+    saccum78 gBurstxv;
+    saccum78 gBurstyv;
+    CRGB gBurstcolor;
+    bool gSkyburst = false;
+} DOTS_STORE;
+
+class Dot {    // класс для создания снарядов и петард
+private:
+  CRGB empty = CRGB(0,0,0);
+public:
+  byte    show;
+  byte    theType;
+  accum88 x;
+  accum88 y;
+  saccum78 xv;
+  saccum78 yv;
+  accum88 r;
+  CRGB color;
+
+  Dot() {
+    show = 0;
+    theType = 0;
+    x =  0;
+    y =  0;
+    xv = 0;
+    yv = 0;
+    r  = 0;
+    color.setRGB( 0, 0, 0);
+  }
+
+  void Draw(CRGB *leds);
+  void Move(DOTS_STORE &store, bool Flashing);
+  void GroundLaunch(DOTS_STORE &store);
+  void Skyburst( accum88 basex, accum88 basey, saccum78 basedv, CRGB& basecolor, uint8_t dim);
+  CRGB &piXY(CRGB *leds, byte x, byte y);
+
+  int16_t scale15by8_local( int16_t i, fract8 _scale )
+  {
+    int16_t result;
+    result = (int32_t)((int32_t)i * _scale) / 256;
+    return result;
+  };
+
+  void screenscale(accum88 a, byte N, byte &screen, byte &screenerr)
+  {
+    byte ia = a >> 8;
+    screen = scale8(ia, N);
+    byte m = screen * (256 / N);
+    screenerr = (ia - m) * scale8(255, N);
+    return;
+  };
+};
+
 class EffectFireworks : public EffectCalc {
+
 private:
     DOTS_STORE store;
     uint16_t launchcountdown[SPARK];

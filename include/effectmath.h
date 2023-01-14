@@ -219,4 +219,254 @@ public:
     static float InOutCirc(float t, float b, float c, float d);
 };
 
+
+template <class T>
+class Vector2 {
+public:
+    T x, y;
+
+    Vector2() :x(0), y(0) {}
+    Vector2(T x, T y) : x(x), y(y) {}
+    Vector2(const Vector2& v) : x(v.x), y(v.y) {}
+
+    Vector2& operator=(const Vector2& v) {
+        x = v.x;
+        y = v.y;
+        return *this;
+    }
+
+    bool isEmpty() {
+        return x == 0 && y == 0;
+    }
+
+    bool operator==(Vector2& v) {
+        return x == v.x && y == v.y;
+    }
+
+    bool operator!=(Vector2& v) {
+        return !(x == y);
+    }
+
+    Vector2 operator+(Vector2& v) {
+        return Vector2(x + v.x, y + v.y);
+    }
+    Vector2 operator-(Vector2& v) {
+        return Vector2(x - v.x, y - v.y);
+    }
+
+    Vector2& operator+=(Vector2& v) {
+        x += v.x;
+        y += v.y;
+        return *this;
+    }
+    Vector2& operator-=(Vector2& v) {
+        x -= v.x;
+        y -= v.y;
+        return *this;
+    }
+
+    Vector2 operator+(double s) {
+        return Vector2(x + s, y + s);
+    }
+    Vector2 operator-(double s) {
+        return Vector2(x - s, y - s);
+    }
+    Vector2 operator*(double s) {
+        return Vector2(x * s, y * s);
+    }
+    Vector2 operator/(double s) {
+        return Vector2(x / s, y / s);
+    }
+
+    Vector2& operator+=(double s) {
+        x += s;
+        y += s;
+        return *this;
+    }
+    Vector2& operator-=(double s) {
+        x -= s;
+        y -= s;
+        return *this;
+    }
+    Vector2& operator*=(double s) {
+        x *= s;
+        y *= s;
+        return *this;
+    }
+    Vector2& operator/=(double s) {
+        x /= s;
+        y /= s;
+        return *this;
+    }
+
+    void set(T x, T y) {
+        this->x = x;
+        this->y = y;
+    }
+
+    void rotate(double deg) {
+        double theta = deg / 180.0 * M_PI;
+        double c = cos(theta);
+        double s = sin(theta);
+        double tx = x * c - y * s;
+        double ty = x * s + y * c;
+        x = tx;
+        y = ty;
+    }
+
+    Vector2& normalize() {
+        if (length() == 0) return *this;
+        *this *= (1.0 / length());
+        return *this;
+    }
+
+    float dist(Vector2 v) const {
+        Vector2 d(v.x - x, v.y - y);
+        return d.length();
+    }
+    float length() const {
+        return sqrt(x * x + y * y);
+    }
+
+    float mag() const {
+        return length();
+    }
+
+    float magSq() {
+        return (x * x + y * y);
+    }
+
+    void truncate(double length) {
+        double angle = atan2f(y, x);
+        x = length * cos(angle);
+        y = length * sin(angle);
+    }
+
+    Vector2 ortho() const {
+        return Vector2(y, -x);
+    }
+
+    static float dot(Vector2 v1, Vector2 v2) {
+        return v1.x * v2.x + v1.y * v2.y;
+    }
+    static float cross(Vector2 v1, Vector2 v2) {
+        return (v1.x * v2.y) - (v1.y * v2.x);
+    }
+
+    void limit(float max) {
+        if (magSq() > max*max) {
+            normalize();
+            *this *= max;
+        }
+    }
+};
+
+typedef Vector2<float> PVector;
+
+// Flocking
+// Daniel Shiffman <http://www.shiffman.net>
+// The Nature of Code, Spring 2009
+
+// Boid class
+// Methods for Separation, Cohesion, Alignment added
+class Boid {
+  public:
+
+    PVector location;
+    PVector velocity;
+    PVector acceleration;
+    float maxforce;    // Maximum steering force
+    float maxspeed;    // Maximum speed
+
+    float desiredseparation = 4;
+    float neighbordist = 8;
+    byte colorIndex = 0;
+    float mass;
+
+    boolean enabled = true;
+
+    Boid() {}
+
+    Boid(float x, float y) {
+      acceleration = PVector(0, 0);
+      velocity = PVector(randomf(), randomf());
+      location = PVector(x, y);
+      maxspeed = 1.5;
+      maxforce = 0.05;
+    }
+
+    static float randomf() {
+      return mapfloat(random(0, 255), 0, 255, -.5, .5);
+    }
+
+    static float mapfloat(float x, float in_min, float in_max, float out_min, float out_max) {
+      return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+    }
+
+    void run(Boid boids [], uint8_t boidCount) {
+      flock(boids, boidCount);
+      update();
+      // wrapAroundBorders();
+      // render();
+    }
+
+    // Method to update location
+    void update();
+
+    inline void applyForce(PVector force) {
+      // We could add mass here if we want A = F / M
+      acceleration += force;
+    }
+
+    void repelForce(PVector obstacle, float radius);
+
+    // We accumulate a new acceleration each time based on three rules
+    void flock(Boid boids [], uint8_t boidCount);
+
+    // Separation
+    // Method checks for nearby boids and steers away
+    PVector separate(Boid boids [], uint8_t boidCount);
+
+    // Alignment
+    // For every nearby boid in the system, calculate the average velocity
+    PVector align(Boid boids [], uint8_t boidCount);
+
+    // Cohesion
+    // For the average location (i.e. center) of all nearby boids, calculate steering vector towards that location
+    PVector cohesion(Boid boids [], uint8_t boidCount);
+
+    // A method that calculates and applies a steering force towards a target
+    // STEER = DESIRED MINUS VELOCITY
+    PVector seek(PVector target);
+
+    // A method that calculates a steering force towards a target
+    // STEER = DESIRED MINUS VELOCITY
+    void arrive(PVector target);
+
+    void wrapAroundBorders();
+
+    void avoidBorders();
+
+    bool bounceOffBorders(float bounce);
+
+    void render() {
+      // // Draw a triangle rotated in the direction of velocity
+      // float theta = velocity.heading2D() + radians(90);
+      // fill(175);
+      // stroke(0);
+      // pushMatrix();
+      // translate(location.x,location.y);
+      // rotate(theta);
+      // beginShape(TRIANGLES);
+      // vertex(0, -r*2);
+      // vertex(-r, r*2);
+      // vertex(r, r*2);
+      // endShape();
+      // popMatrix();
+      // backgroundLayer.drawPixel(location.x, location.y, CRGB::Blue);
+    }
+};
+
+
+
 #endif
