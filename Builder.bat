@@ -13,46 +13,46 @@ cls
 
 :m1
 Echo  #------------------------------------------#-----------------------------------------# 
-Echo  *                COMMANDS                  *  (Russian)      КОМАНДЫ                 *
+Echo  *                COMMANDS                  *  (Russian)      РљРћРњРђРќР”Р«                 *
 Echo  #------------------------------------------#-----------------------------------------# 
-Echo  *              GIT commands                *              Работа с GIT               *
-Echo  *  Switch/update - MASTER branch    - (1)  *  Переключить\обновить- ветка MASTER     *
-Echo  *  Switch/update - DEV branch       - (2)  *  Переключить\обновить- ветка DEV        *
+Echo  *              GIT commands                *              Р Р°Р±РѕС‚Р° СЃ GIT               *
+Echo  *  Switch/update - MASTER branch    - (1)  *  РџРµСЂРµРєР»СЋС‡РёС‚СЊ\РѕР±РЅРѕРІРёС‚СЊ- РІРµС‚РєР° MASTER     *
+Echo  *  Switch/update - DEV branch       - (2)  *  РџРµСЂРµРєР»СЋС‡РёС‚СЊ\РѕР±РЅРѕРІРёС‚СЊ- РІРµС‚РєР° DEV        *
 Echo  #------------------------------------------#-----------------------------------------# 
-echo  *  Reset changes in local repo!     - (3)  *  Сбросить изменения в локальном репо!   *
-Echo  *  WARNING! This will revert all changes!  *  ВНИМАНИЕ! Это сбросит все изменения!   *
+echo  *  Reset changes in local repo!     - (3)  *  РЎР±СЂРѕСЃРёС‚СЊ РёР·РјРµРЅРµРЅРёСЏ РІ Р»РѕРєР°Р»СЊРЅРѕРј СЂРµРїРѕ!   *
+Echo  *  WARNING! This will revert all changes!  *  Р’РќРРњРђРќРР•! Р­С‚Рѕ СЃР±СЂРѕСЃРёС‚ РІСЃРµ РёР·РјРµРЅРµРЅРёСЏ!   *
 Echo  #------------------------------------------#-----------------------------------------# 
-Echo  *                Build only                *              Только сборка              *
-Echo  *  Build - Esp8266 160MHz           - (4)  *  Собрать для Esp8266 на 160МГц          *
-Echo  *  Build - Esp8266 80MHz            - (5)  *  Собрать для Esp8266 на 80МГц           *
-Echo  *  Build - Esp32                    - (6)  *  Собрать для Esp32                      *
+Echo  *                Build only                *              РўРѕР»СЊРєРѕ СЃР±РѕСЂРєР°              *
+Echo  *  Build - Esp8266 160MHz           - (4)  *  РЎРѕР±СЂР°С‚СЊ РґР»СЏ Esp8266 РЅР° 160РњР“С†          *
+Echo  *  Build - Esp8266 80MHz            - (5)  *  РЎРѕР±СЂР°С‚СЊ РґР»СЏ Esp8266 РЅР° 80РњР“С†           *
+Echo  *  Build - Esp32                    - (6)  *  РЎРѕР±СЂР°С‚СЊ РґР»СЏ Esp32                      *
 Echo  #------------------------------------------#-----------------------------------------#
-Echo  *             Build and flash              *            Сборка и прошивка            *
-Echo  *  Build and upload - Esp8266@160   - (7)  *  Собрать и прошить - Esp8266 на 160МГц  *
-Echo  *  Build and upload - Esp8266@80    - (8)  *  Собрать и прошить - Esp8266 на 80МГц   *
-Echo  *  Build and upload - Esp32         - (9)  *  Собрать и прошить - Esp32              *
+Echo  *             Build and flash              *            РЎР±РѕСЂРєР° Рё РїСЂРѕС€РёРІРєР°            *
+Echo  *  Build and upload - Esp8266@160   - (7)  *  РЎРѕР±СЂР°С‚СЊ Рё РїСЂРѕС€РёС‚СЊ - Esp8266 РЅР° 160РњР“С†  *
+Echo  *  Build and upload - Esp8266@80    - (8)  *  РЎРѕР±СЂР°С‚СЊ Рё РїСЂРѕС€РёС‚СЊ - Esp8266 РЅР° 80РњР“С†   *
+Echo  *  Build and upload - Esp32         - (9)  *  РЎРѕР±СЂР°С‚СЊ Рё РїСЂРѕС€РёС‚СЊ - Esp32              *
 Echo  #------------------------------------------#-----------------------------------------#
-Echo  *         Build and flash (DEBUG)          *      Сборка и прошивка  (С ЛОГОМ)       *
-Echo  *  Build and upload - Esp8266@160   - (7D) *  Собрать и прошить - Esp8266 на 160МГц  *
-Echo  *  Build and upload - Esp8266@80    - (8D) *  Собрать и прошить - Esp8266 на 80МГц   *
-Echo  *  Serial port monitor               - (D) *  Вывод отладочной информации (ЛОГ)      *
+Echo  *         Build and flash (DEBUG)          *      РЎР±РѕСЂРєР° Рё РїСЂРѕС€РёРІРєР°  (РЎ Р›РћР“РћРњ)       *
+rem Echo  *  Build and upload - Esp8266@160   - (7D) *  РЎРѕР±СЂР°С‚СЊ Рё РїСЂРѕС€РёС‚СЊ - Esp8266 РЅР° 160РњР“С†  *
+Echo  *  Build and upload - Esp8266@80    - (8D) *  РЎРѕР±СЂР°С‚СЊ Рё РїСЂРѕС€РёС‚СЊ - Esp8266 РЅР° 80РњР“С†   *
+Echo  *  Serial port monitor               - (D) *  Р’С‹РІРѕРґ РѕС‚Р»Р°РґРѕС‡РЅРѕР№ РёРЅС„РѕСЂРјР°С†РёРё (Р›РћР“)      *
 Echo  #------------------------------------------#-----------------------------------------#
-Echo  *            File System                   *           Файловая Система              *
-Echo  *  Update FS data from framework    - (u)  *  Обновить файлы ФС из фреймворка        *
-Echo  *  Build File System image          - (b)  *  Собрать образ Файловой Системы         *
-Echo  *  Build and upload File System     - (f)  *  Собрать и прошить Файловую Систему     *
+Echo  *            File System                   *           Р¤Р°Р№Р»РѕРІР°СЏ РЎРёСЃС‚РµРјР°              *
+Echo  *  Update FS data from framework    - (u)  *  РћР±РЅРѕРІРёС‚СЊ С„Р°Р№Р»С‹ Р¤РЎ РёР· С„СЂРµР№РјРІРѕСЂРєР°        *
+Echo  *  Build File System image          - (b)  *  РЎРѕР±СЂР°С‚СЊ РѕР±СЂР°Р· Р¤Р°Р№Р»РѕРІРѕР№ РЎРёСЃС‚РµРјС‹         *
+Echo  *  Build and upload File System     - (f)  *  РЎРѕР±СЂР°С‚СЊ Рё РїСЂРѕС€РёС‚СЊ Р¤Р°Р№Р»РѕРІСѓСЋ РЎРёСЃС‚РµРјСѓ     *
 Echo  #------------------------------------------#-----------------------------------------#
-Echo  *  Erase Flash                      - (e)  *  Стереть флеш контроллера               *
+Echo  *  Erase Flash                      - (e)  *  РЎС‚РµСЂРµС‚СЊ С„Р»РµС€ РєРѕРЅС‚СЂРѕР»Р»РµСЂР°               *
 Echo  #------------------------------------------#-----------------------------------------#
-Echo  *  Update libs and PIO Core         - (g)  *  Обновить библиотеки и среду PIO Core   *
-Echo  *  Clean up temp files .pio         - (c)  *  Очистить временные файлы .pio          *
+Echo  *  Update libs and PIO Core         - (g)  *  РћР±РЅРѕРІРёС‚СЊ Р±РёР±Р»РёРѕС‚РµРєРё Рё СЃСЂРµРґСѓ PIO Core   *
+Echo  *  Clean up temp files .pio         - (c)  *  РћС‡РёСЃС‚РёС‚СЊ РІСЂРµРјРµРЅРЅС‹Рµ С„Р°Р№Р»С‹ .pio          *
 Echo  *------------------------------------------#-----------------------------------------*
-Echo  *  CMD window                       - (m)  *  Открыть окно коммандной строки CMD     *
+Echo  *  CMD window                       - (m)  *  РћС‚РєСЂС‹С‚СЊ РѕРєРЅРѕ РєРѕРјРјР°РЅРґРЅРѕР№ СЃС‚СЂРѕРєРё CMD     *
 Echo  *------------------------------------------#-----------------------------------------*
-Echo  *  Remove Platformio installation   - (R)  *  Полностью удалить Platformio с ПК      *
+Echo  *  Remove Platformio installation   - (R)  *  РџРѕР»РЅРѕСЃС‚СЊСЋ СѓРґР°Р»РёС‚СЊ Platformio СЃ РџРљ      *
 Echo  #------------------------------------------#-----------------------------------------#
 Echo.
-Set /p choice="Your choice (Ваш выбор): " 
+Set /p choice="Your choice (Р’Р°С€ РІС‹Р±РѕСЂ): " 
 
 
 if "%choice%"=="1" (
@@ -90,7 +90,7 @@ if "%choice%"=="c" (
 if "%choice%"=="g" (
 	"%USERPROFILE%\.platformio\penv\Scripts\pio.exe" upgrade
 	"%USERPROFILE%\.platformio\penv\Scripts\pio.exe" update
-	"%USERPROFILE%\.platformio\penv\Scripts\pio.exe" lib update
+	"%USERPROFILE%\.platformio\penv\Scripts\pio.exe" pkg update
 )
 if "%choice%"=="m" (start cmd)
 if "%choice%"=="R" (rmdir /S "%USERPROFILE%\.platformio")
