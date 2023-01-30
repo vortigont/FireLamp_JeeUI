@@ -7,7 +7,11 @@ if exist "%USERPROFILE%\Python\python.exe" (
 	set PYTHONPATH=%USERPROFILE%\Python
 )
 PATH=%PATH%;%workdir%;%USERPROFILE%\.platformio\penv\Scripts;%PYTHONPATH%;
-@chcp 1251>nul
+
+REM set the code page to UTF8
+chcp 65001 >nul
+rem @chcp 1251>nul
+
 mode con: cols=88 lines=40
 cls 
 
