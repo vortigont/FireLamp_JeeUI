@@ -89,9 +89,9 @@ if "%choice%"=="4" (
 		goto m1
 
 	) else (
-		echo "Firmware repo wil be instaled on disk !diskInstal!:"
+		echo "Firmware repo will be instaled on disk !diskInstal!:"
 		!diskInstal!:
-		if exist "!diskInstal!:\FireLamp_vortigont" (rmdir /S /Q !diskInstal!:\FireLamp_JeeUI_original_int)
+		if exist "!diskInstal!:\FireLamp_vortigont" (rmdir /S /Q !diskInstal!:\FireLamp_vortigont)
 		"%ProgramFiles%\Git\bin\git" clone %lamprepo%
 		start .\FireLamp_JeeUI_original_int
 	)
