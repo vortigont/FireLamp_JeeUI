@@ -15,8 +15,8 @@ if "%param%"=="2" ( rem переключаем на дев
 	"%ProgramFiles%\Git\bin\git" pull
 )
 if "%param%"=="3" ( rem сброс состояния локального репозитория
-	"%ProgramFiles%\Git\bin\git" reset
-	"%ProgramFiles%\Git\bin\git" checkout .
+	"%ProgramFiles%\Git\bin\git" reset --hard
+	rem "%ProgramFiles%\Git\bin\git" checkout .
 	"%ProgramFiles%\Git\bin\git" pull
 )
 Echo.

@@ -89,10 +89,10 @@ if "%choice%"=="4" (
 		goto m1
 
 	) else (
-		echo "Firmware repo will be instaled on disk !diskInstal!:"
+		echo "Firmware repo will be instaled on disk !diskInstal!:\FireLamp_vortigont"
 		!diskInstal!:
 		if exist "!diskInstal!:\FireLamp_vortigont" (rmdir /S /Q !diskInstal!:\FireLamp_vortigont)
-		"%ProgramFiles%\Git\bin\git" clone %lamprepo%
+		"%ProgramFiles%\Git\bin\git" clone -q %lamprepo% !diskInstal!:\FireLamp_vortigont
 		start .\FireLamp_vortigont
 	)
 )
