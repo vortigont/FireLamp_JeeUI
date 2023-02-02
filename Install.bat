@@ -93,7 +93,7 @@ if "%choice%"=="4" (
 		!diskInstal!:
 		if exist "!diskInstal!:\FireLamp_vortigont" (rmdir /S /Q !diskInstal!:\FireLamp_vortigont)
 		"%ProgramFiles%\Git\bin\git" clone %lamprepo%
-		start .\FireLamp_JeeUI_original_int
+		start .\FireLamp_vortigont
 	)
 )
 
