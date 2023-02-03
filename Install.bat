@@ -14,8 +14,30 @@ set "pythondistro=https://www.python.org/ftp/python/3.10.4/python-3.10.4.exe"
 set "pythondistro64=https://www.python.org/ftp/python/3.10.4/python-3.10.4-amd64.exe"
 set "gitdistro=https://github.com/git-for-windows/git/releases/download/v2.39.1.windows.1/Git-2.39.1-32-bit.exe"
 set "gitdistro64=https://github.com/git-for-windows/git/releases/download/v2.39.1.windows.1/Git-2.39.1-64-bit.exe"
+set "repodstdir=FireLamp.vortigont"
+
 
 cls
+
+: detect arch
+SET "ARCH=x64"
+IF NOT EXIST "%SystemRoot%\SysWOW64\cmd.exe" (     IF NOT DEFINED PROCESSOR_ARCHITEW6432 SET "ARCH=x86" )
+
+if "%ARCH%"=="x64" (
+set "pfilespath=%ProgramW6432%"
+) else (
+set "pfilespath=%ProgramFiles%"
+)
+
+
+where /q git
+IF ERRORLEVEL 1 (
+    ECHO "Git not in path. Assume it is '%pfilespath%\Git\bin\git'"
+    set "gitcmd=%pfilespath%\Git\bin\git"
+) ELSE (
+    ECHO Git found in PATH
+    set "gitcmd=git"
+)
 
 Echo  Attention. For install Python, run this script "As Administrator". 
 Echo  And after completing this step 1, restart your computer.
@@ -38,8 +60,8 @@ Echo.
 Set /p choice="Your choice (Ваш выбор): "
 
 if "%choice%"=="1" (
-	if not exist "%systemdrive%\Program Files (x86)" (
-		CALL DOWNLOAD_FILE %pythondistro% "%TMP%\python.exe"
+	if "%ARCH%"=="x64" (
+		CALL DOWNLOAD_FILE %pythondistro64% "%TMP%\python.exe"
 	) else (
 		CALL DOWNLOAD_FILE %pythondistro%  "%TMP%\python.exe"
 	)
@@ -69,10 +91,10 @@ if "%choice%"=="2" (
 )
 
 if "%choice%"=="3" (
-	if not exist "%systemdrive%\Program Files (x86)" (
-		CALL DOWNLOAD_FILE %gitdistro% %TMP%\git.exe
-	) else (
+	if "%ARCH%"=="x64" (
 		CALL DOWNLOAD_FILE %gitdistro64% %TMP%\git.exe
+	) else (
+		CALL DOWNLOAD_FILE %gitdistro% %TMP%\git.exe
 	)
 	
 	%TMP%\git.exe /SILENT
@@ -87,14 +109,17 @@ if "%choice%"=="4" (
 		pause
 		cls
 		goto m1
+    )
 
-	) else (
-		echo "Firmware repo will be instaled on disk !diskInstal!:\FireLamp_vortigont"
-		!diskInstal!:
-		if exist "!diskInstal!:\FireLamp_vortigont" (rmdir /S /Q !diskInstal!:\FireLamp_vortigont)
-		"%ProgramFiles%\Git\bin\git" clone -q %lamprepo% !diskInstal!:\FireLamp_vortigont
-		start .\FireLamp_vortigont
-	)
+    echo "FireLamp repo will be instaled into !diskInstal!:\%repodstdir% directory, any existing data will be lost"
+    pause
+    !diskInstal!:
+    if exist "!diskInstal!:\%repodstdir%" (rmdir /S /Q !diskInstal!:\%repodstdir%)
+    cd \
+    mkdir %repodstdir%
+    %gitcmd% clone -q --progress %lamprepo% %repodstdir%
+    start %repodstdir%
+    GOTO :EOF
 )
 
 if "%choice%"=="R" (rmdir /S %USERPROFILE%\.platformio)
