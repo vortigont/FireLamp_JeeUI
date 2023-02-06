@@ -522,8 +522,8 @@ private:
 
 public:
     void removeLists(); // уделение списков из ФС
-    time_t getlistsuffix() {return listsuffix ? listsuffix : (listsuffix=micros());}
-    void setlistsuffix(time_t val) {listsuffix=val;}
+    //time_t getlistsuffix() {return listsuffix ? listsuffix : (listsuffix=micros());}      // obsolete, server could handle caching
+    //void setlistsuffix(time_t val) {listsuffix=val;}
     std::unique_ptr<EffectCalc> worker = nullptr;           ///< указатель-класс обработчик текущего эффекта
     void initDefault(const char *folder = NULL); // пусть вызывается позже и явно
     ~EffectWorker() { clearEffectList(); clearControlsList(); }
@@ -553,7 +553,7 @@ public:
     String geteffconfig(uint16_t nb, uint8_t replaceBright = 0);
 
     // Получить конфиг эффекта из ФС
-    String getfseffconfig(uint16_t nb);
+    bool getfseffconfig(uint16_t nb, String &result);
 
     // конструктор копий эффектов
     EffectWorker(const EffectListElem* base, const EffectListElem* copy);

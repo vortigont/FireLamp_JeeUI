@@ -164,7 +164,6 @@ void setup() {
 #ifdef ENCODER
   enc_setup();
 #endif
-
     LOG(println, F("setup() done"));
 }   // End setup()
 
@@ -279,8 +278,8 @@ ICACHE_FLASH_ATTR void mqttCallback(const String &topic, const String &payload){
     sendtopic.replace(FPSTR(TCONST_00AC), "");
     if(sendtopic==FPSTR(TCONST_00AE)){
         sendtopic=String(FPSTR(TCONST_008B))+sendtopic;
-        String effcfg = myLamp.effects.getfseffconfig(myLamp.effects.getCurrent());
-        embui.publish(sendtopic, effcfg, true); // отправляем обратно в MQTT в топик embui/pub/
+        String effcfg;
+        if (myLamp.effects.getfseffconfig(myLamp.effects.getCurrent(), effcfg)) embui.publish(sendtopic, effcfg, true); // отправляем обратно в MQTT в топик embui/pub/
     } else if(sendtopic==FPSTR(TCONST_00AD)){
         sendData();
     }

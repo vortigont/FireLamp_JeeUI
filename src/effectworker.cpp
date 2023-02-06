@@ -486,6 +486,7 @@ bool EffectWorker::deserializeFile(DynamicJsonDocument& doc, const char* filepat
   if (!filepath || !*filepath)
     return false;
 
+  //LOG(printf_P, PSTR("Try to load file: %s\n"), filepath);
   File jfile = LittleFS.open(filepath, "r");
   DeserializationError error;
   if (jfile){
@@ -515,16 +516,15 @@ int EffectWorker::loadeffconfig(const uint16_t nb, const char *folder)
   READALLAGAIN:
 
   if (!deserializeFile(doc, filename.c_str() )){
-    doc.clear();
     LittleFS.remove(filename);
     savedefaulteffconfig(nb, filename);   // пробуем перегенерировать поврежденный конфиг
     if (!deserializeFile(doc, filename.c_str() ))
+      LOG(printf_P, PSTR("Failed to recreate eff config file: %s"), filename);
       return 1;   // ошибка и в файле и при попытке сгенерить конфиг по-умолчанию - выходим
   }
 
   version = doc[F("ver")].as<uint8_t>();
   if(geteffcodeversion((uint8_t)nb) != version && nb<=255){ // только для базовых эффектов эта проверка
-      doc.clear();
       LOG(printf_P, PSTR("Wrong version of effect, rewrite with default (%d vs %d)\n"), version, geteffcodeversion((uint8_t)nb));
       savedefaulteffconfig(nb, filename);
       goto READALLAGAIN;
@@ -582,10 +582,10 @@ int EffectWorker::loadeffconfig(const uint16_t nb, const char *folder)
               id,                                     // id
               CONTROL_TYPE::RANGE,                    // type
               id==0 ? FPSTR(TINTF_00D) : id==1 ? FPSTR(TINTF_087) : FPSTR(TINTF_088),           // name
-              String(127),                            // value
-              String(1),                              // min
-              String(255),                            // max
-              String(1)                               // step
+              "127",                            // value
+              "1",                              // min
+              "255",                            // max
+              "1"                               // step
           ));
       }
   }
@@ -625,16 +625,17 @@ void EffectWorker::savedefaulteffconfig(uint16_t nb, String &filename){
   }
 }
 
-String EffectWorker::getfseffconfig(uint16_t nb)
+bool EffectWorker::getfseffconfig(uint16_t nb, String &result)
 {
-  String cfg_str;
   String filename = geteffectpathname(nb);
   File jfile = LittleFS.open(filename, "r");
-  if(jfile)
-    cfg_str = jfile.readString();
-  jfile.close();
+  if(jfile){
+    result = jfile.readString();
+    jfile.close();
+    return true;
+  }
 
-  return cfg_str;
+  return false;
 }
 
 String EffectWorker::geteffconfig(uint16_t nb, uint8_t replaceBright)
@@ -672,7 +673,7 @@ String EffectWorker::geteffconfig(uint16_t nb, uint8_t replaceBright)
 
   String cfg_str;
   serializeJson(doc, cfg_str);
-  doc.clear();
+
   //LOG(println,cfg_str);
   return cfg_str;
 }
@@ -843,10 +844,10 @@ void EffectWorker::makeIndexFile(const char *folder)
 }
 
 void EffectWorker::removeLists(){
-  LittleFS.remove(FPSTR(TCONST_0082));
-  LittleFS.remove(FPSTR(TCONST_0083));
-  LittleFS.remove(FPSTR(TCONST_0086));
-  LittleFS.remove(FPSTR(TCONST_0084));
+  LittleFS.remove(FPSTR(TCONST_fquicklist));
+  LittleFS.remove(FPSTR(TCONST_fslowlist));
+  LittleFS.remove(FPSTR(TCONST_quicklist));
+  LittleFS.remove(FPSTR(TCONST_slowlist));
   listsuffix = time(NULL);
 }
 
@@ -877,7 +878,6 @@ void EffectWorker::makeIndexFileFromFS(const char *fromfolder,const char *tofold
   File indexFile;
   String sourcedir;
   makeIndexFile(tofolder); // создать дефолтный набор прежде всего
-
   removeLists();
 
   if (fromfolder) {
@@ -910,12 +910,14 @@ void EffectWorker::makeIndexFileFromFS(const char *fromfolder,const char *tofold
       fn=sourcedir + "/" + dir.fileName();
 #endif
 #ifdef ESP32
-  File _f = dir.openNextFile();
-  while(_f){
-      fn = _f.name();
+  File _f;
+  while(_f = dir.openNextFile()){
+      fn = sourcedir + "/" + _f.name();
 #endif
 
       if (!deserializeFile(doc, fn.c_str())) { //  || doc[F("nb")].as<String>()=="0"
+        _f.close();
+        LittleFS.remove(fn);                // delete corrupted config
         continue;
       }
       uint16_t nb = doc[F("nb")].as<uint16_t>();
@@ -925,13 +927,11 @@ void EffectWorker::makeIndexFileFromFS(const char *fromfolder,const char *tofold
         flags = eff->flags.mask;
       indexFile.printf_P(PGidxtemplate, firstLine ? "" : ",", nb, flags);
       firstLine = false; // сбрасываю признак первой строки
-      doc.clear();
 
 #ifdef ESP8266
   ESP.wdtFeed();
 #elif defined ESP32
   delay(1);
-  _f = dir.openNextFile();
 #endif
   }
   indexFile.print("]");

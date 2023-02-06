@@ -433,7 +433,7 @@ void block_effects_config(Interface *interf, JsonObject *data, bool fast=true){
 
     bool firsttime = false;
     File *fquiklist = nullptr;
-    if(!LittleFS.exists(FPSTR(TCONST_0082))){
+    if(!LittleFS.exists(FPSTR(TCONST_fquicklist))){
         fquiklist = new fs::File;
         *fquiklist = LittleFS.open(FPSTR(TCONST_0081), "w");
         fquiklist->print('[');
@@ -443,7 +443,7 @@ void block_effects_config(Interface *interf, JsonObject *data, bool fast=true){
         // формируем и отправляем кадр с запросом подгрузки внешнего ресурса
         interf->json_frame_custom(FPSTR(T_XLOAD));
         interf->json_section_content();
-        interf->select(FPSTR(TCONST_0010), String((int)confEff->eff_nb), String(FPSTR(TINTF_00A)), true, false, String(LittleFS.exists(FPSTR(TCONST_0083)) ? FPSTR(TCONST_0083) : FPSTR(TCONST_0082))+'?'+myLamp.effects.getlistsuffix());
+        interf->select(FPSTR(TCONST_0010), String((int)confEff->eff_nb), String(FPSTR(TINTF_00A)), true, false, String(LittleFS.exists(FPSTR(TCONST_fslowlist)) ? FPSTR(TCONST_fslowlist) : FPSTR(TCONST_fquicklist)));
         interf->json_section_end();
         block_effects_config_param(interf, nullptr);
         interf->spacer();
@@ -477,7 +477,7 @@ void block_effects_config(Interface *interf, JsonObject *data, bool fast=true){
         if(fquiklist){
             fquiklist->print(']');
             fquiklist->close();
-            LittleFS.rename(FPSTR(TCONST_0081),FPSTR(TCONST_0082));
+            LittleFS.rename(FPSTR(TCONST_0081),FPSTR(TCONST_fquicklist));
             delete (fs::FS *)fquiklist;
         }
     } else {
@@ -502,7 +502,7 @@ void block_effects_config(Interface *interf, JsonObject *data, bool fast=true){
         if(fquiklist){
             fquiklist->print(']');
             fquiklist->close();
-            LittleFS.rename(FPSTR(TCONST_0081),FPSTR(TCONST_0082));
+            LittleFS.rename(FPSTR(TCONST_0081),FPSTR(TCONST_fquicklist));
             delete (fs::FS *)fquiklist;
         }
     }
@@ -512,7 +512,7 @@ void block_effects_config(Interface *interf, JsonObject *data, bool fast=true){
     // формируем и отправляем кадр с запросом подгрузки внешнего ресурса
     interf->json_frame_custom(FPSTR(T_XLOAD));
     interf->json_section_content();
-    interf->select(FPSTR(TCONST_0010), String((int)confEff->eff_nb), String(FPSTR(TINTF_00A)), true, false, String(FPSTR(TCONST_0082))+'?'+myLamp.effects.getlistsuffix());
+    interf->select(FPSTR(TCONST_0010), String((int)confEff->eff_nb), String(FPSTR(TINTF_00A)), true, false, String(FPSTR(TCONST_fquicklist)));
     interf->json_section_end();
     block_effects_config_param(interf, nullptr);
 
@@ -533,7 +533,7 @@ void delayedcall_show_effects(){
     EffectListElem **peff = new (EffectListElem *); // выделяем память под укзатель на указатель
     *peff = nullptr; // чистим содержимое
     File *slowlist = nullptr;
-    if(!LittleFS.exists(confEff?FPSTR(TCONST_0083):FPSTR(TCONST_0084))){
+    if(!LittleFS.exists(confEff?FPSTR(TCONST_fslowlist):FPSTR(TCONST_fslowlist))){
         slowlist = new fs::File;
         *slowlist = LittleFS.open(FPSTR(TCONST_0085), "w");
     } else {
@@ -541,7 +541,7 @@ void delayedcall_show_effects(){
         Interface *interf = embui.ws.count()? new Interface(&embui, &embui.ws, 512) : nullptr;
         interf->json_frame_custom(FPSTR(T_XLOAD));
         interf->json_section_content();
-        interf->select(confEff?FPSTR(TCONST_0010):FPSTR(TCONST_0016), String(effnb), String(FPSTR(TINTF_00A)), true, true, String(confEff?FPSTR(TCONST_0083):FPSTR(TCONST_0084))+'?'+myLamp.effects.getlistsuffix());
+        interf->select(confEff?FPSTR(TCONST_0010):FPSTR(TCONST_0016), String(effnb), String(FPSTR(TINTF_00A)), true, true, String(confEff?FPSTR(TCONST_fslowlist):FPSTR(TCONST_fslowlist)));
         interf->json_section_end();
         interf->json_frame_flush();
         delete interf;
@@ -593,7 +593,7 @@ void delayedcall_show_effects(){
 #ifdef ESP32
                         delay(500);
 #endif
-                        LittleFS.rename(FPSTR(TCONST_0085),confEff?FPSTR(TCONST_0083):FPSTR(TCONST_0084));
+                        LittleFS.rename(FPSTR(TCONST_0085),confEff?FPSTR(TCONST_fslowlist):FPSTR(TCONST_fslowlist));
                         delete (fs::FS *)slowlist;
                     }
 
@@ -613,7 +613,7 @@ void delayedcall_show_effects(){
             uint16_t effnb = confEff?(int)confEff->eff_nb:myLamp.effects.getSelected(); // если confEff не NULL, то мы в конфирурировании, иначе в основном режиме
             interf->json_frame_custom(FPSTR(T_XLOAD));
             interf->json_section_content();
-            interf->select(confEff?FPSTR(TCONST_0010):FPSTR(TCONST_0016), String(effnb), String(FPSTR(TINTF_00A)), true, true, String(confEff?FPSTR(TCONST_0083):FPSTR(TCONST_0084))+'?'+myLamp.effects.getlistsuffix());
+            interf->select(confEff?FPSTR(TCONST_0010):FPSTR(TCONST_0016), String(effnb), String(FPSTR(TINTF_00A)), true, true, String(confEff?FPSTR(TCONST_fslowlist):FPSTR(TCONST_fslowlist)));
             interf->json_section_end();
             interf->json_frame_flush();
             delete interf;
@@ -636,7 +636,7 @@ void show_effects_config(Interface *interf, JsonObject *data){
     block_effects_config(interf, data, false);
     interf->json_frame_flush();
 #endif
-    if(!LittleFS.exists(FPSTR(TCONST_0083)))
+    if(!LittleFS.exists(FPSTR(TCONST_fslowlist)))
         recreateoptionsTask();
 }
 
@@ -993,7 +993,7 @@ void block_effects_main(Interface *interf, JsonObject *data, bool fast=true){
 
     bool firsttime = false;
     File *quicklist = nullptr;
-    if(!LittleFS.exists(FPSTR(TCONST_0086))){
+    if(!LittleFS.exists(FPSTR(TCONST_quicklist))){
         quicklist = new fs::File;
         *quicklist = LittleFS.open(FPSTR(TCONST_0081), "w");
         quicklist->print('[');
@@ -1001,10 +1001,10 @@ void block_effects_main(Interface *interf, JsonObject *data, bool fast=true){
         fast=true;
     } else {
         // формируем и отправляем кадр с запросом подгрузки внешнего ресурса
-        bool isSlowExist = LittleFS.exists(FPSTR(TCONST_0084));
+        bool isSlowExist = LittleFS.exists(FPSTR(TCONST_fslowlist));
         interf->json_frame_custom(FPSTR(T_XLOAD));
         interf->json_section_content();
-        interf->select(FPSTR(TCONST_0016), String(myLamp.effects.getSelected()), String(FPSTR(TINTF_00A)), true, false, String(isSlowExist ? FPSTR(TCONST_0084) : FPSTR(TCONST_0086))+'?'+myLamp.effects.getlistsuffix());
+        interf->select(FPSTR(TCONST_0016), String(myLamp.effects.getSelected()), String(FPSTR(TINTF_00A)), true, false, String(isSlowExist ? FPSTR(TCONST_fslowlist) : FPSTR(TCONST_quicklist)));
         interf->json_section_end();
         block_effects_param(interf, data);
         interf->button(FPSTR(TCONST_000F), FPSTR(TINTF_009));
@@ -1054,7 +1054,7 @@ void block_effects_main(Interface *interf, JsonObject *data, bool fast=true){
         if(quicklist){
             quicklist->print(']');
             quicklist->close();
-            LittleFS.rename(FPSTR(TCONST_0081),FPSTR(TCONST_0086));
+            LittleFS.rename(FPSTR(TCONST_0081),FPSTR(TCONST_quicklist));
             delete (fs::FS *)quicklist;
         }
     } else {
@@ -1090,13 +1090,13 @@ void block_effects_main(Interface *interf, JsonObject *data, bool fast=true){
         if(quicklist){
             quicklist->print(']');
             quicklist->close();
-            LittleFS.rename(FPSTR(TCONST_0081),FPSTR(TCONST_0086));
+            LittleFS.rename(FPSTR(TCONST_0081),FPSTR(TCONST_quicklist));
             delete (fs::FS *)quicklist;
         }
     }
     interf->json_frame_custom(FPSTR(T_XLOAD));
     interf->json_section_content();
-    interf->select(FPSTR(TCONST_0016), String(myLamp.effects.getSelected()), String(FPSTR(TINTF_00A)), true, false, String(FPSTR(TCONST_0086))+'?'+myLamp.effects.getlistsuffix());
+    interf->select(FPSTR(TCONST_0016), String(myLamp.effects.getSelected()), String(FPSTR(TINTF_00A)), true, false, String(FPSTR(TCONST_quicklist)));
     interf->json_section_end();
     LOG(printf_P,PSTR("DBG2: generating Names list took %ld ms\n"), millis() - timest);
 
