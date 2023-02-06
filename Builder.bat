@@ -12,7 +12,7 @@ REM set the code page to UTF8
 chcp 65001 >nul
 rem @chcp 1251>nul
 
-mode con: cols=88 lines=40
+mode con: cols=88
 cls
 
 if not exist "%workdir%\out_bin" (mkdir %workdir%\out_bin)
@@ -40,7 +40,7 @@ Echo  *  Build and upload - Esp8266@80    - (8)  *  Собрать и проши
 Echo  *  Build and upload - Esp32         - (9)  *  Собрать и прошить - Esp32              *
 Echo  #------------------------------------------#-----------------------------------------#
 Echo  *         Build and flash (DEBUG)          *      Сборка и прошивка  (С ЛОГОМ)       *
-rem Echo  *  Build and upload - Esp8266@160   - (7D) *  Собрать и прошить - Esp8266 на 160МГц  *
+Echo  *  Build and upload - Esp8266@160   - (7D) *  Собрать и прошить - Esp8266 на 160МГц  *
 Echo  *  Build and upload - Esp8266@80    - (8D) *  Собрать и прошить - Esp8266 на 80МГц   *
 Echo  *  Build and upload - Esp32         - (9D) *  Собрать и прошить - Esp32              *
 Echo  *  Serial port monitor               - (D) *  Вывод отладочной информации (ЛОГ)      *
