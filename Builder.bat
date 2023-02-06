@@ -101,7 +101,7 @@ if "%choice%"=="8" ("%USERPROFILE%\.platformio\penv\Scripts\pio.exe" run --targe
 if "%choice%"=="9" ("%USERPROFILE%\.platformio\penv\Scripts\pio.exe" run --target upload --environment esp32)
 if "%choice%"=="7D" ("%USERPROFILE%\.platformio\penv\Scripts\pio.exe" run --target upload --environment esp8266@160dev)
 if "%choice%"=="8D" ("%USERPROFILE%\.platformio\penv\Scripts\pio.exe" run --target upload --environment esp8266dev)
-if "%choice%"=="9D" ("%USERPROFILE%\.platformio\penv\Scripts\pio.exe" run --target upload --environment esp32debug)if "%choice%"=="D" (start %workdir%\SerialMonitor.cmd)
+if "%choice%"=="9D" ("%USERPROFILE%\.platformio\penv\Scripts\pio.exe" run --target upload --environment esp32debug)
 if "%choice%"=="D" (start %workdir%\SerialMonitor.cmd)
 if "%choice%"=="u" (
 	cd %workdir%\resources\
