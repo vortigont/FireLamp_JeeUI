@@ -848,7 +848,7 @@ void EffectWorker::removeLists(){
   LittleFS.remove(FPSTR(TCONST_fslowlist));
   LittleFS.remove(FPSTR(TCONST_quicklist));
   LittleFS.remove(FPSTR(TCONST_slowlist));
-  listsuffix = time(NULL);
+//  listsuffix = time(NULL);
 }
 
 void EffectWorker::makeIndexFileFromList(const char *folder, bool forceRemove)
@@ -916,7 +916,9 @@ void EffectWorker::makeIndexFileFromFS(const char *fromfolder,const char *tofold
 #endif
 
       if (!deserializeFile(doc, fn.c_str())) { //  || doc[F("nb")].as<String>()=="0"
+        #ifdef ESP32
         _f.close();
+        #endif
         LittleFS.remove(fn);                // delete corrupted config
         continue;
       }

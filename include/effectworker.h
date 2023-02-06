@@ -436,7 +436,7 @@ public:
 
 class EffectWorker {
 private:
-    time_t listsuffix = 0; // суффикс используемый для обновления списков
+    //time_t listsuffix = 0; // суффикс используемый для обновления списков
     LAMPSTATE *lampstate; // ссылка на состояние лампы
     SORT_TYPE effSort; // порядок сортировки в UI
 
