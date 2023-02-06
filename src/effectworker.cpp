@@ -519,7 +519,7 @@ int EffectWorker::loadeffconfig(const uint16_t nb, const char *folder)
     LittleFS.remove(filename);
     savedefaulteffconfig(nb, filename);   // пробуем перегенерировать поврежденный конфиг
     if (!deserializeFile(doc, filename.c_str() ))
-      LOG(printf_P, PSTR("Failed to recreate eff config file: %s"), filename);
+      LOG(printf_P, PSTR("Failed to recreate eff config file: %s"), filename.c_str());
       return 1;   // ошибка и в файле и при попытке сгенерить конфиг по-умолчанию - выходим
   }
 
