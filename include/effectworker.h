@@ -300,27 +300,7 @@ protected:
     std::vector<PGMPalette*> palettes;          /**< набор используемых палитр (пустой)*/
     TProgmemRGBPalette16 const *curPalette = &RainbowColors_p;     /**< указатель на текущую палитру */
 
-    const String &getCtrlVal(int idx) {
-        //return (idx<ctrls->size() && idx>=0) ? (*ctrls)[idx]->getVal() : dummy;
-
-        // Добавлена поддержка вариантов следования индексов контролов вида 0,1,2,5,7 т.е. с пропусками
-        dummy.clear();
-        if(idx<ctrls->size() && idx>=0 && idx<=2 && (*ctrls)[idx]->getId()==idx){
-            return (*ctrls)[idx]->getVal();
-        } else {
-            for(int i = 3; i<ctrls->size(); i++){
-                if((*ctrls)[i]->getId()==idx){
-                    if(isRandDemo()){
-                        dummy = random((*ctrls)[i]->getMin().toInt(),(*ctrls)[i]->getMax().toInt()+1);
-                        return dummy;
-                    }
-                    else
-                        return (*ctrls)[i]->getVal();
-                }
-            }
-        }
-        return dummy;
-    }
+    const String &getCtrlVal(unsigned idx);
 
 public:
 

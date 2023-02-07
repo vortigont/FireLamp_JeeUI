@@ -381,7 +381,7 @@ void EffectWorker::initDefault(const char *folder)
   }
   effects.sort([](EffectListElem *&a, EffectListElem *&b){ return a->eff_nb - b->eff_nb;}); // сортирую по eff_nb
   int32_t chk = -1; // удаляю дубликаты
-  for(int i=0; i<effects.size(); i++){
+  for(unsigned i=0; i<effects.size(); i++){
     if((int32_t)effects[i]->eff_nb==chk){
           delete effects.remove(i);
           continue;
@@ -658,7 +658,7 @@ String EffectWorker::geteffconfig(uint16_t nb, uint8_t replaceBright)
   doc[F("ver")] = tmp->version;
   doc[F("snd")] = tmp->soundfile;
   JsonArray arr = doc.createNestedArray(F("ctrls"));
-  for (int i = 0; i < tmp->controls.size(); i++) {
+  for (unsigned i = 0; i < tmp->controls.size(); i++) {
     JsonObject var = arr.createNestedObject();
     var[F("id")]=tmp->controls[i]->getId();
     var[F("type")]=tmp->controls[i]->getType();
@@ -958,7 +958,7 @@ void EffectWorker::deleteFromIndexFile(const uint16_t effect)
 // удалить эффект
 void EffectWorker::deleteEffect(const EffectListElem *eff, bool isCfgRemove)
 {
-  for(int i=0; i<effects.size(); i++){
+  for(unsigned i=0; i<effects.size(); i++){
       if(effects[i]->eff_nb==eff->eff_nb){
           if(isCfgRemove)
             removeConfig(eff->eff_nb);
@@ -974,7 +974,7 @@ void EffectWorker::copyEffect(const EffectListElem *base)
   EffectListElem *copy = new EffectListElem(base); // создать копию переданного эффекта
   //uint8_t foundcnt=0;
   uint16_t maxfoundnb=base->eff_nb;
-  for(int i=0; i<effects.size();i++){
+  for(unsigned i=0; i<effects.size();i++){
     if(effects[i]->eff_nb>255 && ((effects[i]->eff_nb&0x00FF)==(copy->eff_nb&0x00FF))){ // найдены копии
       //foundcnt++;
       if(maxfoundnb<effects[i]->eff_nb) maxfoundnb=effects[i]->eff_nb;
@@ -996,7 +996,7 @@ void EffectWorker::copyEffect(const EffectListElem *base)
 EffectListElem *EffectWorker::getSelectedListElement()
 {
   EffectListElem *res = effects.size()>0? effects[0] : nullptr;
-  for(int i=0; i<effects.size(); i++){
+  for(unsigned i=0; i<effects.size(); i++){
       if(effects[i]->eff_nb==selEff)
           res=effects[i];
   }
@@ -1007,7 +1007,7 @@ EffectListElem *EffectWorker::getSelectedListElement()
 EffectListElem *EffectWorker::getCurrentListElement()
 {
   EffectListElem *res = nullptr;
-  for(int i=0; i<effects.size(); i++){
+  for(unsigned i=0; i<effects.size(); i++){
       if(effects[i]->eff_nb==curEff)
           res=effects[i];
   }
@@ -1026,7 +1026,7 @@ EffectListElem *EffectWorker::getFirstEffect()
 // вернуть выбранный элемент списка
 EffectListElem *EffectWorker::getEffect(uint16_t select){
   //LOG(println,F("------"));
-  for (int i = 0; i < effects.size(); i++) {
+  for (unsigned i = 0; i < effects.size(); i++) {
       //LOG(println,effects[i]->eff_nb);
       if (effects[i]->eff_nb == select) {
           return effects[i];
@@ -1038,7 +1038,7 @@ EffectListElem *EffectWorker::getEffect(uint16_t select){
 // вернуть следующий эффект, если передан nullptr, то возвращается первый
 EffectListElem *EffectWorker::getNextEffect(EffectListElem *current){
     if(current == nullptr) return getFirstEffect();
-    for (int i = 0; i < effects.size(); i++) {
+    for (unsigned i = 0; i < effects.size(); i++) {
         if (effects[i]->eff_nb == current->eff_nb) {
             return i+1<effects.size() ? effects[i+1] : nullptr;
         }
@@ -1059,7 +1059,7 @@ uint16_t EffectWorker::getByCnt(byte cnt)
 {
   uint16_t firstfound = curEff;
   bool found = false;
-  for(int i=0; i<effects.size(); i++){
+  for(unsigned i=0; i<effects.size(); i++){
       if(curEff==effects[i]->eff_nb){
           found = true;
           continue;
@@ -1076,7 +1076,7 @@ uint16_t EffectWorker::getByCnt(byte cnt)
       }
   }
   if(cnt){ // список кончился, но до сих пор не нашли... начинаем сначала
-      for(int i=0; i<effects.size(); i++){
+      for(unsigned i=0; i<effects.size(); i++){
           if(effects[i]->isFavorite() && effects[i]->eff_nb!=curEff){
               --cnt;
               if(!cnt){
@@ -1097,7 +1097,7 @@ uint16_t EffectWorker::getPrev()
   // все индексы списка и их синхронизация - фигня ИМХО, исходим только от curEff
   uint16_t firstfound = curEff;
   bool found = false;
-  for(int i=0; i<effects.size(); i++){
+  for(unsigned i=0; i<effects.size(); i++){
       if(found && firstfound!=curEff) { // нашли эффект перед собой
           break;
       } else {
@@ -1122,7 +1122,7 @@ uint16_t EffectWorker::getNext()
   // все индексы списка и их синхронизация - фигня ИМХО, исходим только от curEff
   uint16_t firstfound = curEff;
   bool found = false;
-  for(int i=0; i<effects.size(); i++){
+  for(unsigned i=0; i<effects.size(); i++){
       if(effects[i]->eff_nb==curEff){ // нашли себя
           found = true;
           continue;
@@ -1188,7 +1188,7 @@ void EffectCalc::init(EFF_ENUM _eff, LList<UIControl*>* controls, LAMPSTATE *_la
   lampstate = _lampstate;
 
   isMicActive = isMicOnState();
-  for(int i=0; i<controls->size(); i++){
+  for(unsigned i=0; i<controls->size(); i++){
     setDynCtrl((*controls)[i]);
     // switch(i){
     //   case 0:
@@ -1392,7 +1392,29 @@ void EffectCalc::scale2pallete(){
   // setbrt((*ctrls)[0]->getVal().toInt());
   // setspd((*ctrls)[1]->getVal().toInt());
   // setscl((*ctrls)[2]->getVal().toInt());
-  for(int i=0;i<ctrls->size();i++){
+  for(unsigned i=0;i<ctrls->size();i++){
     setDynCtrl((*ctrls)[i]);
   }
+}
+
+const String& EffectCalc::getCtrlVal(unsigned idx) {
+    //return (idx<ctrls->size() && idx>=0) ? (*ctrls)[idx]->getVal() : dummy;
+
+    // Добавлена поддержка вариантов следования индексов контролов вида 0,1,2,5,7 т.е. с пропусками
+    dummy.clear();
+    if(idx<ctrls->size() && idx>=0 && idx<=2 && (*ctrls)[idx]->getId()==idx){
+        return (*ctrls)[idx]->getVal();
+    } else {
+        for(unsigned i = 3; i<ctrls->size(); i++){
+            if((*ctrls)[i]->getId()==idx){
+                if(isRandDemo()){
+                    dummy = random((*ctrls)[i]->getMin().toInt(),(*ctrls)[i]->getMax().toInt()+1);
+                    return dummy;
+                }
+                else
+                    return (*ctrls)[i]->getVal();
+            }
+        }
+    }
+    return dummy;
 }

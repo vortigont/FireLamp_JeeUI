@@ -205,7 +205,7 @@ void Buttons::buttonTick(){
 	}
 	
 	Button btn(onoffLampState, holding, clicks, true); // myLamp.isLampOn() - анализироваться будет состояние на начало нажимания кнопки
-	for (int i = 0; i < buttons.size(); i++) {
+	for (unsigned i = 0; i < buttons.size(); i++) {
 		if (btn == *buttons[i]) {
 			//if(buttons[i]->action==1) continue; // отладка, отключить действие увеличения яркости
 			if (!buttons[i]->activate(buttons[i]->flags, reverse)) {
@@ -288,7 +288,7 @@ void Buttons::saveConfig(const char *cfg){
 		}
 		configFile.print("[");
 
-		for (int i = 0; i < buttons.size(); i++) {
+		for (unsigned i = 0; i < buttons.size(); i++) {
 			Button *btn = buttons[i];
 			configFile.printf_P(PSTR("%s{\"flg\":%u,\"ac\":%u,\"p\":\"%s\"}"),
 				(char*)(i? F(",") : F("")), btn->flags.mask, btn->action, btn->getParam().c_str()

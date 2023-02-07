@@ -675,7 +675,7 @@ void block_effects_param(Interface *interf, JsonObject *data){
             isMicOn = isMicOn && controls[i]->getVal().toInt();
 #endif
 
-    for(int i=0; i<controls.size();i++){
+    for(unsigned i=0; i<controls.size();i++){
         ctrlCaseType = controls[i]->getType();
         switch(ctrlCaseType>>4){
             case CONTROL_CASE::HIDE :
@@ -815,7 +815,7 @@ void direct_set_effects_dynCtrl(JsonObject *data){
 
     String ctrlName;
     LList<UIControl*>&controls = myLamp.effects.getControls();
-    for(int i=0; i<controls.size();i++){
+    for(unsigned i=0; i<controls.size();i++){
         ctrlName = String(FPSTR(TCONST_0015))+String(controls[i]->getId());
         if((*data).containsKey(ctrlName)){
             if(!i){ // яркость???
@@ -2010,7 +2010,7 @@ void block_settings_event(Interface *interf, JsonObject *data){
 
     int num = 0;
     LList<DEV_EVENT *> *events= myLamp.events.getEvents();
-    for(int i=0; i<events->size(); i++){
+    for(unsigned i=0; i<events->size(); i++){
         interf->option(String(num), (*events)[i]->getName());
         ++num;
     }
@@ -2065,7 +2065,7 @@ void set_event_conf(Interface *interf, JsonObject *data){
     if(cur_edit_event){
         myLamp.events.delEvent(*cur_edit_event);
     } else if (data->containsKey(FPSTR(TCONST_005E))) {
-        int num = (*data)[FPSTR(TCONST_005E)];
+        unsigned num = (*data)[FPSTR(TCONST_005E)];
         LList<DEV_EVENT *> *events = myLamp.events.getEvents();
         if(events->size()>num)
             events->remove(num);
@@ -2149,7 +2149,7 @@ void set_event_conf(Interface *interf, JsonObject *data){
 void show_event_conf(Interface *interf, JsonObject *data){
     String act;
     bool edit = false;
-    int num = 0;
+    unsigned num = 0;
     if (!interf || !data) return;
 
     LOG(print,F("event_conf=")); LOG(println, (*data)[FPSTR(TCONST_005D)].as<String>()); //  && data->containsKey(FPSTR(TCONST_005D))
@@ -3934,7 +3934,7 @@ String httpCallback(const String &param, const String &value, bool isset){
             }
         else if (upperParam == FPSTR(CMD_CONTROL)) {
             LList<UIControl*>&controls = myLamp.effects.getControls();
-            for(int i=0; i<controls.size();i++){
+            for(unsigned i=0; i<controls.size();i++){
                 if(value == String(controls[i]->getId())){
                     result = String(F("[")) + controls[i]->getId() + String(F(",\"")) + (controls[i]->getId()==0 ? String(myLamp.getNormalizedLampBrightness()) : controls[i]->getVal()) + String(F("\"]"));
 #ifdef EMBUI_USE_MQTT
