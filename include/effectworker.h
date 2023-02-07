@@ -83,7 +83,7 @@ typedef struct {
     float cur_val = 0.0;   // текущее значение
     uint8_t last_max_peak = 0; // последнее максимальное амплитудное значение (по модулю)
     uint8_t last_min_peak = 0; // последнее минимальное амплитудное значение (по модулю)
-    MIC_NOISE_REDUCE_LEVEL noise_reduce = MIC_NOISE_REDUCE_LEVEL::NR_NONE; // уровень шумодава
+    mic_noise_reduce_level_t noise_reduce = mic_noise_reduce_level_t::NR_NONE; // уровень шумодава
 
     float getCurVal() {return cur_val;}
     void setMicAnalyseDivider(uint8_t val) {micAnalyseDivider = val&3;}
@@ -91,8 +91,8 @@ typedef struct {
     void setMicScale(float scale) {mic_scale = scale;}
     float getMicNoise() {return mic_noise;}
     void setMicNoise(float noise) {mic_noise = noise;}
-    void setMicNoiseRdcLevel(MIC_NOISE_REDUCE_LEVEL lvl) {noise_reduce = lvl;}
-    MIC_NOISE_REDUCE_LEVEL getMicNoiseRdcLevel() {return noise_reduce;}
+    void setMicNoiseRdcLevel(mic_noise_reduce_level_t lvl) {noise_reduce = lvl;}
+    mic_noise_reduce_level_t getMicNoiseRdcLevel() {return noise_reduce;}
     uint8_t getMicMaxPeak() {return isMicOn?last_max_peak:0;}
     uint8_t getMicMapMaxPeak() {return isMicOn?((last_max_peak>(uint8_t)mic_noise)?(last_max_peak-(uint8_t)mic_noise)*2:1):0;}
     float getMicFreq() {return isMicOn?last_freq:0;}
@@ -275,7 +275,7 @@ protected:
     float getMicFreq() {return lampstate!=nullptr ? lampstate->getMicFreq() : 0;}
     float getMicScale() {return lampstate!=nullptr ? lampstate->getMicScale() : 0;}
     float getMicNoise() {return lampstate!=nullptr ? lampstate->getMicNoise() : 0;}
-    MIC_NOISE_REDUCE_LEVEL getMicNoiseRdcLevel() {return lampstate!=nullptr ? lampstate->getMicNoiseRdcLevel() : MIC_NOISE_REDUCE_LEVEL::NR_NONE;}
+    mic_noise_reduce_level_t getMicNoiseRdcLevel() {return lampstate!=nullptr ? lampstate->getMicNoiseRdcLevel() : mic_noise_reduce_level_t::NR_NONE;}
     
 #endif
     bool isActive() {return active;}

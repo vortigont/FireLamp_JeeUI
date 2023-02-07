@@ -7737,7 +7737,7 @@ bool EffectVU::run(CRGB *leds, EffectWorker *opt) {
     //EVERY_N_MILLIS(100){ // обсчет тяжелый, так что желательно не дергать его чаще 10 раз в секунду, лучеш реже
     if (!(tickCounter%3)) {
       bool withAnalyse = !(++calcArray%3);
-      MICWORKER *mw = new MICWORKER(getMicScale(),getMicNoise(), withAnalyse);
+      MicWorker *mw = new MicWorker(getMicScale(),getMicNoise(), withAnalyse);
 
       if(mw!=nullptr){
         samp_freq = mw->process(getMicNoiseRdcLevel()); // частота семплирования

@@ -393,5 +393,3 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
   #define TM_SHOW_BANNER 0
 #endif
 #endif
-
-typedef enum {NR_NONE,BIT_1,BIT_2,BIT_3,BIT_4} MIC_NOISE_REDUCE_LEVEL;

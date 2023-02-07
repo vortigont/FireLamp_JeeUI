@@ -48,7 +48,9 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "arduinoFFT.h"
 #include "config.h"
 
-class MICWORKER {
+enum class mic_noise_reduce_level_t {NR_NONE,BIT_1,BIT_2,BIT_3,BIT_4};
+
+class MicWorker {
 private:
 #ifdef FAST_ADC_READ
   bool useFixedFreq = true; // использовать фиксированное семплирование, либо максимально возможное (false)
@@ -78,7 +80,7 @@ public:
 #else
   static const uint16_t samples=64U;     //This value MUST ALWAYS be a power of 2
 #endif
-  MICWORKER(float scale = 1.28, float noise = 0, bool withAnalyse=true) {
+  MicWorker(float scale = 1.28, float noise = 0, bool withAnalyse=true) {
     this->vReal = new float[samples];
     if(withAnalyse)
       this->vImag = new float[samples];
@@ -87,10 +89,10 @@ public:
     this->scale=scale;
     this->noise=noise;
   }
-  ~MICWORKER() { if(vReal) delete [] vReal; if(vImag) delete [] vImag; }
+  ~MicWorker() { if(vReal) delete [] vReal; if(vImag) delete [] vImag; }
   bool isCaliblation() {return _isCaliblation;}
   void calibrate();
-  double process(MIC_NOISE_REDUCE_LEVEL level=MIC_NOISE_REDUCE_LEVEL::NR_NONE);
+  double process(mic_noise_reduce_level_t level=mic_noise_reduce_level_t::NR_NONE);
   double analyse();
   float getScale() {return scale;}
   float getNoise() {return noise;}

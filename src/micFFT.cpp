@@ -43,7 +43,7 @@ ADC_MODE(ADC_TOUT);
 #include "misc.h"
 
 
-void MICWORKER::read_data()
+void MicWorker::read_data()
 {
   //uint16_t adc_addr[samples]; // point to the address of ADC continuously fast sampling output
   uint16_t adc_addr[1]; // point to the address of ADC continuously fast sampling output
@@ -90,7 +90,7 @@ void MICWORKER::read_data()
   FFT = ArduinoFFT<float>(vReal, vImag, samples, samplingFrequency);
 }
 
-void MICWORKER::PrintVector(float *vData, uint16_t bufferSize, uint8_t scaleType)
+void MicWorker::PrintVector(float *vData, uint16_t bufferSize, uint8_t scaleType)
 {
   typedef enum {
     SCL_INDEX=0x00,
@@ -127,7 +127,7 @@ void MICWORKER::PrintVector(float *vData, uint16_t bufferSize, uint8_t scaleType
   LOG(println, );
 }
 
-double MICWORKER::process(MIC_NOISE_REDUCE_LEVEL level)
+double MicWorker::process(mic_noise_reduce_level_t level)
 {
   read_data();
 
@@ -143,22 +143,22 @@ double MICWORKER::process(MIC_NOISE_REDUCE_LEVEL level)
     vReal[i]*=scale; // нормализация
     switch (level)
     {
-    case MIC_NOISE_REDUCE_LEVEL::NR_NONE:
+    case mic_noise_reduce_level_t::NR_NONE:
       vReal[i] = map(vReal[i], 0, RESOLUTION, -128, 127); // без преобразований
       break;
-    case MIC_NOISE_REDUCE_LEVEL::BIT_1:
+    case mic_noise_reduce_level_t::BIT_1:
       vReal[i] = map((uint16_t)vReal[i], 0, RESOLUTION, -128, 127);
       vReal[i] = ((uint16_t)(abs((int16_t)vReal[i]))&0xFE)*(vReal[i]>0?1:-1); // маскируем один бита
       break;
-    case MIC_NOISE_REDUCE_LEVEL::BIT_2:
+    case mic_noise_reduce_level_t::BIT_2:
       vReal[i] = map((uint16_t)vReal[i], 0, RESOLUTION, -128, 127);
       vReal[i] = ((uint16_t)(abs((int16_t)vReal[i]))&0xFC)*(vReal[i]>0?1:-1); // маскируем два бита
       break;
-    case MIC_NOISE_REDUCE_LEVEL::BIT_3:
+    case mic_noise_reduce_level_t::BIT_3:
       vReal[i] = map((uint16_t)vReal[i], 0, RESOLUTION, -128, 127);
       vReal[i] = ((uint16_t)(abs((int16_t)vReal[i]))&0xF8)*(vReal[i]>0?1:-1); // маскируем три бита
       break;
-    case MIC_NOISE_REDUCE_LEVEL::BIT_4:
+    case mic_noise_reduce_level_t::BIT_4:
       vReal[i] = map((uint16_t)vReal[i], 0, RESOLUTION, -128, 127);
       vReal[i] = ((uint16_t)(abs((int16_t)vReal[i]))&0xF0)*(vReal[i]>0?1:-1); // маскируем четыре бита
       break;
@@ -174,7 +174,7 @@ double MICWORKER::process(MIC_NOISE_REDUCE_LEVEL level)
   return samplingFrequency; // частота семплирования
 }
 
-double MICWORKER::analyse()
+double MicWorker::analyse()
 {
   //memset(vImag,0,sizeof(samples*sizeof(*vImag))); // обнулить массив предыдущих измерений (так нельзя, ломает float)
   for(uint16_t i=0; i<samples; i++)
@@ -187,7 +187,7 @@ double MICWORKER::analyse()
   return signalFrequency; // измеренная частота главной гармоники
 }
 
-float MICWORKER::fillSizeScaledArray(float *arr, size_t size, bool bound) // bound - ограничивать частотный диапазон или использовать 20-20000, по умолчанию - ограничивать
+float MicWorker::fillSizeScaledArray(float *arr, size_t size, bool bound) // bound - ограничивать частотный диапазон или использовать 20-20000, по умолчанию - ограничивать
 {
   float prevdata[size];
   for(size_t i=0; i<size; i++){
@@ -240,7 +240,7 @@ float MICWORKER::fillSizeScaledArray(float *arr, size_t size, bool bound) // bou
   return maxVal<0?0:maxVal;
 }
 
-void MICWORKER::debug()
+void MicWorker::debug()
 {
   /* Print the results of the simulated sampling according to time */
   // LOG(println, F("Data:"));
@@ -265,7 +265,7 @@ void MICWORKER::debug()
   LOG(println, x, 6);
 }
 
-void MICWORKER::calibrate()
+void MicWorker::calibrate()
 {
   if(!_isCaliblation){
     // начальный вход в калибровку

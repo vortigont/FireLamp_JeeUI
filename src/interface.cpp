@@ -1630,7 +1630,7 @@ void set_settings_mic(Interface *interf, JsonObject *data){
     if (!data) return;
     float scale = (*data)[FPSTR(TCONST_0039)]; //atof((*data)[FPSTR(TCONST_0039)].as<String>().c_str());
     float noise = (*data)[FPSTR(TCONST_003A)]; //atof((*data)[FPSTR(TCONST_003A)].as<String>().c_str());
-    MIC_NOISE_REDUCE_LEVEL rdl = (*data)[FPSTR(TCONST_003B)];
+    mic_noise_reduce_level_t rdl = (*data)[FPSTR(TCONST_003B)];
 
     // LOG(printf_P, PSTR("scale=%2.3f noise=%2.3f rdl=%d\n"),scale,noise,rdl);
     // String tmpStr;
@@ -3375,7 +3375,7 @@ t->enableDelayed();
 
     // float scale = atof(embui.param(FPSTR(TCONST_0039)).c_str());
     // float noise = atof(embui.param(FPSTR(TCONST_003A)).c_str());
-    // MIC_NOISE_REDUCE_LEVEL lvl=(MIC_NOISE_REDUCE_LEVEL)embui.param(FPSTR(TCONST_003B)).toInt();
+    // mic_noise_reduce_level_t lvl=(mic_noise_reduce_level_t)embui.param(FPSTR(TCONST_003B)).toInt();
 
     obj[FPSTR(TCONST_0039)] = embui.param(FPSTR(TCONST_0039)); //scale;
     obj[FPSTR(TCONST_003A)] = embui.param(FPSTR(TCONST_003A)); //noise;

@@ -852,10 +852,10 @@ void LAMP::micHandler()
 #if defined(PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED)
       HeapSelectIram ephemeral;
 #endif
-      mw = new MICWORKER(lampState.mic_scale,lampState.mic_noise,!counter);
+      mw = new MicWorker(lampState.mic_scale,lampState.mic_noise,!counter);
     }
     if(!mw) {
-      mw = new MICWORKER(lampState.mic_scale,lampState.mic_noise,!counter);
+      mw = new MicWorker(lampState.mic_scale,lampState.mic_noise,!counter);
     }
 
     if(!mw) {
@@ -890,10 +890,10 @@ void LAMP::micHandler()
 #if defined(PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED)
         HeapSelectIram ephemeral;
 #endif
-        mw = new MICWORKER();
+        mw = new MicWorker();
       }
       if(!mw){
-        mw = new MICWORKER();   
+        mw = new MicWorker();   
       }
       mw->calibrate();
     } else { // калибровка продолжение
