@@ -205,7 +205,7 @@ private:
     CRGB rgbColor = CRGB::White; // дефолтный цвет для RGB-режима
 
 #ifdef MIC_EFFECTS
-    MICWORKER *mw = nullptr;
+    MicWorker *mw = nullptr;
     void micHandler();
 #endif
 
@@ -267,36 +267,11 @@ public:
 
 #ifdef MIC_EFFECTS
     void setMicCalibration() {lampState.isCalibrationRequest = true;}
-    bool isMicCalibration() {return lampState.isCalibrationRequest;}
+    bool isMicCalibration() const {return lampState.isCalibrationRequest;}
 
-    void setMicOnOff(bool val) {
-        bool found=false;
-        flags.isMicOn = val;
-        lampState.isMicOn = val;
-        if(effects.getEn()==EFF_NONE) return;
-        LList<UIControl*>&controls = effects.getControls();
-        UIControl *c7 = nullptr;
-        if(val){
-            for(int i=3; i<controls.size(); i++) {
-                if(controls[i]->getId()==7 && controls[i]->getName().startsWith(FPSTR(TINTF_020))==1){
-                    if(effects.worker) effects.worker->setDynCtrl(controls[i]);
-                    found=true;
-                } else if(controls[i]->getId()==7) {
-                    c7 = controls[i];
-                }
-            }
-        } 
-        if(!val || !found){
-            UIControl *ctrl = new UIControl(7,(CONTROL_TYPE)18,String(FPSTR(TINTF_020)), val ? "1" : "0", "0", "1", "1");
-            if(effects.worker) effects.worker->setDynCtrl(ctrl);
-            delete ctrl;
-            if(c7){ // был найден 7 контрол, но не микрофон
-                if(effects.worker) effects.worker->setDynCtrl(c7);
-            }
-        }
-    }
+    void setMicOnOff(bool val);
     
-    bool isMicOnOff() {return flags.isMicOn;}
+    bool isMicOnOff() const {return flags.isMicOn;}
 #endif
 
     void setSpeedFactor(float val) {
@@ -313,19 +288,9 @@ public:
     bool IsGlobalBrightness() {return flags.isGlobalBrightness;}
     bool isAlarm() {return mode == LAMPMODE::MODE_ALARMCLOCK;}
     bool isWarning() {return lampState.isWarning;}
-    //int getmqtt_int() {return mqtt_int;}
 
 #ifdef EMBUI_USE_MQTT
-    void setmqtt_int(int val=DEFAULT_MQTTPUB_INTERVAL) {
-        //mqtt_int = val;
-        if(tmqtt_pub)
-            tmqtt_pub->cancel(); // cancel & delete
-
-        extern void sendData();
-        if(val){
-            tmqtt_pub = new Task(val * TASK_SECOND, TASK_FOREVER, [this](){ if(embui.isMQTTconected()) sendData(); }, &ts, true, nullptr, [this](){TASK_RECYCLE; tmqtt_pub=nullptr;});
-        }
-    }
+    void setmqtt_int(int val=DEFAULT_MQTTPUB_INTERVAL);
 #endif
 
     LAMPMODE getMode() {return mode;}
@@ -354,35 +319,24 @@ public:
     bool isDrawOn() {return flags.isDraw;}
     void setDebug(bool flag) {flags.isDebug=flag; lampState.isDebug=flag;}
     void setButton(bool flag) {flags.isBtn=flag;}
-    void setDraw(bool flag){
-        flags.isDraw=flag;
-// #if defined(USE_STREAMING) && !defined(EXT_STREAM_BUFFER)
-//         if (flag && ledStream) {
-//             flags.isStream=false;
-//             remote_action();                // TODO: сделать нужный RA для стрима и рисования
-//         }
-// #endif
-        setDrawBuff(flag);
-    }
-    void setDrawBuff(bool flag) {
-        // flags.isDraw=flag;
-        if(!flag){
-            if (drawbuff) {
-                delete [] drawbuff;
-                drawbuff = nullptr;
-            }
-        } else if(!drawbuff){
-#if defined(PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED)
-            HeapSelectIram ephemeral;
-#endif
-            drawbuff = new CRGB[NUM_LEDS];
-            //for(uint16_t i=0; i<NUM_LEDS; i++) {drawbuff[i] = CHSV(random(0,255),0,255);} // тест :)
-        }
-    }
+    void setDraw(bool flag);
+    void setDrawBuff(bool flag);
     void writeDrawBuf(CRGB &color, uint16_t x, uint16_t y) { if(drawbuff) { drawbuff[getPixelNumber(x,y)]=color; } }
     void writeDrawBuf(CRGB &color, uint16_t num) { if(drawbuff) { drawbuff[num]=color; } }
-    void fillDrawBuf(CRGB &color) { if(drawbuff) { for(uint16_t i=0; i<NUM_LEDS; i++) drawbuff[i]=color; } }
-    void clearDrawBuf() { if(drawbuff) { for(uint16_t i=0; i<NUM_LEDS; i++) drawbuff[i]=CRGB::Black; } }
+
+    /**
+     * @brief fill DrawBuffer with solid color
+     * 
+     * @param color 
+     */
+    void fillDrawBuf(CRGB &color);
+
+    /**
+     * @brief fill DrawBuf with solid black
+     * 
+     */
+    void clearDrawBuf() { CRGB c = CRGB::Black; fillDrawBuf(c); }
+
 #ifdef USE_STREAMING
     bool isStreamOn() {return flags.isStream;}
     bool isDirect() {return flags.isDirect;}
@@ -391,24 +345,11 @@ public:
     void setDirect(bool flag) {flags.isDirect = flag;}
     void setMapping(bool flag) {flags.isMapping = flag;}
 #ifdef EXT_STREAM_BUFFER
-    void setStreamBuff(bool flag) {
-        if(!flag){
-            if (!streambuff.empty()) {
-                streambuff.resize(0);
-                streambuff.shrink_to_fit();
-            }
-        } else if(streambuff.empty()){
-#if defined(PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED)
-            HeapSelectIram ephemeral;
-#endif
-            streambuff.resize(NUM_LEDS);
-            //for(uint16_t i=0; i<NUM_LEDS; i++) {drawbuff[i] = CHSV(random(0,255),0,255);} // тест :)
-        }
-    }
+    void setStreamBuff(bool flag);
     void writeStreamBuff(CRGB &color, uint16_t x, uint16_t y) { if(!streambuff.empty()) { streambuff[getPixelNumber(x,y)]=color; } }
     void writeStreamBuff(CRGB &color, uint16_t num) { if(!streambuff.empty()) { streambuff[num]=color; } }
     void fillStreamBuff(CRGB &color) { for(uint16_t i=0; i<streambuff.size(); i++) streambuff[i]=color; }
-    void clearStreamBuff() { for(uint16_t i=0; i<streambuff.size(); i++) streambuff[i]=CRGB::Black; }
+    void clearStreamBuff() { fillStreamBuff(CRGB::Black); }
 #endif
 #endif
     bool isONMP3() {return flags.isOnMP3;}

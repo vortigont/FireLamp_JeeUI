@@ -97,7 +97,7 @@ typedef struct {
     uint8_t getMicMapMaxPeak() {return isMicOn?((last_max_peak>(uint8_t)mic_noise)?(last_max_peak-(uint8_t)mic_noise)*2:1):0;}
     float getMicFreq() {return isMicOn?last_freq:0;}
     uint8_t getMicMapFreq() {
-        float minFreq=(log((float)(SAMPLING_FREQ>>1)/MICWORKER::samples));
+        float minFreq=(log((float)(SAMPLING_FREQ>>1)/MicWorker::samples));
         float scale = 255.0 / (log((float)HIGH_MAP_FREQ) - minFreq); 
         return (uint8_t)(isMicOn?(log(last_freq)-minFreq)*scale:0);
     }

@@ -340,6 +340,34 @@ void LAMP::playEffect(bool isPlayName, EFFSWITCH action){
     mp3->setCurEffect(effects.getEn());
   }
 }
+
+void LAMP::setMicOnOff(bool val) {
+    bool found=false;
+    flags.isMicOn = val;
+    lampState.isMicOn = val;
+    if(effects.getEn()==EFF_NONE) return;
+    LList<UIControl*>&controls = effects.getControls();
+    UIControl *c7 = nullptr;
+    if(val){
+        for(int i=3; i<controls.size(); i++) {
+            if(controls[i]->getId()==7 && controls[i]->getName().startsWith(FPSTR(TINTF_020))==1){
+                if(effects.worker) effects.worker->setDynCtrl(controls[i]);
+                found=true;
+            } else if(controls[i]->getId()==7) {
+                c7 = controls[i];
+            }
+        }
+    } 
+    if(!val || !found){
+        UIControl *ctrl = new UIControl(7,(CONTROL_TYPE)18,String(FPSTR(TINTF_020)), val ? "1" : "0", "0", "1", "1");
+        if(effects.worker) effects.worker->setDynCtrl(ctrl);
+        delete ctrl;
+        if(c7){ // был найден 7 контрол, но не микрофон
+            if(effects.worker) effects.worker->setDynCtrl(c7);
+        }
+    }
+}
+
 #endif
 
 void LAMP::startRGB(CRGB &val){
@@ -1232,3 +1260,62 @@ void LAMP::showWarning(
   }
 }
 
+void LAMP::setDraw(bool flag){
+    flags.isDraw=flag;
+// #if defined(USE_STREAMING) && !defined(EXT_STREAM_BUFFER)
+//         if (flag && ledStream) {
+//             flags.isStream=false;
+//             remote_action();                // TODO: сделать нужный RA для стрима и рисования
+//         }
+// #endif
+    setDrawBuff(flag);
+}
+
+void LAMP::setDrawBuff(bool flag) {
+    // flags.isDraw=flag;
+    if(!flag){
+        if (drawbuff) {
+            delete [] drawbuff;
+            drawbuff = nullptr;
+        }
+    } else if(!drawbuff){
+#if defined(PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED)
+        HeapSelectIram ephemeral;
+#endif
+        drawbuff = new CRGB[NUM_LEDS];
+        //for(uint16_t i=0; i<NUM_LEDS; i++) {drawbuff[i] = CHSV(random(0,255),0,255);} // тест :)
+    }
+}
+
+void LAMP::fillDrawBuf(CRGB &color) {
+  if(drawbuff) { for(uint16_t i=0; i<NUM_LEDS; i++) drawbuff[i]=color; }
+}
+
+#ifdef EMBUI_USE_MQTT
+void LAMP::setmqtt_int(int val) {
+    //mqtt_int = val;
+    if(tmqtt_pub)
+        tmqtt_pub->cancel(); // cancel & delete
+
+    extern void sendData();
+    if(val){
+        tmqtt_pub = new Task(val * TASK_SECOND, TASK_FOREVER, [this](){ if(embui.isMQTTconected()) sendData(); }, &ts, true, nullptr, [this](){TASK_RECYCLE; tmqtt_pub=nullptr;});
+    }
+}
+#endif
+
+#ifdef EXT_STREAM_BUFFER
+void LAMP::setStreamBuff(bool flag) {
+    if(!flag){
+        if (!streambuff.empty()) {
+            streambuff.resize(0);
+            streambuff.shrink_to_fit();
+        }
+    } else if(streambuff.empty()){
+#if defined(PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED)
+        HeapSelectIram ephemeral;
+#endif
+        streambuff.resize(NUM_LEDS);
+    }
+}
+#endif

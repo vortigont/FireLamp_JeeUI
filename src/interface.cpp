@@ -1630,7 +1630,7 @@ void set_settings_mic(Interface *interf, JsonObject *data){
     if (!data) return;
     float scale = (*data)[FPSTR(TCONST_0039)]; //atof((*data)[FPSTR(TCONST_0039)].as<String>().c_str());
     float noise = (*data)[FPSTR(TCONST_003A)]; //atof((*data)[FPSTR(TCONST_003A)].as<String>().c_str());
-    mic_noise_reduce_level_t rdl = (*data)[FPSTR(TCONST_003B)];
+    mic_noise_reduce_level_t rdl = static_cast<mic_noise_reduce_level_t>((*data)[FPSTR(TCONST_003B)].as<unsigned>());
 
     // LOG(printf_P, PSTR("scale=%2.3f noise=%2.3f rdl=%d\n"),scale,noise,rdl);
     // String tmpStr;
