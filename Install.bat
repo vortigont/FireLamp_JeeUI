@@ -117,7 +117,7 @@ if "%choice%"=="4" (
     if exist "!diskInstal!:\%repodstdir%" (rmdir /S /Q !diskInstal!:\%repodstdir%)
     cd \
     mkdir %repodstdir%
-    %gitcmd% clone -q --progress %lamprepo% %repodstdir%
+    %gitcmd% clone -q --progress --depth 1 --no-single-branch %lamprepo% %repodstdir%
     start %repodstdir%
     GOTO :EOF
 )
