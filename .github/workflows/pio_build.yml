@@ -34,7 +34,7 @@ jobs:
   esp8266:
     runs-on: ubuntu-latest
     if: github.repository == 'vortigont/FireLamp_JeeUI'
-    continue-on-error: true
+    continue-on-error: false
     strategy:
       matrix:
         variant:
