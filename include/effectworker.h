@@ -166,63 +166,15 @@ public:
 class EffectListElem{
 private:
     uint8_t ms = micros()|0xFF; // момент создания элемента, для сортировки в порядке следования (естественно, что байта мало, но экономим память)
-// #ifdef CASHED_EFFECTS_NAMES
-//     String name;
-//     void initName(uint16_t nb) {
-//         uint16_t swapnb = nb>>8|nb<<8; // меняю местами 2 байта, так чтобы копии/верисии эффекта оказалась в имени файла позади
-//         String filename;
-//         char buffer[5];
-//         filename.concat(F("/eff/"));
-//         sprintf_P(buffer,PSTR("%04x"), swapnb);
-//         filename.concat(buffer);
-//         filename.concat(F(".json"));
 
-//         DynamicJsonDocument doc(2048);
-//         bool ok = false;
-
-//         File jfile = LittleFS.open(filename.c_str(), "r");
-//         DeserializationError error;
-//         if (jfile){
-//             error = deserializeJson(doc, jfile);
-//             jfile.close();
-//         } else {
-//             ok = false;
-//         }
-
-//         if (error) {
-//             LOG(printf_P, PSTR("File: failed to load json file: %s, deserializeJson error: "), filename.c_str());
-//             LOG(println, error.code());
-//             ok = false;
-//         }
-//         ok = true;
-
-//         if (ok && doc[F("name")]){
-//             name = doc[F("name")].as<String>(); // перенакрываем именем из конфига, если есть
-//         } else if(!ok) {
-//             // LittleFS.remove(filename);
-//             // savedefaulteffconfig(nb, filename);   // пробуем перегенерировать поврежденный конфиг
-//             name = FPSTR(T_EFFNAMEID[(uint8_t)nb]);   // выбираем имя по-умолчанию из флеша если конфиг поврежден
-//         }
-//     }
-// #endif
 public:
     uint16_t eff_nb; // номер эффекта, для копий наращиваем старший байт
     EFFFLAGS flags; // флаги эффекта
 
-    EffectListElem(uint16_t nb, uint8_t mask){
-        eff_nb = nb;
-        flags.mask = mask;
-// #ifdef CASHED_EFFECTS_NAMES
-//         initName(nb);
-// #endif
-    }
+    EffectListElem(uint16_t nb, uint8_t mask) : eff_nb(nb), flags.mask(mask) {}
 
-    EffectListElem(const EffectListElem *base){
+    EffectListElem(const EffectListElem *base) : flags(base->flags) {
         eff_nb = ((((base->eff_nb >> 8) + 1 ) << 8 ) | (base->eff_nb&0xFF)); // в старшем байте увеличиваем значение на 1
-        flags = base->flags;
-// #ifdef CASHED_EFFECTS_NAMES
-//         initName(base->eff_nb);
-// #endif
     }
 
     bool canBeSelected(){ return flags.canBeSelected; }
@@ -230,10 +182,6 @@ public:
     bool isFavorite(){ return flags.isFavorite; }
     void isFavorite(bool val){ flags.isFavorite = val; }
     uint8_t getMS(){ return ms; }
-// #ifdef CASHED_EFFECTS_NAMES
-//     String& getName() {return name;}
-//     void setName(const String& _name) {name = _name;}
-// #endif
 };
 
 
@@ -249,7 +197,7 @@ class EffectCalc {
 private:
     EffectWorker *pworker = nullptr; // указатель на воркер
     LAMPSTATE *lampstate = nullptr;
-    LList<UIControl *> *ctrls;
+    LList<std::shared_ptr<UIControl>> *ctrls;
     String dummy; // дефолтная затычка для отсутствующего контролла, в случае приведения к целому получится "0"
     bool active = false;          /**< работает ли воркер и был ли обсчет кадров с момента последнего вызова, пока нужно чтобы пропускать холостые кадры */
     bool isCtrlPallete = false; // признак наличия контрола палитры
@@ -316,7 +264,7 @@ public:
      * pre_init метод, вызывается отдельно после создания экземпляра эффекта до каких либо иных инициализаций
      * это нужно чтобы объект понимал кто он и возможно было вычитать конфиг для мультиэфектов, никаких иных действий здесь не предполагается
     */
-    void pre_init(EFF_ENUM _eff, EffectWorker *_pworker, LList<UIControl *> *_ctrls, LAMPSTATE* _state) {effect = _eff; pworker = _pworker; ctrls = _ctrls; lampstate = _state;}
+    void pre_init(EFF_ENUM _eff, EffectWorker *_pworker, LList<std::shared_ptr<UIControl>> *_ctrls, LAMPSTATE* _state) {effect = _eff; pworker = _pworker; ctrls = _ctrls; lampstate = _state;}
 
     /**
      * intit метод, вызывается отдельно после создания экземпляра эффекта для установки базовых переменных
@@ -326,7 +274,7 @@ public:
      * @param _state - текущее состояние лампы
      *
     */
-    void init(EFF_ENUM _eff, LList<UIControl*>* _controls, LAMPSTATE* _state);
+    void init(EFF_ENUM _eff, LList<std::shared_ptr<UIControl>> *_controls, LAMPSTATE* _state);
 
     /**
      * load метод, по умолчанию пустой. Вызывается автоматом из init(), в дочернем классе можно заменять на процедуру первой загрузки эффекта (вместо того что выполняется под флагом load)
@@ -424,8 +372,10 @@ private:
     uint8_t version;        // версия эффекта
 
     LList<EffectListElem*> effects; // список эффектов с флагами из индекса
-    LList<UIControl*> controls; // список контроллов текущего эффекта
-    LList<UIControl*> selcontrols; // список контроллов выбранного эффекта (пока еще идет фейдер)
+    // список контроллов текущего эффекта
+    LList<std::shared_ptr<UIControl>> controls;
+    // список контроллов следующего эффекта (используется на время работы фейдера)
+    LList<std::shared_ptr<UIControl>> selcontrols;
 
     Task *tConfigSave = nullptr;       // динамическая таска, задержки при сохранении текущего конфига эффекта в файл
 
@@ -458,7 +408,7 @@ private:
      * 
      * @param list list to clear
      */
-    void _clearControlsList(LList<UIControl*> &list);
+    void _clearControlsList(LList<std::shared_ptr<UIControl>> &list);
 
     void effectsReSort(SORT_TYPE st=(SORT_TYPE)(255));
 
@@ -509,7 +459,7 @@ public:
     void initDefault(const char *folder = NULL); // пусть вызывается позже и явно
     ~EffectWorker();
 
-    LList<UIControl*>&getControls() { return isSelected() ? controls : selcontrols; }
+    LList<std::shared_ptr<UIControl>>&getControls() { return isSelected() ? controls : selcontrols; }
 
     // дефолтный конструктор
     EffectWorker(LAMPSTATE *_lampstate);

@@ -340,29 +340,27 @@ void LAMP::playEffect(bool isPlayName, EFFSWITCH action){
 }
 
 void LAMP::setMicOnOff(bool val) {
-    bool found=false;
     flags.isMicOn = val;
     lampState.isMicOn = val;
-    if(effects.getEn()==EFF_NONE) return;
-    LList<UIControl*>&controls = effects.getControls();
-    UIControl *c7 = nullptr;
+    if(effects.getEn()==EFF_NONE || !effects.worker) return;
+
+    unsigned foundc7 = 0;
+    LList<std::shared_ptr<UIControl>>&controls = effects.getControls();
     if(val){
         for(unsigned i=3; i<controls.size(); i++) {
             if(controls[i]->getId()==7 && controls[i]->getName().startsWith(FPSTR(TINTF_020))==1){
-                if(effects.worker) effects.worker->setDynCtrl(controls[i]);
-                found=true;
+                effects.worker->setDynCtrl(controls[i].get());
+                return;
             } else if(controls[i]->getId()==7) {
-                c7 = controls[i];
+                foundc7 = i;
             }
         }
-    } 
-    if(!val || !found){
-        UIControl *ctrl = new UIControl(7,(CONTROL_TYPE)18,String(FPSTR(TINTF_020)), val ? "1" : "0", "0", "1", "1");
-        if(effects.worker) effects.worker->setDynCtrl(ctrl);
-        delete ctrl;
-        if(c7){ // был найден 7 контрол, но не микрофон
-            if(effects.worker) effects.worker->setDynCtrl(c7);
-        }
+    }
+
+    UIControl ctrl(7,(CONTROL_TYPE)18,String(FPSTR(TINTF_020)), val ? "1" : "0", "0", "1", "1");
+    effects.worker->setDynCtrl(&ctrl);
+    if(foundc7){ // был найден 7 контрол, но не микрофон
+        effects.worker->setDynCtrl(controls[foundc7].get());
     }
 }
 

@@ -263,7 +263,7 @@ public:
     void setcurLimit(uint16_t val) {curLimit = val;}
     uint16_t getcurLimit() {return curLimit;}
     LAMPSTATE &getLampState() {return lampState;}
-    LList<UIControl*>&getEffControls() { LList<UIControl*>&controls = effects.getControls(); return controls; }
+    LList<std::shared_ptr<UIControl>>&getEffControls() { return effects.getControls(); }
 
 #ifdef MIC_EFFECTS
     void setMicCalibration() {lampState.isCalibrationRequest = true;}
@@ -276,7 +276,7 @@ public:
 
     void setSpeedFactor(float val) {
         lampState.speedfactor = val;
-        if(effects.worker) effects.worker->setDynCtrl(effects.getControls()[1]);
+        if(effects.worker) effects.worker->setDynCtrl(effects.getControls()[1].get());
     }
 
     // Lamp brightness control (здесь методы работы с конфигурационной яркостью, не с LED!)
@@ -284,7 +284,7 @@ public:
     uint8_t getNormalizedLampBrightness() { return (uint8_t)(BRIGHTNESS * (flags.isGlobalBrightness? globalBrightness : (effects.getControls()[0]->getVal()).toInt()) / 255);}
     void setLampBrightness(uint8_t brg) { lampState.brightness=brg; if (flags.isGlobalBrightness) setGlobalBrightness(brg); else effects.getControls()[0]->setVal(String(brg)); }
     void setGlobalBrightness(uint8_t brg) {globalBrightness = brg;}
-    void setIsGlobalBrightness(bool val) {flags.isGlobalBrightness = val; if(effects.worker) { lampState.brightness=getLampBrightness(); effects.worker->setDynCtrl(effects.getControls()[0]);} }
+    void setIsGlobalBrightness(bool val) {flags.isGlobalBrightness = val; if(effects.worker) { lampState.brightness=getLampBrightness(); effects.worker->setDynCtrl(effects.getControls()[0].get());} }
     bool IsGlobalBrightness() {return flags.isGlobalBrightness;}
     bool isAlarm() {return mode == LAMPMODE::MODE_ALARMCLOCK;}
     bool isWarning() {return lampState.isWarning;}

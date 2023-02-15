@@ -660,7 +660,7 @@ void block_effects_param(Interface *interf, JsonObject *data){
 
     if(isinterf) interf->json_section_begin(FPSTR(TCONST_effects_param));
 
-    LList<UIControl*>&controls = myLamp.effects.getControls();
+    LList<std::shared_ptr<UIControl>>&controls = myLamp.effects.getControls();
     uint8_t ctrlCaseType; // тип контрола, старшие 4 бита соответствуют CONTROL_CASE, младшие 4 - CONTROL_TYPE
 #ifdef MIC_EFFECTS
    bool isMicOn = myLamp.isMicOnOff();
@@ -810,7 +810,7 @@ void direct_set_effects_dynCtrl(JsonObject *data){
     if (!data) return;
 
     String ctrlName;
-    LList<UIControl*>&controls = myLamp.effects.getControls();
+    LList<std::shared_ptr<UIControl>>&controls = myLamp.effects.getControls();
     for(unsigned i=0; i<controls.size();i++){
         ctrlName = String(FPSTR(TCONST_0015))+String(controls[i]->getId());
         if((*data).containsKey(ctrlName)){
@@ -834,7 +834,7 @@ void direct_set_effects_dynCtrl(JsonObject *data){
                 resetAutoTimers(true);
             }
             if(myLamp.effects.worker) // && myLamp.effects.getEn()
-                myLamp.effects.worker->setDynCtrl(controls[i]);
+                myLamp.effects.worker->setDynCtrl(controls[i].get());
             break;
         }
     }
@@ -3930,7 +3930,7 @@ String httpCallback(const String &param, const String &value, bool isset){
                 return result;
             }
         else if (upperParam == FPSTR(CMD_CONTROL)) {
-            LList<UIControl*>&controls = myLamp.effects.getControls();
+            LList<std::shared_ptr<UIControl>>&controls = myLamp.effects.getControls();
             for(unsigned i=0; i<controls.size();i++){
                 if(value == String(controls[i]->getId())){
                     result = String(F("[")) + controls[i]->getId() + String(F(",\"")) + (controls[i]->getId()==0 ? String(myLamp.getNormalizedLampBrightness()) : controls[i]->getVal()) + String(F("\"]"));
