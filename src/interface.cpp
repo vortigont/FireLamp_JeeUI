@@ -90,9 +90,8 @@ void recreateoptionsTask(bool isCancelOnly=false){
     if(!isCancelOnly){
         embui.autosave();
         optionsTask = new Task(INDEX_BUILD_DELAY * TASK_SECOND, TASK_ONCE, delayedcall_show_effects, &ts, false, nullptr, [](){
-            TASK_RECYCLE;
             optionsTask=nullptr;
-        });
+        }, true);
         optionsTask->enableDelayed();
     }
 }
@@ -350,9 +349,8 @@ void set_effects_config_param(Interface *interf, JsonObject *data){
                                 Interface *interf = embui.ws.count()? new Interface(&embui, &embui.ws, 1024) : nullptr;
                                 section_main_frame(interf, nullptr);
                                 delete interf;
-                                recreateoptionsTask();
-                                TASK_RECYCLE; },
-            &ts, false);
+                                recreateoptionsTask(); },
+            &ts, false, nullptr, nullptr, true);
         _t->enableDelayed();
         return;
     //} else if (act == FPSTR(TCONST_000A)) {
@@ -377,9 +375,8 @@ void set_effects_config_param(Interface *interf, JsonObject *data){
                                     Interface *interf = embui.ws.count()? new Interface(&embui, &embui.ws, 1024) : nullptr;
                                     section_main_frame(interf, nullptr);
                                     delete interf;
-                                    recreateoptionsTask();
-                                    TASK_RECYCLE; },
-                &ts, false);
+                                    recreateoptionsTask(); },
+                &ts, false, nullptr, nullptr, true);
             _t->enableDelayed();
         } else {
             Task *_t = new Task(
@@ -390,9 +387,8 @@ void set_effects_config_param(Interface *interf, JsonObject *data){
                                     Interface *interf = embui.ws.count()? new Interface(&embui, &embui.ws, 1024) : nullptr;
                                     section_main_frame(interf, nullptr);
                                     delete interf;
-                                    recreateoptionsTask();
-                                    TASK_RECYCLE; },
-                &ts, false);
+                                    recreateoptionsTask(); },
+                &ts, false, nullptr, nullptr, true);
             _t->enableDelayed();
         }
         return;
@@ -404,9 +400,8 @@ void set_effects_config_param(Interface *interf, JsonObject *data){
                                 Interface *interf = embui.ws.count()? new Interface(&embui, &embui.ws, 1024) : nullptr;
                                 section_main_frame(interf, nullptr);
                                 delete interf;
-                                recreateoptionsTask();
-                                TASK_RECYCLE; },
-            &ts, false);
+                                recreateoptionsTask(); },
+            &ts, false, nullptr, nullptr, true);
         _t->enableDelayed();
         return;
     } else {
@@ -619,8 +614,7 @@ void delayedcall_show_effects(){
             delete interf;
             delete peff; // освободить указатель на указатель
             delayedOptionTask = nullptr;
-            TASK_RECYCLE;
-        }
+        }, true
     );
 }
 
@@ -664,13 +658,14 @@ void block_effects_param(Interface *interf, JsonObject *data){
     //if (!interf) return;
     bool isinterf = (interf != nullptr); // буду публиковать, даже если WebUI клиентов нет
 
-    if(isinterf) interf->json_section_begin(FPSTR(TCONST_0011));
+    if(isinterf) interf->json_section_begin(FPSTR(TCONST_effects_param));
 
     LList<UIControl*>&controls = myLamp.effects.getControls();
     uint8_t ctrlCaseType; // тип контрола, старшие 4 бита соответствуют CONTROL_CASE, младшие 4 - CONTROL_TYPE
 #ifdef MIC_EFFECTS
    bool isMicOn = myLamp.isMicOnOff();
-    for(int i=0; i<controls.size();i++)
+   LOG(printf_P,PSTR("Make UI for %d controls\n"), controls.size());
+    for(unsigned i=0; i<controls.size();i++)
         if(controls[i]->getId()==7 && controls[i]->getName().startsWith(FPSTR(TINTF_020)))
             isMicOn = isMicOn && controls[i]->getVal().toInt();
 #endif
@@ -775,6 +770,7 @@ void show_effects_param(Interface *interf, JsonObject *data){
 }
 
 void set_effects_list(Interface *interf, JsonObject *data){
+    LOG(println, "C: set_effects_list");
     if (!data) return;
     uint16_t num = (*data)[FPSTR(TCONST_0016)].as<uint16_t>();
     uint16_t curr = myLamp.effects.getSelected();
@@ -790,7 +786,7 @@ void set_effects_list(Interface *interf, JsonObject *data){
     }
 
     myLamp.setDRand(myLamp.getLampSettings().dRand); // сборосить флаг рандомного демо
-    LOG(printf_P, PSTR("EFF LIST n:%d, o:%d, on:%d, md:%d\n"), eff->eff_nb, curr, myLamp.isLampOn(), myLamp.getMode());
+    LOG(printf_P, PSTR("EFF switch to:%d, cur:%d, isOn:%d, mode:%d\n"), eff->eff_nb, curr, myLamp.isLampOn(), myLamp.getMode());
     if (eff->eff_nb != curr) {
         if (!myLamp.isLampOn()) {
             myLamp.effects.directMoveBy(eff->eff_nb); // переходим на выбранный эффект для начальной инициализации
@@ -873,6 +869,7 @@ void set_effects_dynCtrl(Interface *interf, JsonObject *data){
 
             LOG(println, "publishing & sending dynctrl...");
             String tmp; serializeJson(*data,tmp);LOG(println, tmp);
+    LOG(printf_P,PSTR("Mark ps 1\n"));
 
             direct_set_effects_dynCtrl(data);
 #ifdef EMBUI_USE_MQTT
@@ -903,7 +900,8 @@ void set_effects_dynCtrl(Interface *interf, JsonObject *data){
             }
             if(task==ctrlsTask)
                 ctrlsTask = nullptr;
-            //TASK_RECYCLE;
+    LOG(printf_P,PSTR("Mark ps end\n"));
+
             delete task;
         },
         &ts,
@@ -1138,8 +1136,8 @@ void set_onflag(Interface *interf, JsonObject *data){
             if(millis()<20000){        // 10 секунд мало, как показала практика, ставим 20
                 Task *_t = new Task(
                     INDEX_BUILD_DELAY * TASK_SECOND,
-                    TASK_ONCE, [](){ myLamp.sendString(WiFi.localIP().toString().c_str(), CRGB::White); TASK_RECYCLE; },
-                    &ts, false);
+                    TASK_ONCE, [](){ myLamp.sendString(WiFi.localIP().toString().c_str(), CRGB::White); },
+                    &ts, false, nullptr, nullptr, true);
                 _t->enableDelayed();
             }
 #endif
@@ -1165,8 +1163,8 @@ void set_onflag(Interface *interf, JsonObject *data){
                                 embui.publish(String(FPSTR(TCONST_008B)) + FPSTR(TCONST_0021), String(myLamp.getMode()), true);
                                 embui.publish(String(FPSTR(TCONST_008B)) + FPSTR(TCONST_00AA), String(myLamp.getMode()==LAMPMODE::MODE_DEMO?"1":"0"), true);
                 #endif
-                                TASK_RECYCLE; },
-                                &ts, false);
+                                },
+                                &ts, false, nullptr, nullptr, true);
             _t->enableDelayed();
         }
     }
@@ -1348,7 +1346,7 @@ void edit_lamp_config(Interface *interf, JsonObject *data){
         String str = String(F("CFG:")) + name;
         myLamp.sendString(str.c_str(), CRGB::Red);
 
-        Task *_t = new Task(3*TASK_SECOND, TASK_ONCE, [](){ myLamp.effects.makeIndexFileFromFS(); sync_parameters(); TASK_RECYCLE; }, &ts, false);
+        Task *_t = new Task(3*TASK_SECOND, TASK_ONCE, [](){ myLamp.effects.makeIndexFileFromFS(); sync_parameters(); }, &ts, false, nullptr, nullptr, true);
         _t->enableDelayed();
 
     } else { // создание
@@ -1722,8 +1720,7 @@ void set_scan_wifi(Interface *interf, JsonObject *data){
             EmbUI::GetInstance()->setWiFiScanCB(&scan_complete);
             WiFi.scanNetworks(true);         // У ESP нет метода с коллбеком, поэтому просто сканируем
             #endif
-            TASK_RECYCLE;
-        });
+        }, true);
         t->enableDelayed();
     }
 };
@@ -1887,8 +1884,9 @@ void show_settings_other(Interface *interf, JsonObject *data){
 
 void set_settings_other(Interface *interf, JsonObject *data){
     if (!data) return;
-
+    LOG(printf_P,PSTR("Mark sso 1\n"));
     resetAutoTimers();
+    LOG(printf_P,PSTR("Mark sso 2\n"));
 
     DynamicJsonDocument *_str = new DynamicJsonDocument(1024);
     (*_str)=(*data);
@@ -1896,6 +1894,7 @@ void set_settings_other(Interface *interf, JsonObject *data){
     Task *_t = new Task(300, TASK_ONCE, [_str](){
         JsonObject dataStore = (*_str).as<JsonObject>();
         JsonObject *data = &dataStore;
+    LOG(printf_P,PSTR("Mark sso 3\n"));
 
         // LOG(printf_P,PSTR("Settings: %s\n"),tmpData.c_str());
         myLamp.setMIRR_H((*data)[FPSTR(TCONST_004C)] == "1");
@@ -1904,11 +1903,14 @@ void set_settings_other(Interface *interf, JsonObject *data){
         myLamp.setClearingFlag((*data)[FPSTR(TCONST_008E)] == "1");
         myLamp.setDRand((*data)[FPSTR(TCONST_004F)] == "1");
         myLamp.setShowName((*data)[FPSTR(TCONST_009E)] == "1");
+    LOG(printf_P,PSTR("Mark sso 4\n"));
 
         SETPARAM(FPSTR(TCONST_0026), ({if (myLamp.getMode() == LAMPMODE::MODE_DEMO){ myLamp.demoTimer(T_DISABLE); myLamp.demoTimer(T_ENABLE, embui.param(FPSTR(TCONST_0026)).toInt()); }}));
+    LOG(printf_P,PSTR("Mark sso 4.5\n"));
 
         float sf = (*data)[FPSTR(TCONST_0053)];
         SETPARAM(FPSTR(TCONST_0053), myLamp.setSpeedFactor(sf));
+    LOG(printf_P,PSTR("Mark sso 5\n"));
 
         myLamp.setIsShowSysMenu((*data)[FPSTR(TCONST_0096)] == "1");
 
@@ -1928,15 +1930,16 @@ void set_settings_other(Interface *interf, JsonObject *data){
         embui.var(FPSTR(TCONST_00BD), String(alatmPT)); myLamp.setAlarmPT(alatmPT);
         //SETPARAM(FPSTR(TCONST_00BD), myLamp.setAlarmPT(alatmPT));
         //LOG(printf_P, PSTR("alatmPT=%d, alatmP=%d, alatmT=%d\n"), alatmPT, myLamp.getAlarmP(), myLamp.getAlarmT());
+    LOG(printf_P,PSTR("Mark sso 6\n"));
 
         save_lamp_flags();
-        delete _str;
-        TASK_RECYCLE; },
-        &ts, false
+        delete _str; },
+        &ts, false, nullptr, nullptr, true
     );
     _t->enableDelayed();
 
     //BasicUI::section_settings_frame(interf, data);
+    LOG(printf_P,PSTR("Mark sso 7\n"));
     if(interf)
         section_settings_frame(interf, data);
 }
@@ -2758,7 +2761,7 @@ void set_opt_pass(Interface *interf, JsonObject *data){
     if((*data)[FPSTR(TCONST_00B8)]==OPTIONS_PASSWORD){
         LOG(println, F("Options unlocked for 10 minutes"));
         myLamp.getLampState().isOptPass = true;
-        Task *_t = new Task(TASK_MINUTE*10, TASK_ONCE, [](){ myLamp.getLampState().isOptPass = false; TASK_RECYCLE; }, &ts); // через 10 минут отключаем
+        Task *_t = new Task(TASK_MINUTE*10, TASK_ONCE, [](){ myLamp.getLampState().isOptPass = false; }, &ts, false, nullptr, nullptr, true ); // через 10 минут отключаем
         _t->enableDelayed();
         section_settings_frame(interf, nullptr);
     }
@@ -3057,7 +3060,7 @@ void create_parameters(){
     embui.section_handle_add(FPSTR(TCONST_0020), show_main_flags);
 
     embui.section_handle_add(FPSTR(TCONST_0000), section_effects_frame);
-    embui.section_handle_add(FPSTR(TCONST_0011), show_effects_param);
+    embui.section_handle_add(FPSTR(TCONST_effects_param), show_effects_param);
     embui.section_handle_add(FPSTR(TCONST_0016), set_effects_list);
     embui.section_handle_add(FPSTR(TCONST_007F), set_effects_dynCtrl);
 
@@ -3266,8 +3269,7 @@ Task *t = new Task(DFPALYER_START_DELAY+500, TASK_ONCE, nullptr, &ts, false, nul
     doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
 
     CALL_SETTER(FPSTR(TCONST_00A2), embui.param(FPSTR(TCONST_00A2)), set_mp3volume);
-    TASK_RECYCLE;
-});
+}, true);
 t->enableDelayed();
 #endif
 
@@ -3403,8 +3405,7 @@ t->enableDelayed();
     check_recovery_state(false); // удаляем маркер, считаем что у нас все хорошо...
     Task *_t = new Task(TASK_SECOND, TASK_ONCE, [](){ // откладыаем задачу на 1 секунду, т.к. выше есть тоже отложенные инициализации, см. set_settings_other()
         myLamp.getLampState().isInitCompleted = true; // ставим признак того, что инициализация уже завершилась, больше его не менять и должен быть в самом конце sync_parameters() !!!
-        TASK_RECYCLE;
-    }, &ts, false);
+    }, &ts, false, nullptr, nullptr, true);
     _t->enableDelayed();
     LOG(println, F("sync_parameters() done"));
 }
@@ -3551,8 +3552,7 @@ void remote_action(RA action, ...){
                 StringTask *t = new StringTask(value, 3 * TASK_SECOND, TASK_ONCE, nullptr, &ts, false, nullptr,  [](){
                     StringTask *cur = (StringTask *)ts.getCurrentTask();
                     remote_action(RA::RA_SEND_TEXT, cur->getData(), NULL);
-                    TASK_RECYCLE;
-                });
+                }, true);
                 t->enableDelayed();
             }
             break;
@@ -3574,13 +3574,10 @@ void remote_action(RA action, ...){
                                 embui.var(FPSTR(TCONST_0018), String(myLamp.getLampBrightness())); // сохранить восстановленную яркость в конфиг, если она глобальная
                             }
                         }
-                        obj.clear();
-                        doc.garbageCollect();
                         CALL_INTF(FPSTR(TCONST_001A), "0", set_onflag);
                         task->disable();
-                        TASK_RECYCLE;
                     }
-                }, &ts, true);
+                }, &ts, true, nullptr, nullptr, true);
             }
             break;
         case RA::RA_DEMO:
@@ -3600,7 +3597,7 @@ void remote_action(RA action, ...){
             } else {
                 myLamp.switcheffect(SW_NEXT_DEMO, myLamp.getFaderFlag());
             }
-            new Task(TASK_SECOND, TASK_ONCE, nullptr, &ts, true, nullptr, [](){ remote_action(RA::RA_EFFECT, String(myLamp.effects.getSelected()).c_str(), NULL); TASK_RECYCLE; });
+            new Task(TASK_SECOND, TASK_ONCE, nullptr, &ts, true, nullptr, [](){ remote_action(RA::RA_EFFECT, String(myLamp.effects.getSelected()).c_str(), NULL); }, true);
             break;
         case RA::RA_EFFECT: {
             LAMPMODE mode=myLamp.getMode();
@@ -3691,7 +3688,7 @@ void remote_action(RA action, ...){
             break;
         case RA::RA_REBOOT: {
                 remote_action(RA::RA_WARNING, F("[16711680,3000,500]"), NULL);
-                Task *t = new Task(3 * TASK_SECOND, TASK_ONCE, nullptr, &ts, false, nullptr, [](){ ESP.restart(); TASK_RECYCLE; });
+                Task *t = new Task(3 * TASK_SECOND, TASK_ONCE, nullptr, &ts, false, nullptr, [](){ ESP.restart(); });
                 t->enableDelayed();
             }
             break;

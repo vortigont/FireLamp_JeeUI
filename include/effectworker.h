@@ -143,6 +143,13 @@ public:
         control_name(_name),
         val(_val), min(_min), max(_max), step(_step) {}
 
+    /**
+     * @brief copy constructor
+     * 
+     */
+    UIControl(const UIControl&rhs) : id(rhs.id), ctype(rhs.ctype), control_name(rhs.control_name), val(rhs.val), min(rhs.min), max(rhs.max), step(rhs.step) {};
+    UIControl& operator =(const UIControl&rhs);
+
     const uint8_t getId() {return id;}
     const CONTROL_TYPE getType() {return ctype;}
     const String &getName() {return control_name;}
@@ -151,17 +158,7 @@ public:
     const String &getMax() {return max;}
     const String &getStep() {return step;}
 
-    void setVal(const String &_val) {
-        switch(getType()&0x0F){
-            case CONTROL_TYPE::RANGE:
-            case CONTROL_TYPE::CHECKBOX:
-                val=String(constrain(_val.toInt(),getMin().toInt(),getMax().toInt()));
-                break;
-            default:
-                val=_val;
-                break;
-        }
-    }
+    void setVal(const String &_val);
 };
 
 
@@ -303,14 +300,17 @@ protected:
     const String &getCtrlVal(unsigned idx);
 
 public:
+    /**
+     * деструктор по-умолчанию пустой, может быть переопределен
+     */
+    virtual ~EffectCalc() = default;
+    //virtual ~EffectCalc(){ LOG(println,PSTR("DEGUG: Effect was destroyed\n")); } // отладка, можно будет затем закомментировать
 
     bool isMicOn() {return isMicActive;}
 
     /** полезные обертки **/
-    uint8_t wrapX(int8_t x){ return (x + WIDTH) % WIDTH; }
-    uint8_t wrapY(int8_t y){ return (y + HEIGHT) % HEIGHT; }
-
-    EffectCalc(){}
+    static uint8_t wrapX(int8_t x){ return (x + WIDTH) % WIDTH; }
+    static uint8_t wrapY(int8_t y){ return (y + HEIGHT) % HEIGHT; }
 
     /**
      * pre_init метод, вызывается отдельно после создания экземпляра эффекта до каких либо иных инициализаций
@@ -407,11 +407,6 @@ public:
      */
     void scale2pallete();
 
-    /**
-     * деструктор по-умолчанию пустой, может быть переопределен
-     */
-    virtual ~EffectCalc() = default;
-    //virtual ~EffectCalc(){ LOG(println,PSTR("DEGUG: Effect was destroyed\n")); } // отладка, можно будет затем закомментировать
 };
 
 class EffectWorker {
@@ -457,7 +452,13 @@ private:
     EffectWorker& operator=(const EffectWorker&);  // noncopyable
 
     void clearEffectList(); // очистка списка эффектов, вызываетсяч в initDefault
-    void clearControlsList(); // очистка списка контроллов и освобождение памяти
+
+    /**
+     * @brief очистка списка контроллов и освобождение памяти
+     * 
+     * @param list list to clear
+     */
+    void _clearControlsList(LList<UIControl*> &list);
 
     void effectsReSort(SORT_TYPE st=(SORT_TYPE)(255));
 
@@ -506,24 +507,12 @@ public:
     //void setlistsuffix(time_t val) {listsuffix=val;}
     std::unique_ptr<EffectCalc> worker = nullptr;           ///< указатель-класс обработчик текущего эффекта
     void initDefault(const char *folder = NULL); // пусть вызывается позже и явно
-    ~EffectWorker() { clearEffectList(); clearControlsList(); }
+    ~EffectWorker();
 
     LList<UIControl*>&getControls() { return isSelected() ? controls : selcontrols; }
 
     // дефолтный конструктор
-    EffectWorker(LAMPSTATE *_lampstate) : effects(), controls(), selcontrols() {
-      lampstate = _lampstate;
-      // нельзя вызывать литлфс.бегин из конструктора, т.к. инстанс этого объекта есть в лампе, который декларируется до setup()
-
-      for(int8_t id=0;id<3;id++){
-        controls.add(new UIControl(
-            id,                                     // id
-            CONTROL_TYPE::RANGE,                    // type
-            id==0 ? String(FPSTR(TINTF_00D)) : id==1 ? String(FPSTR(TINTF_087)) : String(FPSTR(TINTF_088))           // name
-        ));
-      }
-      selcontrols = controls;
-    }
+    EffectWorker(LAMPSTATE *_lampstate);
 
     // тип сортировки
     void setEffSortType(SORT_TYPE type) {if(effSort != type) { effectsReSort(type); } effSort = type;}

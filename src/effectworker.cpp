@@ -38,10 +38,41 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "effects.h"
 #include "char_const.h"
 
+void clone_controls_list(const LList<UIControl*> &src, LList<UIControl*> &dst){
+  while (dst.size()){
+    UIControl* c = dst.shift();
+    delete c;
+    c = nullptr;
+  }
+  LList<UIControl*>::ConstIterator i(src.cbegin());
+  while(i != src.cend()){
+    dst.add(new UIControl(**i));
+    LOG(printf_P,PSTR("Clone ctrl: %s\n"), (*i)->getName().c_str());
+    ++i;
+  }
+}
+
+EffectWorker::EffectWorker(LAMPSTATE *_lampstate) : lampstate(_lampstate) {
+  // нельзя вызывать литлфс.бегин из конструктора, т.к. инстанс этого объекта есть в лампе, который декларируется до setup()
+
+  // create 3 'faivored' superusefull controls for 'brightness', 'speed', 'scale'
+  for(int8_t id=0;id<3;id++){
+    controls.add(new UIControl(
+        id,                                     // id
+        CONTROL_TYPE::RANGE,                    // type
+        id==0 ? String(FPSTR(TINTF_00D)) : id==1 ? String(FPSTR(TINTF_087)) : String(FPSTR(TINTF_088))           // name
+    ));
+  }
+  clone_controls_list(controls, selcontrols);
+}
+
+EffectWorker::~EffectWorker() { clearEffectList(); _clearControlsList(controls); _clearControlsList(selcontrols); }
+
 /*
  * Создаем экземпляр класса калькулятора в зависимости от требуемого эффекта
  */
 void EffectWorker::workerset(uint16_t effect, const bool isCfgProceed){
+  LOG(printf_P,PSTR("Wrkr set: %u\n"), effect);
   if(worker && isCfgProceed){ // сначала сохраним текущий эффект
     saveeffconfig(curEff); // пишем конфиг только если это требуется, для индекса - пропускаем, там свой механизм
   }
@@ -293,12 +324,19 @@ void EffectWorker::workerset(uint16_t effect, const bool isCfgProceed){
   }
 
   if(worker){
+    LOG(println,F("created"));
     worker->pre_init(static_cast<EFF_ENUM>(effect%256), this, &(getControls()), lampstate);
+    LOG(println,F("pre"));
     originalName = effectName = FPSTR(T_EFFNAMEID[(uint8_t)effect]); // сначла заполним дефолтным именем, а затем лишь вычитаем из конфига
     if(isCfgProceed){ // читаем конфиг только если это требуется, для индекса - пропускаем
+      LOG(println,F("try load"));
       loadeffconfig(effect);
+      LOG(println,F("load done"));
+
       // окончательная инициализация эффекта тут
       worker->init(static_cast<EFF_ENUM>(effect%256), &(getControls()), lampstate);
+          LOG(println,F("init done"));
+
     }
   }
 }
@@ -307,20 +345,18 @@ void EffectWorker::clearEffectList()
 {
   // удаляем весь список
   while (effects.size()) {
-      EffectListElem *eff = effects.shift();
-      delete eff;
+      delete effects.shift();
   }
-  effects.clear();
 }
 
-void EffectWorker::clearControlsList()
+void EffectWorker::_clearControlsList(LList<UIControl*> &list)
 {
-  // удаляем весь список
-  while (controls.size()) {
-      UIControl *ctrl = controls.shift();
-      delete ctrl;
+  while (list.size()) {
+      UIControl *t = list.shift();
+      //LOG(printf_P, PSTR("Del ctrl: %s\n"), t->getName().c_str());
+      delete t;
+      t = nullptr;
   }
-  controls.clear();
 }
 
 void EffectWorker::initDefault(const char *folder)
@@ -486,7 +522,7 @@ bool EffectWorker::deserializeFile(DynamicJsonDocument& doc, const char* filepat
   if (!filepath || !*filepath)
     return false;
 
-  //LOG(printf_P, PSTR("Try to load file: %s\n"), filepath);
+  LOG(printf_P, PSTR("Load file: %s\n"), filepath);
   File jfile = LittleFS.open(filepath, "r");
   DeserializationError error;
   if (jfile){
@@ -497,7 +533,7 @@ bool EffectWorker::deserializeFile(DynamicJsonDocument& doc, const char* filepat
   }
 
   if (error) {
-    LOG(printf_P, PSTR("File: failed to load json file: %s, deserializeJson error: "), filepath);
+    LOG(printf_P, PSTR("File: failed to load json file: %s, deserialize error: "), filepath);
     LOG(println, error.code());
     return false;
   }
@@ -514,7 +550,6 @@ int EffectWorker::loadeffconfig(const uint16_t nb, const char *folder)
   String filename = geteffectpathname(nb,folder);
   DynamicJsonDocument doc(2048);
   READALLAGAIN:
-
   if (!deserializeFile(doc, filename.c_str() )){
     LittleFS.remove(filename);
     savedefaulteffconfig(nb, filename);   // пробуем перегенерировать поврежденный конфиг
@@ -529,6 +564,7 @@ int EffectWorker::loadeffconfig(const uint16_t nb, const char *folder)
       savedefaulteffconfig(nb, filename);
       goto READALLAGAIN;
   }
+LOG(println,F("L_3"));
 
   curEff = doc[F("nb")].as<uint16_t>();
   //flags.mask = doc.containsKey(F("flags")) ? doc[F("flags")].as<uint8_t>() : 255;
@@ -539,9 +575,11 @@ int EffectWorker::loadeffconfig(const uint16_t nb, const char *folder)
   // вычитываею список контроллов
   // повторные - скипаем, нехватающие - создаем
   // обязательные контролы 0, 1, 2 - яркость, скорость, масштаб, остальные пользовательские
+  _clearControlsList(controls);
+LOG(println,F("L_4"));
   JsonArray arr = doc[F("ctrls")].as<JsonArray>();
-  clearControlsList();
   uint8_t id_tst = 0x0; // пустой
+LOG(println,F("L_5"));
   for (size_t i = 0; i < arr.size(); i++) {
       JsonObject item = arr[i];
       uint8_t id = item[F("id")].as<uint8_t>();
@@ -574,7 +612,7 @@ int EffectWorker::loadeffconfig(const uint16_t nb, const char *folder)
           //LOG(printf_P,PSTR("%d %d %s %s %s %s %s\n"), id, type, name.c_str(), val.c_str(), min.c_str(), max.c_str(), step.c_str());
       }
   }
-  doc.clear();
+
   // тест стандартных контроллов
   for(int8_t id=0;id<3;id++){
       if(!((id_tst>>id)&1)){ // не найден контрол, нужно создать
@@ -589,6 +627,7 @@ int EffectWorker::loadeffconfig(const uint16_t nb, const char *folder)
           ));
       }
   }
+LOG(println,F("L_6"));
   controls.sort([](UIControl *&a, UIControl *&b){ return a->getId() - b->getId();}); // сортирую по id
   return 0; // успешно
 }
@@ -724,7 +763,7 @@ void EffectWorker::autoSaveConfig(bool force) {
             saveeffconfig(curEff);
             fsinforenew();
             LOG(printf_P,PSTR("Autosave effect config: %d\n"), curEff);
-          }, &ts, false, nullptr, [this](){TASK_RECYCLE; tConfigSave=nullptr;});
+          }, &ts, false, nullptr, [this](){tConfigSave=nullptr;}, true);
           tConfigSave->enableDelayed();
         } else {
           tConfigSave->restartDelayed();
@@ -1047,11 +1086,13 @@ EffectListElem *EffectWorker::getNextEffect(EffectListElem *current){
 }
 
 // перейти на указанный
+// выполняется в обход фейдера, как моментальное переключение
 void EffectWorker::directMoveBy(uint16_t select)
 {
-  // выполняется в обход фейдера, как моментальное переключение
-  setSelected(getBy(select));
-  moveSelected();
+  curEff = selEff = getBy(select);
+  workerset(curEff);
+  //setSelected(getBy(select));
+  //moveSelected();
 }
 
 // получить номер эффекта смещенного на количество шагов, к ближайшему большему при превышении (для DEMO)
@@ -1142,32 +1183,45 @@ uint16_t EffectWorker::getNext()
 // выбор нового эффекта с отложенной сменой, на время смены эффекта читаем его список контроллов отдельно
 void EffectWorker::setSelected(uint16_t effnb)
 {
+    LOG(printf_P,PSTR("setSelected\n"));
   //selcontrols.size()!=controls.size() || 
-  if(controls.size()==0 || selcontrols[0]!=controls[0]){
-    while(selcontrols.size()>0){ // очистить предыщий набор, если он только не отображен на текущий
-      delete selcontrols.shift();
-    }
-  }
+  //if(controls.size()==0 || selcontrols[0]!=controls[0]){
+    //while(selcontrols.size()>0){ // очистить предыщий набор, если он только не отображен на текущий
+    //  delete selcontrols.shift();
+    //}
+      //while (selcontrols.size()) {
+      //LOG(printf_P, PSTR("selc_size %u\n"), selcontrols.size());
+      //UIControl *t = controls.shift();
+      
+      //if (t) { LOG(printf_P, PSTR("Ctrl: %s\n"), t->getName().c_str()); delete t; }
+      //else { LOG(println,F("OMG! nullptr in UIControl")); }
+      //}
+  //}
+    LOG(printf_P,PSTR("setSelected 2\n"));
 
   selEff = effnb;
   //LOG(println,F("Читаю список контроллов выбранного эффекта:"));
-#if defined(PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED)
-  HeapSelectIram ephemeral;
-#endif
+  // OMG, what's this??? making a new EffectWorker just to get it's controls?
+  // todo: get rid of this temp object
   EffectWorker *tmpEffect = new EffectWorker(effnb);
-  LList<UIControl *> fake;
-  this->selcontrols = tmpEffect->controls; // копирую список контроллов, освобождать будет другой объект
-  tmpEffect->controls = fake;
+  //LList<UIControl *> fake;
+    LOG(printf_P,PSTR("setSelected 3\n"));
+  //while(selcontrols.size()) delete selcontrols.shift();
+  //  LOG(printf_P,PSTR("setSelected 4\n"));
+  clone_controls_list(tmpEffect->controls, selcontrols); // копирую список контроллов, освобождать будет другой объект
+  //tmpEffect->controls = fake;
   delete tmpEffect;
 }
 
 void EffectWorker::moveSelected(){
-  LOG(printf_P,PSTR("Синхронизация списков! Эффект: %d\n"), selEff);
+  LOG(printf_P,PSTR("Синхронизация контролов. Эффект: %d\n"), selEff);
   if(curEff != selEff){
     workerset(selEff);
+    LOG(printf_P,PSTR("Set done\n"));
     curEff = selEff;
-    clearControlsList();
-    controls = selcontrols; // теперь оба списка совпадают, смена эффекта завершена
+    clone_controls_list(selcontrols, controls); // теперь оба списка совпадают, смена эффекта завершена
+    LOG(printf_P,PSTR("clone done\n"));
+    _clearControlsList(selcontrols);
   }
   //LOG(printf_P,PSTR("%d %d\n"),controls.size(), selcontrols.size());
 }
@@ -1417,4 +1471,27 @@ const String& EffectCalc::getCtrlVal(unsigned idx) {
         }
     }
     return dummy;
+}
+
+void UIControl::setVal(const String &_val) {
+    switch(getType()&0x0F){
+        case CONTROL_TYPE::RANGE:
+        case CONTROL_TYPE::CHECKBOX:
+            val=String(constrain(_val.toInt(),getMin().toInt(),getMax().toInt()));
+            break;
+        default:
+            val=_val;
+            break;
+    }
+}
+
+UIControl& UIControl::operator =(const UIControl &rhs){
+  id = rhs.id;
+  ctype = rhs.ctype;
+  control_name = rhs.control_name;
+  val = rhs.val;
+  min = rhs.min;
+  max = rhs.max;
+  step = rhs.step;
+  return *this;
 }
