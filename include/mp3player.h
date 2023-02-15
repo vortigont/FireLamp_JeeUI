@@ -84,30 +84,7 @@ class MP3PLAYERDEVICE : protected DFRobotDFPlayerMini {
     bool isAlarm() {return alarm;}
     bool isOn() {return on && ready;}
     bool isMP3Mode() {return mp3mode;}
-    void setIsOn(bool val, bool forcePlay=true) {
-      on = val;
-
-      if(!forcePlay){
-        iscancelrestart = true;
-        restartTimeout = millis();
-      }
-
-      if(!on){
-        stop();
-        isplaying = false;
-        iscancelrestart = true;
-        restartTimeout = millis();
-      } else if(forcePlay && (effectmode || mp3mode))
-        playEffect(cur_effnb, soundfile);
-
-      if(tPeriodic)
-        tPeriodic->cancel();
-      
-      if(on){
-        tPeriodic = new Task(1.21 * TASK_SECOND, TASK_FOREVER, std::bind(&MP3PLAYERDEVICE::handle,this), &ts, false, nullptr, [this](){TASK_RECYCLE; tPeriodic = nullptr;}); // "ленивый" опрос - раз в 1.21 сек (стараюсь избежать пересеченией с произнесением времени)
-        tPeriodic->enableDelayed();
-      }
-    }
+    void setIsOn(bool val, bool forcePlay=true);
     void playTime(int hours, int minutes, TIME_SOUND_TYPE tst);
     void playEffect(uint16_t effnb, const String &_soundfile, bool delayed=false);
     void playName(uint16_t effnb);

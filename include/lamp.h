@@ -496,8 +496,7 @@ public:
             }
             fader = nullptr;
             _cb = nullptr;
-            TASK_RECYCLE;
-        })
+        }, true)
     {
         this->_cb = callback;
         this->lmp = _l;
@@ -597,7 +596,7 @@ private:
 
 public:
     ALARMTASK(Scheduler* aS, LAMP *_l, char *value = nullptr)
-        : Task(TASK_SECOND, TASK_FOREVER, [](){ ALARMTASK::alarmWorker(); }, aS, false, nullptr,[](){ alarmTask = nullptr; TASK_RECYCLE; })
+        : Task(TASK_SECOND, TASK_FOREVER, [](){ ALARMTASK::alarmWorker(); }, aS, false, nullptr,[](){ alarmTask = nullptr;}, true)
     {
         lamp = _l;
         alarmTask = this;
@@ -627,8 +626,7 @@ public:
             mp3->RestoreVolume(); // восстановить уровень громкости
             if(lamp->isLampOn())
                 mp3->playEffect(mp3->getCurPlayingNb(),"");
-            TASK_RECYCLE;
-        });
+        }, true);
         _t->enableDelayed();
         ALARMTASK::getInstance()->curAlarm.clear(); // очистить сообщение выводимое на лампу в будильнике
         #endif

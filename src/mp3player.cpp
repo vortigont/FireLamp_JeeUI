@@ -65,8 +65,7 @@ MP3PLAYERDEVICE::MP3PLAYERDEVICE(const uint8_t rxPin, const uint8_t txPin) : mp3
     LOG(println, F("DFplayer: DFPlayer Mini online."));
     outputDevice(DFPLAYER_DEVICE_SD);
     setTempVolume(5);
-    TASK_RECYCLE;
-  });
+  }, true);
   _t->enableDelayed();
 }
 
@@ -92,9 +91,8 @@ void MP3PLAYERDEVICE::restartSound()
               playMp3Folder(cur_effnb);
             }
           }
-          isplaying = true;
-        TASK_RECYCLE; },
-        &ts, false);
+          isplaying = true; },
+        &ts, false, nullptr, nullptr, true);
     _t->enableDelayed();
   }
 }
@@ -178,10 +176,8 @@ void MP3PLAYERDEVICE::printSatusDetail(){
             if(timeSoundType == TIME_SOUND_TYPE::TS_VER1 && nextAdv){
               Task *_t = new Task(
                   2.5 * TASK_SECOND + 300,
-                  TASK_ONCE, [this](){
-                    playAdvertise(nextAdv);
-                  TASK_RECYCLE; },
-                  &ts, false);
+                  TASK_ONCE, [this](){ playAdvertise(nextAdv); },
+                  &ts, false, nullptr, nullptr, true);
               _t->enableDelayed();
             }
           }
@@ -217,20 +213,16 @@ void MP3PLAYERDEVICE::playTime(int hours, int minutes, TIME_SOUND_TYPE tst)
       nextAdv = minutes+3100;
       Task *_t = new Task(
           2.25 * TASK_SECOND,
-          TASK_ONCE, [this](){
-            playAdvertise(nextAdv);
-          TASK_RECYCLE; },
-          &ts, false);
+          TASK_ONCE, [this](){ playAdvertise(nextAdv); },
+          &ts, false, nullptr, nullptr, true);
       _t->enableDelayed();
     } else {
       playLargeFolder(0x00, 3000+hours);
       nextAdv = minutes+3100;
       Task *_t = new Task(
           2.25 * TASK_SECOND,
-          TASK_ONCE, [this](){
-            playAdvertise(nextAdv);
-          TASK_RECYCLE; },
-          &ts, false);
+          TASK_ONCE, [this](){ playAdvertise(nextAdv); },
+          &ts, false, nullptr, nullptr, true);
       _t->enableDelayed();
       restartTimeout = millis();
     }
@@ -258,8 +250,8 @@ void MP3PLAYERDEVICE::playAdvertise(int filenb) {
       TASK_ONCE, [this](){
         LOG(println, F("DFplayer: isadvert = false"));
         isadvert = false; // через 6.66 секунд снимим флаг, шаманство!
-      TASK_RECYCLE; },
-      &ts, false);
+      },
+      &ts, false, nullptr, nullptr, true);
   _t->enableDelayed();
 }
 
@@ -312,8 +304,7 @@ void MP3PLAYERDEVICE::StartAlarmSoundAtVol(ALARM_SOUND_TYPE val, uint8_t vol){
   tAlarm = val;
   Task *_t = new Task(300, TASK_ONCE, nullptr, &ts, false, nullptr, [this](){
     ReStartAlarmSound((ALARM_SOUND_TYPE)tAlarm);
-    TASK_RECYCLE;
-  });
+  }, true);
   _t->enableDelayed();
 }
 
@@ -378,6 +369,35 @@ void MP3PLAYERDEVICE::setTempVolume(uint8_t vol) {
     } while(!readType() && tcnt);
   }
   LOG(printf_P, PSTR("DFplayer: Set temp volume: %d\n"), vol);
+}
+
+void MP3PLAYERDEVICE::setIsOn(bool val, bool forcePlay) {
+  on = val;
+
+  if(!forcePlay){
+    iscancelrestart = true;
+    restartTimeout = millis();
+  }
+
+  if(!on){
+    stop();
+    isplaying = false;
+    iscancelrestart = true;
+    restartTimeout = millis();
+  } else if(forcePlay && (effectmode || mp3mode))
+    playEffect(cur_effnb, soundfile);
+
+  if(tPeriodic && on)
+    return;
+
+  if (!on){
+    delete tPeriodic;
+    tPeriodic = nullptr;
+    return;
+  }
+  
+    tPeriodic = new Task(1.21 * TASK_SECOND, TASK_FOREVER, std::bind(&MP3PLAYERDEVICE::handle,this), &ts, false, nullptr, nullptr, true); // "ленивый" опрос - раз в 1.21 сек (стараюсь избежать пересеченией с произнесением времени)
+    tPeriodic->enableDelayed();
 }
 
 #endif

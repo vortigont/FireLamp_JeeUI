@@ -305,14 +305,12 @@ void LAMP::changePower(bool flag) // флаг включения/выключе�
     demoTimer(T_DISABLE);     // гасим Демо-таймер
   }
 
-  Task *_t = new Task(flags.isFaderON && !flags.ONflag ? 5*TASK_SECOND : 50, TASK_ONCE, // для выключения - отложенное переключение мосфета 5 секунд
-    [this](){
 #if defined(MOSFET_PIN) && defined(MOSFET_LEVEL)          // установка сигнала в пин, управляющий MOSFET транзистором, соответственно состоянию вкл/выкл матрицы
-  digitalWrite(MOSFET_PIN, (flags.ONflag ? MOSFET_LEVEL : !MOSFET_LEVEL));
-#endif
-    TASK_RECYCLE; },
-    &ts, false);
+  Task *_t = new Task(flags.isFaderON && !flags.ONflag ? 5*TASK_SECOND : 50, TASK_ONCE, // для выключения - отложенное переключение мосфета 5 секунд
+    [this](){ digitalWrite(MOSFET_PIN, (flags.ONflag ? MOSFET_LEVEL : !MOSFET_LEVEL)); },
+    &ts, false, nullptr, nullptr, true);
   _t->enableDelayed();
+#endif
 
 // #if defined(MOSFET_PIN) && defined(MOSFET_LEVEL)          // установка сигнала в пин, управляющий MOSFET транзистором, соответственно состоянию вкл/выкл матрицы
 //   digitalWrite(MOSFET_PIN, (flags.ONflag ? MOSFET_LEVEL : !MOSFET_LEVEL));
@@ -349,7 +347,7 @@ void LAMP::setMicOnOff(bool val) {
     LList<UIControl*>&controls = effects.getControls();
     UIControl *c7 = nullptr;
     if(val){
-        for(int i=3; i<controls.size(); i++) {
+        for(unsigned i=3; i<controls.size(); i++) {
             if(controls[i]->getId()==7 && controls[i]->getName().startsWith(FPSTR(TINTF_020))==1){
                 if(effects.worker) effects.worker->setDynCtrl(controls[i]);
                 found=true;
@@ -423,10 +421,10 @@ void LAMP::restoreStored()
     setLampBrightness(storedBright);
   lampState.isMicOn = flags.isMicOn;
   if (static_cast<EFF_ENUM>(storedEffect) != EFF_NONE) {    // ничего не должно происходить, включаемся на текущем :), текущий всегда определен...
-    Task *_t = new Task(3 * TASK_SECOND, TASK_ONCE, [this](){remote_action(RA::RA_EFFECT, String(storedEffect).c_str(), NULL); TASK_RECYCLE; }, &ts, false);
+    Task *_t = new Task(3 * TASK_SECOND, TASK_ONCE, [this](){remote_action(RA::RA_EFFECT, String(storedEffect).c_str(), NULL); }, &ts, false, nullptr, nullptr, true);
     _t->enableDelayed();
   } else if(static_cast<EFF_ENUM>(effects.getEn()%256) == EFF_NONE) { // если по каким-то причинам текущий пустой, то выбираем рандомный
-    Task *_t = new Task(3 * TASK_SECOND, TASK_ONCE, [this](){remote_action(RA::RA_EFF_RAND, NULL); TASK_RECYCLE; }, &ts, false);
+    Task *_t = new Task(3 * TASK_SECOND, TASK_ONCE, [this](){remote_action(RA::RA_EFF_RAND, NULL); }, &ts, false, nullptr, nullptr, true);
     _t->enableDelayed();
   }
 }
@@ -1105,18 +1103,21 @@ void LAMP::demoTimer(SCHEDULER action, uint8_t tmout){
   switch (action)
   {
   case SCHEDULER::T_DISABLE :
-    if(demoTask){
-      demoTask->cancel();
-    }
+    delete demoTask;
+    demoTask = nullptr;
     break;
   case SCHEDULER::T_ENABLE :
-    if(tmout){
-      if(demoTask){
-        demoTask->cancel();
-      }
-      demoTask = new Task(tmout * TASK_SECOND, TASK_FOREVER, std::bind(&remote_action, RA::RA_DEMO_NEXT, NULL), &ts, false, nullptr, [this](){TASK_RECYCLE; demoTask = nullptr;});
-      demoTask->enableDelayed();
+    if (!tmout && demoTask){
+      delete demoTask;
+      demoTask = nullptr;
+      return;
     }
+    if(demoTask){
+      demoTask->setInterval(tmout);
+      return;
+    }
+    demoTask = new Task(tmout * TASK_SECOND, TASK_FOREVER, std::bind(&remote_action, RA::RA_DEMO_NEXT, NULL), &ts, false);
+    demoTask->enableDelayed();
     break;
   case SCHEDULER::T_RESET :
     if (isAlarm())
@@ -1139,8 +1140,7 @@ void LAMP::effectsTimer(SCHEDULER action, uint32_t _begin) {
   {
   case SCHEDULER::T_DISABLE :
     if(effectsTask){
-      effectsTask->cancel();
-      embui.taskRecycle(effectsTask);
+      delete effectsTask;
       effectsTask = nullptr;
     }
     break;
@@ -1249,7 +1249,7 @@ void LAMP::showWarning(
       WarningTask *cur = (WarningTask *)ts.getCurrentTask();
       showWarning(cur->getWarn_color(),cur->getWarn_duration(),cur->getWarn_blinkHalfPeriod(),(uint8_t)lampState.warnType, !lampState.isWarning, cur->getData());
     }
-    , &ts, false, nullptr, [](){TASK_RECYCLE;});
+    , &ts, false, nullptr, nullptr, true);
     warningTask->enableDelayed();
   }
   else {
@@ -1293,14 +1293,19 @@ void LAMP::fillDrawBuf(CRGB &color) {
 
 #ifdef EMBUI_USE_MQTT
 void LAMP::setmqtt_int(int val) {
-    //mqtt_int = val;
-    if(tmqtt_pub)
-        tmqtt_pub->cancel(); // cancel & delete
+    if (!val && tmqtt_pub){
+      delete tmqtt_pub;
+      tmqtt_pub = nullptr;
+      return;
+    }
+
+    if(tmqtt_pub){
+        tmqtt_pub->setInterval(val);
+        return;
+    }
 
     extern void sendData();
-    if(val){
-        tmqtt_pub = new Task(val * TASK_SECOND, TASK_FOREVER, [this](){ if(embui.isMQTTconected()) sendData(); }, &ts, true, nullptr, [this](){TASK_RECYCLE; tmqtt_pub=nullptr;});
-    }
+    tmqtt_pub = new Task(val * TASK_SECOND, TASK_FOREVER, [this](){ if(embui.isMQTTconected()) sendData(); }, &ts, true);
 }
 #endif
 

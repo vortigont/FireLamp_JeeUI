@@ -64,8 +64,8 @@ private:
     CRGB gauge_color = 0;
     GAUGE() = delete;
 public:
-    INLINE GAUGE(unsigned val, unsigned max, uint8_t hue = 0)
-    : Task(3*TASK_SECOND, TASK_ONCE, []() {TASK_RECYCLE; gauge = nullptr;}, &ts, false){
+    GAUGE(unsigned val, unsigned max, uint8_t hue = 0)
+    : Task(3*TASK_SECOND, TASK_ONCE, []() {gauge = nullptr;}, &ts, false, nullptr, nullptr, true){
         GAUGE::gauge = this;
 
         gauge_time = millis();
@@ -170,9 +170,8 @@ class StringTask : public Task {
     INLINE void setNewData(char *newData) {if(_data) delete []_data; _data=newData;}
 public:
     INLINE char *getData() {return _data;}
-    INLINE StringTask(const char *data = nullptr, unsigned long aInterval=0, long aIterations=0, TaskCallback aCallback=NULL, Scheduler* aScheduler=NULL, bool aEnable=false, TaskOnEnable aOnEnable=NULL, TaskOnDisable aOnDisable=NULL)
-    : Task(aInterval, aIterations, aCallback, aScheduler, aEnable, aOnEnable, aOnDisable){
-        //LOG(println, F("StringTask constructor"));
+    StringTask(const char *data = nullptr, unsigned long aInterval=0, long aIterations=0, TaskCallback aCallback=NULL, Scheduler* aScheduler=NULL, bool aEnable=false, TaskOnEnable aOnEnable=NULL, TaskOnDisable aOnDisable=NULL, bool sd = false)
+    : Task(aInterval, aIterations, aCallback, aScheduler, aEnable, aOnEnable, aOnDisable, sd){
         _data = makeCopy(data);
     }
     ~StringTask() {if(_data) delete[] _data;}
@@ -188,8 +187,8 @@ public:
     INLINE uint32_t getWarn_duration() {return _warn_duration;}
     INLINE uint32_t getWarn_blinkHalfPeriod() {return _warn_blinkHalfPeriod;}
     INLINE CRGB& getWarn_color() {return _warn_color;}
-    INLINE WarningTask(CRGB &warn_color, uint32_t warn_duration, uint16_t warn_blinkHalfPeriod, const char *data = nullptr, unsigned long aInterval=0, long aIterations=0, TaskCallback aCallback=NULL, Scheduler* aScheduler=NULL, bool aEnable=false, TaskOnEnable aOnEnable=NULL, TaskOnDisable aOnDisable=NULL)
-    : StringTask(data, aInterval, aIterations, aCallback, aScheduler, aEnable, aOnEnable, aOnDisable)
+    WarningTask(CRGB &warn_color, uint32_t warn_duration, uint16_t warn_blinkHalfPeriod, const char *data = nullptr, unsigned long aInterval=0, long aIterations=0, TaskCallback aCallback=NULL, Scheduler* aScheduler=NULL, bool aEnable=false, TaskOnEnable aOnEnable=NULL, TaskOnDisable aOnDisable=NULL, bool sd = false)
+    : StringTask(data, aInterval, aIterations, aCallback, aScheduler, aEnable, aOnEnable, aOnDisable, sd)
     , _warn_color(warn_color), _warn_duration(warn_duration), _warn_blinkHalfPeriod(warn_blinkHalfPeriod) {
       //LOG(println, F("WarningTask constructor"));
     }

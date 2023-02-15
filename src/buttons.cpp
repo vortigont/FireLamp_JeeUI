@@ -36,7 +36,7 @@ bool Button::activate(btnflags& flg, bool reverse){
 				if ((newval == 1 || newval == 255) && tReverseTimeout==nullptr){
 					tReverseTimeout = new Task(2 * TASK_SECOND, TASK_ONCE,
 									[this](){ flags.direction = !flags.direction; LOG(println,F("reverse")); },
-									&ts, false, nullptr, [](){TASK_RECYCLE; tReverseTimeout = nullptr;}
+									&ts, false, nullptr, [](){ tReverseTimeout = nullptr;}, true
 							);
 					tReverseTimeout->enableDelayed();
 				} 
@@ -51,7 +51,7 @@ bool Button::activate(btnflags& flg, bool reverse){
 				if ((newval == 1 || newval == 255) && tReverseTimeout==nullptr){
 					tReverseTimeout = new Task(2 * TASK_SECOND, TASK_ONCE,
 									[this](){ flags.direction = !flags.direction; LOG(println,F("reverse")); },
-									&ts, false, nullptr, [](){TASK_RECYCLE; tReverseTimeout = nullptr;}
+									&ts, false, nullptr, [](){ tReverseTimeout = nullptr;}, true
 							);
 					tReverseTimeout->enableDelayed();
 				}
@@ -67,7 +67,7 @@ bool Button::activate(btnflags& flg, bool reverse){
 				if ((newval == 1 || newval == 255) && tReverseTimeout==nullptr){
 					tReverseTimeout = new Task(2 * TASK_SECOND, TASK_ONCE,
 									[this](){ flags.direction = !flags.direction; LOG(println,F("reverse")); },
-									&ts, false, nullptr, [](){TASK_RECYCLE; tReverseTimeout = nullptr;}
+									&ts, false, nullptr, [](){ tReverseTimeout = nullptr; }, true
 							);
 					tReverseTimeout->enableDelayed();
 				}
@@ -164,7 +164,7 @@ void Buttons::buttonTick(){
 		if(!tClicksClear || (tstclicks && tstclicks!=clicks)) // нажатия после удержания не сбрасываем!!! они сбросятся по tClicksClear или по смене кол-ва нажатий до удержания
 			clicks=tstclicks;
 		if(!tClicksClear){
-			tClicksClear = new Task(NUMHOLD_TIME, TASK_ONCE, [this](){ holded = true; clicks=0; }, &ts, false, nullptr, [this](){TASK_RECYCLE; tClicksClear=nullptr;});
+			tClicksClear = new Task(NUMHOLD_TIME, TASK_ONCE, [this](){ holded = true; clicks=0; }, &ts, false, nullptr, [this](){tClicksClear=nullptr;}, true);
 			tClicksClear->enableDelayed();
 		}
 		onoffLampState = myLamp.isLampOn(); // получить статус на начало удержания
@@ -184,7 +184,7 @@ void Buttons::buttonTick(){
 			resetStates();
 			onoffLampState = myLamp.isLampOn(); // сменить статус после удержания
 			LOG(printf_P, PSTR("reset - buttonEnabled=%d, onoffLampState=%d, holding=%d, holded=%d, clicks=%d, reverse=%d\n"), buttonEnabled, onoffLampState, holding, holded, clicks, reverse);
-			for (int i = 0; i < buttons.size(); i++) {
+			for (unsigned i = 0; i < buttons.size(); i++) {
 				buttons[i]->flags.onetime&=1;
 			}
 			isrEnable(); // переключение на ленивый опрос
@@ -305,17 +305,21 @@ void Buttons::saveConfig(const char *cfg){
 
 void IRAM_ATTR Buttons::isrPress() {
   detachInterrupt(pin);
+	// какой нерюх создает новый объект в ISR???
+	// todo: убрать
 	if(tButton)
-		tButton->cancel();
-	tButton = new Task(20, TASK_FOREVER, std::bind(&Buttons::buttonTick, this), &ts, true, nullptr, [this](){TASK_RECYCLE; tButton=nullptr;}); // переключение в режим удержания кнопки
+		tButton->restartDelayed();
+	else
+		tButton = new Task(20, TASK_FOREVER, std::bind(&Buttons::buttonTick, this), &ts, true, nullptr, [this](){ tButton=nullptr; }, true); // переключение в режим удержания кнопки
 }
 
 void Buttons::isrEnable(){
 	LOG(println,F("Button switch to isr"));
 	attachInterrupt(pin, std::bind(&Buttons::isrPress,this), pullmode==LOW_PULL ? RISING : FALLING );
 	if(tButton)
-		tButton->cancel();
-	tButton = new Task(TASK_SECOND, 5, std::bind(&Buttons::buttonTick, this), &ts, true, nullptr, [this](){TASK_RECYCLE; tButton=nullptr;});	// "ленивый" опрос 1 раз в сек в течение 5 секунд
+		tButton->restartDelayed();
+	else
+		tButton = new Task(TASK_SECOND, 5, std::bind(&Buttons::buttonTick, this), &ts, true, nullptr, [this](){ tButton=nullptr;}, true);	// "ленивый" опрос 1 раз в сек в течение 5 секунд
 }
 
 void Buttons::setButtonOn(bool flag) {

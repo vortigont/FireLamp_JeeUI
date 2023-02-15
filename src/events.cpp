@@ -63,7 +63,7 @@ DEV_EVENT *EVENT_MANAGER::addEvent(const DEV_EVENT&event)
 }
 
 void EVENT_MANAGER::delEvent(const DEV_EVENT&event) {
-    for(int i=0;i<events->size();i++){
+    for(unsigned i=0;i<events->size();i++){
         if(*((*events)[i])==event){
             events->remove(i); // удаляет из списка и чистит память
         }
@@ -71,7 +71,7 @@ void EVENT_MANAGER::delEvent(const DEV_EVENT&event) {
 }
 
 bool EVENT_MANAGER::isEnumerated(const DEV_EVENT&event) {
-    for(int i=0;i<events->size();i++){
+    for(unsigned i=0;i<events->size();i++){
         if(*((*events)[i])==event){
             return true;
         }
@@ -85,7 +85,7 @@ void EVENT_MANAGER::events_handle()
     if(!TimeProcessor::seconds00())
         return;
 
-    for(int i=0;i<events->size();i++){
+    for(unsigned i=0;i<events->size();i++){
         check_event((*events)[i]);
     }
 }
@@ -168,7 +168,7 @@ void EVENT_MANAGER::saveConfig(const char *cfg)
         LOG(println, F("Save events config"));
         bool firstLine=true;
         DEV_EVENT *next;
-        for(int i=0;i<events->size();i++){
+        for(unsigned i=0;i<events->size();i++){
             next = (*events)[i];
             LOG(printf_P, PSTR("%s{\"raw\":%u,\"ut\":%llu,\"ev\":%u,\"rp\":%u,\"sa\":%u,\"msg\":\"%s\"}"),
                 (!firstLine?",":""), next->raw_data, (unsigned long long)next->unixtime, next->event, next->repeat, next->stopat, next->message.c_str());
