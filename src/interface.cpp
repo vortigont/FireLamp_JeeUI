@@ -660,7 +660,7 @@ void block_effects_param(Interface *interf, JsonObject *data){
 
     if(isinterf) interf->json_section_begin(FPSTR(TCONST_effects_param));
 
-    LList<std::shared_ptr<UIControl>>&controls = myLamp.effects.getControls();
+    LList<std::shared_ptr<UIControl>> &controls = myLamp.effects.getControls();
     uint8_t ctrlCaseType; // тип контрола, старшие 4 бита соответствуют CONTROL_CASE, младшие 4 - CONTROL_TYPE
 #ifdef MIC_EFFECTS
    bool isMicOn = myLamp.isMicOnOff();
@@ -669,7 +669,7 @@ void block_effects_param(Interface *interf, JsonObject *data){
         if(controls[i]->getId()==7 && controls[i]->getName().startsWith(FPSTR(TINTF_020)))
             isMicOn = isMicOn && controls[i]->getVal().toInt();
 #endif
-
+    LOG(printf_P, PSTR("block_effects_param() got %u ctrls\n"), controls.size());
     for(unsigned i=0; i<controls.size();i++){
         ctrlCaseType = controls[i]->getType();
         switch(ctrlCaseType>>4){
@@ -759,10 +759,12 @@ void block_effects_param(Interface *interf, JsonObject *data){
     publish_ctrls_vals();
 #endif
     if(isinterf) interf->json_section_end();
+    LOG(println, F("eof block_effects_param()"));
 }
 
 void show_effects_param(Interface *interf, JsonObject *data){
     //if (!interf) return;
+    LOG(println, F("show_effects_param()"));
     bool isinterf = (interf != nullptr); // буду публиковать, даже если WebUI клиентов нет
     if(isinterf) interf->json_frame_interface();
     block_effects_param(interf, data);
@@ -770,7 +772,7 @@ void show_effects_param(Interface *interf, JsonObject *data){
 }
 
 void set_effects_list(Interface *interf, JsonObject *data){
-    LOG(println, "C: set_effects_list");
+    LOG(println, "set_effects_list()");
     if (!data) return;
     uint16_t num = (*data)[FPSTR(TCONST_0016)].as<uint16_t>();
     uint16_t curr = myLamp.effects.getSelected();
@@ -786,8 +788,8 @@ void set_effects_list(Interface *interf, JsonObject *data){
     }
 
     myLamp.setDRand(myLamp.getLampSettings().dRand); // сборосить флаг рандомного демо
-    LOG(printf_P, PSTR("EFF switch to:%d, cur:%d, isOn:%d, mode:%d\n"), eff->eff_nb, curr, myLamp.isLampOn(), myLamp.getMode());
     if (eff->eff_nb != curr) {
+        LOG(printf_P, PSTR("UI EFF switch to:%d, cur:%d, isOn:%d, mode:%d\n"), eff->eff_nb, curr, myLamp.isLampOn(), myLamp.getMode());
         if (!myLamp.isLampOn()) {
             myLamp.effects.directMoveBy(eff->eff_nb); // переходим на выбранный эффект для начальной инициализации
         } else {
@@ -3526,6 +3528,8 @@ void default_buttons(){
 }
 #endif
 
+
+// набор акшенов, которые дергаются из всех мест со всех сторон
 void remote_action(RA action, ...){
     LOG(printf_P, PSTR("RA %d: "), action);
     DynamicJsonDocument doc(512);
@@ -3591,19 +3595,22 @@ void remote_action(RA action, ...){
                 myLamp.startDemoMode();
             }
             break;
+        // trigger effect change in Demo mode
         case RA::RA_DEMO_NEXT:
             if (myLamp.getLampSettings().dRand) {
                 myLamp.switcheffect(SW_RND, myLamp.getFaderFlag());
             } else {
                 myLamp.switcheffect(SW_NEXT_DEMO, myLamp.getFaderFlag());
             }
+            // postponed action to publish eff changes
             new Task(TASK_SECOND, TASK_ONCE, nullptr, &ts, true, nullptr, [](){ remote_action(RA::RA_EFFECT, String(myLamp.effects.getSelected()).c_str(), NULL); }, true);
             break;
+        // called on effect change events
         case RA::RA_EFFECT: {
             LAMPMODE mode=myLamp.getMode();
             if(mode==LAMPMODE::MODE_WHITELAMP && myLamp.effects.getSelected()!=1){
                 myLamp.startNormalMode(true);
-                DynamicJsonDocument doc(512);
+                StaticJsonDocument<200>doc;
                 JsonObject obj = doc.to<JsonObject>();
                 CALL_INTF(FPSTR(TCONST_001A), !myLamp.isLampOn() ? "1" : "0", set_onflag);
                 break;

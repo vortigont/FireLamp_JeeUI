@@ -171,10 +171,11 @@ public:
     uint16_t eff_nb; // номер эффекта, для копий наращиваем старший байт
     EFFFLAGS flags; // флаги эффекта
 
-    EffectListElem(uint16_t nb, uint8_t mask) : eff_nb(nb), flags.mask(mask) {}
+    EffectListElem(uint16_t nb, uint8_t mask) : eff_nb(nb) { flags.mask = mask; }
 
-    EffectListElem(const EffectListElem *base) : flags(base->flags) {
+    EffectListElem(const EffectListElem *base) {
         eff_nb = ((((base->eff_nb >> 8) + 1 ) << 8 ) | (base->eff_nb&0xFF)); // в старшем байте увеличиваем значение на 1
+        flags =base->flags; 
     }
 
     bool canBeSelected(){ return flags.canBeSelected; }
@@ -379,18 +380,12 @@ private:
 
     Task *tConfigSave = nullptr;       // динамическая таска, задержки при сохранении текущего конфига эффекта в файл
 
-    void fsinforenew(){
-#ifdef ESP8266
-        FSInfo fs_info;
-        LittleFS.info(fs_info);
-        if(lampstate)
-        lampstate->fsfreespace = fs_info.totalBytes-fs_info.usedBytes;
-#endif
-#ifdef ESP32
-        if(lampstate)
-        lampstate->fsfreespace = LittleFS.totalBytes() - LittleFS.usedBytes();
-#endif
-    }
+    /**
+     * @brief WTF???
+     * update LAMP class instance with FileSystem stat info
+     * todo: move it to a proper place
+     */
+    void fsinforenew();
 
     /**
      * создает и инициализирует экземпляр класса выбранного эффекта
@@ -404,7 +399,7 @@ private:
     void clearEffectList(); // очистка списка эффектов, вызываетсяч в initDefault
 
     /**
-     * @brief очистка списка контроллов и освобождение памяти
+     * @brief очистка списка контроллов
      * 
      * @param list list to clear
      */
@@ -412,10 +407,23 @@ private:
 
     void effectsReSort(SORT_TYPE st=(SORT_TYPE)(255));
 
-    int loadeffconfig(const uint16_t nb, const char *folder=NULL);
+    /**
+     * @brief load effect's configuration from a json file
+     * apply saved configuration to current worker instance
+     * @param nb - effect number
+     * @param folder - folder to look for config files
+     * @return int 
+     */
+    bool loadeffconfig(const uint16_t nb, const char *folder=NULL);
 
-    // получение пути и имени файла конфига эффекта
-    const String geteffectpathname(const uint16_t nb, const char *folder=NULL);
+    /**
+     * @brief получение пути и имени файла конфига эффекта по его номеру
+     * 
+     * @param nb - номер эффекта
+     * @param folder -  абсолютный путь к каталогу с конфигами, должен начинаться и заканчиваться '/', по-умолчанию испльзуется '/eff/'
+     * @return const String - полный путь до файла с конфигом
+     */
+    const String geteffectpathname(const uint16_t nb, const char *folder=NULL) const;
 
     /**
      * проверка на существование "дефолтных" конфигов для всех статичных эффектов
@@ -450,8 +458,40 @@ private:
      */
     File& openIndexFile(File& fhandle, const char *folder);
 
+    /**
+     * @brief deserialise effect configuration from a file based on eff number
+     * if file is missing/damaged or it's versions is older than firmware's default
+     * it will be reset to defaults
+     * 
+     * @param nb - effect number
+     * @param folder - folder to load effects from, must be absolute path with leading/trailing slashes, default is '/eff/'
+     * @param jdoc - document to place deserialized obj
+     * @return true - on success
+     * @return false - on failure
+     */
+    bool _eff_cfg_deserialize(DynamicJsonDocument &doc, uint16_t nb, const char *folder = NULL);
+
+    /**
+     * @brief load effect controls from JsonDocument to a list
+     * 
+     * @param effcfg - deserialized JsonDocument with effect config (should come from a file)
+     * @param ctrls - destination list to load controls (all existing controls will be cleared)
+     * @return true - on success
+     * @return false - on error
+     */
+    bool _eff_ctrls_load_from_jdoc(DynamicJsonDocument &effcfg, LList<std::shared_ptr<UIControl>> &ctrls);
 
 public:
+    // дефолтный конструктор
+    EffectWorker(LAMPSTATE *_lampstate);
+    // конструктор копий эффектов
+    EffectWorker(const EffectListElem* base, const EffectListElem* copy);
+    // Конструктор для отложенного эффекта
+    EffectWorker(uint16_t delayeffnb);
+    // конструктор текущего эффекта, для fast=true вычитываетсяч только имя
+    EffectWorker(const EffectListElem* eff, bool fast=false);
+
+
     void removeLists(); // уделение списков из ФС
     //time_t getlistsuffix() {return listsuffix ? listsuffix : (listsuffix=micros());}      // obsolete, server could handle caching
     //void setlistsuffix(time_t val) {listsuffix=val;}
@@ -460,9 +500,6 @@ public:
     ~EffectWorker();
 
     LList<std::shared_ptr<UIControl>>&getControls() { return isSelected() ? controls : selcontrols; }
-
-    // дефолтный конструктор
-    EffectWorker(LAMPSTATE *_lampstate);
 
     // тип сортировки
     void setEffSortType(SORT_TYPE type) {if(effSort != type) { effectsReSort(type); } effSort = type;}
@@ -473,13 +510,6 @@ public:
 
     // Получить конфиг эффекта из ФС
     bool getfseffconfig(uint16_t nb, String &result);
-
-    // конструктор копий эффектов
-    EffectWorker(const EffectListElem* base, const EffectListElem* copy);
-    // Конструктор для отложенного эффекта
-    EffectWorker(uint16_t delayeffnb);
-    // конструктор текущего эффекта, для fast=true вычитываетсяч только имя
-    EffectWorker(const EffectListElem* eff, bool fast=false);
 
     /**
      *  отложенная запись конфига текущего эффекта, каждый вызов перезапускает счетчик
@@ -497,34 +527,13 @@ public:
 
     const String &getEffectName() {return effectName;}
 
-    void setEffectName(const String &name, EffectListElem*to) // если текущий, то просто пишем имя, если другой - создаем экземпляр, пишем, удаляем
-        {
-            if(to->eff_nb==curEff){
-                effectName=name;
-                saveeffconfig(curEff);
-            }
-            else {
-                EffectWorker *tmp=new EffectWorker(to);
-                tmp->curEff=to->eff_nb;
-                tmp->selEff=to->eff_nb;
-                tmp->setEffectName(name,to);
-                tmp->saveeffconfig(to->eff_nb);
-                delete tmp;
-            }
-        }
+    // если текущий, то просто пишем имя, если другой - создаем экземпляр, пишем, удаляем
+    void setEffectName(const String &name, EffectListElem*to);
 
     const String &getSoundfile() {return soundfile;}
 
     // если текущий, то просто пишем имя звукового файла, если другой - создаем экземпляр, пишем, удаляем
-    void setSoundfile(const String &_soundfile, EffectListElem*to){
-        if(to->eff_nb==curEff) soundfile=_soundfile;
-        else {EffectWorker *tmp=new EffectWorker(to);
-        tmp->curEff=to->eff_nb;
-        tmp->selEff=to->eff_nb;
-        tmp->setSoundfile(_soundfile,to);
-        tmp->saveeffconfig(to->eff_nb);
-        delete tmp;}
-    }
+    void setSoundfile(const String &_soundfile, EffectListElem*to);
 
     const String &getOriginalName() {return originalName;}
 
@@ -569,15 +578,8 @@ public:
     // получить реальный номер эффекта по номеру элемента списка (для плагинов)
     uint16_t realEffNumdByList(uint16_t val) { return effects[val]->eff_nb; }
     // получить индекс эффекта по номеру (для плагинов)
-    uint16_t effIndexByList(uint16_t val) { 
-        uint16_t found = 0;
-        for (uint16_t i = 0; i < effects.size(); i++) {
-            if (effects[i]->eff_nb == val ) {
-                found = i;
-            } 
-        }
-        return found;
-    }
+    uint16_t effIndexByList(uint16_t val);
+
     // получить флаг canBeSelected по номеру элемента списка (для плагинов)
     bool effCanBeSelected(uint16_t val) { if (val < effects.size())return effects[val]->canBeSelected(); return false; }
 

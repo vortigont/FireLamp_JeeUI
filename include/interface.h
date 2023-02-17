@@ -8,7 +8,7 @@ typedef enum _remote_action {
     RA_ON,
     RA_OFF,
     RA_DEMO,
-    RA_DEMO_NEXT,
+    RA_DEMO_NEXT,       // trigger effect change in Demo mode
     RA_ALARM,
     RA_ALARM_OFF,
     RA_LAMP_CONFIG,
@@ -39,7 +39,7 @@ typedef enum _remote_action {
 #ifdef MIC_EFFECTS
     RA_MICONOFF,
 #endif
-    RA_EFFECT,
+    RA_EFFECT,          // called on effect change events
     RA_SEND_TEXT,
     RA_SEND_TIME,
     RA_SEND_IP,

@@ -997,46 +997,59 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
     if(isRGB()){ // выход из этого режима, при любой попытки перехода по эффектам
       stopRGB();
     }
+    uint16_t next_eff_num = effnb;
     switch (action) {
     case EFFSWITCH::SW_NEXT :
         fade = (!LEDFader::getInstance()) && fade;
-        effects.setSelected(effects.getNext());
+        next_eff_num = effects.getNext();
+        //effects.setSelected(effects.getNext());
         break;
     case EFFSWITCH::SW_NEXT_DEMO :
-        effects.setSelected(effects.getByCnt(1));
+        next_eff_num = effects.getByCnt(1);
+        //effects.setSelected(effects.getByCnt(1));
         break;
     case EFFSWITCH::SW_PREV :
         fade = (!LEDFader::getInstance()) && fade;
-        effects.setSelected(effects.getPrev());
+        next_eff_num = effects.getPrev();
+        //effects.setSelected(effects.getPrev());
         break;
     case EFFSWITCH::SW_SPECIFIC :
         //fade = (!LEDFader::getInstance()) && fade;
-        effects.setSelected(effects.getBy(effnb));
+        next_eff_num = effects.getBy(effnb);
+        //effects.setSelected(effects.getBy(effnb));
         break;
     case EFFSWITCH::SW_RND :
-        effects.setSelected(effects.getByCnt(random(0, effects.getModeAmount())));
+        next_eff_num = effects.getByCnt(random(0, effects.getModeAmount()));
+        //effects.setSelected(effects.getByCnt(random(0, effects.getModeAmount())));
         break;
     case EFFSWITCH::SW_WHITE_HI:
         storeEffect();
-        effects.setSelected(effects.getBy(EFF_WHITE_COLOR));
+        next_eff_num = effects.getBy(EFF_WHITE_COLOR);
+        //effects.setSelected(effects.getBy(EFF_WHITE_COLOR));
         setMode(LAMPMODE::MODE_WHITELAMP);
         break;
     case EFFSWITCH::SW_WHITE_LO:
         storeEffect();
-        effects.setSelected(effects.getBy(EFF_WHITE_COLOR));
+        next_eff_num = effects.getBy(EFF_WHITE_COLOR);
+        //effects.setSelected(effects.getBy(EFF_WHITE_COLOR));
         setMode(LAMPMODE::MODE_WHITELAMP);
         break;
     default:
         return;
     }
-    LOG(printf_P, PSTR("EFFSWITCH=%d, fade=%d, effnb=%d\n"), action, fade, effects.getSelected());
+    LOG(printf_P, PSTR("switcheffect() act=%d, fade=%d, effnb=%d\n"), action, fade, next_eff_num);
     // тухнем "вниз" только на включенной лампе
     if (fade && flags.ONflag) {
-      LEDFader::fadelight(this, min(FADE_MINCHANGEBRT, (unsigned int)myLamp.getLampBrightness()), FADE_TIME, std::bind(&LAMP::switcheffect, this, action, fade, effnb, true));
+      effects.setSelected(next_eff_num);    // preload controls for next effect
+      // запускаем фейдер и уходим на второй круг переключения
+      LEDFader::fadelight(this, min(FADE_MINCHANGEBRT, (unsigned int)myLamp.getLampBrightness()), FADE_TIME, std::bind(&LAMP::switcheffect, this, action, fade, next_eff_num, true));
       return;
+    } else {
+      // do derect switch to effect
+      effects.directMoveBy(next_eff_num);
     }
   } else {
-    LOG(printf_P, PSTR("EFFSWITCH=%d, fade=%d, effnb=%d\n"), action, fade, effnb ? effnb : effects.getSelected());
+    LOG(printf_P, PSTR("switcheffect() postfade act=%d, fade=%d, effnb=%d\n"), action, fade, effnb ? effnb : effects.getSelected());
   }
 
   //LOG(printf_P,PSTR(">>>>>>>>>>>isEffClearing==%d\n"),isEffClearing);
@@ -1045,7 +1058,9 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
     FastLED.show();
   }
 
-  effects.moveSelected();
+  // move to 'selected' only if lamp is On and fader is in effect
+  if (fade && flags.ONflag)
+    effects.moveSelected();
 
   bool isShowName = (mode==LAMPMODE::MODE_DEMO && flags.showName);
 #ifdef MP3PLAYER
@@ -1091,6 +1106,7 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
     memcpy(sledsbuff, getUnsafeLedsArray(), NUM_LEDS);
   }
   setBrightness(getNormalizedLampBrightness(), fade, natural);
+  LOG(println_P, F("eof switcheffect"));
 }
 
 /*

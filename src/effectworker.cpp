@@ -38,6 +38,8 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "effects.h"
 #include "char_const.h"
 
+#define DYNJSON_SIZE_EFF_CFG   2048
+
 /*
 // true deep-copy of UIControl ponters
 void clone_controls_list(const LList<UIControl*> &src, LList<UIControl*> &dst){
@@ -543,107 +545,30 @@ bool EffectWorker::deserializeFile(DynamicJsonDocument& doc, const char* filepat
   return true;
 }
 
-int EffectWorker::loadeffconfig(const uint16_t nb, const char *folder)
+bool EffectWorker::loadeffconfig(const uint16_t nb, const char *folder)
 {
   if(worker==nullptr){
-    return 1;   // ошибка
+    return false;   // ошибка
   }
+  DynamicJsonDocument doc(DYNJSON_SIZE_EFF_CFG);
+  if (!_eff_cfg_deserialize(doc, nb, folder)) return false;   // error loading file
 
-  String filename = geteffectpathname(nb,folder);
-  DynamicJsonDocument doc(2048);
-  READALLAGAIN:
-  if (!deserializeFile(doc, filename.c_str() )){
-    LittleFS.remove(filename);
-    savedefaulteffconfig(nb, filename);   // пробуем перегенерировать поврежденный конфиг
-    if (!deserializeFile(doc, filename.c_str() ))
-      LOG(printf_P, PSTR("Failed to recreate eff config file: %s"), filename.c_str());
-      return 1;   // ошибка и в файле и при попытке сгенерить конфиг по-умолчанию - выходим
-  }
+  version = doc[F("ver")];
+  curEff = doc[F("nb")];
+  effectName = doc[F("name")] | String(FPSTR(T_EFFNAMEID[(uint8_t)nb]));
+  soundfile = doc[F("snd")].as<String>();
 
-  version = doc[F("ver")].as<uint8_t>();
-  if(geteffcodeversion((uint8_t)nb) != version && nb<=255){ // только для базовых эффектов эта проверка
-      LOG(printf_P, PSTR("Wrong version of effect, rewrite with default (%d vs %d)\n"), version, geteffcodeversion((uint8_t)nb));
-      savedefaulteffconfig(nb, filename);
-      goto READALLAGAIN;
-  }
-
-  curEff = doc[F("nb")].as<uint16_t>();
-  //flags.mask = doc.containsKey(F("flags")) ? doc[F("flags")].as<uint8_t>() : 255;
-  const char* name = doc[F("name")];
-  effectName = name ? name : (String)(FPSTR(T_EFFNAMEID[(uint8_t)nb]));
-  soundfile = doc.containsKey(F("snd")) ? doc[F("snd")].as<String>() : "";
-  //LOG(printf_P, PSTR("Load MEM: %s - CFG: %s - DEF: %s\n"), effectName.c_str(), doc[F("name")].as<String>().c_str(), worker->getName().c_str());
-  // вычитываею список контроллов
-  // повторные - скипаем, нехватающие - создаем
-  // обязательные контролы 0, 1, 2 - яркость, скорость, масштаб, остальные пользовательские
-  controls.clear();
-  JsonArray arr = doc[F("ctrls")].as<JsonArray>();
-  uint8_t id_tst = 0x0; // пустой
-  for (size_t i = 0; i < arr.size(); i++) {
-      JsonObject item = arr[i];
-      uint8_t id = item[F("id")].as<uint8_t>();
-      if(!(id_tst&(1<<id))){ // проверка на существование контрола
-          id_tst |= 1<<item[F("id")].as<uint8_t>(); // закладываемся не более чем на 8 контролов, этого хватит более чем :)
-          String name = item.containsKey(F("name")) ?
-              item[F("name")].as<String>()
-              : id == 0 ? String(FPSTR(TINTF_00D))
-              : id == 1 ? String(FPSTR(TINTF_087))
-              : id == 2 ? String(FPSTR(TINTF_088))
-              : String(F("Доп."))+String(id);
-          String val = item.containsKey(F("val")) ? item[F("val")].as<String>() : String(1);
-          String min = item.containsKey(F("min")) && id>2 ? item[F("min")].as<String>() : String(1);
-          String max = item.containsKey(F("max")) && id>2 ? item[F("max")].as<String>() : String(255);
-          String step = item.containsKey(F("step")) && id>2 ?  item[F("step")].as<String>() : String(1);
-          CONTROL_TYPE type = item[F("type")].as<CONTROL_TYPE>();
-          type = ((type & 0x0F)!=CONTROL_TYPE::RANGE) && id<3 ? CONTROL_TYPE::RANGE : type;
-          min = ((type & 0x0F)==CONTROL_TYPE::CHECKBOX) ? "0" : min;
-          max = ((type & 0x0F)==CONTROL_TYPE::CHECKBOX) ? "1" : max;
-          step = ((type & 0x0F)==CONTROL_TYPE::CHECKBOX) ? "1" : step;
-          auto c = std::make_shared<UIControl>(
-              id,             // id
-              type,           // type
-              name,           // name
-              val,            // value
-              min,            // min
-              max,            // max
-              step            // step
-          );
-          controls.add(c);
-          //LOG(printf_P,PSTR("%d %d %s %s %s %s %s\n"), id, type, name.c_str(), val.c_str(), min.c_str(), max.c_str(), step.c_str());
-      }
-  }
-
-  // тест стандартных контроллов
-  for(int8_t id=0;id<3;id++){
-      if(!((id_tst>>id)&1)){ // не найден контрол, нужно создать
-        auto c = std::make_shared<UIControl>(
-              id,                                     // id
-              CONTROL_TYPE::RANGE,                    // type
-              id==0 ? FPSTR(TINTF_00D) : id==1 ? FPSTR(TINTF_087) : FPSTR(TINTF_088),           // name
-              "127",                            // value
-              "1",                              // min
-              "255",                            // max
-              "1"                               // step
-        );
-        controls.add(c);
-      }
-  }
-  controls.sort([](std::shared_ptr<UIControl> &a, std::shared_ptr<UIControl> &b){ return (*a).getId() - (*b).getId();}); // сортирую по id
-  return 0; // успешно
+  return _eff_ctrls_load_from_jdoc(doc, controls);
 }
 
-const String EffectWorker::geteffectpathname(const uint16_t nb, const char *folder){
+const String EffectWorker::geteffectpathname(const uint16_t nb, const char *folder) const {
   uint16_t swapnb = nb>>8|nb<<8; // меняю местами 2 байта, так чтобы копии/верисии эффекта оказалась в имени файла позади
-  String filename;
-  char buffer[5];
-  if (folder) {
-      filename.concat(F("/"));
-      filename.concat(folder);
-  }
-  filename.concat(F("/eff/"));
-  sprintf_P(buffer,PSTR("%04x"), swapnb);
+
+  // todo: check if supplied alternative path starts with '/'
+  String filename(folder ? folder : "/eff/");
+  char buffer[10];
+  sprintf_P(buffer,PSTR("%04x.json"), swapnb);
   filename.concat(buffer);
-  filename.concat(F(".json"));
   return filename;
 }
 
@@ -945,14 +870,18 @@ void EffectWorker::makeIndexFileFromFS(const char *fromfolder,const char *tofold
   DynamicJsonDocument doc(3072);
 
 #ifdef ESP8266
-  while (dir.next()) {
-      fn=sourcedir + "/" + dir.fileName();
-#endif
-#ifdef ESP32
+  while (dir.next())
+#else
   File _f;
-  while(_f = dir.openNextFile()){
+  while(_f = dir.openNextFile())
+#endif
+  {   // keep this bracket, otherwise VSCode cant fold a region
+#ifdef ESP8266
+      fn=sourcedir + "/" + dir.fileName();
+#else
       fn = sourcedir + "/" + _f.name();
 #endif
+
 
       if (!deserializeFile(doc, fn.c_str())) { //  || doc[F("nb")].as<String>()=="0"
         #ifdef ESP32
@@ -1089,8 +1018,10 @@ EffectListElem *EffectWorker::getNextEffect(EffectListElem *current){
 // выполняется в обход фейдера, как моментальное переключение
 void EffectWorker::directMoveBy(uint16_t select)
 {
+  LOG(printf_P,PSTR("Direct Switch EffWorker to %d\n"), select);
   curEff = selEff = getBy(select);
   workerset(curEff);
+  selcontrols.clear();        // no longer needed
   //setSelected(getBy(select));
   //moveSelected();
 }
@@ -1183,7 +1114,6 @@ uint16_t EffectWorker::getNext()
 // выбор нового эффекта с отложенной сменой, на время смены эффекта читаем его список контроллов отдельно
 void EffectWorker::setSelected(uint16_t effnb)
 {
-  LOG(printf_P,PSTR("setSelected eff: %u\n"), effnb);
   //selcontrols.size()!=controls.size() || 
   //if(controls.size()==0 || selcontrols[0]!=controls[0]){
     //while(selcontrols.size()>0){ // очистить предыщий набор, если он только не отображен на текущий
@@ -1199,29 +1129,37 @@ void EffectWorker::setSelected(uint16_t effnb)
   //}
 
   selEff = effnb;
+
+  DynamicJsonDocument doc(DYNJSON_SIZE_EFF_CFG);
+  if (!_eff_cfg_deserialize(doc, effnb)) return;   // error loading file
+  if (!_eff_ctrls_load_from_jdoc(doc, selcontrols)) LOG(printf_P,PSTR("Can't load ctrls from jdoc: %u\n"), effnb);
+
+  LOG(printf_P,PSTR("Preloading controls for eff: %u, current eff:%u\n"), effnb, curEff);
+
   //LOG(println,F("Читаю список контроллов выбранного эффекта:"));
   // OMG, what's this??? making a new EffectWorker just to get it's controls?
   // todo: get rid of this temp object
-  EffectWorker *tmpEffect = new EffectWorker(effnb);
+    //EffectWorker *tmpEffect = new EffectWorker(effnb);
   //LList<UIControl *> fake;
   //while(selcontrols.size()) delete selcontrols.shift();
   //  LOG(printf_P,PSTR("setSelected 4\n"));
-  selcontrols = tmpEffect->controls;
+    //selcontrols = tmpEffect->controls;
   //clone_controls_list(tmpEffect->controls, selcontrols); // копирую список контроллов, освобождать будет другой объект
   //tmpEffect->controls = fake;
-  delete tmpEffect;
+    //delete tmpEffect;
 }
 
 void EffectWorker::moveSelected(){
-  LOG(printf_P,PSTR("Синхронизация контролов. Эффект: %d\n"), selEff);
+  LOG(printf_P,PSTR("Move EffWorker to selected eff %d\n"), selEff);
   if(curEff != selEff){
-    workerset(selEff);
-    LOG(printf_P,PSTR("Set done\n"));
     curEff = selEff;
     //clone_controls_list(selcontrols, controls); // теперь оба списка совпадают, смена эффекта завершена
-    controls = selcontrols;
-    LOG(printf_P,PSTR("clone done\n"));
-    _clearControlsList(selcontrols);
+    // deep-copy controls list if selcontrols is not empty (i.e. it's a move from faded switch)
+    if (selcontrols.size())
+      controls = selcontrols;
+
+    workerset(selEff, selcontrols.size() ? false : true);
+    selcontrols.clear();        // no longer needed anyway
   }
   //LOG(printf_P,PSTR("%d %d\n"),controls.size(), selcontrols.size());
 }
@@ -1235,7 +1173,138 @@ const uint8_t EffectWorker::geteffcodeversion(const uint8_t id){
     return ver;
 }
 
+void EffectWorker::fsinforenew(){
+#ifdef ESP8266
+    FSInfo fs_info;
+    LittleFS.info(fs_info);
+    if(lampstate)
+    lampstate->fsfreespace = fs_info.totalBytes-fs_info.usedBytes;
+#endif
+#ifdef ESP32
+    if(lampstate)
+    lampstate->fsfreespace = LittleFS.totalBytes() - LittleFS.usedBytes();
+#endif
+}
 
+void EffectWorker::setEffectName(const String &name, EffectListElem*to){
+  if(to->eff_nb==curEff){
+      effectName=name;
+      saveeffconfig(curEff);
+  }
+  else {
+      EffectWorker *tmp=new EffectWorker(to);
+      tmp->curEff=to->eff_nb;
+      tmp->selEff=to->eff_nb;
+      tmp->setEffectName(name,to);
+      tmp->saveeffconfig(to->eff_nb);
+      delete tmp;
+  }
+}
+
+void EffectWorker::setSoundfile(const String &_soundfile, EffectListElem*to){
+    if(to->eff_nb==curEff) soundfile=_soundfile;
+    else {EffectWorker *tmp=new EffectWorker(to);
+    tmp->curEff=to->eff_nb;
+    tmp->selEff=to->eff_nb;
+    tmp->setSoundfile(_soundfile,to);
+    tmp->saveeffconfig(to->eff_nb);
+    delete tmp;}
+}
+
+uint16_t EffectWorker::effIndexByList(uint16_t val) { 
+    uint16_t found = 0;
+    for (uint16_t i = 0; i < effects.size(); i++) {
+        if (effects[i]->eff_nb == val ) {
+            found = i;
+        } 
+    }
+    return found;
+}
+
+bool EffectWorker::_eff_cfg_deserialize(DynamicJsonDocument &doc, uint16_t nb, const char *folder){
+  LOG(printf_P, PSTR("_eff_cfg_deserialize() %u\n"), nb);
+  String filename(geteffectpathname(nb,folder));
+
+  READALLAGAIN:
+  if (!deserializeFile(doc, filename.c_str() )){
+    LittleFS.remove(filename);
+    savedefaulteffconfig(nb, filename);   // пробуем перегенерировать поврежденный конфиг
+    if (!deserializeFile(doc, filename.c_str() ))
+      LOG(printf_P, PSTR("Failed to recreate eff config file: %s\n"), filename.c_str());
+      return false;   // ошибка и в файле и при попытке сгенерить конфиг по-умолчанию - выходим
+  }
+
+  uint8_t version = doc[F("ver")];
+  if(geteffcodeversion((uint8_t)nb) != version && nb<=255){ // только для базовых эффектов эта проверка
+      LOG(printf_P, PSTR("Wrong version of effect, reset to default (%d vs %d)\n"), version, geteffcodeversion((uint8_t)nb));
+      savedefaulteffconfig(nb, filename);
+      goto READALLAGAIN;
+  }
+  return true;
+}
+
+bool EffectWorker::_eff_ctrls_load_from_jdoc(DynamicJsonDocument &effcfg, LList<std::shared_ptr<UIControl>> &ctrls){
+  LOG(print_P, PSTR("_eff_ctrls_load_from_jdoc(), "));
+  //LOG(printf_P, PSTR("Load MEM: %s - CFG: %s - DEF: %s\n"), effectName.c_str(), doc[F("name")].as<String>().c_str(), worker->getName().c_str());
+  // вычитываею список контроллов
+  // повторные - скипаем, нехватающие - создаем
+  // обязательные контролы 0, 1, 2 - яркость, скорость, масштаб, остальные пользовательские
+  JsonArray arr = effcfg[F("ctrls")].as<JsonArray>();
+  if (!arr) return false;
+  LOG(printf_P, PSTR("got arr of %u controls\n"), arr.size());
+
+  ctrls.clear();
+  uint8_t id_tst = 0x0; // пустой
+  for (JsonObject item : arr) {
+      uint8_t id = item[F("id")].as<uint8_t>();
+      if(!(id_tst&(1<<id))){ // проверка на существование контрола
+          id_tst |= 1<<item[F("id")].as<uint8_t>(); // закладываемся не более чем на 8 контролов, этого хватит более чем :)
+          String name = item.containsKey(F("name")) ?
+              item[F("name")].as<String>()
+              : id == 0 ? String(FPSTR(TINTF_00D))
+              : id == 1 ? String(FPSTR(TINTF_087))
+              : id == 2 ? String(FPSTR(TINTF_088))
+              : String(F("Доп."))+String(id);
+          String val = item.containsKey(F("val")) ? item[F("val")].as<String>() : String(1);
+          String min = item.containsKey(F("min")) && id>2 ? item[F("min")].as<String>() : String(1);
+          String max = item.containsKey(F("max")) && id>2 ? item[F("max")].as<String>() : String(255);
+          String step = item.containsKey(F("step")) && id>2 ?  item[F("step")].as<String>() : String(1);
+          CONTROL_TYPE type = item[F("type")].as<CONTROL_TYPE>();
+          type = ((type & 0x0F)!=CONTROL_TYPE::RANGE) && id<3 ? CONTROL_TYPE::RANGE : type;
+          min = ((type & 0x0F)==CONTROL_TYPE::CHECKBOX) ? "0" : min;
+          max = ((type & 0x0F)==CONTROL_TYPE::CHECKBOX) ? "1" : max;
+          step = ((type & 0x0F)==CONTROL_TYPE::CHECKBOX) ? "1" : step;
+          auto c = std::make_shared<UIControl>( id, type, name, val, min, max, step );
+          ctrls.add(c);
+          //LOG(printf_P,PSTR("%d %d %s %s %s %s %s\n"), id, type, name.c_str(), val.c_str(), min.c_str(), max.c_str(), step.c_str());
+      }
+  }
+
+  // тест стандартных контроллов
+  for(int8_t id=0;id<3;id++){
+      if(!((id_tst>>id)&1)){ // не найден контрол, нужно создать
+        auto c = std::make_shared<UIControl>(
+              id,                                     // id
+              CONTROL_TYPE::RANGE,                    // type
+              id==0 ? FPSTR(TINTF_00D) : id==1 ? FPSTR(TINTF_087) : FPSTR(TINTF_088),           // name
+              "127",                            // value
+              "1",                              // min
+              "255",                            // max
+              "1"                               // step
+        );
+        ctrls.add(c);
+      }
+  }
+
+  ctrls.sort([](std::shared_ptr<UIControl> &a, std::shared_ptr<UIControl> &b){ return (*a).getId() - (*b).getId();}); // сортирую по id
+  return true;
+}
+
+
+
+
+
+/*  *** EffectCalc  implementation  ***   */
 
 void EffectCalc::init(EFF_ENUM _eff, LList<std::shared_ptr<UIControl>> *controls, LAMPSTATE *_lampstate){
   effect=_eff;
@@ -1442,10 +1511,12 @@ void EffectCalc::scale2pallete(){
   if (!usepalettes)
     return;
 
-  LOG(println, F("Reset all controls"));
+  LOG(println, F("scale2pallete() Reset all controls, wtf???"));
   // setbrt((*ctrls)[0]->getVal().toInt());
   // setspd((*ctrls)[1]->getVal().toInt());
   // setscl((*ctrls)[2]->getVal().toInt());
+
+  // todo: this could crash sometimes on bugy ctrls 43
   for(unsigned i=0;i<ctrls->size();i++){
     setDynCtrl((*ctrls)[i].get());
   }

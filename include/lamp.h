@@ -465,7 +465,7 @@ private:
 };
 
 //-----------------------------------------------
-
+// TODO: this fader is a buggy pseudosingleton, it could spawn multi parallel tasks, need a fix
 class LEDFader : public Task {
     LAMP *lmp;
     uint8_t _brt, _brtincrement;
@@ -512,7 +512,7 @@ public:
         _brtincrement = (_targetbrightness - _brt) / _steps;
         LOG(printf_P, PSTR("Fading to: %d\n"), _targetbrightness);
     }
-    //~LEDFader() {LOG(println, F("Fader destructor"));}
+    ~LEDFader() {LOG(println, F("Fader destructor"));}
 
     /**
      * @brief - Non-blocking light fader, uses scheduler to globaly fade FastLED brighness within specified duration
