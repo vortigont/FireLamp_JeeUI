@@ -2285,10 +2285,11 @@ public:
 // (c) kostyamat 26.12.2021
 // https://editor.soulmatelights.com/gallery/1587-oil
 #define BLOT_SIZE WIDTH/2
+#define BLOT_COUNT 1U
 class EffectWcolor : public EffectCalc {
 private:
     float speedFactor;
-    uint8_t bCounts = 1;
+    uint8_t bCounts = {BLOT_COUNT};
     uint8_t blur;
     bool mode = false;
     float t;
@@ -2311,7 +2312,7 @@ private:
         }
         
 
-        void reset(byte num, byte Counts) {  
+        void reset(byte num, byte Counts) {     // wtf??? num and Counts are unused
             x0 = random(-5, WIDTH - 5);
             float y0 = EffectMath::randomf(-1, HEIGHT+1);
             uint8_t dy;
@@ -2349,7 +2350,7 @@ private:
     };
 
 
-    std::vector<Blot> blots;
+    std::vector<Blot> blots = std::vector<Blot>(BLOT_COUNT);
 
     String setDynCtrl(UIControl*_val) override;
 
