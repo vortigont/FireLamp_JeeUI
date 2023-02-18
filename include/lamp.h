@@ -464,71 +464,55 @@ private:
 #endif
 };
 
-//-----------------------------------------------
-// TODO: this fader is a buggy pseudosingleton, it could spawn multi parallel tasks, need a fix
-class LEDFader : public Task {
-    LAMP *lmp;
-    uint8_t _brt, _brtincrement;
-    bool isSkipBrightness = false;
-    static LEDFader *fader;
+/**
+ * @brief asynchronously fade lamp's brightness
+ * 
+ */
+class LEDFader {
+    LAMP *lmp = nullptr;
+    uint8_t  _tgtbrt;                           // target brightness
+    int8_t _brtincrement;                       // change step
     std::function<void(void)> _cb = nullptr;    // callback func to call upon completition
-    LEDFader() = delete;
-public:
-    static inline LEDFader *getInstance() {return fader;}
-    void skipBrightness() { 
-        isSkipBrightness = true;
-        LOG(println,F("Fading canceled"));
-        this->cancel(); // вызовет OnDisable
-    }
-    LEDFader(Scheduler* aS, LAMP *_l, const uint8_t _targetbrightness, const uint32_t _duration, std::function<void(void)> callback)
-        : Task((unsigned long)FADE_STEPTIME,
-        (abs(_targetbrightness - _l->getBrightness()) > FADE_MININCREMENT * _duration / FADE_STEPTIME) ? (long)(_duration / FADE_STEPTIME) : (long)(abs(_targetbrightness - _l->getBrightness())/FADE_MININCREMENT) + 1,
-        [this](){_brt += _brtincrement; lmp->brightness(_brt);},
-        aS,
-        false,
-        nullptr,
-        [this, _targetbrightness](){
-            if(!isSkipBrightness){
-                lmp->brightness(_targetbrightness);
-                if(_cb)
-                    _cb();
-                LOG(printf_P, PSTR("Fading to %d done\n"), _targetbrightness);
-            }
-            fader = nullptr;
-            _cb = nullptr;
-        }, true)
-    {
-        this->_cb = callback;
-        this->lmp = _l;
-        fader = this;
-        this->restart();
+    Task *runner = nullptr;
+    LEDFader(){};     // hidden c-tor;
+    ~LEDFader(){};    // hidden d-tor;
 
-        this->_brt = lmp->getBrightness();
-        int _steps = (abs(_targetbrightness - _brt) > FADE_MININCREMENT * _duration / FADE_STEPTIME) ? (long)(_duration / FADE_STEPTIME) : (long)(abs(_targetbrightness - _brt)/FADE_MININCREMENT);
-        if (_steps < 3) {
-            this->cancel();
-            return;
-        }
-        _brtincrement = (_targetbrightness - _brt) / _steps;
-        LOG(printf_P, PSTR("Fading to: %d\n"), _targetbrightness);
+public:
+    // this is a singleton, no copy's
+    LEDFader(const LEDFader&) = delete;
+    LEDFader& operator=(const LEDFader &) = delete;
+    LEDFader(LEDFader &&) = delete;
+    LEDFader & operator=(LEDFader &&) = delete;
+
+    /**
+     * get singlton instance
+    */
+    static LEDFader* getInstance(){
+        static LEDFader fader;
+        return &fader;
     }
-    ~LEDFader() {LOG(println, F("Fader destructor"));}
+
+    /**
+     * @brief aborts fader runner if in progress
+     * it will leave lamp brightness as-is on the moment call was made
+     * fader callback won't be executed
+     */
+    void abort();
+
+    /**
+     * @brief Set ptr to Lamp instance object
+     * todo: get rid of this rudiment
+     * @param l ptr to lamp
+     */
+    void setLamp(LAMP *l){ if(l) lmp = l;}
 
     /**
      * @brief - Non-blocking light fader, uses scheduler to globaly fade FastLED brighness within specified duration
-     * @param LAMP *lamp - lamp instance
-     * @param uint8_t _targetbrightness - end value for the brighness to fade to, FastLED dim8
-     *                                   function applied internaly for natiral dimming
+     * @param uint8_t _targetbrightness - end value for the brighness to fade to. FastLED dim8 function applied internaly for natural dimming
      * @param uint32_t _duration - fade effect duraion, ms
      * @param callback  -  callback-функция, которая будет выполнена после окончания затухания
      */
-    static void fadelight(LAMP *lamp, const uint8_t _targetbrightness=0, const uint32_t _duration=FADE_TIME, std::function<void()> callback=nullptr)
-    {
-        if(LEDFader::getInstance()){
-            LEDFader::getInstance()->skipBrightness(); // отмена предыдущего фейдера
-        }
-        new LEDFader(&ts, lamp, _targetbrightness, _duration, callback);
-    }
+    void fadelight(const uint8_t _targetbrightness=0, const uint32_t _duration=FADE_TIME, std::function<void()> callback=nullptr);
 };
 
 //-----------------------------------------------

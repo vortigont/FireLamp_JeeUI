@@ -54,6 +54,10 @@ void LAMP::lamp_init(const uint16_t curlimit)
   FastLED.clearData();
   //FastLED.clear();                                            // очистка матрицы
   //FastLED.show(); // для ESP32 вызывает перезагрузку циклическую!!! Убираю, т.к. при 160Мгц вызывает бросок тока и яркости!!! Не включать и оставить как напоминание!
+
+  // initialize fader instance
+  LEDFader::getInstance()->setLamp(this);
+
   // ПИНЫ
 #ifdef MOSFET_PIN                                         // инициализация пина, управляющего MOSFET транзистором в состояние "выключен"
   pinMode(MOSFET_PIN, OUTPUT);
@@ -248,7 +252,6 @@ void LAMP::frameShow(const uint32_t ticktime){
 }
 
 GAUGE *GAUGE::gauge = nullptr; // объект индикатора
-LEDFader *LEDFader::fader = nullptr; // объект фейдера
 ALARMTASK *ALARMTASK::alarmTask = nullptr; // объект будильника
 
 LAMP::LAMP() : tmStringStepTime(DEFAULT_TEXT_SPEED), tmNewYearMessage(0), effects(&lampState)
@@ -295,7 +298,7 @@ void LAMP::changePower(bool flag) // флаг включения/выключе�
     Led_Stream::clearStreamObj();
 #endif
     if(flags.isFaderON && !lampState.isOffAfterText)
-      LEDFader::fadelight(this, 0, FADE_TIME, std::bind(&LAMP::effectsTimer, this, SCHEDULER::T_DISABLE, 0));  // гасим эффект-процессор
+      LEDFader::getInstance()->fadelight(0, FADE_TIME, std::bind(&LAMP::effectsTimer, this, SCHEDULER::T_DISABLE, 0));  // гасим эффект-процессор
     else {
       brightness(0);
       effectsTimer(SCHEDULER::T_DISABLE);
@@ -946,7 +949,7 @@ void LAMP::micHandler()
 void LAMP::setBrightness(const uint8_t _brt, const bool fade, const bool natural){
     LOG(printf_P, PSTR("Set brightness: %u\n"), _brt);
     if (fade) {
-        LEDFader::fadelight(this, _brt);
+        LEDFader::getInstance()->fadelight(_brt);
     } else {
         brightness(_brt, natural);
     }
@@ -1042,7 +1045,7 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
     if (fade && flags.ONflag) {
       effects.setSelected(next_eff_num);    // preload controls for next effect
       // запускаем фейдер и уходим на второй круг переключения
-      LEDFader::fadelight(this, min(FADE_MINCHANGEBRT, (unsigned int)myLamp.getLampBrightness()), FADE_TIME, std::bind(&LAMP::switcheffect, this, action, fade, next_eff_num, true));
+      LEDFader::getInstance()->fadelight(min(FADE_MINCHANGEBRT, (unsigned int)myLamp.getLampBrightness()), FADE_TIME, std::bind(&LAMP::switcheffect, this, action, fade, next_eff_num, true));
       return;
     } else {
       // do derect switch to effect
@@ -1106,7 +1109,7 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
     memcpy(sledsbuff, getUnsafeLedsArray(), NUM_LEDS);
   }
   setBrightness(getNormalizedLampBrightness(), fade, natural);
-  LOG(println_P, F("eof switcheffect"));
+  LOG(println, F("eof switcheffect"));
 }
 
 /*
@@ -1338,3 +1341,54 @@ void LAMP::setStreamBuff(bool flag) {
     }
 }
 #endif
+
+
+/*  LEDFader class implementation */
+
+void LEDFader::fadelight(const uint8_t _targetbrightness, const uint32_t _duration, std::function<void()> callback){
+  if (!lmp) return;
+  if (lmp->getBrightness() == _targetbrightness) {
+    // no need to fade, already same brightness
+    if (callback) callback();
+    return;
+  }
+  _tgtbrt = _targetbrightness;
+  _cb = callback;
+  int _steps = (abs(_targetbrightness - lmp->getBrightness()) > FADE_MININCREMENT * _duration / FADE_STEPTIME) ? (long)(_duration / FADE_STEPTIME) : (long)(abs(_targetbrightness - lmp->getBrightness())/FADE_MININCREMENT);
+  if (_steps < 3) {   // no need to fade for such small difference
+    lmp->brightness(_targetbrightness);
+    if (runner) abort();
+    if (callback) callback();
+  }
+  _brtincrement = (_targetbrightness - lmp->getBrightness()) / _steps;
+
+  if (runner){
+    runner->setIterations(_steps);
+    runner->restartDelayed();
+  } else {
+    runner = new Task((unsigned long)FADE_STEPTIME,
+      _steps,
+      [this](){ lmp->brightness(lmp->getBrightness()+_brtincrement); },
+      &ts,
+      true,
+      nullptr,
+      [this](){
+          lmp->brightness(_tgtbrt);
+          LOG(printf_P, PSTR("Fading to %d done\n"), _tgtbrt);
+          if(_cb) _cb();
+          _cb = nullptr;
+          runner = nullptr;
+      },
+      true);
+  }
+
+  LOG(printf_P, PSTR("Fading %d->%d, in %d steps, inc %d\n"), lmp->getBrightness(), _targetbrightness, _steps, _brtincrement);
+}
+
+void LEDFader::abort(){
+  if (!runner) return;
+  runner->abort();
+  delete runner;
+  runner = nullptr;
+  LOG(println,F("Fader aborted"));
+}

@@ -1114,46 +1114,19 @@ uint16_t EffectWorker::getNext()
 // выбор нового эффекта с отложенной сменой, на время смены эффекта читаем его список контроллов отдельно
 void EffectWorker::setSelected(uint16_t effnb)
 {
-  //selcontrols.size()!=controls.size() || 
-  //if(controls.size()==0 || selcontrols[0]!=controls[0]){
-    //while(selcontrols.size()>0){ // очистить предыщий набор, если он только не отображен на текущий
-    //  delete selcontrols.shift();
-    //}
-      //while (selcontrols.size()) {
-      //LOG(printf_P, PSTR("selc_size %u\n"), selcontrols.size());
-      //UIControl *t = controls.shift();
-      
-      //if (t) { LOG(printf_P, PSTR("Ctrl: %s\n"), t->getName().c_str()); delete t; }
-      //else { LOG(println,F("OMG! nullptr in UIControl")); }
-      //}
-  //}
-
   selEff = effnb;
 
   DynamicJsonDocument doc(DYNJSON_SIZE_EFF_CFG);
   if (!_eff_cfg_deserialize(doc, effnb)) return;   // error loading file
   if (!_eff_ctrls_load_from_jdoc(doc, selcontrols)) LOG(printf_P,PSTR("Can't load ctrls from jdoc: %u\n"), effnb);
 
-  LOG(printf_P,PSTR("Preloading controls for eff: %u, current eff:%u\n"), effnb, curEff);
-
-  //LOG(println,F("Читаю список контроллов выбранного эффекта:"));
-  // OMG, what's this??? making a new EffectWorker just to get it's controls?
-  // todo: get rid of this temp object
-    //EffectWorker *tmpEffect = new EffectWorker(effnb);
-  //LList<UIControl *> fake;
-  //while(selcontrols.size()) delete selcontrols.shift();
-  //  LOG(printf_P,PSTR("setSelected 4\n"));
-    //selcontrols = tmpEffect->controls;
-  //clone_controls_list(tmpEffect->controls, selcontrols); // копирую список контроллов, освобождать будет другой объект
-  //tmpEffect->controls = fake;
-    //delete tmpEffect;
+  LOG(printf_P,PSTR("Preloaded controls for eff: %u, current eff:%u\n"), effnb, curEff);
 }
 
 void EffectWorker::moveSelected(){
   LOG(printf_P,PSTR("Move EffWorker to selected eff %d\n"), selEff);
   if(curEff != selEff){
     curEff = selEff;
-    //clone_controls_list(selcontrols, controls); // теперь оба списка совпадают, смена эффекта завершена
     // deep-copy controls list if selcontrols is not empty (i.e. it's a move from faded switch)
     if (selcontrols.size())
       controls = selcontrols;
@@ -1244,7 +1217,7 @@ bool EffectWorker::_eff_cfg_deserialize(DynamicJsonDocument &doc, uint16_t nb, c
 }
 
 bool EffectWorker::_eff_ctrls_load_from_jdoc(DynamicJsonDocument &effcfg, LList<std::shared_ptr<UIControl>> &ctrls){
-  LOG(print_P, PSTR("_eff_ctrls_load_from_jdoc(), "));
+  LOG(print, PSTR("_eff_ctrls_load_from_jdoc(), "));
   //LOG(printf_P, PSTR("Load MEM: %s - CFG: %s - DEF: %s\n"), effectName.c_str(), doc[F("name")].as<String>().c_str(), worker->getName().c_str());
   // вычитываею список контроллов
   // повторные - скипаем, нехватающие - создаем
@@ -1516,7 +1489,6 @@ void EffectCalc::scale2pallete(){
   // setspd((*ctrls)[1]->getVal().toInt());
   // setscl((*ctrls)[2]->getVal().toInt());
 
-  // todo: this could crash sometimes on bugy ctrls 43
   for(unsigned i=0;i<ctrls->size();i++){
     setDynCtrl((*ctrls)[i].get());
   }
