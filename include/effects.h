@@ -2188,7 +2188,7 @@ private:
     uint8_t PCols = round(Ecols) + Ca;
     uint8_t PRows = round(Erows) + Ra;
     float speedFactor = 0.1;
-    std::vector<std::vector<uint8_t>> puzzle;
+    std::vector<std::vector<uint8_t>> puzzle = std::vector<std::vector<uint8_t>>(PCols, std::vector<uint8_t>(PRows, 0));
     byte color;
     byte z_dot[2];
     byte step;
