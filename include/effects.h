@@ -2365,12 +2365,12 @@ public:
 //23/12/21
 class EffectRadialFire : public EffectCalc {
 private:
-    const int8_t MIN_MAX = max(WIDTH, HEIGHT);
-    const int8_t CENTRE = (MIN_MAX / 2);
+    const int8_t maximum = max(WIDTH, HEIGHT);
+    const int8_t centre = (max(WIDTH, HEIGHT) / 2);
     const uint8_t X = WIDTH > HEIGHT ? 0: (WIDTH - HEIGHT) /2; 
     const uint8_t Y = WIDTH < HEIGHT ? 0: (HEIGHT - WIDTH) /2;
-    std::vector<std::vector<float>> XY_angle;
-    std::vector<std::vector<float>> XY_radius;
+    std::vector<std::vector<float>> XY_angle = std::vector<std::vector<float>>(max(WIDTH, HEIGHT), std::vector<float>(max(WIDTH, HEIGHT), 0));
+    std::vector<std::vector<float>> XY_radius = std::vector<std::vector<float>>(max(WIDTH, HEIGHT), std::vector<float>(max(WIDTH, HEIGHT), 0));
     float t;
     float speedFactor;
     uint8_t _scale;
