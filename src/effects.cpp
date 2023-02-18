@@ -3124,7 +3124,7 @@ bool EffectPicasso::metaBallsRoutine(CRGB *leds, EffectWorker *param){
   generate();
   position();
 
-  GradientPalette *myPal = (*palettes)[pidx];
+  GradientPalette myPal((*palettes)[pidx]);
 
  // сила возмущения
   unsigned mx = EffectMath::fmap(scale, 0U, 255U, 200U, 80U);
@@ -3150,7 +3150,7 @@ bool EffectPicasso::metaBallsRoutine(CRGB *leds, EffectWorker *param){
 
         if (sum >= 255) { sum = 255; break; }
       }
-      CRGB color = myPal->GetColor((uint8_t)sum, 255);
+      CRGB color = myPal.GetColor((uint8_t)sum, 255);
       EffectMath::drawPixelXY(x, y, color);
       }
   }
@@ -3402,7 +3402,7 @@ bool EffectLiquidLamp::Routine(CRGB *leds, EffectWorker *param){
     physic();
   }
 
-  GradientPalette *myPal = (*palettes)[pidx];
+  GradientPalette myPal((*palettes)[pidx]);
 
   for (unsigned x = 0; x < WIDTH; x++) {
     for (unsigned y = 0; y < HEIGHT; y++) {
@@ -3419,7 +3419,7 @@ bool EffectLiquidLamp::Routine(CRGB *leds, EffectWorker *param){
         if (sum > 255) { sum = 255; break; }
       }
       buff[x][y] = sum;
-      CRGB color = myPal->GetColor((uint8_t)sum, 255);
+      CRGB color = myPal.GetColor((uint8_t)sum, 255);
       EffectMath::drawPixelXY(x, y, color);
     }
   }
@@ -3427,7 +3427,7 @@ bool EffectLiquidLamp::Routine(CRGB *leds, EffectWorker *param){
   if (filter < 2) {
     for (unsigned x = 0; x < WIDTH; x++) {
       for (unsigned y = 0; y < HEIGHT; y++) {
-        CRGB color = myPal->GetColor(buff[x][y], filter? buff[x][y] : 255);
+        CRGB color = myPal.GetColor(buff[x][y], filter? buff[x][y] : 255);
         EffectMath::drawPixelXY(x, y, color);
       }
     }
@@ -3458,7 +3458,7 @@ bool EffectLiquidLamp::Routine(CRGB *leds, EffectWorker *param){
         unsigned step = filter - 1;
         val = 1 - (val - min) / (max - min);
         while (step) { val *= val; --step; } // почему-то это быстрее чем pow
-        CRGB color = myPal->GetColor(buff[x][y], val * 255);
+        CRGB color = myPal.GetColor(buff[x][y], val * 255);
         EffectMath::drawPixelXY(x, y, color);
       }
     }

@@ -107,9 +107,8 @@ class GradientPalette{
     int mn;
     int mx;
     public:
-    GradientPalette(CRGBPalette32 pallete, uint8_t shift = 0, uint8_t min = 0, uint8_t max = 0) {
-        pl = pallete; sh = shift; mn = min; mx = max;
-    }
+    GradientPalette(CRGBPalette32 pallete = CRGBPalette32(CRGB::Black), uint8_t shift = 0, uint8_t min = 0, uint8_t max = 0) :
+        pl(pallete), sh(shift), mn(min), mx(max) {};
     CRGB GetColor(uint8_t idx, uint8_t br) {
         if (mn && idx < mn) idx = mn;
         if (mx && idx > mx) idx = mx;
@@ -118,31 +117,27 @@ class GradientPalette{
 };
 
 class GradientPaletteList{
-    LList<GradientPalette*> palletes;
+    LList<GradientPalette> palletes;
     public:
-    GradientPaletteList(): palletes(){
+    GradientPaletteList(){}
+    // ~GradientPaletteList(){} d-tor is trivial
 
-    }
-    ~GradientPaletteList(){
-        while (palletes.size()) {
-            GradientPalette *pl = palletes.shift();
-            delete pl;
-        }
-    }
-
-    GradientPalette *operator[](int i){ return palletes[i]; }
+    GradientPalette operator[](int i){ return palletes[i]; }
 
     int size(){ return palletes.size(); }
-    void del(int idx){ palletes.remove(idx); }
+    void del(int idx){ palletes.unlink(idx); }
     int add(CRGBPalette32 pallete, int shift, uint8_t min = 0, uint8_t max = 0) {
-        palletes.add(new GradientPalette(pallete, shift, min, max));
+        GradientPalette p(pallete, shift, min, max);
+        palletes.add(p);
         return size();
     }
     int add(int idx, CRGBPalette32 pallete, int shift, uint8_t min = 0, uint8_t max = 0) {
-        GradientPalette *pl = palletes.get(idx);
-        if (pl) {
-            delete pl;
-            palletes.set(idx, new GradientPalette(pallete, shift, min, max));
+        if (palletes.exist(idx)){
+            GradientPalette p(pallete, shift, min, max);
+            palletes.set(idx, p);
+        } else {
+            GradientPalette p(pallete, shift, min, max);
+            palletes.add(p);
         }
         return size();
     }
