@@ -986,7 +986,7 @@ public:
 // https://raw.githubusercontent.com/FastLED/FastLED/master/examples/Pacifica/Pacifica.ino
 class EffectPacific : public EffectCalc {
 private:
-	uint32_t speedFactor;
+	uint32_t speedFactor = 100;
 	void pacifica_one_layer(const TProgmemRGBPalette16& p, uint16_t cistart, uint16_t wavescale, uint8_t bri, uint16_t ioff);
 	void pacifica_deepen_colors();
 	void pacifica_add_whitecaps();
