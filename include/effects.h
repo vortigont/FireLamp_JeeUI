@@ -1798,13 +1798,13 @@ static const TProgmemRGBPalette16 NeonAuroraColors_p FL_PROGMEM ={0x000000, 0x00
 class EffectPolarL : public EffectCalc {
 private:
     const byte numpalettes = 14;
-    unsigned long timer;
-    float adjastHeight;
-    uint16_t adjScale;
-    byte pal;
-    uint16_t _scale;
-    byte flag;
-	byte _speed;
+    unsigned long timer = 0;
+    float adjastHeight = 1;
+    uint16_t adjScale = 1;
+    byte pal = 0;
+    uint16_t _scale = 30;
+    byte flag = 0;
+	byte _speed = 16;
 
     //void setscl(const byte _scl) override;
     String setDynCtrl(UIControl*_val) override;
