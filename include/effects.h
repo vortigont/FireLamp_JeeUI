@@ -2165,7 +2165,7 @@ private:
         }
     }; 
 
-    std::vector<Spark> sparks;
+    std::vector<Spark> sparks{std::vector<Spark>(sparksCount, Spark())};
 
     String setDynCtrl(UIControl*_val) override;
     void palettesload() override;
