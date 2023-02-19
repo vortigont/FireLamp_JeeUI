@@ -1406,9 +1406,10 @@ public:
 // ----------- Эфеект "Попкорн"
 // (C) Aaron Gotwalt (Soulmate)
 // адаптация и доработки kostyamat
+#define POPCORN_ROCKETS 10
 class EffectPopcorn : public EffectCalc {
 private:
-    uint8_t numRockets = 10;
+    uint8_t numRockets = POPCORN_ROCKETS;
     bool blurred = false;
     bool revCol = false;
     //bool tiltDirec;
@@ -1421,7 +1422,7 @@ private:
         byte hue;
     } Rocket;
 
-    std::vector<Rocket> rockets;
+    std::vector<Rocket> rockets{std::vector<Rocket>(POPCORN_ROCKETS, Rocket())};
 
     void restart_rocket(uint8_t r);
     void reload();
