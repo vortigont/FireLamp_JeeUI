@@ -35,8 +35,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
    <https://www.gnu.org/licenses/>.)
 */
 
-#ifndef _EFFECTS_H
-#define _EFFECTS_H
+#pragma once
 
 #include "color_palette.h"
 #include "effectworker.h"
@@ -621,15 +620,15 @@ private:
   uint8_t currentStep;
   uint8_t pauseSteps; // осталось шагов паузы
   uint8_t shiftSteps; // всего шагов сдвига
+  bool direction = false; // направление вращения в текущем цикле (вертикаль/горизонталь)
   std::vector<int8_t> moveItems;     // индекс перемещаемого элемента
   //bool movedirection;   // направление смещения
-  bool direction; // направление вращения в текущем цикле (вертикаль/горизонталь)
   uint8_t storage[WIDTH][HEIGHT];
   int8_t globalShiftX, globalShiftY;
   uint8_t gX, gY;
   bool seamlessX = true;
 
-  std::vector<CRGB> ledbuff;
+  std::vector<CRGB> ledbuff;        // wtf???
 
   void swapBuff();
   void cubesize();
@@ -641,6 +640,7 @@ private:
   //void setscl(const byte _scl) override;
 
 public:
+    EffectCube2d() : sizeX(4), sizeY(4) { cubesize(); moveItems = std::vector<int8_t>(direction ? cntX : cntY, 0); }
     void load() override;
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
 };
@@ -2419,4 +2419,3 @@ public:
     void load() override;
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
 };
-#endif

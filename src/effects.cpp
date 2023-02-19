@@ -2502,12 +2502,6 @@ String EffectCube2d::setDynCtrl(UIControl*_val)
   return String();
 }
 
-// void EffectCube2d::setscl(const byte _scl)
-// {
-//   EffectCalc::setscl(_scl); // сначала дергаем базовый, чтобы была обработка палитр/микрофона (если такая обработка точно не нужна, то можно не вызывать базовый метод)
-//   cubesize();
-// }
-
 void EffectCube2d::load(){
   palettesload();    // подгружаем дефолтные палитры
   cubesize();
@@ -2519,17 +2513,15 @@ void EffectCube2d::cubesize() {
     return;
   }
 
-  FastLED.clear();
+  FastLED.clear();          // wtf??? looks like Kostyamat's code :)
 
-  cntY = ceil((float)HEIGHT / (float)(sizeY + 1U));
+  cntY = ceil((float)HEIGHT / (float)(sizeY + 1U));   // wtf??? floats??? looks like Kostyamat's code :)
 	fieldY = (sizeY + 1U) * cntY;
 
-  cntX = ceil((float)WIDTH / (float)(sizeX + 1U));
+  cntX = ceil((float)WIDTH / (float)(sizeX + 1U));    // wtf??? floats??? looks like Kostyamat's code :)
 	fieldX = (sizeX + 1U) * cntX;
 
-  ledbuff.resize(fieldX * fieldY); // создаем виртуальную матрицу, размером кратную размеру кубика+1
-  for(uint16_t i = 0; i < (fieldX * fieldY); i++) // очищаем виртуальную матрицу. (может кто знает способ попроще?)
-    ledbuff[i] = CRGB(0, 0, 0);
+  ledbuff = std::vector<CRGB>(fieldX * fieldY, CRGB(0, 0, 0));   // создаем виртуальную матрицу, размером кратную размеру кубика+1
 
   //LOG(printf_P, PSTR("CUBE2D Size: scX=%d, scY=%d, scaleY=%d, cntX=%d, cntY=%d\n"), cubeScaleX, cubeScaleY, scaleY, cntX, cntY);
   uint8_t x=0, y = 0;
@@ -2590,10 +2582,10 @@ bool EffectCube2d::cube2dRoutine(CRGB *leds, EffectWorker *param)
     // ====== определяем направление прокруток на будущий цикл
     pauseSteps = CUBE2D_PAUSE_FRAMES;
     direction = random8()%2;  // сдвиг 0 - строки, 1 - столбцы
-    moveItems.resize(direction ? cntX : cntY, 0);
+    moveItems = std::vector<int8_t>(direction ? cntX : cntY, 0);
 
-    for (uint8_t i=0; i<(direction ? cntX : cntY); i++){
-      moveItems.at(i)= random8()%3; // 1 - fwd, 0 - bkw, 2 - none
+    for ( auto &item : moveItems ){
+      item = random8()%3; // 1 - fwd, 0 - bkw, 2 - none
     }
 
     shiftSteps = ((direction ? sizeY : sizeX)+1) * random8(direction ? cntY : cntX);  // такой рандом добавляет случайную задержку в паузу, попадая на "0"
