@@ -5657,7 +5657,7 @@ bool EffectSmokeballs::run(CRGB *ledarr, EffectWorker *opt){
 
 void EffectSmokeballs::shiftUp(){       
   for (byte x = 0; x < WIDTH; x++) {
-    for (float y = (float)HEIGHT; y > 0.; y-= speedFactor) {
+    for (int16_t y = HEIGHT; y > 0; --y) {
       EffectMath::drawPixelXY(x, y, EffectMath::getPixColorXY(x, y - 1));
     }
   }

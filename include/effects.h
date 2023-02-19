@@ -1445,7 +1445,7 @@ class EffectSmokeballs: public EffectCalc {
     uint16_t pos[WAVES_AMOUNT];
     float sSpeed[WAVES_AMOUNT];
     uint8_t maxMin[WAVES_AMOUNT];
-    float speedFactor;
+    float speedFactor = 0.1;
     uint8_t waveColors[WAVES_AMOUNT];
     void shiftUp();
     void regen();
