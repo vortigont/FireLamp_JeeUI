@@ -1003,38 +1003,28 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
     uint16_t next_eff_num = effnb;
     switch (action) {
     case EFFSWITCH::SW_NEXT :
-        fade = (!LEDFader::getInstance()) && fade;
         next_eff_num = effects.getNext();
-        //effects.setSelected(effects.getNext());
         break;
     case EFFSWITCH::SW_NEXT_DEMO :
         next_eff_num = effects.getByCnt(1);
-        //effects.setSelected(effects.getByCnt(1));
         break;
     case EFFSWITCH::SW_PREV :
-        fade = (!LEDFader::getInstance()) && fade;
         next_eff_num = effects.getPrev();
-        //effects.setSelected(effects.getPrev());
         break;
     case EFFSWITCH::SW_SPECIFIC :
-        //fade = (!LEDFader::getInstance()) && fade;
         next_eff_num = effects.getBy(effnb);
-        //effects.setSelected(effects.getBy(effnb));
         break;
     case EFFSWITCH::SW_RND :
         next_eff_num = effects.getByCnt(random(0, effects.getModeAmount()));
-        //effects.setSelected(effects.getByCnt(random(0, effects.getModeAmount())));
         break;
     case EFFSWITCH::SW_WHITE_HI:
         storeEffect();
         next_eff_num = effects.getBy(EFF_WHITE_COLOR);
-        //effects.setSelected(effects.getBy(EFF_WHITE_COLOR));
         setMode(LAMPMODE::MODE_WHITELAMP);
         break;
     case EFFSWITCH::SW_WHITE_LO:
         storeEffect();
         next_eff_num = effects.getBy(EFF_WHITE_COLOR);
-        //effects.setSelected(effects.getBy(EFF_WHITE_COLOR));
         setMode(LAMPMODE::MODE_WHITELAMP);
         break;
     default:
@@ -1048,7 +1038,7 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
       LEDFader::getInstance()->fadelight(min(FADE_MINCHANGEBRT, (unsigned int)myLamp.getLampBrightness()), FADE_TIME, std::bind(&LAMP::switcheffect, this, action, fade, next_eff_num, true));
       return;
     } else {
-      // do derect switch to effect
+      // do direct switch to effect
       effects.directMoveBy(next_eff_num);
     }
   } else {
