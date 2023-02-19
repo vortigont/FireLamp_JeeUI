@@ -695,7 +695,7 @@ void block_effects_param(Interface *interf, JsonObject *data){
             default: break;
         }
         bool isRandDemo = (myLamp.getLampSettings().dRand && myLamp.getMode()==LAMPMODE::MODE_DEMO);
-        String ctrlId = String(FPSTR(TCONST_0015)) + String(controls[i]->getId());
+        String ctrlId = String(FPSTR(TCONST_dynCtrl)) + String(controls[i]->getId());
         String ctrlName = i ? controls[i]->getName() : (myLamp.IsGlobalBrightness() ? FPSTR(TINTF_00C) : FPSTR(TINTF_00D));
         switch(ctrlCaseType&0x0F){
             case CONTROL_TYPE::RANGE :
@@ -722,7 +722,7 @@ void block_effects_param(Interface *interf, JsonObject *data){
                     if(isRandDemo && controls[i]->getId()>0 && !(controls[i]->getId()==7 && controls[i]->getName().startsWith(FPSTR(TINTF_020))==1))
                         ctrlName=String(FPSTR(TINTF_0C9))+ctrlName;
                     
-                    if(isinterf) interf->text(String(FPSTR(TCONST_0015)) + String(controls[i]->getId())
+                    if(isinterf) interf->text(String(FPSTR(TCONST_dynCtrl)) + String(controls[i]->getId())
                     , controls[i]->getVal()
                     , ctrlName
                     , true
@@ -738,7 +738,7 @@ void block_effects_param(Interface *interf, JsonObject *data){
                     if(isRandDemo && controls[i]->getId()>0 && !(controls[i]->getId()==7 && controls[i]->getName().startsWith(FPSTR(TINTF_020))==1))
                         ctrlName=String(FPSTR(TINTF_0C9))+ctrlName;
 
-                    if(isinterf) interf->checkbox(String(FPSTR(TCONST_0015)) + String(controls[i]->getId())
+                    if(isinterf) interf->checkbox(String(FPSTR(TCONST_dynCtrl)) + String(controls[i]->getId())
                     , controls[i]->getVal()
                     , ctrlName
                     , true
@@ -814,7 +814,7 @@ void direct_set_effects_dynCtrl(JsonObject *data){
     String ctrlName;
     LList<std::shared_ptr<UIControl>>&controls = myLamp.effects.getControls();
     for(unsigned i=0; i<controls.size();i++){
-        ctrlName = String(FPSTR(TCONST_0015))+String(controls[i]->getId());
+        ctrlName = String(FPSTR(TCONST_dynCtrl))+String(controls[i]->getId());
         if((*data).containsKey(ctrlName)){
             if(!i){ // яркость???
                 byte bright = (*data)[ctrlName];
@@ -2694,7 +2694,7 @@ void set_streaming_mapping(Interface *interf, JsonObject *data){
 }
 void set_streaming_bright(Interface *interf, JsonObject *data){
     if (!data) return;
-    remote_action(RA_CONTROL, (String(FPSTR(TCONST_0015))+F("0")).c_str(), String((*data)[FPSTR(TCONST_0012)].as<String>()).c_str(), NULL);
+    remote_action(RA_CONTROL, (String(FPSTR(TCONST_dynCtrl))+F("0")).c_str(), String((*data)[FPSTR(TCONST_0012)].as<String>()).c_str(), NULL);
 }
 
 void set_streaming_type(Interface *interf, JsonObject *data){
@@ -2941,7 +2941,7 @@ bool notfound_handle(AsyncWebServerRequest *request, const String& req)
     if ((req.indexOf(F("&A=")) > 1)){
         bright = req.substring(req.indexOf(F("&A="))+3).toInt();
         if(bright)
-            remote_action(RA::RA_BRIGHT_NF, (String(FPSTR(TCONST_0015))+"0").c_str(), String(bright).c_str(), NULL);
+            remote_action(RA::RA_BRIGHT_NF, (String(FPSTR(TCONST_dynCtrl))+"0").c_str(), String(bright).c_str(), NULL);
     }
 
     String result = F("<?xml version=\"1.0\" ?><vs><ac>");
@@ -3236,7 +3236,7 @@ void sync_parameters(){
 #endif
 
     if(tmp.isGlobalBrightness)
-        CALL_SETTER(String(FPSTR(TCONST_0015)) + "0", myLamp.getLampBrightness(), set_effects_dynCtrl);
+        CALL_SETTER(String(FPSTR(TCONST_dynCtrl)) + "0", myLamp.getLampBrightness(), set_effects_dynCtrl);
 
 #ifdef MP3PLAYER
 Task *t = new Task(DFPALYER_START_DELAY+500, TASK_ONCE, nullptr, &ts, false, nullptr, [tmp](){
@@ -3623,7 +3623,7 @@ void remote_action(RA action, ...){
         case RA::RA_GLOBAL_BRIGHT:
             if (atoi(value) > 0){
                 CALL_INTF(FPSTR(TCONST_001C), F("1"), set_gbrflag);
-                return remote_action(RA_CONTROL, (String(FPSTR(TCONST_0015))+F("0")).c_str(), value, NULL);
+                return remote_action(RA_CONTROL, (String(FPSTR(TCONST_dynCtrl))+F("0")).c_str(), value, NULL);
             }
             else
                 CALL_INTF(FPSTR(TCONST_001C), value, set_gbrflag);
@@ -4036,7 +4036,7 @@ String httpCallback(const String &param, const String &value, bool isset){
 #ifdef MIC_EFFECTS
         else if (upperParam == FPSTR(CMD_MIC)) action = RA_MICONOFF;
 #endif
-        //else if (upperParam.startsWith(FPSTR(TCONST_0015))) { action = RA_CONTROL; remote_action(action, upperParam.c_str(), value.c_str(), NULL); return result; }
+        //else if (upperParam.startsWith(FPSTR(TCONST_dynCtrl))) { action = RA_CONTROL; remote_action(action, upperParam.c_str(), value.c_str(), NULL); return result; }
         else if (upperParam == FPSTR(CMD_EFF_CONFIG)) {
             return httpCallback(upperParam, "", false); // set пока не реализована
         }
@@ -4071,7 +4071,7 @@ String httpCallback(const String &param, const String &value, bool isset){
                     default : break;
                 }
 			}
-            remote_action(RA_CONTROL, (String(FPSTR(TCONST_0015))+id).c_str(), val.c_str(), NULL);
+            remote_action(RA_CONTROL, (String(FPSTR(TCONST_dynCtrl))+id).c_str(), val.c_str(), NULL);
             //result = String(F("[")) + String(id) + String(F(",\"")) + val + String(F("\"]"));
             //embui.publish(String(FPSTR(TCONST_008B)) + FPSTR(TCONST_00D0), result, true);
 

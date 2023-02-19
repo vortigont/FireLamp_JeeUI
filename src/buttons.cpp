@@ -43,7 +43,7 @@ bool Button::activate(btnflags& flg, bool reverse){
 				if (myLamp.getGaugeType()!=GAUGETYPE::GT_NONE){
 						GAUGE::GaugeShow(newval, 255, 10);
 				}
-				remote_action(RA::RA_BRIGHT_NF, (String(FPSTR(TCONST_0015))+"0").c_str(), String(newval).c_str(), NULL);
+				remote_action(RA::RA_BRIGHT_NF, (String(FPSTR(TCONST_dynCtrl))+"0").c_str(), String(newval).c_str(), NULL);
 				return true;
 			case BA_SPEED: {
 				byte speed = (myLamp.effects.getControls()[1]->getVal()).toInt();
@@ -58,7 +58,7 @@ bool Button::activate(btnflags& flg, bool reverse){
 				if (myLamp.getGaugeType()!=GAUGETYPE::GT_NONE){
 						GAUGE::GaugeShow(newval, 255, 100);
 				}
-				remote_action(RA::RA_CONTROL, (String(FPSTR(TCONST_0015))+"1").c_str(), String(newval).c_str(), NULL);
+				remote_action(RA::RA_CONTROL, (String(FPSTR(TCONST_dynCtrl))+"1").c_str(), String(newval).c_str(), NULL);
 				return true;
 			}
 			case BA_SCALE: {
@@ -74,7 +74,7 @@ bool Button::activate(btnflags& flg, bool reverse){
 				if (myLamp.getGaugeType()!=GAUGETYPE::GT_NONE){
 						GAUGE::GaugeShow(newval, 255, 150);
 				}
-				remote_action(RA::RA_CONTROL, (String(FPSTR(TCONST_0015))+"2").c_str(), String(newval).c_str(), NULL);
+				remote_action(RA::RA_CONTROL, (String(FPSTR(TCONST_dynCtrl))+"2").c_str(), String(newval).c_str(), NULL);
 				return true;
 			}
 			case BA_ON: ract = RA_ON; break;

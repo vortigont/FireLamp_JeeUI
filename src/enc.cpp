@@ -98,11 +98,11 @@ void encLoop() {
       switch (currAction)
       {
       case 1: // регулировка яркости
-        remote_action(RA::RA_BRIGHT_NF, (String(FPSTR(TCONST_0015)) + "0").c_str(), String(anyValue).c_str(), NULL);
+        remote_action(RA::RA_BRIGHT_NF, (String(FPSTR(TCONST_dynCtrl)) + "0").c_str(), String(anyValue).c_str(), NULL);
         done = true;
         break;
       case 3: // регулировка любого из динамических контролов в режиме "Настройки эффекта"
-        remote_action(RA::RA_CONTROL, (String(FPSTR(TCONST_0015)) + String(myLamp.getEffControls()[currDynCtrl]->getId())).c_str(), myLamp.getEffControls()[currDynCtrl]->getVal().c_str(), NULL);
+        remote_action(RA::RA_CONTROL, (String(FPSTR(TCONST_dynCtrl)) + String(myLamp.getEffControls()[currDynCtrl]->getId())).c_str(), myLamp.getEffControls()[currDynCtrl]->getVal().c_str(), NULL);
         done = true;
       break;
       default:
