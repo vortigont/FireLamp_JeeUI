@@ -2046,11 +2046,11 @@ private:
     uint16_t chance = 4096;
 
     byte dir = 3;
-    byte _dir;
+    int8_t _dir = 0;
     byte count = 0;
-    uint8_t _fade;
+    uint8_t _fade = 20;
 
-	float speedFactor;
+	float speedFactor = 0.5;
 
     void draw(float x, float y, CRGB color);
     String setDynCtrl(UIControl*_val) override;

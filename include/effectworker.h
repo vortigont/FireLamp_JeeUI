@@ -506,6 +506,14 @@ public:
     SORT_TYPE getEffSortType() {return effSort;}
 
     // Получить конфиг текущего эффекта
+    /**
+     * @brief Get the json string with Serialized Eff Config object
+     * 
+     * @param nb 
+     * @param replaceBright 
+     * @return String 
+     */
+    //getSerializedEffConfig
     String geteffconfig(uint16_t nb, uint8_t replaceBright = 0);
 
     // Получить конфиг эффекта из ФС
