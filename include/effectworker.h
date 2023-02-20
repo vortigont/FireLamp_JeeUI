@@ -514,7 +514,7 @@ public:
      * @return String 
      */
     //getSerializedEffConfig
-    String geteffconfig(uint16_t nb, uint8_t replaceBright = 0);
+    String getSerializedEffConfig(uint16_t nb, uint8_t replaceBright = 0);
 
     // Получить конфиг эффекта из ФС
     bool getfseffconfig(uint16_t nb, String &result);

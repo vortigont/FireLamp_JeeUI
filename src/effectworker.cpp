@@ -602,7 +602,7 @@ bool EffectWorker::getfseffconfig(uint16_t nb, String &result)
   return false;
 }
 
-String EffectWorker::geteffconfig(uint16_t nb, uint8_t replaceBright)
+String EffectWorker::getSerializedEffConfig(uint16_t nb, uint8_t replaceBright)
 {
   // конфиг текущего эффекта
   DynamicJsonDocument doc(2048);
@@ -651,7 +651,7 @@ void EffectWorker::saveeffconfig(uint16_t nb, char *folder){
   File configFile;
   String filename = geteffectpathname(nb,folder);
   configFile = LittleFS.open(filename, "w"); // PSTR("w") использовать нельзя, будет исключение!
-  configFile.print(geteffconfig(nb));
+  configFile.print(getSerializedEffConfig(nb));
   configFile.close();
 }
 

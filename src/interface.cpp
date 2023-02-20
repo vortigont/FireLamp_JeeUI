@@ -648,17 +648,18 @@ void set_effects_config_list(Interface *interf, JsonObject *data){
 }
 
 #ifdef EMBUI_USE_MQTT
-void publish_ctrls_vals()
-{
-  embui.publish(String(FPSTR(TCONST_embui_pub_)) + FPSTR(TCONST_eff_config), myLamp.effects.geteffconfig(String(myLamp.effects.getSelected()).toInt(), myLamp.getNormalizedLampBrightness()), true);
+void mqtt_publish_selected_effect_config_json(){
+  if (!embui.isMQTTconected()) return;
+  embui.publish(String(FPSTR(TCONST_embui_pub_)) + FPSTR(TCONST_eff_config), myLamp.effects.getSerializedEffConfig(myLamp.effects.getSelected(), myLamp.getNormalizedLampBrightness()), true);
 }
 #endif
 
 void block_effects_param(Interface *interf, JsonObject *data){
-    //if (!interf) return;
-    bool isinterf = (interf != nullptr); // буду публиковать, даже если WebUI клиентов нет
+    // if no mqtt or ws clients, just quit
+    if (!embui.isMQTTconected() && !embui.ws.count()) return;
 
-    if(isinterf) interf->json_section_begin(FPSTR(TCONST_effects_param));
+    // there could be no ws clients connected
+    if(interf) interf->json_section_begin(FPSTR(TCONST_effects_param));
 
     LList<std::shared_ptr<UIControl>> &controls = myLamp.effects.getControls();
     uint8_t ctrlCaseType; // тип контрола, старшие 4 бита соответствуют CONTROL_CASE, младшие 4 - CONTROL_TYPE
@@ -670,8 +671,8 @@ void block_effects_param(Interface *interf, JsonObject *data){
             isMicOn = isMicOn && controls[i]->getVal().toInt();
 #endif
     LOG(printf_P, PSTR("block_effects_param() got %u ctrls\n"), controls.size());
-    for(unsigned i=0; i<controls.size();i++){
-        ctrlCaseType = controls[i]->getType();
+    for (const auto &ctrl : controls){
+        ctrlCaseType = ctrl->getType();
         switch(ctrlCaseType>>4){
             case CONTROL_CASE::HIDE :
                 continue;
@@ -679,7 +680,7 @@ void block_effects_param(Interface *interf, JsonObject *data){
             case CONTROL_CASE::ISMICON :
 #ifdef MIC_EFFECTS
                 //if(!myLamp.isMicOnOff()) continue;
-                if(!isMicOn && (!myLamp.isMicOnOff() || !(controls[i]->getId()==7 && controls[i]->getName().startsWith(FPSTR(TINTF_020))==1) )) continue;
+                if(!isMicOn && (!myLamp.isMicOnOff() || !(ctrl->getId()==7 && ctrl->getName().startsWith(FPSTR(TINTF_020))==1) )) continue;
 #else
                 continue;
 #endif          
@@ -687,28 +688,31 @@ void block_effects_param(Interface *interf, JsonObject *data){
             case CONTROL_CASE::ISMICOFF :
 #ifdef MIC_EFFECTS
                 //if(myLamp.isMicOnOff()) continue;
-                if(isMicOn && (myLamp.isMicOnOff() || !(controls[i]->getId()==7 && controls[i]->getName().startsWith(FPSTR(TINTF_020))==1) )) continue;
+                if(isMicOn && (myLamp.isMicOnOff() || !(ctrl->getId()==7 && ctrl->getName().startsWith(FPSTR(TINTF_020))==1) )) continue;
 #else
                 continue;
 #endif   
                 break;
             default: break;
         }
+
         bool isRandDemo = (myLamp.getLampSettings().dRand && myLamp.getMode()==LAMPMODE::MODE_DEMO);
-        String ctrlId = String(FPSTR(TCONST_dynCtrl)) + String(controls[i]->getId());
-        String ctrlName = i ? controls[i]->getName() : (myLamp.IsGlobalBrightness() ? FPSTR(TINTF_00C) : FPSTR(TINTF_00D));
+        String ctrlId(FPSTR(TCONST_dynCtrl));
+        ctrlId += ctrl->getId();
+        String ctrlName = ctrl->getId() ? ctrl->getName() : (myLamp.IsGlobalBrightness() ? FPSTR(TINTF_00C) : FPSTR(TINTF_00D));
+
         switch(ctrlCaseType&0x0F){
             case CONTROL_TYPE::RANGE :
                 {
-                    if(isRandDemo && controls[i]->getId()>0 && !(controls[i]->getId()==7 && controls[i]->getName().startsWith(FPSTR(TINTF_020))==1))
+                    if(isRandDemo && ctrl->getId()>0 && !(ctrl->getId()==7 && ctrl->getName().startsWith(FPSTR(TINTF_020))==1))
                         ctrlName=String(FPSTR(TINTF_0C9))+ctrlName;
-                    int value = i ? controls[i]->getVal().toInt() : myLamp.getNormalizedLampBrightness();
-                    if(isinterf) interf->range(
+                    int value = ctrl->getId() ? ctrl->getVal().toInt() : myLamp.getNormalizedLampBrightness();
+                    if(interf) interf->range(
                         ctrlId
                         ,String(value)
-                        ,controls[i]->getMin()
-                        ,controls[i]->getMax()
-                        ,controls[i]->getStep()
+                        ,ctrl->getMin()
+                        ,ctrl->getMax()
+                        ,ctrl->getStep()
                         , ctrlName
                         , true);
 #ifdef EMBUI_USE_MQTT
@@ -718,64 +722,63 @@ void block_effects_param(Interface *interf, JsonObject *data){
                 break;
             case CONTROL_TYPE::EDIT :
                 {
-                    String ctrlName = controls[i]->getName();
-                    if(isRandDemo && controls[i]->getId()>0 && !(controls[i]->getId()==7 && controls[i]->getName().startsWith(FPSTR(TINTF_020))==1))
+                    String ctrlName = ctrl->getName();
+                    if(isRandDemo && ctrl->getId()>0 && !(ctrl->getId()==7 && ctrl->getName().startsWith(FPSTR(TINTF_020))==1))
                         ctrlName=String(FPSTR(TINTF_0C9))+ctrlName;
                     
-                    if(isinterf) interf->text(String(FPSTR(TCONST_dynCtrl)) + String(controls[i]->getId())
-                    , controls[i]->getVal()
+                    if(interf) interf->text(String(FPSTR(TCONST_dynCtrl)) + String(ctrl->getId())
+                    , ctrl->getVal()
                     , ctrlName
                     , true
                     );
 #ifdef EMBUI_USE_MQTT
-                    embui.publish(String(FPSTR(TCONST_embui_pub_)) + ctrlId, controls[i]->getVal(), true);
+                    embui.publish(String(FPSTR(TCONST_embui_pub_)) + ctrlId, ctrl->getVal(), true);
 #endif
                     break;
                 }
             case CONTROL_TYPE::CHECKBOX :
                 {
-                    String ctrlName = controls[i]->getName();
-                    if(isRandDemo && controls[i]->getId()>0 && !(controls[i]->getId()==7 && controls[i]->getName().startsWith(FPSTR(TINTF_020))==1))
+                    String ctrlName = ctrl->getName();
+                    if(isRandDemo && ctrl->getId()>0 && !(ctrl->getId()==7 && ctrl->getName().startsWith(FPSTR(TINTF_020))==1))
                         ctrlName=String(FPSTR(TINTF_0C9))+ctrlName;
 
-                    if(isinterf) interf->checkbox(String(FPSTR(TCONST_dynCtrl)) + String(controls[i]->getId())
-                    , controls[i]->getVal()
+                    if(interf) interf->checkbox(String(FPSTR(TCONST_dynCtrl)) + String(ctrl->getId())
+                    , ctrl->getVal()
                     , ctrlName
                     , true
                     );
 #ifdef EMBUI_USE_MQTT
-                    embui.publish(String(FPSTR(TCONST_embui_pub_)) + ctrlId, controls[i]->getVal(), true);
+                    embui.publish(String(FPSTR(TCONST_embui_pub_)) + ctrlId, ctrl->getVal(), true);
 #endif
                     break;
                 }
             default:
 #ifdef EMBUI_USE_MQTT
-                    embui.publish(String(FPSTR(TCONST_embui_pub_)) + ctrlId, controls[i]->getVal(), true);
+                    embui.publish(String(FPSTR(TCONST_embui_pub_)) + ctrlId, ctrl->getVal(), true);
 #endif
                 break;
         }
     }
 #ifdef EMBUI_USE_MQTT
-    publish_ctrls_vals();
+    // publish full effect config via mqtt
+    mqtt_publish_selected_effect_config_json();
 #endif
-    if(isinterf) interf->json_section_end();
+    if(interf) interf->json_section_end();
     LOG(println, F("eof block_effects_param()"));
 }
 
 void show_effects_param(Interface *interf, JsonObject *data){
-    //if (!interf) return;
     LOG(println, F("show_effects_param()"));
-    bool isinterf = (interf != nullptr); // буду публиковать, даже если WebUI клиентов нет
-    if(isinterf) interf->json_frame_interface();
+    if(interf) interf->json_frame_interface();
     block_effects_param(interf, data);
-    if(isinterf) interf->json_frame_flush();
+    if(interf) interf->json_frame_flush();
 }
 
 void set_effects_list(Interface *interf, JsonObject *data){
     LOG(println, "set_effects_list()");
     if (!data) return;
     uint16_t num = (*data)[FPSTR(TCONST_effListMain)].as<uint16_t>();
-    uint16_t curr = myLamp.effects.getSelected();
+    uint16_t nextEff = myLamp.effects.getSelected();        // get next eff with preloaded controls
     EffectListElem *eff = myLamp.effects.getEffect(num);
     if (!eff) return;
 
@@ -787,23 +790,30 @@ void set_effects_list(Interface *interf, JsonObject *data){
         return;
     }
 
-    myLamp.setDRand(myLamp.getLampSettings().dRand); // сборосить флаг рандомного демо
-    if (eff->eff_nb != curr) {
-        LOG(printf_P, PSTR("UI EFF switch to:%d, cur:%d, isOn:%d, mode:%d\n"), eff->eff_nb, curr, myLamp.isLampOn(), myLamp.getMode());
-        if (!myLamp.isLampOn()) {
-            myLamp.effects.directMoveBy(eff->eff_nb); // переходим на выбранный эффект для начальной инициализации
-        } else {
+    // сбросить флаг рандомного демо
+    myLamp.setDRand(myLamp.getLampSettings().dRand);
+
+    // if this request is for some other effect than preloaded seletedEffect, than need to switch effect
+    if (eff->eff_nb != nextEff) {
+        LOG(printf_P, PSTR("UI EFF switch to:%d, selected:%d, isOn:%d, mode:%d\n"), eff->eff_nb, nextEff, myLamp.isLampOn(), myLamp.getMode());
+        if (myLamp.isLampOn()) {
             myLamp.switcheffect(SW_SPECIFIC, myLamp.getFaderFlag(), eff->eff_nb);
+        } else {
+            myLamp.effects.directMoveBy(eff->eff_nb); // переходим прямо на выбранный эффект 
         }
         if(myLamp.getMode()==LAMPMODE::MODE_NORMAL)
             embui.var(FPSTR(TCONST_effListMain), (*data)[FPSTR(TCONST_effListMain)]);
         resetAutoTimers();
     }
 
+    // publish effect's controls to WebUI and MQTT
     show_effects_param(interf, data);
 #ifdef EMBUI_USE_MQTT
-    embui.publish(String(FPSTR(TCONST_embui_pub_)) + FPSTR(CMD_EFFECT), String(eff->eff_nb), true);
-    embui.publish(String(FPSTR(TCONST_embui_pub_)) + FPSTR(TCONST_eff_config), myLamp.effects.geteffconfig(String(eff->eff_nb).toInt(), myLamp.getNormalizedLampBrightness()), true); // publish_ctrls_vals
+    if (embui.isMQTTconected()){
+        embui.publish(String(FPSTR(TCONST_embui_pub_)) + FPSTR(CMD_EFFECT), String(eff->eff_nb), true);
+        // not needed, already done in show_effects_param(), also same as mqtt_publish_selected_effect_config_json();
+        //embui.publish(String(FPSTR(TCONST_embui_pub_)) + FPSTR(TCONST_eff_config), myLamp.effects.getSerializedEffConfig(String(eff->eff_nb).toInt(), myLamp.getNormalizedLampBrightness()), true);
+    }
 #endif
 }
 
@@ -870,12 +880,14 @@ void set_effects_dynCtrl(Interface *interf, JsonObject *data){
             if(!data) return;
 
             LOG(println, "publishing & sending dynctrl...");
+            #ifdef LAMP_DEBUG
             String tmp; serializeJson(*data,tmp);LOG(println, tmp);
+            #endif
     LOG(printf_P,PSTR("Mark ps 1\n"));
 
             direct_set_effects_dynCtrl(data);
 #ifdef EMBUI_USE_MQTT
-            publish_ctrls_vals();
+            mqtt_publish_selected_effect_config_json();
             for (JsonPair kv : *data){
                 embui.publish(String(FPSTR(TCONST_embui_pub_)) + String(kv.key().c_str()), kv.value().as<String>(), true);
             }
@@ -3930,7 +3942,7 @@ String httpCallback(const String &param, const String &value, bool isset){
         else if (upperParam == FPSTR(CMD_WARNING))
             { myLamp.showWarning(CRGB::Orange,5000,500); }
         else if (upperParam == FPSTR(CMD_EFF_CONFIG)) {
-                String result = myLamp.effects.geteffconfig(myLamp.effects.getCurrent(), myLamp.getNormalizedLampBrightness());
+                String result = myLamp.effects.getSerializedEffConfig(myLamp.effects.getCurrent(), myLamp.getNormalizedLampBrightness());
 #ifdef EMBUI_USE_MQTT
                 embui.publish(String(FPSTR(TCONST_embui_pub_)) + FPSTR(TCONST_eff_config), result, true);
 #endif

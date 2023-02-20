@@ -1051,7 +1051,8 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
     FastLED.show();
   }
 
-  // move to 'selected' only if lamp is On and fader is in effect
+  // move to 'selected' only if lamp is On and fader is in effect (i.e. it's a second call after fade),
+  // otherwise it's been switched already
   if (fade && flags.ONflag)
     effects.moveSelected();
 
@@ -1059,6 +1060,8 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
 #ifdef MP3PLAYER
   bool isPlayName = (isShowName && flags.playName && !flags.playMP3 && effects.getEn()>0);
 #endif
+
+  // show effects's name on screen and play name over speaker (if set)
   if(isShowName){
     sendStringToLamp(String(F("%EN")).c_str(), CRGB::Green);
 #ifdef MP3PLAYER
