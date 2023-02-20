@@ -287,7 +287,7 @@ void LAMP::changePower(bool flag) // флаг включения/выключе�
   if (flag){
 #ifdef USE_STREAMING
     if (flags.isStream)
-      Led_Stream::newStreamObj((STREAM_TYPE)embui.param(FPSTR(TCONST_0047)).toInt());
+      Led_Stream::newStreamObj((STREAM_TYPE)embui.param(FPSTR(TCONST_stream_type)).toInt());
     if(!flags.isDirect || !flags.isStream)
 #endif
     effectsTimer(T_ENABLE);
@@ -323,7 +323,7 @@ void LAMP::changePower(bool flag) // флаг включения/выключе�
 #ifdef SHOWSYSCONFIG
     // восстанавливаем значение тока после включения. Так как значение 0 не работает в ограничителе тока по перегреву, 
     // то если ограничение тока установлено в 0, устанвливаем вместо него рассчетный максимум в 15.36А на 256 диодов (бред конечно, но нужно же хоть какое-то значение больше 0).
-    setcurLimit(embui.param(FPSTR(TCONST_0098)).toInt() == 0 ? (NUM_LEDS * 60) : embui.param(FPSTR(TCONST_0098)).toInt());
+    setcurLimit(embui.param(FPSTR(TCONST_CLmt)).toInt() == 0 ? (NUM_LEDS * 60) : embui.param(FPSTR(TCONST_CLmt)).toInt());
 #else
     setcurLimit(CURRENT_LIMIT == 0U ? (NUM_LEDS * 60) : CURRENT_LIMIT);
 #endif
@@ -837,8 +837,8 @@ void LAMP::periodicTimeHandle(char *value, bool force)
   String buf = value;
   buf.replace("'","\"");
   deserializeJson(doc,buf);
-  bool isShowOff = (doc.containsKey(FPSTR(TCONST_0048)) ? doc[FPSTR(TCONST_0048)] : String("0")) == "1" ? true : false;
-  bool isPlayTime = (doc.containsKey(FPSTR(TCONST_0056)) ? doc[FPSTR(TCONST_0056)] : String("0"))  == "1" ? true : false;
+  bool isShowOff = (doc.containsKey(FPSTR(TCONST_isShowOff)) ? doc[FPSTR(TCONST_isShowOff)] : String("0")) == "1" ? true : false;
+  bool isPlayTime = (doc.containsKey(FPSTR(TCONST_isPlayTime)) ? doc[FPSTR(TCONST_isPlayTime)] : String("0"))  == "1" ? true : false;
 
   const tm* t = localtime(embui.timeProcessor.now());
   if(t->tm_sec && !force)

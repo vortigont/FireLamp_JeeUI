@@ -581,7 +581,7 @@ void toggleMic() {
 void toggleAUX() {
 #ifdef AUX_PIN
   remote_action(RA::RA_AUX_TOGLE, NULL);
-  encSendString(String(FPSTR(TCONST_000E)) + String(digitalRead(AUX_PIN) == AUX_LEVEL ? F(": ON") : F(": OFF")), txtColor, true, txtDelay);
+  encSendString(String(FPSTR(TCONST_AUX)) + String(digitalRead(AUX_PIN) == AUX_LEVEL ? F(": ON") : F(": OFF")), txtColor, true, txtDelay);
 #endif
 }
 

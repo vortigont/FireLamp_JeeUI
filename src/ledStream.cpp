@@ -166,7 +166,7 @@ Led_Stream::Led_Stream(const STREAM_TYPE type){
     LOG(printf_P, PSTR("Stream ON, type %d \n"), (uint8_t)type);
     streamType = type;
     if (type == E131) {
-        firstUni = embui.param(FPSTR(TCONST_0077)).toInt();
+        firstUni = embui.param(FPSTR(TCONST_Universe)).toInt();
         e131 = new ESPAsyncE131(&handleE131Packet);
         // bufLeds = new CRGB[NUM_LEDS]{CRGB::Black};
         lastSeqNum = new uint8_t[uniQt];

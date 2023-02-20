@@ -105,7 +105,7 @@ void setup() {
     //embui.mqtt(mqttCallback, true);
     embui.mqtt(mqttCallback, mqttConnect, true);
 #endif
-    myLamp.effects.setEffSortType((SORT_TYPE)embui.param(FPSTR(TCONST_0050)).toInt()); // сортировка должна быть определена до заполнения
+    myLamp.effects.setEffSortType((SORT_TYPE)embui.param(FPSTR(TCONST_effSort)).toInt()); // сортировка должна быть определена до заполнения
     myLamp.effects.initDefault(); // если вызывать из конструктора, то не забыть о том, что нужно инициализировать Serial.begin(115200); иначе ничего не увидеть!
     myLamp.events.loadConfig(); // << -- SDK3.0 будет падение, разобраться позже
 #ifdef RTC
@@ -117,14 +117,14 @@ void setup() {
 #endif
 
 #ifdef SHOWSYSCONFIG
-    myLamp.lamp_init(embui.param(FPSTR(TCONST_0098)).toInt());
+    myLamp.lamp_init(embui.param(FPSTR(TCONST_CLmt)).toInt());
 #else
     myLamp.lamp_init(CURRENT_LIMIT);
 #endif
 
 #ifdef ESP_USE_BUTTON
 #ifdef SHOWSYSCONFIG
-    myLamp.setbPin(embui.param(FPSTR(TCONST_0097)).toInt());
+    myLamp.setbPin(embui.param(FPSTR(TCONST_PINB)).toInt());
     myButtons = new Buttons(myLamp.getbPin(), PULL_MODE, NORM_OPEN);
 #else
     myButtons = new Buttons(BTN_PIN, PULL_MODE, NORM_OPEN);
@@ -139,8 +139,8 @@ void setup() {
 
 #ifdef MP3PLAYER
 #ifdef SHOWSYSCONFIG
-    int rxpin = embui.param(FPSTR(TCONST_009B)).isEmpty() ? MP3_RX_PIN : embui.param(FPSTR(TCONST_009B)).toInt();
-    int txpin = embui.param(FPSTR(TCONST_009C)).isEmpty() ? MP3_TX_PIN : embui.param(FPSTR(TCONST_009C)).toInt();
+    int rxpin = embui.param(FPSTR(TCONST_PINMP3RX)).isEmpty() ? MP3_RX_PIN : embui.param(FPSTR(TCONST_PINMP3RX)).toInt();
+    int txpin = embui.param(FPSTR(TCONST_PINMP3TX)).isEmpty() ? MP3_TX_PIN : embui.param(FPSTR(TCONST_PINMP3TX)).toInt();
     mp3 = new MP3PLAYERDEVICE(rxpin, txpin); //rxpin, txpin
 #else
     mp3 = new MP3PLAYERDEVICE(MP3_RX_PIN, MP3_TX_PIN); //rxpin, txpin
@@ -208,7 +208,7 @@ String ha_autodiscovery()
     String name = embui.param(FPSTR(P_hostname));
     String unique_id = embui.mc;
 
-    hass_discover[F("~")] = embui.id(FPSTR(TCONST_00E7));     // embui.param(FPSTR(P_m_pref)) + F("/embui/")
+    hass_discover[F("~")] = embui.id(FPSTR(TCONST_embui_));     // embui.param(FPSTR(P_m_pref)) + F("/embui/")
     hass_discover[F("name")] = name;                // name
     hass_discover[F("uniq_id")] = unique_id;        // String(ESP.getChipId(), HEX); // unique_id
 
@@ -231,12 +231,12 @@ String ha_autodiscovery()
     hass_discover[F("bri_scl")] = 255;
 
     JsonArray data = hass_discover.createNestedArray(F("effect_list"));
-    data.add(FPSTR(TCONST_00E8));
-    data.add(FPSTR(TCONST_00E9));
-    data.add(FPSTR(TCONST_00EA));
-    data.add(FPSTR(TCONST_00EB));
-    data.add(FPSTR(TCONST_00EC));
-    data.add(FPSTR(TCONST_00ED));
+    data.add(FPSTR(TCONST_Normal));
+    data.add(FPSTR(TCONST_Alarm));
+    data.add(FPSTR(TCONST_Demo));
+    data.add(FPSTR(TCONST_RGB));
+    data.add(FPSTR(TCONST_White));
+    data.add(FPSTR(TCONST_Other));
 
     //---------------------
 
@@ -273,14 +273,14 @@ void mqttConnect(){
 
 ICACHE_FLASH_ATTR void mqttCallback(const String &topic, const String &payload){ // функция вызывается, когда приходят данные MQTT
   LOG(printf_P, PSTR("Message [%s - %s]\n"), topic.c_str() , payload.c_str());
-  if(topic.startsWith(FPSTR(TCONST_00AC))){
+  if(topic.startsWith(FPSTR(TCONST_embui_get_))){
     String sendtopic=topic;
-    sendtopic.replace(FPSTR(TCONST_00AC), "");
-    if(sendtopic==FPSTR(TCONST_00AE)){
-        sendtopic=String(FPSTR(TCONST_008B))+sendtopic;
+    sendtopic.replace(FPSTR(TCONST_embui_get_), "");
+    if(sendtopic==FPSTR(TCONST_eff_config)){
+        sendtopic=String(FPSTR(TCONST_embui_pub_))+sendtopic;
         String effcfg;
         if (myLamp.effects.getfseffconfig(myLamp.effects.getCurrent(), effcfg)) embui.publish(sendtopic, effcfg, true); // отправляем обратно в MQTT в топик embui/pub/
-    } else if(sendtopic==FPSTR(TCONST_00AD)){
+    } else if(sendtopic==FPSTR(TCONST_state)){
         sendData();
     }
   }
@@ -294,35 +294,35 @@ void sendData(){
     switch (myLamp.getMode())
     {
         case LAMPMODE::MODE_NORMAL :
-            obj[FPSTR(TCONST_00DD)] = FPSTR(TCONST_00E8);
+            obj[FPSTR(TCONST_Mode)] = FPSTR(TCONST_Normal);
             break;
         case LAMPMODE::MODE_ALARMCLOCK :
-            obj[FPSTR(TCONST_00DD)] = FPSTR(TCONST_00E9);
+            obj[FPSTR(TCONST_Mode)] = FPSTR(TCONST_Alarm);
             break;
         case LAMPMODE::MODE_DEMO :
-            obj[FPSTR(TCONST_00DD)] = FPSTR(TCONST_00EA);
+            obj[FPSTR(TCONST_Mode)] = FPSTR(TCONST_Demo);
             break;
         case LAMPMODE::MODE_RGBLAMP :
-            obj[FPSTR(TCONST_00DD)] = FPSTR(TCONST_00EB);
+            obj[FPSTR(TCONST_Mode)] = FPSTR(TCONST_RGB);
             break;
         case LAMPMODE::MODE_WHITELAMP :
-            obj[FPSTR(TCONST_00DD)] = FPSTR(TCONST_00EC);
+            obj[FPSTR(TCONST_Mode)] = FPSTR(TCONST_White);
             break;
         default:
-            obj[FPSTR(TCONST_00DD)] = FPSTR(TCONST_00ED);
+            obj[FPSTR(TCONST_Mode)] = FPSTR(TCONST_Other);
             break;
     }
-    obj[FPSTR(TCONST_00DE)] = String(embui.timeProcessor.getFormattedShortTime());
-    obj[FPSTR(TCONST_00DF)] = String(myLamp.getLampState().freeHeap);
-    obj[FPSTR(TCONST_00E0)] = String(embui.getUptime());
-    obj[FPSTR(TCONST_00E1)] = String(myLamp.getLampState().rssi);
-    obj[FPSTR(TCONST_00E2)] = WiFi.localIP().toString();
-    obj[FPSTR(TCONST_00E3)] = WiFi.macAddress();
-    obj[FPSTR(TCONST_00E4)] = String(F("http://"))+WiFi.localIP().toString();
-    obj[FPSTR(TCONST_00E5)] = embui.getEmbUIver();
-    obj[FPSTR(TCONST_00E6)] = embui.id(FPSTR(TCONST_00E7));     // embui.param(FPSTR(P_m_pref)) + F("/embui/")
-    String sendtopic=FPSTR(TCONST_008B);
-    sendtopic+=FPSTR(TCONST_00AD);
+    obj[FPSTR(TCONST_Time)] = String(embui.timeProcessor.getFormattedShortTime());
+    obj[FPSTR(TCONST_Memory)] = String(myLamp.getLampState().freeHeap);
+    obj[FPSTR(TCONST_Uptime)] = String(embui.getUptime());
+    obj[FPSTR(TCONST_RSSI)] = String(myLamp.getLampState().rssi);
+    obj[FPSTR(TCONST_Ip)] = WiFi.localIP().toString();
+    obj[FPSTR(TCONST_Mac)] = WiFi.macAddress();
+    obj[FPSTR(TCONST_Host)] = String(F("http://"))+WiFi.localIP().toString();
+    obj[FPSTR(TCONST_Version)] = embui.getEmbUIver();
+    obj[FPSTR(TCONST_MQTTTopic)] = embui.id(FPSTR(TCONST_embui_));     // embui.param(FPSTR(P_m_pref)) + F("/embui/")
+    String sendtopic=FPSTR(TCONST_embui_pub_);
+    sendtopic+=FPSTR(TCONST_state);
     String out;
     serializeJson(obj, out);
     LOG(println, F("send MQTT Data :"));

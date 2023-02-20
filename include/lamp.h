@@ -547,12 +547,12 @@ private:
         String buf = value;
         buf.replace("'","\"");
         deserializeJson(doc,buf);
-        curAlarm.alarmP = doc.containsKey(FPSTR(TCONST_00BB)) ? doc[FPSTR(TCONST_00BB)] : lamp->getAlarmP();
-        curAlarm.alarmT = doc.containsKey(FPSTR(TCONST_00BC)) ? doc[FPSTR(TCONST_00BC)] : lamp->getAlarmT();
-        curAlarm.msg = doc.containsKey(FPSTR(TCONST_0035)) ? doc[FPSTR(TCONST_0035)] : String("");
-        curAlarm.isLimitVol = doc.containsKey(FPSTR(TCONST_00D2)) ? doc[FPSTR(TCONST_00D2)].as<String>()=="1" : lamp->getLampSettings().limitAlarmVolume;
-        curAlarm.isStartSnd = doc.containsKey(FPSTR(TCONST_00D1)) ? doc[FPSTR(TCONST_00D1)].as<String>()=="1" : true;
-        curAlarm.type = (ALARM_SOUND_TYPE)(doc.containsKey(FPSTR(TCONST_00D3)) ? doc[FPSTR(TCONST_00D3)].as<uint8_t>() : lamp->getLampSettings().alarmSound);
+        curAlarm.alarmP = doc.containsKey(FPSTR(TCONST_alarmP)) ? doc[FPSTR(TCONST_alarmP)] : lamp->getAlarmP();
+        curAlarm.alarmT = doc.containsKey(FPSTR(TCONST_alarmT)) ? doc[FPSTR(TCONST_alarmT)] : lamp->getAlarmT();
+        curAlarm.msg = doc.containsKey(FPSTR(TCONST_msg)) ? doc[FPSTR(TCONST_msg)] : String("");
+        curAlarm.isLimitVol = doc.containsKey(FPSTR(TCONST_lV)) ? doc[FPSTR(TCONST_lV)].as<String>()=="1" : lamp->getLampSettings().limitAlarmVolume;
+        curAlarm.isStartSnd = doc.containsKey(FPSTR(TCONST_afS)) ? doc[FPSTR(TCONST_afS)].as<String>()=="1" : true;
+        curAlarm.type = (ALARM_SOUND_TYPE)(doc.containsKey(FPSTR(TCONST_sT)) ? doc[FPSTR(TCONST_sT)].as<uint8_t>() : lamp->getLampSettings().alarmSound);
 
         lamp->setMode(LAMPMODE::MODE_ALARMCLOCK);
         lamp->demoTimer(T_DISABLE);     // гасим Демо-таймер
