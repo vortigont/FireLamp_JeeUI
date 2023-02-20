@@ -1352,6 +1352,7 @@ void LEDFader::fadelight(const uint8_t _targetbrightness, const uint32_t _durati
     lmp->brightness(_targetbrightness);
     if (runner) abort();
     if (callback) callback();
+    return;
   }
   _brtincrement = (_targetbrightness - lmp->getBrightness()) / _steps;
 
