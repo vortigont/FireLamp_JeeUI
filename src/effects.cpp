@@ -8070,7 +8070,7 @@ void EffectPuzzles::regen() {
   PCols = round(Ecols) + Ca;
   PRows = round(Erows) + Ra;
   step = 0;
-  puzzle.resize(PCols, std::vector<uint8_t>(PRows, 0));
+  puzzle = std::vector<std::vector<uint8_t>>(PCols, std::vector<uint8_t>(PRows, 0));
 
   byte n = 0;
   for (byte x = 0; x < PCols; x++) {
