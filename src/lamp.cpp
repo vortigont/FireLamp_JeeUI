@@ -1033,7 +1033,7 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
     LOG(printf_P, PSTR("switcheffect() act=%d, fade=%d, effnb=%d\n"), action, fade, next_eff_num);
     // тухнем "вниз" только на включенной лампе
     if (fade && flags.ONflag) {
-      effects.setSelected(next_eff_num);    // preload controls for next effect
+      effects.preloadEffCtrls(next_eff_num);    // preload controls for next effect
       // запускаем фейдер и уходим на второй круг переключения
       LEDFader::getInstance()->fadelight(min(FADE_MINCHANGEBRT, (unsigned int)myLamp.getLampBrightness()), FADE_TIME, std::bind(&LAMP::switcheffect, this, action, fade, next_eff_num, true));
       return;

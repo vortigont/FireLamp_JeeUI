@@ -69,8 +69,7 @@ EffectWorker::EffectWorker(LAMPSTATE *_lampstate) : lampstate(_lampstate) {
     );
     controls.add(c);
   }
-  //clone_controls_list(controls, selcontrols);
-  selcontrols = controls;
+  pendingCtrls = controls;
 }
 
 EffectWorker::~EffectWorker() { clearEffectList(); }
@@ -331,6 +330,7 @@ void EffectWorker::workerset(uint16_t effect, const bool isCfgProceed){
   }
 
   if(worker){
+    // запихать в экземпляр калькулятор эффекта ссылки на все то барахло из чего состоит лампа вместе с самой лампой 8()
     worker->pre_init(static_cast<EFF_ENUM>(effect%256), this, &(getControls()), lampstate);
     originalName = effectName = FPSTR(T_EFFNAMEID[(uint8_t)effect]); // сначла заполним дефолтным именем, а затем лишь вычитаем из конфига
     if(isCfgProceed){ // читаем конфиг только если это требуется, для индекса - пропускаем
@@ -433,7 +433,7 @@ void EffectWorker::initDefault(const char *folder)
 
 void EffectWorker::removeConfig(const uint16_t nb, const char *folder)
 {
-  String filename = geteffectpathname(nb,folder);
+  String filename = getEffectCfgPath(nb,folder);
   LOG(printf_P,PSTR("Remove from FS: %s\n"), filename.c_str());
   LittleFS.remove(filename); // удаляем файл
 }
@@ -481,19 +481,14 @@ void EffectWorker::effectsReSort(SORT_TYPE _effSort)
  */
 void EffectWorker::loadeffname(String& _effectName, const uint16_t nb, const char *folder)
 {
-// #ifdef CASHED_EFFECTS_NAMES
-//   EffectListElem *tmp = getEffect(nb);
-//   _effectName = tmp->getName();
-// #else
-  String filename = geteffectpathname(nb,folder);
-  DynamicJsonDocument doc(2048);
+  String filename = getEffectCfgPath(nb,folder);
+  DynamicJsonDocument doc(DYNJSON_SIZE_EFF_CFG);
   bool ok = deserializeFile(doc, filename.c_str());
   if (ok && doc[F("name")]){
     _effectName = doc[F("name")].as<String>(); // перенакрываем именем из конфига, если есть
   } else if(!ok) {
     _effectName = FPSTR(T_EFFNAMEID[(uint8_t)nb]);   // выбираем имя по-умолчанию из флеша если конфиг поврежден
   }
-// #endif
 }
 
 /**
@@ -505,7 +500,7 @@ void EffectWorker::loadeffname(String& _effectName, const uint16_t nb, const cha
 */
 void EffectWorker::loadsoundfile(String& _soundfile, const uint16_t nb, const char *folder)
 {
-  String filename = geteffectpathname(nb,folder);
+  String filename = getEffectCfgPath(nb,folder);
   DynamicJsonDocument doc(2048);
   bool ok = deserializeFile(doc, filename.c_str());
   LOG(printf_P,PSTR("snd: %s\n"),doc[F("snd")].as<String>().c_str());
@@ -561,7 +556,7 @@ bool EffectWorker::loadeffconfig(const uint16_t nb, const char *folder)
   return _eff_ctrls_load_from_jdoc(doc, controls);
 }
 
-const String EffectWorker::geteffectpathname(const uint16_t nb, const char *folder) const {
+const String EffectWorker::getEffectCfgPath(const uint16_t nb, const char *folder) const {
   uint16_t swapnb = nb>>8|nb<<8; // меняю местами 2 байта, так чтобы копии/верисии эффекта оказалась в имени файла позади
 
   // todo: check if supplied alternative path starts with '/'
@@ -591,7 +586,7 @@ void EffectWorker::savedefaulteffconfig(uint16_t nb, String &filename){
 
 bool EffectWorker::getfseffconfig(uint16_t nb, String &result)
 {
-  String filename = geteffectpathname(nb);
+  String filename = getEffectCfgPath(nb);
   File jfile = LittleFS.open(filename, "r");
   if(jfile){
     result = jfile.readString();
@@ -605,7 +600,7 @@ bool EffectWorker::getfseffconfig(uint16_t nb, String &result)
 String EffectWorker::getSerializedEffConfig(uint16_t nb, uint8_t replaceBright)
 {
   // конфиг текущего эффекта
-  DynamicJsonDocument doc(2048);
+  DynamicJsonDocument doc(DYNJSON_SIZE_EFF_CFG);
   EffectListElem *eff = getEffect(nb);
   EffectWorker *tmp=this;
   bool isFader = (curEff != nb);
@@ -649,7 +644,7 @@ void EffectWorker::saveeffconfig(uint16_t nb, char *folder){
     tConfigSave->cancel(); // если оказались здесь, и есть отложенная задача сохранения конфига, то отменить ее
   
   File configFile;
-  String filename = geteffectpathname(nb,folder);
+  String filename = getEffectCfgPath(nb,folder);
   configFile = LittleFS.open(filename, "w"); // PSTR("w") использовать нельзя, будет исключение!
   configFile.print(getSerializedEffConfig(nb));
   configFile.close();
@@ -668,7 +663,7 @@ void EffectWorker::chckdefconfigs(const char *folder){
     if(i>EFF_ENUM::EFF_TIME) continue; // пропускаем эффекты для микрофона, если отключен микрофон
 #endif
 
-    String cfgfilename = geteffectpathname(i, folder);
+    String cfgfilename = getEffectCfgPath(i, folder);
     if(!LittleFS.exists(cfgfilename)){ // если конфига эффекта не существует, создаем дефолтный
       savedefaulteffconfig(i, cfgfilename);
     }
@@ -965,7 +960,7 @@ EffectListElem *EffectWorker::getSelectedListElement()
 {
   EffectListElem *res = effects.size()>0? effects[0] : nullptr;
   for(unsigned i=0; i<effects.size(); i++){
-      if(effects[i]->eff_nb==selEff)
+      if(effects[i]->eff_nb==pendingEffNum)
           res=effects[i];
   }
   return res;
@@ -1019,11 +1014,9 @@ EffectListElem *EffectWorker::getNextEffect(EffectListElem *current){
 void EffectWorker::directMoveBy(uint16_t select)
 {
   LOG(printf_P,PSTR("Direct Switch EffWorker to %d\n"), select);
-  curEff = selEff = getBy(select);
+  curEff = pendingEffNum = getBy(select);
   workerset(curEff);
-  selcontrols.clear();        // no longer needed
-  //setSelected(getBy(select));
-  //moveSelected();
+  pendingCtrls.clear();        // no longer needed
 }
 
 // получить номер эффекта смещенного на количество шагов, к ближайшему большему при превышении (для DEMO)
@@ -1064,7 +1057,7 @@ uint16_t EffectWorker::getByCnt(byte cnt)
 // предыдущий эффект, кроме canBeSelected==false
 uint16_t EffectWorker::getPrev()
 {
-  if(!isSelected()) return selEff; // если эффект в процессе смены, то возвращаем selEff
+  if(isEffSwPending()) return pendingEffNum; // если эффект в процессе смены, то возвращаем pendingEffNum
 
   // все индексы списка и их синхронизация - фигня ИМХО, исходим только от curEff
   uint16_t firstfound = curEff;
@@ -1089,7 +1082,7 @@ uint16_t EffectWorker::getPrev()
 // следующий эффект, кроме canBeSelected==false
 uint16_t EffectWorker::getNext()
 {
-  if(!isSelected()) return selEff; // если эффект в процессе смены, то возвращаем selEff
+  if(isEffSwPending()) return pendingEffNum; // если эффект в процессе смены, то возвращаем pendingEffNum
 
   // все индексы списка и их синхронизация - фигня ИМХО, исходим только от curEff
   uint16_t firstfound = curEff;
@@ -1112,29 +1105,37 @@ uint16_t EffectWorker::getNext()
 }
 
 // выбор нового эффекта с отложенной сменой, на время смены эффекта читаем его список контроллов отдельно
-void EffectWorker::setSelected(uint16_t effnb)
+void EffectWorker::preloadEffCtrls(uint16_t effnb)
 {
-  selEff = effnb;
+  if (effnb == pendingEffNum) return;
+  pendingEffNum = effnb;
 
   DynamicJsonDocument doc(DYNJSON_SIZE_EFF_CFG);
   if (!_eff_cfg_deserialize(doc, effnb)) return;   // error loading file
-  if (!_eff_ctrls_load_from_jdoc(doc, selcontrols)) LOG(printf_P,PSTR("Can't load ctrls from jdoc: %u\n"), effnb);
+  if (!_eff_ctrls_load_from_jdoc(doc, pendingCtrls)) LOG(printf_P,PSTR("Can't load ctrls from jdoc: %u\n"), effnb);
 
   LOG(printf_P,PSTR("Preloaded controls for eff: %u, current eff:%u\n"), effnb, curEff);
 }
 
 void EffectWorker::moveSelected(){
-  LOG(printf_P,PSTR("Move EffWorker to selected eff %d\n"), selEff);
-  if(curEff != selEff){
-    curEff = selEff;
-    // deep-copy controls list if selcontrols is not empty (i.e. it's a move from faded switch)
-    if (selcontrols.size())
-      controls = selcontrols;
+  LOG(printf_P,PSTR("Move EffWorker to selected eff %d\n"), pendingEffNum);
+  if(isEffSwPending()){
+    curEff = pendingEffNum;
+    workerset(pendingEffNum);
 
-    workerset(selEff, selcontrols.size() ? false : true);
-    selcontrols.clear();        // no longer needed anyway
+    /*
+    todo: omg...
+    зачем эти предзагруженные контролы если эффект при загрузке все равно перетрет это все из конфига с ФС?? 
+    // deep-copy controls list if pendingCtrls is not empty (i.e. it's a move from faded switch)
+    if (pendingCtrls.size())
+      controls = pendingCtrls;
+
+    workerset(pendingEffNum, pendingCtrls.size() ? false : true);
+    */
+
+    pendingCtrls.clear();        // no longer needed anyway
   }
-  //LOG(printf_P,PSTR("%d %d\n"),controls.size(), selcontrols.size());
+  //LOG(printf_P,PSTR("%d %d\n"),controls.size(), pendingCtrls.size());
 }
 
 
@@ -1167,7 +1168,7 @@ void EffectWorker::setEffectName(const String &name, EffectListElem*to){
   else {
       EffectWorker *tmp=new EffectWorker(to);
       tmp->curEff=to->eff_nb;
-      tmp->selEff=to->eff_nb;
+      tmp->pendingEffNum=to->eff_nb;
       tmp->setEffectName(name,to);
       tmp->saveeffconfig(to->eff_nb);
       delete tmp;
@@ -1178,7 +1179,7 @@ void EffectWorker::setSoundfile(const String &_soundfile, EffectListElem*to){
     if(to->eff_nb==curEff) soundfile=_soundfile;
     else {EffectWorker *tmp=new EffectWorker(to);
     tmp->curEff=to->eff_nb;
-    tmp->selEff=to->eff_nb;
+    tmp->pendingEffNum=to->eff_nb;
     tmp->setSoundfile(_soundfile,to);
     tmp->saveeffconfig(to->eff_nb);
     delete tmp;}
@@ -1196,7 +1197,7 @@ uint16_t EffectWorker::effIndexByList(uint16_t val) {
 
 bool EffectWorker::_eff_cfg_deserialize(DynamicJsonDocument &doc, uint16_t nb, const char *folder){
   LOG(printf_P, PSTR("_eff_cfg_deserialize() %u\n"), nb);
-  String filename(geteffectpathname(nb,folder));
+  String filename(getEffectCfgPath(nb,folder));
 
   READALLAGAIN:
   if (!deserializeFile(doc, filename.c_str() )){

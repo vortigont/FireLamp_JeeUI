@@ -365,7 +365,7 @@ private:
     SORT_TYPE effSort; // порядок сортировки в UI
 
     uint16_t curEff = (uint16_t)EFF_NONE;     ///< энумератор текущего эффекта
-    uint16_t selEff = (uint16_t)EFF_NONE;     ///< энумератор выбранного эффекта (для отложенного перехода)
+    uint16_t pendingEffNum = (uint16_t)EFF_NONE;     ///< энумератор выбранного эффекта (для отложенного перехода)
     
     String originalName;    // имя эффекта дефолтное
     String effectName;      // имя эффекта (предварительно заданное или из конфига)
@@ -376,7 +376,7 @@ private:
     // список контроллов текущего эффекта
     LList<std::shared_ptr<UIControl>> controls;
     // список контроллов следующего эффекта (используется на время работы фейдера)
-    LList<std::shared_ptr<UIControl>> selcontrols;
+    LList<std::shared_ptr<UIControl>> pendingCtrls;
 
     Task *tConfigSave = nullptr;       // динамическая таска, задержки при сохранении текущего конфига эффекта в файл
 
@@ -423,7 +423,7 @@ private:
      * @param folder -  абсолютный путь к каталогу с конфигами, должен начинаться и заканчиваться '/', по-умолчанию испльзуется '/eff/'
      * @return const String - полный путь до файла с конфигом
      */
-    const String geteffectpathname(const uint16_t nb, const char *folder=NULL) const;
+    const String getEffectCfgPath(const uint16_t nb, const char *folder=NULL) const;
 
     /**
      * проверка на существование "дефолтных" конфигов для всех статичных эффектов
@@ -499,7 +499,7 @@ public:
     void initDefault(const char *folder = NULL); // пусть вызывается позже и явно
     ~EffectWorker();
 
-    LList<std::shared_ptr<UIControl>>&getControls() { return isSelected() ? controls : selcontrols; }
+    LList<std::shared_ptr<UIControl>>&getControls() { return isEffSwPending() ? pendingCtrls : controls; }
 
     // тип сортировки
     void setEffSortType(SORT_TYPE type) {if(effSort != type) { effectsReSort(type); } effSort = type;}
@@ -604,11 +604,24 @@ public:
     // вернуть текущий элемент списка
     EffectListElem *getCurrentListElement();
     // вернуть выбранный
-    uint16_t getSelected() {return selEff;}
+    uint16_t getSelected() {return pendingEffNum;}
     // вернуть выбранный элемент списка
     EffectListElem *getSelectedListElement();
-    void setSelected(const uint16_t effnb);
-    bool isSelected(){ return (curEff == selEff); }
+
+    /**
+     * @brief preload controls for pending effect
+     * used when switching effects with fading. Preloaded controls are waiting
+     * for fader to finish before being applied to hz kuda...
+     * todo: it need to be redesined from scratch
+     * @param effnb 
+     */
+    void preloadEffCtrls(const uint16_t effnb);
+
+    /**
+     * @brief returns true if effect switching is pending for fader
+     */
+    bool isEffSwPending() const { return (curEff != pendingEffNum); }
+
     // копирование эффекта
     void copyEffect(const EffectListElem *base);
     // удалить эффект
