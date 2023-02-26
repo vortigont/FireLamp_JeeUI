@@ -171,7 +171,7 @@ public:
     uint16_t eff_nb; // номер эффекта, для копий наращиваем старший байт
     EFFFLAGS flags; // флаги эффекта
 
-    EffectListElem(uint16_t nb, uint8_t mask) : eff_nb(nb) { flags.mask = mask; }
+    EffectListElem(uint16_t nb = 0, uint8_t mask = 0) : eff_nb(nb) { flags.mask = mask; }
 
     EffectListElem(const EffectListElem *base) {
         eff_nb = ((((base->eff_nb >> 8) + 1 ) << 8 ) | (base->eff_nb&0xFF)); // в старшем байте увеличиваем значение на 1
@@ -372,7 +372,7 @@ private:
     String soundfile;       // имя/путь к звуковому файлу (DF Player Mini)
     uint8_t version;        // версия эффекта
 
-    LList<EffectListElem*> effects; // список эффектов с флагами из индекса
+    LList<EffectListElem> effects; // список эффектов с флагами из индекса
     // список контроллов текущего эффекта
     LList<std::shared_ptr<UIControl>> controls;
     // список контроллов следующего эффекта (используется на время работы фейдера)
@@ -490,6 +490,7 @@ public:
     EffectWorker(uint16_t delayeffnb);
     // конструктор текущего эффекта, для fast=true вычитываетсяч только имя
     EffectWorker(const EffectListElem* eff, bool fast=false);
+    //~EffectWorker();
 
 
     void removeLists(); // уделение списков из ФС
@@ -497,7 +498,6 @@ public:
     //void setlistsuffix(time_t val) {listsuffix=val;}
     std::unique_ptr<EffectCalc> worker = nullptr;           ///< указатель-класс обработчик текущего эффекта
     void initDefault(const char *folder = NULL); // пусть вызывается позже и явно
-    ~EffectWorker();
 
     LList<std::shared_ptr<UIControl>>&getControls() { return isEffSwPending() ? pendingCtrls : controls; }
 
@@ -584,12 +584,12 @@ public:
     uint16_t getByCnt(byte cnt);
     bool validByList(int val);
     // получить реальный номер эффекта по номеру элемента списка (для плагинов)
-    uint16_t realEffNumdByList(uint16_t val) { return effects[val]->eff_nb; }
+    uint16_t realEffNumdByList(uint16_t val) { return effects[val].eff_nb; }
     // получить индекс эффекта по номеру (для плагинов)
     uint16_t effIndexByList(uint16_t val);
 
     // получить флаг canBeSelected по номеру элемента списка (для плагинов)
-    bool effCanBeSelected(uint16_t val) { if (val < effects.size())return effects[val]->canBeSelected(); return false; }
+    bool effCanBeSelected(uint16_t val) { return effects.exist(val) ? effects[val].canBeSelected() : false; }
 
     // перейти на указанный в обход нормального переключения, использовать только понимая что это (нужно для начальной инициализации и переключений выключенной лампы)
     void directMoveBy(uint16_t select);

@@ -72,7 +72,7 @@ EffectWorker::EffectWorker(LAMPSTATE *_lampstate) : lampstate(_lampstate) {
   pendingCtrls = controls;
 }
 
-EffectWorker::~EffectWorker() { clearEffectList(); }
+//EffectWorker::~EffectWorker() { clearEffectList(); }
 
 /*
  * Создаем экземпляр класса калькулятора в зависимости от требуемого эффекта
@@ -345,9 +345,7 @@ void EffectWorker::workerset(uint16_t effect, const bool isCfgProceed){
 void EffectWorker::clearEffectList()
 {
   // удаляем весь список
-  while (effects.size()) {
-      delete effects.shift();
-  }
+  effects.clear();
 }
 
 void EffectWorker::_clearControlsList(LList<std::shared_ptr<UIControl>> &list)
@@ -413,20 +411,25 @@ void EffectWorker::initDefault(const char *folder)
   clearEffectList();
   for (size_t i=0; i<arr.size(); i++) {
       JsonObject item = arr[i];
-      if(item.containsKey("nb")) // на время миграции, далее убрать!!!
-        effects.add(new EffectListElem(item[F("nb")].as<uint16_t>(), item[F("fl")].as<uint8_t>()));
-      else
-        effects.add(new EffectListElem(item[F("n")].as<uint16_t>(), item[F("f")].as<uint8_t>()));
+      if(item.containsKey("nb")){ // на время миграции, далее убрать!!!
+        //effects.add(new EffectListElem(item[F("nb")].as<uint16_t>(), item[F("fl")].as<uint8_t>()));
+        EffectListElem el(item[F("nb")].as<uint16_t>(), item[F("fl")].as<uint8_t>());
+        effects.add(el);
+      } else {
+        //effects.add(new EffectListElem(item[F("n")].as<uint16_t>(), item[F("f")].as<uint8_t>()));
+        EffectListElem el(item[F("n")].as<uint16_t>(), item[F("f")].as<uint8_t>());
+        effects.add(el);
+      }
       //LOG(printf_P,PSTR("%d : %d\n"),item[F("nb")].as<uint16_t>(), item[F("fl")].as<uint8_t>());
   }
-  effects.sort([](EffectListElem *&a, EffectListElem *&b){ return a->eff_nb - b->eff_nb;}); // сортирую по eff_nb
+  effects.sort([](EffectListElem &a, EffectListElem &b){ return a.eff_nb - b.eff_nb;}); // сортирую по eff_nb
   int32_t chk = -1; // удаляю дубликаты
   for(unsigned i=0; i<effects.size(); i++){
-    if((int32_t)effects[i]->eff_nb==chk){
-          delete effects.remove(i);
-          continue;
-        }
-    chk = effects[i]->eff_nb;
+    if((int32_t)effects[i].eff_nb==chk){
+      effects.unlink(i);
+      continue;
+    }
+    chk = effects[i].eff_nb;
   }
   effectsReSort();
 }
@@ -445,26 +448,26 @@ void EffectWorker::effectsReSort(SORT_TYPE _effSort)
 
   switch(_effSort){
     case SORT_TYPE::ST_BASE :
-      effects.sort([](EffectListElem *&a, EffectListElem *&b){ return (((a->eff_nb&0xFF) - (b->eff_nb&0xFF))<<8) + (((a->eff_nb&0xFF00) - (b->eff_nb&0xFF00))>>8);});
+      effects.sort([](EffectListElem &a, EffectListElem &b){ return (((a.eff_nb&0xFF) - (b.eff_nb&0xFF))<<8) + (((a.eff_nb&0xFF00) - (b.eff_nb&0xFF00))>>8);});
       break;
     case SORT_TYPE::ST_END :
-      effects.sort([](EffectListElem *&a, EffectListElem *&b){ return a->eff_nb - b->eff_nb;}); // сортирую по eff_nb
+      effects.sort([](EffectListElem &a, EffectListElem &b){ return a.eff_nb - b.eff_nb;}); // сортирую по eff_nb
       //effects.sort([](EffectListElem *&a, EffectListElem *&b){ return ((int32_t)(((a->eff_nb&0xFF)<<8) | ((a->eff_nb&0xFF00)>>8)) - (((b->eff_nb&0xFF)<<8) | ((b->eff_nb&0xFF00)>>8)));});
       //effects.sort([](EffectListElem *&a, EffectListElem *&b){ return (a->eff_nb&0xFF00) - (b->eff_nb&0xFF00) + (((a->eff_nb&0xFF) - (b->eff_nb&0xFF))<<8) + (((a->eff_nb&0xFF00) - (b->eff_nb&0xFF00))>>8);});
       break;
     case SORT_TYPE::ST_IDX :
-      effects.sort([](EffectListElem *&a, EffectListElem *&b){ return (int)(a->getMS() - b->getMS());});
+      effects.sort([](EffectListElem &a, EffectListElem &b){ return (int)(a.getMS() - b.getMS());});
       break;
     case SORT_TYPE::ST_AB2 :
       // крайне медленный вариант, с побочными эффектами, пока отключаю и использую вместо него ST_AB
       //effects.sort([](EffectListElem *&a, EffectListElem *&b){ EffectWorker *tmp = new EffectWorker((uint16_t)0); String tmp1; tmp->loadeffname(tmp1, a->eff_nb); String tmp2; tmp->loadeffname(tmp2,b->eff_nb); delete tmp; return strcmp_P(tmp1.c_str(), tmp2.c_str());});
       //break;
     case SORT_TYPE::ST_AB :
-      effects.sort([](EffectListElem *&a, EffectListElem *&b){ String tmp=FPSTR(T_EFFNAMEID[(uint8_t)a->eff_nb]); return strcmp_P(tmp.c_str(), (T_EFFNAMEID[(uint8_t)b->eff_nb]));});
+      effects.sort([](EffectListElem &a, EffectListElem &b){ String tmp=FPSTR(T_EFFNAMEID[(uint8_t)a.eff_nb]); return strcmp_P(tmp.c_str(), (T_EFFNAMEID[(uint8_t)b.eff_nb]));});
       break;
 #ifdef MIC_EFFECTS
     case SORT_TYPE::ST_MIC :
-      effects.sort([](EffectListElem *&a, EffectListElem *&b){ return ((int)(pgm_read_byte(T_EFFVER + (a->eff_nb&0xFF))&0x01) - (int)(pgm_read_byte(T_EFFVER + (b->eff_nb&0xFF))&0x01)); });
+      effects.sort([](EffectListElem &a, EffectListElem &b){ return ((int)(pgm_read_byte(T_EFFVER + (a.eff_nb&0xFF))&0x01) - (int)(pgm_read_byte(T_EFFVER + (b.eff_nb&0xFF))&0x01)); });
       break;
 #endif
     default:
@@ -822,10 +825,11 @@ void EffectWorker::makeIndexFileFromList(const char *folder, bool forceRemove)
 
   bool firstLine = true;
   indexFile.print("[");
-  for (uint8_t i = 0; i < effects.size(); i++){
-    indexFile.printf_P(PGidxtemplate, firstLine ? "" : ",", effects[i]->eff_nb, effects[i]->flags.mask);
+  for (const auto &eff : effects){
+    indexFile.printf_P(PGidxtemplate, firstLine ? "" : ",", eff.eff_nb, eff.flags.mask);
     firstLine = false; // сбрасываю признак первой строки
   }
+
   indexFile.print("]");
   indexFile.close();
   LOG(println,F("Индекс эффектов обновлен!"));
@@ -922,10 +926,10 @@ void EffectWorker::deleteFromIndexFile(const uint16_t effect)
 void EffectWorker::deleteEffect(const EffectListElem *eff, bool isCfgRemove)
 {
   for(unsigned i=0; i<effects.size(); i++){
-      if(effects[i]->eff_nb==eff->eff_nb){
+      if(effects[i].eff_nb == eff->eff_nb){
           if(isCfgRemove)
             removeConfig(eff->eff_nb);
-          delete effects.remove(i);
+          effects.unlink(i);
           break;
       }
   }
@@ -934,23 +938,23 @@ void EffectWorker::deleteEffect(const EffectListElem *eff, bool isCfgRemove)
 // копирование эффекта
 void EffectWorker::copyEffect(const EffectListElem *base)
 {
-  EffectListElem *copy = new EffectListElem(base); // создать копию переданного эффекта
+  EffectListElem copy(base); // создать копию переданного эффекта
   //uint8_t foundcnt=0;
   uint16_t maxfoundnb=base->eff_nb;
   for(unsigned i=0; i<effects.size();i++){
-    if(effects[i]->eff_nb>255 && ((effects[i]->eff_nb&0x00FF)==(copy->eff_nb&0x00FF))){ // найдены копии
+    if(effects[i].eff_nb>255 && ((effects[i].eff_nb&0x00FF)==(copy.eff_nb&0x00FF))){ // найдены копии
       //foundcnt++;
-      if(maxfoundnb<effects[i]->eff_nb) maxfoundnb=effects[i]->eff_nb;
+      if(maxfoundnb < effects[i].eff_nb) maxfoundnb=effects[i].eff_nb;
     }
   }
   //if(foundcnt){
     // if(!foundcnt)
     //   copy->eff_nb=(((foundcnt+1) << 8 ) | (copy->eff_nb&0xFF)); // в старшем байте увеличиваем значение на число имеющихся копий
     // else
-      copy->eff_nb=(((((maxfoundnb&0xFF00)>>8)+1) << 8 ) | (copy->eff_nb&0xFF)); // в старшем байте увеличиваем значение на число имеющихся копий
+      copy.eff_nb=(((((maxfoundnb & 0xFF00)>>8)+1) << 8 ) | (copy.eff_nb&0xFF)); // в старшем байте увеличиваем значение на число имеющихся копий
   //}
 
-  EffectWorker *effect = new EffectWorker(base,copy); // создать параметры для него (конфиг, индекс и т.д.)
+  EffectWorker *effect = new EffectWorker(base, &copy); // создать параметры для него (конфиг, индекс и т.д.)
   effects.add(copy);
   delete effect; // после того как все создано, временный экземпляр EffectWorker уже не нужен
 }
@@ -958,41 +962,39 @@ void EffectWorker::copyEffect(const EffectListElem *base)
 // вернуть выбранный элемент списка
 EffectListElem *EffectWorker::getSelectedListElement()
 {
-  EffectListElem *res = effects.size()>0? effects[0] : nullptr;
+//  EffectListElem *res = effects.size()>0? effects[0] : nullptr;
   for(unsigned i=0; i<effects.size(); i++){
-      if(effects[i]->eff_nb==pendingEffNum)
-          res=effects[i];
+    if(effects[i].eff_nb==pendingEffNum)
+      return &effects[i];
   }
-  return res;
+  return nullptr;
 }
 
 // вернуть текущий элемент списка
 EffectListElem *EffectWorker::getCurrentListElement()
 {
-  EffectListElem *res = nullptr;
   for(unsigned i=0; i<effects.size(); i++){
-      if(effects[i]->eff_nb==curEff)
-          res=effects[i];
+    if(effects[i].eff_nb==curEff)
+      return &effects[i];
   }
-  return res;
+  return nullptr;
 }
 
 // вернуть выбранный элемент списка
 EffectListElem *EffectWorker::getFirstEffect()
 {
   if(effects.size()>0)
-    return effects[0];
+    return &effects[0];
   else
     return nullptr; // NONE
 }
 
 // вернуть выбранный элемент списка
 EffectListElem *EffectWorker::getEffect(uint16_t select){
-  //LOG(println,F("------"));
   for (unsigned i = 0; i < effects.size(); i++) {
       //LOG(println,effects[i]->eff_nb);
-      if (effects[i]->eff_nb == select) {
-          return effects[i];
+      if (effects[i].eff_nb == select) {
+          return &effects[i];
       }
   }
   return nullptr; // NONE
@@ -1002,8 +1004,8 @@ EffectListElem *EffectWorker::getEffect(uint16_t select){
 EffectListElem *EffectWorker::getNextEffect(EffectListElem *current){
     if(current == nullptr) return getFirstEffect();
     for (unsigned i = 0; i < effects.size(); i++) {
-        if (effects[i]->eff_nb == current->eff_nb) {
-            return i+1<effects.size() ? effects[i+1] : nullptr;
+        if (effects[i].eff_nb == current->eff_nb) {
+            return i+1<effects.size() ? &effects[i+1] : nullptr;
         }
     }
     return nullptr; // NONE
@@ -1025,27 +1027,27 @@ uint16_t EffectWorker::getByCnt(byte cnt)
   uint16_t firstfound = curEff;
   bool found = false;
   for(unsigned i=0; i<effects.size(); i++){
-      if(curEff==effects[i]->eff_nb){
+      if(curEff==effects[i].eff_nb){
           found = true;
           continue;
       }
-      if(effects[i]->isFavorite() && firstfound == curEff){
-          firstfound = effects[i]->eff_nb;
+      if(effects[i].isFavorite() && firstfound == curEff){
+          firstfound = effects[i].eff_nb;
       }
-      if(effects[i]->isFavorite() && found  && effects[i]->eff_nb!=curEff){
+      if(effects[i].isFavorite() && found  && effects[i].eff_nb != curEff){
             --cnt;
             if(!cnt){
-                firstfound = effects[i]->eff_nb;
+                firstfound = effects[i].eff_nb;
                 break;
             }
       }
   }
   if(cnt){ // список кончился, но до сих пор не нашли... начинаем сначала
       for(unsigned i=0; i<effects.size(); i++){
-          if(effects[i]->isFavorite() && effects[i]->eff_nb!=curEff){
+          if(effects[i].isFavorite() && effects[i].eff_nb!=curEff){
               --cnt;
               if(!cnt){
-                  firstfound = effects[i]->eff_nb;
+                  firstfound = effects[i].eff_nb;
                   break;
               }
           }
@@ -1068,12 +1070,12 @@ uint16_t EffectWorker::getPrev()
       } else {
           found = false; // перед текущим не нашлось подходящих, поэтому возьмем последний из canBeSelected()
       }
-      if(effects[i]->eff_nb==curEff && i!=0){ // нашли себя, но не первым :)
+      if(effects[i].eff_nb==curEff && i!=0){ // нашли себя, но не первым :)
           found = true;
           continue;
       }
-      if(effects[i]->canBeSelected()){
-          firstfound = effects[i]->eff_nb; // первый найденный, на случай если следующего после текущего не будет
+      if(effects[i].canBeSelected()){
+          firstfound = effects[i].eff_nb; // первый найденный, на случай если следующего после текущего не будет
       }
   }
   return firstfound;
@@ -1088,15 +1090,15 @@ uint16_t EffectWorker::getNext()
   uint16_t firstfound = curEff;
   bool found = false;
   for(unsigned i=0; i<effects.size(); i++){
-      if(effects[i]->eff_nb==curEff){ // нашли себя
+      if(effects[i].eff_nb==curEff){ // нашли себя
           found = true;
           continue;
       }
-      if(effects[i]->canBeSelected()){
+      if(effects[i].canBeSelected()){
           if(firstfound == curEff)
-              firstfound = effects[i]->eff_nb; // первый найденный, на случай если следующего после текущего не будет
+              firstfound = effects[i].eff_nb; // первый найденный, на случай если следующего после текущего не будет
           if(found) { // нашли эффект после себя
-              firstfound = effects[i]->eff_nb;
+              firstfound = effects[i].eff_nb;
               break;
           }
       }
@@ -1188,7 +1190,7 @@ void EffectWorker::setSoundfile(const String &_soundfile, EffectListElem*to){
 uint16_t EffectWorker::effIndexByList(uint16_t val) { 
     uint16_t found = 0;
     for (uint16_t i = 0; i < effects.size(); i++) {
-        if (effects[i]->eff_nb == val ) {
+        if (effects[i].eff_nb == val ) {
             found = i;
         } 
     }
