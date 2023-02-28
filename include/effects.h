@@ -1735,7 +1735,7 @@ public:
 class EffectMaze : public EffectCalc {
 private:
     const uint16_t maxSolves = MAZE_WIDTH * MAZE_WIDTH * 5;
-    char *maze = (char*)malloc(MAZE_WIDTH * MAZE_HEIGHT * sizeof(char));
+    std::array<uint8_t, MAZE_WIDTH * MAZE_HEIGHT> maze;
     int8_t playerPos[2];
     uint32_t labTimer;
     bool mazeMode = false;
@@ -1758,9 +1758,9 @@ private:
     void movePlayer(int8_t nowX, int8_t nowY, int8_t prevX, int8_t prevY);
     void demoMaze();
     bool checkPath(int8_t x, int8_t y);
-    void CarveMaze(char *maze, int width, int height, int x, int y);
-    void GenerateMaze(char *maze, int width, int height);
-    void SolveMaze(char *maze, int width, int height);
+    void CarveMaze(std::array<uint8_t, MAZE_WIDTH * MAZE_HEIGHT> &maze, int width, int height, int x, int y);
+    void GenerateMaze(std::array<uint8_t, MAZE_WIDTH * MAZE_HEIGHT> &maze, int width, int height);
+    void SolveMaze(std::array<uint8_t, MAZE_WIDTH * MAZE_HEIGHT> &maze, int width, int height);
 
     bool checkButtons()
     {

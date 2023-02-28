@@ -7061,7 +7061,7 @@ bool EffectMaze::checkPath(int8_t x, int8_t y) {
 }
 
 // копаем лабиринт
-void EffectMaze::CarveMaze(char *maze, int width, int height, int x, int y) {
+void EffectMaze::CarveMaze(std::array<uint8_t, MAZE_WIDTH * MAZE_HEIGHT> &maze, int width, int height, int x, int y) {
   int x1, y1;
   int x2, y2;
   int dx, dy;
@@ -7096,7 +7096,7 @@ void EffectMaze::CarveMaze(char *maze, int width, int height, int x, int y) {
 }
 
 // генерацтор лабиринта
-void EffectMaze::GenerateMaze(char *maze, int width, int height) {
+void EffectMaze::GenerateMaze(std::array<uint8_t, MAZE_WIDTH * MAZE_HEIGHT> &maze, int width, int height) {
   int x, y;
   for (x = 0; x < width * height; x++) {
     maze[x] = 1;
@@ -7124,7 +7124,7 @@ void EffectMaze::GenerateMaze(char *maze, int width, int height) {
 }
 
 // решатель (ищет путь)
-void EffectMaze::SolveMaze(char *maze, int width, int height) {
+void EffectMaze::SolveMaze(std::array<uint8_t, MAZE_WIDTH * MAZE_HEIGHT> &maze, int width, int height) {
   int dir, count;
   int x, y;
   int dx, dy;
