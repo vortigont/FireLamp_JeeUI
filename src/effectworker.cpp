@@ -585,6 +585,7 @@ void EffectWorker::savedefaulteffconfig(uint16_t nb, String &filename){
     configFile.print(cfg.c_str());
     configFile.close();
   }
+  LOG(printf_P, PSTR("Effect: %u, cfg:%s\n"), nb, cfg.c_str());
 }
 
 bool EffectWorker::getfseffconfig(uint16_t nb, String &result)

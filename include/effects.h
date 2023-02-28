@@ -1536,18 +1536,22 @@ class EffectOscilator: public EffectCalc {
 
 //------------ Эффект "Шторм" 
 // (с) kostyamat 1.12.2020
-#define counts  (WIDTH*3)
+#define DROP_CNT  (WIDTH*3)
 
 class EffectWrain: public EffectCalc {
   private:
+
+    struct Drop {
+        float posX{0};
+        float posY{0};
+        uint8_t color{0};    // цвет капли
+        float accell{0};     // персональное ускорение каждой капли
+        uint8_t bri{0};      // яркость капли
+    };
+
     static const uint8_t cloudHeight = HEIGHT / 5 + 1;
-    float dotPosX[counts];
-    float dotPosY[counts];
     float dotChaos;         // сила ветра
     int8_t dotDirect;       // направление ветра 
-    byte dotColor[counts];  // цвет капли
-    float dotAccel[counts]; // персональное ускорение каждой капли
-    byte dotBri[counts];    // яркость капли
     bool clouds = false;
     bool storm = false;
     bool white = false;
@@ -1555,12 +1559,11 @@ class EffectWrain: public EffectCalc {
     byte type = 1;
     bool _flash;
     bool randColor = false;
-    float windProgress;
-	float speedFactor;
-    uint8_t *_noise = (uint8_t *)malloc(WIDTH * cloudHeight);
-    uint8_t *lightning = (uint8_t *)malloc(WIDTH * HEIGHT);  
+    float windProgress = 0;
+    float speedFactor = 0.5;
     uint32_t timer = 0;
-    
+    std::array<uint8_t, WIDTH * cloudHeight> _noise;
+    std::vector<Drop> drops {std::vector<Drop>(DROP_CNT)};
 
     void reload();
     String setDynCtrl(UIControl*_val) override;
