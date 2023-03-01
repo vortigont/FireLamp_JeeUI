@@ -1517,9 +1517,15 @@ void set_text_config(Interface *interf, JsonObject *data){
 }
 
 #ifdef MP3PLAYER
+// show page with MP3 Player setup
 void block_settings_mp3(Interface *interf, JsonObject *data){
     if (!interf) return;
     interf->json_section_main(FPSTR(TCONST_settings_mp3), FPSTR(TINTF_099));
+
+    // show message if DFPlayer is not available
+    if (!mp3->isReady()){
+        interf->constant(F("MP3 player is not connected, not ready or not responding :("));
+    }
 
     interf->checkbox(FPSTR(TCONST_isOnMP3), myLamp.isONMP3()? "1" : "0", FPSTR(TINTF_099), true);
     interf->range(FPSTR(TCONST_mp3volume), String(1), String(30), String(1), FPSTR(TINTF_09B), true);
@@ -1575,7 +1581,7 @@ void block_settings_mp3(Interface *interf, JsonObject *data){
 }
 
 void show_settings_mp3(Interface *interf, JsonObject *data){
-    if (!interf || !mp3->isReady()) return;
+    if (!interf) return;
     interf->json_frame_interface();
     block_settings_mp3(interf, data);
     interf->json_frame_flush();
