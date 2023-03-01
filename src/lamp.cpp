@@ -341,33 +341,7 @@ void LAMP::playEffect(bool isPlayName, EFFSWITCH action){
     mp3->setCurEffect(effects.getEn());
   }
 }
-
-void LAMP::setMicOnOff(bool val) {
-    flags.isMicOn = val;
-    lampState.isMicOn = val;
-    if(effects.getEn()==EFF_NONE || !effects.worker) return;
-
-    unsigned foundc7 = 0;
-    LList<std::shared_ptr<UIControl>>&controls = effects.getControls();
-    if(val){
-        for(unsigned i=3; i<controls.size(); i++) {
-            if(controls[i]->getId()==7 && controls[i]->getName().startsWith(FPSTR(TINTF_020))==1){
-                effects.worker->setDynCtrl(controls[i].get());
-                return;
-            } else if(controls[i]->getId()==7) {
-                foundc7 = i;
-            }
-        }
-    }
-
-    UIControl ctrl(7,(CONTROL_TYPE)18,String(FPSTR(TINTF_020)), val ? "1" : "0", "0", "1", "1");
-    effects.worker->setDynCtrl(&ctrl);
-    if(foundc7){ // был найден 7 контрол, но не микрофон
-        effects.worker->setDynCtrl(controls[foundc7].get());
-    }
-}
-
-#endif
+#endif  // MP3PLAYER
 
 void LAMP::startRGB(CRGB &val){
   rgbColor = val;
@@ -937,7 +911,32 @@ void LAMP::micHandler()
     }
   }
 }
-#endif
+
+void LAMP::setMicOnOff(bool val) {
+    flags.isMicOn = val;
+    lampState.isMicOn = val;
+    if(effects.getEn()==EFF_NONE || !effects.worker) return;
+
+    unsigned foundc7 = 0;
+    LList<std::shared_ptr<UIControl>>&controls = effects.getControls();
+    if(val){
+        for(unsigned i=3; i<controls.size(); i++) {
+            if(controls[i]->getId()==7 && controls[i]->getName().startsWith(FPSTR(TINTF_020))==1){
+                effects.worker->setDynCtrl(controls[i].get());
+                return;
+            } else if(controls[i]->getId()==7) {
+                foundc7 = i;
+            }
+        }
+    }
+
+    UIControl ctrl(7,(CONTROL_TYPE)18,String(FPSTR(TINTF_020)), val ? "1" : "0", "0", "1", "1");
+    effects.worker->setDynCtrl(&ctrl);
+    if(foundc7){ // был найден 7 контрол, но не микрофон
+        effects.worker->setDynCtrl(controls[foundc7].get());
+    }
+}
+#endif  // MIC_EFFECTS
 
 /*
  * Change global brightness with or without fade effect
