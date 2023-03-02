@@ -1524,7 +1524,7 @@ void block_settings_mp3(Interface *interf, JsonObject *data){
 
     // show message if DFPlayer is not available
     if (!mp3->isReady()){
-        interf->constant(F("MP3 player is not connected, not ready or not responding :("));
+        interf->constant(F("cmt"), F("MP3 player is not connected, not ready or not responding :("));
     }
 
     interf->checkbox(FPSTR(TCONST_isOnMP3), myLamp.isONMP3()? "1" : "0", FPSTR(TINTF_099), true);
