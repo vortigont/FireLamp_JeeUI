@@ -48,7 +48,7 @@ MP3PLAYERDEVICE::MP3PLAYERDEVICE(const uint8_t rxPin, const uint8_t txPin) : mp3
   LOG(println, F("DFplayer: DFRobot DFPlayer Mini"));
   LOG(println, F("DFplayer: Initializing DFPlayer ... (May take 3~5 seconds)"));
   // cur_volume при инициализации используется как счетчик попыток :), так делать не хорошо, но экономим память
-  Task *_t = new Task(DFPALYER_START_DELAY, TASK_ONCE, nullptr, &ts, false, nullptr, [this](){
+  Task *_t = new Task(DFPLAYER_START_DELAY, TASK_ONCE, nullptr, &ts, false, nullptr, [this](){
     if(!begin(mp3player) && cur_volume++<=5){
         LOG(printf_P, PSTR("DFPlayer: Unable to begin: %d...\n"), cur_volume);
         ts.getCurrentTask()->restartDelayed(MP3_SERIAL_TIMEOUT);

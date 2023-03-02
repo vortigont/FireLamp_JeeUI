@@ -3257,7 +3257,7 @@ void sync_parameters(){
         CALL_SETTER(String(FPSTR(TCONST_dynCtrl)) + "0", myLamp.getLampBrightness(), set_effects_dynCtrl);
 
 #ifdef MP3PLAYER
-Task *t = new Task(DFPALYER_START_DELAY+500, TASK_ONCE, nullptr, &ts, false, nullptr, [tmp](){
+Task *t = new Task(DFPLAYER_START_DELAY+500, TASK_ONCE, nullptr, &ts, false, nullptr, [tmp](){
     if(!mp3->isReady()){
         LOG(println, F("DFPlayer not ready yet..."));
         if(millis()<10000){
