@@ -123,7 +123,7 @@ private:
         float pos{0};               // The integer position of the dot on the strip (LED index) /yeah, integer.../
         float vimpact{0};           // As time goes on the impact velocity will change, so make an array to store those values
         float cor{0};               // Coefficient of Restitution (bounce damping)
-        long  tlast{millis()};      // The clock time of the last ground strike
+        long unsigned tlast{millis()};      // The clock time of the last ground strike
         float shift{0};
     };
 
@@ -1444,13 +1444,22 @@ public:
 #define WAVES_AMOUNT WIDTH
 class EffectSmokeballs: public EffectCalc {
   private:
+    struct Wave {
+        uint16_t reg;
+        uint16_t pos;
+        float sSpeed;
+        uint8_t maxMin;
+        uint8_t waveColors;
+    };
     uint8_t _scale = 1;
-    uint16_t reg[WAVES_AMOUNT];
-    uint16_t pos[WAVES_AMOUNT];
-    float sSpeed[WAVES_AMOUNT];
-    uint8_t maxMin[WAVES_AMOUNT];
+    //uint16_t reg[WAVES_AMOUNT];
+    //uint16_t pos[WAVES_AMOUNT];
+    //float sSpeed[WAVES_AMOUNT];
+    //uint8_t maxMin[WAVES_AMOUNT];
+    //uint8_t waveColors[WAVES_AMOUNT];
     float speedFactor = 0.1;
-    uint8_t waveColors[WAVES_AMOUNT];
+    std::array<Wave, WAVES_AMOUNT> waves;
+
     void shiftUp();
     void regen();
     String setDynCtrl(UIControl*_val) override;
