@@ -115,24 +115,28 @@ public:
 // перевод на субпиксельную графику kostyamat
 class EffectBBalls : public EffectCalc {
 private:
-    // можно переписать на динамческую память
-    uint8_t bballsNUM_BALLS;                            // Number of bouncing balls you want (recommend < 7, but 20 is fun in its own way) ... количество мячиков теперь задаётся бегунком, а не константой
-    byte bballsCOLOR[bballsMaxNUM_BALLS] ;              // прикручено при адаптации для разноцветных мячиков
-    byte bballsBri[bballsMaxNUM_BALLS];                 // --- // ---
-    int8_t bballsX[bballsMaxNUM_BALLS] ;                // прикручено при адаптации для распределения мячиков по радиусу лампы
-    float bballsPos[bballsMaxNUM_BALLS] ;               // The integer position of the dot on the strip (LED index)
+
+    struct Ball {
+        uint8_t color;              // прикручено при адаптации для разноцветных мячиков
+        uint8_t brightness{156};
+        int8_t x;                   // прикручено при адаптации для распределения мячиков по радиусу лампы
+        float pos{0};               // The integer position of the dot on the strip (LED index) /yeah, integer.../
+        float vimpact{0};           // As time goes on the impact velocity will change, so make an array to store those values
+        float cor{0};               // Coefficient of Restitution (bounce damping)
+        long  tlast{millis()};      // The clock time of the last ground strike
+        float shift{0};
+    };
+
+    uint8_t bballsNUM_BALLS{1};                            // Number of bouncing balls you want (recommend < 7, but 20 is fun in its own way) ... количество мячиков теперь задаётся бегунком, а не константой
     float bballsHi = 0.0;                               // An array of heights
-    float bballsVImpact[bballsMaxNUM_BALLS] ;           // As time goes on the impact velocity will change, so make an array to store those values
     uint32_t bballsTCycle = 0;                        // The time since the last time the ball struck the ground
-    float bballsCOR[bballsMaxNUM_BALLS] ;               // Coefficient of Restitution (bounce damping)
-    long  bballsTLast[bballsMaxNUM_BALLS] ;             // The clock time of the last ground strike
-    float bballsShift[bballsMaxNUM_BALLS];
-    float hue;
+    float hue{0};
     bool halo = false;                                  // ореол
     uint8_t _scale=1;
     uint16_t _speed;
+    std::vector<Ball> balls = std::vector<Ball>(bballsNUM_BALLS, Ball());
+
     bool bBallsRoutine(CRGB *leds, EffectWorker *param);
-    void regen();
     void load() override;
 	String setDynCtrl(UIControl*_val) override;
 public:
