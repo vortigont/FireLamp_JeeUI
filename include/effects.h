@@ -651,8 +651,11 @@ public:
 
 // ------ Эффекты "Пикассо"
 // (c) obliterator
+#define PICASSO_MIN_PARTICLES   6U
+#define PICASSO_MAX_PARTICLES   20U
 class EffectPicasso : public EffectCalc {
-    typedef struct Particle{
+private:
+    struct Particle {
         float position_x = 0;
         float position_y = 0;
         float speed_x = 0;
@@ -660,60 +663,20 @@ class EffectPicasso : public EffectCalc {
         CHSV color;
         uint8_t hue_next = 0;
         int8_t hue_step = 0;
-    } Particle;
-private:
+    };
     uint8_t effId=0;
     uint8_t pidx = 0;
-    Particle particles[20];
-    unsigned numParticles = 0;
-	float speedFactor;
+	float speedFactor{1};
+    std::vector<Particle> particles{std::vector<Particle>(PICASSO_MIN_PARTICLES, Particle())};
+
     void generate(bool reset = false);
     void position();
     bool picassoRoutine(CRGB *leds, EffectWorker *param);
-    /*
-    bool picassoRoutine2(CRGB *leds, EffectWorker *param);
-    bool picassoRoutine3(CRGB *leds, EffectWorker *param);
-    */
     bool metaBallsRoutine(CRGB *leds, EffectWorker *param);
-    GradientPaletteList *palettes;
+    GradientPaletteList palettes;
 public:
-    EffectPicasso() {
-        palettes = new GradientPaletteList();
-        palettes->add(MBVioletColors_gp, 0, 16); // будет заменен генератором
-        palettes->add(MBVioletColors_gp, 0, 16);
-
-        palettes->add(ib_jul01_gp, 60, 16, 200);
-
-        palettes->add(es_pinksplash_08_gp, 125, 16);
-
-        palettes->add(departure_gp, 0);
-        palettes->add(departure_gp, 140, 16, 220);
-
-        palettes->add(es_landscape_64_gp, 25, 16, 250);
-        palettes->add(es_landscape_64_gp, 125);
-        palettes->add(es_landscape_64_gp, 175, 50, 220);
-
-        palettes->add(es_ocean_breeze_036_gp, 0);
-
-        palettes->add(es_landscape_33_gp, 0);
-        palettes->add(es_landscape_33_gp, 50);
-        palettes->add(es_landscape_33_gp, 50, 50);
-
-        palettes->add(GMT_drywet_gp, 0);
-        palettes->add(GMT_drywet_gp, 75);
-        palettes->add(GMT_drywet_gp, 150, 0, 200);
-
-        palettes->add(fire_gp, 175);
-
-        palettes->add(Pink_Purple_gp, 25);
-        palettes->add(Pink_Purple_gp, 175, 0, 220);
-
-        palettes->add(Sunset_Real_gp, 25, 0, 200);
-        palettes->add(Sunset_Real_gp, 50, 0, 220);
-
-        palettes->add(BlacK_Magenta_Red_gp, 25);
-    }
-    ~EffectPicasso() { delete palettes; }
+    EffectPicasso();
+    virtual ~EffectPicasso(){}
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
     String setDynCtrl(UIControl*_val) override;
 };

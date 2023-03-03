@@ -3006,50 +3006,86 @@ bool EffectTime::timePrintRoutine(CRGB *leds, EffectWorker *param)
 }
 
 // ----------- Эффекты "Пикассо" (c) obliterator
+EffectPicasso::EffectPicasso(){
+  palettes.add(MBVioletColors_gp, 0, 16); // будет заменен генератором
+  palettes.add(MBVioletColors_gp, 0, 16);
+
+  palettes.add(ib_jul01_gp, 60, 16, 200);
+
+  palettes.add(es_pinksplash_08_gp, 125, 16);
+
+  palettes.add(departure_gp, 0);
+  palettes.add(departure_gp, 140, 16, 220);
+
+  palettes.add(es_landscape_64_gp, 25, 16, 250);
+  palettes.add(es_landscape_64_gp, 125);
+  palettes.add(es_landscape_64_gp, 175, 50, 220);
+
+  palettes.add(es_ocean_breeze_036_gp, 0);
+
+  palettes.add(es_landscape_33_gp, 0);
+  palettes.add(es_landscape_33_gp, 50);
+  palettes.add(es_landscape_33_gp, 50, 50);
+
+  palettes.add(GMT_drywet_gp, 0);
+  palettes.add(GMT_drywet_gp, 75);
+  palettes.add(GMT_drywet_gp, 150, 0, 200);
+
+  palettes.add(fire_gp, 175);
+
+  palettes.add(Pink_Purple_gp, 25);
+  palettes.add(Pink_Purple_gp, 175, 0, 220);
+
+  palettes.add(Sunset_Real_gp, 25, 0, 200);
+  palettes.add(Sunset_Real_gp, 50, 0, 220);
+
+  palettes.add(BlacK_Magenta_Red_gp, 25);
+}
+
 void EffectPicasso::generate(bool reset){
   double minSpeed = 0.2, maxSpeed = 0.8;
-  unsigned num = map(scale, 0U, 255U, 6U, sizeof(particles) / sizeof(*particles));
+  unsigned numParticles = map(scale, 0U, 255U, PICASSO_MIN_PARTICLES, PICASSO_MAX_PARTICLES);
 
-  for (unsigned i = numParticles; i < num; i++) {
-    Particle *curr = (Particle *)&particles[i];
-    curr->position_x = random8(0, WIDTH);
-    curr->position_y = random8(0, HEIGHT);
+  if (numParticles != particles.size()){
+    particles.assign(numParticles, Particle());
+    for (auto &particle : particles){
+      particle.position_x = random8(0, WIDTH);
+      particle.position_y = random8(0, HEIGHT);
 
-    curr->speed_x = +((-maxSpeed / 3) + (maxSpeed * (float)random(1, 100) / 100));
-    curr->speed_x += curr->speed_x > 0 ? minSpeed : -minSpeed;
+      particle.speed_x = +((-maxSpeed / 3) + (maxSpeed * (float)random(1, 100) / 100));
+      particle.speed_x += particle.speed_x > 0 ? minSpeed : -minSpeed;
 
-    curr->speed_y = +((-maxSpeed / 2) + (maxSpeed * (float)random(1, 100) / 100));
-    curr->speed_y += curr->speed_y > 0 ? minSpeed : -minSpeed;
+      particle.speed_y = +((-maxSpeed / 2) + (maxSpeed * (float)random(1, 100) / 100));
+      particle.speed_y += particle.speed_y > 0 ? minSpeed : -minSpeed;
 
-    curr->color = CHSV(random8(1U, 255U), 255U, 255U);
-    curr->hue_next = curr->color.h;
-  };
+      particle.color = CHSV(random8(1U, 255U), 255U, 255U);
+      particle.hue_next = particle.color.h;
+    };
+  }
 
-  for (unsigned i = 0; i < num; i++) {
+  for (auto &particle : particles){
     if (reset) {
-      particles[i].hue_next = random8(1U, 255U);
-      particles[i].hue_step = (particles[i].hue_next - particles[i].color.h) / 25;
+      particle.hue_next = random8(1U, 255U);
+      particle.hue_step = (particle.hue_next - particle.color.h) / 25;
     }
-    if (particles[i].hue_next != particles[i].color.h && particles[i].hue_step) {
-      particles[i].color.h += particles[i].hue_step;
+    if (particle.hue_next != particle.color.h && particle.hue_step) {
+      particle.color.h += particle.hue_step;
     }
   }
-  numParticles = num;
 }
 
 void EffectPicasso::position(){
-  for (unsigned i = 0; i < numParticles; i++) {
-    Particle *curr = (Particle *)&particles[i];
-    if (curr->position_x + curr->speed_x > WIDTH || curr->position_x + curr->speed_x < 0) {
-      curr->speed_x = -curr->speed_x;
+  for (auto &particle : particles){
+    if (particle.position_x + particle.speed_x > WIDTH || particle.position_x + particle.speed_x < 0) {
+      particle.speed_x *= -1;
     }
 
-    if (curr->position_y + curr->speed_y > HEIGHT || curr->position_y + curr->speed_y < 0) {
-      curr->speed_y = -curr->speed_y;
+    if (particle.position_y + particle.speed_y > HEIGHT || particle.position_y + particle.speed_y < 0) {
+      particle.speed_y *= -1;
     }
 
-    curr->position_x += curr->speed_x*speedFactor;
-    curr->position_y += curr->speed_y*speedFactor;
+    particle.position_x += particle.speed_x*speedFactor;
+    particle.position_y += particle.speed_y*speedFactor;
   };
 }
 
@@ -3058,22 +3094,23 @@ bool EffectPicasso::picassoRoutine(CRGB *leds, EffectWorker *param){
   position();
   if (effId > 1) EffectMath::dimAll(180);
 
-  for (unsigned i = 0; i < numParticles - 2; i+=2) {
-    Particle *p1 = (Particle *)&particles[i];
-    Particle *p2 = (Particle *)&particles[i + 1];
+  unsigned iter = (particles.size() - particles.size()%2) / 2;
+  for (unsigned i = 0; i != iter; ++i) {
+    Particle &p1 = particles[i];
+    Particle &p2 = particles[particles.size()-i];
     switch (effId)
     {
     case 1:
-      EffectMath::drawLine(p1->position_x, p1->position_y, p2->position_x, p2->position_y, p1->color);
+      EffectMath::drawLine(p1.position_x, p1.position_y, p2.position_x, p2.position_y, p1.color);
       break;
     case 2:
-      EffectMath::drawLineF(p1->position_x, p1->position_y, p2->position_x, p2->position_y, p1->color);
+      EffectMath::drawLineF(p1.position_x, p1.position_y, p2.position_x, p2.position_y, p1.color);
       break;
     case 3:
-      EffectMath::drawCircleF(fabs(p1->position_x - p2->position_x), fabs(p1->position_y - p2->position_y), fabs(p1->position_x - p1->position_y), p1->color);
+      EffectMath::drawCircleF(fabs(p1.position_x - p2.position_x), fabs(p1.position_y - p2.position_y), fabs(p1.position_x - p1.position_y), p1.color);
       break;
-	case 4:
-      EffectMath::drawSquareF(fabs(p1->position_x - p2->position_x), fabs(p1->position_y - p2->position_y), fabs(p1->position_x - p1->position_y), p1->color);
+  	case 4:
+      EffectMath::drawSquareF(fabs(p1.position_x - p2.position_x), fabs(p1.position_y - p2.position_y), fabs(p1.position_x - p1.position_y), p1.color);
       break;
     }
   }
@@ -3099,21 +3136,15 @@ String EffectPicasso::setDynCtrl(UIControl*_val) {
         150,  0,  0,  0,
         255,  0,  0,  0
     };
-    uint8_t *ptr = (uint8_t *)dynpal + 1;
-    CRGB color = CHSV(hue + 255, 255U, 255U);
-    memcpy(ptr, color.raw, sizeof(color.raw)); ptr += 4;
-    color = CHSV(hue + 135, 255U, 200U);
-    memcpy(ptr, color.raw, sizeof(color.raw)); ptr += 4;
-    color = CHSV(hue + 160, 255U, 120U);
-    memcpy(ptr, color.raw, sizeof(color.raw)); ptr += 4;
-    color = CHSV(hue + 150, 255U, 255U);
-    memcpy(ptr, color.raw, sizeof(color.raw)); ptr += 4;
-    color = CHSV(hue  + 255, 255U, 255U);
-    memcpy(ptr, color.raw, sizeof(color.raw)); ptr += 4;
-
+    CRGB *color = (CRGB *)dynpal + 1;
+    *color = CHSV(hue + 255, 255U, 255U); color += 4;
+    *color = CHSV(hue + 135, 255U, 200U); color += 4;
+    *color = CHSV(hue + 160, 255U, 120U); color += 4;
+    *color = CHSV(hue + 150, 255U, 255U); color += 4;
+    *color = CHSV(hue + 255, 255U, 255U); color += 4;
     CRGBPalette32 pal;
     pal.loadDynamicGradientPalette(dynpal);
-    palettes->add(0, pal, 0, 16);
+    palettes.add(0, pal, 0, 16);
   }
   else if(_val->getId()==5) effId = EffectCalc::setDynCtrl(_val).toInt();
   else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
@@ -3123,8 +3154,6 @@ String EffectPicasso::setDynCtrl(UIControl*_val) {
 bool EffectPicasso::metaBallsRoutine(CRGB *leds, EffectWorker *param){
   generate();
   position();
-
-  GradientPalette myPal((*palettes)[pidx]);
 
  // сила возмущения
   unsigned mx = EffectMath::fmap(scale, 0U, 255U, 200U, 80U);
@@ -3136,10 +3165,9 @@ bool EffectPicasso::metaBallsRoutine(CRGB *leds, EffectWorker *param){
   for (unsigned x = 0; x < WIDTH; x++) {
     for (unsigned y = 0; y < HEIGHT; y++) {
       float sum = 0;
-      for (unsigned i = 0; i < numParticles; i += 2) {
-        Particle *p1 = (Particle *)&particles[i];
-        if ((unsigned)abs(x - p1->position_x) > tr || (unsigned)abs(y - p1->position_y) > tr) continue;
-        float d = EffectMath::distance(x, y, p1->position_x, p1->position_y);
+      for (auto &p1 : particles){
+        if ((unsigned)abs(x - p1.position_x) > tr || (unsigned)abs(y - p1.position_y) > tr) continue;
+        float d = EffectMath::distance(x, y, p1.position_x, p1.position_y);
         if (d < 2) {
           // дополнительно подсвечиваем сердцевину
           sum += EffectMath::mapcurve(d, 0, 2, 255, mx, EffectMath::InQuad);
@@ -3150,7 +3178,7 @@ bool EffectPicasso::metaBallsRoutine(CRGB *leds, EffectWorker *param){
 
         if (sum >= 255) { sum = 255; break; }
       }
-      CRGB color = myPal.GetColor((uint8_t)sum, 255);
+      CRGB color = palettes[pidx].GetColor((uint8_t)sum, 255);
       EffectMath::drawPixelXY(x, y, color);
       }
   }
