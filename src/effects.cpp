@@ -5205,19 +5205,23 @@ void EffectSnake::Snake::draw(CRGB colors[SNAKE_LENGTH], int snakenb, bool subpi
 //------------ Эффект "Nexus"
 // (с) kostyamat 4.12.2020
 void EffectNexus::reload() {
-  for (byte i = 0; i < NEXUS; i++) {
-    dotDirect[i] = random(0, 4);                     // задаем направление
-    dotPosX[i] = random(0, WIDTH);                   // Разбрасываем частицы по ширине
-    dotPosY[i] = random(0, HEIGHT);                  // и по высоте
-    dotColor[i] = ColorFromPalette(*curPalette, random8(0, 9) * 31, 255); // цвет капли
-    dotAccel[i] = (float)random(5, 11) / 70;        // делаем частицам немного разное ускорение 
+  for (auto &nx : nxdots) {
+    nx.direct = random(0, 4);                     // задаем направление
+    nx.posX = random(0, WIDTH);                   // Разбрасываем частицы по ширине
+    nx.posY = random(0, HEIGHT);                  // и по высоте
+    nx.color = ColorFromPalette(*curPalette, random8(0, 9) * 31, 255); // цвет капли
+    nx.accel = (float)random(5, 11) / 70;        // делаем частицам немного разное ускорение 
   }
 }
 
 // !++
 String EffectNexus::setDynCtrl(UIControl*_val) {
   if(_val->getId()==1) speedFactor = EffectMath::fmap(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 0.1, .33) * EffectCalc::speedfactor;
-  else if(_val->getId()==3) _scale = EffectCalc::setDynCtrl(_val).toInt();
+  else if(_val->getId()==3){
+    _scale = EffectCalc::setDynCtrl(_val).toInt();
+    nxdots.assign(_scale, Nexus());
+    reload();
+  }
   else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
   return String();
 }
@@ -5231,90 +5235,81 @@ void EffectNexus::load() {
 bool EffectNexus::run(CRGB *leds, EffectWorker *opt) {
   fadeToBlackBy(leds, NUM_LEDS, map(speed, 1, 255, 11, 33));
 
-  for (byte i = 0; i < map(_scale, 1, 10, 4, NEXUS); i++) {
-    switch (dotDirect[i])
-    {
-    case 0:   // вверх
-      dotPosY[i] += (speedFactor + dotAccel[i]);
-      break;
-    case 1:   //  вниз 
-      dotPosY[i] -= (speedFactor + dotAccel[i]);
-      break;
-    case 2:   // вправо
-      dotPosX[i] += (speedFactor + dotAccel[i]);
-      break;
-    case 3:   // влево
-      dotPosX[i] -= (speedFactor + dotAccel[i]);
-      break;
-    default:
-      break;
-    } 
-
-    // Обеспечиваем бесшовность по Y. И переносим каплю в начало трека
-    if (dotPosY[i] < 0) {
-      dotPosY[i] = (float)EffectMath::getmaxHeightIndex();    
-      resetDot(i);
+  for (auto &nx : nxdots){
+    switch (nx.direct){
+      case 0:   // вверх
+        nx.posY += (speedFactor + nx.accel);
+        break;
+      case 1:   //  вниз 
+        nx.posY -= (speedFactor + nx.accel);
+        break;
+      case 2:   // вправо
+        nx.posX += (speedFactor + nx.accel);
+        break;
+      case 3:   // влево
+        nx.posX -= (speedFactor + nx.accel);
+        break;
+      default:
+        break;
     }
 
-    if (dotPosY[i] > (EffectMath::getmaxHeightIndex())) {
-      dotPosY[i] = 0;
-      resetDot(i);
+    // Обеспечиваем бесшовность по Y. И переносим каплю в начало трека
+    if (nx.posY < 0) {
+      nx.posY = (float)EffectMath::getmaxHeightIndex();    
+      resetDot(nx);
+    }
+
+    if (nx.posY > (EffectMath::getmaxHeightIndex())) {
+      nx.posY = 0;
+      resetDot(nx);
     }
 
     // Обеспечиваем бесшовность по X.
-    if (dotPosX[i] < 0) {
-      dotPosX[i] = EffectMath::getmaxWidthIndex();
-      resetDot(i);
+    if (nx.posX < 0) {
+      nx.posX = EffectMath::getmaxWidthIndex();
+      resetDot(nx);
     }
-    if (dotPosX[i] > EffectMath::getmaxWidthIndex()) {
-      dotPosX[i] = 0;
-      resetDot(i);
+    if (nx.posX > EffectMath::getmaxWidthIndex()) {
+      nx.posX = 0;
+      resetDot(nx);
     }
 
-   switch (dotDirect[i])
-  {
-  case 0:   // вверх
-  case 1:   //  вниз 
-    EffectMath::drawPixelXYF_Y(dotPosX[i], dotPosY[i], dotColor[i], 0);
-    break;
-  case 2:   // вправо
-  case 3:   // влево
-    EffectMath::drawPixelXYF_X(dotPosX[i], dotPosY[i], dotColor[i], 0);
-    break;
-  default:
-    break;
-  } 
-
-
+    switch (nx.direct){
+      case 0:   // вверх
+      case 1:   //  вниз 
+        EffectMath::drawPixelXYF_Y(nx.posX, nx.posY, nx.color, 0);
+        break;
+      default:
+      //case 2:   // вправо
+      //case 3:   // влево
+        EffectMath::drawPixelXYF_X(nx.posX, nx.posY, nx.color, 0);
+    }
   }
   return true;
 }
 
-void EffectNexus::resetDot(uint8_t idx) {
+void EffectNexus::resetDot(Nexus &nx) {
   randomSeed(micros());
-  dotDirect[idx] = random8(0, 4);                     // задаем направление
-  dotColor[idx] = ColorFromPalette(*curPalette, random(0, 9) * 31, 255);              // цвет 
-  dotAccel[idx] = (float)random(5, 10) / 70;     // делаем частицам немного разное ускорение 
-  switch (dotDirect[idx])
-  {
-  case 0:   // вверх
-    dotPosX[idx] = random8(0, WIDTH); // Разбрасываем капли по ширине
-    dotPosY[idx] = 0;  // и по высоте
-    break;
-  case 1:   //  вниз 
-    dotPosX[idx] = random8(0, WIDTH); // Разбрасываем капли по ширине
-    dotPosY[idx] = EffectMath::getmaxHeightIndex();  // и по высоте
-    break;
-  case 2:   // вправо
-    dotPosX[idx] = 0; // Разбрасываем капли по ширине
-    dotPosY[idx] = random8(0, HEIGHT);  // и по высоте
-    break;
-  case 3:   // влево
-    dotPosX[idx] = EffectMath::getmaxWidthIndex(); // Разбрасываем капли по ширине
-    dotPosY[idx] = random8(0, HEIGHT);  // и по высоте
-    break;
-  default:
-    break;
+  nx.direct = random8(0, 4);                     // задаем направление
+  nx.color = ColorFromPalette(*curPalette, random(0, 9) * 31, 255);              // цвет 
+  nx.accel = (float)random(5, 10) / 70;     // делаем частицам немного разное ускорение 
+  switch (nx.direct){
+    case 0:   // вверх
+      nx.posX = random8(0, WIDTH); // Разбрасываем капли по ширине
+      nx.posY = 0;  // и по высоте
+      break;
+    case 1:   //  вниз 
+      nx.posX = random8(0, WIDTH); // Разбрасываем капли по ширине
+      nx.posY = EffectMath::getmaxHeightIndex();  // и по высоте
+      break;
+    case 2:   // вправо
+      nx.posX = 0; // Разбрасываем капли по ширине
+      nx.posY = random8(0, HEIGHT);  // и по высоте
+      break;
+    //case 3:   // влево
+    default:
+      nx.posX = EffectMath::getmaxWidthIndex(); // Разбрасываем капли по ширине
+      nx.posY = random8(0, HEIGHT);  // и по высоте
   } 
 }
 

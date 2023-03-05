@@ -1291,25 +1291,27 @@ public:
 //------------ Эффект "Nexus"
 // База паттерн "Змейка" из проекта Аврора, 
 // перенос и переписан - kostyamat
-#define NEXUS (WIDTH)
-
+#define NEXUS_MIN   5
+#define NEXUS_MAX (WIDTH)
 class EffectNexus: public EffectCalc {
-  private:
-    float dotPosX[NEXUS];
-    float dotPosY[NEXUS];
-    int8_t dotDirect[NEXUS];       // направление точки 
-    CRGB dotColor[NEXUS];          // цвет точки
-    float dotAccel[NEXUS];         // персональное ускорение каждой точки
+  struct Nexus{
+    float posX{0};
+    float posY{0};
+    int8_t direct{0};           // направление точки 
+    CRGB color{CRGB::Black};    // цвет точки
+    float accel{0};             // персональное ускорение каждой точки
+  };
+
     bool white = false;
     byte type = 1;
     uint8_t _scale = 1;
     bool randColor = false;
-    float windProgress;
-	float speedFactor;
-    
+    //float windProgress{1};
+	float speedFactor{1};
+    std::vector<Nexus> nxdots{std::vector<Nexus>(NEXUS_MIN, Nexus())};
 
     void reload();
-    void resetDot(uint8_t idx);
+    void resetDot(Nexus &nx);
     String setDynCtrl(UIControl*_val) override;
 
   public:
