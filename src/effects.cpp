@@ -1041,12 +1041,9 @@ void EffectBBalls::load(){
   balls.assign(bballsNUM_BALLS, Ball());
 
   randomSeed(millis());
-  int i = 0;
-  uint8_t prevbrt = 0;
-
-  for (int i = 0; i != balls.size(); ++i){
+  for (size_t i = 0; i != balls.size(); ++i){
     balls[i].color = random(0, 255);
-    balls[i].x = (++i) * WIDTH / bballsNUM_BALLS;
+    balls[i].x = (i+1) * WIDTH / bballsNUM_BALLS;
     balls[i].vimpact = bballsVImpact0 + EffectMath::randomf( - 2., 2.);                   // And "pop" up at vImpact0
     balls[i].cor = 0.9 - float(i) / pow(bballsNUM_BALLS, 2);
     if (halo){
@@ -3137,11 +3134,11 @@ String EffectPicasso::setDynCtrl(UIControl*_val) {
         255,  0,  0,  0
     };
     CRGB *color = (CRGB *)dynpal + 1;
-    *color = CHSV(hue + 255, 255U, 255U); color += 4;
-    *color = CHSV(hue + 135, 255U, 200U); color += 4;
-    *color = CHSV(hue + 160, 255U, 120U); color += 4;
-    *color = CHSV(hue + 150, 255U, 255U); color += 4;
-    *color = CHSV(hue + 255, 255U, 255U); color += 4;
+    *color = CHSV(hue + 255, 255U, 255U); ++color;
+    *color = CHSV(hue + 135, 255U, 200U); ++color;
+    *color = CHSV(hue + 160, 255U, 120U); ++color;
+    *color = CHSV(hue + 150, 255U, 255U); ++color;
+    *color = CHSV(hue + 255, 255U, 255U); ++color;
     CRGBPalette32 pal;
     pal.loadDynamicGradientPalette(dynpal);
     palettes.add(0, pal, 0, 16);
@@ -3424,11 +3421,11 @@ String EffectLiquidLamp::setDynCtrl(UIControl*_val) {
         255,  0,  0,  0
     };
     CRGB *color = (CRGB *)dynpal + 1;
-    *color = CHSV(hue + 255, 255U, 255U); color += 4;
-    *color = CHSV(hue + 135, 255U, 200U); color += 4;
-    *color = CHSV(hue + 160, 255U, 120U); color += 4;
-    *color = CHSV(hue + 150, 255U, 255U); color += 4;
-    *color = CHSV(hue + 255, 255U, 255U); color += 4;
+    *color = CHSV(hue + 255, 255U, 255U); ++color;
+    *color = CHSV(hue + 135, 255U, 200U); ++color;
+    *color = CHSV(hue + 160, 255U, 120U); ++color;
+    *color = CHSV(hue + 150, 255U, 255U); ++color;
+    *color = CHSV(hue + 255, 255U, 255U); ++color;
     CRGBPalette32 pal;
     pal.loadDynamicGradientPalette(dynpal);
     palettes.add(0, pal, 0, 16);
