@@ -706,8 +706,12 @@ public:
 
 // ------ Эффект "Лавовая Лампа"
 // (c) obliterator
+#define LIQLAMP_MASS_MIN    10
+#define LIQLAMP_MASS_MAX    50
+#define LIQLAMP_MIN_PARTICLES   10
+#define LIQLAMP_MAX_PARTICLES   20
 class EffectLiquidLamp : public EffectCalc {
-    typedef struct Particle{
+    struct Particle{
         float position_x = 0;
         float position_y = 0;
         float speed_x = 0;
@@ -719,60 +723,29 @@ class EffectLiquidLamp : public EffectCalc {
         unsigned mx = 0;
         unsigned sc = 0;
         unsigned tr = 0;
-    } Particle;
-private:
-    unsigned MASS_MIN = 10;
-    unsigned MASS_MAX = 50;
-    Particle particles[20];
+    };
+
+    uint8_t pidx = 0;
+    bool physic_on = 1;
+    unsigned filter = 0;
+	float speedFactor = 1.0;
+    GradientPaletteList palettes;
+
+    std::vector<Particle> particles{std::vector<Particle>(LIQLAMP_MIN_PARTICLES, Particle())};
+    // todo: allocate/deallocate those arrays dynamically only if needed by filter settings
     uint8_t buff[WIDTH][HEIGHT];
     float buff2[WIDTH][HEIGHT];
-    uint8_t pidx = 0;
-    unsigned numParticles = 0;
-    unsigned physic_on = 1;
-    unsigned filter = 0;
-	float speedFactor;
+
     void generate(bool reset = false);
     void position();
     void physic();
-    bool Routine(CRGB *leds, EffectWorker *param);
+    bool routine(CRGB *leds, EffectWorker *param);
 
-    GradientPaletteList *palettes;
 public:
-    EffectLiquidLamp() {
-        palettes = new GradientPaletteList();
-        palettes->add(MBVioletColors_gp, 0, 16);
-        // эта политра создана под эффект
-        palettes->add(MBVioletColors_gp, 0, 16);
-        // палитры частично подогнаные под эффект
-        palettes->add(ib_jul01_gp, 60, 16, 200);
-        palettes->add(Sunset_Real_gp, 25, 0, 200);
-
-        palettes->add(es_landscape_33_gp, 50, 50);
-
-        palettes->add(es_pinksplash_08_gp, 125, 16);
-
-        palettes->add(es_landscape_64_gp, 175, 50, 220);
-        palettes->add(es_landscape_64_gp, 25, 16, 250);
-
-        palettes->add(es_ocean_breeze_036_gp, 0);
-
-        palettes->add(es_landscape_33_gp, 0);
-
-        palettes->add(GMT_drywet_gp, 0);
-        palettes->add(GMT_drywet_gp, 75);
-        palettes->add(GMT_drywet_gp, 150, 0, 200);
-
-        palettes->add(fire_gp, 175);
-
-        palettes->add(Pink_Purple_gp, 25);
-        palettes->add(Pink_Purple_gp, 175, 0, 220);
-
-        palettes->add(Sunset_Real_gp, 50, 0, 220);
-
-        palettes->add(BlacK_Magenta_Red_gp, 25);
-    }
-    ~EffectLiquidLamp() { delete palettes; }
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    EffectLiquidLamp();
+    virtual ~EffectLiquidLamp() {};
+    void load() override { generate(true); };
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override {return routine(ledarr, opt);};
     String setDynCtrl(UIControl*_val) override;
 };
 

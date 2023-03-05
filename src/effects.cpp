@@ -3313,58 +3313,80 @@ bool EffectLeapers::run(CRGB *leds, EffectWorker *param){
 
 
 // ----------- Эффекты "Лавовая лампа" (c) obliterator
-void EffectLiquidLamp::generate(bool reset){
-  unsigned num = map(scale, 0U, 255, 10, sizeof(particles) / sizeof(*particles));
+EffectLiquidLamp::EffectLiquidLamp() {
+  // эта палитра создана под эффект
+  palettes.add(MBVioletColors_gp, 0, 16);
+  // палитры частично подогнаные под эффект
+  palettes.add(ib_jul01_gp, 60, 16, 200);
+  palettes.add(Sunset_Real_gp, 25, 0, 200);
+  palettes.add(es_landscape_33_gp, 50, 50);
+  palettes.add(es_pinksplash_08_gp, 125, 16);
+  palettes.add(es_landscape_64_gp, 175, 50, 220);
+  palettes.add(es_landscape_64_gp, 25, 16, 250);
+  palettes.add(es_ocean_breeze_036_gp, 0);
+  palettes.add(es_landscape_33_gp, 0);
+  palettes.add(GMT_drywet_gp, 0);
+  palettes.add(GMT_drywet_gp, 75);
+  palettes.add(GMT_drywet_gp, 150, 0, 200);
+  palettes.add(fire_gp, 175);
+  palettes.add(Pink_Purple_gp, 25);
+  palettes.add(Pink_Purple_gp, 175, 0, 220);
+  palettes.add(Sunset_Real_gp, 50, 0, 220);
+  palettes.add(BlacK_Magenta_Red_gp, 25);
+}
 
-  for (unsigned i = numParticles; i < num; i++) {
-    Particle *curr = (Particle *)&particles[i];
-    curr->position_x = random(0, WIDTH);
-    curr->position_y = 0;
-    curr->mass = random(MASS_MIN, MASS_MAX);
-    curr->spf = EffectMath::fmap(curr->mass, MASS_MIN, MASS_MAX, 0.0015, 0.0005);
-    curr->rad = EffectMath::fmap(curr->mass, MASS_MIN, MASS_MAX, 2, 3);
-    curr->mx = map(curr->mass, MASS_MIN, MASS_MAX, 60, 80); // сила возмущения
-    curr->sc = map(curr->mass, MASS_MIN, MASS_MAX, 6, 10); // радиус возмущения
-    curr->tr = curr->sc  * 2 / 3; // отсечка расчетов (оптимизация скорости)
+void EffectLiquidLamp::generate(bool reset){
+  unsigned num = map(scale, 0U, 255, LIQLAMP_MIN_PARTICLES, LIQLAMP_MAX_PARTICLES);
+
+  if (num != particles.size())
+    particles.assign(num, Particle());
+  else if (!reset) return;
+
+  for (auto &curr : particles){
+    curr.position_x = random(0, WIDTH);
+    curr.position_y = 0;
+    curr.mass = random(LIQLAMP_MASS_MIN, LIQLAMP_MASS_MAX);
+    curr.spf = EffectMath::fmap(curr.mass, LIQLAMP_MASS_MIN, LIQLAMP_MASS_MAX, 0.0015, 0.0005);
+    curr.rad = EffectMath::fmap(curr.mass, LIQLAMP_MASS_MIN, LIQLAMP_MASS_MAX, 2, 3);
+    curr.mx = map(curr.mass, LIQLAMP_MASS_MIN, LIQLAMP_MASS_MAX, 60, 80); // сила возмущения
+    curr.sc = map(curr.mass, LIQLAMP_MASS_MIN, LIQLAMP_MASS_MAX, 6, 10); // радиус возмущения
+    curr.tr = curr.sc  * 2 / 3; // отсечка расчетов (оптимизация скорости)
   };
-  numParticles = num;
 }
 
 void EffectLiquidLamp::position(){
-  for (unsigned i = 0; i < numParticles; i++) {
-    Particle *curr = (Particle *)&particles[i];
-    curr->hot += EffectMath::mapcurve(curr->position_y, 0, HEIGHT, 5, -5, EffectMath::InOutQuad) * speedFactor;
+  for (auto &curr : particles){
+    curr.hot += EffectMath::mapcurve(curr.position_y, 0, HEIGHT, 5, -5, EffectMath::InOutQuad) * speedFactor;
 
-    float heat = (curr->hot / curr->mass) - 1;
-    if (heat > 0 && curr->position_y < HEIGHT) {
-      curr->speed_y += heat * curr->spf;
+    float heat = (curr.hot / curr.mass) - 1;
+    if (heat > 0 && curr.position_y < HEIGHT) {
+      curr.speed_y += heat * curr.spf;
     }
-    if (curr->position_y > 0) {
-      curr->speed_y -= 0.07;
+    if (curr.position_y > 0) {
+      curr.speed_y -= 0.07;
     }
 
-    if (curr->speed_y) curr->speed_y *= 0.85;
-    curr->position_y += curr->speed_y * speedFactor;
+    if (curr.speed_y) curr.speed_y *= 0.85;
+    curr.position_y += curr.speed_y * speedFactor;
 
     if (physic_on) {
-      if (curr->speed_x) curr->speed_x *= 0.7;
-      curr->position_x += curr->speed_x * speedFactor;
+      curr.speed_x *= 0.7;
+      curr.position_x += curr.speed_x * speedFactor;
     }
 
-    if (curr->position_x > WIDTH) curr->position_x -= WIDTH;
-    if (curr->position_x < 0) curr->position_x += WIDTH;
-    if (curr->position_y > HEIGHT) curr->position_y = HEIGHT;
-    if (curr->position_y < 0) curr->position_y = 0;
+    if (curr.position_x > WIDTH) curr.position_x -= WIDTH;
+    if (curr.position_x < 0) curr.position_x += WIDTH;
+    if (curr.position_y > HEIGHT) curr.position_y = HEIGHT;
+    if (curr.position_y < 0) curr.position_y = 0;
   };
 }
 
 void EffectLiquidLamp::physic(){
-  for (unsigned i = 0; i < numParticles; i++) {
-    Particle *p1 = (Particle *)&particles[i];
+  for (auto p1 = particles.begin(); p1 != particles.end(); ++p1){
     // отключаем физику на границах, чтобы не слипались шары
     if (p1->position_y < 3 || p1->position_y > EffectMath::getmaxHeightIndex()) continue;
-    for (unsigned j = i + 1; j < numParticles; j++) {
-      Particle *p2 = (Particle *)&particles[j];
+
+    for (auto p2 = p1 + 1; p2 != particles.end(); ++p2) {
       if (p2->position_y < 3 || p2->position_y > EffectMath::getmaxHeightIndex()) continue;
       float radius = 3;//(p1->rad + p2->rad);
       if (p1->position_x + radius > p2->position_x
@@ -3401,21 +3423,15 @@ String EffectLiquidLamp::setDynCtrl(UIControl*_val) {
         150,  0,  0,  0,
         255,  0,  0,  0
     };
-    uint8_t *ptr = (uint8_t *)dynpal + 1;
-    CRGB color = CHSV(hue + 255, 255U, 255U);
-    memcpy(ptr, color.raw, sizeof(color.raw)); ptr += 4;
-    color = CHSV(hue + 135, 255U, 200U);
-    memcpy(ptr, color.raw, sizeof(color.raw)); ptr += 4;
-    color = CHSV(hue + 160, 255U, 120U);
-    memcpy(ptr, color.raw, sizeof(color.raw)); ptr += 4;
-    color = CHSV(hue + 150, 255U, 255U);
-    memcpy(ptr, color.raw, sizeof(color.raw)); ptr += 4;
-    color = CHSV(hue  + 255, 255U, 255U);
-    memcpy(ptr, color.raw, sizeof(color.raw)); ptr += 4;
-
+    CRGB *color = (CRGB *)dynpal + 1;
+    *color = CHSV(hue + 255, 255U, 255U); color += 4;
+    *color = CHSV(hue + 135, 255U, 200U); color += 4;
+    *color = CHSV(hue + 160, 255U, 120U); color += 4;
+    *color = CHSV(hue + 150, 255U, 255U); color += 4;
+    *color = CHSV(hue + 255, 255U, 255U); color += 4;
     CRGBPalette32 pal;
     pal.loadDynamicGradientPalette(dynpal);
-    palettes->add(0, pal, 0, 16);
+    palettes.add(0, pal, 0, 16);
   }
   else if(_val->getId()==5) filter = EffectCalc::setDynCtrl(_val).toInt();
   else if(_val->getId()==6) physic_on = EffectCalc::setDynCtrl(_val).toInt();
@@ -3423,79 +3439,67 @@ String EffectLiquidLamp::setDynCtrl(UIControl*_val) {
   return String();
 }
 
-bool EffectLiquidLamp::Routine(CRGB *leds, EffectWorker *param){
+bool EffectLiquidLamp::routine(CRGB *leds, EffectWorker *param){
   generate();
   position();
-  if (physic_on) {
-    physic();
-  }
-
-  GradientPalette myPal((*palettes)[pidx]);
+  if (physic_on) physic();
 
   for (unsigned x = 0; x < WIDTH; x++) {
     for (unsigned y = 0; y < HEIGHT; y++) {
       float sum = 0;
-      for (unsigned i = 0; i < numParticles; i++) {
-        Particle *p1 = (Particle *)&particles[i];
-        if ((unsigned)abs(x - p1->position_x) > p1->tr || (unsigned)abs(y - p1->position_y) > p1->tr) continue;
-        float d = EffectMath::distance(x, y, p1->position_x, p1->position_y);
-        if (d < p1->rad) {
-          sum += EffectMath::mapcurve(d, 0, p1->rad, 255, p1->mx, EffectMath::InQuad);
-        } else if (d < p1->sc){
-          sum += EffectMath::mapcurve(d, p1->rad, p1->sc, p1->mx, 0, EffectMath::OutQuart);
+      for (auto &p1 : particles){
+        if ((unsigned)abs(x - p1.position_x) > p1.tr || (unsigned)abs(y - p1.position_y) > p1.tr) continue;
+        float d = EffectMath::distance(x, y, p1.position_x, p1.position_y);
+        if (d < p1.rad) {
+          sum += EffectMath::mapcurve(d, 0, p1.rad, 255, p1.mx, EffectMath::InQuad);
+        } else if (d < p1.sc){
+          sum += EffectMath::mapcurve(d, p1.rad, p1.sc, p1.mx, 0, EffectMath::OutQuart);
         }
         if (sum > 255) { sum = 255; break; }
       }
-      buff[x][y] = sum;
-      CRGB color = myPal.GetColor((uint8_t)sum, 255);
-      EffectMath::drawPixelXY(x, y, color);
+
+      if (filter < 2) {
+        EffectMath::drawPixelXY(x, y, palettes[pidx].GetColor(sum, filter? sum : 255));
+      } else {
+        buff[x][y] = sum;
+      }
     }
   }
 
-  if (filter < 2) {
-    for (unsigned x = 0; x < WIDTH; x++) {
-      for (unsigned y = 0; y < HEIGHT; y++) {
-        CRGB color = myPal.GetColor(buff[x][y], filter? buff[x][y] : 255);
-        EffectMath::drawPixelXY(x, y, color);
-      }
-    }
-  } else {
+  if (filter < 2) return true;
+
+  // use Scharr's filter
+    static constexpr std::array<int, 9> dh_scharr = {3, 10, 3,  0, 0,   0, -3, -10, -3};
+    static constexpr std::array<int, 9> dv_scharr = {3, 0, -3, 10, 0, -10,  3,   0, -3};
     float min =0, max = 0;
-    // Оператор Щарра
-    int oper_h[3][3] = {{3, 10, 3}, {0, 0, 0}, {-3, -10, -3}};
-    int oper_v[3][3] = {{3, 0, -3}, {10, 0, -10}, {3, 0, -3}};
-    for (unsigned x = 0; x < (unsigned)EffectMath::getmaxWidthIndex(); x++) {
-      for (unsigned y = 0; y < (unsigned)EffectMath::getmaxHeightIndex(); y++) {
-        int valh = 0, valv = 0;
-        for (int j = -1; j <= 1; j++) {
-          for (int i = -1; i <= 1; i++) {
-            valh += oper_h[j + 1][i + 1] * buff[(int)x + j][(int)y + i];
-            valv += oper_v[j + 1][i + 1] * buff[(int)x + j][(int)y + i];
+    for (int16_t x = 1; x < EffectMath::getmaxWidthIndex() -1; x++) {
+      for (int16_t y = 1; y < EffectMath::getmaxHeightIndex() -1; y++) {
+        int gh = 0, gv = 0, idx = 0;
+
+        for (int v = -1; v != 2; ++v) {
+          for (int h = -1; h != 2; ++h) {
+            gh += dh_scharr[idx] * buff[x+h][y+v];
+            gv += dv_scharr[idx] * buff[x+h][y+v];
+            ++idx;
           }
         }
-        float val = EffectMath::sqrt((valh * valh) + (valv * valv));
-        buff2[x][y] = val;
-        if (val < min) min = val;
-        if (val > max) max = val;
+        buff2[x][y] = EffectMath::sqrt((gh * gh) + (gv * gv));
+        if (buff2[x][y] < min) min = buff2[x][y];
+        if (buff2[x][y] > max) max = buff2[x][y];
       }
     }
 
     for (unsigned x = 0; x < (unsigned)EffectMath::getmaxWidthIndex(); x++) {
       for (unsigned y = 0; y < (unsigned)EffectMath::getmaxHeightIndex(); y++) {
         float val = buff2[x][y];
-        unsigned step = filter - 1;
         val = 1 - (val - min) / (max - min);
+        unsigned step = filter - 1;
         while (step) { val *= val; --step; } // почему-то это быстрее чем pow
-        CRGB color = myPal.GetColor(buff[x][y], val * 255);
-        EffectMath::drawPixelXY(x, y, color);
+        EffectMath::drawPixelXY(x, y, palettes[pidx].GetColor(buff[x][y], val * 255));
       }
     }
-  }
-  return true;
-}
 
-bool EffectLiquidLamp::run(CRGB *ledarr, EffectWorker *opt){
-  return Routine(*&ledarr, &*opt);
+  return true;
 }
 
 // ------- Эффект "Вихри"
