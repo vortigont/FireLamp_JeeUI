@@ -292,7 +292,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #endif
 
 #ifndef CFG_AUTOSAVE_TIMEOUT
-#define CFG_AUTOSAVE_TIMEOUT       (20*1000U)                   // таймаут сохранения конфигурации эффекта, по умолчанию - 20 секунд
+#define CFG_AUTOSAVE_TIMEOUT       (60*1000U)                   // таймаут сохранения конфигурации эффекта, по умолчанию - 60 секунд
 #endif
 
 #ifndef TEXT_OFFSET

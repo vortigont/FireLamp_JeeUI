@@ -78,16 +78,14 @@ EffectWorker::EffectWorker(LAMPSTATE *_lampstate) : lampstate(_lampstate) {
  * Создаем экземпляр класса калькулятора в зависимости от требуемого эффекта
  */
 void EffectWorker::workerset(uint16_t effect, const bool isCfgProceed){
-  LOG(printf_P,PSTR("Wrkr set: %u\n"), effect);
-  if(worker && isCfgProceed){ // сначала сохраним текущий эффект
-    saveeffconfig(curEff); // пишем конфиг только если это требуется, для индекса - пропускаем, там свой механизм
+  LOG(printf_P,PSTR("Wrkr set: %u, is cfg:%u\n"), effect, isCfgProceed);
+  if(worker && isCfgProceed){
+    // пишем конфиг текущего эффекта на диск только если есть несохраненные изменения
+    _flush_config();
+    //saveeffconfig(curEff); // пишем конфиг только если это требуется, для индекса - пропускаем, там свой механизм
   }
   if(worker)
      worker.reset(); // освободим явно, т.к. 100% здесь будем пересоздавать
-
-#if defined(PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED)
-  HeapSelectIram ephemeral;
-#endif
 
   switch (static_cast<EFF_ENUM>(effect%256)) // номер может быть больше чем ENUM из-за копирований, находим эффект по модулю
   {
@@ -531,6 +529,7 @@ bool EffectWorker::deserializeFile(DynamicJsonDocument& doc, const char* filepat
     error = deserializeJson(doc, jfile);
     jfile.close();
   } else {
+    LOG(printf_P, PSTR("Can't open File: %s"), filepath);
     return false;
   }
 
@@ -539,7 +538,6 @@ bool EffectWorker::deserializeFile(DynamicJsonDocument& doc, const char* filepat
     LOG(println, error.code());
     return false;
   }
-  //LOG(printf_P,PSTR("File: %s deserialization took %d ms\n"), filepath, millis() - timest);
   return true;
 }
 
@@ -649,6 +647,7 @@ void EffectWorker::saveeffconfig(uint16_t nb, char *folder){
   
   File configFile;
   String filename = getEffectCfgPath(nb,folder);
+  LOG(printf_P,PSTR("Writing eff #%d cfg: %s\n"), nb, filename.c_str());
   configFile = LittleFS.open(filename, "w"); // PSTR("w") использовать нельзя, будет исключение!
   configFile.print(getSerializedEffConfig(nb));
   configFile.close();
@@ -1123,8 +1122,9 @@ void EffectWorker::preloadEffCtrls(uint16_t effnb)
 void EffectWorker::moveSelected(){
   LOG(printf_P,PSTR("Move EffWorker to selected eff %d\n"), pendingEffNum);
   if(isEffSwPending()){
-    curEff = pendingEffNum;
-    workerset(pendingEffNum);
+    workerset(pendingEffNum);   // first we change the effect
+    curEff = pendingEffNum;     // than change the number! Effect's config data saving depends on it
+                                // todo: resolve this stuped dependency via private members
 
     /*
     todo: omg...
@@ -1199,25 +1199,28 @@ uint16_t EffectWorker::effIndexByList(uint16_t val) {
 }
 
 bool EffectWorker::_eff_cfg_deserialize(DynamicJsonDocument &doc, uint16_t nb, const char *folder){
-  LOG(printf_P, PSTR("_eff_cfg_deserialize() %u\n"), nb);
+  LOG(printf_P, PSTR("_eff_cfg_deserialize() eff:%u\n"), nb);
   String filename(getEffectCfgPath(nb,folder));
 
+  bool retry = true;
   READALLAGAIN:
-  if (!deserializeFile(doc, filename.c_str() )){
-    LittleFS.remove(filename);
-    savedefaulteffconfig(nb, filename);   // пробуем перегенерировать поврежденный конфиг
-    if (!deserializeFile(doc, filename.c_str() ))
-      LOG(printf_P, PSTR("Failed to recreate eff config file: %s\n"), filename.c_str());
-      return false;   // ошибка и в файле и при попытке сгенерить конфиг по-умолчанию - выходим
+  if (deserializeFile(doc, filename.c_str() )){
+    if ( nb>255 || geteffcodeversion((uint8_t)nb) == doc[F("ver")] ){ // только для базовых эффектов эта проверка
+      return true;   // we are OK
+    }
+    LOG(printf_P, PSTR("Wrong version in effect cfg file, reset cfg to default (%d vs %d)\n"), doc[F("ver")].as<uint8_t>(), geteffcodeversion((uint8_t)nb));
+  }
+  // something is wrong with eff config file, recreate it to default
+  LittleFS.remove(filename);
+  savedefaulteffconfig(nb, filename);   // пробуем перегенерировать поврежденный конфиг
+
+  if (retry) {
+    retry = false;
+    goto READALLAGAIN;
   }
 
-  uint8_t version = doc[F("ver")];
-  if(geteffcodeversion((uint8_t)nb) != version && nb<=255){ // только для базовых эффектов эта проверка
-      LOG(printf_P, PSTR("Wrong version of effect, reset to default (%d vs %d)\n"), version, geteffcodeversion((uint8_t)nb));
-      savedefaulteffconfig(nb, filename);
-      goto READALLAGAIN;
-  }
-  return true;
+  LOG(printf_P, PSTR("Failed to recreate eff config file: %s\n"), filename.c_str());
+  return false;
 }
 
 bool EffectWorker::_eff_ctrls_load_from_jdoc(DynamicJsonDocument &effcfg, LList<std::shared_ptr<UIControl>> &ctrls){

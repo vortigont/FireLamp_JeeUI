@@ -481,6 +481,13 @@ private:
      */
     bool _eff_ctrls_load_from_jdoc(DynamicJsonDocument &effcfg, LList<std::shared_ptr<UIControl>> &ctrls);
 
+    /**
+     * @brief flush pending config data to file on disk
+     * it's a temporary workaround method
+     * it writes cfg data ONLY if some changes are pending in delayed task
+     */
+    void _flush_config(){ if(tConfigSave) autoSaveConfig(true); };
+
 public:
     // дефолтный конструктор
     EffectWorker(LAMPSTATE *_lampstate);
