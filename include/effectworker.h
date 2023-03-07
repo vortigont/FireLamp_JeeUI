@@ -360,7 +360,6 @@ public:
 
 class EffectWorker {
 private:
-    //time_t listsuffix = 0; // суффикс используемый для обновления списков
     LAMPSTATE *lampstate; // ссылка на состояние лампы
     SORT_TYPE effSort; // порядок сортировки в UI
 
@@ -395,8 +394,6 @@ private:
 
     EffectWorker(const EffectWorker&);  // noncopyable
     EffectWorker& operator=(const EffectWorker&);  // noncopyable
-
-    void clearEffectList(); // очистка списка эффектов, вызываетсяч в initDefault
 
     /**
      * @brief очистка списка контроллов
@@ -433,7 +430,7 @@ private:
 
     void savedefaulteffconfig(uint16_t nb, String &filename);
     void saveeffconfig(uint16_t nb, char *folder=NULL);
-    void makeIndexFile(const char *folder = NULL);
+    //void makeIndexFile(const char *folder = NULL);
     // создать или обновить текущий индекс эффекта
     void updateIndexFile();
     // удалить эффект из индексного файла
@@ -450,7 +447,7 @@ private:
      *  @param doc - DynamicJsonDocument куда будет загружен джейсон
      *  @param jsonfile - файл, для загрузки
      */
-    bool deserializeFile(DynamicJsonDocument& doc, const char* filepath);
+    static bool deserializeFile(DynamicJsonDocument& doc, const char* filepath);
 
     /**
      * процедура открывает индекс-файл на запись в переданный хендл,
@@ -488,6 +485,22 @@ private:
      */
     void _flush_config(){ if(tConfigSave) autoSaveConfig(true); };
 
+    /**
+     * @brief load a list of default effects from firmware tables
+     * it loads an 'effects' list with default flags
+     * used when no on-flash index file is present 
+     */
+    void _load_default_fweff_list();
+
+    /**
+     * @brief try to load effects list from index file on fs
+     * loads an 'effects' list from 'eff_index.json' file
+     * if file is missing or corrupted, loads default list from firmware
+     * 
+     * @param folder - where to look for idx file, must end with a '/'
+     */
+    void _load_eff_list_from_idx_file(const char *folder = NULL);
+
 public:
     // дефолтный конструктор
     EffectWorker(LAMPSTATE *_lampstate);
@@ -499,11 +512,13 @@ public:
     EffectWorker(const EffectListElem* eff, bool fast=false);
     //~EffectWorker();
 
+    // указатель на экземпляр класса текущего эффекта
+    std::unique_ptr<EffectCalc> worker = nullptr;
 
-    void removeLists(); // уделение списков из ФС
-    //time_t getlistsuffix() {return listsuffix ? listsuffix : (listsuffix=micros());}      // obsolete, server could handle caching
-    //void setlistsuffix(time_t val) {listsuffix=val;}
-    std::unique_ptr<EffectCalc> worker = nullptr;           ///< указатель-класс обработчик текущего эффекта
+
+    // уделение списков из ФС
+    void removeLists();
+
     void initDefault(const char *folder = NULL); // пусть вызывается позже и явно
 
     LList<std::shared_ptr<UIControl>>&getControls() { return isEffSwPending() ? pendingCtrls : controls; }
@@ -512,7 +527,6 @@ public:
     void setEffSortType(SORT_TYPE type) {if(effSort != type) { effectsReSort(type); } effSort = type;}
     SORT_TYPE getEffSortType() {return effSort;}
 
-    // Получить конфиг текущего эффекта
     /**
      * @brief Get the json string with Serialized Eff Config object
      * 
@@ -520,7 +534,6 @@ public:
      * @param replaceBright 
      * @return String 
      */
-    //getSerializedEffConfig
     String getSerializedEffConfig(uint16_t nb, uint8_t replaceBright = 0);
 
     // Получить конфиг эффекта из ФС
@@ -531,10 +544,13 @@ public:
      *  force - сохраняет без задержки, таймер отключается
      */
     void autoSaveConfig(bool force=false);
+
     // удалить конфиг переданного эффекта
     void removeConfig(const uint16_t nb, const char *folder=NULL);
+
     // пересоздает индекс с текущего списка эффектов
     void makeIndexFileFromList(const char *folder = NULL, bool forceRemove = true);
+
     // пересоздает индекс с конфигов в ФС
     void makeIndexFileFromFS(const char *fromfolder = NULL, const char *tofolder = NULL);
 
@@ -573,8 +589,6 @@ public:
 
     // текущий эффект или его копия
     const uint16_t getEn() {return curEff;}
-    //const uint16_t
-
     // следующий эффект, кроме canBeSelected==false
     uint16_t getNext();
     // предыдущий эффект, кроме canBeSelected==false
@@ -584,8 +598,8 @@ public:
     // перейти по предворительно выбранному
 
     void moveSelected();
-    // перейти на количество шагов, к ближйшему большему (для DEMO)
 
+    // перейти на количество шагов, к ближйшему большему (для DEMO)
     void moveByCnt(byte cnt){ uint16_t eff = getByCnt(cnt); directMoveBy(eff); }
     // получить номер эффекта смещенного на количество шагов (для DEMO)
     uint16_t getByCnt(byte cnt);

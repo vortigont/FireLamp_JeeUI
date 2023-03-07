@@ -69,7 +69,7 @@ EffectWorker::EffectWorker(LAMPSTATE *_lampstate) : lampstate(_lampstate) {
     );
     controls.add(c);
   }
-  pendingCtrls = controls;
+  //pendingCtrls = controls;
 }
 
 //EffectWorker::~EffectWorker() { clearEffectList(); }
@@ -340,12 +340,6 @@ void EffectWorker::workerset(uint16_t effect, const bool isCfgProceed){
   }
 }
 
-void EffectWorker::clearEffectList()
-{
-  // удаляем весь список
-  effects.clear();
-}
-
 void EffectWorker::_clearControlsList(LList<std::shared_ptr<UIControl>> &list)
 {
   list.clear();
@@ -361,9 +355,6 @@ void EffectWorker::_clearControlsList(LList<std::shared_ptr<UIControl>> &list)
 
 void EffectWorker::initDefault(const char *folder)
 {
-  String filename;
-  DynamicJsonDocument doc(4096); // отожрет много памяти, но имена все равно не храним, так что хрен с ним, писать ручной парсер как-то лень
-
   if(!LittleFS.exists(F("/eff"))){
     LittleFS.mkdir(F("/eff"));
   }
@@ -383,53 +374,8 @@ void EffectWorker::initDefault(const char *folder)
     LittleFS.mkdir(F("/backup/idx"));
   }
 
-  if(folder && folder[0])
-    filename = folder;
-  else
-    filename = F("/eff_index.json");
-
-  TRYAGAIN:
-  if (!deserializeFile(doc, filename.c_str())){
-    LittleFS.remove(filename); // пересоздаем индекс и пробуем снова
-      makeIndexFile();
-      if (!deserializeFile(doc, filename.c_str())){
-        LOG(println, F("ERROR: Can't rebuild Index file"));
-        return;   // пересоздание индекса не помогло
-      }
-
-  }
-
-  JsonArray arr = doc.as<JsonArray>();
-  if(arr.isNull() || arr.size()==0){
-          LOG(print, F("Index corrupted... "));
-          LittleFS.remove(filename); // пересоздаем индекс и пробуем снова
-          goto TRYAGAIN;
-  }
-  //LOG(printf_P,PSTR("Создаю список эффектов конструктор (%d): %s\n"),arr.size(),idx.c_str());
-  clearEffectList();
-  for (size_t i=0; i<arr.size(); i++) {
-      JsonObject item = arr[i];
-      if(item.containsKey("nb")){ // на время миграции, далее убрать!!!
-        //effects.add(new EffectListElem(item[F("nb")].as<uint16_t>(), item[F("fl")].as<uint8_t>()));
-        EffectListElem el(item[F("nb")].as<uint16_t>(), item[F("fl")].as<uint8_t>());
-        effects.add(el);
-      } else {
-        //effects.add(new EffectListElem(item[F("n")].as<uint16_t>(), item[F("f")].as<uint8_t>()));
-        EffectListElem el(item[F("n")].as<uint16_t>(), item[F("f")].as<uint8_t>());
-        effects.add(el);
-      }
-      //LOG(printf_P,PSTR("%d : %d\n"),item[F("nb")].as<uint16_t>(), item[F("fl")].as<uint8_t>());
-  }
-  effects.sort([](EffectListElem &a, EffectListElem &b){ return a.eff_nb - b.eff_nb;}); // сортирую по eff_nb
-  int32_t chk = -1; // удаляю дубликаты
-  for(unsigned i=0; i<effects.size(); i++){
-    if((int32_t)effects[i].eff_nb==chk){
-      effects.unlink(i);
-      continue;
-    }
-    chk = effects[i].eff_nb;
-  }
-  effectsReSort();
+  // try to load effects index from FS, or default index from FW if FS index is missing or corrupted
+  _load_eff_list_from_idx_file();
 }
 
 void EffectWorker::removeConfig(const uint16_t nb, const char *folder)
@@ -764,6 +710,7 @@ File& EffectWorker::openIndexFile(File& fhandle, const char *folder){
  *  процедура содания индекса "по-умолчанию" на основе "вшитых" в код enum/имен эффектов
  *
  */
+/*
 void EffectWorker::makeIndexFile(const char *folder)
 {
   uint32_t timest = millis();
@@ -774,7 +721,7 @@ void EffectWorker::makeIndexFile(const char *folder)
 
   File indexFile;
 
-  LOG(println, F("Rebuilding Index file..."));
+  LOG(println, F("Rebuilding default index file..."));
   bool firstLine = true;
   openIndexFile(indexFile, folder);
   indexFile.print("[");
@@ -802,14 +749,12 @@ void EffectWorker::makeIndexFile(const char *folder)
   indexFile.close();
 
   LOG(printf_P,PSTR("rebuilding took %ld ms\n"), millis() - timest);
-
 }
-
+*/
 void EffectWorker::removeLists(){
   LittleFS.remove(FPSTR(TCONST_fquicklist));
   LittleFS.remove(FPSTR(TCONST_fslowlist));
   LittleFS.remove(FPSTR(TCONST_quicklist));
-  LittleFS.remove(FPSTR(TCONST_slowlist));
 //  listsuffix = time(NULL);
 }
 
@@ -840,7 +785,7 @@ void EffectWorker::makeIndexFileFromFS(const char *fromfolder,const char *tofold
 {
   File indexFile;
   String sourcedir;
-  makeIndexFile(tofolder); // создать дефолтный набор прежде всего
+  //makeIndexFile(tofolder); // будет перезапиан ниже
   removeLists();
 
   if (fromfolder) {
@@ -997,6 +942,7 @@ EffectListElem *EffectWorker::getEffect(uint16_t select){
           return &effects[i];
       }
   }
+  LOG(printf_P, PSTR("requested eff %u not found\n"), select);
   return nullptr; // NONE
 }
 
@@ -1280,6 +1226,72 @@ bool EffectWorker::_eff_ctrls_load_from_jdoc(DynamicJsonDocument &effcfg, LList<
   return true;
 }
 
+void EffectWorker::_load_default_fweff_list(){
+  LOG(println, F("Load default eff list from fw"));
+
+  effects.clear();
+
+  for (uint16_t i = 0; i != 256U; i++){
+    if (!strlen_P(T_EFFNAMEID[i]) && i)   // пропускаем индексы-"пустышки" без названия, кроме 0 "EFF_NONE"
+      continue;
+
+#ifndef MIC_EFFECTS
+    if(i>EFF_ENUM::EFF_TIME) continue;    // пропускаем эффекты для микрофона, если отключен микрофон
+#endif
+
+    EffectListElem el(i, SET_ALL_EFFFLAGS);
+    effects.add(el);
+  }
+}
+
+void EffectWorker::_load_eff_list_from_idx_file(const char *folder){
+  // todo: check if supplied alternative path starts with '/'
+  String filename(folder ? folder : "/");
+  filename += FPSTR(TCONST_eff_index); // append 'eff_index.json' filename
+
+  // if index file does not exist - load default list from firmware tables
+  if (!LittleFS.exists(filename)){
+    LOG(println, F("eff index file missing, loading fw defaults"));
+    return _load_default_fweff_list();
+  }
+
+  DynamicJsonDocument doc(4096);  // document for loading effects index from file
+
+  if (!deserializeFile(doc, filename.c_str())){
+    LittleFS.remove(filename);    // remove corrupted index file
+    return _load_default_fweff_list();
+  }
+
+  JsonArray arr = doc.as<JsonArray>();
+  if(arr.isNull() || arr.size()==0){
+    LittleFS.remove(filename);    // remove corrupted index file
+    LOG(println, F("eff index file corrupted, loading fw defaults"));
+    return _load_default_fweff_list();
+  }
+
+  //LOG(printf_P,PSTR("Создаю список эффектов конструктор (%d): %s\n"),arr.size(),idx.c_str());
+  effects.clear();
+  for (JsonObject item : arr){
+      if(item.containsKey("n")){
+        EffectListElem el(item[F("n")].as<uint16_t>(), item[F("f")].as<uint8_t>());
+        effects.add(el);
+      }
+      //LOG(printf_P,PSTR("%d : %d\n"),item[F("n")].as<uint16_t>(), item[F("f")].as<uint8_t>());
+  }
+
+  effects.sort([](EffectListElem &a, EffectListElem &b){ return a.eff_nb - b.eff_nb;}); // сортирую по eff_nb
+
+  int32_t chk = -1; // удаляю дубликаты
+  for(unsigned i=0; i<effects.size(); i++){
+    if((int32_t)effects[i].eff_nb==chk){
+      effects.unlink(i);
+      continue;
+    }
+    chk = effects[i].eff_nb;
+  }
+  effectsReSort();
+  LOG(printf_P, PSTR("Loaded list of effects, %u entries\n"), effects.size());
+}
 
 
 

@@ -519,24 +519,23 @@ void block_effects_config(Interface *interf, JsonObject *data, bool fast=true){
 // Построение выпадающего списка эффектов для вебморды
 void delayedcall_show_effects(){
 
-    LOG(println, F("=== GENERATE EffLIst for GUI ==="));
-    uint16_t effnb = confEff?(int)confEff->eff_nb:myLamp.effects.getSelected(); // если confEff не NULL, то мы в конфирурировании, иначе в основном режиме
+    LOG(println, F("=== GENERATE EffLIst for GUI (fslowlist.json) ==="));
+    uint16_t effnb = confEff ? (int)confEff->eff_nb : myLamp.effects.getSelected(); // если confEff не NULL, то мы в конфирурировании, иначе в основном режиме
 
     if(delayedOptionTask)
         delayedOptionTask->cancel(); // отмена предыдущей задачи, если была запущена
 
-    EffectListElem **peff = new (EffectListElem *); // выделяем память под укзатель на указатель
-    *peff = nullptr; // чистим содержимое
     File *slowlist = nullptr;
-    if(!LittleFS.exists(confEff?FPSTR(TCONST_fslowlist):FPSTR(TCONST_fslowlist))){
+    if(!LittleFS.exists(confEff ? FPSTR(TCONST_fslowlist) : FPSTR(TCONST_fslowlist))){
         slowlist = new fs::File;
         *slowlist = LittleFS.open(FPSTR(TCONST__tmplist_tmp), "w");
     } else {
         // формируем и отправляем кадр с запросом подгрузки внешнего ресурса
+        LOG(println, F("fslowlist.json exist, sending xload frame"));
         Interface *interf = embui.ws.count()? new Interface(&embui, &embui.ws, 512) : nullptr;
         interf->json_frame_custom(FPSTR(T_XLOAD));
         interf->json_section_content();
-        interf->select(confEff?FPSTR(TCONST_effListConf):FPSTR(TCONST_effListMain), String(effnb), String(FPSTR(TINTF_00A)), true, true, String(confEff?FPSTR(TCONST_fslowlist):FPSTR(TCONST_fslowlist)));
+        interf->select(confEff?FPSTR(TCONST_effListConf):FPSTR(TCONST_effListMain), String(effnb), String(FPSTR(TINTF_00A)), true, true, String(FPSTR(TCONST_fslowlist)));
         interf->json_section_end();
         interf->json_frame_flush();
         delete interf;
@@ -544,6 +543,9 @@ void delayedcall_show_effects(){
         return;
     }
     //LOG(print,(uint32_t)peff); LOG(print," "); LOG(println,(uint32_t)*peff);
+
+    EffectListElem **peff = new (EffectListElem *); // выделяем память под укзатель на указатель
+    *peff = nullptr; // чистим содержимое
 
     delayedOptionTask = new Task(300, TASK_FOREVER,
         // loop
@@ -586,9 +588,9 @@ void delayedcall_show_effects(){
                         slowlist->print(']');
                         slowlist->close();
 #ifdef ESP32
-                        delay(500);
+                        delay(50);
 #endif
-                        LittleFS.rename(FPSTR(TCONST__tmplist_tmp),confEff?FPSTR(TCONST_fslowlist):FPSTR(TCONST_fslowlist));
+                        LittleFS.rename(FPSTR(TCONST__tmplist_tmp), FPSTR(TCONST_fslowlist));
                         delete (fs::FS *)slowlist;
                     }
 
