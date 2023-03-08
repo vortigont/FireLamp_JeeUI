@@ -650,7 +650,7 @@ void set_effects_config_list(Interface *interf, JsonObject *data){
 #ifdef EMBUI_USE_MQTT
 void mqtt_publish_selected_effect_config_json(){
   if (!embui.isMQTTconected()) return;
-  embui.publish(String(FPSTR(TCONST_embui_pub_)) + FPSTR(TCONST_eff_config), myLamp.effects.getSerializedEffConfig(myLamp.effects.getSelected(), myLamp.getNormalizedLampBrightness()), true);
+  embui.publish(String(FPSTR(TCONST_embui_pub_)) + FPSTR(TCONST_eff_config), myLamp.effects.getSerializedEffConfig(myLamp.effects.getSelected(), myLamp.getLampBrightness()), true);
 }
 #endif
 
@@ -706,7 +706,7 @@ void block_effects_param(Interface *interf, JsonObject *data){
                 {
                     if(isRandDemo && ctrl->getId()>0 && !(ctrl->getId()==7 && ctrl->getName().startsWith(FPSTR(TINTF_020))==1))
                         ctrlName=String(FPSTR(TINTF_0C9))+ctrlName;
-                    int value = ctrl->getId() ? ctrl->getVal().toInt() : myLamp.getNormalizedLampBrightness();
+                    int value = ctrl->getId() ? ctrl->getVal().toInt() : myLamp.getLampBrightness();
                     if(interf) interf->range(
                         ctrlId
                         ,String(value)
@@ -812,7 +812,7 @@ void set_effects_list(Interface *interf, JsonObject *data){
     if (embui.isMQTTconected()){
         embui.publish(String(FPSTR(TCONST_embui_pub_)) + FPSTR(CMD_EFFECT), String(eff->eff_nb), true);
         // not needed, already done in show_effects_param(), also same as mqtt_publish_selected_effect_config_json();
-        //embui.publish(String(FPSTR(TCONST_embui_pub_)) + FPSTR(TCONST_eff_config), myLamp.effects.getSerializedEffConfig(String(eff->eff_nb).toInt(), myLamp.getNormalizedLampBrightness()), true);
+        //embui.publish(String(FPSTR(TCONST_embui_pub_)) + FPSTR(TCONST_eff_config), myLamp.effects.getSerializedEffConfig(String(eff->eff_nb).toInt(), myLamp.getLampBrightness()), true);
     }
 #endif
 }
@@ -828,10 +828,10 @@ void direct_set_effects_dynCtrl(JsonObject *data){
         if((*data).containsKey(ctrlName)){
             if(!i){ // яркость???
                 byte bright = (*data)[ctrlName];
-                if (myLamp.getNormalizedLampBrightness() != bright) {
+                if (myLamp.getLampBrightness() != bright) {
                     myLamp.setLampBrightness(bright);
                     if(myLamp.isLampOn())
-                        myLamp.setBrightness(myLamp.getNormalizedLampBrightness(), !((*data)[FPSTR(TCONST_nofade)]));
+                        myLamp.setBrightness(myLamp.getLampBrightness(), !((*data)[FPSTR(TCONST_nofade)]));
                     if (myLamp.IsGlobalBrightness()) {
                         embui.var(FPSTR(TCONST_GlobBRI), (*data)[ctrlName]);
                     } else
@@ -1234,7 +1234,7 @@ void set_gbrflag(Interface *interf, JsonObject *data){
 #endif
     save_lamp_flags();
     if (myLamp.isLampOn()) {
-        myLamp.setBrightness(myLamp.getNormalizedLampBrightness());
+        myLamp.setBrightness(myLamp.getLampBrightness());
     }
     show_effects_param(interf, data);
 }
@@ -3948,7 +3948,7 @@ String httpCallback(const String &param, const String &value, bool isset){
         else if (upperParam == FPSTR(CMD_WARNING))
             { myLamp.showWarning(CRGB::Orange,5000,500); }
         else if (upperParam == FPSTR(CMD_EFF_CONFIG)) {
-                String result = myLamp.effects.getSerializedEffConfig(myLamp.effects.getCurrent(), myLamp.getNormalizedLampBrightness());
+                String result = myLamp.effects.getSerializedEffConfig(myLamp.effects.getCurrent(), myLamp.getLampBrightness());
 #ifdef EMBUI_USE_MQTT
                 embui.publish(String(FPSTR(TCONST_embui_pub_)) + FPSTR(TCONST_eff_config), result, true);
 #endif
@@ -3958,7 +3958,7 @@ String httpCallback(const String &param, const String &value, bool isset){
             LList<std::shared_ptr<UIControl>>&controls = myLamp.effects.getControls();
             for(unsigned i=0; i<controls.size();i++){
                 if(value == String(controls[i]->getId())){
-                    result = String(F("[")) + controls[i]->getId() + String(F(",\"")) + (controls[i]->getId()==0 ? String(myLamp.getNormalizedLampBrightness()) : controls[i]->getVal()) + String(F("\"]"));
+                    result = String(F("[")) + controls[i]->getId() + String(F(",\"")) + (controls[i]->getId()==0 ? String(myLamp.getLampBrightness()) : controls[i]->getVal()) + String(F("\"]"));
 #ifdef EMBUI_USE_MQTT
                     embui.publish(String(FPSTR(TCONST_embui_pub_)) + FPSTR(TCONST_control), result, true);
 #endif

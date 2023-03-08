@@ -1138,7 +1138,6 @@ void EffectWorker::moveSelected(){
 
     pendingCtrls.clear();        // no longer needed anyway
   }
-  //LOG(printf_P,PSTR("%d %d\n"),controls.size(), pendingCtrls.size());
 }
 
 
@@ -1308,7 +1307,6 @@ void EffectCalc::init(EFF_ENUM _eff, LList<std::shared_ptr<UIControl>> *controls
     //     break;
     // }
   }
-
   active=true;
   load();
 }

@@ -61,6 +61,9 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
     #define DEFAULT_MQTTPUB_INTERVAL 30
 #endif
 
+#define MAX_BRIGHTNESS            (255U)                    // стандартная максимальная яркость (255)
+
+
 typedef enum _LAMPMODE {
   MODE_NORMAL = 0,
   MODE_DEMO,
@@ -189,7 +192,7 @@ private:
     LAMPSTATE lampState; // текущее состояние лампы, которое передается эффектам
 
     uint8_t txtOffset = 0; // смещение текста относительно края матрицы
-    uint8_t globalBrightness = 127; // глобальная яркость, пока что будет использоваться для демо-режимов
+    uint8_t globalBrightness = 127;     // глобальная яркость
     uint8_t fps = 0;        // fps counter
 #ifdef LAMP_DEBUG
     uint16_t avgfps = 0;    // avarage fps counter
@@ -281,7 +284,6 @@ public:
 
     // Lamp brightness control (здесь методы работы с конфигурационной яркостью, не с LED!)
     uint8_t getLampBrightness() { return flags.isGlobalBrightness? globalBrightness : (effects.getControls()[0]->getVal()).toInt();}
-    uint8_t getNormalizedLampBrightness() { return (uint8_t)(BRIGHTNESS * (flags.isGlobalBrightness? globalBrightness : (effects.getControls()[0]->getVal()).toInt()) / 255);}
     void setLampBrightness(uint8_t brg) { lampState.brightness=brg; if (flags.isGlobalBrightness) setGlobalBrightness(brg); else effects.getControls()[0]->setVal(String(brg)); }
     void setGlobalBrightness(uint8_t brg) {globalBrightness = brg;}
     void setIsGlobalBrightness(bool val) {flags.isGlobalBrightness = val; if(effects.worker) { lampState.brightness=getLampBrightness(); effects.worker->setDynCtrl(effects.getControls()[0].get());} }
@@ -424,7 +426,7 @@ void setTempDisp(bool flag) {flags.isTempOn = flag;}
     void setBrightness(const uint8_t _tgtbrt, const bool fade=false, const bool natural=true);
 
     /**
-     * @brief - Get current brightness
+     * @brief - Get current FASTLED brightness
      * FastLED brighten8 function applied internaly for natural brightness compensation
      * @param bool natural - return compensated or absolute brightness
      */
@@ -470,7 +472,8 @@ private:
  */
 class LEDFader {
     LAMP *lmp = nullptr;
-    uint8_t  _tgtbrt;                           // target brightness
+    uint8_t _brt;                               // transient brightness
+    uint8_t  _tgtbrt{0};                        // target brightness
     int8_t _brtincrement;                       // change step
     std::function<void(void)> _cb = nullptr;    // callback func to call upon completition
     Task *runner = nullptr;
@@ -625,7 +628,7 @@ public:
 
         LOG(printf_P, PSTR("Отключение будильника рассвет, ONflag=%d\n"), lamp->isLampOn());
         //lamp->brightness(lamp->getNormalizedLampBrightness());
-        lamp->setBrightness(lamp->getNormalizedLampBrightness(), false, false);
+        lamp->setBrightness(lamp->getLampBrightness(), false, false);
         if (!lamp->isLampOn()) {
             lamp->effectsTimer(T_DISABLE);
             FastLED.clear();
@@ -650,8 +653,7 @@ public:
             memset(ALARMTASK::getInstance()->dawnColorMinus,0,sizeof(dawnColorMinus));
             ALARMTASK::getInstance()->dawnCounter = 0;
             FastLED.clear();
-            //brightness(BRIGHTNESS, false);
-            lamp->setBrightness(BRIGHTNESS, false, false);
+            lamp->setBrightness(MAX_BRIGHTNESS, false, false);
             // величина рассвета 0-255
             int16_t dawnPosition = map((millis()-ALARMTASK::getInstance()->startmillis)/1000,0,ALARMTASK::getInstance()->curAlarm.alarmP*60,0,255); // 0...curAlarm.alarmP*60 секунд приведенные к 0...255
             dawnPosition = constrain(dawnPosition, 0, 255);

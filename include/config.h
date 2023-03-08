@@ -246,10 +246,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #define NUMHOLD_TIME          (3000U)                       // время запоминания последней комбинации яркости/скорости/масштаба в мс
 #endif
 
-#ifndef BRIGHTNESS
-#define BRIGHTNESS            (255U)                        // стандартная максимальная яркость (0-255)
-#endif
-
 #ifndef OFF_BRIGHTNESS
 #define OFF_BRIGHTNESS          (2U)                        // яркость вывода текста в случае выключенной лампы
 #endif
@@ -265,7 +261,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #define FADE_TIME             (2000U)                       // Default fade time, ms
 #endif
 #ifndef FADE_MININCREMENT
-#define FADE_MININCREMENT     (3U)                          // Minimal increment for brightness fade
+#define FADE_MININCREMENT     (2U)                          // Minimal increment for brightness fade
 #endif
 #ifndef FADE_MINCHANGEBRT
 #define FADE_MINCHANGEBRT     (30U)                         // Minimal brightness for effects changer

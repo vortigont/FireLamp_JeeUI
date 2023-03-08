@@ -354,7 +354,7 @@ void LAMP::startRGB(CRGB &val){
 void LAMP::stopRGB(){
   if (mode != LAMPMODE::MODE_RGBLAMP) return;
 
-  setBrightness(getNormalizedLampBrightness(), false, false);
+  setBrightness(getLampBrightness(), false, false);
   mode = (storedMode != LAMPMODE::MODE_RGBLAMP ? storedMode : LAMPMODE::MODE_NORMAL); // возвращаем предыдущий режим
   if(mode==LAMPMODE::MODE_DEMO)
     demoTimer(T_ENABLE);     // вернуть демо-таймер
@@ -946,7 +946,7 @@ void LAMP::setMicOnOff(bool val) {
  * @param bool fade - use fade effect on brightness change
  */
 void LAMP::setBrightness(const uint8_t _brt, const bool fade, const bool natural){
-    LOG(printf_P, PSTR("Set brightness: %u\n"), _brt);
+    LOG(printf_P, PSTR("setBrightness(): %u\n"), _brt);
     if (fade) {
         LEDFader::getInstance()->fadelight(_brt);
     } else {
@@ -1034,7 +1034,7 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
     if (fade && flags.ONflag) {
       effects.preloadEffCtrls(next_eff_num);    // preload controls for next effect
       // запускаем фейдер и уходим на второй круг переключения
-      LEDFader::getInstance()->fadelight(min(FADE_MINCHANGEBRT, (unsigned int)myLamp.getLampBrightness()), FADE_TIME, std::bind(&LAMP::switcheffect, this, action, fade, next_eff_num, true));
+      LEDFader::getInstance()->fadelight( myLamp.getLampBrightness() < 2*FADE_MINCHANGEBRT ? 0 : FADE_MINCHANGEBRT, FADE_TIME, std::bind(&LAMP::switcheffect, this, action, fade, next_eff_num, true));
       return;
     } else {
       // do direct switch to effect
@@ -1100,7 +1100,7 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
     //std::copy(getUnsafeLedsArray(), getUnsafeLedsArray() + NUM_LEDS, sledsbuff); // сохранить кадр в буфер
     memcpy(sledsbuff, getUnsafeLedsArray(), NUM_LEDS);
   }
-  setBrightness(getNormalizedLampBrightness(), fade, natural);
+  setBrightness(getLampBrightness(), fade, natural);
   LOG(println, F("eof switcheffect"));
 }
 
@@ -1339,21 +1339,27 @@ void LAMP::setStreamBuff(bool flag) {
 
 void LEDFader::fadelight(const uint8_t _targetbrightness, const uint32_t _duration, std::function<void()> callback){
   if (!lmp) return;
-  if (lmp->getBrightness() == _targetbrightness) {
+  //LOG(printf_P, PSTR("FDR lamp_getbr:%d, fled_getbr:%d, fled_vid%d\n"), lmp->getBrightness(), FastLED.getBrightness(), brighten8_video(FastLED.getBrightness()));
+
+  // will take previous value of fader target value as current lamp brightness,
+  // during fadedown lamp's configured brightness does no change, so we can't rely on it
+  _brt = _tgtbrt;
+  if (_brt == _targetbrightness) {
     // no need to fade, already same brightness
     if (callback) callback();
     return;
   }
   _tgtbrt = _targetbrightness;
   _cb = callback;
-  int _steps = (abs(_targetbrightness - lmp->getBrightness()) > FADE_MININCREMENT * _duration / FADE_STEPTIME) ? (long)(_duration / FADE_STEPTIME) : (long)(abs(_targetbrightness - lmp->getBrightness())/FADE_MININCREMENT);
+  int _steps = (abs(_tgtbrt - _brt) > FADE_MININCREMENT * _duration / FADE_STEPTIME) ? _duration / FADE_STEPTIME : abs(_tgtbrt - _brt)/FADE_MININCREMENT;
   if (_steps < 3) {   // no need to fade for such small difference
-    lmp->brightness(_targetbrightness);
+    lmp->brightness(_tgtbrt);
+    LOG(printf_P, PSTR("Fast fade to %d->%d\n"), _brt, _tgtbrt);
     if (runner) abort();
     if (callback) callback();
     return;
   }
-  _brtincrement = (_targetbrightness - lmp->getBrightness()) / _steps;
+  _brtincrement = (_tgtbrt - _brt) / _steps;
 
   if (runner){
     runner->setIterations(_steps);
@@ -1361,21 +1367,22 @@ void LEDFader::fadelight(const uint8_t _targetbrightness, const uint32_t _durati
   } else {
     runner = new Task((unsigned long)FADE_STEPTIME,
       _steps,
-      [this](){ lmp->brightness(lmp->getBrightness()+_brtincrement); },
+      [this](){ _brt += _brtincrement; lmp->brightness(_brt); /* LOG(printf_P, PSTR("fd brt %d/%d, glbr:%d, gbr:%d, vid:%d, vid2:%d\n"), _brt, _brtincrement, lmp->getLampBrightness(), lmp->getBrightness(), brighten8_video(FastLED.getBrightness()), brighten8_video(brighten8_video(FastLED.getBrightness()))  ); */ },
       &ts,
       true,
       nullptr,
       [this](){
           lmp->brightness(_tgtbrt);
           LOG(printf_P, PSTR("Fading to %d done\n"), _tgtbrt);
-          if(_cb) _cb();
-          _cb = nullptr;
+          // use new task for callback, 'cause effect switching will immiatetly respawn new fader from callback
+          // so need to release a task instance
+          if(_cb) { new Task(FADE_STEPTIME, TASK_ONCE, [this](){ if (_cb) { _cb(); _cb = nullptr; } }, &ts, true ); }
           runner = nullptr;
       },
       true);
   }
 
-  LOG(printf_P, PSTR("Fading %d->%d, in %d steps, inc %d\n"), lmp->getBrightness(), _targetbrightness, _steps, _brtincrement);
+  LOG(printf_P, PSTR("Fading l:%d(led:%d)->%d, in %d steps, inc %d\n"), lmp->getBrightness(), _brt, _targetbrightness, _steps, _brtincrement);
 }
 
 void LEDFader::abort(){

@@ -144,14 +144,14 @@ bool EffectWhiteColorStripe::whiteColorStripeRoutine(CRGB *leds, EffectWorker *p
         uint8_t centerY = EffectMath::getmaxHeightIndex() / 2U;
         for (int16_t y = centerY; y >= 0; y--)
         {
-          int br = (BRIGHTNESS)-constrain(map(_scale,126,1,1,15)*(centerY-y)*((centerY-y)/(HEIGHT*(0.0005*brightness))),1,BRIGHTNESS); if(br<0) br=0;
+          int br = (MAX_BRIGHTNESS)-constrain(map(_scale,126,1,1,15)*(centerY-y)*((centerY-y)/(HEIGHT*(0.0005*brightness))),1,MAX_BRIGHTNESS); if(br<0) br=0;
           int _shift = isMicOn() ? 0 : map(shift,1,255,-centerY,centerY);
 
             CRGB color = CHSV(
               45U,                                                        // определяем тон
               map(_speed, 0U, 255U, 0U, 170U),                            // определяем насыщенность
-              (y == centerY ? (BRIGHTNESS) : br));                        // определяем яркость для центральной вертикальной полосы (или двух) яркость всегда равна BRIGHTNESS
-                                                                          // для остальных вертикальных полос яркость равна либо BRIGHTNESS, либо вычисляется по br
+              (y == centerY ? (MAX_BRIGHTNESS) : br));                        // определяем яркость для центральной вертикальной полосы (или двух) яркость всегда равна MAX_BRIGHTNESS
+                                                                          // для остальных вертикальных полос яркость равна либо MAX_BRIGHTNESS, либо вычисляется по br
 
           for (int16_t x = 0U; x < (int16_t)WIDTH; x++)
           {
@@ -163,14 +163,14 @@ bool EffectWhiteColorStripe::whiteColorStripeRoutine(CRGB *leds, EffectWorker *p
         uint8_t centerX = EffectMath::getmaxWidthIndex() / 2U;
         for (int16_t y = 0U; y < (int16_t)HEIGHT; y++){
           for (int16_t x = centerX; x >= 0; x--){
-            int br = (BRIGHTNESS)-constrain(map(_scale,128,255,1,15)*(centerX-x)*((centerX-x)/(WIDTH*(0.0005*brightness))),1,BRIGHTNESS); if(br<0) br=0;
+            int br = (MAX_BRIGHTNESS)-constrain(map(_scale,128,255,1,15)*(centerX-x)*((centerX-x)/(WIDTH*(0.0005*brightness))),1,MAX_BRIGHTNESS); if(br<0) br=0;
             int _shift = isMicOn() ? 0 : map(shift,1,255,-centerX,centerX);
 
             CRGB color = CHSV(
               45U,                                                        // определяем тон
               map(_speed, 0U, 255U, 0U, 170U),                            // определяем насыщенность
-              (x == centerX ? (BRIGHTNESS) : br));                        // определяем яркость для центральной вертикальной полосы (или двух) яркость всегда равна BRIGHTNESS
-                                                                          // для остальных вертикальных полос яркость равна либо BRIGHTNESS, либо вычисляется по br
+              (x == centerX ? (MAX_BRIGHTNESS) : br));                        // определяем яркость для центральной вертикальной полосы (или двух) яркость всегда равна MAX_BRIGHTNESS
+                                                                          // для остальных вертикальных полос яркость равна либо MAX_BRIGHTNESS, либо вычисляется по br
 
             EffectMath::drawPixelXY(x + _shift, y, color);                // при чётной ширине матрицы максимально яркими отрисуются 2 центральных вертикальных полосы
             EffectMath::drawPixelXY((WIDTH - x + _shift) - 1, y, color);  // при нечётной - одна, но дважды
@@ -183,7 +183,7 @@ bool EffectWhiteColorStripe::whiteColorStripeRoutine(CRGB *leds, EffectWorker *p
             CRGB color = CHSV(
               45U,                                                       // определяем тон
               (brightness>=0 ? map(_speed, 0U, 255U, 0U, 170U) : 0),     // определяем насыщенность
-              (BRIGHTNESS));
+              (MAX_BRIGHTNESS));
             EffectMath::drawPixelXY(x, y, color);                        // 127 - заливка полная
           }
         }
@@ -3133,6 +3133,7 @@ String EffectPicasso::setDynCtrl(UIControl*_val) {
         150,  0,  0,  0,
         255,  0,  0,  0
     };
+
     CRGB *color = (CRGB *)dynpal + 1;
     *color = CHSV(hue + 255, 255U, 255U); ++color;
     *color = CHSV(hue + 135, 255U, 200U); ++color;
