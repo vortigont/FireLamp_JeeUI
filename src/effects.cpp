@@ -3129,17 +3129,17 @@ String EffectPicasso::setDynCtrl(UIControl*_val) {
     TDynamicRGBGradientPalette_byte dynpal[20] = {
         0,  0,  0,  0,
         1,  0,  0,  0,
-        80,  0,  0,  0,
-        150,  0,  0,  0,
-        255,  0,  0,  0
+       80,  0,  0,  0,
+      150,  0,  0,  0,
+      255,  0,  0,  0
     };
 
     CRGB *color = (CRGB *)dynpal + 1;
-    *color = CHSV(hue + 255, 255U, 255U); ++color;
-    *color = CHSV(hue + 135, 255U, 200U); ++color;
-    *color = CHSV(hue + 160, 255U, 120U); ++color;
-    *color = CHSV(hue + 150, 255U, 255U); ++color;
-    *color = CHSV(hue + 255, 255U, 255U); ++color;
+    *color = CHSV(hue + 255, 255U, 255U); color = (CRGB *)(dynpal + 5);
+    *color = CHSV(hue + 135, 255U, 200U); color = (CRGB *)(dynpal + 9);
+    *color = CHSV(hue + 160, 255U, 120U); color = (CRGB *)(dynpal + 13);
+    *color = CHSV(hue + 150, 255U, 255U); color = (CRGB *)(dynpal + 17);
+    *color = CHSV(hue + 255, 255U, 255U);
     CRGBPalette32 pal;
     pal.loadDynamicGradientPalette(dynpal);
     palettes.add(0, pal, 0, 16);
@@ -3417,18 +3417,17 @@ String EffectLiquidLamp::setDynCtrl(UIControl*_val) {
     TDynamicRGBGradientPalette_byte dynpal[20] = {
         0,  0,  0,  0,
         1,  0,  0,  0,
-        80,  0,  0,  0,
-        150,  0,  0,  0,
-        255,  0,  0,  0
+       80,  0,  0,  0,
+      150,  0,  0,  0,
+      255,  0,  0,  0
     };
     CRGB *color = (CRGB *)dynpal + 1;
-    *color = CHSV(hue + 255, 255U, 255U); ++color;
-    *color = CHSV(hue + 135, 255U, 200U); ++color;
-    *color = CHSV(hue + 160, 255U, 120U); ++color;
-    *color = CHSV(hue + 150, 255U, 255U); ++color;
-    *color = CHSV(hue + 255, 255U, 255U); ++color;
-    CRGBPalette32 pal;
-    pal.loadDynamicGradientPalette(dynpal);
+    *color = CHSV(hue + 255, 255U, 255U); color = (CRGB *)(dynpal + 5);
+    *color = CHSV(hue + 135, 255U, 200U); color = (CRGB *)(dynpal + 9);
+    *color = CHSV(hue + 160, 255U, 120U); color = (CRGB *)(dynpal + 13);
+    *color = CHSV(hue + 150, 255U, 255U); color = (CRGB *)(dynpal + 17);
+    *color = CHSV(hue + 255, 255U, 255U);
+    CRGBPalette32 pal;    pal.loadDynamicGradientPalette(dynpal);
     palettes.add(0, pal, 0, 16);
   }
   else if(_val->getId()==5) filter = EffectCalc::setDynCtrl(_val).toInt();
