@@ -268,9 +268,9 @@ void block_effects_config_param(Interface *interf, JsonObject *data){
     interf->option(String(SORT_TYPE::ST_MIC), FPSTR(TINTF_08D));  // эффекты с микрофоном
 #endif
     interf->json_section_end();
-    interf->checkbox(FPSTR(TCONST_numInList), myLamp.getLampSettings().numInList ? "1" : "0", FPSTR(TINTF_090), false); // нумерация в списке эффектов
+    //interf->checkbox(FPSTR(TCONST_numInList), myLamp.getLampSettings().numInList ? "1" : "0", FPSTR(TINTF_090), false); // нумерация в списке эффектов
 #ifdef MIC_EFFECTS
-    interf->checkbox(FPSTR(TCONST_effHasMic), myLamp.getLampSettings().effHasMic ? "1" : "0", FPSTR(TINTF_091), false); // значек микрофона в списке эффектов
+    //interf->checkbox(FPSTR(TCONST_effHasMic), myLamp.getLampSettings().effHasMic ? "1" : "0", FPSTR(TINTF_091), false); // значек микрофона в списке эффектов
 #endif
 
     interf->button_submit(FPSTR(TCONST_set_effect), FPSTR(TINTF_008), FPSTR(P_GRAY));
