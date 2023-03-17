@@ -35,8 +35,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
    <https://www.gnu.org/licenses/>.)
 */
 
-#ifndef __LAMP_H
-#define __LAMP_H
+#pragma once
 
 #include "misc.h"
 #include "config.h" // подключаем эффекты, там же их настройки
@@ -718,5 +717,3 @@ public:
 };
 
 extern LAMP myLamp; // Объект лампы
-
-#endif

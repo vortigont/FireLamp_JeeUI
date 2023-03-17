@@ -37,6 +37,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "effectworker.h"
 #include "effects.h"
 #include "char_const.h"
+#include "filehelpers.hpp"
 
 #define DYNJSON_SIZE_EFF_CFG   2048
 
@@ -380,7 +381,7 @@ void EffectWorker::initDefault(const char *folder)
 
 void EffectWorker::removeConfig(const uint16_t nb, const char *folder)
 {
-  String filename = getEffectCfgPath(nb,folder);
+  String filename = fshlpr::getEffectCfgPath(nb,folder);
   LOG(printf_P,PSTR("Remove from FS: %s\n"), filename.c_str());
   LittleFS.remove(filename); // удаляем файл
 }
@@ -428,9 +429,9 @@ void EffectWorker::effectsReSort(SORT_TYPE _effSort)
  */
 void EffectWorker::loadeffname(String& _effectName, const uint16_t nb, const char *folder)
 {
-  String filename = getEffectCfgPath(nb,folder);
+  String filename = fshlpr::getEffectCfgPath(nb,folder);
   DynamicJsonDocument doc(DYNJSON_SIZE_EFF_CFG);
-  bool ok = deserializeFile(doc, filename.c_str());
+  bool ok = fshlpr::deserializeFile(doc, filename.c_str());
   if (ok && doc[F("name")]){
     _effectName = doc[F("name")].as<String>(); // перенакрываем именем из конфига, если есть
   } else if(!ok) {
@@ -447,44 +448,15 @@ void EffectWorker::loadeffname(String& _effectName, const uint16_t nb, const cha
 */
 void EffectWorker::loadsoundfile(String& _soundfile, const uint16_t nb, const char *folder)
 {
-  String filename = getEffectCfgPath(nb,folder);
+  String filename = fshlpr::getEffectCfgPath(nb,folder);
   DynamicJsonDocument doc(2048);
-  bool ok = deserializeFile(doc, filename.c_str());
+  bool ok = fshlpr::deserializeFile(doc, filename.c_str());
   LOG(printf_P,PSTR("snd: %s\n"),doc[F("snd")].as<String>().c_str());
   if (ok && doc[F("snd")]){
     _soundfile = doc[F("snd")].as<String>(); // перенакрываем именем из конфига, если есть
   } else if(!ok) {
     _soundfile = "";
   }
-}
-
-/**
- *  метод загружает и пробует десериализовать джейсон из файла в предоставленный документ,
- *  возвращает true если загрузка и десериализация прошла успешно
- *  @param doc - DynamicJsonDocument куда будет загружен джейсон
- *  @param jsonfile - файл, для загрузки
- */
-bool EffectWorker::deserializeFile(DynamicJsonDocument& doc, const char* filepath){
-  if (!filepath || !*filepath)
-    return false;
-
-  LOG(printf_P, PSTR("Load file: %s\n"), filepath);
-  File jfile = LittleFS.open(filepath, "r");
-  DeserializationError error;
-  if (jfile){
-    error = deserializeJson(doc, jfile);
-    jfile.close();
-  } else {
-    LOG(printf_P, PSTR("Can't open File: %s"), filepath);
-    return false;
-  }
-
-  if (error) {
-    LOG(printf_P, PSTR("File: failed to load json file: %s, deserialize error: "), filepath);
-    LOG(println, error.code());
-    return false;
-  }
-  return true;
 }
 
 bool EffectWorker::loadeffconfig(const uint16_t nb, const char *folder)
@@ -503,18 +475,7 @@ bool EffectWorker::loadeffconfig(const uint16_t nb, const char *folder)
   return _eff_ctrls_load_from_jdoc(doc, controls);
 }
 
-const String EffectWorker::getEffectCfgPath(const uint16_t nb, const char *folder) const {
-  uint16_t swapnb = nb>>8|nb<<8; // меняю местами 2 байта, так чтобы копии/верисии эффекта оказалась в имени файла позади
-
-  // todo: check if supplied alternative path starts with '/'
-  String filename(folder ? folder : "/eff/");
-  char buffer[10];
-  sprintf_P(buffer,PSTR("%04x.json"), swapnb);
-  filename.concat(buffer);
-  return filename;
-}
-
-void EffectWorker::savedefaulteffconfig(uint16_t nb, String &filename){
+void EffectWorker::_create_eff_default_cfg_file(uint16_t nb, String &filename){
 
   const String efname(FPSTR(T_EFFNAMEID[(uint8_t)nb])); // выдергиваем имя эффекта из таблицы
   LOG(printf_P,PSTR("Make default config: %d %s\n"), nb, efname.c_str());
@@ -524,7 +485,7 @@ void EffectWorker::savedefaulteffconfig(uint16_t nb, String &filename){
   cfg.replace(F("@ver@"), String(geteffcodeversion((uint8_t)nb)) );
   cfg.replace(F("@nb@"), String(nb));
   
-  File configFile = LittleFS.open(filename, "w"); // PSTR("w") использовать нельзя, будет исключение!
+  File configFile = LittleFS.open(filename, "w");
   if (configFile){
     configFile.print(cfg.c_str());
     configFile.close();
@@ -532,18 +493,6 @@ void EffectWorker::savedefaulteffconfig(uint16_t nb, String &filename){
   LOG(printf_P, PSTR("Effect: %u, cfg:%s\n"), nb, cfg.c_str());
 }
 
-bool EffectWorker::getfseffconfig(uint16_t nb, String &result)
-{
-  String filename = getEffectCfgPath(nb);
-  File jfile = LittleFS.open(filename, "r");
-  if(jfile){
-    result = jfile.readString();
-    jfile.close();
-    return true;
-  }
-
-  return false;
-}
 
 String EffectWorker::getSerializedEffConfig(uint16_t nb, uint8_t replaceBright)
 {
@@ -592,7 +541,7 @@ void EffectWorker::saveeffconfig(uint16_t nb, char *folder){
     tConfigSave->cancel(); // если оказались здесь, и есть отложенная задача сохранения конфига, то отменить ее
   
   File configFile;
-  String filename = getEffectCfgPath(nb,folder);
+  String filename = fshlpr::getEffectCfgPath(nb,folder);
   LOG(printf_P,PSTR("Writing eff #%d cfg: %s\n"), nb, filename.c_str());
   configFile = LittleFS.open(filename, "w"); // PSTR("w") использовать нельзя, будет исключение!
   configFile.print(getSerializedEffConfig(nb));
@@ -612,9 +561,9 @@ void EffectWorker::chckdefconfigs(const char *folder){
     if(i>EFF_ENUM::EFF_TIME) continue; // пропускаем эффекты для микрофона, если отключен микрофон
 #endif
 
-    String cfgfilename = getEffectCfgPath(i, folder);
+    String cfgfilename = fshlpr::getEffectCfgPath(i, folder);
     if(!LittleFS.exists(cfgfilename)){ // если конфига эффекта не существует, создаем дефолтный
-      savedefaulteffconfig(i, cfgfilename);
+      _create_eff_default_cfg_file(i, cfgfilename);
     }
   }
 }
@@ -686,25 +635,6 @@ EffectWorker::EffectWorker(uint16_t delayeffnb)
 #endif
 }
 
-/**
- * процедура открывает индекс-файл на запись в переданный хендл,
- * возвращает хендл
- */
-File& EffectWorker::openIndexFile(File& fhandle, const char *folder){
-
-  String filename;
-
-  if (folder && folder[0]){ // если указан каталог и первый символ не пустой, то берем как есть
-    filename.concat(folder);
-    LOG(print, F("index:"));
-    LOG(println, filename.c_str());
-  } else
-    filename.concat(F("/eff_index.json"));
-  
-  fhandle = LittleFS.open(filename, "w");
-  return fhandle;
-}
-
 
 /**
  *  процедура содания индекса "по-умолчанию" на основе "вшитых" в код enum/имен эффектов
@@ -765,7 +695,7 @@ void EffectWorker::makeIndexFileFromList(const char *folder, bool forceRemove)
   if(forceRemove)
     removeLists();
 
-  openIndexFile(indexFile, folder);
+  fshlpr::openIndexFile(indexFile, folder);
   effectsReSort(SORT_TYPE::ST_IDX); // сброс сортировки перед записью
 
   bool firstLine = true;
@@ -807,7 +737,7 @@ void EffectWorker::makeIndexFileFromFS(const char *fromfolder,const char *tofold
 #endif
 
   String fn;
-  openIndexFile(indexFile, tofolder);
+  fshlpr::openIndexFile(indexFile, tofolder);
   bool firstLine = true;
   indexFile.print("[");
 
@@ -827,7 +757,7 @@ void EffectWorker::makeIndexFileFromFS(const char *fromfolder,const char *tofold
 #endif
 
 
-      if (!deserializeFile(doc, fn.c_str())) { //  || doc[F("nb")].as<String>()=="0"
+      if (!fshlpr::deserializeFile(doc, fn.c_str())) { //  || doc[F("nb")].as<String>()=="0"
         #ifdef ESP32
         _f.close();
         #endif
@@ -1146,11 +1076,11 @@ uint16_t EffectWorker::effIndexByList(uint16_t val) {
 
 bool EffectWorker::_eff_cfg_deserialize(DynamicJsonDocument &doc, uint16_t nb, const char *folder){
   LOG(printf_P, PSTR("_eff_cfg_deserialize() eff:%u\n"), nb);
-  String filename(getEffectCfgPath(nb,folder));
+  String filename(fshlpr::getEffectCfgPath(nb,folder));
 
   bool retry = true;
   READALLAGAIN:
-  if (deserializeFile(doc, filename.c_str() )){
+  if (fshlpr::deserializeFile(doc, filename.c_str() )){
     if ( nb>255 || geteffcodeversion((uint8_t)nb) == doc[F("ver")] ){ // только для базовых эффектов эта проверка
       return true;   // we are OK
     }
@@ -1158,7 +1088,7 @@ bool EffectWorker::_eff_cfg_deserialize(DynamicJsonDocument &doc, uint16_t nb, c
   }
   // something is wrong with eff config file, recreate it to default
   LittleFS.remove(filename);
-  savedefaulteffconfig(nb, filename);   // пробуем перегенерировать поврежденный конфиг
+  _create_eff_default_cfg_file(nb, filename);   // пробуем перегенерировать поврежденный конфиг (todo: remove it and provide default from code)
 
   if (retry) {
     retry = false;
@@ -1257,7 +1187,7 @@ void EffectWorker::_load_eff_list_from_idx_file(const char *folder){
 
   DynamicJsonDocument doc(4096);  // document for loading effects index from file
 
-  if (!deserializeFile(doc, filename.c_str())){
+  if (!fshlpr::deserializeFile(doc, filename.c_str())){
     LittleFS.remove(filename);    // remove corrupted index file
     return _load_default_fweff_list();
   }
@@ -1556,4 +1486,64 @@ UIControl& UIControl::operator =(const UIControl &rhs){
   max = rhs.max;
   step = rhs.step;
   return *this;
+}
+
+// Построение выпадающего списка эффектов для вебморды
+void build_eff_names_list_file(EffectWorker &w, bool full){
+  LOG(println, F("=== GENERATE effects name list file for GUI ==="));
+  //uint16_t effnb = confEff ? (int)confEff->eff_nb : myLamp.effects.getSelected(); // если confEff не NULL, то мы в конфирурировании, иначе в основном режиме
+
+  // delete existing file if any
+  if(LittleFS.exists(full ? FPSTR(TCONST_eff_fulllist_json) : FPSTR(TCONST_eff_list_json))){
+    LittleFS.remove(full ? FPSTR(TCONST_eff_fulllist_json) : FPSTR(TCONST_eff_list_json));
+  }
+
+#ifdef ESP32
+#define ARR_LIST_SIZE   4096
+#else
+#define ARR_LIST_SIZE   1024
+#endif
+
+  std::array<char, ARR_LIST_SIZE> *buff = new(std::nothrow) std::array<char, ARR_LIST_SIZE>;
+  if (!buff) return;    // not enough mem
+
+  fs::File hndlr = LittleFS.open(FPSTR(TCONST_eff_list_json_tmp), "w");
+  
+  size_t offset = 0;
+  auto itr =  w.getEffectsList().cbegin();  // get const interator
+  buff->at(offset++) = (char)0x5b;   // Open json with ASCII '['
+
+  do {
+    // skip effects that are excluded from selection list (main page)
+    if (!full && !itr->flags.canBeSelected)
+      continue;
+
+    String effname((char *)0);
+    w.loadeffname(effname, itr->eff_nb);
+
+    // {"label":"50. Прыгуны","value":"50"}, => 30 bytes + NameLen (assume 35 to be safe)
+    #define LIST_JSON_OVERHEAD  35
+    LOG(printf_P,PSTR("gen list: %d, %s\n"), itr->eff_nb, effname.c_str());
+
+    if (ARR_LIST_SIZE - offset < effname.length() + LIST_JSON_OVERHEAD){
+      // write to file and purge buffer
+      //LOG(println,F("Dumping buff..."));
+      hndlr.write(reinterpret_cast<uint8_t*>(buff->data()), offset);
+      offset = 0;
+    }
+
+    String name(EFF_NUMBER(itr->eff_nb));
+    //name + (eff->eff_nb>255 ? String(F(" (")) + String(eff->eff_nb&0xFF) + String(F(")")) : String("")) + String(F(". "))
+    name += effname + MIC_SYMBOL(itr->eff_nb);
+
+    offset += sprintf_P(buff->data()+offset, PSTR("{\"label\":\"%s\",\"value\":\"%d\"},"), name.c_str(), itr->eff_nb);
+  } while (++itr != w.getEffectsList().cend());
+
+  buff->at(--offset) = (char)0x5d;   // ASCII ']' implaced over last comma
+  hndlr.write(reinterpret_cast<uint8_t*>(buff->data()), ++offset);
+  delete buff;
+  hndlr.close();
+
+  LittleFS.rename(FPSTR(TCONST_eff_list_json_tmp), full ? FPSTR(TCONST_eff_fulllist_json) : FPSTR(TCONST_eff_list_json));
+
 }

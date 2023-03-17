@@ -80,6 +80,10 @@ typedef const TProgmemRGBPalette16 PGMPalette;
 // все установленные биты для EFFFLAGS
 #define SET_ALL_EFFFLAGS 3
 
+/**
+ * @brief enumerated list of visual effects
+ * 
+ */
 typedef enum : uint8_t {
 EFF_NONE = (0U),                              // Специальный служебный эффект, не комментировать и индекс не менять константу!
 EFF_WHITE_COLOR,                              // Белый свет

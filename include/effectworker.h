@@ -35,14 +35,11 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
    <https://www.gnu.org/licenses/>.)
 */
 
-#ifndef __EFFECTWORKER_H
-#define __EFFECTWORKER_H
+#pragma once
 
-#include "misc.h"
+#include "filehelpers.hpp"
 #include "LList.h"
-#include <ArduinoJson.h>
 #include "effects_types.h"
-#include <LittleFS.h>
 
 #ifdef MIC_EFFECTS
 #include "micFFT.h"
@@ -51,6 +48,23 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "ts.h"
 // TaskScheduler - Let the runner object be a global, single instance shared between object files.
 extern Scheduler ts;
+
+// Вывод значка микрофона в списке эффектов
+#ifdef MIC_EFFECTS
+    #define MIC_SYMBOL(N) (pgm_read_byte(T_EFFVER + (uint8_t)N) % 2 ? "" : " \U0001F399")
+    //#define MIC_SYMBOL (micSymb ? (pgm_read_byte(T_EFFVER + (uint8_t)eff->eff_nb) % 2 == 0 ? " \U0001F399" : "") : "")
+    //#define MIC_SYMB bool micSymb = myLamp.getLampSettings().effHasMic
+#else
+    #define MIC_SYMBOL(N) ""
+    //#define MIC_SYMB
+#endif
+
+// Вывод номеров эффектов в списке, в WebUI
+// depend on option to disable numbers in list names 
+//#define EFF_NUMBER   (numList ? (eff->eff_nb <= 255 ? (String(eff->eff_nb) + ". ") : (String((byte)(eff->eff_nb & 0xFF)) + "." + String((byte)(eff->eff_nb >> 8) - 1U) + ". ")) : "")
+#define EFF_NUMBER(N)   N <= 255 ? (String(N) + ". ") : (String((byte)(N & 0xFF)) + "." + String((byte)(N >> 8) - 1U) + " ")
+
+
 
 typedef struct {
     union {
@@ -414,21 +428,20 @@ private:
     bool loadeffconfig(const uint16_t nb, const char *folder=NULL);
 
     /**
-     * @brief получение пути и имени файла конфига эффекта по его номеру
-     * 
-     * @param nb - номер эффекта
-     * @param folder -  абсолютный путь к каталогу с конфигами, должен начинаться и заканчиваться '/', по-умолчанию испльзуется '/eff/'
-     * @return const String - полный путь до файла с конфигом
-     */
-    const String getEffectCfgPath(const uint16_t nb, const char *folder=NULL) const;
-
-    /**
      * проверка на существование "дефолтных" конфигов для всех статичных эффектов
      *
      */
     void chckdefconfigs(const char *folder);
 
-    void savedefaulteffconfig(uint16_t nb, String &filename);
+    /**
+     * @brief create Effect's default configuration json file
+     * it overwrites existing file on FS with effect's default configuration
+     * 
+     * @param nb - eff enum
+     * @param filename - filename to write
+     */
+    void _create_eff_default_cfg_file(uint16_t nb, String &filename);
+
     void saveeffconfig(uint16_t nb, char *folder=NULL);
     //void makeIndexFile(const char *folder = NULL);
     // создать или обновить текущий индекс эффекта
@@ -440,20 +453,6 @@ private:
      * получить версию эффекта из "прошивки" по его ENUM
      */
     const uint8_t geteffcodeversion(const uint8_t id);
-
-    /**
-     *  метод загружает и пробует десериализовать джейсон из файла в предоставленный документ,
-     *  возвращает true если загрузка и десериализация прошла успешно
-     *  @param doc - DynamicJsonDocument куда будет загружен джейсон
-     *  @param jsonfile - файл, для загрузки
-     */
-    static bool deserializeFile(DynamicJsonDocument& doc, const char* filepath);
-
-    /**
-     * процедура открывает индекс-файл на запись в переданный хендл,
-     * возвращает хендл
-     */
-    File& openIndexFile(File& fhandle, const char *folder);
 
     /**
      * @brief deserialise effect configuration from a file based on eff number
@@ -521,6 +520,12 @@ public:
 
     void initDefault(const char *folder = NULL); // пусть вызывается позже и явно
 
+    /**
+     * @brief Get const reference to current Effects List
+     * 
+     */
+    LList<EffectListElem> const &getEffectsList() const { return effects; };
+
     LList<std::shared_ptr<UIControl>>&getControls() { return isEffSwPending() ? pendingCtrls : controls; }
 
     // тип сортировки
@@ -535,9 +540,6 @@ public:
      * @return String 
      */
     String getSerializedEffConfig(uint16_t nb, uint8_t replaceBright = 0);
-
-    // Получить конфиг эффекта из ФС
-    bool getfseffconfig(uint16_t nb, String &result);
 
     /**
      *  отложенная запись конфига текущего эффекта, каждый вызов перезапускает счетчик
@@ -649,5 +651,13 @@ public:
     void deleteEffect(const EffectListElem *eff, bool isCfgRemove = false);
 };
 
-#endif
-
+/**
+ * @brief creates a json file with a list of effects names
+ * list files are fetched from WebUI to create dropdown lists
+ * on a main page and in "effects configuration" page
+ * 
+ * @param w reference to current Effects worker object
+ * @param full - if true, build full list of all efects (/eff_fulllist.json), used in "effects configuration" page,
+ *                 otherwise build (/eff_list.json) a list of only those effects that are not "hidden", used on a main page
+ */
+void build_eff_names_list_file(EffectWorker &w, bool full = false);
