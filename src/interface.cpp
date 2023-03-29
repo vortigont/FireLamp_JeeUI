@@ -71,8 +71,8 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 namespace INTERFACE {
 // ------------- глобальные переменные построения интерфейса
 // планировщик заполнения списка
-Task *optionsTask = nullptr;     // задача для отложенной генерации списка
-Task *delayedOptionTask = nullptr; // текущая отложенная задача, для сброса при повторных входах
+Task *optionsTask = nullptr;        // задача для отложенной генерации списка
+Task *delayedOptionTask = nullptr;  // текущая отложенная задача, для сброса при повторных входах
 CtrlsTask *ctrlsTask = nullptr;       // планировщик контролов
 
 static EffectListElem *confEff = nullptr; // эффект, который сейчас конфигурируется на странице "Управление списком эффектов"
@@ -82,6 +82,7 @@ static DEV_EVENT *cur_edit_event = NULL; // текущее редактируе�
 using namespace INTERFACE;
 
 // функция пересоздания/отмены генерации списка эффектов
+/*
 void recreateoptionsTask(bool isCancelOnly=false){
     if(optionsTask)
         optionsTask->cancel();
@@ -95,6 +96,54 @@ void recreateoptionsTask(bool isCancelOnly=false){
         optionsTask->enableDelayed();
     }
 }
+*/
+
+/**
+ * @brief enumerator with a files of effect lists for webui 
+ * i.e. cached json files with effect names for drop down lists 
+ */
+enum class lstfile_t {
+    selected,
+    full,
+    all
+};
+
+/**
+ * @brief rebuild cached json file with effects names list
+ * i.e. used for sideloading in WebUI
+ * @param full - rebuild full list or brief, excluding hidden effs
+ * todo: implement an event queue
+ */
+void rebuild_effect_list_files(lstfile_t lst){
+    if (delayedOptionTask)      // task is already running, skip
+        return;
+    // schedule a task to rebuild effects names list files
+    // todo: add UI update call here
+    delayedOptionTask = new Task(500, TASK_ONCE,
+        [lst](){
+            switch (lst){
+                case lstfile_t::full :
+                    build_eff_names_list_file(myLamp.effects, true);
+                    if (embui.ws.count()){  // refresh UI page with a regerated list
+                        Interface interf(&embui, &embui.ws, 1024);
+                        show_effects_config_param(&interf, nullptr);
+                    }
+                    break;
+                case lstfile_t::all :
+                    build_eff_names_list_file(myLamp.effects, true);
+                    // intentionally fall-trough this to default
+                default :
+                    build_eff_names_list_file(myLamp.effects);
+                    if (embui.ws.count()){  // refresh UI page with a regenerated list
+                        Interface interf(&embui, &embui.ws, 1024);
+                        section_main_frame(&interf, nullptr);
+                    }
+            }
+        },
+        &ts, true, nullptr, [](){ delayedOptionTask=nullptr; }, true
+    );
+}
+
 
 // Функция преобразования для конфига
 uint64_t stoull(const String &str){
@@ -240,10 +289,11 @@ void block_menu(Interface *interf, JsonObject *data){
 
 /**
  * Страница с контролами параметров эфеекта
- * 
+ * выводится при в разделе "Управление списком эффектов"
  */
 void block_effects_config_param(Interface *interf, JsonObject *data){
-    if (!interf || !confEff) return;
+    //if (!interf || !confEff) return;
+    if (!interf) return;
 
     String tmpName, tmpSoundfile;
     myLamp.effects.loadeffname(tmpName,confEff->eff_nb);
@@ -268,9 +318,9 @@ void block_effects_config_param(Interface *interf, JsonObject *data){
     interf->option(String(SORT_TYPE::ST_MIC), FPSTR(TINTF_08D));  // эффекты с микрофоном
 #endif
     interf->json_section_end();
-    interf->checkbox(FPSTR(TCONST_numInList), myLamp.getLampSettings().numInList ? "1" : "0", FPSTR(TINTF_090), false); // нумерация в списке эффектов
+    //interf->checkbox(FPSTR(TCONST_numInList), myLamp.getLampSettings().numInList ? "1" : "0", FPSTR(TINTF_090), false); // нумерация в списке эффектов
 #ifdef MIC_EFFECTS
-    interf->checkbox(FPSTR(TCONST_effHasMic), myLamp.getLampSettings().effHasMic ? "1" : "0", FPSTR(TINTF_091), false); // значек микрофона в списке эффектов
+    //interf->checkbox(FPSTR(TCONST_effHasMic), myLamp.getLampSettings().effHasMic ? "1" : "0", FPSTR(TINTF_091), false); // значек микрофона в списке эффектов
 #endif
 
     interf->button_submit(FPSTR(TCONST_set_effect), FPSTR(TINTF_008), FPSTR(P_GRAY));
@@ -290,7 +340,8 @@ void block_effects_config_param(Interface *interf, JsonObject *data){
 }
 
 /**
- * Сформировать и вывести контролы для настроек параметров эффекта
+ * Сформировать и вывести страницу с контролами для настроек параметров эффектов
+ * здесь выводится ПОЛНЫЙ сипсок эффектов
  */
 void show_effects_config_param(Interface *interf, JsonObject *data){
     if (!interf) return;
@@ -304,60 +355,51 @@ void show_effects_config_param(Interface *interf, JsonObject *data){
  */
 void set_effects_config_param(Interface *interf, JsonObject *data){
     if (!confEff || !data) return;
-    recreateoptionsTask(true); // only cancel task
     EffectListElem *effect = confEff;
     
-    bool isNumInList =  (*data)[FPSTR(TCONST_numInList)] == "1";
+    //bool isNumInList =  (*data)[FPSTR(TCONST_numInList)] == "1";
 #ifdef MIC_EFFECTS
     bool isEffHasMic =  (*data)[FPSTR(TCONST_effHasMic)] == "1";
+    myLamp.setEffHasMic(isEffHasMic);
 #endif
     SORT_TYPE st = (*data)[FPSTR(TCONST_effSort)].as<SORT_TYPE>();
 
     if(myLamp.getLampState().isInitCompleted){
         LOG(printf_P, PSTR("Settings: call removeLists()\n"));
         bool isRecreate = false;
-        isRecreate = myLamp.getLampSettings().numInList!=isNumInList;
+        //isRecreate = myLamp.getLampSettings().numInList!=isNumInList;
 #ifdef MIC_EFFECTS
-        isRecreate = (myLamp.getLampSettings().effHasMic!=isEffHasMic) || isRecreate;
+        //isRecreate = (myLamp.getLampSettings().effHasMic!=isEffHasMic) || isRecreate;
 #endif
         isRecreate = (myLamp.effects.getEffSortType()!=st) || isRecreate;
 
         if(isRecreate){
             myLamp.effects.setEffSortType(st);
-            myLamp.setNumInList(isNumInList);
-#ifdef MIC_EFFECTS
-            myLamp.setEffHasMic(isEffHasMic);
-#endif
-            myLamp.effects.removeLists();
-            recreateoptionsTask();
+            //myLamp.setNumInList(isNumInList);
+            //myLamp.effects.removeLists();
+            rebuild_effect_list_files(lstfile_t::all);
         }
     }
-    myLamp.setNumInList(isNumInList);
-#ifdef MIC_EFFECTS
-    myLamp.setEffHasMic(isEffHasMic);
-#endif
+    //myLamp.setNumInList(isNumInList);
+
     SETPARAM(FPSTR(TCONST_effSort), myLamp.effects.setEffSortType(st));
     save_lamp_flags();
     
     String act = (*data)[FPSTR(TCONST_set_effect)];
+    // action is to "copy" effect
     if (act == FPSTR(TCONST_copy)) {
-        Task *_t = new Task(
-            300,
-            TASK_ONCE, [effect](){
-                                myLamp.effects.copyEffect(effect); // копируем текущий
-                                myLamp.effects.makeIndexFileFromList(); // создаем индекс по списку и на выход
-                                Interface *interf = embui.ws.count()? new Interface(&embui, &embui.ws, 1024) : nullptr;
-                                section_main_frame(interf, nullptr);
-                                delete interf;
-                                recreateoptionsTask(); },
-            &ts, false, nullptr, nullptr, true);
-        _t->enableDelayed();
+        myLamp.effects.copyEffect(effect); // копируем текущий
+        myLamp.effects.makeIndexFileFromList(); // создаем индекс по списку и на выход
+        rebuild_effect_list_files(lstfile_t::all);
         return;
-    //} else if (act == FPSTR(TCONST_del_)) {
-    } else if (act == FPSTR(TCONST_delfromlist) || act == FPSTR(TCONST_delall)) {
+    }
+    
+    // action is to "delete" effect
+    if (act == FPSTR(TCONST_delfromlist) || act == FPSTR(TCONST_delall)) {
         uint16_t tmpEffnb = effect->eff_nb;
+        LOG(printf_P,PSTR("delete effect->eff_nb=%d\n"), tmpEffnb);
         bool isCfgRemove = (act == FPSTR(TCONST_delall));
-        LOG(printf_P,PSTR("confEff->eff_nb=%d\n"), tmpEffnb);
+
         if(tmpEffnb==myLamp.effects.getCurrent()){
             myLamp.effects.directMoveBy(EFF_ENUM::EFF_NONE);
             remote_action(RA_EFF_NEXT, NULL);
@@ -367,79 +409,61 @@ void set_effects_config_param(Interface *interf, JsonObject *data){
         myLamp.sendString(tmpStr.c_str(), CRGB::Red);
         confEff = myLamp.effects.getEffect(EFF_ENUM::EFF_NONE);
         if(isCfgRemove){
-            Task *_t = new Task(
-                300,
-                TASK_ONCE, [effect](){
-                                    myLamp.effects.deleteEffect(effect, true); // удаляем эффект из ФС
-                                    myLamp.effects.makeIndexFileFromFS(); // создаем индекс по файлам ФС и на выход
-                                    Interface *interf = embui.ws.count()? new Interface(&embui, &embui.ws, 1024) : nullptr;
-                                    section_main_frame(interf, nullptr);
-                                    delete interf;
-                                    recreateoptionsTask(); },
-                &ts, false, nullptr, nullptr, true);
-            _t->enableDelayed();
+            myLamp.effects.deleteEffect(effect, true);  // удаляем эффект вместе с конфигом на ФС
+            myLamp.effects.makeIndexFileFromList();     // создаем индекс по текущему списку и на выход
+            //myLamp.effects.makeIndexFileFromFS();       // создаем индекс по файлам ФС и на выход
+            rebuild_effect_list_files(lstfile_t::all);
         } else {
-            Task *_t = new Task(
-                300,
-                TASK_ONCE, [effect](){
-                                    myLamp.effects.deleteEffect(effect, false); // удаляем эффект из списка
-                                    myLamp.effects.makeIndexFileFromList(); // создаем индекс по текущему списку и на выход
-                                    Interface *interf = embui.ws.count()? new Interface(&embui, &embui.ws, 1024) : nullptr;
-                                    section_main_frame(interf, nullptr);
-                                    delete interf;
-                                    recreateoptionsTask(); },
-                &ts, false, nullptr, nullptr, true);
-            _t->enableDelayed();
+            myLamp.effects.deleteEffect(effect, false); // удаляем эффект только из активного списка
+            myLamp.effects.makeIndexFileFromList();     // создаем индекс по текущему списку и на выход
+            rebuild_effect_list_files(lstfile_t::selected);
         }
         return;
-    } else if (act == FPSTR(TCONST_makeidx)) {
-        Task *_t = new Task(
-            300,
-            TASK_ONCE, [](){
-                                myLamp.effects.makeIndexFileFromFS(); // создаем индекс по файлам ФС и на выход
-                                Interface *interf = embui.ws.count()? new Interface(&embui, &embui.ws, 1024) : nullptr;
-                                section_main_frame(interf, nullptr);
-                                delete interf;
-                                recreateoptionsTask(); },
-            &ts, false, nullptr, nullptr, true);
-        _t->enableDelayed();
-        return;
-    } else {
-        effect->canBeSelected((*data)[FPSTR(TCONST_eff_sel)] == "1");
-        effect->isFavorite((*data)[FPSTR(TCONST_eff_fav)] == "1");
-        myLamp.effects.setSoundfile((*data)[FPSTR(TCONST_soundfile)], effect);
-// #ifdef CASHED_EFFECTS_NAMES
-//         effect->setName((*data)[FPSTR(TCONST_effname)]);
-// #endif
-        myLamp.effects.setEffectName((*data)[FPSTR(TCONST_effname)], effect);
     }
+
+    // action is "rebuild effects index"
+    if (act == FPSTR(TCONST_makeidx)) {
+        myLamp.effects.removeLists();
+        myLamp.effects.initDefault();
+        //myLamp.effects.makeIndexFileFromList();     // создаем индекс по текущему списку и на выход
+        //myLamp.effects.makeIndexFileFromFS(); // создаем индекс по файлам ФС и на выход
+        rebuild_effect_list_files(lstfile_t::all);
+        return;
+    }
+    
+    effect->canBeSelected((*data)[FPSTR(TCONST_eff_sel)] == "1");
+    effect->isFavorite((*data)[FPSTR(TCONST_eff_fav)] == "1");
+    myLamp.effects.setSoundfile((*data)[FPSTR(TCONST_soundfile)], effect);
+    myLamp.effects.setEffectName((*data)[FPSTR(TCONST_effname)], effect);
 
     resetAutoTimers();
     myLamp.effects.makeIndexFileFromList(); // обновить индексный файл после возможных изменений
     section_main_frame(interf, nullptr);
 }
 
-void block_effects_config(Interface *interf, JsonObject *data, bool fast=true){
+
+/**
+ * блок формирования страницы с контролами для настроек параметров эффектов
+ * здесь выводится ПОЛНЫЙ сипсок эффектов
+ */
+void block_effects_config(Interface *interf, JsonObject *data){
     if (!interf) return;
 
     interf->json_section_main(FPSTR(TCONST_effects_config), FPSTR(TINTF_009));
     confEff = myLamp.effects.getSelectedListElement();
     //interf->select(FPSTR(TCONST_effListConf), String((int)confEff->eff_nb), String(FPSTR(TINTF_00A)), true);
 
-    bool firsttime = false;
-    File *fquiklist = nullptr;
-    if(!LittleFS.exists(FPSTR(TCONST_fquicklist))){
-        fquiklist = new fs::File;
-        *fquiklist = LittleFS.open(FPSTR(TCONST__tmpqlist_tmp), "w");
-        fquiklist->print('[');
-        firsttime = true;
-        fast = true;
-    } else {
+    if(LittleFS.exists(FPSTR(TCONST_eff_fulllist_json))){
         // формируем и отправляем кадр с запросом подгрузки внешнего ресурса
         interf->json_frame_custom(FPSTR(T_XLOAD));
         interf->json_section_content();
-        interf->select(FPSTR(TCONST_effListConf), String((int)confEff->eff_nb), String(FPSTR(TINTF_00A)), true, false, String(LittleFS.exists(FPSTR(TCONST_fslowlist)) ? FPSTR(TCONST_fslowlist) : FPSTR(TCONST_fquicklist)));
+        interf->select(FPSTR(TCONST_effListConf), String((int)confEff->eff_nb), String(FPSTR(TINTF_00A)),
+                        true,   // direct
+                        false,  // skiplabel
+                        FPSTR(TCONST_eff_fulllist_json)
+                );
         interf->json_section_end();
+        // generate block with effect settings controls
         block_effects_config_param(interf, nullptr);
         interf->spacer();
         interf->button(FPSTR(TCONST_effects), FPSTR(TINTF_00B));
@@ -447,103 +471,40 @@ void block_effects_config(Interface *interf, JsonObject *data, bool fast=true){
         return;
     }
 
-    uint32_t timest = millis();
-    if(fast){
-        // Сначала подгрузим дефолтный список, а затем спустя время - подтянем имена из конфига
-
-        //interf->option(String(myLamp.effects.getSelected()), myLamp.effects.getEffectName());
-        String effname((char *)0);
-        EffectListElem *eff = nullptr;
-        MIC_SYMB;
-        while ((eff = myLamp.effects.getNextEffect(eff)) != nullptr) {
-            effname = String(eff->eff_nb) + (eff->eff_nb>255 ? String(F(" (")) + String(eff->eff_nb&0xFF) + String(F(")")) : String("")) + String(F(". ")) + String(FPSTR(T_EFFNAMEID[(uint8_t)eff->eff_nb])) + MIC_SYMBOL;
-            if(fquiklist){
-                fquiklist->printf_P(PSTR("%s{\"label\":\"%s\",\"value\":\"%s\"}"), firsttime?"":",", effname.c_str(), String(eff->eff_nb).c_str());
-                firsttime = false;
-            }
-            //interf->option(String(eff->eff_nb), effname);
-            #ifdef ESP8266
-            ESP.wdtFeed();
-            #elif defined ESP32
-            delay(1);
-            #endif
-        }
-        //interf->option(String(0),"");
-        if(fquiklist){
-            fquiklist->print(']');
-            fquiklist->close();
-            LittleFS.rename(FPSTR(TCONST__tmpqlist_tmp),FPSTR(TCONST_fquicklist));
-            delete (fs::FS *)fquiklist;
-        }
-    } else {
-        EffectListElem *eff = nullptr;
-        LOG(println,F("DBG1: using slow Names generation"));
-        String effname((char *)0);
-        MIC_SYMB;
-        while ((eff = myLamp.effects.getNextEffect(eff)) != nullptr) {
-            myLamp.effects.loadeffname(effname, eff->eff_nb);
-            effname = String(eff->eff_nb) + (eff->eff_nb>255 ? String(F(" (")) + String(eff->eff_nb&0xFF) + String(F(")")) : String("")) + String(F(". ")) + String(FPSTR(T_EFFNAMEID[(uint8_t)eff->eff_nb])) + MIC_SYMBOL;
-            if(fquiklist){
-                fquiklist->printf_P(PSTR("%s{\"label\":\"%s\",\"value\":\"%s\"}"), firsttime?"":",", effname.c_str(), String(eff->eff_nb).c_str());
-                firsttime = false;
-            }
-            //interf->option(String(eff->eff_nb), effname);
-            #ifdef ESP8266
-            ESP.wdtFeed();
-            #elif defined ESP32
-            delay(1);
-            #endif
-        }
-        if(fquiklist){
-            fquiklist->print(']');
-            fquiklist->close();
-            LittleFS.rename(FPSTR(TCONST__tmpqlist_tmp),FPSTR(TCONST_fquicklist));
-            delete (fs::FS *)fquiklist;
-        }
-    }
-    //interf->option(String(0),"");
-    //interf->json_section_end();
-    LOG(printf_P,PSTR("DBG1: generating Names list took %ld ms\n"), millis() - timest);
-    // формируем и отправляем кадр с запросом подгрузки внешнего ресурса
-    interf->json_frame_custom(FPSTR(T_XLOAD));
-    interf->json_section_content();
-    interf->select(FPSTR(TCONST_effListConf), String((int)confEff->eff_nb), String(FPSTR(TINTF_00A)), true, false, String(FPSTR(TCONST_fquicklist)));
-    interf->json_section_end();
-    block_effects_config_param(interf, nullptr);
-
-    interf->spacer();
-    interf->button(FPSTR(TCONST_effects), FPSTR(TINTF_00B));
-    interf->json_section_end();
+    interf->constant(F("cmt"), F("Rebuilding effects list, pls retry in a second..."));
+    rebuild_effect_list_files(lstfile_t::full);
 }
 
 // Построение выпадающего списка эффектов для вебморды
+/*
 void delayedcall_show_effects(){
 
-    LOG(println, F("=== GENERATE EffLIst for GUI ==="));
-    uint16_t effnb = confEff?(int)confEff->eff_nb:myLamp.effects.getSelected(); // если confEff не NULL, то мы в конфирурировании, иначе в основном режиме
+    LOG(println, F("=== GENERATE EffLIst for GUI (fslowlist.json) ==="));
+    uint16_t effnb = confEff ? (int)confEff->eff_nb : myLamp.effects.getSelected(); // если confEff не NULL, то мы в конфирурировании, иначе в основном режиме
 
     if(delayedOptionTask)
         delayedOptionTask->cancel(); // отмена предыдущей задачи, если была запущена
 
-    EffectListElem **peff = new (EffectListElem *); // выделяем память под укзатель на указатель
-    *peff = nullptr; // чистим содержимое
     File *slowlist = nullptr;
-    if(!LittleFS.exists(confEff?FPSTR(TCONST_fslowlist):FPSTR(TCONST_fslowlist))){
+    if(!LittleFS.exists(confEff ? FPSTR(TCONST_fslowlist) : FPSTR(TCONST_fslowlist))){
         slowlist = new fs::File;
         *slowlist = LittleFS.open(FPSTR(TCONST__tmplist_tmp), "w");
     } else {
         // формируем и отправляем кадр с запросом подгрузки внешнего ресурса
+        LOG(println, F("fslowlist.json exist, sending xload frame"));
         Interface *interf = embui.ws.count()? new Interface(&embui, &embui.ws, 512) : nullptr;
         interf->json_frame_custom(FPSTR(T_XLOAD));
         interf->json_section_content();
-        interf->select(confEff?FPSTR(TCONST_effListConf):FPSTR(TCONST_effListMain), String(effnb), String(FPSTR(TINTF_00A)), true, true, String(confEff?FPSTR(TCONST_fslowlist):FPSTR(TCONST_fslowlist)));
+        interf->select(confEff?FPSTR(TCONST_effListConf):FPSTR(TCONST_effListMain), String(effnb), String(FPSTR(TINTF_00A)), true, true, String(FPSTR(TCONST_fslowlist)));
         interf->json_section_end();
         interf->json_frame_flush();
         delete interf;
         interf = nullptr;
         return;
     }
-    //LOG(print,(uint32_t)peff); LOG(print," "); LOG(println,(uint32_t)*peff);
+
+    EffectListElem **peff = new (EffectListElem *); // выделяем память под укзатель на указатель
+    *peff = nullptr; // чистим содержимое
 
     delayedOptionTask = new Task(300, TASK_FOREVER,
         // loop
@@ -557,7 +518,7 @@ void delayedcall_show_effects(){
             }
 
             String effname((char *)0);
-            MIC_SYMB;
+            ////MIC_SYMB;
             size_t cnt = 5; // генерим по 5 элементов
             bool numList = myLamp.getLampSettings().numInList;
             while (--cnt) {
@@ -566,9 +527,9 @@ void delayedcall_show_effects(){
                     myLamp.effects.loadeffname(effname, eff->eff_nb);
                     LOG(println, effname);
                     if(confEff || eff->eff_nb || (!eff->eff_nb && eff->canBeSelected())){ // если в конфигурировании или не 0 или 0 эффект и он может быть выбран
-                        String name =                             (!confEff ? EFF_NUMBER : String(eff->eff_nb) + (eff->eff_nb>255 ? String(F(" (")) + String(eff->eff_nb&0xFF) + String(F(")")) : String("")) + String(F(". "))) +
+                        String name =                             (!confEff ? EFF_NUMBER(eff->eff_nb) : String(eff->eff_nb) + (eff->eff_nb>255 ? String(F(" (")) + String(eff->eff_nb&0xFF) + String(F(")")) : String("")) + String(F(". "))) +
                             effname +
-                            MIC_SYMBOL;
+                            MIC_SYMBOL(eff->eff_nb);
                         if(slowlist){
                             slowlist->printf_P(PSTR("%s{\"label\":\"%s\",\"value\":\"%s\"}"), firsttime?"":",", name.c_str(), String(eff->eff_nb).c_str());
                             firsttime = false;
@@ -586,9 +547,9 @@ void delayedcall_show_effects(){
                         slowlist->print(']');
                         slowlist->close();
 #ifdef ESP32
-                        delay(500);
+                        delay(50);
 #endif
-                        LittleFS.rename(FPSTR(TCONST__tmplist_tmp),confEff?FPSTR(TCONST_fslowlist):FPSTR(TCONST_fslowlist));
+                        LittleFS.rename(FPSTR(TCONST__tmplist_tmp), FPSTR(TCONST_fslowlist));
                         delete (fs::FS *)slowlist;
                     }
 
@@ -617,21 +578,13 @@ void delayedcall_show_effects(){
         }, true
     );
 }
+*/
 
 void show_effects_config(Interface *interf, JsonObject *data){
-#ifdef DELAYED_EFFECTS
     if (!interf) return;
     interf->json_frame_interface();
     block_effects_config(interf, data);
     interf->json_frame_flush();
-#else
-    if (!interf) return;
-    interf->json_frame_interface();
-    block_effects_config(interf, data, false);
-    interf->json_frame_flush();
-#endif
-    if(!LittleFS.exists(FPSTR(TCONST_fslowlist)))
-        recreateoptionsTask();
 }
 
 void set_effects_config_list(Interface *interf, JsonObject *data){
@@ -883,7 +836,6 @@ void set_effects_dynCtrl(Interface *interf, JsonObject *data){
             #ifdef LAMP_DEBUG
             String tmp; serializeJson(*data,tmp);LOG(println, tmp);
             #endif
-    LOG(printf_P,PSTR("Mark ps 1\n"));
 
             direct_set_effects_dynCtrl(data);
 #ifdef EMBUI_USE_MQTT
@@ -914,7 +866,6 @@ void set_effects_dynCtrl(Interface *interf, JsonObject *data){
             }
             if(task==ctrlsTask)
                 ctrlsTask = nullptr;
-    LOG(printf_P,PSTR("Mark ps end\n"));
 
             delete task;
         },
@@ -983,11 +934,10 @@ void show_main_flags(Interface *interf, JsonObject *data){
     interf->json_frame_flush();
 }
 
-// Страница "Эффекты" (начальная страница)
+/* Страница "Эффекты" (начальная страница)
+    здесь выводится список эффектов который не содержит "скрытые" элементы
+*/
 void block_effects_main(Interface *interf, JsonObject *data, bool fast=true){
-#ifndef DELAYED_EFFECTS
-    fast=false;
-#endif
     confEff = NULL; // т.к. не в конфигурировании, то сбросить данное значение
     if (!interf) return;
 
@@ -998,128 +948,29 @@ void block_effects_main(Interface *interf, JsonObject *data, bool fast=true){
     interf->button(FPSTR(TCONST_show_flags), FPSTR(TINTF_014));
     interf->json_section_end();
 
+    // 'next', 'prev' buttons << >>
     interf->json_section_line(FPSTR(TCONST_mode));
     interf->button(FPSTR(TCONST_eff_prev), FPSTR(TINTF_015), FPSTR(TCONST__708090));
     interf->button(FPSTR(TCONST_eff_next), FPSTR(TINTF_016), FPSTR(TCONST__5f9ea0));
     interf->json_section_end();
 
-    bool firsttime = false;
-    File *quicklist = nullptr;
-    if(!LittleFS.exists(FPSTR(TCONST_quicklist))){
-        quicklist = new fs::File;
-        *quicklist = LittleFS.open(FPSTR(TCONST__tmpqlist_tmp), "w");
-        quicklist->print('[');
-        firsttime = true;
-        fast=true;
-    } else {
+
+    if(LittleFS.exists(FPSTR(TCONST_eff_list_json))){
         // формируем и отправляем кадр с запросом подгрузки внешнего ресурса
-        bool isSlowExist = LittleFS.exists(FPSTR(TCONST_fslowlist));
         interf->json_frame_custom(FPSTR(T_XLOAD));
         interf->json_section_content();
-        interf->select(FPSTR(TCONST_effListMain), String(myLamp.effects.getSelected()), String(FPSTR(TINTF_00A)), true, false, String(isSlowExist ? FPSTR(TCONST_fslowlist) : FPSTR(TCONST_quicklist)));
+        // side load drop-down list from /eff_list.json file
+        interf->select(FPSTR(TCONST_effListMain), String(myLamp.effects.getSelected()), String(FPSTR(TINTF_00A)), true, false, FPSTR(TCONST_eff_list_json));
         interf->json_section_end();
         block_effects_param(interf, data);
         interf->button(FPSTR(TCONST_effects_config), FPSTR(TINTF_009));
         interf->json_section_end();
-        if(!isSlowExist)
-            recreateoptionsTask();
-        return;
-    }
-
-    //interf->select(FPSTR(TCONST_effListMain), String(myLamp.effects.getSelected()), String(FPSTR(TINTF_00A)), true);
-    LOG(printf_P,PSTR("Создаю список эффектов (%d):\n"),myLamp.effects.getModeAmount());
-    EffectListElem *eff = nullptr;
-
-    uint32_t timest = millis();
-
-    if(fast){
-        // Сначала подгрузим дефолтный список, а затем спустя время - подтянем имена из конфига
-
-        //interf->option(String(myLamp.effects.getSelected()), myLamp.effects.getEffectName());
-        String effname((char *)0);
-        bool isEmptyHidden=false;
-        MIC_SYMB;
-        bool numList = myLamp.getLampSettings().numInList;
-        while ((eff = myLamp.effects.getNextEffect(eff)) != nullptr) {
-            if (eff->canBeSelected()) {
-                effname = EFF_NUMBER + FPSTR(T_EFFNAMEID[(uint8_t)eff->eff_nb]) + MIC_SYMBOL;
-                if(quicklist){
-                    quicklist->printf_P(PSTR("%s{\"label\":\"%s\",\"value\":\"%s\"}"), firsttime?"":",", effname.c_str(), String(eff->eff_nb).c_str());
-                    firsttime = false;
-                }
-                //interf->option(String(eff->eff_nb), effname);
-                #ifdef ESP8266
-                ESP.wdtFeed();
-                #elif defined ESP32
-                delay(1);
-                #endif
-            } else if(!eff->eff_nb){
-                isEmptyHidden=true;
-            }
-        }
-        if(isEmptyHidden){
-            //interf->option(String(0),"");
-            if(quicklist){
-                quicklist->printf_P(PSTR(",{\"label\":\"\",\"value\":\"0\"}"));
-            }
-        }
-        if(quicklist){
-            quicklist->print(']');
-            quicklist->close();
-            LittleFS.rename(FPSTR(TCONST__tmpqlist_tmp),FPSTR(TCONST_quicklist));
-            delete (fs::FS *)quicklist;
-        }
     } else {
-        LOG(println,F("DBG2: using slow Names generation"));
-        bool isEmptyHidden=false;
-        String effname((char *)0);
-        MIC_SYMB;
-        bool numList = myLamp.getLampSettings().numInList;
-        while ((eff = myLamp.effects.getNextEffect(eff)) != nullptr) {
-            if (eff->canBeSelected()) {
-                myLamp.effects.loadeffname(effname, eff->eff_nb);
-                effname = EFF_NUMBER + effname + MIC_SYMBOL;
-                if(quicklist){
-                    quicklist->printf_P(PSTR("%s{\"label\":\"%s\",\"value\":\"%s\"}"), firsttime?"":",", effname.c_str(), String(eff->eff_nb).c_str());
-                    firsttime = false;
-                }
-                //interf->option(String(eff->eff_nb), effname);
-                #ifdef ESP8266
-                ESP.wdtFeed();
-                #elif defined ESP32
-                yield();
-                #endif
-            } else if(!eff->eff_nb){
-                isEmptyHidden=true;
-            }
-        }
-        if(isEmptyHidden){
-            //interf->option(String(0),"");
-            if(quicklist){
-                quicklist->printf_P(PSTR(",{\"label\":\"\",\"value\":\"0\"}"));
-            }
-        }
-        if(quicklist){
-            quicklist->print(']');
-            quicklist->close();
-            LittleFS.rename(FPSTR(TCONST__tmpqlist_tmp),FPSTR(TCONST_quicklist));
-            delete (fs::FS *)quicklist;
-        }
+        interf->constant(F("cmt"), F("Rebuilding effects list, pls retry in a sec..."));
+        rebuild_effect_list_files(lstfile_t::selected);
     }
-    interf->json_frame_custom(FPSTR(T_XLOAD));
-    interf->json_section_content();
-    interf->select(FPSTR(TCONST_effListMain), String(myLamp.effects.getSelected()), String(FPSTR(TINTF_00A)), true, false, String(FPSTR(TCONST_quicklist)));
-    interf->json_section_end();
-    LOG(printf_P,PSTR("DBG2: generating Names list took %ld ms\n"), millis() - timest);
-
-    block_effects_param(interf, data);
-
-    interf->button(FPSTR(TCONST_effects_config), FPSTR(TINTF_009));
 
     interf->json_section_end();
-#ifdef DELAYED_EFFECTS
-    recreateoptionsTask();
-#endif
 }
 
 void set_eff_prev(Interface *interf, JsonObject *data){
@@ -1360,7 +1211,8 @@ void edit_lamp_config(Interface *interf, JsonObject *data){
         String str = String(F("CFG:")) + name;
         myLamp.sendString(str.c_str(), CRGB::Red);
 
-        Task *_t = new Task(3*TASK_SECOND, TASK_ONCE, [](){ myLamp.effects.makeIndexFileFromFS(); sync_parameters(); }, &ts, false, nullptr, nullptr, true);
+        Task *_t = new Task(3*TASK_SECOND, TASK_ONCE, [](){ myLamp.effects.makeIndexFileFromList(); sync_parameters(); }, &ts, false, nullptr, nullptr, true);
+        //Task *_t = new Task(3*TASK_SECOND, TASK_ONCE, [](){ myLamp.effects.makeIndexFileFromFS(); sync_parameters(); }, &ts, false, nullptr, nullptr, true);
         _t->enableDelayed();
 
     } else { // создание
@@ -1431,7 +1283,6 @@ void set_lamp_textsend(Interface *interf, JsonObject *data){
 void block_drawing(Interface *interf, JsonObject *data){
     //Страница "Рисование"
     if (!interf) return;
-    recreateoptionsTask(true); // only cancel task
     interf->json_section_main(FPSTR(TCONST_drawing), FPSTR(TINTF_0CE));
 
     DynamicJsonDocument doc(512);
@@ -1472,7 +1323,6 @@ void set_clear(Interface *interf, JsonObject *data){
 void block_lamptext(Interface *interf, JsonObject *data){
     //Страница "Вывод текста"
     if (!interf) return;
-    recreateoptionsTask(true); // only cancel task
     interf->json_section_main(FPSTR(TCONST_lamptext), FPSTR(TINTF_001));
 
     block_lamp_textsend(interf, data);
@@ -2607,7 +2457,6 @@ void set_mp3_player(Interface *interf, JsonObject *data){
 
 
 void section_effects_frame(Interface *interf, JsonObject *data){
-    recreateoptionsTask(true); // only cancel task
     if (!interf) return;
     interf->json_frame_interface(FPSTR(TINTF_080));
     block_effects_main(interf, data);
@@ -2743,10 +2592,10 @@ void set_streaming_universe(Interface *interf, JsonObject *data){
 #endif
 // Точка входа в настройки
 void user_settings_frame(Interface *interf, JsonObject *data);
+
 void section_settings_frame(Interface *interf, JsonObject *data){
     // Страница "Настройки"
     if (!interf) return;
-    recreateoptionsTask(true); // only cancel task
     interf->json_frame_interface(FPSTR(TINTF_080));
 
     interf->json_section_main(FPSTR(T_SETTINGS), FPSTR(TINTF_002));
@@ -2841,7 +2690,6 @@ void section_main_frame(Interface *interf, JsonObject *data){
 void section_sys_settings_frame(Interface *interf, JsonObject *data){
     // Страница "Настройки ESP"
     if (!interf) return;
-    recreateoptionsTask(true); // only cancel task
     interf->json_frame_interface(FPSTR(TINTF_08F));
 
     block_menu(interf, data);

@@ -35,6 +35,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
    <https://www.gnu.org/licenses/>.)
 */
 #include "main.h"
+#include "filehelpers.hpp"
 
 #ifdef DS18B20
 #include "DS18B20.h"
@@ -279,7 +280,7 @@ ICACHE_FLASH_ATTR void mqttCallback(const String &topic, const String &payload){
     if(sendtopic==FPSTR(TCONST_eff_config)){
         sendtopic=String(FPSTR(TCONST_embui_pub_))+sendtopic;
         String effcfg;
-        if (myLamp.effects.getfseffconfig(myLamp.effects.getCurrent(), effcfg)) embui.publish(sendtopic, effcfg, true); // отправляем обратно в MQTT в топик embui/pub/
+        if (fshlpr::getfseffconfig(myLamp.effects.getCurrent(), effcfg)) embui.publish(sendtopic, effcfg, true); // отправляем обратно в MQTT в топик embui/pub/
     } else if(sendtopic==FPSTR(TCONST_state)){
         sendData();
     }

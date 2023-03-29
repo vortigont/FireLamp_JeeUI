@@ -73,19 +73,13 @@ void save_lamp_flags();
 uint8_t uploadProgress(size_t len, size_t total);
 
 void delayedcall_show_effects();
+void show_effects_config_param(Interface *interf, JsonObject *data);
 
-// Вывод значка микрофона в списке эффектов
-#ifdef MIC_EFFECTS
-    #define MIC_SYMBOL (micSymb ? (pgm_read_byte(T_EFFVER + (uint8_t)eff->eff_nb) % 2 == 0 ? " \U0001F399" : "") : "")
-    #define MIC_SYMB bool micSymb = myLamp.getLampSettings().effHasMic
-#else
-    #define MIC_SYMBOL ""
-    #define MIC_SYMB
-#endif
-
-// Вывод номеров эффектов в списке, в WebUI
-//#define EFF_NUMBER (numList ? (String(eff->eff_nb) + ". ") : "")
-#define EFF_NUMBER   (numList ? (eff->eff_nb <= 255 ? (String(eff->eff_nb) + ". ") : (String((byte)(eff->eff_nb & 0xFF)) + "." + String((byte)(eff->eff_nb >> 8) - 1U) + ". ")) : "")
+/**
+ * блок формирования страницы с контролами для настроек параметров эффектов
+ * здесь выводится ПОЛНЫЙ сипсок эффектов
+ */
+void block_effects_config(Interface *interf, JsonObject *data);
 
 #ifdef DELAYED_EFFECTS
  #define INDEX_BUILD_DELAY 5
