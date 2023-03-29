@@ -500,6 +500,15 @@ private:
      */
     void _load_eff_list_from_idx_file(const char *folder = NULL);
 
+    /**
+     * @brief rebuild list of effects based on json configs on filesystem
+     * loads a list of default effects from firmware, then apply per effect
+     * configs from fs (if present)
+     * 
+     * @param folder 
+     */
+    void _rebuild_eff_list(const char *folder = NULL);
+
 public:
     // дефолтный конструктор
     EffectWorker(LAMPSTATE *_lampstate);
@@ -554,7 +563,7 @@ public:
     void makeIndexFileFromList(const char *folder = NULL, bool forceRemove = true);
 
     // пересоздает индекс с конфигов в ФС
-    void makeIndexFileFromFS(const char *fromfolder = NULL, const char *tofolder = NULL);
+    //void makeIndexFileFromFS(const char *fromfolder = NULL, const char *tofolder = NULL);
 
     byte getModeAmount() {return effects.size();}
 

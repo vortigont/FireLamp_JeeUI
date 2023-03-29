@@ -39,7 +39,7 @@ namespace fshlpr{
             error = deserializeJson(doc, jfile);
             jfile.close();
         } else {
-            LOG(printf_P, PSTR("Can't open File: %s"), filepath);
+            LOG(printf_P, PSTR("Can't open File: %s\n"), filepath);
             return false;
         }
 

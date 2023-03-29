@@ -73,6 +73,7 @@ void save_lamp_flags();
 uint8_t uploadProgress(size_t len, size_t total);
 
 void delayedcall_show_effects();
+void show_effects_config_param(Interface *interf, JsonObject *data);
 
 /**
  * блок формирования страницы с контролами для настроек параметров эффектов

@@ -126,7 +126,7 @@ void rebuild_effect_list_files(lstfile_t lst){
                     build_eff_names_list_file(myLamp.effects, true);
                     if (embui.ws.count()){  // refresh UI page with a regerated list
                         Interface interf(&embui, &embui.ws, 1024);
-                        block_effects_config(&interf, nullptr);
+                        show_effects_config_param(&interf, nullptr);
                     }
                     break;
                 case lstfile_t::all :
@@ -134,7 +134,7 @@ void rebuild_effect_list_files(lstfile_t lst){
                     // intentionally fall-trough this to default
                 default :
                     build_eff_names_list_file(myLamp.effects);
-                    if (embui.ws.count()){  // refresh UI page with a regerated list
+                    if (embui.ws.count()){  // refresh UI page with a regenerated list
                         Interface interf(&embui, &embui.ws, 1024);
                         section_main_frame(&interf, nullptr);
                     }
@@ -292,7 +292,8 @@ void block_menu(Interface *interf, JsonObject *data){
  * выводится при в разделе "Управление списком эффектов"
  */
 void block_effects_config_param(Interface *interf, JsonObject *data){
-    if (!interf || !confEff) return;
+    //if (!interf || !confEff) return;
+    if (!interf) return;
 
     String tmpName, tmpSoundfile;
     myLamp.effects.loadeffname(tmpName,confEff->eff_nb);
@@ -409,7 +410,8 @@ void set_effects_config_param(Interface *interf, JsonObject *data){
         confEff = myLamp.effects.getEffect(EFF_ENUM::EFF_NONE);
         if(isCfgRemove){
             myLamp.effects.deleteEffect(effect, true);  // удаляем эффект вместе с конфигом на ФС
-            myLamp.effects.makeIndexFileFromFS();       // создаем индекс по файлам ФС и на выход
+            myLamp.effects.makeIndexFileFromList();     // создаем индекс по текущему списку и на выход
+            //myLamp.effects.makeIndexFileFromFS();       // создаем индекс по файлам ФС и на выход
             rebuild_effect_list_files(lstfile_t::all);
         } else {
             myLamp.effects.deleteEffect(effect, false); // удаляем эффект только из активного списка
@@ -421,8 +423,11 @@ void set_effects_config_param(Interface *interf, JsonObject *data){
 
     // action is "rebuild effects index"
     if (act == FPSTR(TCONST_makeidx)) {
-        myLamp.effects.makeIndexFileFromFS(); // создаем индекс по файлам ФС и на выход
-        rebuild_effect_list_files(lstfile_t::selected);
+        myLamp.effects.removeLists();
+        myLamp.effects.initDefault();
+        //myLamp.effects.makeIndexFileFromList();     // создаем индекс по текущему списку и на выход
+        //myLamp.effects.makeIndexFileFromFS(); // создаем индекс по файлам ФС и на выход
+        rebuild_effect_list_files(lstfile_t::all);
         return;
     }
     
@@ -466,7 +471,7 @@ void block_effects_config(Interface *interf, JsonObject *data){
         return;
     }
 
-    interf->constant(F("cmt"), F("Rebuilding effects list, pls wait..."));
+    interf->constant(F("cmt"), F("Rebuilding effects list, pls retry in a second..."));
     rebuild_effect_list_files(lstfile_t::full);
 }
 
@@ -961,7 +966,7 @@ void block_effects_main(Interface *interf, JsonObject *data, bool fast=true){
         interf->button(FPSTR(TCONST_effects_config), FPSTR(TINTF_009));
         interf->json_section_end();
     } else {
-        interf->constant(F("cmt"), F("Rebuilding effects list, pls wait..."));
+        interf->constant(F("cmt"), F("Rebuilding effects list, pls retry in a sec..."));
         rebuild_effect_list_files(lstfile_t::selected);
     }
 
@@ -1206,7 +1211,8 @@ void edit_lamp_config(Interface *interf, JsonObject *data){
         String str = String(F("CFG:")) + name;
         myLamp.sendString(str.c_str(), CRGB::Red);
 
-        Task *_t = new Task(3*TASK_SECOND, TASK_ONCE, [](){ myLamp.effects.makeIndexFileFromFS(); sync_parameters(); }, &ts, false, nullptr, nullptr, true);
+        Task *_t = new Task(3*TASK_SECOND, TASK_ONCE, [](){ myLamp.effects.makeIndexFileFromList(); sync_parameters(); }, &ts, false, nullptr, nullptr, true);
+        //Task *_t = new Task(3*TASK_SECOND, TASK_ONCE, [](){ myLamp.effects.makeIndexFileFromFS(); sync_parameters(); }, &ts, false, nullptr, nullptr, true);
         _t->enableDelayed();
 
     } else { // создание

@@ -681,11 +681,11 @@ void EffectWorker::makeIndexFile(const char *folder)
   LOG(printf_P,PSTR("rebuilding took %ld ms\n"), millis() - timest);
 }
 */
+
 void EffectWorker::removeLists(){
   LittleFS.remove(FPSTR(TCONST_eff_list_json));
   LittleFS.remove(FPSTR(TCONST_eff_fulllist_json));
-//  LittleFS.remove(FPSTR(TCONST_quicklist));
-//  listsuffix = time(NULL);
+  LittleFS.remove(FPSTR(TCONST_eff_index));
 }
 
 void EffectWorker::makeIndexFileFromList(const char *folder, bool forceRemove)
@@ -710,7 +710,7 @@ void EffectWorker::makeIndexFileFromList(const char *folder, bool forceRemove)
   LOG(println,F("Индекс эффектов обновлен!"));
   effectsReSort(); // восстанавливаем сортировку
 }
-
+/*
 void EffectWorker::makeIndexFileFromFS(const char *fromfolder,const char *tofolder)
 {
   File indexFile;
@@ -784,7 +784,7 @@ void EffectWorker::makeIndexFileFromFS(const char *fromfolder,const char *tofold
   LOG(println,F("Индекс эффектов создан из FS!"));
   initDefault(tofolder); // перечитаем вновь созданный индекс
 }
-
+*/
 // создать или обновить текущий индекс эффекта
 void EffectWorker::updateIndexFile()
 {
@@ -1181,21 +1181,21 @@ void EffectWorker::_load_eff_list_from_idx_file(const char *folder){
   // if index file does not exist - load default list from firmware tables
   if (!LittleFS.exists(filename)){
     LOG(println, F("eff index file missing, loading fw defaults"));
-    return _load_default_fweff_list();
+    return _rebuild_eff_list();
   }
 
   DynamicJsonDocument doc(4096);  // document for loading effects index from file
 
   if (!fshlpr::deserializeFile(doc, filename.c_str())){
     LittleFS.remove(filename);    // remove corrupted index file
-    return _load_default_fweff_list();
+    return _rebuild_eff_list();
   }
 
   JsonArray arr = doc.as<JsonArray>();
   if(arr.isNull() || arr.size()==0){
     LittleFS.remove(filename);    // remove corrupted index file
     LOG(println, F("eff index file corrupted, loading fw defaults"));
-    return _load_default_fweff_list();
+    return _rebuild_eff_list();
   }
 
   //LOG(printf_P,PSTR("Создаю список эффектов конструктор (%d): %s\n"),arr.size(),idx.c_str());
@@ -1222,7 +1222,67 @@ void EffectWorker::_load_eff_list_from_idx_file(const char *folder){
   LOG(printf_P, PSTR("Loaded list of effects, %u entries\n"), effects.size());
 }
 
+void EffectWorker::_rebuild_eff_list(const char *folder){
+  LOG(println, F("_rebuild_eff_list()"));
+  // load default fw list first
+  _load_default_fweff_list();
 
+  String sourcedir;
+
+  if (folder) {
+      sourcedir.concat(F("/"));
+      sourcedir.concat(folder);
+  }
+  sourcedir.concat(F("/eff"));
+
+#ifdef ESP8266
+  Dir dir = LittleFS.openDir(sourcedir);
+#endif
+
+#ifdef ESP32
+  File dir = LittleFS.open(sourcedir);
+  if (!dir || !dir.isDirectory()){
+    LOG(print, F("Can't open dir: ")); LOG(println, sourcedir);
+    return;
+  }
+#endif
+
+  String fn;
+
+  DynamicJsonDocument doc(2048);
+
+#ifdef ESP8266
+  while (dir.next())
+#else
+  File _f;
+  while(_f = dir.openNextFile())
+#endif
+  {   // keep this bracket, otherwise VSCode cant fold a region
+#ifdef ESP8266
+      fn = sourcedir + "/" + dir.fileName();
+#else
+      fn = sourcedir + "/" + _f.name();
+#endif
+
+    if (!fshlpr::deserializeFile(doc, fn.c_str())) {
+      #ifdef ESP32
+      _f.close();
+      #endif
+      LittleFS.remove(fn);                // delete corrupted config
+      continue;
+    }
+
+    uint16_t nb = doc[F("nb")].as<uint16_t>();
+    uint8_t flags = doc[F("flags")].as<uint8_t>();
+    EffectListElem *eff = getEffect(nb);
+    if(eff){  // such effect exist in list, apply flags
+      flags = eff->flags.mask;
+    } else {    // no such eff in list, must be an effect copy
+      EffectListElem el(nb, flags);
+      effects.add(el);
+    }
+  }
+}
 
 
 /*  *** EffectCalc  implementation  ***   */
