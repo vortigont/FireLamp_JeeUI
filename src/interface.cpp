@@ -82,6 +82,7 @@ static DEV_EVENT *cur_edit_event = NULL; // текущее редактируе�
 using namespace INTERFACE;
 
 // функция пересоздания/отмены генерации списка эффектов
+/*
 void recreateoptionsTask(bool isCancelOnly=false){
     if(optionsTask)
         optionsTask->cancel();
@@ -95,6 +96,47 @@ void recreateoptionsTask(bool isCancelOnly=false){
         optionsTask->enableDelayed();
     }
 }
+*/
+
+/**
+ * @brief enumerator with a files of effect lists for webui 
+ * i.e. cached json files with effect names for drop down lists 
+ */
+enum class lstfile_t {
+    selected,
+    full,
+    all
+};
+
+/**
+ * @brief rebuild cached json file with effects names list
+ * i.e. used for sideloading in WebUI
+ * @param full - rebuild full list or brief, excluding hidden effs
+ * todo: implement an event queue
+ */
+void rebuild_effect_list_files(lstfile_t lst){
+    if (delayedOptionTask)      // task is already running, skip
+        return;
+    // schedule a task to rebuild effects names list files
+    // todo: add UI update call here
+    delayedOptionTask = new Task(500, TASK_ONCE,
+        [lst](){
+            switch (lst){
+                case lstfile_t::full :
+                    build_eff_names_list_file(myLamp.effects, true);
+                    break;
+                case lstfile_t::all :
+                    build_eff_names_list_file(myLamp.effects);
+                    build_eff_names_list_file(myLamp.effects, true);
+                    break;
+                default :
+                    build_eff_names_list_file(myLamp.effects);
+            }
+        },
+        &ts, true, nullptr, [](){ delayedOptionTask=nullptr; }, true
+    );
+}
+
 
 // Функция преобразования для конфига
 uint64_t stoull(const String &str){
@@ -305,42 +347,38 @@ void show_effects_config_param(Interface *interf, JsonObject *data){
  */
 void set_effects_config_param(Interface *interf, JsonObject *data){
     if (!confEff || !data) return;
-    recreateoptionsTask(true); // only cancel task
     EffectListElem *effect = confEff;
     
-    bool isNumInList =  (*data)[FPSTR(TCONST_numInList)] == "1";
+    //bool isNumInList =  (*data)[FPSTR(TCONST_numInList)] == "1";
 #ifdef MIC_EFFECTS
     bool isEffHasMic =  (*data)[FPSTR(TCONST_effHasMic)] == "1";
+    myLamp.setEffHasMic(isEffHasMic);
 #endif
     SORT_TYPE st = (*data)[FPSTR(TCONST_effSort)].as<SORT_TYPE>();
 
     if(myLamp.getLampState().isInitCompleted){
         LOG(printf_P, PSTR("Settings: call removeLists()\n"));
         bool isRecreate = false;
-        isRecreate = myLamp.getLampSettings().numInList!=isNumInList;
+        //isRecreate = myLamp.getLampSettings().numInList!=isNumInList;
 #ifdef MIC_EFFECTS
-        isRecreate = (myLamp.getLampSettings().effHasMic!=isEffHasMic) || isRecreate;
+        //isRecreate = (myLamp.getLampSettings().effHasMic!=isEffHasMic) || isRecreate;
 #endif
         isRecreate = (myLamp.effects.getEffSortType()!=st) || isRecreate;
 
         if(isRecreate){
             myLamp.effects.setEffSortType(st);
-            myLamp.setNumInList(isNumInList);
-#ifdef MIC_EFFECTS
-            myLamp.setEffHasMic(isEffHasMic);
-#endif
-            myLamp.effects.removeLists();
-            recreateoptionsTask();
+            //myLamp.setNumInList(isNumInList);
+            //myLamp.effects.removeLists();
+            rebuild_effect_list_files(lstfile_t::all);
         }
     }
-    myLamp.setNumInList(isNumInList);
-#ifdef MIC_EFFECTS
-    myLamp.setEffHasMic(isEffHasMic);
-#endif
+    //myLamp.setNumInList(isNumInList);
+
     SETPARAM(FPSTR(TCONST_effSort), myLamp.effects.setEffSortType(st));
     save_lamp_flags();
     
     String act = (*data)[FPSTR(TCONST_set_effect)];
+    // action is to "copy" effect
     if (act == FPSTR(TCONST_copy)) {
         Task *_t = new Task(
             300,
@@ -350,7 +388,8 @@ void set_effects_config_param(Interface *interf, JsonObject *data){
                                 Interface *interf = embui.ws.count()? new Interface(&embui, &embui.ws, 1024) : nullptr;
                                 section_main_frame(interf, nullptr);
                                 delete interf;
-                                recreateoptionsTask(); },
+                                rebuild_effect_list_files(lstfile_t::all);
+            },
             &ts, false, nullptr, nullptr, true);
         _t->enableDelayed();
         return;
@@ -376,7 +415,8 @@ void set_effects_config_param(Interface *interf, JsonObject *data){
                                     Interface *interf = embui.ws.count()? new Interface(&embui, &embui.ws, 1024) : nullptr;
                                     section_main_frame(interf, nullptr);
                                     delete interf;
-                                    recreateoptionsTask(); },
+                                    rebuild_effect_list_files(lstfile_t::all);
+                                    },
                 &ts, false, nullptr, nullptr, true);
             _t->enableDelayed();
         } else {
@@ -388,7 +428,7 @@ void set_effects_config_param(Interface *interf, JsonObject *data){
                                     Interface *interf = embui.ws.count()? new Interface(&embui, &embui.ws, 1024) : nullptr;
                                     section_main_frame(interf, nullptr);
                                     delete interf;
-                                    recreateoptionsTask(); },
+                                    rebuild_effect_list_files(lstfile_t::all); },
                 &ts, false, nullptr, nullptr, true);
             _t->enableDelayed();
         }
@@ -401,7 +441,7 @@ void set_effects_config_param(Interface *interf, JsonObject *data){
                                 Interface *interf = embui.ws.count()? new Interface(&embui, &embui.ws, 1024) : nullptr;
                                 section_main_frame(interf, nullptr);
                                 delete interf;
-                                recreateoptionsTask(); },
+                                rebuild_effect_list_files(lstfile_t::all); },
             &ts, false, nullptr, nullptr, true);
         _t->enableDelayed();
         return;
@@ -425,7 +465,7 @@ void set_effects_config_param(Interface *interf, JsonObject *data){
  * блок формирования страницы с контролами для настроек параметров эффектов
  * здесь выводится ПОЛНЫЙ сипсок эффектов
  */
-void block_effects_config(Interface *interf, JsonObject *data, bool fast=true){
+void block_effects_config(Interface *interf, JsonObject *data){
     if (!interf) return;
 
     interf->json_section_main(FPSTR(TCONST_effects_config), FPSTR(TINTF_009));
@@ -451,15 +491,11 @@ void block_effects_config(Interface *interf, JsonObject *data, bool fast=true){
     }
 
     interf->constant(F("cmt"), F("Rebuilding effects list, pls wait..."));
-    if (delayedOptionTask)  // rebuild is already in progress, skip...
-        return;
-
-    // schedule a task to rebuild full effects names list file
-    delayedOptionTask = new Task(500, TASK_ONCE, [](){ build_eff_names_list_file(myLamp.effects, true); }, &ts, true, nullptr, [](){ delayedOptionTask=nullptr; }, true );
+    rebuild_effect_list_files(lstfile_t::full);
 }
 
 // Построение выпадающего списка эффектов для вебморды
-//
+/*
 void delayedcall_show_effects(){
 
     LOG(println, F("=== GENERATE EffLIst for GUI (fslowlist.json) ==="));
@@ -561,22 +597,13 @@ void delayedcall_show_effects(){
         }, true
     );
 }
-//
+*/
 
 void show_effects_config(Interface *interf, JsonObject *data){
-#ifdef DELAYED_EFFECTS
     if (!interf) return;
     interf->json_frame_interface();
     block_effects_config(interf, data);
     interf->json_frame_flush();
-#else
-    if (!interf) return;
-    interf->json_frame_interface();
-    block_effects_config(interf, data, false);
-    interf->json_frame_flush();
-#endif
-    if(!LittleFS.exists(FPSTR(TCONST_fslowlist)))
-        recreateoptionsTask();
 }
 
 void set_effects_config_list(Interface *interf, JsonObject *data){
@@ -959,16 +986,8 @@ void block_effects_main(Interface *interf, JsonObject *data, bool fast=true){
         interf->json_section_end();
     } else {
         interf->constant(F("cmt"), F("Rebuilding effects list, pls wait..."));
-        // check if rebuild task is already in progress
-        if (!delayedOptionTask){
-            // schedule a task to rebuild limited effects names list file (skipping "hidden" effects)
-            delayedOptionTask = new Task(500, TASK_ONCE, [](){ build_eff_names_list_file(myLamp.effects); }, &ts, true, nullptr, [](){ delayedOptionTask=nullptr; }, true );
-        }
+        rebuild_effect_list_files(lstfile_t::selected);
     }
-
-    block_effects_param(interf, data);
-
-    interf->button(FPSTR(TCONST_effects_config), FPSTR(TINTF_009));
 
     interf->json_section_end();
 }
@@ -1282,7 +1301,6 @@ void set_lamp_textsend(Interface *interf, JsonObject *data){
 void block_drawing(Interface *interf, JsonObject *data){
     //Страница "Рисование"
     if (!interf) return;
-    recreateoptionsTask(true); // only cancel task
     interf->json_section_main(FPSTR(TCONST_drawing), FPSTR(TINTF_0CE));
 
     DynamicJsonDocument doc(512);
@@ -1323,7 +1341,6 @@ void set_clear(Interface *interf, JsonObject *data){
 void block_lamptext(Interface *interf, JsonObject *data){
     //Страница "Вывод текста"
     if (!interf) return;
-    recreateoptionsTask(true); // only cancel task
     interf->json_section_main(FPSTR(TCONST_lamptext), FPSTR(TINTF_001));
 
     block_lamp_textsend(interf, data);
@@ -2458,7 +2475,6 @@ void set_mp3_player(Interface *interf, JsonObject *data){
 
 
 void section_effects_frame(Interface *interf, JsonObject *data){
-    recreateoptionsTask(true); // only cancel task
     if (!interf) return;
     interf->json_frame_interface(FPSTR(TINTF_080));
     block_effects_main(interf, data);
@@ -2594,10 +2610,10 @@ void set_streaming_universe(Interface *interf, JsonObject *data){
 #endif
 // Точка входа в настройки
 void user_settings_frame(Interface *interf, JsonObject *data);
+
 void section_settings_frame(Interface *interf, JsonObject *data){
     // Страница "Настройки"
     if (!interf) return;
-    recreateoptionsTask(true); // only cancel task
     interf->json_frame_interface(FPSTR(TINTF_080));
 
     interf->json_section_main(FPSTR(T_SETTINGS), FPSTR(TINTF_002));
@@ -2692,7 +2708,6 @@ void section_main_frame(Interface *interf, JsonObject *data){
 void section_sys_settings_frame(Interface *interf, JsonObject *data){
     // Страница "Настройки ESP"
     if (!interf) return;
-    recreateoptionsTask(true); // only cancel task
     interf->json_frame_interface(FPSTR(TINTF_08F));
 
     block_menu(interf, data);

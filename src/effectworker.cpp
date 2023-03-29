@@ -682,9 +682,9 @@ void EffectWorker::makeIndexFile(const char *folder)
 }
 */
 void EffectWorker::removeLists(){
-  LittleFS.remove(FPSTR(TCONST_fquicklist));
-  LittleFS.remove(FPSTR(TCONST_fslowlist));
-  LittleFS.remove(FPSTR(TCONST_quicklist));
+  LittleFS.remove(FPSTR(TCONST_eff_list_json));
+  LittleFS.remove(FPSTR(TCONST_eff_fulllist_json));
+//  LittleFS.remove(FPSTR(TCONST_quicklist));
 //  listsuffix = time(NULL);
 }
 
@@ -1157,8 +1157,6 @@ bool EffectWorker::_eff_ctrls_load_from_jdoc(DynamicJsonDocument &effcfg, LList<
 }
 
 void EffectWorker::_load_default_fweff_list(){
-  LOG(println, F("Load default eff list from fw"));
-
   effects.clear();
 
   for (uint16_t i = 0; i != 256U; i++){
@@ -1172,6 +1170,7 @@ void EffectWorker::_load_default_fweff_list(){
     EffectListElem el(i, SET_ALL_EFFFLAGS);
     effects.add(el);
   }
+  LOG(printf_P, PSTR("Loaded default list of effects, %u entries\n"), effects.size());
 }
 
 void EffectWorker::_load_eff_list_from_idx_file(const char *folder){
