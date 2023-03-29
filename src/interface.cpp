@@ -124,13 +124,20 @@ void rebuild_effect_list_files(lstfile_t lst){
             switch (lst){
                 case lstfile_t::full :
                     build_eff_names_list_file(myLamp.effects, true);
+                    if (embui.ws.count()){  // refresh UI page with a regerated list
+                        Interface interf(&embui, &embui.ws, 1024);
+                        block_effects_config(&interf, nullptr);
+                    }
                     break;
                 case lstfile_t::all :
-                    build_eff_names_list_file(myLamp.effects);
                     build_eff_names_list_file(myLamp.effects, true);
-                    break;
+                    // intentionally fall-trough this to default
                 default :
                     build_eff_names_list_file(myLamp.effects);
+                    if (embui.ws.count()){  // refresh UI page with a regerated list
+                        Interface interf(&embui, &embui.ws, 1024);
+                        section_main_frame(&interf, nullptr);
+                    }
             }
         },
         &ts, true, nullptr, [](){ delayedOptionTask=nullptr; }, true
@@ -380,24 +387,18 @@ void set_effects_config_param(Interface *interf, JsonObject *data){
     String act = (*data)[FPSTR(TCONST_set_effect)];
     // action is to "copy" effect
     if (act == FPSTR(TCONST_copy)) {
-        Task *_t = new Task(
-            300,
-            TASK_ONCE, [effect](){
-                                myLamp.effects.copyEffect(effect); // копируем текущий
-                                myLamp.effects.makeIndexFileFromList(); // создаем индекс по списку и на выход
-                                Interface *interf = embui.ws.count()? new Interface(&embui, &embui.ws, 1024) : nullptr;
-                                section_main_frame(interf, nullptr);
-                                delete interf;
-                                rebuild_effect_list_files(lstfile_t::all);
-            },
-            &ts, false, nullptr, nullptr, true);
-        _t->enableDelayed();
+        myLamp.effects.copyEffect(effect); // копируем текущий
+        myLamp.effects.makeIndexFileFromList(); // создаем индекс по списку и на выход
+        rebuild_effect_list_files(lstfile_t::all);
         return;
-    //} else if (act == FPSTR(TCONST_del_)) {
-    } else if (act == FPSTR(TCONST_delfromlist) || act == FPSTR(TCONST_delall)) {
+    }
+    
+    // action is to "delete" effect
+    if (act == FPSTR(TCONST_delfromlist) || act == FPSTR(TCONST_delall)) {
         uint16_t tmpEffnb = effect->eff_nb;
+        LOG(printf_P,PSTR("delete effect->eff_nb=%d\n"), tmpEffnb);
         bool isCfgRemove = (act == FPSTR(TCONST_delall));
-        LOG(printf_P,PSTR("confEff->eff_nb=%d\n"), tmpEffnb);
+
         if(tmpEffnb==myLamp.effects.getCurrent()){
             myLamp.effects.directMoveBy(EFF_ENUM::EFF_NONE);
             remote_action(RA_EFF_NEXT, NULL);
@@ -407,53 +408,28 @@ void set_effects_config_param(Interface *interf, JsonObject *data){
         myLamp.sendString(tmpStr.c_str(), CRGB::Red);
         confEff = myLamp.effects.getEffect(EFF_ENUM::EFF_NONE);
         if(isCfgRemove){
-            Task *_t = new Task(
-                300,
-                TASK_ONCE, [effect](){
-                                    myLamp.effects.deleteEffect(effect, true); // удаляем эффект из ФС
-                                    myLamp.effects.makeIndexFileFromFS(); // создаем индекс по файлам ФС и на выход
-                                    Interface *interf = embui.ws.count()? new Interface(&embui, &embui.ws, 1024) : nullptr;
-                                    section_main_frame(interf, nullptr);
-                                    delete interf;
-                                    rebuild_effect_list_files(lstfile_t::all);
-                                    },
-                &ts, false, nullptr, nullptr, true);
-            _t->enableDelayed();
+            myLamp.effects.deleteEffect(effect, true);  // удаляем эффект вместе с конфигом на ФС
+            myLamp.effects.makeIndexFileFromFS();       // создаем индекс по файлам ФС и на выход
+            rebuild_effect_list_files(lstfile_t::all);
         } else {
-            Task *_t = new Task(
-                300,
-                TASK_ONCE, [effect](){
-                                    myLamp.effects.deleteEffect(effect, false); // удаляем эффект из списка
-                                    myLamp.effects.makeIndexFileFromList(); // создаем индекс по текущему списку и на выход
-                                    Interface *interf = embui.ws.count()? new Interface(&embui, &embui.ws, 1024) : nullptr;
-                                    section_main_frame(interf, nullptr);
-                                    delete interf;
-                                    rebuild_effect_list_files(lstfile_t::all); },
-                &ts, false, nullptr, nullptr, true);
-            _t->enableDelayed();
+            myLamp.effects.deleteEffect(effect, false); // удаляем эффект только из активного списка
+            myLamp.effects.makeIndexFileFromList();     // создаем индекс по текущему списку и на выход
+            rebuild_effect_list_files(lstfile_t::selected);
         }
         return;
-    } else if (act == FPSTR(TCONST_makeidx)) {
-        Task *_t = new Task(
-            300,
-            TASK_ONCE, [](){
-                                myLamp.effects.makeIndexFileFromFS(); // создаем индекс по файлам ФС и на выход
-                                Interface *interf = embui.ws.count()? new Interface(&embui, &embui.ws, 1024) : nullptr;
-                                section_main_frame(interf, nullptr);
-                                delete interf;
-                                rebuild_effect_list_files(lstfile_t::all); },
-            &ts, false, nullptr, nullptr, true);
-        _t->enableDelayed();
-        return;
-    } else {
-        effect->canBeSelected((*data)[FPSTR(TCONST_eff_sel)] == "1");
-        effect->isFavorite((*data)[FPSTR(TCONST_eff_fav)] == "1");
-        myLamp.effects.setSoundfile((*data)[FPSTR(TCONST_soundfile)], effect);
-// #ifdef CASHED_EFFECTS_NAMES
-//         effect->setName((*data)[FPSTR(TCONST_effname)]);
-// #endif
-        myLamp.effects.setEffectName((*data)[FPSTR(TCONST_effname)], effect);
     }
+
+    // action is "rebuild effects index"
+    if (act == FPSTR(TCONST_makeidx)) {
+        myLamp.effects.makeIndexFileFromFS(); // создаем индекс по файлам ФС и на выход
+        rebuild_effect_list_files(lstfile_t::selected);
+        return;
+    }
+    
+    effect->canBeSelected((*data)[FPSTR(TCONST_eff_sel)] == "1");
+    effect->isFavorite((*data)[FPSTR(TCONST_eff_fav)] == "1");
+    myLamp.effects.setSoundfile((*data)[FPSTR(TCONST_soundfile)], effect);
+    myLamp.effects.setEffectName((*data)[FPSTR(TCONST_effname)], effect);
 
     resetAutoTimers();
     myLamp.effects.makeIndexFileFromList(); // обновить индексный файл после возможных изменений

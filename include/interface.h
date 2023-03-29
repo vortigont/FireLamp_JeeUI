@@ -74,6 +74,11 @@ uint8_t uploadProgress(size_t len, size_t total);
 
 void delayedcall_show_effects();
 
+/**
+ * блок формирования страницы с контролами для настроек параметров эффектов
+ * здесь выводится ПОЛНЫЙ сипсок эффектов
+ */
+void block_effects_config(Interface *interf, JsonObject *data);
 
 #ifdef DELAYED_EFFECTS
  #define INDEX_BUILD_DELAY 5
