@@ -7424,21 +7424,23 @@ void EffectMagma::load() {
 // !++
 String EffectMagma::setDynCtrl(UIControl*_val){
   if (_val->getId()==1) speedFactor = EffectMath::fmap(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 0.075, .5) * EffectCalc::speedfactor;
-  else if(_val->getId()==3) ObjectNUM = map(EffectCalc::setDynCtrl(_val).toInt(), 1, 100, WIDTH/2, enlargedOBJECT_MAX_COUNT);
+  else if(_val->getId()==3) {
+    long scale = map(EffectCalc::setDynCtrl(_val).toInt(), 1, 100, MAGMA_MIN_OBJ, MAGMA_MAX_OBJ);
+    particles.assign(scale, Magma());
+  }
   else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
   regen();
   return String();
 }
 
 void EffectMagma::regen() {
-  for (uint8_t j = 0; j < HEIGHT; j++) {
+  for (uint8_t j = 0; j != shiftHue.size(); ++j){
     shiftHue[j] = map(j, 0, HEIGHT+HEIGHT/4, 255, 0);// init colorfade table
   }
 
-
-  for (uint8_t i = 0 ; i < enlargedOBJECT_MAX_COUNT ; i++) {
-    LeapersRestart_leaper(i);  
-    trackingObjectHue[i] = 50U;
+  for (auto &i : particles){
+    leapersRestart_leaper(i);
+    i.hue = 50U;
   }
 }
 
@@ -7446,9 +7448,10 @@ bool EffectMagma::run(CRGB *leds, EffectWorker *opt) {
   fadeToBlackBy(leds, NUM_LEDS, 50);
   
 
-  for (uint8_t i = 0; i < ObjectNUM; i++) {
-    LeapersMove_leaper(i);
-    EffectMath::drawPixelXYF(trackingObjectPosX[i], trackingObjectPosY[i], ColorFromPalette(*curPalette, trackingObjectHue[i]), 0);
+  for (auto &i : particles){
+    leapersMove_leaper(i);
+    i.hue = 50U;
+    EffectMath::drawPixelXYF(i.posX, i.posY, ColorFromPalette(*curPalette, i.hue), 0);
   }
 
   for (uint8_t i = 0; i < WIDTH; i++) {
@@ -7463,40 +7466,40 @@ bool EffectMagma::run(CRGB *leds, EffectWorker *opt) {
   return true;
 }
 
-void EffectMagma::LeapersMove_leaper(uint8_t l) {
+void EffectMagma::leapersMove_leaper(Magma &l) {
 
-  trackingObjectPosX[l] += trackingObjectSpeedX[l] * speedFactor;
-  trackingObjectPosY[l] += trackingObjectShift[l] * speedFactor;
+  l.posX += l.speedX * speedFactor;
+  l.posY += l.shift * speedFactor;
 
   // bounce off the ceiling?
-  if (trackingObjectPosY[l] > HEIGHT + HEIGHT/4) {
-    trackingObjectShift[l] = -trackingObjectShift[l];
+  if (l.posY > HEIGHT + HEIGHT/4) {
+    l.shift *= -1;
   }
   
   // settled on the floor?
-  if (trackingObjectPosY[l] <= (HEIGHT/8-1)) {
-    LeapersRestart_leaper(l);
+  if (l.posY <= (HEIGHT/8-1)) {
+    leapersRestart_leaper(l);
   }
 
   // bounce off the sides of the screen?
-  if (trackingObjectPosX[l] < 0 || trackingObjectPosX[l] > EffectMath::getmaxWidthIndex()) {
-    LeapersRestart_leaper(l);
+  if (l.posX < 0 || l.posX > EffectMath::getmaxWidthIndex()) {
+    leapersRestart_leaper(l);
   }
   
-  trackingObjectShift[l] -= Gravity * speedFactor;
+  l.shift -= gravity * speedFactor;
 }
 
-void EffectMagma::LeapersRestart_leaper(uint8_t l) {
+void EffectMagma::leapersRestart_leaper(Magma &l) {
   randomSeed(millis());
   // leap up and to the side with some random component
-  trackingObjectSpeedX[l] = EffectMath::randomf(-0.75, 0.75);
-  trackingObjectShift[l] = EffectMath::randomf(0.50, 0.85);
-  trackingObjectPosX[l] = EffectMath::randomf(0, WIDTH);
-  trackingObjectPosY[l] = EffectMath::randomf(0, (float)HEIGHT/4-1);
+  l.speedX = EffectMath::randomf(-0.75, 0.75);
+  l.shift = EffectMath::randomf(0.50, 0.85);
+  l.posX = EffectMath::randomf(0, WIDTH);
+  l.posY = EffectMath::randomf(0, (float)HEIGHT/4-1);
 
   // for variety, sometimes go 100% faster
   if (random8() < 12) {
-    trackingObjectShift[l] += trackingObjectShift[l] * EffectMath::randomf(1.5, 2.5);
+    l.shift += l.shift * EffectMath::randomf(1.5, 2.5);
   }
 }
 

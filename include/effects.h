@@ -1803,27 +1803,32 @@ public:
 // ----------------- Эффект "Магма"
 // (c) Сотнег (SottNick) 2021
 // адаптация и доводка до ума - kostyamat
+#define MAGMA_MIN_OBJ   (WIDTH/2)
+#define MAGMA_MAX_OBJ   (WIDTH*3)
 class EffectMagma: public EffectCalc {
 private:
-    //uint16_t ff_x;
-    float ff_y, ff_z;                         // большие счётчики
+
+    struct Magma {
+        float posX{0}, posY{0};
+        float speedX{0};
+        float shift{0};
+        uint8_t hue{0};
+    };
+
+    float ff_y{0}, ff_z{0};         // большие счётчики
     //control magma bursts
-    const byte deltaValue = 6U; // 2-12 
-    const byte deltaHue = 8U; // высота языков пламени должна уменьшаться не так быстро, как ширина
-    const float Gravity = 0.1;
-    uint8_t step, ObjectNUM = WIDTH; 
-    uint8_t shiftHue[HEIGHT];
-    float trackingObjectPosX[enlargedOBJECT_MAX_COUNT];
-    float trackingObjectPosY[enlargedOBJECT_MAX_COUNT];
-    uint8_t trackingObjectHue[enlargedOBJECT_MAX_COUNT];
-    float trackingObjectSpeedX[enlargedOBJECT_MAX_COUNT];
-    float trackingObjectShift[enlargedOBJECT_MAX_COUNT];
-    float speedFactor;
+    const byte deltaValue = 6U;     // 2-12 
+    const byte deltaHue = 8U;       // высота языков пламени должна уменьшаться не так быстро, как ширина
+    const float gravity = 0.1;
+    uint8_t step = WIDTH;
+    float speedFactor{0.1};
+    std::array<uint8_t, HEIGHT> shiftHue;
+    std::vector<Magma> particles{std::vector<Magma>(WIDTH, Magma())};
 
     void palettesload();
     void regen();
-    void LeapersMove_leaper(uint8_t l);
-    void LeapersRestart_leaper(uint8_t l);
+    void leapersMove_leaper(Magma &l);
+    void leapersRestart_leaper(Magma &l);
     String setDynCtrl(UIControl*_val) override;
 
 public:
