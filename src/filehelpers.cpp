@@ -77,18 +77,14 @@ namespace fshlpr{
      * возвращает хендл
      */
     File& openIndexFile(File& fhandle, const char *folder){
-
-    String filename;
-
-    if (folder && folder[0]){ // если указан каталог и первый символ не пустой, то берем как есть
-        filename.concat(folder);
-        //LOG(print, F("index:"));
-        //LOG(println, filename.c_str());
-    } else
-        filename.concat(F("/eff_index.json"));
-    
-    fhandle = LittleFS.open(filename, "w");
-    return fhandle;
+        String filename;
+        if (folder && folder[0]){ // если указан каталог и первый символ не пустой, то берем как есть
+            filename.concat(folder);
+        } else
+            filename.concat(F("/eff_index.json"));
+        
+        fhandle = LittleFS.open(filename, "w");
+        return fhandle;
     }
 
 

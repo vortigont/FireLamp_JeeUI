@@ -501,18 +501,17 @@ void EffectWorker::_create_eff_default_cfg_file(uint16_t nb, String &filename){
   LOG(printf_P, PSTR("Effect: %u, cfg:%s\n"), nb, cfg.c_str());
 }
 
-
 String EffectWorker::getSerializedEffConfig(uint16_t nb, uint8_t replaceBright)
 {
   // конфиг текущего эффекта
   DynamicJsonDocument doc(DYNJSON_SIZE_EFF_CFG);
   EffectListElem *eff = getEffect(nb);
+  if (!eff)
+    return String();
+
   EffectWorker *tmp=this;
   bool isFader = (curEff != nb);
   if(isFader){ // работает фейдер, нужен новый экземпляр
-#if defined(PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED)
-    HeapSelectIram ephemeral;
-#endif
     tmp=new EffectWorker(eff);
   }
 
@@ -554,26 +553,6 @@ void EffectWorker::saveeffconfig(uint16_t nb, char *folder){
   configFile = LittleFS.open(filename, "w"); // PSTR("w") использовать нельзя, будет исключение!
   configFile.print(getSerializedEffConfig(nb));
   configFile.close();
-}
-
-/**
- * проверка на существование "дефолтных" конфигов для всех статичных эффектов
- *
- */
-void EffectWorker::chckdefconfigs(const char *folder){
-  for (uint16_t i = ((uint16_t)EFF_ENUM::EFF_NONE); i < (uint16_t)256; i++){ // всего 254 базовых эффекта, 0 - служебный, 255 - последний
-    if (!strlen_P(T_EFFNAMEID[i]) && i!=0)   // пропускаем индексы-"пустышки" без названия, кроме EFF_NONE
-      continue;
-
-#ifndef MIC_EFFECTS
-    if(i>EFF_ENUM::EFF_TIME) continue; // пропускаем эффекты для микрофона, если отключен микрофон
-#endif
-
-    String cfgfilename = fshlpr::getEffectCfgPath(i, folder);
-    if(!LittleFS.exists(cfgfilename)){ // если конфига эффекта не существует, создаем дефолтный
-      _create_eff_default_cfg_file(i, cfgfilename);
-    }
-  }
 }
 
 void EffectWorker::autoSaveConfig(bool force) {
@@ -642,53 +621,6 @@ EffectWorker::EffectWorker(uint16_t delayeffnb)
   delay(1);
 #endif
 }
-
-
-/**
- *  процедура содания индекса "по-умолчанию" на основе "вшитых" в код enum/имен эффектов
- *
- */
-/*
-void EffectWorker::makeIndexFile(const char *folder)
-{
-  uint32_t timest = millis();
-
-  // LittleFS глючит при конкуретном доступе к файлам на запись, разносим разношерстные операции во времени
-  // сначала проверяем наличие дефолтных конфигов для всех эффектов
-  chckdefconfigs(folder);
-
-  File indexFile;
-
-  LOG(println, F("Rebuilding default index file..."));
-  bool firstLine = true;
-  openIndexFile(indexFile, folder);
-  indexFile.print("[");
-
-  EffectListElem *eff;
-  uint8_t flags = SET_ALL_EFFFLAGS;
-  for (uint16_t i = ((uint16_t)EFF_ENUM::EFF_NONE); i < (uint16_t)256; i++){
-    if (!strlen_P(T_EFFNAMEID[i]) && i!=0)   // пропускаем индексы-"пустышки" без названия, кроме 0 "EFF_NONE"
-      continue;
-
-#ifndef MIC_EFFECTS
-    if(i>EFF_ENUM::EFF_TIME) continue; // пропускаем эффекты для микрофона, если отключен микрофон
-#endif
-
-    eff = getEffect(i);
-    if(eff)
-      flags = eff->flags.mask;
-
-    indexFile.printf_P(PGidxtemplate, firstLine ? "" : ",", i, i ? flags : 0); // дефолтный флаг SET_ALL_EFFFLAGS для любого эффекта, кроме 0
-    firstLine = false; // сбрасываю признак перовой строки
-    //yield();
-  }
-
-  indexFile.print("]");
-  indexFile.close();
-
-  LOG(printf_P,PSTR("rebuilding took %ld ms\n"), millis() - timest);
-}
-*/
 
 void EffectWorker::removeLists(){
   LittleFS.remove(FPSTR(TCONST_eff_list_json));
@@ -813,12 +745,6 @@ void EffectWorker::updateIndexFile()
   makeIndexFileFromList();
 }
 
-// удалить эффект из индексного файла
-void EffectWorker::deleteFromIndexFile(const uint16_t effect)
-{
-  makeIndexFileFromList();
-}
-
 // удалить эффект
 void EffectWorker::deleteEffect(const EffectListElem *eff, bool isCfgRemove)
 {
@@ -840,16 +766,11 @@ void EffectWorker::copyEffect(const EffectListElem *base)
   uint16_t maxfoundnb=base->eff_nb;
   for(unsigned i=0; i<effects.size();i++){
     if(effects[i].eff_nb>255 && ((effects[i].eff_nb&0x00FF)==(copy.eff_nb&0x00FF))){ // найдены копии
-      //foundcnt++;
       if(maxfoundnb < effects[i].eff_nb) maxfoundnb=effects[i].eff_nb;
     }
   }
-  //if(foundcnt){
-    // if(!foundcnt)
-    //   copy->eff_nb=(((foundcnt+1) << 8 ) | (copy->eff_nb&0xFF)); // в старшем байте увеличиваем значение на число имеющихся копий
-    // else
-      copy.eff_nb=(((((maxfoundnb & 0xFF00)>>8)+1) << 8 ) | (copy.eff_nb&0xFF)); // в старшем байте увеличиваем значение на число имеющихся копий
-  //}
+
+  copy.eff_nb=(((((maxfoundnb & 0xFF00)>>8)+1) << 8 ) | (copy.eff_nb&0xFF)); // в старшем байте увеличиваем значение на число имеющихся копий
 
   EffectWorker *effect = new EffectWorker(base, &copy); // создать параметры для него (конфиг, индекс и т.д.)
   effects.add(copy);
@@ -1556,9 +1477,11 @@ void build_eff_names_list_file(EffectWorker &w, bool full){
       offset = 0;
     }
 
+    // create number prefix for effect name in list, i.e.  '8. '
+    // for effect copies it will append clone number suffix, i.e. '75.0 '
     String name(EFF_NUMBER(itr->eff_nb));
+    name += effname + MIC_SYMBOL(itr->eff_nb);    // add microphone symbol for effects that support it
     //name + (eff->eff_nb>255 ? String(F(" (")) + String(eff->eff_nb&0xFF) + String(F(")")) : String("")) + String(F(". "))
-    name += effname + MIC_SYMBOL(itr->eff_nb);
 
     offset += sprintf_P(buff->data()+offset, PSTR("{\"label\":\"%s\",\"value\":\"%d\"},"), name.c_str(), itr->eff_nb);
   } while (++itr != w.getEffectsList().cend());

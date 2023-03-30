@@ -60,9 +60,9 @@ extern Scheduler ts;
 #endif
 
 // Вывод номеров эффектов в списке, в WebUI
+#define EFF_NUMBER(N)   N <= 255 ? (String(N) + ". ") : (String((byte)(N & 0xFF)) + "." + String((byte)(N >> 8) - 1U) + " ")
 // depend on option to disable numbers in list names 
 //#define EFF_NUMBER   (numList ? (eff->eff_nb <= 255 ? (String(eff->eff_nb) + ". ") : (String((byte)(eff->eff_nb & 0xFF)) + "." + String((byte)(eff->eff_nb >> 8) - 1U) + ". ")) : "")
-#define EFF_NUMBER(N)   N <= 255 ? (String(N) + ". ") : (String((byte)(N & 0xFF)) + "." + String((byte)(N >> 8) - 1U) + " ")
 
 
 
@@ -428,12 +428,6 @@ private:
     bool loadeffconfig(const uint16_t nb, const char *folder=NULL);
 
     /**
-     * проверка на существование "дефолтных" конфигов для всех статичных эффектов
-     *
-     */
-    void chckdefconfigs(const char *folder);
-
-    /**
      * @brief create Effect's default configuration json file
      * it overwrites existing file on FS with effect's default configuration
      * 
@@ -446,8 +440,6 @@ private:
     //void makeIndexFile(const char *folder = NULL);
     // создать или обновить текущий индекс эффекта
     void updateIndexFile();
-    // удалить эффект из индексного файла
-    void deleteFromIndexFile(const uint16_t effect);
 
     /**
      * получить версию эффекта из "прошивки" по его ENUM
