@@ -656,10 +656,8 @@ public:
 class EffectPicasso : public EffectCalc {
 private:
     struct Particle {
-        float position_x = 0;
-        float position_y = 0;
-        float speed_x = 0;
-        float speed_y = 0;
+        float position_x{0}, position_y{0};
+        float speed_x{0}, speed_y{0};
         CHSV color;
         uint8_t hue_next = 0;
         int8_t hue_step = 0;

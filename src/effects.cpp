@@ -3037,37 +3037,39 @@ EffectPicasso::EffectPicasso(){
   palettes.add(Sunset_Real_gp, 50, 0, 220);
 
   palettes.add(BlacK_Magenta_Red_gp, 25);
+
+  generate(true);
 }
 
 void EffectPicasso::generate(bool reset){
-  double minSpeed = 0.2, maxSpeed = 0.8;
   unsigned numParticles = map(scale, 0U, 255U, PICASSO_MIN_PARTICLES, PICASSO_MAX_PARTICLES);
 
   if (numParticles != particles.size()){
     particles.assign(numParticles, Particle());
-    for (auto &particle : particles){
+    reset = true;
+  }
+
+  double minSpeed = 0.2, maxSpeed = 0.8;
+  for (auto &particle : particles){
+    if (reset) {
       particle.position_x = random8(0, WIDTH);
       particle.position_y = random8(0, HEIGHT);
 
-      particle.speed_x = +((-maxSpeed / 3) + (maxSpeed * (float)random(1, 100) / 100));
+      particle.speed_x = (-maxSpeed / 3) + (maxSpeed * (float)random(1, 100) / 100);
       particle.speed_x += particle.speed_x > 0 ? minSpeed : -minSpeed;
 
-      particle.speed_y = +((-maxSpeed / 2) + (maxSpeed * (float)random(1, 100) / 100));
+      particle.speed_y = (-maxSpeed / 2) + (maxSpeed * (float)random(1, 100) / 100);
       particle.speed_y += particle.speed_y > 0 ? minSpeed : -minSpeed;
 
       particle.color = CHSV(random8(1U, 255U), 255U, 255U);
-      particle.hue_next = particle.color.h;
-    };
-  }
+      //particle.hue_next = particle.color.h;
 
-  for (auto &particle : particles){
-    if (reset) {
       particle.hue_next = random8(1U, 255U);
       particle.hue_step = (particle.hue_next - particle.color.h) / 25;
-    }
-    if (particle.hue_next != particle.color.h && particle.hue_step) {
+    };
+
+    if (particle.hue_next != particle.color.h && particle.hue_step)
       particle.color.h += particle.hue_step;
-    }
   }
 }
 
@@ -3094,11 +3096,10 @@ bool EffectPicasso::picassoRoutine(CRGB *leds, EffectWorker *param){
   unsigned iter = (particles.size() - particles.size()%2) / 2;
   for (unsigned i = 0; i != iter; ++i) {
     Particle &p1 = particles[i];
-    Particle &p2 = particles[particles.size()-i];
-    switch (effId)
-    {
+    Particle &p2 = particles[particles.size()-1-i];
+    switch (effId){
     case 1:
-      EffectMath::drawLine(p1.position_x, p1.position_y, p2.position_x, p2.position_y, p1.color);
+      EffectMath::drawLine(static_cast<int>(p1.position_x), static_cast<int>(p1.position_y), static_cast<int>(p2.position_x), static_cast<int>(p2.position_y), p1.color);
       break;
     case 2:
       EffectMath::drawLineF(p1.position_x, p1.position_y, p2.position_x, p2.position_y, p1.color);
@@ -3106,9 +3107,8 @@ bool EffectPicasso::picassoRoutine(CRGB *leds, EffectWorker *param){
     case 3:
       EffectMath::drawCircleF(fabs(p1.position_x - p2.position_x), fabs(p1.position_y - p2.position_y), fabs(p1.position_x - p1.position_y), p1.color);
       break;
-  	case 4:
+  	default:
       EffectMath::drawSquareF(fabs(p1.position_x - p2.position_x), fabs(p1.position_y - p2.position_y), fabs(p1.position_x - p1.position_y), p1.color);
-      break;
     }
   }
 
