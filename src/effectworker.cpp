@@ -41,6 +41,14 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 #define DYNJSON_SIZE_EFF_CFG   2048
 
+// defines buffer size for writing json files
+#ifdef ESP32
+#define ARR_LIST_SIZE   4096
+#else
+#define ARR_LIST_SIZE   1024
+#endif
+
+
 /*
 // true deep-copy of UIControl ponters
 void clone_controls_list(const LList<UIControl*> &src, LList<UIControl*> &dst){
@@ -690,23 +698,37 @@ void EffectWorker::removeLists(){
 
 void EffectWorker::makeIndexFileFromList(const char *folder, bool forceRemove)
 {
-  File indexFile;
-
   if(forceRemove)
     removeLists();
 
-  fshlpr::openIndexFile(indexFile, folder);
+  std::array<char, ARR_LIST_SIZE> *buff = new(std::nothrow) std::array<char, ARR_LIST_SIZE>;
+  if (!buff) return;    // not enough mem
+
+  File hndlr;
+  fshlpr::openIndexFile(hndlr, folder);
   effectsReSort(SORT_TYPE::ST_IDX); // сброс сортировки перед записью
 
-  bool firstLine = true;
-  indexFile.print("[");
-  for (const auto &eff : effects){
-    indexFile.printf_P(PGidxtemplate, firstLine ? "" : ",", eff.eff_nb, eff.flags.mask);
-    firstLine = false; // сбрасываю признак первой строки
-  }
+  size_t offset = 0;
+  auto itr =  effects.cbegin();  // get const interator
+  buff->at(offset++) = (char)0x5b;   // Open json with ASCII '['
 
-  indexFile.print("]");
-  indexFile.close();
+  do {
+    // {"n":%d,"f":%d},   => 32 bytes is more than enough
+    if (ARR_LIST_SIZE - offset < 32){
+      // write to file and purge buffer
+      //LOG(println,F("Dumping buff..."));
+      hndlr.write(reinterpret_cast<uint8_t*>(buff->data()), offset);
+      offset = 0;
+    }
+
+    offset += sprintf_P(buff->data()+offset, PSTR("{\"n\":%d,\"f\":%d},"), itr->eff_nb, itr->flags.mask);
+  } while (++itr != effects.cend());
+
+  buff->at(--offset) = (char)0x5d;   // ASCII ']' implaced over last comma
+  hndlr.write(reinterpret_cast<uint8_t*>(buff->data()), ++offset);
+  hndlr.close();
+  delete buff;
+
   LOG(println,F("Индекс эффектов обновлен!"));
   effectsReSort(); // восстанавливаем сортировку
 }
@@ -1341,55 +1363,6 @@ bool EffectCalc::dryrun(float n, uint8_t delay){
  */
 bool EffectCalc::status(){return active;}
 
-// /**
-//  * setbrt - установка яркости для воркера
-//  */
-// void EffectCalc::setbrt(const byte _brt){
-//   if(isRandDemo()){
-//     brightness = random((*ctrls)[0]->getMin().toInt(),(*ctrls)[0]->getMax().toInt()+1);
-//   } else
-//     brightness = _brt;
-//   //LOG(printf_P, PSTR("Worker brt: %d\n"), brightness);
-//   // менять палитру в соответствие со шкалой, если этот контрол начинается с "Палитра"
-//   if (usepalettes && (*ctrls)[0]->getName().startsWith(FPSTR(TINTF_084))==1){
-//     palettemap(palettes, brightness, (*ctrls)[0]->getMin().toInt(), (*ctrls)[0]->getMax().toInt());
-//     paletteIdx = brightness;
-//   }
-// }
-
-// /**
-//  * setspd - установка скорости для воркера
-//  */
-// void EffectCalc::setspd(const byte _spd){
-//   if(isRandDemo()){
-//     speed = random((*ctrls)[1]->getMin().toInt(),(*ctrls)[1]->getMax().toInt()+1);
-//   } else
-//     speed = _spd;
-//   //LOG(printf_P, PSTR("Worker speed: %d\n"), speed);
-//   // менять палитру в соответствие со шкалой, если этот контрол начинается с "Палитра"
-//   if (usepalettes && (*ctrls)[1]->getName().startsWith(FPSTR(TINTF_084))==1){
-//     palettemap(palettes, speed, (*ctrls)[1]->getMin().toInt(), (*ctrls)[1]->getMax().toInt());
-//     paletteIdx = speed;
-//   }
-//   speedfactor = lampstate->speedfactor*SPEED_ADJ;
-// }
-
-// /**
-//  * setscl - установка шкалы для воркера
-//  */
-// void EffectCalc::setscl(byte _scl){
-//   //LOG(printf_P, PSTR("Worker scale: %d\n"), scale);
-//   if(isRandDemo()){
-//     scale = random((*ctrls)[2]->getMin().toInt(),(*ctrls)[2]->getMax().toInt()+1);
-//   } else
-//     scale = _scl;
-//   // менять палитру в соответствие со шкалой, если только 3 контрола или если нет контрола палитры или этот контрол начинается с "Палитра"
-//   if (usepalettes && (ctrls->size()<4 || (ctrls->size()>=4 && !isCtrlPallete) || (isCtrlPallete && (*ctrls)[2]->getName().startsWith(FPSTR(TINTF_084))==1))){
-//     palettemap(palettes, scale, (*ctrls)[2]->getMin().toInt(), (*ctrls)[2]->getMax().toInt());
-//     paletteIdx = scale;
-//   }
-// }
-
 /**
  * setDynCtrl - была смена динамического контрола, idx=3+
  * вызывается в UI, для реализации особого поведения (палитра и т.д.)...
@@ -1555,12 +1528,6 @@ void build_eff_names_list_file(EffectWorker &w, bool full){
     LittleFS.remove(full ? FPSTR(TCONST_eff_fulllist_json) : FPSTR(TCONST_eff_list_json));
   }
 
-#ifdef ESP32
-#define ARR_LIST_SIZE   4096
-#else
-#define ARR_LIST_SIZE   1024
-#endif
-
   std::array<char, ARR_LIST_SIZE> *buff = new(std::nothrow) std::array<char, ARR_LIST_SIZE>;
   if (!buff) return;    // not enough mem
 
@@ -1580,7 +1547,7 @@ void build_eff_names_list_file(EffectWorker &w, bool full){
 
     // {"label":"50. Прыгуны","value":"50"}, => 30 bytes + NameLen (assume 35 to be safe)
     #define LIST_JSON_OVERHEAD  35
-    LOG(printf_P,PSTR("gen list: %d, %s\n"), itr->eff_nb, effname.c_str());
+    //LOG(printf_P,PSTR("gen list: %d, %s\n"), itr->eff_nb, effname.c_str());
 
     if (ARR_LIST_SIZE - offset < effname.length() + LIST_JSON_OVERHEAD){
       // write to file and purge buffer
