@@ -117,19 +117,12 @@ void setup() {
     ds_setup();
 #endif
 
-#ifdef SHOWSYSCONFIG
+    // restore matrix current limit from config
     myLamp.lamp_init(embui.param(FPSTR(TCONST_CLmt)).toInt());
-#else
-    myLamp.lamp_init(CURRENT_LIMIT);
-#endif
 
 #ifdef ESP_USE_BUTTON
-#ifdef SHOWSYSCONFIG
     myLamp.setbPin(embui.param(FPSTR(TCONST_PINB)).toInt());
     myButtons = new Buttons(myLamp.getbPin(), PULL_MODE, NORM_OPEN);
-#else
-    myButtons = new Buttons(BTN_PIN, PULL_MODE, NORM_OPEN);
-#endif
     if (!myButtons->loadConfig()) {
       default_buttons();
       myButtons->saveConfig();
@@ -139,13 +132,9 @@ void setup() {
     myLamp.events.setEventCallback(event_worker);
 
 #ifdef MP3PLAYER
-#ifdef SHOWSYSCONFIG
-    int rxpin = embui.param(FPSTR(TCONST_PINMP3RX)).isEmpty() ? MP3_RX_PIN : embui.param(FPSTR(TCONST_PINMP3RX)).toInt();
-    int txpin = embui.param(FPSTR(TCONST_PINMP3TX)).isEmpty() ? MP3_TX_PIN : embui.param(FPSTR(TCONST_PINMP3TX)).toInt();
+    int rxpin = embui.param(FPSTR(TCONST_PINMP3RX)).toInt() | MP3_RX_PIN;
+    int txpin = embui.param(FPSTR(TCONST_PINMP3TX)).toInt() | MP3_TX_PIN;
     mp3 = new MP3PLAYERDEVICE(rxpin, txpin); //rxpin, txpin
-#else
-    mp3 = new MP3PLAYERDEVICE(MP3_RX_PIN, MP3_TX_PIN); //rxpin, txpin
-#endif
 #endif
 
 #ifdef ESP8266

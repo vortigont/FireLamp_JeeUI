@@ -1597,9 +1597,10 @@ void block_settings_other(Interface *interf, JsonObject *data){
     interf->range(FPSTR(TCONST_DTimer), String(30), String(250), String(5), FPSTR(TINTF_03F));
     float sf = embui.param(FPSTR(TCONST_spdcf)).toFloat();
     interf->range(String(FPSTR(TCONST_spdcf)), String(sf), String(0.25), String(4.0), String(0.25), String(FPSTR(TINTF_0D3)), false);
-#ifdef SHOWSYSCONFIG
-    interf->checkbox(FPSTR(TCONST_isShowSysMenu), myLamp.getLampSettings().isShowSysMenu ? "1" : "0", FPSTR(TINTF_093), false); // отображение системного меню
-#endif
+
+    // отображение системного меню
+    interf->checkbox(FPSTR(TCONST_isShowSysMenu), myLamp.getLampSettings().isShowSysMenu ? "1" : "0", FPSTR(TINTF_093), false);
+
 #ifdef TM1637_CLOCK
     interf->spacer(FPSTR(TINTF_0D4));
     interf->checkbox(FPSTR(TCONST_tm24), myLamp.getLampSettings().tm24 ? String("1") : String("0"), FPSTR(TINTF_0D7), false);
@@ -2530,10 +2531,10 @@ if (!interf) return;
     interf->button(FPSTR(TCONST_encoder), FPSTR(TINTF_0DC));
 #endif
     interf->button(FPSTR(TCONST_show_other), FPSTR(TINTF_082));
-#ifdef SHOWSYSCONFIG
+
     if(myLamp.isShowSysMenu())
         interf->button(FPSTR(TCONST_ESPsysSettings), FPSTR(TINTF_08F));
-#endif
+
 #ifndef MOOT
     block_lamp_config(interf, data);
 #endif

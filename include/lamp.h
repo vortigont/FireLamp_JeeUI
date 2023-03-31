@@ -519,7 +519,6 @@ public:
 
 //-----------------------------------------------
 #ifdef MP3PLAYER
-#include "mp3player.h"
 extern MP3PLAYERDEVICE *mp3;
 #endif
 class ALARMTASK : public Task {
