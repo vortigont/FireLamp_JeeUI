@@ -3204,85 +3204,82 @@ void EffectLeapers::load() {
   generate();
 }
 
-void EffectLeapers::restart_leaper(EffectLeapers::Leaper * l) {
+void EffectLeapers::restart_leaper(Leaper &l) {
   // leap up and to the side with some random component
 #ifdef MIC_EFFECTS
   uint8_t mic = getMicMaxPeak();
   uint8_t rand = random(5, 50 + _rv * 4);
-  l->xd = (1 * (float)(isMicOn() ? 25 + mic : rand) / 100.0);
-  l->yd = (2 * (float)(isMicOn() ? 25 + mic : rand) / 100.0);
+  l.xd = static_cast<float>(isMicOn() ? 25 + mic : rand) / 100.0;
+  l.yd = static_cast<float>(isMicOn() ? 25 + mic : rand) / 50.0;
 #else
-  l->xd = (1 * (float)random8(5, 50 + _rv * 4) / 100);
-  l->yd = (2 * (float)random8(5, 100 + _rv * 3) / 100);
+  l.xd = static_cast<float>(random8(5, 50 + _rv * 4)) / 100;
+  l.yd = static_cast<float>(random8(5, 100 + _rv * 3)) / 50;
 #endif
 
   // for variety, sometimes go 20% faster
   if (random8() < 12) {
-    l->xd += l->xd * 0.2;
-    l->yd += l->yd * 0.2;
+    l.xd += l.xd * 0.2;
+    l.yd += l.yd * 0.2;
   }
 
   // leap towards the centre of the screen
-  if (l->x > (WIDTH / 2)) {
-    l->xd = -l->xd;
+  if (l.x > (WIDTH / 2)) {
+    l.xd *= -1;
   }
-  l->color += 8;
+  l.color += 8;
 }
 
-void EffectLeapers::move_leaper(EffectLeapers::Leaper * l) {
+void EffectLeapers::move_leaper(Leaper &l) {
 #define GRAVITY            0.06
 #define SETTLED_THRESHOLD  0.15
 #define WALL_FRICTION      0.95
 #define WIND               0.98    // wind resistance
 
-  l->x += l->xd * speedFactor;
-  l->y += l->yd * speedFactor;
+  l.x += l.xd * speedFactor;
+  l.y += l.yd * speedFactor;
 
   // bounce off the floor and ceiling?
-  if (l->y < 0 || l->y > (EffectMath::getmaxHeightIndex() - SETTLED_THRESHOLD)) {
-    l->yd = (-l->yd * WALL_FRICTION);
-    l->xd = (l->xd * WALL_FRICTION);
-    if (l->y > (EffectMath::getmaxHeightIndex() - SETTLED_THRESHOLD)) l->y += l->yd;
-    if (l->y < 0) l->y = 0;
+  if (l.y < 0 || l.y > (EffectMath::getmaxHeightIndex() - SETTLED_THRESHOLD)) {
+    l.yd = (-l.yd * WALL_FRICTION);
+    l.xd = (l.xd * WALL_FRICTION);
+    if (l.y > (EffectMath::getmaxHeightIndex() - SETTLED_THRESHOLD)) l.y += l.yd;
+    if (l.y < 0) l.y = 0;
     // settled on the floor?
-    if (l->y <= SETTLED_THRESHOLD && fabs(l->yd) <= SETTLED_THRESHOLD) {
+    if (l.y <= SETTLED_THRESHOLD && fabs(l.yd) <= SETTLED_THRESHOLD) {
       restart_leaper(l);
     }
   }
 
   // bounce off the sides of the screen?
-  if (l->x <= 0 || l->x >= EffectMath::getmaxWidthIndex()) {
-    l->xd = (-l->xd * WALL_FRICTION);
-    l->yd = (l->yd * WALL_FRICTION);
-    //l->x += l->xd;
-    if (l->x < 0) l->x = 0;
-    if (l->x > EffectMath::getmaxWidthIndex()) l->x = EffectMath::getmaxWidthIndex();
+  if (l.x <= 0 || l.x >= EffectMath::getmaxWidthIndex()) {
+    l.xd = (-l.xd * WALL_FRICTION);
+    l.yd = (l.yd * WALL_FRICTION);
+    if (l.x < 0) l.x = 0;
+    if (l.x > EffectMath::getmaxWidthIndex()) l.x = EffectMath::getmaxWidthIndex();
   }
 
-  l->yd -= GRAVITY*speedFactor;
-  l->xd *= WIND;
-  l->yd *= WIND;
+  l.yd -= GRAVITY*speedFactor;
+  l.xd *= WIND;
+  l.yd *= WIND;
 }
 
-void EffectLeapers::generate(bool reset){
+void EffectLeapers::generate(){
+  for (auto &curr : leapers){
+    curr.x = EffectMath::randomf(0, EffectMath::getmaxWidthIndex());
+    curr.y = EffectMath::randomf(0, EffectMath::getmaxHeightIndex());
+    curr.xd = ((float)random(5, 50 + _rv * 4) / 100);
+    curr.yd = ((float)random(5, 100 + _rv * 3) / 50);
 
-  for (unsigned i = numParticles; i < num; i++) {
-    Leaper *curr = (Leaper *)&leapers[i];
-    curr->x = EffectMath::randomf(0, EffectMath::getmaxWidthIndex());
-    curr->y = EffectMath::randomf(0, EffectMath::getmaxHeightIndex());
-    curr->xd = (1 * (float)random(5, 50 + _rv * 4) / 100);
-    curr->yd = (2 * (float)random(5, 100 + _rv * 3) / 100);
-
-    curr->color = random(1U, 255U);
+    curr.color = random8();
   };
-  numParticles = num;
 }
 
 // !++
 String EffectLeapers::setDynCtrl(UIControl*_val) {
   if(_val->getId()==1) speedFactor = ((float)EffectCalc::setDynCtrl(_val).toInt()/256.0 + 0.33)*EffectCalc::speedfactor;
   else if(_val->getId()==2) {
-    num = map(EffectCalc::setDynCtrl(_val).toInt(), 0U, 255U, 6U, sizeof(leapers) / sizeof(*leapers)); 
+    long num = map(EffectCalc::setDynCtrl(_val).toInt(), 0U, 255U, LEAPERS_MIN, LEAPERS_MAX);
+    leapers.assign(num, Leaper());
     generate();
   }
   else if(_val->getId()==3) _rv = EffectCalc::setDynCtrl(_val).toInt();
@@ -3299,9 +3296,10 @@ bool EffectLeapers::run(CRGB *leds, EffectWorker *param){
   //EffectMath::dimAll(0);
   FastLED.clear();
 
-  for (unsigned i = 0; i < numParticles; i++) {
-    move_leaper(&leapers[i]);
-    EffectMath::drawPixelXYF(leapers[i].x, leapers[i].y, CHSV(leapers[i].color, 255, 255));
+  //for (unsigned i = 0; i < numParticles; i++) {
+  for (auto &l : leapers){
+    move_leaper(l);
+    EffectMath::drawPixelXYF(l.x, l.y, CHSV(l.color, 255, 255));
   };
 
   EffectMath::blur2d(20);

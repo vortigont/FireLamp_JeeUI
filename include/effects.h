@@ -680,21 +680,23 @@ public:
 };
 
 // ------ Эффект "Прыгуны" (c) obliterator
+#define LEAPERS_MIN     5
+#define LEAPERS_MAX     20
 class EffectLeapers : public EffectCalc {
-    typedef struct Leaper{
-        float x, y;
-        float xd, yd;
+    struct Leaper {
+        float x{0}, y{0};
+        float xd{0}, yd{0};
         byte color;
-    } Leaper;
+    };
 private:
-    Leaper leapers[20];
     unsigned numParticles = 0;
-    uint8_t _rv;
-	uint8_t num;
-	float speedFactor;
-    void generate(bool reset = false);
-    void restart_leaper(Leaper * l);
-    void move_leaper(Leaper * l);
+    uint8_t _rv{0};
+	float speedFactor{1};
+    std::vector<Leaper> leapers{std::vector<Leaper>(LEAPERS_MIN, Leaper())};
+
+    void generate();
+    void restart_leaper(Leaper &l);
+    void move_leaper(Leaper &l);
 	String setDynCtrl(UIControl*_val) override;
 public:
 	void load() override;
