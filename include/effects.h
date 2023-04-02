@@ -944,9 +944,13 @@ class EffectOsc : public EffectCalc {
 private:
     byte oscHV;
     byte oscilLimit;
-    float pointer;
+#ifdef ESP32
+    float pointer{2048};
+#else
+    float pointer{512};
+#endif
     CRGB color;
-    float div;
+    float div{1};
     byte gain;
     float y[2] = {0., 0.};
     String setDynCtrl(UIControl*_val) override;

@@ -337,7 +337,7 @@ protected:
     
     float getCurVal() {return lampstate!=nullptr ? lampstate->getCurVal() : 0;}
     float getMicFreq() {return lampstate!=nullptr ? lampstate->getMicFreq() : 0;}
-    float getMicScale() {return lampstate!=nullptr ? lampstate->getMicScale() : 0;}
+    float getMicScale() {return lampstate!=nullptr ? lampstate->getMicScale() : 1;}
     float getMicNoise() {return lampstate!=nullptr ? lampstate->getMicNoise() : 0;}
     mic_noise_reduce_level_t getMicNoiseRdcLevel() {return lampstate!=nullptr ? lampstate->getMicNoiseRdcLevel() : mic_noise_reduce_level_t::NR_NONE;}
     
