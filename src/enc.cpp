@@ -324,7 +324,7 @@ void exitSettings() {
   inSettings = false;
   encDisplay(String(F("done")));
   encSendString(String(FPSTR(TINTF_00B)), CRGB::Red, true, txtDelay);
-  myLamp.effects.autoSaveConfig(true);
+  myLamp.effects.autoSaveConfig();
 #ifdef DS18B20
   canDisplayTemp() = true;
 #endif

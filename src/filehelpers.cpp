@@ -19,6 +19,7 @@
 */
 
 #include "filehelpers.hpp"
+#include "char_const.h"
 
 namespace fshlpr{
 
@@ -32,7 +33,7 @@ namespace fshlpr{
         if (!filepath || !*filepath)
             return false;
 
-        LOG(printf_P, PSTR("Load file: %s\n"), filepath);
+        //LOG(printf_P, PSTR("Load file: %s\n"), filepath);
         File jfile = LittleFS.open(filepath, "r");
         DeserializationError error;
         if (jfile){
@@ -81,7 +82,7 @@ namespace fshlpr{
         if (folder && folder[0]){ // если указан каталог и первый символ не пустой, то берем как есть
             filename.concat(folder);
         } else
-            filename.concat(F("/eff_index.json"));
+            filename.concat(FPSTR(TCONST_eff_index));
         
         fhandle = LittleFS.open(filename, "w");
         return fhandle;

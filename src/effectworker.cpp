@@ -66,9 +66,134 @@ void clone_controls_list(const LList<UIControl*> &src, LList<UIControl*> &dst){
 }
 */
 
-EffectWorker::EffectWorker(LAMPSTATE *_lampstate) : lampstate(_lampstate) {
-  // нельзя вызывать литлфс.бегин из конструктора, т.к. инстанс этого объекта есть в лампе, который декларируется до setup()
+Effcfg::Effcfg(uint16_t effid) : num(effid){
+  loadeffconfig(effid);
+};
 
+Effcfg::~Effcfg(){
+  // save config if any changes are pending
+  if (tConfigSave){
+    delete tConfigSave;
+    _savecfg();
+  }
+}
+
+bool Effcfg::_eff_cfg_deserialize(DynamicJsonDocument &doc, const char *folder){
+  LOG(printf_P, PSTR("_eff_cfg_deserialize() eff:%u\n"), num);
+  String filename(fshlpr::getEffectCfgPath(num,folder));
+
+  bool retry = true;
+  READALLAGAIN:
+  if (fshlpr::deserializeFile(doc, filename.c_str() )){
+    if ( num>255 || geteffcodeversion((uint8_t)num) == doc[F("ver")] ){ // только для базовых эффектов эта проверка
+      return true;   // we are OK
+    }
+    LOG(printf_P, PSTR("Wrong version in effect cfg file, reset cfg to default (%d vs %d)\n"), doc[F("ver")].as<uint8_t>(), geteffcodeversion((uint8_t)num));
+  }
+  // something is wrong with eff config file, recreate it to default
+  create_eff_default_cfg_file(num, filename);   // пробуем перегенерировать поврежденный конфиг (todo: remove it and provide default from code)
+
+  if (retry) {
+    retry = false;
+    goto READALLAGAIN;
+  }
+
+  LOG(printf_P, PSTR("Failed to recreate eff config file: %s\n"), filename.c_str());
+  return false;
+}
+
+bool Effcfg::loadeffconfig(uint16_t nb, const char *folder){
+  num = nb;
+  DynamicJsonDocument doc(DYNJSON_SIZE_EFF_CFG);
+  if (!_eff_cfg_deserialize(doc, folder)) return false;   // error loading file
+
+  version = doc[F("ver")];
+  effectName = doc[F("name")] | String(FPSTR(T_EFFNAMEID[(uint8_t)nb]));
+  soundfile = doc[F("snd")].as<String>();
+
+  return _eff_ctrls_load_from_jdoc(doc, controls);
+}
+
+void Effcfg::create_eff_default_cfg_file(uint16_t nb, String &filename){
+
+  const String efname(FPSTR(T_EFFNAMEID[(uint8_t)nb])); // выдергиваем имя эффекта из таблицы
+  LOG(printf_P,PSTR("Make default config: %d %s\n"), nb, efname.c_str());
+
+  String  cfg(FPSTR(T_EFFUICFG[(uint8_t)nb]));    // извлекаем конфиг для UI-эффекта по-умолчанию из флеш-таблицы
+  cfg.replace(F("@name@"), efname);
+  cfg.replace(F("@ver@"), String(geteffcodeversion((uint8_t)nb)) );
+  cfg.replace(F("@nb@"), String(nb));
+  
+  File configFile = LittleFS.open(filename, "w");
+  if (configFile){
+    configFile.print(cfg.c_str());
+    configFile.close();
+  }
+}
+
+void Effcfg::_savecfg(char *folder){
+  File configFile;
+  String filename = fshlpr::getEffectCfgPath(num, folder);
+  LOG(printf_P,PSTR("Writing eff #%d cfg: %s\n"), num, filename.c_str());
+  configFile = LittleFS.open(filename, "w"); // PSTR("w") использовать нельзя, будет исключение!
+  //configFile.w
+  configFile.print(getSerializedEffConfig(num));
+  configFile.close();
+}
+
+void Effcfg::autosave(bool force) {
+  if (force){
+    if(tConfigSave)
+      tConfigSave->cancel();
+    LOG(printf_P,PSTR("Force save eff cfg: %d\n"), num);
+    _savecfg();
+    //fsinforenew();
+    return;
+  }
+
+  if(!tConfigSave){ // task for delayed config autosave
+    tConfigSave = new Task(CFG_AUTOSAVE_TIMEOUT, TASK_ONCE, [this](){
+      _savecfg();
+      //fsinforenew();
+      LOG(printf_P,PSTR("Autosave effect config: %d\n"), num);
+    }, &ts, false, nullptr, [this](){tConfigSave=nullptr;}, true);
+    tConfigSave->enableDelayed();
+  } else {
+    tConfigSave->restartDelayed();
+  }
+}
+
+String Effcfg::getSerializedEffConfig(uint8_t replaceBright) const {
+  DynamicJsonDocument doc(DYNJSON_SIZE_EFF_CFG);
+
+  doc[F("nb")] = num;
+  doc[F("flags")] = flags.mask;
+  doc[F("name")] = effectName;
+  doc[F("ver")] = version;
+  doc[F("snd")] = soundfile;
+  JsonArray arr = doc.createNestedArray(F("ctrls"));
+  for (auto c = controls.cbegin(); c != controls.cend(); ++c){
+    auto ctrl = c->get();
+    JsonObject var = arr.createNestedObject();
+    var[F("id")]=ctrl->getId();
+    var[F("type")]=ctrl->getType();
+    var[F("name")]=ctrl->getName();
+    var[F("val")]=(ctrl->getId()==0 && replaceBright) ? String(replaceBright) : ctrl->getVal();
+    var[F("min")]=ctrl->getMin();
+    var[F("max")]=ctrl->getMax();
+    var[F("step")]=ctrl->getStep();
+  }
+
+  String cfg_str;
+  serializeJson(doc, cfg_str);
+
+  return cfg_str;
+}
+
+
+//  ***** EffectWorker implementation *****
+
+EffectWorker::EffectWorker(LAMPSTATE *_lampstate) : lampstate(_lampstate) {
   // create 3 'faivored' superusefull controls for 'brightness', 'speed', 'scale'
   for(int8_t id=0;id<3;id++){
     auto c = std::make_shared<UIControl>(
@@ -76,7 +201,7 @@ EffectWorker::EffectWorker(LAMPSTATE *_lampstate) : lampstate(_lampstate) {
       CONTROL_TYPE::RANGE,                    // type
       id==0 ? String(FPSTR(TINTF_00D)) : id==1 ? String(FPSTR(TINTF_087)) : String(FPSTR(TINTF_088))           // name
     );
-    controls.add(c);
+    curEff.controls.add(c);
   }
   //pendingCtrls = controls;
 }
@@ -86,13 +211,10 @@ EffectWorker::EffectWorker(LAMPSTATE *_lampstate) : lampstate(_lampstate) {
 /*
  * Создаем экземпляр класса калькулятора в зависимости от требуемого эффекта
  */
-void EffectWorker::workerset(uint16_t effect, const bool isCfgProceed){
-  LOG(printf_P,PSTR("Wrkr set: %u, is cfg:%u\n"), effect, isCfgProceed);
-  if(worker && isCfgProceed){
-    // пишем конфиг текущего эффекта на диск только если есть несохраненные изменения
-    _flush_config();
-    //saveeffconfig(curEff); // пишем конфиг только если это требуется, для индекса - пропускаем, там свой механизм
-  }
+void EffectWorker::workerset(uint16_t effect){
+  LOG(printf_P,PSTR("Wrkr set: %u\n"), effect);
+  curEff.flushcfg();  // сохраняем конфигурацию предыдущего эффекта если были несохраненные изменения
+
   if(worker)
      worker.reset(); // освободим явно, т.к. 100% здесь будем пересоздавать
 
@@ -339,27 +461,10 @@ void EffectWorker::workerset(uint16_t effect, const bool isCfgProceed){
   if(worker){
     // запихать в экземпляр калькулятор эффекта ссылки на все то барахло из чего состоит лампа вместе с самой лампой 8()
     worker->pre_init(static_cast<EFF_ENUM>(effect%256), this, &(getControls()), lampstate);
-    effectName = FPSTR(T_EFFNAMEID[(uint8_t)effect]); // сначла заполним дефолтным именем, а затем лишь вычитаем из конфига
-    if(isCfgProceed){ // читаем конфиг только если это требуется, для индекса - пропускаем
-      loadeffconfig(effect);
-
-      // окончательная инициализация эффекта тут
-      worker->init(static_cast<EFF_ENUM>(effect%256), &(getControls()), lampstate);
-    }
+    curEff.loadeffconfig(effect);
+    // окончательная инициализация эффекта тут
+    worker->init(static_cast<EFF_ENUM>(effect%256), &(getControls()), lampstate);
   }
-}
-
-void EffectWorker::_clearControlsList(LList<std::shared_ptr<UIControl>> &list)
-{
-  list.clear();
-/*
-  while (list.size()) {
-    UIControl *t = list.shift();
-    LOG(printf_P, PSTR("Del ctrl: %s\n"), t->getName().c_str());
-    delete t;
-    t = nullptr;
-  }
-*/
 }
 
 void EffectWorker::initDefault(const char *folder)
@@ -467,160 +572,6 @@ void EffectWorker::loadsoundfile(String& _soundfile, const uint16_t nb, const ch
   }
 }
 
-bool EffectWorker::loadeffconfig(const uint16_t nb, const char *folder)
-{
-  if(worker==nullptr){
-    return false;   // ошибка
-  }
-  DynamicJsonDocument doc(DYNJSON_SIZE_EFF_CFG);
-  if (!_eff_cfg_deserialize(doc, nb, folder)) return false;   // error loading file
-
-  version = doc[F("ver")];
-  curEff = doc[F("nb")];
-  effectName = doc[F("name")] | String(FPSTR(T_EFFNAMEID[(uint8_t)nb]));
-  soundfile = doc[F("snd")].as<String>();
-
-  return _eff_ctrls_load_from_jdoc(doc, controls);
-}
-
-void EffectWorker::_create_eff_default_cfg_file(uint16_t nb, String &filename){
-
-  const String efname(FPSTR(T_EFFNAMEID[(uint8_t)nb])); // выдергиваем имя эффекта из таблицы
-  LOG(printf_P,PSTR("Make default config: %d %s\n"), nb, efname.c_str());
-
-  String  cfg(FPSTR(T_EFFUICFG[(uint8_t)nb]));    // извлекаем конфиг для UI-эффекта по-умолчанию из флеш-таблицы
-  cfg.replace(F("@name@"), efname);
-  cfg.replace(F("@ver@"), String(geteffcodeversion((uint8_t)nb)) );
-  cfg.replace(F("@nb@"), String(nb));
-  
-  File configFile = LittleFS.open(filename, "w");
-  if (configFile){
-    configFile.print(cfg.c_str());
-    configFile.close();
-  }
-  LOG(printf_P, PSTR("Effect: %u, cfg:%s\n"), nb, cfg.c_str());
-}
-
-String EffectWorker::getSerializedEffConfig(uint16_t nb, uint8_t replaceBright)
-{
-  // конфиг текущего эффекта
-  DynamicJsonDocument doc(DYNJSON_SIZE_EFF_CFG);
-  EffectListElem *eff = getEffect(nb);
-  if (!eff)
-    return String();
-
-  EffectWorker *tmp=this;
-  bool isFader = (curEff != nb);
-  if(isFader){ // работает фейдер, нужен новый экземпляр
-    tmp=new EffectWorker(eff);
-  }
-
-  doc[F("nb")] = nb;
-  doc[F("flags")] = eff ? eff->flags.mask : SET_ALL_EFFFLAGS;
-  doc[F("name")] = tmp->effectName;
-  doc[F("ver")] = tmp->version;
-  doc[F("snd")] = tmp->soundfile;
-  JsonArray arr = doc.createNestedArray(F("ctrls"));
-  for (unsigned i = 0; i < tmp->controls.size(); i++) {
-    JsonObject var = arr.createNestedObject();
-    var[F("id")]=tmp->controls[i]->getId();
-    var[F("type")]=tmp->controls[i]->getType();
-    var[F("name")]=tmp->controls[i]->getName();
-    var[F("val")]=(tmp->controls[i]->getId()==0 && replaceBright) ? String(replaceBright) : tmp->controls[i]->getVal();
-    var[F("min")]=tmp->controls[i]->getMin();
-    var[F("max")]=tmp->controls[i]->getMax();
-    var[F("step")]=tmp->controls[i]->getStep();
-  }
-  if(isFader)
-    delete tmp;
-
-  String cfg_str;
-  serializeJson(doc, cfg_str);
-
-  //LOG(println,cfg_str);
-  return cfg_str;
-}
-
-void EffectWorker::saveeffconfig(uint16_t nb, char *folder){
-  // а тут уже будем писать рабочий конфиг исходя из того, что есть в памяти
-  if(millis()<10000) return; // в первые десять секунд после рестарта запрещаем запись
-  if(tConfigSave)
-    tConfigSave->cancel(); // если оказались здесь, и есть отложенная задача сохранения конфига, то отменить ее
-  
-  File configFile;
-  String filename = fshlpr::getEffectCfgPath(nb,folder);
-  LOG(printf_P,PSTR("Writing eff #%d cfg: %s\n"), nb, filename.c_str());
-  configFile = LittleFS.open(filename, "w"); // PSTR("w") использовать нельзя, будет исключение!
-  configFile.print(getSerializedEffConfig(nb));
-  configFile.close();
-}
-
-void EffectWorker::autoSaveConfig(bool force) {
-    if (force){
-        if(tConfigSave)
-          tConfigSave->cancel();
-        saveeffconfig(curEff);
-        fsinforenew();
-        LOG(printf_P,PSTR("Force save effect config: %d\n"), curEff);
-    } else {
-        if(!tConfigSave){ // task for delayed config autosave
-          tConfigSave = new Task(CFG_AUTOSAVE_TIMEOUT, TASK_ONCE, [this](){
-            saveeffconfig(curEff);
-            fsinforenew();
-            LOG(printf_P,PSTR("Autosave effect config: %d\n"), curEff);
-          }, &ts, false, nullptr, [this](){tConfigSave=nullptr;}, true);
-          tConfigSave->enableDelayed();
-        } else {
-          tConfigSave->restartDelayed();
-        }
-    }
-}
-
-// конструктор копий эффектов
-EffectWorker::EffectWorker(const EffectListElem* base, const EffectListElem* copy) : effects(), controls()
-{
-  curEff = base->eff_nb;
-  if(worker==nullptr){
-    workerset(base->eff_nb, false);
-  }
-  loadeffconfig(base->eff_nb); // вычитываем базовый конфиг
-  curEff = copy->eff_nb;
-  // имя формируем с базового + индекс копии
-  effectName.concat(F("_"));
-  effectName.concat(curEff>>8);
-  saveeffconfig(copy->eff_nb); // записываем конфиг
-  //updateIndexFile();
-}
-
-// конструктор текущего эффекта
-EffectWorker::EffectWorker(const EffectListElem* eff, bool fast)
-{
-  curEff = eff->eff_nb;
-  if(worker==nullptr){
-    workerset(curEff, false);
-  }
-  if(fast){
-    loadeffname(effectName, eff->eff_nb); // вычитываем только имя, если что-то не так, то используем дефолтное
-  } else {
-    loadeffconfig(eff->eff_nb); // вычитываем конфиг эффекта полностью, если что-то не так, то создаем все что нужно
-    //updateIndexFile();
-  }
-}
-
-// Конструктор для отложенного эффекта, очень не желательно вызывать в цикле!
-EffectWorker::EffectWorker(uint16_t delayeffnb)
-{
-  curEff = delayeffnb;
-  if(worker==nullptr){
-    workerset(curEff, false);
-  }
-  loadeffconfig(delayeffnb); // вычитываем конфиг эффекта полностью, если что-то не так, то создаем все что нужно
-#ifdef ESP8266
-  ESP.wdtFeed(); // если читается список имен эффектов перебором, то возможен эксепшен вотчдога, сбрасываем его таймер...
-#elif defined ESP32
-  delay(1);
-#endif
-}
 
 void EffectWorker::removeLists(){
   LittleFS.remove(FPSTR(TCONST_eff_list_json));
@@ -665,12 +616,6 @@ void EffectWorker::makeIndexFileFromList(const char *folder, bool forceRemove)
   effectsReSort(); // восстанавливаем сортировку
 }
 
-// создать или обновить текущий индекс эффекта
-void EffectWorker::updateIndexFile()
-{
-  makeIndexFileFromList();
-}
-
 // удалить эффект
 void EffectWorker::deleteEffect(const EffectListElem *eff, bool isCfgRemove)
 {
@@ -688,7 +633,6 @@ void EffectWorker::deleteEffect(const EffectListElem *eff, bool isCfgRemove)
 void EffectWorker::copyEffect(const EffectListElem *base)
 {
   EffectListElem copy(base); // создать копию переданного эффекта
-  //uint8_t foundcnt=0;
   uint16_t maxfoundnb=base->eff_nb;
   for(unsigned i=0; i<effects.size();i++){
     if(effects[i].eff_nb>255 && ((effects[i].eff_nb&0x00FF)==(copy.eff_nb&0x00FF))){ // найдены копии
@@ -696,19 +640,25 @@ void EffectWorker::copyEffect(const EffectListElem *base)
     }
   }
 
-  copy.eff_nb=(((((maxfoundnb & 0xFF00)>>8)+1) << 8 ) | (copy.eff_nb&0xFF)); // в старшем байте увеличиваем значение на число имеющихся копий
-
-  EffectWorker *effect = new EffectWorker(base, &copy); // создать параметры для него (конфиг, индекс и т.д.)
+  int16_t newnum =(((((maxfoundnb & 0xFF00)>>8)+1) << 8 ) | (copy.eff_nb&0xFF)); // в старшем байте увеличиваем значение на число имеющихся копий
+  copy.eff_nb = newnum;
   effects.add(copy);
-  delete effect; // после того как все создано, временный экземпляр EffectWorker уже не нужен
+
+  Effcfg copycfg(base->eff_nb);
+  copycfg.num = newnum;
+  // имя формируем с базового + индекс копии
+  copycfg.effectName.concat(F("_"));
+  copycfg.effectName.concat(newnum>>8);
+
+  // save new config file
+  copycfg.autosave(true);
 }
 
-// вернуть выбранный элемент списка
+// вернуть эффект на очереди из списка эффектов
 EffectListElem *EffectWorker::getSelectedListElement()
 {
-//  EffectListElem *res = effects.size()>0? effects[0] : nullptr;
   for(unsigned i=0; i<effects.size(); i++){
-    if(effects[i].eff_nb==pendingEffNum)
+    if(effects[i].eff_nb==pendingEff.num)
       return &effects[i];
   }
   return nullptr;
@@ -718,7 +668,7 @@ EffectListElem *EffectWorker::getSelectedListElement()
 EffectListElem *EffectWorker::getCurrentListElement()
 {
   for(unsigned i=0; i<effects.size(); i++){
-    if(effects[i].eff_nb==curEff)
+    if(effects[i].eff_nb==curEff.num)
       return &effects[i];
   }
   return nullptr;
@@ -761,25 +711,25 @@ EffectListElem *EffectWorker::getNextEffect(EffectListElem *current){
 void EffectWorker::directMoveBy(uint16_t select)
 {
   LOG(printf_P,PSTR("Direct Switch EffWorker to %d\n"), select);
-  curEff = pendingEffNum = getBy(select);
-  workerset(curEff);
-  pendingCtrls.clear();        // no longer needed
+  curEff.num = pendingEff.num = getBy(select);
+  workerset(curEff.num);
+  pendingEff.controls.clear();        // no longer needed
 }
 
 // получить номер эффекта смещенного на количество шагов, к ближайшему большему при превышении (для DEMO)
 uint16_t EffectWorker::getByCnt(byte cnt)
 {
-  uint16_t firstfound = curEff;
+  uint16_t firstfound = curEff.num;
   bool found = false;
   for(unsigned i=0; i<effects.size(); i++){
-      if(curEff==effects[i].eff_nb){
+      if(curEff.num == effects[i].eff_nb){
           found = true;
           continue;
       }
-      if(effects[i].isFavorite() && firstfound == curEff){
+      if(effects[i].isFavorite() && firstfound == curEff.num){
           firstfound = effects[i].eff_nb;
       }
-      if(effects[i].isFavorite() && found  && effects[i].eff_nb != curEff){
+      if(effects[i].isFavorite() && found  && effects[i].eff_nb != curEff.num){
             --cnt;
             if(!cnt){
                 firstfound = effects[i].eff_nb;
@@ -789,7 +739,7 @@ uint16_t EffectWorker::getByCnt(byte cnt)
   }
   if(cnt){ // список кончился, но до сих пор не нашли... начинаем сначала
       for(unsigned i=0; i<effects.size(); i++){
-          if(effects[i].isFavorite() && effects[i].eff_nb!=curEff){
+          if(effects[i].isFavorite() && effects[i].eff_nb!=curEff.num){
               --cnt;
               if(!cnt){
                   firstfound = effects[i].eff_nb;
@@ -804,18 +754,18 @@ uint16_t EffectWorker::getByCnt(byte cnt)
 // предыдущий эффект, кроме canBeSelected==false
 uint16_t EffectWorker::getPrev()
 {
-  if(isEffSwPending()) return pendingEffNum; // если эффект в процессе смены, то возвращаем pendingEffNum
+  if(isEffSwPending()) return pendingEff.num; // если эффект в процессе смены, то возвращаем pendingEffNum
 
   // все индексы списка и их синхронизация - фигня ИМХО, исходим только от curEff
-  uint16_t firstfound = curEff;
+  uint16_t firstfound = curEff.num;
   bool found = false;
   for(unsigned i=0; i<effects.size(); i++){
-      if(found && firstfound!=curEff) { // нашли эффект перед собой
+      if(found && firstfound!=curEff.num) { // нашли эффект перед собой
           break;
       } else {
           found = false; // перед текущим не нашлось подходящих, поэтому возьмем последний из canBeSelected()
       }
-      if(effects[i].eff_nb==curEff && i!=0){ // нашли себя, но не первым :)
+      if(effects[i].eff_nb==curEff.num && i!=0){ // нашли себя, но не первым :)
           found = true;
           continue;
       }
@@ -829,18 +779,18 @@ uint16_t EffectWorker::getPrev()
 // следующий эффект, кроме canBeSelected==false
 uint16_t EffectWorker::getNext()
 {
-  if(isEffSwPending()) return pendingEffNum; // если эффект в процессе смены, то возвращаем pendingEffNum
+  if(isEffSwPending()) return pendingEff.num; // если эффект в процессе смены, то возвращаем pendingEffNum
 
   // все индексы списка и их синхронизация - фигня ИМХО, исходим только от curEff
-  uint16_t firstfound = curEff;
+  uint16_t firstfound = curEff.num;
   bool found = false;
   for(unsigned i=0; i<effects.size(); i++){
-      if(effects[i].eff_nb==curEff){ // нашли себя
+      if(effects[i].eff_nb==curEff.num){ // нашли себя
           found = true;
           continue;
       }
       if(effects[i].canBeSelected()){
-          if(firstfound == curEff)
+          if(firstfound == curEff.num)
               firstfound = effects[i].eff_nb; // первый найденный, на случай если следующего после текущего не будет
           if(found) { // нашли эффект после себя
               firstfound = effects[i].eff_nb;
@@ -854,33 +804,20 @@ uint16_t EffectWorker::getNext()
 // выбор нового эффекта с отложенной сменой, на время смены эффекта читаем его список контроллов отдельно
 void EffectWorker::preloadEffCtrls(uint16_t effnb)
 {
-  if (effnb == pendingEffNum) return;
-  pendingEffNum = effnb;
+  if (effnb == pendingEff.num) return;
+  pendingEff.loadeffconfig(effnb);
 
-  DynamicJsonDocument doc(DYNJSON_SIZE_EFF_CFG);
-  if (!_eff_cfg_deserialize(doc, effnb)) return;   // error loading file
-  if (!_eff_ctrls_load_from_jdoc(doc, pendingCtrls)) LOG(printf_P,PSTR("Can't load ctrls from jdoc: %u\n"), effnb);
-
-  LOG(printf_P,PSTR("Preloaded controls for eff: %u, current eff:%u\n"), effnb, curEff);
+  LOG(printf_P,PSTR("Preloaded controls for eff: %u, current eff:%u\n"), effnb, curEff.num);
 }
 
 void EffectWorker::moveSelected(){
-  LOG(printf_P,PSTR("Move EffWorker to selected eff %d\n"), pendingEffNum);
+  LOG(printf_P,PSTR("Move EffWorker to selected eff %d\n"), pendingEff.num);
   if(isEffSwPending()){
-    workerset(pendingEffNum);   // first we change the effect
-    curEff = pendingEffNum;     // than change the number! Effect's config data saving depends on it
+    workerset(pendingEff.num);   // first we change the effect
+    //curEff = pendingEffNum;     // than change the number! Effect's config data saving depends on it
                                 // todo: resolve this stuped dependency via private members
-    pendingCtrls.clear();        // no longer needed anyway
+    pendingEff.controls.clear();        // no longer needed anyway
   }
-}
-
-
-/**
- * получить версию эффекта из "прошивки" по его ENUM
- */
-const uint8_t EffectWorker::geteffcodeversion(const uint8_t id){
-    uint8_t ver = pgm_read_byte(T_EFFVER + id);
-    return ver;
 }
 
 void EffectWorker::fsinforenew(){
@@ -897,65 +834,41 @@ void EffectWorker::fsinforenew(){
 }
 
 void EffectWorker::setEffectName(const String &name, EffectListElem*to){
-  if(to->eff_nb==curEff){
-      effectName=name;
-      saveeffconfig(curEff);
+  if(to->eff_nb==curEff.num){
+    curEff.effectName=name;
+    curEff.autosave();
+    return;
   }
-  else {
-      EffectWorker *tmp=new EffectWorker(to);
-      tmp->curEff=to->eff_nb;
-      tmp->pendingEffNum=to->eff_nb;
-      tmp->setEffectName(name,to);
-      delete tmp;
-  }
+
+  // load specific configuration
+  Effcfg cfg(to->eff_nb);
+  cfg.effectName = name;
+  cfg.autosave(true);
 }
 
 void EffectWorker::setSoundfile(const String &_soundfile, EffectListElem*to){
-  if(to->eff_nb==curEff) soundfile=_soundfile;
-  else {
-    EffectWorker *tmp=new EffectWorker(to);
-    tmp->curEff=to->eff_nb;
-    tmp->pendingEffNum=to->eff_nb;
-    tmp->setSoundfile(_soundfile,to);
-    tmp->saveeffconfig(to->eff_nb);
-    delete tmp;
+  if(to->eff_nb==curEff.num){
+    curEff.soundfile=_soundfile;
+    curEff.autosave();
+    return;
   }
+
+  // load specific configuration
+  Effcfg cfg(to->eff_nb);
+  cfg.soundfile=_soundfile;
+  cfg.autosave(true);
 }
 
 uint16_t EffectWorker::effIndexByList(uint16_t val) { 
     for (uint16_t i = 0; i < effects.size(); i++) {
         if (effects[i].eff_nb == val ) {
             return i;
-        } 
+        }
     }
+    return 0;
 }
 
-bool EffectWorker::_eff_cfg_deserialize(DynamicJsonDocument &doc, uint16_t nb, const char *folder){
-  LOG(printf_P, PSTR("_eff_cfg_deserialize() eff:%u\n"), nb);
-  String filename(fshlpr::getEffectCfgPath(nb,folder));
-
-  bool retry = true;
-  READALLAGAIN:
-  if (fshlpr::deserializeFile(doc, filename.c_str() )){
-    if ( nb>255 || geteffcodeversion((uint8_t)nb) == doc[F("ver")] ){ // только для базовых эффектов эта проверка
-      return true;   // we are OK
-    }
-    LOG(printf_P, PSTR("Wrong version in effect cfg file, reset cfg to default (%d vs %d)\n"), doc[F("ver")].as<uint8_t>(), geteffcodeversion((uint8_t)nb));
-  }
-  // something is wrong with eff config file, recreate it to default
-  LittleFS.remove(filename);
-  _create_eff_default_cfg_file(nb, filename);   // пробуем перегенерировать поврежденный конфиг (todo: remove it and provide default from code)
-
-  if (retry) {
-    retry = false;
-    goto READALLAGAIN;
-  }
-
-  LOG(printf_P, PSTR("Failed to recreate eff config file: %s\n"), filename.c_str());
-  return false;
-}
-
-bool EffectWorker::_eff_ctrls_load_from_jdoc(DynamicJsonDocument &effcfg, LList<std::shared_ptr<UIControl>> &ctrls){
+bool Effcfg::_eff_ctrls_load_from_jdoc(DynamicJsonDocument &effcfg, LList<std::shared_ptr<UIControl>> &ctrls){
   LOG(print, PSTR("_eff_ctrls_load_from_jdoc(), "));
   //LOG(printf_P, PSTR("Load MEM: %s - CFG: %s - DEF: %s\n"), effectName.c_str(), doc[F("name")].as<String>().c_str(), worker->getName().c_str());
   // вычитываею список контроллов
@@ -1031,12 +944,12 @@ void EffectWorker::_load_default_fweff_list(){
 
 void EffectWorker::_load_eff_list_from_idx_file(const char *folder){
   // todo: check if supplied alternative path starts with '/'
-  String filename(folder ? folder : "/");
+  String filename(folder ? folder : "");
   filename += FPSTR(TCONST_eff_index); // append 'eff_index.json' filename
 
   // if index file does not exist - load default list from firmware tables
   if (!LittleFS.exists(filename)){
-    LOG(println, F("eff index file missing, loading fw defaults"));
+    LOG(printf_P, PSTR("eff index file %s missing, loading fw defaults\n"), filename.c_str());
     return _rebuild_eff_list();
   }
 
@@ -1054,7 +967,6 @@ void EffectWorker::_load_eff_list_from_idx_file(const char *folder){
     return _rebuild_eff_list();
   }
 
-  //LOG(printf_P,PSTR("Создаю список эффектов конструктор (%d): %s\n"),arr.size(),idx.c_str());
   effects.clear();
   for (JsonObject item : arr){
       if(item.containsKey("n")){
@@ -1121,9 +1033,9 @@ void EffectWorker::_rebuild_eff_list(const char *folder){
 #endif
 
     if (!fshlpr::deserializeFile(doc, fn.c_str())) {
-      #ifdef ESP32
-      _f.close();
-      #endif
+      //#ifdef ESP32
+      //_f.close();
+      //#endif
       LittleFS.remove(fn);                // delete corrupted config
       continue;
     }
@@ -1138,6 +1050,7 @@ void EffectWorker::_rebuild_eff_list(const char *folder){
       effects.add(el);
     }
   }
+  makeIndexFileFromList();
 }
 
 

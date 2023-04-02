@@ -175,7 +175,112 @@ public:
     void setVal(const String &_val);
 };
 
-//struct Eff
+/**
+ * @brief effect configuration data structure
+ * holds info about effect engine, like name,num
+ * controls, etc...
+ */
+class Effcfg {
+    Task *tConfigSave = nullptr;       // динамическая таска, задержки при сохранении текущего конфига эффекта в файл
+
+    /**
+     * получить версию эффекта из "прошивки" по его ENUM
+     */
+    inline static uint8_t geteffcodeversion(uint8_t id) { return pgm_read_byte(T_EFFVER + id); };
+
+    /**
+     * @brief deserialise effect configuration from a file based on eff number
+     * if file is missing/damaged or it's versions is older than firmware's default
+     * it will be reset to defaults
+     * 
+     * @param nb - effect number
+     * @param folder - folder to load effects from, must be absolute path with leading/trailing slashes, default is '/eff/'
+     * @param jdoc - document to place deserialized obj
+     * @return true - on success
+     * @return false - on failure
+     */
+    bool _eff_cfg_deserialize(DynamicJsonDocument &doc, const char *folder = NULL);
+
+    /**
+     * @brief serialize and write struct to json file
+     * 
+     * @param folder 
+     */
+    void _savecfg(char *folder=NULL);
+
+    /**
+     * @brief load effect controls from JsonDocument to a list
+     * 
+     * @param effcfg - deserialized JsonDocument with effect config (should come from a file)
+     * @param ctrls - destination list to load controls (all existing controls will be cleared)
+     * @return true - on success
+     * @return false - on error
+     */
+    bool _eff_ctrls_load_from_jdoc(DynamicJsonDocument &effcfg, LList<std::shared_ptr<UIControl>> &ctrls);
+
+public:
+    uint16_t num = 0;       // номер эффекта
+    uint8_t version = 0;    // версия эффекта
+    EFFFLAGS flags;         // effect flags
+    String effectName;      // имя эффекта (предварительно заданное или из конфига)
+    String soundfile;       // имя/путь к звуковому файлу (DF Player Mini)
+    // список контроллов эффекта
+    LList<std::shared_ptr<UIControl>> controls;
+
+    Effcfg(){};
+    // constructor loads or creates default configuration for effect with specified ID
+    Effcfg(uint16_t effid);
+    ~Effcfg();
+
+    // copy not yet implemented
+    Effcfg(const Effcfg&) = delete;
+    Effcfg& operator=(const Effcfg &) = delete;
+    Effcfg(Effcfg &&) = delete;
+    Effcfg & operator=(Effcfg &&) = delete;
+
+    /**
+     * @brief load effect's configuration from a json file
+     * apply saved configuration to current worker instance
+     * @param cfg - struct to load data into
+     * @param nb - effect number
+     * @param folder - folder to look for config files
+     * @return int 
+     */
+    bool loadeffconfig(uint16_t nb, const char *folder=NULL);
+
+    /**
+     * @brief create Effect's default configuration json file
+     * it (over)writes json file with effect's default configuration
+     * 
+     * @param nb - eff enum
+     * @param filename - filename to write
+     */
+    static void create_eff_default_cfg_file(uint16_t nb, String &filename);
+
+    /**
+     * @brief write configuration to json file on FS
+     * it used delayed save (CFG_AUTOSAVE_TIMEOUT) to reduce writing to flash
+     * @param force write immidiately, wo delay
+     */
+    void autosave(bool force = false);
+
+    /**
+     * @brief Get the json string with Serialized Eff Config object
+     * 
+     * @param nb 
+     * @param replaceBright 
+     * @return String 
+     */
+    String getSerializedEffConfig(uint8_t replaceBright = 0) const;
+
+    /**
+     * @brief flush pending config data to file on disk
+     * it's a temporary workaround method
+     * it writes cfg data ONLY if some changes are pending in delayed task
+     */
+    void flushcfg(){ if(tConfigSave) autosave(true); };
+};
+
 
 class EffectListElem{
 private:
@@ -203,7 +308,6 @@ public:
 // forward declaration
 class EffectWorker;
 
-//! Basic Effect Calc class
 /**
  * Базовый класс эффекта с основными переменными и методами общими для всех эффектов
  * методы переопределяются каждым эффектом по необходимости
@@ -374,23 +478,14 @@ public:
 
 class EffectWorker {
 private:
-    LAMPSTATE *lampstate; // ссылка на состояние лампы
-    SORT_TYPE effSort; // порядок сортировки в UI
+    LAMPSTATE *lampstate;   // ссылка на состояние лампы
+    SORT_TYPE effSort;      // порядок сортировки в UI
 
-    uint16_t curEff = (uint16_t)EFF_NONE;     ///< энумератор текущего эффекта
-    uint16_t pendingEffNum = (uint16_t)EFF_NONE;     ///< энумератор выбранного эффекта (для отложенного перехода)
+    Effcfg curEff;          // конфигурация текущего эффекта, имя/версия и т.п.
+    Effcfg pendingEff;      // конфигурация эффекта следующего на очереди переключения (на время работы затухания)
     
-    String effectName;      // имя эффекта (предварительно заданное или из конфига)
-    String soundfile;       // имя/путь к звуковому файлу (DF Player Mini)
-    uint8_t version;        // версия эффекта
-
-    LList<EffectListElem> effects; // список эффектов с флагами из индекса
-    // список контроллов текущего эффекта
-    LList<std::shared_ptr<UIControl>> controls;
-    // список контроллов следующего эффекта (используется на время работы фейдера)
-    LList<std::shared_ptr<UIControl>> pendingCtrls;
-
-    Task *tConfigSave = nullptr;       // динамическая таска, задержки при сохранении текущего конфига эффекта в файл
+    // список эффектов с флагами из индекса
+    LList<EffectListElem> effects;
 
     /**
      * @brief WTF???
@@ -403,77 +498,12 @@ private:
      * создает и инициализирует экземпляр класса выбранного эффекта
      *
     */
-    void workerset(uint16_t effect, const bool isCfgProceed = true);
+    void workerset(uint16_t effect);
 
     EffectWorker(const EffectWorker&);  // noncopyable
     EffectWorker& operator=(const EffectWorker&);  // noncopyable
 
-    /**
-     * @brief очистка списка контроллов
-     * 
-     * @param list list to clear
-     */
-    void _clearControlsList(LList<std::shared_ptr<UIControl>> &list);
-
     void effectsReSort(SORT_TYPE st=(SORT_TYPE)(255));
-
-    /**
-     * @brief load effect's configuration from a json file
-     * apply saved configuration to current worker instance
-     * @param nb - effect number
-     * @param folder - folder to look for config files
-     * @return int 
-     */
-    bool loadeffconfig(const uint16_t nb, const char *folder=NULL);
-
-    /**
-     * @brief create Effect's default configuration json file
-     * it overwrites existing file on FS with effect's default configuration
-     * 
-     * @param nb - eff enum
-     * @param filename - filename to write
-     */
-    void _create_eff_default_cfg_file(uint16_t nb, String &filename);
-
-    void saveeffconfig(uint16_t nb, char *folder=NULL);
-    //void makeIndexFile(const char *folder = NULL);
-    // создать или обновить текущий индекс эффекта
-    void updateIndexFile();
-
-    /**
-     * получить версию эффекта из "прошивки" по его ENUM
-     */
-    const uint8_t geteffcodeversion(const uint8_t id);
-
-    /**
-     * @brief deserialise effect configuration from a file based on eff number
-     * if file is missing/damaged or it's versions is older than firmware's default
-     * it will be reset to defaults
-     * 
-     * @param nb - effect number
-     * @param folder - folder to load effects from, must be absolute path with leading/trailing slashes, default is '/eff/'
-     * @param jdoc - document to place deserialized obj
-     * @return true - on success
-     * @return false - on failure
-     */
-    bool _eff_cfg_deserialize(DynamicJsonDocument &doc, uint16_t nb, const char *folder = NULL);
-
-    /**
-     * @brief load effect controls from JsonDocument to a list
-     * 
-     * @param effcfg - deserialized JsonDocument with effect config (should come from a file)
-     * @param ctrls - destination list to load controls (all existing controls will be cleared)
-     * @return true - on success
-     * @return false - on error
-     */
-    bool _eff_ctrls_load_from_jdoc(DynamicJsonDocument &effcfg, LList<std::shared_ptr<UIControl>> &ctrls);
-
-    /**
-     * @brief flush pending config data to file on disk
-     * it's a temporary workaround method
-     * it writes cfg data ONLY if some changes are pending in delayed task
-     */
-    void _flush_config(){ if(tConfigSave) autoSaveConfig(true); };
 
     /**
      * @brief load a list of default effects from firmware tables
@@ -504,11 +534,11 @@ public:
     // дефолтный конструктор
     EffectWorker(LAMPSTATE *_lampstate);
     // конструктор копий эффектов
-    EffectWorker(const EffectListElem* base, const EffectListElem* copy);
+    //EffectWorker(const EffectListElem* base, const EffectListElem* copy);
     // Конструктор для отложенного эффекта
-    EffectWorker(uint16_t delayeffnb);
-    // конструктор текущего эффекта, для fast=true вычитываетсяч только имя
-    EffectWorker(const EffectListElem* eff, bool fast=false);
+    //EffectWorker(uint16_t delayeffnb);
+
+    //EffectWorker(const EffectListElem* eff);
     //~EffectWorker();
 
     // указатель на экземпляр класса текущего эффекта
@@ -526,26 +556,11 @@ public:
      */
     LList<EffectListElem> const &getEffectsList() const { return effects; };
 
-    LList<std::shared_ptr<UIControl>>&getControls() { return isEffSwPending() ? pendingCtrls : controls; }
+    LList<std::shared_ptr<UIControl>>&getControls() { return isEffSwPending() ? pendingEff.controls : curEff.controls; }
 
     // тип сортировки
     void setEffSortType(SORT_TYPE type) {if(effSort != type) { effectsReSort(type); } effSort = type;}
     SORT_TYPE getEffSortType() {return effSort;}
-
-    /**
-     * @brief Get the json string with Serialized Eff Config object
-     * 
-     * @param nb 
-     * @param replaceBright 
-     * @return String 
-     */
-    String getSerializedEffConfig(uint16_t nb, uint8_t replaceBright = 0);
-
-    /**
-     *  отложенная запись конфига текущего эффекта, каждый вызов перезапускает счетчик
-     *  force - сохраняет без задержки, таймер отключается
-     */
-    void autoSaveConfig(bool force=false);
 
     // удалить конфиг переданного эффекта
     void removeConfig(const uint16_t nb, const char *folder=NULL);
@@ -558,12 +573,12 @@ public:
 
     byte getModeAmount() {return effects.size();}
 
-    const String &getEffectName() {return effectName;}
+    const String &getEffectName() const {return curEff.effectName;}
 
     // если текущий, то просто пишем имя, если другой - создаем экземпляр, пишем, удаляем
     void setEffectName(const String &name, EffectListElem*to);
 
-    const String &getSoundfile() {return soundfile;}
+    const String &getSoundfile() const {return curEff.soundfile;}
 
     // если текущий, то просто пишем имя звукового файла, если другой - создаем экземпляр, пишем, удаляем
     void setSoundfile(const String &_soundfile, EffectListElem*to);
@@ -588,7 +603,7 @@ public:
     void loadsoundfile(String& effectName, const uint16_t nb, const char *folder=NULL);
 
     // текущий эффект или его копия
-    const uint16_t getEn() {return curEff;}
+    uint16_t getEn() const { return curEff.num; }
     // следующий эффект, кроме canBeSelected==false
     uint16_t getNext();
     // предыдущий эффект, кроме canBeSelected==false
@@ -621,13 +636,35 @@ public:
     // вернуть выбранный элемент списка
     EffectListElem *getEffect(uint16_t select);
     // вернуть текущий
-    uint16_t getCurrent() {return curEff;}
+    uint16_t getCurrent() const {return curEff.num; }
     // вернуть текущий элемент списка
     EffectListElem *getCurrentListElement();
     // вернуть выбранный
-    uint16_t getSelected() {return pendingEffNum;}
+    uint16_t getSelected() const { return pendingEff.num; }
     // вернуть выбранный элемент списка
     EffectListElem *getSelectedListElement();
+
+    /**
+     * @brief return current effect config object
+     */
+    Effcfg const &getCurrEffCfg() const { return curEff; }
+
+    /**
+     * @brief return pending effect config object
+     */
+    Effcfg const &getPendingEffCfg() const { return pendingEff; }
+
+    /**
+     * @brief return a ref to effect config depending on if switching in pending or not
+     * if fade is progress, than a ref to pending config will be returned
+     */
+    Effcfg const &getEffCfg() const { return isEffSwPending() ? pendingEff : curEff; }
+
+    /**
+     * @brief autosave current effect configuration to json file
+     * 
+     */
+    void autoSaveConfig(){ curEff.autosave(); }
 
     /**
      * @brief preload controls for pending effect
@@ -641,7 +678,7 @@ public:
     /**
      * @brief returns true if effect switching is pending for fader
      */
-    bool isEffSwPending() const { return (curEff != pendingEffNum); }
+    bool isEffSwPending() const { return (curEff.num != pendingEff.num); }
 
     // копирование эффекта
     void copyEffect(const EffectListElem *base);

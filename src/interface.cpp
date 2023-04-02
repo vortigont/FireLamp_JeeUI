@@ -480,7 +480,7 @@ void set_effects_config_list(Interface *interf, JsonObject *data){
 #ifdef EMBUI_USE_MQTT
 void mqtt_publish_selected_effect_config_json(){
   if (!embui.isMQTTconected()) return;
-  embui.publish(String(FPSTR(TCONST_embui_pub_)) + FPSTR(TCONST_eff_config), myLamp.effects.getSerializedEffConfig(myLamp.effects.getSelected(), myLamp.getLampBrightness()), true);
+  embui.publish(String(FPSTR(TCONST_embui_pub_)) + FPSTR(TCONST_eff_config), myLamp.effects.getEffCfg().getSerializedEffConfig(myLamp.getLampBrightness()), true);
 }
 #endif
 
@@ -863,13 +863,15 @@ void set_eff_next(Interface *interf, JsonObject *data){
  */
 void set_onflag(Interface *interf, JsonObject *data){
     if (!data) return;
-
     bool newpower = TOGLE_STATE((*data)[FPSTR(TCONST_ONflag)], myLamp.isLampOn());
     if (newpower != myLamp.isLampOn()) {
         if (newpower) {
             // включаем через switcheffect, т.к. простого isOn недостаточно чтобы запустить фейдер и поменять яркость (при необходимости)
             myLamp.switcheffect(SW_SPECIFIC, myLamp.getFaderFlag(), myLamp.effects.getEn());
             myLamp.changePower(newpower);
+#ifdef RESTORE_STATE
+            save_lamp_flags();
+#endif
 #ifdef MP3PLAYER
             if(myLamp.getLampSettings().isOnMP3)
                 mp3->setIsOn(true);
@@ -889,11 +891,10 @@ void set_onflag(Interface *interf, JsonObject *data){
             embui.publish(String(FPSTR(TCONST_embui_pub_)) + FPSTR(TCONST__demo), String(myLamp.getMode()==LAMPMODE::MODE_DEMO?"1":"0"), true);
 #endif
         } else {
-            resetAutoTimers(); // автосохранение конфига будет отсчитываться от этого момента
-            //myLamp.changePower(newpower);
+            resetAutoTimers();              // автосохранение конфига будет отсчитываться от этого момента
+            myLamp.changePower(false);
             Task *_t = new Task(300, TASK_ONCE,
                                 [](){ // при выключении бывает эксепшен, видимо это слишком длительная операция, разносим во времени и отдаем управление
-                                myLamp.changePower(false);
                 #ifdef MP3PLAYER
                                 mp3->setIsOn(false);
                 #endif
@@ -910,9 +911,6 @@ void set_onflag(Interface *interf, JsonObject *data){
             _t->enableDelayed();
         }
     }
-#ifdef RESTORE_STATE
-    save_lamp_flags();
-#endif
 }
 
 void set_demoflag(Interface *interf, JsonObject *data){
@@ -1632,9 +1630,7 @@ void show_settings_other(Interface *interf, JsonObject *data){
 
 void set_settings_other(Interface *interf, JsonObject *data){
     if (!data) return;
-    LOG(printf_P,PSTR("Mark sso 1\n"));
     resetAutoTimers();
-    LOG(printf_P,PSTR("Mark sso 2\n"));
 
     DynamicJsonDocument *_str = new DynamicJsonDocument(1024);
     (*_str)=(*data);
@@ -1642,7 +1638,6 @@ void set_settings_other(Interface *interf, JsonObject *data){
     Task *_t = new Task(300, TASK_ONCE, [_str](){
         JsonObject dataStore = (*_str).as<JsonObject>();
         JsonObject *data = &dataStore;
-    LOG(printf_P,PSTR("Mark sso 3\n"));
 
         // LOG(printf_P,PSTR("Settings: %s\n"),tmpData.c_str());
         myLamp.setMIRR_H((*data)[FPSTR(TCONST_MIRR_H)] == "1");
@@ -1651,14 +1646,11 @@ void set_settings_other(Interface *interf, JsonObject *data){
         myLamp.setClearingFlag((*data)[FPSTR(TCONST_isClearing)] == "1");
         myLamp.setDRand((*data)[FPSTR(TCONST_DRand)] == "1");
         myLamp.setShowName((*data)[FPSTR(TCONST_showName)] == "1");
-    LOG(printf_P,PSTR("Mark sso 4\n"));
 
         SETPARAM(FPSTR(TCONST_DTimer), ({if (myLamp.getMode() == LAMPMODE::MODE_DEMO){ myLamp.demoTimer(T_DISABLE); myLamp.demoTimer(T_ENABLE, embui.param(FPSTR(TCONST_DTimer)).toInt()); }}));
-    LOG(printf_P,PSTR("Mark sso 4.5\n"));
 
         float sf = (*data)[FPSTR(TCONST_spdcf)];
         SETPARAM(FPSTR(TCONST_spdcf), myLamp.setSpeedFactor(sf));
-    LOG(printf_P,PSTR("Mark sso 5\n"));
 
         myLamp.setIsShowSysMenu((*data)[FPSTR(TCONST_isShowSysMenu)] == "1");
 
@@ -1678,7 +1670,6 @@ void set_settings_other(Interface *interf, JsonObject *data){
         embui.var(FPSTR(TCONST_alarmPT), String(alatmPT)); myLamp.setAlarmPT(alatmPT);
         //SETPARAM(FPSTR(TCONST_alarmPT), myLamp.setAlarmPT(alatmPT));
         //LOG(printf_P, PSTR("alatmPT=%d, alatmP=%d, alatmT=%d\n"), alatmPT, myLamp.getAlarmP(), myLamp.getAlarmT());
-    LOG(printf_P,PSTR("Mark sso 6\n"));
 
         save_lamp_flags();
         delete _str; },
@@ -1687,7 +1678,6 @@ void set_settings_other(Interface *interf, JsonObject *data){
     _t->enableDelayed();
 
     //BasicUI::section_settings_frame(interf, data);
-    LOG(printf_P,PSTR("Mark sso 7\n"));
     if(interf)
         section_settings_frame(interf, data);
 }
@@ -2636,7 +2626,6 @@ void save_lamp_flags(){
     JsonObject obj = doc.to<JsonObject>();
     obj[FPSTR(TCONST_syslampFlags)] = ulltos(myLamp.getLampFlags());
     set_lamp_flags(nullptr, &obj);
-    doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
 }
 
 // кастомный обработчик, для реализации особой обработки событий сокетов
@@ -3670,7 +3659,7 @@ String httpCallback(const String &param, const String &value, bool isset){
         else if (upperParam == FPSTR(CMD_WARNING))
             { myLamp.showWarning(CRGB::Orange,5000,500); }
         else if (upperParam == FPSTR(CMD_EFF_CONFIG)) {
-                String result = myLamp.effects.getSerializedEffConfig(myLamp.effects.getCurrent(), myLamp.getLampBrightness());
+                String result(myLamp.effects.getEffCfg().getSerializedEffConfig(myLamp.getLampBrightness()));
 #ifdef EMBUI_USE_MQTT
                 embui.publish(String(FPSTR(TCONST_embui_pub_)) + FPSTR(TCONST_eff_config), result, true);
 #endif

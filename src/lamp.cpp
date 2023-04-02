@@ -297,8 +297,9 @@ void LAMP::changePower(bool flag) // флаг включения/выключе�
 #ifdef USE_STREAMING
     Led_Stream::clearStreamObj();
 #endif
-    if(flags.isFaderON && !lampState.isOffAfterText)
+    if(flags.isFaderON && !lampState.isOffAfterText){
       LEDFader::getInstance()->fadelight(0, FADE_TIME, std::bind(&LAMP::effectsTimer, this, SCHEDULER::T_DISABLE, 0));  // гасим эффект-процессор
+    }
     else {
       brightness(0);
       effectsTimer(SCHEDULER::T_DISABLE);
@@ -307,14 +308,12 @@ void LAMP::changePower(bool flag) // флаг включения/выключе�
     lampState.isStringPrinting = false;
     demoTimer(T_DISABLE);     // гасим Демо-таймер
   }
-
 #if defined(MOSFET_PIN) && defined(MOSFET_LEVEL)          // установка сигнала в пин, управляющий MOSFET транзистором, соответственно состоянию вкл/выкл матрицы
   Task *_t = new Task(flags.isFaderON && !flags.ONflag ? 5*TASK_SECOND : 50, TASK_ONCE, // для выключения - отложенное переключение мосфета 5 секунд
     [this](){ digitalWrite(MOSFET_PIN, (flags.ONflag ? MOSFET_LEVEL : !MOSFET_LEVEL)); },
     &ts, false, nullptr, nullptr, true);
   _t->enableDelayed();
 #endif
-
 // #if defined(MOSFET_PIN) && defined(MOSFET_LEVEL)          // установка сигнала в пин, управляющий MOSFET транзистором, соответственно состоянию вкл/выкл матрицы
 //   digitalWrite(MOSFET_PIN, (flags.ONflag ? MOSFET_LEVEL : !MOSFET_LEVEL));
 // #endif
@@ -970,9 +969,10 @@ void LAMP::brightness(const uint8_t _brt, bool natural){
     if (_brt) {
       FastLED.setBrightness(natural ? dim8_video(_brt) : _brt);
     } else {
-      FastLED.setBrightness(0); // полностью гасим лапу если нужна 0-я яркость
-      FastLED.show();
+      FastLED.setBrightness(1); // 8266 may crash if brightness is set to zero, need triage
+      FastLED.clear();
     }
+    FastLED.show();
 }
 
 /*
