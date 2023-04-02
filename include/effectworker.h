@@ -148,10 +148,10 @@ public:
         uint8_t _id=0,
         CONTROL_TYPE _ctype=CONTROL_TYPE::RANGE,
         const String _name="ctrl",
-        const String _val="128",
-        const String _min="1",
-        const String _max="255",
-        const String _step="1"
+        const String _val= "128",
+        const String _min= "1",
+        const String _max= "255",
+        const String _step= "1"
         ) : 
         id(_id), ctype(_ctype),
         control_name(_name),
@@ -175,7 +175,7 @@ public:
     void setVal(const String &_val);
 };
 
-
+//struct Eff
 
 class EffectListElem{
 private:
@@ -380,7 +380,6 @@ private:
     uint16_t curEff = (uint16_t)EFF_NONE;     ///< энумератор текущего эффекта
     uint16_t pendingEffNum = (uint16_t)EFF_NONE;     ///< энумератор выбранного эффекта (для отложенного перехода)
     
-    String originalName;    // имя эффекта дефолтное
     String effectName;      // имя эффекта (предварительно заданное или из конфига)
     String soundfile;       // имя/путь к звуковому файлу (DF Player Mini)
     uint8_t version;        // версия эффекта
@@ -568,8 +567,6 @@ public:
 
     // если текущий, то просто пишем имя звукового файла, если другой - создаем экземпляр, пишем, удаляем
     void setSoundfile(const String &_soundfile, EffectListElem*to);
-
-    const String &getOriginalName() {return originalName;}
 
     /**
     * вычитать только имя эффекта из конфиг-файла и записать в предоставленную строку

@@ -339,7 +339,7 @@ void EffectWorker::workerset(uint16_t effect, const bool isCfgProceed){
   if(worker){
     // запихать в экземпляр калькулятор эффекта ссылки на все то барахло из чего состоит лампа вместе с самой лампой 8()
     worker->pre_init(static_cast<EFF_ENUM>(effect%256), this, &(getControls()), lampstate);
-    originalName = effectName = FPSTR(T_EFFNAMEID[(uint8_t)effect]); // сначла заполним дефолтным именем, а затем лишь вычитаем из конфига
+    effectName = FPSTR(T_EFFNAMEID[(uint8_t)effect]); // сначла заполним дефолтным именем, а затем лишь вычитаем из конфига
     if(isCfgProceed){ // читаем конфиг только если это требуется, для индекса - пропускаем
       loadeffconfig(effect);
 
@@ -463,7 +463,7 @@ void EffectWorker::loadsoundfile(String& _soundfile, const uint16_t nb, const ch
   if (ok && doc[F("snd")]){
     _soundfile = doc[F("snd")].as<String>(); // перенакрываем именем из конфига, если есть
   } else if(!ok) {
-    _soundfile = "";
+    _soundfile.clear();
   }
 }
 
@@ -664,81 +664,7 @@ void EffectWorker::makeIndexFileFromList(const char *folder, bool forceRemove)
   LOG(println,F("Индекс эффектов обновлен!"));
   effectsReSort(); // восстанавливаем сортировку
 }
-/*
-void EffectWorker::makeIndexFileFromFS(const char *fromfolder,const char *tofolder)
-{
-  File indexFile;
-  String sourcedir;
-  //makeIndexFile(tofolder); // будет перезапиан ниже
-  removeLists();
 
-  if (fromfolder) {
-      sourcedir.concat(F("/"));
-      sourcedir.concat(fromfolder);
-  }
-  sourcedir.concat(F("/eff"));
-
-#ifdef ESP8266
-  Dir dir = LittleFS.openDir(sourcedir);
-#endif
-
-#ifdef ESP32
-  File dir = LittleFS.open(sourcedir);
-  if (!dir || !dir.isDirectory()){
-    LOG(print, F("Can't open dir: ")); LOG(println, sourcedir);
-    return;
-  }
-#endif
-
-  String fn;
-  fshlpr::openIndexFile(indexFile, tofolder);
-  bool firstLine = true;
-  indexFile.print("[");
-
-  DynamicJsonDocument doc(3072);
-
-#ifdef ESP8266
-  while (dir.next())
-#else
-  File _f;
-  while(_f = dir.openNextFile())
-#endif
-  {   // keep this bracket, otherwise VSCode cant fold a region
-#ifdef ESP8266
-      fn=sourcedir + "/" + dir.fileName();
-#else
-      fn = sourcedir + "/" + _f.name();
-#endif
-
-
-      if (!fshlpr::deserializeFile(doc, fn.c_str())) { //  || doc[F("nb")].as<String>()=="0"
-        #ifdef ESP32
-        _f.close();
-        #endif
-        LittleFS.remove(fn);                // delete corrupted config
-        continue;
-      }
-      uint16_t nb = doc[F("nb")].as<uint16_t>();
-      uint8_t flags = doc[F("flags")].as<uint8_t>();
-      EffectListElem *eff = getEffect(nb);
-      if(eff)
-        flags = eff->flags.mask;
-      indexFile.printf_P(PGidxtemplate, firstLine ? "" : ",", nb, flags);
-      firstLine = false; // сбрасываю признак первой строки
-
-#ifdef ESP8266
-  ESP.wdtFeed();
-#elif defined ESP32
-  delay(1);
-#endif
-  }
-  indexFile.print("]");
-  indexFile.close();
-
-  LOG(println,F("Индекс эффектов создан из FS!"));
-  initDefault(tofolder); // перечитаем вновь созданный индекс
-}
-*/
 // создать или обновить текущий индекс эффекта
 void EffectWorker::updateIndexFile()
 {
@@ -944,17 +870,6 @@ void EffectWorker::moveSelected(){
     workerset(pendingEffNum);   // first we change the effect
     curEff = pendingEffNum;     // than change the number! Effect's config data saving depends on it
                                 // todo: resolve this stuped dependency via private members
-
-    /*
-    todo: omg...
-    зачем эти предзагруженные контролы если эффект при загрузке все равно перетрет это все из конфига с ФС?? 
-    // deep-copy controls list if pendingCtrls is not empty (i.e. it's a move from faded switch)
-    if (pendingCtrls.size())
-      controls = pendingCtrls;
-
-    workerset(pendingEffNum, pendingCtrls.size() ? false : true);
-    */
-
     pendingCtrls.clear();        // no longer needed anyway
   }
 }
@@ -991,29 +906,28 @@ void EffectWorker::setEffectName(const String &name, EffectListElem*to){
       tmp->curEff=to->eff_nb;
       tmp->pendingEffNum=to->eff_nb;
       tmp->setEffectName(name,to);
-      tmp->saveeffconfig(to->eff_nb);
       delete tmp;
   }
 }
 
 void EffectWorker::setSoundfile(const String &_soundfile, EffectListElem*to){
-    if(to->eff_nb==curEff) soundfile=_soundfile;
-    else {EffectWorker *tmp=new EffectWorker(to);
+  if(to->eff_nb==curEff) soundfile=_soundfile;
+  else {
+    EffectWorker *tmp=new EffectWorker(to);
     tmp->curEff=to->eff_nb;
     tmp->pendingEffNum=to->eff_nb;
     tmp->setSoundfile(_soundfile,to);
     tmp->saveeffconfig(to->eff_nb);
-    delete tmp;}
+    delete tmp;
+  }
 }
 
 uint16_t EffectWorker::effIndexByList(uint16_t val) { 
-    uint16_t found = 0;
     for (uint16_t i = 0; i < effects.size(); i++) {
         if (effects[i].eff_nb == val ) {
-            found = i;
+            return i;
         } 
     }
-    return found;
 }
 
 bool EffectWorker::_eff_cfg_deserialize(DynamicJsonDocument &doc, uint16_t nb, const char *folder){

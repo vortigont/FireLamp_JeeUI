@@ -370,7 +370,6 @@ void LAMP::startDemoMode(uint8_t tmout)
   storedEffect = ((static_cast<EFF_ENUM>(effects.getEn()%256) == EFF_ENUM::EFF_WHITE_COLOR) ? storedEffect : effects.getEn()); // сохраняем предыдущий эффект, если только это не белая лампа
   mode = LAMPMODE::MODE_DEMO;
   if(isLampOn()){
-    randomSeed(millis());
     remote_action(RA::RA_DEMO_NEXT, NULL);
     demoTimer(T_ENABLE, tmout);
   }
@@ -382,12 +381,12 @@ void LAMP::storeEffect()
   storedEffect = ((static_cast<EFF_ENUM>(effects.getEn()%256) == EFF_ENUM::EFF_WHITE_COLOR) ? storedEffect : effects.getEn()); // сохраняем предыдущий эффект, если только это не белая лампа
   storedBright = getLampBrightness();
   lampState.isMicOn = false;
-  LOG(printf_P, PSTR("Store: %d,%d\n"),storedEffect,storedBright);
+  LOG(printf_P, PSTR("storeEffect() %d,%d\n"),storedEffect,storedBright);
 }
 
 void LAMP::restoreStored()
 {
-  LOG(printf_P, PSTR("Restore: %d,%d\n"),storedEffect,storedBright);
+  LOG(printf_P, PSTR("restoreStored() %d,%d\n"),storedEffect,storedBright);
   if(storedBright)
     setLampBrightness(storedBright);
   lampState.isMicOn = flags.isMicOn;

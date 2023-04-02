@@ -2983,7 +2983,7 @@ void sync_parameters(){
         CALL_SETTER(String(FPSTR(TCONST_dynCtrl)) + "0", myLamp.getLampBrightness(), set_effects_dynCtrl);
 
 #ifdef MP3PLAYER
-Task *t = new Task(DFPLAYER_START_DELAY+500, TASK_ONCE, nullptr, &ts, false, nullptr, [tmp](){
+    Task *t = new Task(DFPLAYER_START_DELAY+500, TASK_ONCE, nullptr, &ts, false, nullptr, [tmp](){
     if(!mp3->isReady()){
         LOG(println, F("DFPlayer not ready yet..."));
         if(millis()<10000){
@@ -3007,16 +3007,15 @@ Task *t = new Task(DFPLAYER_START_DELAY+500, TASK_ONCE, nullptr, &ts, false, nul
     obj[FPSTR(TCONST_limitAlarmVolume)] = tmp.limitAlarmVolume ? "1" : "0";
 
     set_settings_mp3(nullptr, &obj);
-    doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
+    doc.clear();
 
     mp3->setupplayer(myLamp.effects.getEn(), myLamp.effects.getSoundfile()); // установить начальные значения звука
     obj[FPSTR(TCONST_isOnMP3)] = tmp.isOnMP3 ? "1" : "0";
     set_mp3flag(nullptr, &obj);
-    doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
 
     CALL_SETTER(FPSTR(TCONST_mp3volume), embui.param(FPSTR(TCONST_mp3volume)), set_mp3volume);
-}, true);
-t->enableDelayed();
+    }, true);
+    t->enableDelayed();
 #endif
 
 #ifdef AUX_PIN
@@ -3025,10 +3024,7 @@ t->enableDelayed();
 
     myLamp.setClearingFlag(tmp.isEffClearing);
 
-    obj[FPSTR(TCONST_numInList)] = tmp.numInList ? "1" : "0";
-    myLamp.setNumInList(tmp.numInList);
 #ifdef MIC_EFFECTS
-    obj[FPSTR(TCONST_effHasMic)] = tmp.effHasMic ? "1" : "0";
     myLamp.setEffHasMic(tmp.effHasMic);
 #endif
     SORT_TYPE type = (SORT_TYPE)embui.param(FPSTR(TCONST_effSort)).toInt();
