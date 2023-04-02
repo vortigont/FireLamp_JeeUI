@@ -2353,28 +2353,21 @@ class EffectSplashBals : public EffectCalc {
 private:
     uint8_t count = 3;
     uint8_t hue;
-    const uint8_t DEV = 5;
+    const uint8_t dev = 5;
     const float R = (float)NUM_LEDS/128;
 
-    float x[6];
-    float y[6];
-    uint8_t iniX[6];
-    uint8_t iniY[6];
-
-    float speedFactor;
-
-
-    float dist(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2) {
-        float dist;
-        int a = y2 - y1;
-        int b = x2 - x1;
-        a *= a;
-        b *= b;
-        a += b;
-        dist = EffectMath::sqrt(a);
-        return dist;
+    struct Ball{
+        float x1{0}, y1{0};
+        float x2{0}, y2{0};
+        uint8_t iniX1{0}, iniX2{0};
+        uint8_t iniY1{0}, iniY2{0};
     };
-    
+
+    std::array<Ball, 3> balls;
+
+    float speedFactor{1};
+
+    float dist(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2);
 
     String setDynCtrl(UIControl*_val) override;
 

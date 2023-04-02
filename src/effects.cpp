@@ -8547,9 +8547,11 @@ String EffectSplashBals::setDynCtrl(UIControl*_val){
 }
 
 void EffectSplashBals::load() {
-  for (uint8_t i = 0; i < 6; i++) {
-    iniX[i] = random(0, 8);
-    iniY[i] = random(1, 9);
+  for (auto &b : balls){
+    b.iniX1 = random(0, 8);
+    b.iniY1 = random(1, 9);
+    b.iniX2 = random(0, 8);
+    b.iniY2 = random(1, 9);
   }
   palettesload();
 }
@@ -8558,17 +8560,26 @@ bool EffectSplashBals::run(CRGB *leds, EffectWorker *param) {
   fadeToBlackBy(leds, NUM_LEDS, 100);
   hue++;
 
-  for (byte i = 0; i < count; i++) {
-    x[i] = (float)beatsin88(((10UL + iniX[i]) * 256) * speedFactor, 0, (WIDTH - 1) * DEV) / DEV;
-    y[i] = (float)beatsin88(((10UL + iniY[i]) * 256) * speedFactor, 0, (HEIGHT - 1) * DEV) / DEV;
-    for (byte j = i; j < count; j++) {
-      byte a = dist(x[i], y[i], x[j], y[j]);
-      if ((i != j) & (a <= float(min(WIDTH, HEIGHT) / 2))) {
-        EffectMath::drawLineF(x[i], y[i], x[j], y[j], CHSV(0, 0, EffectMath::fmap(a, min(WIDTH, HEIGHT), 0, 48, 255)));
+  for (auto &b : balls){
+    b.x1 = (float)beatsin88(((10UL + b.iniX1) * 256) * speedFactor, 0, (WIDTH - 1) * dev) / dev;
+    b.y1 = (float)beatsin88(((10UL + b.iniY1) * 256) * speedFactor, 0, (HEIGHT - 1) * dev) / dev;
+    b.x2 = (float)beatsin88(((10UL + b.iniX2) * 256) * speedFactor, 0, (WIDTH - 1) * dev) / dev;
+    b.y2 = (float)beatsin88(((10UL + b.iniY2) * 256) * speedFactor, 0, (HEIGHT - 1) * dev) / dev;
+      float a = dist(b.x1, b.y1, b.x2, b.y2);
+      if (a <= float(min(WIDTH, HEIGHT) / 2)) {
+        EffectMath::drawLineF(b.x1, b.y1, b.x2, b.y2, CHSV(0, 0, EffectMath::fmap(a, min(WIDTH, HEIGHT), 0, 48, 255)));
       }
-    }
-    EffectMath::fill_circleF(x[i], y[i], EffectMath::fmap(fabs(float(WIDTH / 2) - x[i]), 0, WIDTH / 2, R, 0.2), ColorFromPalette(*curPalette, 256 - 256/HEIGHT * fabs(float(HEIGHT/2) - y[i])));
+    EffectMath::fill_circleF(b.x1, b.y1, EffectMath::fmap(fabs(float(WIDTH / 2) - b.x1), 0, WIDTH / 2, R, 0.2), ColorFromPalette(*curPalette, 256 - 256/HEIGHT * fabs(float(HEIGHT/2) - b.y1)));
   }
   EffectMath::blur2d(leds, WIDTH, HEIGHT, 48);
   return true;
 }
+
+float EffectSplashBals::dist(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2) {
+  int a = y2 - y1;
+  int b = x2 - x1;
+  a *= a;
+  b *= b;
+  a += b;
+  return EffectMath::sqrt(a);
+};
