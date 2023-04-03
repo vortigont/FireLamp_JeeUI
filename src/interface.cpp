@@ -685,10 +685,6 @@ void direct_set_effects_dynCtrl(JsonObject *data){
 void set_effects_dynCtrl(Interface *interf, JsonObject *data){
     if (!data) return;
 
-    // static unsigned long timeout = 0;
-    // if(timeout+110UL>millis()) return;
-    // timeout = millis();
-
     // попытка повышения стабильности, отдаем управление браузеру как можно быстрее...
     if((*data).containsKey(FPSTR(TCONST_force)))
         direct_set_effects_dynCtrl(data);
@@ -3260,7 +3256,7 @@ void default_buttons(){
 
 // набор акшенов, которые дергаются из всех мест со всех сторон
 void remote_action(RA action, ...){
-    LOG(printf_P, PSTR("RA %d: "), action);
+    LOG(printf_P, PSTR("Remote Action: %d: "), action);
     DynamicJsonDocument doc(512);
     JsonObject obj = doc.to<JsonObject>();
 
@@ -3268,7 +3264,7 @@ void remote_action(RA action, ...){
     va_list prm;
     va_start(prm, action);
     while ((key = (char *)va_arg(prm, char *)) && (val = (char *)va_arg(prm, char *))) {
-        LOG(printf_P, PSTR("%s = %s"), key, val);
+        LOG(printf_P, PSTR("RA param: '%s = %s' "), key, val);
         obj[key] = val;
     }
     va_end(prm);
@@ -3332,7 +3328,7 @@ void remote_action(RA action, ...){
                 myLamp.switcheffect(SW_NEXT_DEMO, myLamp.getFaderFlag());
             }
             // postponed action to publish eff changes
-            new Task(TASK_SECOND, TASK_ONCE, nullptr, &ts, true, nullptr, [](){ remote_action(RA::RA_EFFECT, String(myLamp.effects.getSelected()).c_str(), NULL); }, true);
+            new Task(TASK_SECOND, TASK_ONCE, nullptr, &ts, true, nullptr, [](){ remote_action(RA::RA_EFFECT, String(myLamp.effects.getCurrent()).c_str(), NULL); }, true);
             break;
         // called on effect change events
         case RA::RA_EFFECT: {
@@ -3357,6 +3353,12 @@ void remote_action(RA action, ...){
             else
                 CALL_INTF(FPSTR(TCONST_GBR), value, set_gbrflag);
             break;
+        // change brightness in percents
+        case RA::RA_BRIGHT_PCT:{
+            int brt = atoi(value);
+            brt = brt >=100 ? 255 : brt * 255 / 100;    // normalize percents to 0-255
+            return remote_action(RA_CONTROL, (String(FPSTR(TCONST_dynCtrl))+F("0")).c_str(), String(brt).c_str(), NULL);
+        }
         case RA::RA_BRIGHT_NF:
             obj[FPSTR(TCONST_nofade)] = true;
             obj[FPSTR(TCONST_force)] = true;
@@ -3622,12 +3624,11 @@ void remote_action(RA action, ...){
         default:
             break;
     }
-    doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
 }
 
 String httpCallback(const String &param, const String &value, bool isset){
     String result = F("Ok");
-    String upperParam = param;
+    String upperParam(param);
     upperParam.toUpperCase();
     RA action = RA_UNKNOWN;
     LOG(printf_P, PSTR("HTTP: %s - %s\n"), upperParam.c_str(), value.c_str());
@@ -3640,6 +3641,8 @@ String httpCallback(const String &param, const String &value, bool isset){
             { result = !myLamp.isLampOn() ? "1" : "0"; }
         else if (upperParam == FPSTR(CMD_G_BRIGHT))
             { result = myLamp.IsGlobalBrightness() ? "1" : "0"; }
+        else if (upperParam == FPSTR(CMD_G_BRTPCT))
+            { result = myLamp.lampBrightnesspct(); return result; }
         else if (upperParam == FPSTR(CMD_DEMO))
             { result = myLamp.getMode() == LAMPMODE::MODE_DEMO ? "1" : "0"; }
 #ifdef MP3PLAYER
@@ -3751,6 +3754,7 @@ String httpCallback(const String &param, const String &value, bool isset){
         else if (upperParam == FPSTR(CMD_REBOOT)) action = RA_REBOOT;
         else if (upperParam == FPSTR(CMD_ALARM)) action = RA_ALARM;
         else if (upperParam == FPSTR(CMD_G_BRIGHT)) action = RA_GLOBAL_BRIGHT;
+        else if (upperParam == FPSTR(CMD_G_BRTPCT)) { action = RA_BRIGHT_PCT; remote_action(action, value.c_str(), NULL); return result; }
         else if (upperParam == FPSTR(CMD_WARNING)) action = RA_WARNING;
         else if (upperParam == FPSTR(CMD_DRAW)) action = RA_DRAW;
         else if (upperParam == FPSTR(CMD_FILL_MATRIX)) action = RA_FILLMATRIX;

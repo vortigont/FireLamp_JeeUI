@@ -281,12 +281,48 @@ public:
         if(effects.worker) effects.worker->setDynCtrl(effects.getControls()[1].get());
     }
 
-    // Lamp brightness control (здесь методы работы с конфигурационной яркостью, не с LED!)
+    // Lamp brightness control
+    /**
+     * @brief - Change global brightness with or without fade effect
+     * fade applied in non-blocking way
+     * FastLED dim8 function applied internaly for natural brightness controll
+     * @param uint8_t _tgtbrt - target brigtness level 0-255
+     * @param bool fade - use fade effect on brightness change
+     * @param bool natural - apply dim8 function for natural brightness controll
+     */
+    void setBrightness(const uint8_t _tgtbrt, const bool fade=false, const bool natural=true);
+
+    /**
+     * @brief - Get current FASTLED brightness
+     * FastLED brighten8 function applied internaly for natural brightness compensation
+     * @param bool natural - return compensated or absolute brightness
+     */
+    uint8_t getBrightness(const bool natural=true);
+
+    // ыставляет ТОЛЬКО значение в кинфиге! Яркость не меняет!
+    void setGlobalBrightness(uint8_t brt) {globalBrightness = brt;}
+
     uint8_t getLampBrightness() { return flags.isGlobalBrightness? globalBrightness : (effects.getControls()[0]->getVal()).toInt();}
-    void setLampBrightness(uint8_t brg) { lampState.brightness=brg; if (flags.isGlobalBrightness) setGlobalBrightness(brg); else effects.getControls()[0]->setVal(String(brg)); }
-    void setGlobalBrightness(uint8_t brg) {globalBrightness = brg;}
+    void setLampBrightness(uint8_t brt) { lampState.brightness=brt; if (flags.isGlobalBrightness) setGlobalBrightness(brt); else effects.getControls()[0]->setVal(String(brt)); }
+
     void setIsGlobalBrightness(bool val) {flags.isGlobalBrightness = val; if(effects.worker) { lampState.brightness=getLampBrightness(); effects.worker->setDynCtrl(effects.getControls()[0].get());} }
     bool IsGlobalBrightness() {return flags.isGlobalBrightness;}
+
+    /**
+     * @brief get lamp brightness in percents 0-100
+     * 
+     * @return uint8_t brightness value in percents
+     */
+    uint8_t lampBrightnesspct(){ return getLampBrightness() * 100 / 255; };
+
+    /**
+     * @brief set lamp brightness in percents
+     * 
+     * @param brt value 0-100
+     * @return uint8_t 
+     */
+    uint8_t lampBrightnesspct(uint8_t brt);
+
     bool isAlarm() {return mode == LAMPMODE::MODE_ALARMCLOCK;}
     bool isWarning() {return lampState.isWarning;}
 
@@ -413,23 +449,6 @@ void setTempDisp(bool flag) {flags.isTempOn = flag;}
 
     void changePower(); // плавное включение/выключение
     void changePower(bool);
-
-    /**
-     * @brief - Change global brightness with or without fade effect
-     * fade applied in non-blocking way
-     * FastLED dim8 function applied internaly for natural brightness controll
-     * @param uint8_t _tgtbrt - target brigtness level 0-255
-     * @param bool fade - use fade effect on brightness change
-     * @param bool natural - apply dim8 function for natural brightness controll
-     */
-    void setBrightness(const uint8_t _tgtbrt, const bool fade=false, const bool natural=true);
-
-    /**
-     * @brief - Get current FASTLED brightness
-     * FastLED brighten8 function applied internaly for natural brightness compensation
-     * @param bool natural - return compensated or absolute brightness
-     */
-    uint8_t getBrightness(const bool natural=true);
 
     /**
      * @brief - переключатель эффектов для других методов,

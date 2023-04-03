@@ -224,12 +224,11 @@ static const char TCONST__ffffff[] PROGMEM = "#ffffff";
 static const char TCONST__tmplist_tmp[] PROGMEM = "/tmplist.tmp";
 static const char TCONST__tmpqlist_tmp[] PROGMEM = "/tmpqlist.tmp";
 
-/** набор служебных текстовых констант (HTTP/MQTT запросы)
- */
-
+/** набор служебных текстовых констант (HTTP/MQTT запросы) */
 static const char CMD_ON[] PROGMEM = "ON";                    // Без параметров - возвращает 1/0 в зависимости вкл/выкл лампа, принимает параметр - 1/0 (вкл/выкл лампу)
 static const char CMD_OFF[] PROGMEM = "OFF";                  // Без параметров - возвращает 1/0 в зависимости выкл/вкл лампа, принимает параметр - 1/0 (выкл/вкл лампу)
 static const char CMD_G_BRIGHT[] PROGMEM = "G_BRIGHT";        // Без параметров - возвращает 1/0 в зависимости вкл/выкл глобальная яркость, принимает параметр - 1/0 (вкл/выкл глобальная яркость)
+static const char CMD_G_BRTPCT[] PROGMEM = "G_BRTPCT";        // Без параметров - возвращает общую яркость в процентах, принимает параметр - 0-100 выставить общую яркость в процентах
 static const char CMD_DEMO[] PROGMEM = "DEMO";                // Без параметров - возвращает 1/0 в зависимости вкл/выкл глобальная яркость, принимает параметр - 1/0 (вкл/выкл глобальная яркость)
 static const char CMD_PLAYER[] PROGMEM = "PLAYER";            // Без параметров - возвращает 1/0 в зависимости вкл/выкл плеер, принимает параметр - 1/0 (вкл/выкл плеер)
 static const char CMD_MP3_SOUND[] PROGMEM = "MP3_SOUND";      // Без параметров - возвращает 1/0 в зависимости вкл/выкл проигрывание MP3, принимает параметр - 1/0 (вкл/выкл проигрывание MP3)

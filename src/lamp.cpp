@@ -975,6 +975,14 @@ void LAMP::brightness(const uint8_t _brt, bool natural){
     FastLED.show();
 }
 
+uint8_t LAMP::lampBrightnesspct(uint8_t brt){
+  if (brt >=100)
+    setLampBrightness(255);
+  else
+    setLampBrightness(brt * 255 / 100);
+  return brt;
+}
+
 /*
  * переключатель эффектов для других методов,
  * может использовать фейдер, выбирать случайный эффект для демо
