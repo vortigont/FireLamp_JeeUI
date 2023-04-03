@@ -1371,7 +1371,7 @@ void LEDFader::fadelight(const uint8_t _targetbrightness, const uint32_t _durati
           LOG(printf_P, PSTR("Fading to %d done\n"), _tgtbrt);
           // use new task for callback, 'cause effect switching will immiatetly respawn new fader from callback
           // so need to release a task instance
-          if(_cb) { new Task(FADE_STEPTIME, TASK_ONCE, [this](){ if (_cb) { _cb(); _cb = nullptr; } }, &ts, true ); }
+          if(_cb) { new Task(FADE_STEPTIME, TASK_ONCE, [this](){ if (_cb) { _cb(); _cb = nullptr; } }, &ts, true, nullptr, nullptr, true ); }
           runner = nullptr;
       },
       true);

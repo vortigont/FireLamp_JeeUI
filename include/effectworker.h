@@ -40,6 +40,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "filehelpers.hpp"
 #include "LList.h"
 #include "effects_types.h"
+#include <vector>
 
 #ifdef MIC_EFFECTS
 #include "micFFT.h"
