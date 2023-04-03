@@ -652,6 +652,8 @@ void EffectWorker::copyEffect(const EffectListElem *base)
 
   // save new config file
   copycfg.autosave(true);
+  removeLists();              // drop cached lists
+  makeIndexFileFromList();    // rebuild index (it will be faster than wait to hit _rebuild_eff_list() )
 }
 
 // вернуть эффект на очереди из списка эффектов
@@ -1049,7 +1051,9 @@ void EffectWorker::_rebuild_eff_list(const char *folder){
       EffectListElem el(nb, flags);
       effects.add(el);
     }
+    delay(1); // give other tasks some breathe
   }
+
   makeIndexFileFromList();
 }
 
@@ -1268,8 +1272,7 @@ UIControl& UIControl::operator =(const UIControl &rhs){
 
 // Построение выпадающего списка эффектов для вебморды
 void build_eff_names_list_file(EffectWorker &w, bool full){
-  LOG(println, F("=== GENERATE effects name list file for GUI ==="));
-  //uint16_t effnb = confEff ? (int)confEff->eff_nb : myLamp.effects.getSelected(); // если confEff не NULL, то мы в конфирурировании, иначе в основном режиме
+  LOG(printf_P, PSTR("GENERATE effects name json file for GUI: %s"), full ? "brief" : "full");
 
   // delete existing file if any
   if(LittleFS.exists(full ? FPSTR(TCONST_eff_fulllist_json) : FPSTR(TCONST_eff_list_json))){
