@@ -636,12 +636,17 @@ public:
     EffectListElem *getNextEffect(EffectListElem *current);
     // вернуть выбранный элемент списка
     EffectListElem *getEffect(uint16_t select);
-    // вернуть текущий
+    // вернуть номер текущего эффекта
     uint16_t getCurrent() const {return curEff.num; }
+    // вернуть номер следущиего эффекта отложенного переключения (на время работы затухания)
+    uint16_t getSelected() const { return pendingEff.num; }
+    /**
+     * @brief  вернуть актуальный номер эффекта
+     * в случае если работает затухание, возвращает номер эффекта на очереди
+     */
+    uint16_t getEffnum() const { return isEffSwPending() ? pendingEff.num : curEff.num; }
     // вернуть текущий элемент списка
     EffectListElem *getCurrentListElement();
-    // вернуть выбранный
-    uint16_t getSelected() const { return pendingEff.num; }
     // вернуть выбранный элемент списка
     EffectListElem *getSelectedListElement();
 

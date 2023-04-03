@@ -370,8 +370,7 @@ void set_effects_config_param(Interface *interf, JsonObject *data){
     String act = (*data)[FPSTR(TCONST_set_effect)];
     // action is to "copy" effect
     if (act == FPSTR(TCONST_copy)) {
-        myLamp.effects.copyEffect(effect); // копируем текущий
-        myLamp.effects.makeIndexFileFromList(); // создаем индекс по списку и на выход
+        myLamp.effects.copyEffect(effect); // копируем текущий, это вызовет перестроение индекса
         rebuild_effect_list_files(lstfile_t::all);
         return;
     }
@@ -407,8 +406,6 @@ void set_effects_config_param(Interface *interf, JsonObject *data){
     if (act == FPSTR(TCONST_makeidx)) {
         myLamp.effects.removeLists();
         myLamp.effects.initDefault();
-        //myLamp.effects.makeIndexFileFromList();     // создаем индекс по текущему списку и на выход
-        //myLamp.effects.makeIndexFileFromFS(); // создаем индекс по файлам ФС и на выход
         rebuild_effect_list_files(lstfile_t::all);
         return;
     }
@@ -584,16 +581,21 @@ void block_effects_param(Interface *interf, JsonObject *data){
                 }
             default:
 #ifdef EMBUI_USE_MQTT
-                    embui.publish(String(FPSTR(TCONST_embui_pub_)) + ctrlId, ctrl->getVal(), true);
+                embui.publish(String(FPSTR(TCONST_embui_pub_)) + ctrlId, ctrl->getVal(), true);
 #endif
                 break;
         }
     }
+
+    if(interf) interf->json_section_end();
+
 #ifdef EMBUI_USE_MQTT
     // publish full effect config via mqtt
     mqtt_publish_selected_effect_config_json();
+    if (embui.isMQTTconected()){
+        embui.publish(String(FPSTR(TCONST_embui_pub_)) + FPSTR(CMD_EFFECT), String(myLamp.effects.getEffnum()), true);
+    }
 #endif
-    if(interf) interf->json_section_end();
     LOG(println, F("eof block_effects_param()"));
 }
 
@@ -612,6 +614,7 @@ void set_effects_list(Interface *interf, JsonObject *data){
     EffectListElem *eff = myLamp.effects.getEffect(num);
     if (!eff) return;
 
+    // пля, этот же код уже есть для RA::RA_EFFECT, откуда вызывается эта функция! какого???
     if(myLamp.getMode()==LAMPMODE::MODE_WHITELAMP && num!=1){
         myLamp.startNormalMode(true);
         DynamicJsonDocument doc(512);
@@ -622,7 +625,7 @@ void set_effects_list(Interface *interf, JsonObject *data){
 
     // сбросить флаг рандомного демо
     myLamp.setDRand(myLamp.getLampSettings().dRand);
-
+    // TODO: Why this code controls effect switching here???
     // if this request is for some other effect than preloaded seletedEffect, than need to switch effect
     if (eff->eff_nb != nextEff) {
         LOG(printf_P, PSTR("UI EFF switch to:%d, selected:%d, isOn:%d, mode:%d\n"), eff->eff_nb, nextEff, myLamp.isLampOn(), myLamp.getMode());
@@ -638,13 +641,6 @@ void set_effects_list(Interface *interf, JsonObject *data){
 
     // publish effect's controls to WebUI and MQTT
     show_effects_param(interf, data);
-#ifdef EMBUI_USE_MQTT
-    if (embui.isMQTTconected()){
-        embui.publish(String(FPSTR(TCONST_embui_pub_)) + FPSTR(CMD_EFFECT), String(eff->eff_nb), true);
-        // not needed, already done in show_effects_param(), also same as mqtt_publish_selected_effect_config_json();
-        //embui.publish(String(FPSTR(TCONST_embui_pub_)) + FPSTR(TCONST_eff_config), myLamp.effects.getSerializedEffConfig(String(eff->eff_nb).toInt(), myLamp.getLampBrightness()), true);
-    }
-#endif
 }
 
 // этот метод меняет контролы БЕЗ синхронизации со внешними системами
@@ -833,7 +829,7 @@ void block_effects_main(Interface *interf, JsonObject *data, bool fast=true){
         interf->json_frame_custom(FPSTR(T_XLOAD));
         interf->json_section_content();
         // side load drop-down list from /eff_list.json file
-        interf->select(FPSTR(TCONST_effListMain), String(myLamp.effects.getSelected()), String(FPSTR(TINTF_00A)), true, false, FPSTR(TCONST_eff_list_json));
+        interf->select(FPSTR(TCONST_effListMain), String(myLamp.effects.getEffnum()), String(FPSTR(TINTF_00A)), true, false, FPSTR(TCONST_eff_list_json));
         interf->json_section_end();
         block_effects_param(interf, data);
         interf->button(FPSTR(TCONST_effects_config), FPSTR(TINTF_009));
@@ -3321,16 +3317,19 @@ void remote_action(RA action, ...){
             }
             break;
         // trigger effect change in Demo mode
-        case RA::RA_DEMO_NEXT:
+        case RA::RA_DEMO_NEXT: {
             if (myLamp.getLampSettings().dRand) {
                 myLamp.switcheffect(SW_RND, myLamp.getFaderFlag());
             } else {
                 myLamp.switcheffect(SW_NEXT_DEMO, myLamp.getFaderFlag());
             }
+            // update UI with changed effect number and publish controls
+            CALL_INTF(FPSTR(TCONST_effListMain), String(myLamp.effects.getEffnum()).c_str(), show_effects_param);
             // postponed action to publish eff changes
-            new Task(TASK_SECOND, TASK_ONCE, nullptr, &ts, true, nullptr, [](){ remote_action(RA::RA_EFFECT, String(myLamp.effects.getCurrent()).c_str(), NULL); }, true);
+            //new Task(TASK_SECOND, TASK_ONCE, nullptr, &ts, true, nullptr, [](){ remote_action(RA::RA_EFFECT, String(myLamp.effects.getEffnum()).c_str(), NULL); }, true);
             break;
-        // called on effect change events
+        }
+        // called on effect change events (warning! this can trigger effect switch in set_effects_list()) WTF???
         case RA::RA_EFFECT: {
             LAMPMODE mode=myLamp.getMode();
             if(mode==LAMPMODE::MODE_WHITELAMP && myLamp.effects.getSelected()!=1){
