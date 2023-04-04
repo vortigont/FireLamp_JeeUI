@@ -163,7 +163,7 @@ public:
     static CRGB getPixColorXYF_Y(int16_t x, float y);
     static CRGB getPixColorXYF(float x, float y);
 
-    static void drawLine(int x1, int y1, int x2, int y2, const CRGB &color);
+    static void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, const CRGB &color);
     static void drawLineF(float x1, float y1, float x2, float y2, const CRGB &color);
 	static void drawSquareF(float x, float y, float leg, CRGB color);
     static void drawCircle(int x0, int y0, int radius, const CRGB &color);

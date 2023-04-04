@@ -536,25 +536,51 @@ CRGB EffectMath::getPixColorXYF_Y(int16_t x, float y)
   return clr;
 }
 
-void EffectMath::drawLine(int x1, int y1, int x2, int y2, const CRGB &color){
-  int deltaX = abs(x2 - x1);
-  int deltaY = abs(y2 - y1);
-  int signX = x1 < x2 ? 1 : -1;
-  int signY = y1 < y2 ? 1 : -1;
-  int error = deltaX - deltaY;
+/*!
+   @brief    Write a line.  Bresenham's algorithm - thx wikpedia
+   https://github.com/adafruit/Adafruit-GFX-Library
+    @param    x0  Start point x coordinate
+    @param    y0  Start point y coordinate
+    @param    x1  End point x coordinate
+    @param    y1  End point y coordinate
+    @param    color CRGB Color to draw with
+*/
+void EffectMath::drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, const CRGB &color) {
+  int16_t steep = abs(y1 - y0) > abs(x1 - x0);
+  if (steep) {
+    std::swap(x0, y0);
+    std::swap(x1, y1);
+  }
 
-  drawPixelXY(x2, y2, color);
-  while (x1 != x2 || y1 != y2) {
-      drawPixelXY(x1, y1, color);
-      int error2 = error * 2;
-      if (error2 > -deltaY) {
-          error -= deltaY;
-          x1 += signX;
-      }
-      if (error2 < deltaX) {
-          error += deltaX;
-          y1 += signY;
-      }
+  if (x0 > x1) {
+    std::swap(x0, x1);
+    std::swap(y0, y1);
+  }
+
+  int16_t dx, dy;
+  dx = x1 - x0;
+  dy = abs(y1 - y0);
+
+  int16_t err = dx / 2;
+  int16_t ystep;
+
+  if (y0 < y1) {
+    ystep = 1;
+  } else {
+    ystep = -1;
+  }
+
+  for (; x0 <= x1; x0++) {
+    if (steep) {
+      drawPixelXY(y0, x0, color);
+    } else {
+      drawPixelXY(x0, y0, color);
+    }
+    err -= dy;
+    if (err < 0) {
+      y0 += ystep;
+      err += dx;
+    }
   }
 }
 
