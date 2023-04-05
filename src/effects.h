@@ -526,7 +526,7 @@ class EffectTwinkles : public EffectCalc {
 private:
   uint8_t thue = 0U;
   uint8_t tnum;
-  CRGB ledsbuff[NUM_LEDS];
+  CRGB ledsbuff[num_leds];
   float speedFactor;
   bool twinklesRoutine(CRGB *leds, EffectWorker *param);
   String setDynCtrl(UIControl*_val) override;
@@ -580,7 +580,7 @@ private:
   uint32_t noise32_z[NUM_LAYERS2];
   uint32_t scale32_x[NUM_LAYERS2];
   uint32_t scale32_y[NUM_LAYERS2];
-  uint8_t fire18heat[NUM_LEDS];
+  uint8_t fire18heat[num_leds];
   uint8_t noise3dx[NUM_LAYERS2][WIDTH][HEIGHT];
 
   String setDynCtrl(UIControl*_val) override;
@@ -1585,7 +1585,7 @@ public:
 // ---------- Эффект "Бульбулятор"
 // "Circles" (C) Elliott Kember https://editor.soulmatelights.com/gallery/11
 // адаптация и переделка - kostyamat
-#define NUMBER_OF_CIRCLES (NUM_LEDS / 16U)
+#define NUMBER_OF_CIRCLES (num_leds / 16U)
 class EffectCircles : public EffectCalc {
 private:
     byte color;
@@ -1790,8 +1790,8 @@ private:
     float angle;
     byte starPoints = random(3, 7);
 
-    const float _speed = (float)NUM_LEDS / 256; // Нормализация скорости для разных размеров матриц
-    const float _addRadius = (float)NUM_LEDS / 4000;   // Нормализация скорости увеличения радиуса круга для разных матриц
+    const float _speed = (float)num_leds / 256; // Нормализация скорости для разных размеров матриц
+    const float _addRadius = (float)num_leds / 4000;   // Нормализация скорости увеличения радиуса круга для разных матриц
 
 
     void aimChange();
@@ -2354,7 +2354,7 @@ private:
     uint8_t count = 3;
     uint8_t hue;
     const uint8_t dev = 5;
-    const float R = (float)NUM_LEDS/128;
+    const float R = (float)num_leds/128;
 
     struct Ball{
         float x1{0}, y1{0};

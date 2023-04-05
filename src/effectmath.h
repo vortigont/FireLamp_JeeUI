@@ -38,7 +38,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #pragma once
 
 #include "config.h"
-#include <FastLED.h>
+#include "ledmatrix.hpp"
 // Общий набор мат. функций и примитивов для обсчета эффектов
 
 #define M_PI_2	1.57079632679489661923
@@ -50,25 +50,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 #define NUM_LAYERS             (1U)                 // The coordinates for 3 16-bit noise spaces.
 #define NUM_LAYERS2            (2U)                 // The coordinates for 3 16-bit noise spaces.
-
-namespace EffectMath_PRIVATE {
-    typedef union {
-    struct {
-        bool MIRR_V:1; // отзрекаливание по V
-        bool MIRR_H:1; // отзрекаливание по H
-    };
-    uint32_t flags; // набор битов для конфига
-    } MATRIXFLAGS;
-
-    extern MATRIXFLAGS matrixflags;
-    extern CRGB leds[NUM_LEDS]; // основной буфер вывода изображения
-    extern CRGB overrun;
-
-    CRGB *getUnsafeLedsArray();
-    uint32_t getPixelNumber(int16_t x, int16_t y);
-}
-
-using namespace EffectMath_PRIVATE;
 
 namespace EffectMath {
   constexpr uint16_t maxDim = ((WIDTH>HEIGHT)?WIDTH:HEIGHT);

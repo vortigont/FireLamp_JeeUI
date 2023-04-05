@@ -34,53 +34,13 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
    вместе с этой программой. Если это не так, см.
    <https://www.gnu.org/licenses/>.)
 */
+#include "effectmath.h"
 
-#ifdef MATRIXx4
-  #include "matrix4.h"
-#endif
-
-// Общий набор мат. функций и примитивов для обсчета эффектов
-
-namespace EffectMath_PRIVATE {
-    MATRIXFLAGS matrixflags;
-    CRGB leds[NUM_LEDS]; // основной буфер вывода изображения
-    CRGB overrun;
-    
-    CRGB *getUnsafeLedsArray(){return leds;}
-
-    // ключевая функция с подстройкой под тип матрицы, использует MIRR_V и MIRR_H
-    uint32_t getPixelNumber(int16_t x, int16_t y) // получить номер пикселя в ленте по координатам
-    {
-    #if defined(XY_EXTERN)
-        uint16_t i = (y * WIDTH) + x;
-        uint16_t j = pgm_read_dword(&XYTable[i]);
-        return j;
-    #elif defined(MATRIXx4)
-      return matrix4_XY(x, y);
-    #else
-        // хак с макроподстановкой, пусть живет пока
-        #define MIRR_H matrixflags.MIRR_H
-        #define MIRR_V matrixflags.MIRR_V
-        
-        if ((THIS_Y % 2 == 0) || MATRIX_TYPE)                     // если чётная строка
-        {
-            return ((uint32_t)THIS_Y * SEGMENTS * _WIDTH + THIS_X);
-        }
-        else                                                      // если нечётная строка
-        {
-            return ((uint32_t)THIS_Y * SEGMENTS * _WIDTH + _WIDTH - THIS_X - 1);
-        }
-    
-        #undef MIRR_H
-        #undef MIRR_V
-    #endif
-    }
-}
-
-using namespace EffectMath_PRIVATE;
-
+// обертка для blur2d из FastLED
 // используется встроенный блер, так что необходимости в данной функции более нет, отключено
 uint16_t XY(uint8_t x, uint8_t y) {return 0;}
+
+using namespace EffectMath_PRIVATE;
 
 namespace EffectMath {
 
@@ -222,7 +182,7 @@ void MoveFractionalNoise(bool _scale, const uint8_t noise3d[][WIDTH][HEIGHT], in
   uint8_t zD;
   uint8_t zF;
   CRGB *leds = getUnsafeLedsArray(); // unsafe
-  CRGB ledsbuff[NUM_LEDS];
+  CRGB ledsbuff[num_leds];
   uint16_t _side_a = _scale ? HEIGHT : WIDTH;
   uint16_t _side_b = _scale ? WIDTH : HEIGHT;
 
@@ -250,7 +210,7 @@ void MoveFractionalNoise(bool _scale, const uint8_t noise3d[][WIDTH][HEIGHT], in
         ledsbuff[getPixelNumber(x%WIDTH, y%HEIGHT)] = (PixelA.nscale8(ease8InOutApprox(255 - fraction))) + (PixelB.nscale8(ease8InOutApprox(fraction)));   // lerp8by8(PixelA, PixelB, fraction );
       }
     }
-  memcpy(leds, ledsbuff, sizeof(CRGB)* NUM_LEDS);
+  memcpy(leds, ledsbuff, sizeof(CRGB)* num_leds);
 }
 
 /**
@@ -326,13 +286,13 @@ bool isInteger(float val) {
 
 // Функция создает вспышки в разных местах матрицы, параметр 0-255. Чем меньше, тем чаще.
 void addGlitter(uint8_t chanceOfGlitter){
-  if ( random8() < chanceOfGlitter) leds[random16(NUM_LEDS)] += CRGB::Gray;
+  if ( random8() < chanceOfGlitter) leds[random16(num_leds)] += CRGB::Gray;
 }
 
 // Функция создает разноцветные конфетти в разных местах матрицы, параметр 0-255. Чем меньше, тем чаще.
 void confetti(byte density) {
-    uint16_t idx = random16(NUM_LEDS);
-    for (byte i=0; i < NUM_LEDS/256; i++)
+    uint16_t idx = random16(num_leds);
+    for (byte i=0; i < num_leds/256; i++)
       if ( random8() < density)
         if (RGBweight(leds, idx) < 32) leds[idx] = random(32, 16777216);
 }
@@ -340,7 +300,7 @@ void confetti(byte density) {
 void gammaCorrection()
 { //gamma correction function
   byte r, g, b;
-  for (uint16_t i = 0; i < NUM_LEDS; i++)
+  for (uint16_t i = 0; i < num_leds; i++)
   {
     r = leds[i].r;
     g = leds[i].g;
@@ -354,7 +314,7 @@ void gammaCorrection()
 uint32_t getPixColor(uint32_t thisSegm) // функция получения цвета пикселя по его номеру
 {
   uint32_t thisPixel = thisSegm * SEGMENTS;
-  if (thisPixel < NUM_LEDS ) 
+  if (thisPixel < num_leds ) 
     return (((uint32_t)leds[thisPixel].r << 16) | ((uint32_t)leds[thisPixel].g << 8 ) | (uint32_t)leds[thisPixel].b);
   else return (((uint32_t)overrun.r << 16) | ((uint32_t)overrun.g << 8 ) | (uint32_t)overrun.b);
 }
@@ -362,7 +322,7 @@ uint32_t getPixColor(uint32_t thisSegm) // функция получения ц�
 // Заливает матрицу выбраным цветом
 void fillAll(const CRGB &color) 
 {
-  for (int32_t i = 0; i < NUM_LEDS; i++)
+  for (int32_t i = 0; i < num_leds; i++)
   {
     leds[i] = color;
   }
@@ -725,7 +685,7 @@ uint16_t RGBweight (CRGB *leds, uint16_t idx) {return (leds[idx].r + leds[idx].g
 
 void nightMode(CRGB *leds)
 {
-    for (uint16_t i = 0; i < NUM_LEDS; i++)
+    for (uint16_t i = 0; i < num_leds; i++)
     {
         leds[i].r = dim8_lin(leds[i].r); //dim8_video
         leds[i].g = dim8_lin(leds[i].g);
@@ -735,11 +695,11 @@ void nightMode(CRGB *leds)
 uint32_t getPixColorXY(int16_t x, int16_t y) { return getPixColor( getPixelNumber(x, y)); } // функция получения цвета пикселя в матрице по его координатам
 //void setLedsfadeToBlackBy(uint16_t idx, uint8_t val) { leds[idx].fadeToBlackBy(val); }
 void setLedsNscale8(uint16_t idx, uint8_t val) { leds[idx].nscale8(val); }
-void dimAll(uint8_t value) { for (uint16_t i = 0; i < NUM_LEDS; i++) {leds[i].nscale8(value); } }
+void dimAll(uint8_t value) { for (uint16_t i = 0; i < num_leds; i++) {leds[i].nscale8(value); } }
 void blur2d(uint8_t val) { EffectMath::blur2d(leds,WIDTH,HEIGHT,val); }
 
 CRGB &getLed(uint16_t idx) { 
-  if(idx<NUM_LEDS){
+  if(idx<num_leds){
     return leds[idx];
   } else {
     return overrun;

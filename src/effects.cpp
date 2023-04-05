@@ -63,7 +63,7 @@ bool EffectSparcles::sparklesRoutine(CRGB *leds, EffectWorker *param)
   uint8_t mic = getMicMapMaxPeak();
   uint8_t mic_f = map(getMicMapFreq(), LOW_FREQ_MAP_VAL, HI_FREQ_MAP_VAL, 0, 255);
   if (isMicOn() && eff > 5)
-    fadeToBlackBy(leds, NUM_LEDS, 255 - mic);
+    fadeToBlackBy(leds, num_leds, 255 - mic);
   EffectMath::fader(isMicOn() ? map(scale, 1, 255, 100, 1) : map(scale, 1, 255, 50, 1));
 #else
   EffectMath::fader(map(scale, 1, 255, 1, 50));
@@ -267,7 +267,7 @@ bool EffectPulse::run(CRGB *leds, EffectWorker *param) {
   #define BLUR 10U
 #endif
 
-  //fadeToBlackBy(leds, NUM_LEDS, FADE);
+  //fadeToBlackBy(leds, num_leds, FADE);
   if (pulse_step <= currentRadius) {
     for (uint8_t i = 0; i < pulse_step; i++ ) {
       uint8_t _dark = qmul8( 2U, cos8 (128U / (pulse_step + 1U) * (i + 1U))) ;
@@ -310,7 +310,7 @@ bool EffectPulse::run(CRGB *leds, EffectWorker *param) {
       EffectMath::drawCircle(centerX, centerY, i, _pulse_color);
     }
   } else {
-    fadeToBlackBy(leds, NUM_LEDS, FADE);
+    fadeToBlackBy(leds, num_leds, FADE);
     centerX = random8(WIDTH - 5U) + 3U;
     centerY = random8(HEIGHT - 5U) + 3U;
     _pulse_hueall += _pulse_delta;
@@ -663,7 +663,7 @@ String EffectLighters::setDynCtrl(UIControl*_val) {
 
 bool EffectLighters::run(CRGB *leds, EffectWorker *param)
 {
-  memset8( leds, 0, NUM_LEDS * 3);
+  memset8( leds, 0, num_leds * 3);
 
   EVERY_N_MILLIS(333)
   {
@@ -744,7 +744,7 @@ bool EffectLighterTracers::run(CRGB *ledarr, EffectWorker *opt){
 bool EffectLighterTracers::lighterTracersRoutine(CRGB *leds, EffectWorker *param)
 {
 
-  fadeToBlackBy(leds, NUM_LEDS, map(speed, 1, 255, 6, 55)); // размер шлейфа должен сохранять размер, не зависимо от скорости
+  fadeToBlackBy(leds, num_leds, map(speed, 1, 255, 6, 55)); // размер шлейфа должен сохранять размер, не зависимо от скорости
 
   // движение шариков
   uint8_t maxBalls = cnt;
@@ -893,11 +893,11 @@ bool EffectBall::run(CRGB *leds, EffectWorker *param) {
   }
 
   if (scale <= 85)  // при масштабе до 85 выводим кубик без шлейфа
-    memset8( leds, 0, NUM_LEDS * 3);
+    memset8( leds, 0, num_leds * 3);
   else if (scale > 85 and scale <= 170)
-    fadeToBlackBy(leds, NUM_LEDS, 255 - map(speed, 1, 255, 245, 200)); // выводим кубик со шлейфом, длинна которого зависит от скорости.
+    fadeToBlackBy(leds, num_leds, 255 - map(speed, 1, 255, 245, 200)); // выводим кубик со шлейфом, длинна которого зависит от скорости.
   else
-    fadeToBlackBy(leds, NUM_LEDS, 255 - map(speed, 1, 255, 253, 248)); // выводим кубик с длинным шлейфом, длинна которого зависит от скорости.
+    fadeToBlackBy(leds, num_leds, 255 - map(speed, 1, 255, 253, 248)); // выводим кубик с длинным шлейфом, длинна которого зависит от скорости.
 
   for (uint8_t i = 0; i < ballSize; i++)
   {
@@ -1065,7 +1065,7 @@ String EffectBBalls::setDynCtrl(UIControl*_val){
 
 bool EffectBBalls::bBallsRoutine(CRGB *leds, EffectWorker *param)
 {
-  fadeToBlackBy(leds, NUM_LEDS, _scale <= 16 ? 255 : 50);
+  fadeToBlackBy(leds, num_leds, _scale <= 16 ? 255 : 50);
   hue += (float)speed/ 1024;
   for (auto &bball : balls){
     bballsTCycle =  millis() - bball.tlast;     // Calculate the time since the last time the ball was on the ground
@@ -1507,7 +1507,7 @@ bool EffectComet::smokeRoutine(CRGB *leds, EffectWorker *param) {
 
 bool EffectComet::firelineRoutine(CRGB *leds, EffectWorker *param) {
   // if(!isDebug()) 
-    fadeToBlackBy(leds, NUM_LEDS, map(blur, 1, 64, 20, 5)); 
+    fadeToBlackBy(leds, num_leds, map(blur, 1, 64, 20, 5)); 
   // else FastLED.clear();
 
   count ++;
@@ -1538,7 +1538,7 @@ bool EffectComet::firelineRoutine(CRGB *leds, EffectWorker *param) {
 bool EffectComet::fractfireRoutine(CRGB *leds, EffectWorker *param) {
 
   // if(!isDebug()) 
-    fadeToBlackBy(leds, NUM_LEDS, map(blur, 1, 64, 20, 5)); 
+    fadeToBlackBy(leds, num_leds, map(blur, 1, 64, 20, 5)); 
   // else FastLED.clear();
 
   float beat = (float)beatsin88(5 * speedy, 50, 100) / 100 ;
@@ -1608,7 +1608,7 @@ bool EffectComet::rainbowCometRoutine(CRGB *leds, EffectWorker *param)
 */
 
   EffectMath::blur2d(e_com_BLUR);    // < -- размытие хвоста
-  if (blur < 64) fadeToBlackBy(leds, NUM_LEDS, map(blur, 1, 64, 32, 0));
+  if (blur < 64) fadeToBlackBy(leds, num_leds, map(blur, 1, 64, 32, 0));
 
   // if(isDebug()){
   //   FastLED.clear(); // для отладки чистим матрицу, чтобы показать перемещение точек
@@ -1645,7 +1645,7 @@ bool EffectComet::rainbowComet3Routine(CRGB *leds, EffectWorker *param)
 { 
   count++;
   EffectMath::blur2d(e_com_BLUR);    // < -- размытие хвоста
-  if (blur < 64) fadeToBlackBy(leds, NUM_LEDS, map(blur, 1, 64, 32, 0));
+  if (blur < 64) fadeToBlackBy(leds, num_leds, map(blur, 1, 64, 32, 0));
 
   if (count%2 == 0) hue++;
 
@@ -1701,7 +1701,7 @@ bool EffectPrismata::run(CRGB *leds, EffectWorker *opt) {
     spirohueoffset += 1;
   }
 
-  fadeToBlackBy(leds, NUM_LEDS, map(fadelvl, 1, 255, 130, 2)); // делаем шлейф
+  fadeToBlackBy(leds, num_leds, map(fadelvl, 1, 255, 130, 2)); // делаем шлейф
 
   for (byte x = 0; x < WIDTH; x++) {
       float y = (float)beatsin16((uint8_t)x + speedFactor, 0, EffectMath::getmaxHeightIndex()* 10) / 10.0f;
@@ -1767,7 +1767,7 @@ bool EffectFlock::run(CRGB *ledarr, EffectWorker *opt){
 bool EffectFlock::flockRoutine(CRGB *leds, EffectWorker *param) {
   hueoffset += (speedFactor/5.0+0.1);
 
-  fadeToBlackBy(leds, NUM_LEDS, map(speed, 1, 255, 220, 10));
+  fadeToBlackBy(leds, num_leds, map(speed, 1, 255, 220, 10));
 
   bool applyWind = random(0, 255) > 240;
   if (applyWind) {
@@ -1877,7 +1877,7 @@ bool EffectDrift::run(CRGB *ledarr, EffectWorker *opt){
   if (driftType == 1 or driftType == 2)
     FastLED.clear();
   else
-    fadeToBlackBy(ledarr, NUM_LEDS, beatsin88(350. * EffectMath::fmap((float)speed, 1., 255., 1., 5.), 512, 4096) / 256);
+    fadeToBlackBy(ledarr, num_leds, beatsin88(350. * EffectMath::fmap((float)speed, 1., 255., 1., 5.), 512, 4096) / 256);
 
   
   _dri_delta = beatsin8(1U);
@@ -1961,7 +1961,7 @@ void EffectTwinkles::load(){
 void EffectTwinkles::setup()
 {
   //randomSeed(millis());
-  for (uint32_t idx = 0; idx < NUM_LEDS; idx++) {
+  for (uint32_t idx = 0; idx < num_leds; idx++) {
     if (random(0,255) < tnum) {                                // чем ниже tnum, тем чаще будут заполняться элементы лампы
       ledsbuff[idx].r = random8();                           // оттенок пикселя
       ledsbuff[idx].g = random8(1, TWINKLES_SPEEDS * 2 + 1); // скорость и направление (нарастает 1-4 или угасает 5-8)
@@ -1991,7 +1991,7 @@ bool EffectTwinkles::twinklesRoutine(CRGB *leds, EffectWorker *param)
     return false;
   }
 
-  for (uint16_t idx = 0; idx < NUM_LEDS; idx++)
+  for (uint16_t idx = 0; idx < num_leds; idx++)
   {
     if (ledsbuff[idx].b == 0)
     {
@@ -2055,7 +2055,7 @@ bool EffectRadar::radarRoutine(CRGB *leds, EffectWorker *param)
 
   if (subPix)
   {
-    fadeToBlackBy(leds, NUM_LEDS, 5 + 20 * (float)speed / 255);
+    fadeToBlackBy(leds, num_leds, 5 + 20 * (float)speed / 255);
     for (float offset = 0.0f; offset < (float)maxDim /2; offset +=0.25)
     {
       float x = (float)EffectMath::mapsincos8(false, eff_theta, offset * 4, maxDim * 4 - offset * 4) / 4.  - width_adj_f;
@@ -3528,7 +3528,7 @@ bool EffectWhirl::whirlRoutine(CRGB *leds, EffectWorker *param) {
 #ifdef MIC_EFFECTS
   micPick = isMicOn() ? getMicMaxPeak() : 0;
 #endif
-  fadeToBlackBy(leds, NUM_LEDS, 15. * speedFactor);
+  fadeToBlackBy(leds, num_leds, 15. * speedFactor);
 
   for (uint8_t i = 0; i < AVAILABLE_BOID_COUNT; i++) {
     Boid * boid = &boids[i];
@@ -3749,9 +3749,9 @@ bool EffectStar::run(CRGB *leds, EffectWorker *param) {
 
 #ifdef MIC_EFFECTS
   micPick = getMicMaxPeak();
-  fadeToBlackBy(leds, NUM_LEDS, 255U - (isMicOn() ? micPick*2 : 90)); // работает быстрее чем dimAll
+  fadeToBlackBy(leds, num_leds, 255U - (isMicOn() ? micPick*2 : 90)); // работает быстрее чем dimAll
 #else
-  fadeToBlackBy(leds, NUM_LEDS, 165);
+  fadeToBlackBy(leds, num_leds, 165);
 #endif
 
   float speedFactor = ((float)speed/380.0+0.05);
@@ -3971,9 +3971,9 @@ void EffectFireworks::sparkGen() {
 bool EffectFireworks::fireworksRoutine(CRGB *leds, EffectWorker *param)
 {
 
-  fadeToBlackBy(leds, NUM_LEDS, valDim);
+  fadeToBlackBy(leds, num_leds, valDim);
   sparkGen();
-  //memset8( leds, 0, NUM_LEDS * 3);
+  //memset8( leds, 0, num_leds * 3);
 
   for (byte a = 0; a < cnt; a++) {
     gDot[a].Move(store, flashing);
@@ -3999,7 +3999,7 @@ void EffectPacific::pacifica_one_layer(const TProgmemRGBPalette16& p, uint16_t c
   uint16_t ci = cistart;
   uint16_t waveangle = ioff;
   uint16_t wavescale_half = (wavescale / 2) + 20;
-  for( uint16_t i = 0; i < NUM_LEDS; i++) {
+  for( uint16_t i = 0; i < num_leds; i++) {
     waveangle += 250;
     uint16_t s16 = sin16( waveangle ) + 32768;
     uint16_t cs = scale16( s16 , wavescale_half ) + wavescale_half;
@@ -4017,7 +4017,7 @@ void EffectPacific::pacifica_add_whitecaps()
   uint8_t basethreshold = beatsin8( 9, 55, 65);
   uint8_t wave = beat8( 7 );
 
-  for( uint16_t i = 0; i < NUM_LEDS; i++) {
+  for( uint16_t i = 0; i < num_leds; i++) {
     uint8_t threshold = scale8( sin8( wave), 20) + basethreshold;
     wave += 7;
     uint8_t l = EffectMath::getLed(i).getAverageLight();
@@ -4032,7 +4032,7 @@ void EffectPacific::pacifica_add_whitecaps()
 // Deepen the blues and greens
 void EffectPacific::pacifica_deepen_colors()
 {
-  for( uint16_t i = 0; i < NUM_LEDS; i++) {
+  for( uint16_t i = 0; i < num_leds; i++) {
     EffectMath::getLed(i).blue = scale8( EffectMath::getLed(i).blue,  145);
     EffectMath::getLed(i).green= scale8( EffectMath::getLed(i).green, 200);
     EffectMath::getLed(i) |= CRGB( 2, 5, 7);
@@ -4066,7 +4066,7 @@ bool EffectPacific::run(CRGB *leds, EffectWorker *param)
   sCIStart4 -= (deltams2 * beatsin88(257,4,6));
 
   // Clear out the LED array to a dim background blue-green
-  fill_solid( leds, NUM_LEDS, CRGB( 2, 6, 10));
+  fill_solid( leds, num_leds, CRGB( 2, 6, 10));
 
   // Render each of four layers, with different scales and speeds, that vary over time
   pacifica_one_layer(pacifica_palette_1, sCIStart1, beatsin16( 3, 11 * 256, 14 * 256), beatsin8( 10, 70, 130), 0-beat16( 301) );
@@ -4117,7 +4117,7 @@ bool EffectOsc::run(CRGB *leds, EffectWorker *param) {
   else {
     lastrun = millis();
   }
-  //fadeToBlackBy(leds, NUM_LEDS, 200);
+  //fadeToBlackBy(leds, num_leds, 200);
   FastLED.clear();
 
   if (scale == 1) {
@@ -4170,7 +4170,7 @@ String EffectMunch::setDynCtrl(UIControl*_val){
 }
 
 bool EffectMunch::munchRoutine(CRGB *leds, EffectWorker *param) {
-  //fadeToBlackBy(leds, NUM_LEDS, 200); EffectMath::setPixel(
+  //fadeToBlackBy(leds, num_leds, 200); EffectMath::setPixel(
   if (flag) rand = beat8(5)/32; // Хрень, конечно, но хоть какое-то разнообразие.
   CRGB color;
   for (uint8_t x = 0; x < minDimLocal; x++) {
@@ -4340,7 +4340,7 @@ bool EffectButterfly::run(CRGB *leds, EffectWorker *param)
   hue2 = (_scale == 1U) ? 100U : 190U; // вычисление базового оттенка
 
   if (wings && isColored)
-    fadeToBlackBy(leds, NUM_LEDS, 200);
+    fadeToBlackBy(leds, num_leds, 200);
   else
     FastLED.clear();
 
@@ -4471,7 +4471,7 @@ bool EffectButterfly::run(CRGB *leds, EffectWorker *param)
     //теперь инверсия всей матрицы
     if (_scale == 1U)
       if (++deltaHue == 0U) hue++;
-    for (uint16_t i = 0U; i < NUM_LEDS; i++)
+    for (uint16_t i = 0U; i < num_leds; i++)
       EffectMath::getLed(i) = CHSV(hue, hue2, 255U - EffectMath::getLed(i).r);
   }
   return true;
@@ -4502,7 +4502,7 @@ bool EffectShadows::run(CRGB *leds, EffectWorker *param) {
   sHue16 += deltams * beatsin88( 400, 5,9);
   uint16_t brightnesstheta16 = sPseudotime;
 
-  for( uint16_t i = 0 ; i < NUM_LEDS; i++) {
+  for( uint16_t i = 0 ; i < num_leds; i++) {
     hue16 += hueinc16;
     uint8_t hue8 = hue16 / 256;
 
@@ -4513,7 +4513,7 @@ bool EffectShadows::run(CRGB *leds, EffectWorker *param) {
     uint8_t bri8 = (uint32_t)(((uint32_t)bri16) * brightdepth) / 65536U;
     bri8 += (255 - brightdepth);
 
-    nblend(EffectMath::getLed((NUM_LEDS-1) - i), CHSV( hue8, sat8, map8(bri8, map(effectBrightness, 1, 255, 32, 125), map(effectBrightness, 1, 255, 125, 250))), 64);
+    nblend(EffectMath::getLed((num_leds-1) - i), CHSV( hue8, sat8, map8(bri8, map(effectBrightness, 1, 255, 32, 125), map(effectBrightness, 1, 255, 125, 250))), 64);
   }
   return true;
 }
@@ -5092,7 +5092,7 @@ void EffectAttract::setup(){
 
 bool EffectAttract::run(CRGB *leds, EffectWorker *param) {
   uint8_t dim = beatsin8(3, 170, 250);
-  fadeToBlackBy(leds, NUM_LEDS, 255U - dim);
+  fadeToBlackBy(leds, num_leds, 255U - dim);
 
   for (int i = 0; i < count; i++) // count
   {
@@ -5135,7 +5135,7 @@ String EffectSnake::setDynCtrl(UIControl*_val) {
 }
 
 bool EffectSnake::run(CRGB *leds, EffectWorker *param) {
-  fadeToBlackBy(leds, NUM_LEDS, speed<25 ? 5 : speed/2 ); // длина хвоста будет зависеть от скорости
+  fadeToBlackBy(leds, num_leds, speed<25 ? 5 : speed/2 ); // длина хвоста будет зависеть от скорости
 #ifdef MIC_EFFECTS
   hue+=(speedFactor/snakeCount+(isMicOn() ? getMicMapFreq()/127.0 : 0));
 #else
@@ -5228,7 +5228,7 @@ void EffectNexus::load() {
 }
 
 bool EffectNexus::run(CRGB *leds, EffectWorker *opt) {
-  fadeToBlackBy(leds, NUM_LEDS, map(speed, 1, 255, 11, 33));
+  fadeToBlackBy(leds, num_leds, map(speed, 1, 255, 11, 33));
 
   for (auto &nx : nxdots){
     switch (nx.direct){
@@ -5559,7 +5559,7 @@ void EffectPopcorn::reload(){
 
 bool EffectPopcorn::run(CRGB *leds, EffectWorker *param) {
   randomSeed(micros());
-  if (blurred) fadeToBlackBy(leds, NUM_LEDS, 30. * speedFactor);
+  if (blurred) fadeToBlackBy(leds, num_leds, 30. * speedFactor);
   else FastLED.clear();
   float popcornGravity = 0.1 * speedFactor;
 
@@ -5757,7 +5757,7 @@ bool EffectCell::run(CRGB *leds, EffectWorker *opt){
 
 void EffectCell::spruce(CRGB *leds) {
   hue++;
-  fadeToBlackBy(leds, NUM_LEDS, map(speed, 1, 255, 1, 10));
+  fadeToBlackBy(leds, num_leds, map(speed, 1, 255, 1, 10));
   uint8_t z;
   if (effId == 3) z = triwave8(hue);
   else z = beatsin8(1, 1, 255);
@@ -5780,7 +5780,7 @@ void EffectCell::spruce(CRGB *leds) {
 
 void EffectCell::spider(CRGB *leds) {
   speedFactor = EffectMath::fmap(speed, 1, 255, 20., 2.) * EffectCalc::speedfactor;
-  fadeToBlackBy(leds, NUM_LEDS, 50);
+  fadeToBlackBy(leds, num_leds, 50);
   for (uint8_t c = 0; c < Lines; c++) {
     float xx = 2. + sin8((float)(millis() & 0x7FFFFF) / speedFactor + 1000 * c * Scale) / 12.;
     float yy = 2. + cos8((float)(millis() & 0x7FFFFF) / speedFactor + 1500 * c * Scale) / 12.;
@@ -5791,7 +5791,7 @@ void EffectCell::spider(CRGB *leds) {
 
 void EffectCell::vals(CRGB *leds) {
   speedFactor = map(speed, 1, 255, 100, 512) * speedfactor;
-  fadeToBlackBy(leds, NUM_LEDS, 128);
+  fadeToBlackBy(leds, num_leds, 128);
   a += 1;
   for (byte i = 0; i < 12; i++) {
     EffectMath::drawLineF((float)beatsin88((10 + i) * speedFactor, 0, EffectMath::getmaxWidthIndex() * 2, i * i) / 2, (float)beatsin88((12 - i) * speedFactor, 0, EffectMath::getmaxHeightIndex() * 2, i * 5) / 2, (float)beatsin88((8 + i) * speedFactor, 0, EffectMath::getmaxWidthIndex() * 2, i * 20) / 2, (float)beatsin88((14 - i) * speedFactor, 0, EffectMath::getmaxHeightIndex() * 2, i * 5) / 2, CHSV(21 * i + (byte)a * i, 255, 255));
@@ -6302,15 +6302,15 @@ bool EffectWrain::run(CRGB *leds, EffectWorker *opt) {
       break;
     case 2:
     case 6:
-      fadeToBlackBy(leds, NUM_LEDS, 200. * speedFactor);
+      fadeToBlackBy(leds, num_leds, 200. * speedFactor);
       break;
     case 3:
     case 7:
-      fadeToBlackBy(leds, NUM_LEDS, 100. * speedFactor);
+      fadeToBlackBy(leds, num_leds, 100. * speedFactor);
       break;
     case 4:
     case 8:
-      fadeToBlackBy(leds, NUM_LEDS, 50. * speedFactor);
+      fadeToBlackBy(leds, num_leds, 50. * speedFactor);
       break;
     default:
       break;
@@ -6817,7 +6817,7 @@ void EffectBengalL::regen(byte id) {
 
 
 bool EffectBengalL::run(CRGB *leds, EffectWorker *opt) {
-  fadeToBlackBy(leds, NUM_LEDS, beatsin8(5, 20, 100));
+  fadeToBlackBy(leds, num_leds, beatsin8(5, 20, 100));
   if (centerRun) {
     gPos[0] = beatsin16(_x, 0, EffectMath::getmaxWidthIndex() * 10);
     gPos[1] = beatsin16(_y, 0, EffectMath::getmaxHeightIndex() * 10);
@@ -6869,7 +6869,7 @@ String EffectBalls::setDynCtrl(UIControl*_val){
 }
 
 bool EffectBalls::run(CRGB *leds, EffectWorker *opt) {
-  fadeToBlackBy(leds, NUM_LEDS, map(speed, 1, 255, 5, 20));
+  fadeToBlackBy(leds, num_leds, map(speed, 1, 255, 5, 20));
 
   for (byte i = 0; i < map(scale, 1, 255, 2, ballsAmount); i++) {
     if (rrad[i]) {  // тут у нас шарики надуваются\сдуваются по ходу движения
@@ -7332,7 +7332,7 @@ String EffectRacer::setDynCtrl(UIControl*_val){
 }
 
 bool EffectRacer::run(CRGB *leds, EffectWorker *opt) {
-  fadeToBlackBy(leds, NUM_LEDS, 16. * speedFactor);
+  fadeToBlackBy(leds, num_leds, 16. * speedFactor);
 
   if (round(posX / 4) > aimX) {
     posX -= speedFactor;
@@ -7443,7 +7443,7 @@ void EffectMagma::regen() {
 }
 
 bool EffectMagma::run(CRGB *leds, EffectWorker *opt) {
-  fadeToBlackBy(leds, NUM_LEDS, 50);
+  fadeToBlackBy(leds, num_leds, 50);
   
 
   for (auto &i : particles){
@@ -7529,7 +7529,7 @@ void EffectStarShips::load() {
 }
 
 bool EffectStarShips::run(CRGB *leds, EffectWorker *opt) {
-  fadeToBlackBy(leds, NUM_LEDS, _fade);
+  fadeToBlackBy(leds, num_leds, _fade);
   switch (dir) {
     case 0: // Up
       for (byte x = 0; x < WIDTH; x++) {
@@ -7635,7 +7635,7 @@ String EffectFlags::setDynCtrl(UIControl*_val){
 
 bool EffectFlags::run(CRGB *leds, EffectWorker *opt) {
   changeFlags();
-  fadeToBlackBy(leds, NUM_LEDS, 32);
+  fadeToBlackBy(leds, num_leds, 32);
   for (uint8_t i = 0; i < WIDTH; i++) {
     thisVal = inoise8((float) i * DEVIATOR, counter, (int)count/*(float)i * SPEED_ADJ/2*/);
     thisMax = map(thisVal, 0, 255, 0, EffectMath::getmaxHeightIndex());
@@ -8209,7 +8209,7 @@ bool EffectPile::run(CRGB *leds, EffectWorker *param) {
         temp = 3U;
       }
     }
-    //for (uint16_t i = 0U; i < NUM_LEDS; i++)
+    //for (uint16_t i = 0U; i < num_leds; i++)
     for (uint8_t y = 0; y < pcnt; y++)
       for (uint8_t x = 0; x < WIDTH; x++)
         if (!random(temp))
@@ -8276,7 +8276,7 @@ String EffectDNA::setDynCtrl(UIControl*_val) {
 }
 
 bool EffectDNA::run(CRGB *leds, EffectWorker *param) {
-  fadeToBlackBy(leds, NUM_LEDS, 32);
+  fadeToBlackBy(leds, num_leds, 32);
   t += speedFactor; // (float)millis()/10;
   if (type == 0) {
     EVERY_N_SECONDS(30) {
@@ -8460,7 +8460,7 @@ void EffectWcolor::load() {
 }
 
 bool EffectWcolor::run(CRGB *leds, EffectWorker *param) {
-  fadeToBlackBy(leds, NUM_LEDS, blur);
+  fadeToBlackBy(leds, num_leds, blur);
   for (byte i = 0; i < bCounts; i++) {
     blots[i].drawing();
     blots[i].appendXY( mode ? ((float)inoise8(t+= speedFactor, 0, i * 100) / 256) - 0.5f : 0, -speedFactor);
@@ -8557,7 +8557,7 @@ void EffectSplashBals::load() {
 }
 
 bool EffectSplashBals::run(CRGB *leds, EffectWorker *param) {
-  fadeToBlackBy(leds, NUM_LEDS, 100);
+  fadeToBlackBy(leds, num_leds, 100);
   hue++;
 
   for (auto &b : balls){

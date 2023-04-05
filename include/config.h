@@ -212,6 +212,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #define ALARM_LEVEL           (HIGH)                        // логический уровень, в который будет установлен пин ALARM_PIN, когда "рассвет"/будильник включен
 #endif
 
+// LED Matrix organization/orientation
 #ifndef WIDTH
 #define WIDTH                 (16U)                         // ширина матрицы
 #endif
@@ -234,8 +235,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
                                                             // при неправильной настройке матрицы вы получите предупреждение "Wrong matrix parameters! Set to default"
                                                             // шпаргалка по настройке матрицы здесь! https://alexgyver.ru/matrix_guide/
 #endif
-
-#define NUM_LEDS              (uint16_t)(WIDTH * HEIGHT)    // не менять и не переопределять, служебный!
 
 #ifndef SEGMENTS
 #define SEGMENTS              (1U)                          // диодов в одном "пикселе" (для создания матрицы из кусков ленты)
@@ -271,7 +270,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #endif
 
 #ifndef SPEED_ADJ
-#define SPEED_ADJ (float)NUM_LEDS/256                         // Поправка скорости риал-тайм эффектов относительно размеров метрицы.
+#define SPEED_ADJ (float)WIDTH*HEIGHT/256                   // Поправка скорости риал-тайм эффектов относительно размеров метрицы.
 #endif
 
 #define EFFECTS_RUN_TIMER   (uint16_t)(1000 / MAX_FPS)     // период обработки эффектов - при 10 это 10мс, т.е. 1000/10 = 100 раз в секунду, при 20 = 50 раз в секунду, желательно использовать диапазон 10...40
@@ -321,58 +320,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #endif
 //#define PRINT_ALARM_TIME                                    // нужен ли вывод времени для будильника, если пустая строка в событии будильника
 
-// ************* НАСТРОЙКА МАТРИЦЫ *****
-#if (CONNECTION_ANGLE == 0 && STRIP_DIRECTION == 0)
-#define _WIDTH WIDTH
-#define THIS_X (MIRR_V ? (WIDTH - x - 1) : x)
-#define THIS_Y (MIRR_H ? (HEIGHT - y - 1) : y)
-
-#elif (CONNECTION_ANGLE == 0 && STRIP_DIRECTION == 1)
-#define _WIDTH HEIGHT
-#define ROTATED_MATRIX
-#define THIS_X (MIRR_V ? (HEIGHT - y - 1) : y)
-#define THIS_Y (MIRR_H ? (WIDTH - x - 1) : x)
-
-#elif (CONNECTION_ANGLE == 1 && STRIP_DIRECTION == 0)
-#define _WIDTH WIDTH
-#define THIS_X (MIRR_V ? (WIDTH - x - 1) : x)
-#define THIS_Y (MIRR_H ?  y : (HEIGHT - y - 1))
-
-#elif (CONNECTION_ANGLE == 1 && STRIP_DIRECTION == 3)
-#define _WIDTH HEIGHT
-#define ROTATED_MATRIX
-#define THIS_X (MIRR_V ? y : (HEIGHT - y - 1))
-#define THIS_Y (MIRR_H ? (WIDTH - x - 1) : x)
-
-#elif (CONNECTION_ANGLE == 2 && STRIP_DIRECTION == 2)
-#define _WIDTH WIDTH
-#define THIS_X (MIRR_V ?  x : (WIDTH - x - 1))
-#define THIS_Y (MIRR_H ? y : (HEIGHT - y - 1))
-
-#elif (CONNECTION_ANGLE == 2 && STRIP_DIRECTION == 3)
-#define _WIDTH HEIGHT
-#define ROTATED_MATRIX
-#define THIS_X (MIRR_V ? y : (HEIGHT - y - 1))
-#define THIS_Y (MIRR_H ?  x : (WIDTH - x - 1))
-
-#elif (CONNECTION_ANGLE == 3 && STRIP_DIRECTION == 2)
-#define _WIDTH WIDTH
-#define THIS_X (MIRR_V ?  x : (WIDTH - x - 1))
-#define THIS_Y (MIRR_H ? (HEIGHT - y - 1) : y)
-
-#elif (CONNECTION_ANGLE == 3 && STRIP_DIRECTION == 1)
-#define _WIDTH HEIGHT
-#define ROTATED_MATRIX
-#define THIS_X (MIRR_V ? (HEIGHT - y - 1) : y)
-#define THIS_Y (MIRR_H ?  x : (WIDTH - x - 1))
-
-#else
-#define _WIDTH WIDTH
-#define THIS_X x
-#define THIS_Y y
-#pragma message "Wrong matrix parameters! Set to default"
-
-#endif
 
 #ifdef TM1637_CLOCK
 #ifndef TM_CLK_PIN
