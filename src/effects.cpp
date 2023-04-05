@@ -2225,7 +2225,7 @@ bool EffectFire2012::fire2012Routine(CRGB *leds, EffectWorker *opt) {
     // Step 2.  Heat from each cell drifts 'up' and diffuses a little
     for (uint8_t k = HEIGHT; k > 1; k--)
     {
-      noise3d[0][x][wrapY(k)] = (noise3d[0][x][k - 1] + noise3d[0][x][wrapY(k - 2)] + noise3d[0][x][wrapY(k - 2)]) / 3;
+      noise3d[0][x][EffectMath::wrapY(k)] = (noise3d[0][x][k - 1] + noise3d[0][x][EffectMath::wrapY(k - 2)] + noise3d[0][x][EffectMath::wrapY(k - 2)]) / 3;
     }
 
     // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
@@ -2238,7 +2238,7 @@ bool EffectFire2012::fire2012Routine(CRGB *leds, EffectWorker *opt) {
     // Step 4.  Map from heat cells to LED colors
     for (uint8_t y = 0; y < HEIGHT; y++)
     {
-      nblend(EffectMath::getPixel(x, y), ColorFromPalette(*curPalette, ((noise3d[0][x][y] * 0.7) + (noise3d[0][wrapX(x + 1)][y] * 0.3))), fireSmoothing);
+      nblend(EffectMath::getPixel(x, y), ColorFromPalette(*curPalette, ((noise3d[0][x][y] * 0.7) + (noise3d[0][EffectMath::wrapX(x + 1)][y] * 0.3))), fireSmoothing);
     }
   }
   return true;

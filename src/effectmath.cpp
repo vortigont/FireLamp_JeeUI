@@ -35,9 +35,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
    <https://www.gnu.org/licenses/>.)
 */
 
-#include "lamp.h"
-#include "effectmath.h"
-//#include "main.h"
 #ifdef MATRIXx4
   #include "matrix4.h"
 #endif
@@ -84,15 +81,52 @@ using namespace EffectMath_PRIVATE;
 
 // используется встроенный блер, так что необходимости в данной функции более нет, отключено
 uint16_t XY(uint8_t x, uint8_t y) {return 0;}
-// // для работы FastLed (blur2d)
-// uint16_t XY(uint8_t x, uint8_t y)
-// {
-// #ifdef ROTATED_MATRIX
-//   return getPixelNumber(y,x); // повернутое на 90 градусов
-// #else
-//   return getPixelNumber(x,y); // обычное подключение
-// #endif
-// }
+
+namespace EffectMath {
+
+static const uint8_t gamma_exp[] PROGMEM = {
+0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   1,   1,   1,
+1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,
+1,   2,   2,   2,   2,   2,   2,   2,   2,   2,   3,   3,   3,   3,   3,
+4,   4,   4,   4,   4,   5,   5,   5,   5,   5,   6,   6,   6,   7,   7,
+7,   7,   8,   8,   8,   9,   9,   9,   10,  10,  10,  11,  11,  12,  12,
+12,  13,  13,  14,  14,  14,  15,  15,  16,  16,  17,  17,  18,  18,  19,
+19,  20,  20,  21,  21,  22,  23,  23,  24,  24,  25,  26,  26,  27,  28,
+28,  29,  30,  30,  31,  32,  32,  33,  34,  35,  35,  36,  37,  38,  39,
+39,  40,  41,  42,  43,  44,  44,  45,  46,  47,  48,  49,  50,  51,  52,
+53,  54,  55,  56,  57,  58,  59,  60,  61,  62,  63,  64,  65,  66,  67,
+68,  70,  71,  72,  73,  74,  75,  77,  78,  79,  80,  82,  83,  84,  85,
+87,  89,  91,  92,  93,  95,  96,  98,  99,  100, 101, 102, 105, 106, 108,
+109, 111, 112, 114, 115, 117, 118, 120, 121, 123, 125, 126, 128, 130, 131,
+133, 135, 136, 138, 140, 142, 143, 145, 147, 149, 151, 152, 154, 156, 158,
+160, 162, 164, 165, 167, 169, 171, 173, 175, 177, 179, 181, 183, 185, 187,
+190, 192, 194, 196, 198, 200, 202, 204, 207, 209, 211, 213, 216, 218, 220,
+222, 225, 227, 229, 232, 234, 236, 239, 241, 244, 246, 249, 251, 253, 254, 255};
+
+// lookup table for fast atan func
+static const PROGMEM float LUT[102] = {
+     0,           0.0099996664, 0.019997334, 0.029991005, 0.039978687,
+     0.049958397, 0.059928156,  0.069885999, 0.079829983, 0.089758173,
+     0.099668652, 0.10955953,   0.11942893,  0.12927501,  0.13909595,
+     0.14888994,  0.15865526,   0.16839015,  0.17809294,  0.18776195,
+     0.19739556,  0.20699219,   0.21655031,  0.22606839,  0.23554498,
+     0.24497867,  0.25436807,   0.26371184,  0.27300870,  0.28225741,
+     0.29145679,  0.30060568,   0.30970293,  0.31874755,  0.32773849,
+     0.33667481,  0.34555557,   0.35437992,  0.36314702,  0.37185606,
+     0.38050637,  0.38909724,   0.39762798,  0.40609807,  0.41450688,
+     0.42285392,  0.43113875,   0.43936089,  0.44751999,  0.45561564,
+     0.46364760,  0.47161558,   0.47951928,  0.48735857,  0.49513325,
+     0.50284320,  0.51048833,   0.51806855,  0.52558380,  0.53303409,
+     0.54041952,  0.54774004,   0.55499572,  0.56218672,  0.56931317,
+     0.57637525,  0.58337301,   0.59030676,  0.59717667,  0.60398299,
+     0.61072594,  0.61740589,   0.62402308,  0.63057774,  0.63707036,
+     0.64350110,  0.64987046,   0.65617871,  0.66242629,  0.66861355,
+     0.67474097,  0.68080884,   0.68681765,  0.69276786,  0.69865984,
+     0.70449406,  0.71027100,   0.71599114,  0.72165483,  0.72726268,
+     0.73281509,  0.73831260,   0.74375558,  0.74914461,  0.75448018,
+     0.75976276,  0.76499283,   0.77017093,  0.77529752,  0.78037310,
+     0.78539819,  0.79037325};
+
 
 //--------------------------------------
 // blur1d: one-dimensional blur filter. Spreads light to 2 line neighbors.
@@ -108,7 +142,7 @@ uint16_t XY(uint8_t x, uint8_t y) {return 0;}
 //         calls to 'blur' will also result in the light fading,
 //         eventually all the way to black; this is by design so that
 //         it can be used to (slowly) clear the LEDs to black.
-void EffectMath::blur1d( CRGB* leds, uint16_t numLeds, fract8 blur_amount)
+void blur1d( CRGB* leds, uint16_t numLeds, fract8 blur_amount)
 {
     uint8_t keep = 255 - blur_amount;
     uint8_t seep = blur_amount >> 1;
@@ -125,14 +159,14 @@ void EffectMath::blur1d( CRGB* leds, uint16_t numLeds, fract8 blur_amount)
     }
 }
 
-void EffectMath::blur2d( CRGB* leds, uint8_t width, uint8_t height, fract8 blur_amount)
+void blur2d( CRGB* leds, uint8_t width, uint8_t height, fract8 blur_amount)
 {
-    blurRows(leds, width, height, blur_amount);
-    blurColumns(leds, width, height, blur_amount);
+    EffectMath::blurRows(leds, width, height, blur_amount);
+    EffectMath::blurColumns(leds, width, height, blur_amount);
 }
 
 // blurRows: perform a blur1d on every row of a rectangular matrix
-void EffectMath::blurRows( CRGB* leds, uint8_t width, uint8_t height, fract8 blur_amount)
+void blurRows( CRGB* leds, uint8_t width, uint8_t height, fract8 blur_amount)
 {
 /*    for( uint8_t row = 0; row < height; ++row) {
         CRGB* rowbase = leds + (row * width);
@@ -158,7 +192,7 @@ void EffectMath::blurRows( CRGB* leds, uint8_t width, uint8_t height, fract8 blu
 }
 
 // blurColumns: perform a blur1d on each column of a rectangular matrix
-void EffectMath::blurColumns(CRGB* leds, uint8_t width, uint8_t height, fract8 blur_amount)
+void blurColumns(CRGB* leds, uint8_t width, uint8_t height, fract8 blur_amount)
 {
     // blur columns
     uint8_t keep = 255 - blur_amount;
@@ -179,12 +213,12 @@ void EffectMath::blurColumns(CRGB* leds, uint8_t width, uint8_t height, fract8 b
 } 
 
 // ******** общие мат. функции переиспользуются в другом эффекте
-uint8_t EffectMath::mapsincos8(bool map, uint8_t theta, uint8_t lowest, uint8_t highest) {
+uint8_t mapsincos8(bool map, uint8_t theta, uint8_t lowest, uint8_t highest) {
   uint8_t beat = map ? sin8(theta) : cos8(theta);
   return lowest + scale8(beat, highest - lowest);
 }
 
-void EffectMath::MoveFractionalNoise(bool _scale, const uint8_t noise3d[][WIDTH][HEIGHT], int8_t amplitude, float shift) {
+void MoveFractionalNoise(bool _scale, const uint8_t noise3d[][WIDTH][HEIGHT], int8_t amplitude, float shift) {
   uint8_t zD;
   uint8_t zF;
   CRGB *leds = getUnsafeLedsArray(); // unsafe
@@ -206,11 +240,11 @@ void EffectMath::MoveFractionalNoise(bool _scale, const uint8_t noise3d[][WIDTH]
         }
         CRGB PixelA = CRGB::Black  ;
         if ((zD >= 0) && (zD < _side_b))
-          PixelA = _scale ? EffectMath::getPixel(zD%WIDTH, a%HEIGHT) : EffectMath::getPixel(a%WIDTH, zD%HEIGHT);
+          PixelA = _scale ? getPixel(zD%WIDTH, a%HEIGHT) : getPixel(a%WIDTH, zD%HEIGHT);
 
         CRGB PixelB = CRGB::Black ;
         if ((zF >= 0) && (zF < _side_b))
-          PixelB = _scale ? EffectMath::getPixel(zF%WIDTH, a%HEIGHT) : EffectMath::getPixel(a%WIDTH, zF%HEIGHT);
+          PixelB = _scale ? getPixel(zF%WIDTH, a%HEIGHT) : getPixel(a%WIDTH, zF%HEIGHT);
         uint16_t x = _scale ? b : a;
         uint16_t y = _scale ? a : b;
         ledsbuff[getPixelNumber(x%WIDTH, y%HEIGHT)] = (PixelA.nscale8(ease8InOutApprox(255 - fraction))) + (PixelB.nscale8(ease8InOutApprox(fraction)));   // lerp8by8(PixelA, PixelB, fraction );
@@ -222,26 +256,26 @@ void EffectMath::MoveFractionalNoise(bool _scale, const uint8_t noise3d[][WIDTH]
 /**
  * Возвращает частное от а,б округленное до большего целого
  */
-uint8_t EffectMath::ceil8(const uint8_t a, const uint8_t b){
+uint8_t ceil8(const uint8_t a, const uint8_t b){
   return a/b + !!(a%b);
 }
 
 // новый фейдер
-void EffectMath::fadePixel(uint8_t i, uint8_t j, uint8_t step)
+void fadePixel(uint8_t i, uint8_t j, uint8_t step)
 {
-    CRGB &led = EffectMath::getPixel(i,j);
+    CRGB &led = getPixel(i,j);
     if (!led) return; // см. приведение к bool для CRGB, это как раз тест на 0
     
     if (led.r >= 30U || led.g >= 30U || led.b >= 30U){
         led.fadeToBlackBy(step);
     }
     else{
-        EffectMath::drawPixelXY(i, j, 0U);
+        drawPixelXY(i, j, 0U);
     }
 }
 
 // функция плавного угасания цвета для всех пикселей
-void EffectMath::fader(uint8_t step)
+void fader(uint8_t step)
 {
   for (uint8_t i = 0U; i < WIDTH; i++)
   {
@@ -254,7 +288,7 @@ void EffectMath::fader(uint8_t step)
 
 /* kostyamat добавил
 функция увеличения яркости */
-CRGB EffectMath::makeBrighter( const CRGB& color, fract8 howMuchBrighter)
+CRGB makeBrighter( const CRGB& color, fract8 howMuchBrighter)
 {
   CRGB incrementalColor = color;
   incrementalColor.nscale8( howMuchBrighter);
@@ -263,7 +297,7 @@ CRGB EffectMath::makeBrighter( const CRGB& color, fract8 howMuchBrighter)
 
 /* kostyamat добавил
  функция уменьшения яркости */
-CRGB EffectMath::makeDarker( const CRGB& color, fract8 howMuchDarker )
+CRGB makeDarker( const CRGB& color, fract8 howMuchDarker )
 {
   CRGB newcolor = color;
   newcolor.nscale8( 255 - howMuchDarker);
@@ -273,7 +307,7 @@ CRGB EffectMath::makeDarker( const CRGB& color, fract8 howMuchDarker )
 /* kostyamat добавил
  функция возвращает рандомное значение float между min и max 
  с шагом 1/1024 */
-float EffectMath::randomf(float min, float max)
+float randomf(float min, float max)
 {
   return fmap(random(1024), 0, 1023, min, max);
 }
@@ -281,7 +315,7 @@ float EffectMath::randomf(float min, float max)
 /* kostyamat добавил
  функция возвращает true, если float
  ~= целое (первая цифра после запятой == 0) */
-bool EffectMath::isInteger(float val) {
+bool isInteger(float val) {
     float val1;
     val1 = val - (int)val;
     if ((int)(val1 * 10) == 0)
@@ -291,19 +325,19 @@ bool EffectMath::isInteger(float val) {
 }
 
 // Функция создает вспышки в разных местах матрицы, параметр 0-255. Чем меньше, тем чаще.
-void EffectMath::addGlitter(uint8_t chanceOfGlitter){
+void addGlitter(uint8_t chanceOfGlitter){
   if ( random8() < chanceOfGlitter) leds[random16(NUM_LEDS)] += CRGB::Gray;
 }
 
 // Функция создает разноцветные конфетти в разных местах матрицы, параметр 0-255. Чем меньше, тем чаще.
-void EffectMath::confetti(byte density) {
+void confetti(byte density) {
     uint16_t idx = random16(NUM_LEDS);
     for (byte i=0; i < NUM_LEDS/256; i++)
       if ( random8() < density)
         if (RGBweight(leds, idx) < 32) leds[idx] = random(32, 16777216);
 }
 
-void EffectMath::gammaCorrection()
+void gammaCorrection()
 { //gamma correction function
   byte r, g, b;
   for (uint16_t i = 0; i < NUM_LEDS; i++)
@@ -317,7 +351,7 @@ void EffectMath::gammaCorrection()
   }
 }
 
-uint32_t EffectMath::getPixColor(uint32_t thisSegm) // функция получения цвета пикселя по его номеру
+uint32_t getPixColor(uint32_t thisSegm) // функция получения цвета пикселя по его номеру
 {
   uint32_t thisPixel = thisSegm * SEGMENTS;
   if (thisPixel < NUM_LEDS ) 
@@ -326,7 +360,7 @@ uint32_t EffectMath::getPixColor(uint32_t thisSegm) // функция получ
 }
 
 // Заливает матрицу выбраным цветом
-void EffectMath::fillAll(const CRGB &color) 
+void fillAll(const CRGB &color) 
 {
   for (int32_t i = 0; i < NUM_LEDS; i++)
   {
@@ -334,12 +368,12 @@ void EffectMath::fillAll(const CRGB &color)
   }
 }
 
-void EffectMath::drawPixelXY(int16_t x, int16_t y, const CRGB &color) // функция отрисовки точки по координатам X Y
+void drawPixelXY(int16_t x, int16_t y, const CRGB &color) // функция отрисовки точки по координатам X Y
 {
   getPixel(x,y) = color;
 }
 
-void EffectMath::wu_pixel(uint32_t x, uint32_t y, CRGB col) {      //awesome wu_pixel procedure by reddit u/sutaburosu
+void wu_pixel(uint32_t x, uint32_t y, CRGB col) {      //awesome wu_pixel procedure by reddit u/sutaburosu
   // extract the fractional parts and derive their inverses
   uint8_t xx = x & 0xff, yy = y & 0xff, ix = 255 - xx, iy = 255 - yy;
   // calculate the intensities for each affected pixel
@@ -354,7 +388,7 @@ void EffectMath::wu_pixel(uint32_t x, uint32_t y, CRGB col) {      //awesome wu_
     clr.g = qadd8(clr.g, (col.g * wu[i]) >> 8);
     clr.b = qadd8(clr.b, (col.b * wu[i]) >> 8);
 
-    EffectMath::drawPixelXY(xn, yn, clr);
+    drawPixelXY(xn, yn, clr);
   }
   #undef WU_WEIGHT
 }
@@ -365,7 +399,7 @@ CRGB colorsmear(const CRGB &col1, const CRGB &col2, byte l) {
   return temp1;
 }
 
-void EffectMath::sDrawPixelXYF(float x, float y, const CRGB &color) {
+void sDrawPixelXYF(float x, float y, const CRGB &color) {
   byte ax = byte(x);
   byte xsh = (x - byte(x)) * 255;
   byte ay = byte(y);
@@ -382,7 +416,7 @@ void EffectMath::sDrawPixelXYF(float x, float y, const CRGB &color) {
   getPixel(ax+1, ay+1) += col4;
 }
 
-void EffectMath::sDrawPixelXYF_X(float x, int16_t y, const CRGB &color) {
+void sDrawPixelXYF_X(float x, int16_t y, const CRGB &color) {
   byte ax = byte(x);
   byte xsh = (x - byte(x)) * 255;
   CRGB col1 = colorsmear(color, CRGB(0, 0, 0), xsh);
@@ -391,7 +425,7 @@ void EffectMath::sDrawPixelXYF_X(float x, int16_t y, const CRGB &color) {
   getPixel(ax + 1, y) += col2;
 }
 
-void EffectMath::sDrawPixelXYF_Y(int16_t x, float y, const CRGB &color) {
+void sDrawPixelXYF_Y(int16_t x, float y, const CRGB &color) {
   byte ay = byte(y);
   byte ysh = (y - byte(y)) * 255;
   CRGB col1 = colorsmear(color, CRGB(0, 0, 0), ysh);
@@ -400,7 +434,7 @@ void EffectMath::sDrawPixelXYF_Y(int16_t x, float y, const CRGB &color) {
   getPixel(x, ay+1) += col2; 
 }
 
-void EffectMath::drawPixelXYF(float x, float y, const CRGB &color, uint8_t darklevel)
+void drawPixelXYF(float x, float y, const CRGB &color, uint8_t darklevel)
 {
 #define WU_WEIGHT(a,b) ((uint8_t) (((a)*(b)+(a)+(b))>>8))
   // extract the fractional parts and derive their inverses
@@ -417,13 +451,13 @@ void EffectMath::drawPixelXYF(float x, float y, const CRGB &color, uint8_t darkl
     clr.r = qadd8(clr.r, (color.r * wu[i]) >> 8);
     clr.g = qadd8(clr.g, (color.g * wu[i]) >> 8);
     clr.b = qadd8(clr.b, (color.b * wu[i]) >> 8);
-    if (darklevel > 0) getPixel(xn, yn) = EffectMath::makeDarker(clr, darklevel);
+    if (darklevel > 0) getPixel(xn, yn) = makeDarker(clr, darklevel);
     else getPixel(xn, yn) = clr;
   }
   #undef WU_WEIGHT
 }
 
-void EffectMath::drawPixelXYF_X(float x, int16_t y, const CRGB &color, uint8_t darklevel)
+void drawPixelXYF_X(float x, int16_t y, const CRGB &color, uint8_t darklevel)
 {
   if (x<-1.0 || y<-1 || x>((float)WIDTH) || y>((float)HEIGHT)) return;
 
@@ -438,12 +472,12 @@ void EffectMath::drawPixelXYF_X(float x, int16_t y, const CRGB &color, uint8_t d
     clr.r = qadd8(clr.r, (color.r * wu[i]) >> 8);
     clr.g = qadd8(clr.g, (color.g * wu[i]) >> 8);
     clr.b = qadd8(clr.b, (color.b * wu[i]) >> 8);
-    if (darklevel > 0) getPixel(xn, y) = EffectMath::makeDarker(clr, darklevel);
+    if (darklevel > 0) getPixel(xn, y) = makeDarker(clr, darklevel);
     else getPixel(xn, y) = clr;
   }
 }
 
-void EffectMath::drawPixelXYF_Y(int16_t x, float y, const CRGB &color, uint8_t darklevel)
+void drawPixelXYF_Y(int16_t x, float y, const CRGB &color, uint8_t darklevel)
 {
   if (x<-1 || y<-1.0 || x>((float)WIDTH) || y>((float)HEIGHT)) return;
 
@@ -458,12 +492,12 @@ void EffectMath::drawPixelXYF_Y(int16_t x, float y, const CRGB &color, uint8_t d
     clr.r = qadd8(clr.r, (color.r * wu[i]) >> 8);
     clr.g = qadd8(clr.g, (color.g * wu[i]) >> 8);
     clr.b = qadd8(clr.b, (color.b * wu[i]) >> 8);
-    if (darklevel > 0) getPixel(x, yn) = EffectMath::makeDarker(clr, darklevel);
+    if (darklevel > 0) getPixel(x, yn) = makeDarker(clr, darklevel);
     else getPixel(x, yn) = clr;
   }
 }
 
-CRGB EffectMath::getPixColorXYF(float x, float y)
+CRGB getPixColorXYF(float x, float y)
 {
   // extract the fractional parts and derive their inverses
   uint8_t xx = (x - (int)x) * 255, yy = (y - (int)y) * 255, ix = 255 - xx, iy = 255 - yy;
@@ -488,7 +522,7 @@ CRGB EffectMath::getPixColorXYF(float x, float y)
   #undef WU_WEIGHT
 }
 
-CRGB EffectMath::getPixColorXYF_X(float x, int16_t y)
+CRGB getPixColorXYF_X(float x, int16_t y)
 {
   if (x<-1.0 || y<-1.0 || x>((float)WIDTH) || y>((float)HEIGHT)) return CRGB::Black;
 
@@ -512,7 +546,7 @@ CRGB EffectMath::getPixColorXYF_X(float x, int16_t y)
   return clr;
 }
 
-CRGB EffectMath::getPixColorXYF_Y(int16_t x, float y)
+CRGB getPixColorXYF_Y(int16_t x, float y)
 {
   if (x<-1 || y<-1.0 || x>((float)WIDTH) || y>((float)HEIGHT)) return CRGB::Black;
 
@@ -545,7 +579,7 @@ CRGB EffectMath::getPixColorXYF_Y(int16_t x, float y)
     @param    y1  End point y coordinate
     @param    color CRGB Color to draw with
 */
-void EffectMath::drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, const CRGB &color) {
+void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, const CRGB &color) {
   int16_t steep = abs(y1 - y0) > abs(x1 - x0);
   if (steep) {
     std::swap(x0, y0);
@@ -584,7 +618,7 @@ void EffectMath::drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, const 
   }
 }
 
-void EffectMath::drawLineF(float x1, float y1, float x2, float y2, const CRGB &color){
+void drawLineF(float x1, float y1, float x2, float y2, const CRGB &color){
   float deltaX = fabs(x2 - x1);
   float deltaY = fabs(y2 - y1);
   float error = deltaX - deltaY;
@@ -611,31 +645,31 @@ void EffectMath::drawLineF(float x1, float y1, float x2, float y2, const CRGB &c
   }
 }
 
-void EffectMath::drawSquareF(float x, float y, float leg, CRGB color) {
-  EffectMath::drawLineF(x+leg,y+leg,x+leg,y-leg,color);
-  EffectMath::drawLineF(x+leg,y-leg,x-leg,y-leg,color);
-  EffectMath::drawLineF(x-leg,y-leg,x-leg,y+leg,color);
-  EffectMath::drawLineF(x-leg,y+leg,x+leg,y+leg,color);
+void drawSquareF(float x, float y, float leg, CRGB color) {
+  drawLineF(x+leg,y+leg,x+leg,y-leg,color);
+  drawLineF(x+leg,y-leg,x-leg,y-leg,color);
+  drawLineF(x-leg,y-leg,x-leg,y+leg,color);
+  drawLineF(x-leg,y+leg,x+leg,y+leg,color);
 }
 
-void EffectMath::drawCircle(int x0, int y0, int radius, const CRGB &color){
+void drawCircle(int x0, int y0, int radius, const CRGB &color){
   int a = radius, b = 0;
   int radiusError = 1 - a;
 
   if (radius == 0) {
-    EffectMath::drawPixelXY(x0, y0, color);
+    drawPixelXY(x0, y0, color);
     return;
   }
 
   while (a >= b)  {
-    EffectMath::drawPixelXY(a + x0, b + y0, color);
-    EffectMath::drawPixelXY(b + x0, a + y0, color);
-    EffectMath::drawPixelXY(-a + x0, b + y0, color);
-    EffectMath::drawPixelXY(-b + x0, a + y0, color);
-    EffectMath::drawPixelXY(-a + x0, -b + y0, color);
-    EffectMath::drawPixelXY(-b + x0, -a + y0, color);
-    EffectMath::drawPixelXY(a + x0, -b + y0, color);
-    EffectMath::drawPixelXY(b + x0, -a + y0, color);
+    drawPixelXY(a + x0, b + y0, color);
+    drawPixelXY(b + x0, a + y0, color);
+    drawPixelXY(-a + x0, b + y0, color);
+    drawPixelXY(-b + x0, a + y0, color);
+    drawPixelXY(-a + x0, -b + y0, color);
+    drawPixelXY(-b + x0, -a + y0, color);
+    drawPixelXY(a + x0, -b + y0, color);
+    drawPixelXY(b + x0, -a + y0, color);
     b++;
     if (radiusError < 0)
       radiusError += 2 * b + 1;
@@ -647,24 +681,24 @@ void EffectMath::drawCircle(int x0, int y0, int radius, const CRGB &color){
   }
 }
 
-void EffectMath::drawCircleF(float x0, float y0, float radius, const CRGB &color, float step){
+void drawCircleF(float x0, float y0, float radius, const CRGB &color, float step){
   float a = radius, b = 0.;
   float radiusError = step - a;
 
   if (radius <= step*2) {
-    EffectMath::drawPixelXYF(x0, y0, color);
+    drawPixelXYF(x0, y0, color);
     return;
   }
 
   while (a >= b)  {
-      EffectMath::drawPixelXYF(a + x0, b + y0, color, 50);
-      EffectMath::drawPixelXYF(b + x0, a + y0, color, 50);
-      EffectMath::drawPixelXYF(-a + x0, b + y0, color, 50);
-      EffectMath::drawPixelXYF(-b + x0, a + y0, color, 50);
-      EffectMath::drawPixelXYF(-a + x0, -b + y0, color, 50);
-      EffectMath::drawPixelXYF(-b + x0, -a + y0, color, 50);
-      EffectMath::drawPixelXYF(a + x0, -b + y0, color, 50);
-      EffectMath::drawPixelXYF(b + x0, -a + y0, color, 50);
+      drawPixelXYF(a + x0, b + y0, color, 50);
+      drawPixelXYF(b + x0, a + y0, color, 50);
+      drawPixelXYF(-a + x0, b + y0, color, 50);
+      drawPixelXYF(-b + x0, a + y0, color, 50);
+      drawPixelXYF(-a + x0, -b + y0, color, 50);
+      drawPixelXYF(-b + x0, -a + y0, color, 50);
+      drawPixelXYF(a + x0, -b + y0, color, 50);
+      drawPixelXYF(b + x0, -a + y0, color, 50);
 
     b+= step;
     if (radiusError < 0.)
@@ -677,17 +711,19 @@ void EffectMath::drawCircleF(float x0, float y0, float radius, const CRGB &color
   }
 }
 
-void EffectMath::fill_circleF(float cx, float cy, float radius, CRGB col) {
+void fill_circleF(float cx, float cy, float radius, CRGB col) {
   int8_t rad = radius;
   for (float y = -radius; y < radius; y += (fabs(y) < rad ? 1 : 0.2)) {
     for (float x = -radius; x < radius; x += (fabs(x) < rad ? 1 : 0.2)) {
       if (x * x + y * y < radius * radius)
-        EffectMath::drawPixelXYF(cx + x, cy + y, col, 0);
+        drawPixelXYF(cx + x, cy + y, col, 0);
     }
   }
 }
 
-void EffectMath::nightMode(CRGB *leds)
+uint16_t RGBweight (CRGB *leds, uint16_t idx) {return (leds[idx].r + leds[idx].g + leds[idx].b);}
+
+void nightMode(CRGB *leds)
 {
     for (uint16_t i = 0; i < NUM_LEDS; i++)
     {
@@ -696,13 +732,13 @@ void EffectMath::nightMode(CRGB *leds)
         leds[i].b = dim8_lin(leds[i].b);
     }
 }
-uint32_t EffectMath::getPixColorXY(int16_t x, int16_t y) { return getPixColor( getPixelNumber(x, y)); } // функция получения цвета пикселя в матрице по его координатам
-//void EffectMath::setLedsfadeToBlackBy(uint16_t idx, uint8_t val) { leds[idx].fadeToBlackBy(val); }
-void EffectMath::setLedsNscale8(uint16_t idx, uint8_t val) { leds[idx].nscale8(val); }
-void EffectMath::dimAll(uint8_t value) { for (uint16_t i = 0; i < NUM_LEDS; i++) {leds[i].nscale8(value); } }
-void EffectMath::blur2d(uint8_t val) {EffectMath::blur2d(leds,WIDTH,HEIGHT,val);}
+uint32_t getPixColorXY(int16_t x, int16_t y) { return getPixColor( getPixelNumber(x, y)); } // функция получения цвета пикселя в матрице по его координатам
+//void setLedsfadeToBlackBy(uint16_t idx, uint8_t val) { leds[idx].fadeToBlackBy(val); }
+void setLedsNscale8(uint16_t idx, uint8_t val) { leds[idx].nscale8(val); }
+void dimAll(uint8_t value) { for (uint16_t i = 0; i < NUM_LEDS; i++) {leds[i].nscale8(value); } }
+void blur2d(uint8_t val) { EffectMath::blur2d(leds,WIDTH,HEIGHT,val); }
 
-CRGB &EffectMath::getLed(uint16_t idx) { 
+CRGB &getLed(uint16_t idx) { 
   if(idx<NUM_LEDS){
     return leds[idx];
   } else {
@@ -711,7 +747,7 @@ CRGB &EffectMath::getLed(uint16_t idx) {
 }
 
 
-uint32_t EffectMath::getPixelNumberBuff(uint16_t x, uint16_t y, uint8_t W , uint8_t H) // получить номер пикселя в буфере по координатам
+uint32_t getPixelNumberBuff(uint16_t x, uint16_t y, uint8_t W , uint8_t H) // получить номер пикселя в буфере по координатам
 {
 
   uint16_t _THIS_Y = y;
@@ -728,14 +764,23 @@ uint32_t EffectMath::getPixelNumberBuff(uint16_t x, uint16_t y, uint8_t W , uint
 
 }
 
-CRGB &EffectMath::getPixel(uint16_t x, uint16_t y){
+CRGB &getPixel(uint16_t x, uint16_t y){
   // Все, что не попадает в диапазон WIDTH x HEIGHT отправляем в "невидимый" светодиод.
   if (y > getmaxHeightIndex() || x > getmaxWidthIndex())
       return overrun;
   return leds[getPixelNumber(x,y)];
 }
 
-float EffectMath::sqrt(float x){
+double fmap(const double x, const double in_min, const double in_max, const double out_min, const double out_max){
+  return (out_max - out_min) * (x - in_min) / (in_max - in_min) + out_min;
+}
+
+float distance(float x1, float y1, float x2, float y2){
+    float dx = x2 - x1, dy = y2 - y1;
+    return EffectMath::sqrt((dx * dx) + (dy * dy));
+}
+
+float sqrt(float x){
   union{
       int i;
       float x;
@@ -748,14 +793,14 @@ float EffectMath::sqrt(float x){
   return u.x;
 }
 
-float EffectMath::tan2pi_fast(float x) {
+float tan2pi_fast(float x) {
   float y = (1 - x*x);
   return x * (((-0.000221184 * y + 0.0024971104) * y - 0.02301937096) * y + 0.3182994604 + 1.2732402998 / y);
   //float y = (1 - x*x);
   //return x * (-0.0187108 * y + 0.31583526 + 1.27365776 / y);
 }
 
-float EffectMath::atan2_fast(float y, float x)
+float atan2_fast(float y, float x)
 {
   //http://pubs.opengroup.org/onlinepubs/009695399/functions/atan2.html
   //Volkan SALMA
@@ -781,7 +826,7 @@ float EffectMath::atan2_fast(float y, float x)
       return( angle );
 }
 
-float EffectMath::atan_fast(float x){
+float atan_fast(float x){
   /*
   A fast look-up method with enough accuracy
   */
@@ -807,46 +852,72 @@ float EffectMath::atan_fast(float x){
   }
 }
 
-float EffectMath::mapcurve(const float x, const float in_min, const float in_max, const float out_min, const float out_max, float (*curve)(float,float,float,float)){
+float mapcurve(const float x, const float in_min, const float in_max, const float out_min, const float out_max, float (*curve)(float,float,float,float)){
   if (x <= in_min) return out_min;
   if (x >= in_max) return out_max;
   return curve((x - in_min), out_min, (out_max - out_min), (in_max - in_min));
 }
 
-float EffectMath::InOutQuad(float t, float b, float c, float d) {
+float linear(float t, float b, float c, float d) { return c * t / d + b; }
+
+float InQuad(float t, float b, float c, float d) { t /= d; return c * t * t + b; }
+
+float OutQuad(float t, float b, float c, float d) { t /= d; return -c * t * (t - 2) + b; }
+
+float InOutQuad(float t, float b, float c, float d) {
   t /= d / 2;
   if (t < 1) return c / 2 * t * t + b;
   --t;
   return -c / 2 * (t * (t - 2) - 1) + b;
 }
 
-float EffectMath::InOutCubic(float t, float b, float c, float d) {
+float InCubic(float t, float b, float c, float d) { t /= d; return c * t * t * t + b; }
+
+float OutCubic(float t, float b, float c, float d) { t = t / d - 1; return c * (t * t * t + 1) + b; }
+
+float InQuart(float t, float b, float c, float d) { t /= d; return c * t * t * t * t + b; }
+
+float OutQuart(float t, float b, float c, float d) { t = t / d - 1; return -c * (t * t * t * t - 1) + b; }
+
+float InOutCubic(float t, float b, float c, float d) {
   t /= d / 2;
   if (t < 1) return c / 2 * t * t * t + b;
   t -= 2;
   return c / 2 * (t * t * t + 2) + b;
 }
 
-float EffectMath::InOutQuart(float t, float b, float c, float d) {
+float InOutQuart(float t, float b, float c, float d) {
   t /= d / 2;
   if (t < 1) return c / 2 * t * t * t * t + b;
   t -= 2;
   return -c / 2 * (t * t * t * t - 2) + b;
 }
 
-float EffectMath::OutQuint(float t, float b, float c, float d) {
+float InQuint(float t, float b, float c, float d) { t /= d; return c * t * t * t * t * t + b; }
+
+float fixed_to_float(int input){ return ((float)input / (float)(1 << 16)); }
+
+int float_to_fixed(float input){ return (int)(input * (1 << 16)); }
+
+float OutQuint(float t, float b, float c, float d) {
   t = t / d - 1;
   return c * (t * t * t * t * t + 1) + b;
 }
 
-float EffectMath::InOutQuint(float t, float b, float c, float d) {
+float InExpo(float t, float b, float c, float d) { return (t==0) ? b : c * powf(2, 10 * (t/d - 1)) + b; }
+float OutExpo(float t, float b, float c, float d) { return (t==d) ? b+c : c * (-powf(2, -10 * t/d) + 1) + b; }
+float InOutExpo(float t, float b, float c, float d);
+float InCirc(float t, float b, float c, float d) { t /= d; return -c * (sqrt(1 - t * t) - 1) + b; }
+float OutCirc(float t, float b, float c, float d) { t = t / d - 1; return c * sqrt(1 - t * t) + b; }
+
+float InOutQuint(float t, float b, float c, float d) {
   t /= d / 2;
   if (t < 1) return  c / 2 * t * t * t * t * t + b;
   t -= 2;
   return c / 2 * (t * t * t * t * t + 2) + b;
 }
 
-float EffectMath::InOutExpo(float t, float b, float c, float d) {
+float InOutExpo(float t, float b, float c, float d) {
   if (t==0) return b;
   if (t==d) return b + c;
   t /= d / 2;
@@ -855,13 +926,14 @@ float EffectMath::InOutExpo(float t, float b, float c, float d) {
   return c/2 * (-powf(2, -10 * t) + 2) + b;
 }
 
-float EffectMath::InOutCirc(float t, float b, float c, float d) {
+float InOutCirc(float t, float b, float c, float d) {
   t /= d / 2;
   if (t < 1) return -c/2 * (sqrt(1 - t*t) - 1) + b;
   t -= 2;
   return c/2 * (sqrt(1 - t*t) + 1) + b;
 }
 
+} // namespace EffectMath
 
 void Boid::update() {
   // Update velocity
