@@ -35,6 +35,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
    <https://www.gnu.org/licenses/>.)
 */
 
+#pragma once
 #ifndef __MAIN_H_
 #define __MAIN_H_
 
@@ -48,8 +49,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include <umm_malloc/umm_malloc.h>
 #include <umm_malloc/umm_heap_select.h>
 #endif
-
-#include <SPIFFSEditor.h>
 
 #include "config.h"
 #include "lamp.h"
@@ -86,9 +85,6 @@ extern Buttons *myButtons;
 extern MP3PLAYERDEVICE *mp3;
 #endif
 
-#ifdef ENCODER
-#include "enc.h"
-#endif
 #ifdef EMBUI_USE_MQTT
 void mqttCallback(const String &topic, const String &payload);
 void mqttConnect();
