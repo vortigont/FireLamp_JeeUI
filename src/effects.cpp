@@ -3607,7 +3607,7 @@ void EffectAquarium::nDrops(uint8_t bri) {
       radius[i] += 0.25;
   }
 
-  EffectMath::blur2d(leds, WIDTH, HEIGHT, 128);
+  EffectMath::blur2d(getUnsafeLedsArray(), WIDTH, HEIGHT, 128);
 }
 
 void EffectAquarium::nGlare(uint8_t bri) {
@@ -3618,9 +3618,9 @@ void EffectAquarium::nGlare(uint8_t bri) {
   currentPalette[8] = CHSV(hue, 255 - satur, 180);
   currentPalette[7] = CHSV(hue, satur - 60, 225);
 
-  fillNoiseLED(leds);
+  fillNoiseLED(getUnsafeLedsArray());
   
-  EffectMath::blur2d(leds, WIDTH, HEIGHT, 100);
+  EffectMath::blur2d(getUnsafeLedsArray(), WIDTH, HEIGHT, 100);
 }
 
 void EffectAquarium::fillNoiseLED(CRGB *leds) {

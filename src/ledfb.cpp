@@ -36,54 +36,55 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
    <https://www.gnu.org/licenses/>.)
 */
 
-#pragma once
-#include "config.h"
-#include <FastLED.h>
+#include "ledfb.hpp"
+#ifdef XY_EXTERN
+#include "XY.h"
+#endif
+
+#ifdef MATRIXx4
+  #include "matrix4.h"
+#endif
 
 // ************* НАСТРОЙКА МАТРИЦЫ *****
 #if (CONNECTION_ANGLE == 0 && STRIP_DIRECTION == 0)
 #define _WIDTH WIDTH
-#define THIS_X (MIRR_V ? (WIDTH - x - 1) : x)
-#define THIS_Y (MIRR_H ? (HEIGHT - y - 1) : y)
+#define THIS_X (cfg.vmirror ? (WIDTH - x - 1) : x)
+#define THIS_Y (cfg.hmirror ? (HEIGHT - y - 1) : y)
 
 #elif (CONNECTION_ANGLE == 0 && STRIP_DIRECTION == 1)
 #define _WIDTH HEIGHT
-#define ROTATED_MATRIX
-#define THIS_X (MIRR_V ? (HEIGHT - y - 1) : y)
-#define THIS_Y (MIRR_H ? (WIDTH - x - 1) : x)
+#define THIS_X (cfg.vmirror ? (HEIGHT - y - 1) : y)
+#define THIS_Y (cfg.hmirror ? (WIDTH - x - 1) : x)
 
 #elif (CONNECTION_ANGLE == 1 && STRIP_DIRECTION == 0)
 #define _WIDTH WIDTH
-#define THIS_X (MIRR_V ? (WIDTH - x - 1) : x)
-#define THIS_Y (MIRR_H ?  y : (HEIGHT - y - 1))
+#define THIS_X (cfg.vmirror ? (WIDTH - x - 1) : x)
+#define THIS_Y (cfg.hmirror ?  y : (HEIGHT - y - 1))
 
 #elif (CONNECTION_ANGLE == 1 && STRIP_DIRECTION == 3)
 #define _WIDTH HEIGHT
-#define ROTATED_MATRIX
-#define THIS_X (MIRR_V ? y : (HEIGHT - y - 1))
-#define THIS_Y (MIRR_H ? (WIDTH - x - 1) : x)
+#define THIS_X (cfg.vmirror ? y : (HEIGHT - y - 1))
+#define THIS_Y (cfg.hmirror ? (WIDTH - x - 1) : x)
 
 #elif (CONNECTION_ANGLE == 2 && STRIP_DIRECTION == 2)
 #define _WIDTH WIDTH
-#define THIS_X (MIRR_V ?  x : (WIDTH - x - 1))
-#define THIS_Y (MIRR_H ? y : (HEIGHT - y - 1))
+#define THIS_X (cfg.vmirror ?  x : (WIDTH - x - 1))
+#define THIS_Y (cfg.hmirror ? y : (HEIGHT - y - 1))
 
 #elif (CONNECTION_ANGLE == 2 && STRIP_DIRECTION == 3)
 #define _WIDTH HEIGHT
-#define ROTATED_MATRIX
-#define THIS_X (MIRR_V ? y : (HEIGHT - y - 1))
-#define THIS_Y (MIRR_H ?  x : (WIDTH - x - 1))
+#define THIS_X (cfg.vmirror ? y : (HEIGHT - y - 1))
+#define THIS_Y (cfg.hmirror ?  x : (WIDTH - x - 1))
 
 #elif (CONNECTION_ANGLE == 3 && STRIP_DIRECTION == 2)
 #define _WIDTH WIDTH
-#define THIS_X (MIRR_V ?  x : (WIDTH - x - 1))
-#define THIS_Y (MIRR_H ? (HEIGHT - y - 1) : y)
+#define THIS_X (cfg.vmirror ?  x : (WIDTH - x - 1))
+#define THIS_Y (cfg.hmirror ? (HEIGHT - y - 1) : y)
 
 #elif (CONNECTION_ANGLE == 3 && STRIP_DIRECTION == 1)
 #define _WIDTH HEIGHT
-#define ROTATED_MATRIX
-#define THIS_X (MIRR_V ? (HEIGHT - y - 1) : y)
-#define THIS_Y (MIRR_H ?  x : (WIDTH - x - 1))
+#define THIS_X (cfg.vmirror ? (HEIGHT - y - 1) : y)
+#define THIS_Y (cfg.hmirror ?  x : (WIDTH - x - 1))
 
 #else
 #define _WIDTH WIDTH
@@ -93,23 +94,24 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 #endif
 
-constexpr uint16_t num_leds = WIDTH * HEIGHT;
+static CRGB blackhole;              // Kostyamat's invisible pixel :) current effects code can't live w/o it
 
-namespace EffectMath_PRIVATE {
-    typedef union {
-    struct {
-        bool MIRR_V:1; // отзрекаливание по V
-        bool MIRR_H:1; // отзрекаливание по H
-    };
-    uint32_t flags; // набор битов для конфига
-    } MATRIXFLAGS;
-
-    extern MATRIXFLAGS matrixflags;
-    extern CRGB leds[num_leds]; // основной буфер вывода изображения
-    extern CRGB overrun;
-
-    CRGB *getUnsafeLedsArray();
-    uint32_t getPixelNumber(int16_t x, int16_t y);
+uint32_t LedFB::transpose(uint16_t x, uint16_t y){
+#if defined(XY_EXTERN)
+    return pgm_read_dword(&XYTable[y * WIDTH + x]);
+#elif defined(MATRIXx4)
+    return matrix4_XY(x, y);
+#else
+    // default substitutions
+    if (MATRIX_TYPE || (THIS_Y % 2 == 0))                     // если чётная строка
+    {
+        return (THIS_Y * SEGMENTS * _WIDTH + THIS_X);
+    }
+    else                                                      // если нечётная строка
+    {
+        return (THIS_Y * SEGMENTS * _WIDTH + _WIDTH - THIS_X - 1);
+    }
+#endif
 }
 
-using namespace EffectMath_PRIVATE;
+CRGB& LedFB::at(size_t i){ return i < fb->size() ? fb->at(i) : blackhole; };

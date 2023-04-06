@@ -48,10 +48,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "char_const.h"
 #include "mp3player.h"
 
-#ifdef XY_EXTERN
-#include "XY.h"
-#endif
-
 #ifdef MIC_EFFECTS
 #include "micFFT.h"
 #endif
@@ -187,8 +183,12 @@ _LAMPFLAGS(){
 class LAMP {
     friend class LEDFader;
 private:
+    LedFB &mx;              // LED matrix framebuffer object
+    CRGB *sledsbuff=nullptr;    // вспомогательный буфер для слоя после эффектов
+    CRGB *drawbuff=nullptr;     // буфер для рисования
+
     LAMPFLAGS flags;
-    LAMPSTATE lampState; // текущее состояние лампы, которое передается эффектам
+    LAMPSTATE lampState;        // текущее состояние лампы, которое передается эффектам
 
     uint8_t txtOffset = 0; // смещение текста относительно края матрицы
     uint8_t globalBrightness = 127;     // глобальная яркость
@@ -250,7 +250,16 @@ private:
     void playEffect(bool isPlayName = false, EFFSWITCH action = EFFSWITCH::SW_NEXT);
 #endif
 
+#if defined(USE_STREAMING) && defined(EXT_STREAM_BUFFER)
+    std::vector<CRGB> streambuff; // буфер для трансляции
+#endif
+
+    LAMP(const LAMP&);  // noncopyable
+    LAMP& operator=(const LAMP&);  // noncopyable
 public:
+    // c-tor
+    LAMP(LedFB &m);
+
     void showWarning(const CRGB &color, uint32_t duration, uint16_t blinkHalfPeriod, uint8_t warnType=0, bool forcerestart=true, const char *msg = nullptr); // Неблокирующая мигалка
     void warningHelper();
 
@@ -338,7 +347,6 @@ public:
     void sendStringToLamp(const char* text = nullptr,  const CRGB &letterColor = CRGB::Black, bool forcePrint = false, bool clearQueue = false, const int8_t textOffset = -128, const int16_t fixedPos = 0);
     void sendStringToLampDirect(const char* text = nullptr,  const CRGB &letterColor = CRGB::Black, bool forcePrint = false, bool clearQueue = false, const int8_t textOffset = -128, const int16_t fixedPos = 0);
     bool isPrintingNow() { return lampState.isStringPrinting; }
-    LAMP();
 
     void handle();          // главная функция обработки эффектов
 
@@ -393,8 +401,8 @@ public:
     void setONMP3(bool flag) {flags.isOnMP3=flag;}
     bool isShowSysMenu() {return flags.isShowSysMenu;}
     void setIsShowSysMenu(bool flag) {flags.isShowSysMenu=flag;}
-    void setMIRR_V(bool flag) {if (flag!=flags.MIRR_V) { flags.MIRR_V = flag; matrixflags.MIRR_V = flag; FastLED.clear();}}
-    void setMIRR_H(bool flag) {if (flag!=flags.MIRR_H) { flags.MIRR_H = flag; matrixflags.MIRR_H = flag; FastLED.clear();}}
+    void setMIRR_V(bool flag) {if (flag!=flags.MIRR_V) { flags.MIRR_V = flag; mx.cfg.vmirror = flag; FastLED.clear();}}
+    void setMIRR_H(bool flag) {if (flag!=flags.MIRR_H) { flags.MIRR_H = flag; mx.cfg.hmirror = flag; FastLED.clear();}}
     void setTextMovingSpeed(uint8_t val) {tmStringStepTime.setInterval(val);}
     uint32_t getTextMovingSpeed() {return tmStringStepTime.getInterval();}
     void setTextOffset(uint8_t val) { txtOffset=val;}
@@ -471,17 +479,6 @@ void setTempDisp(bool flag) {flags.isTempOn = flag;}
      * @param SCHEDULER action - enable/disable/reset
      */
     void effectsTimer(SCHEDULER action, uint32_t _begin = 0);
-
-
-    ~LAMP() {}
-private:
-    LAMP(const LAMP&);  // noncopyable
-    LAMP& operator=(const LAMP&);  // noncopyable
-    CRGB *sledsbuff=nullptr; // вспомогательный буфер для слоя после эффектов
-    CRGB *drawbuff=nullptr; // буфер для рисования
-#if defined(USE_STREAMING) && defined(EXT_STREAM_BUFFER)
-    std::vector<CRGB> streambuff; // буфер для трансляции
-#endif
 };
 
 /**

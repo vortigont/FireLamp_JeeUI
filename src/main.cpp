@@ -42,8 +42,11 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "DS18B20.h"
 #endif
 
+// Led matrix frame buffer
+LedFB mx;
+
 // глобальные переменные для работы с ними в программе
-LAMP myLamp;
+LAMP myLamp(mx);
 #ifdef ESP_USE_BUTTON
 Buttons *myButtons;
 #endif

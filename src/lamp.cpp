@@ -39,6 +39,24 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "effectmath.h"
 #include "fontHEX.h"
 
+LAMP::LAMP(LedFB &m) : mx(m), tmStringStepTime(DEFAULT_TEXT_SPEED), tmNewYearMessage(0), effects(&lampState){
+  lampState.isOptPass = false; // введен ли пароль для опций
+  lampState.isInitCompleted = false; // завершилась ли инициализация лампы
+  lampState.isStringPrinting = false; // печатается ли прямо сейчас строка?
+  lampState.isEffectsDisabledUntilText = false;
+  lampState.isOffAfterText = false;
+  lampState.dawnFlag = false; // флаг устанавливается будильником "рассвет"
+//#ifdef MIC_EFFECTS
+  lampState.isCalibrationRequest = false; // находимся ли в режиме калибровки микрофона
+  lampState.micAnalyseDivider = 1; // анализ каждый раз
+//#endif
+  lampState.flags = 0; // сборосить все флаги состояния
+  lampState.speedfactor = 1.0; // дефолтное значение
+  lampState.brightness = 127;
+  //lamp_init(); // инициализация и настройка лампы (убрано, будет настройка снаружи)
+}
+
+
 void LAMP::lamp_init(const uint16_t curlimit)
 {
   setcurLimit(curlimit);
@@ -253,24 +271,6 @@ void LAMP::frameShow(const uint32_t ticktime){
 
 GAUGE *GAUGE::gauge = nullptr; // объект индикатора
 ALARMTASK *ALARMTASK::alarmTask = nullptr; // объект будильника
-
-LAMP::LAMP() : tmStringStepTime(DEFAULT_TEXT_SPEED), tmNewYearMessage(0), effects(&lampState)
-    {
-      lampState.isOptPass = false; // введен ли пароль для опций
-      lampState.isInitCompleted = false; // завершилась ли инициализация лампы
-      lampState.isStringPrinting = false; // печатается ли прямо сейчас строка?
-      lampState.isEffectsDisabledUntilText = false;
-      lampState.isOffAfterText = false;
-      lampState.dawnFlag = false; // флаг устанавливается будильником "рассвет"
-//#ifdef MIC_EFFECTS
-      lampState.isCalibrationRequest = false; // находимся ли в режиме калибровки микрофона
-      lampState.micAnalyseDivider = 1; // анализ каждый раз
-//#endif
-      lampState.flags = 0; // сборосить все флаги состояния
-      lampState.speedfactor = 1.0; // дефолтное значение
-      lampState.brightness = 127;
-      //lamp_init(); // инициализация и настройка лампы (убрано, будет настройка снаружи)
-    }
 
 void LAMP::changePower() {changePower(!flags.ONflag);}
 

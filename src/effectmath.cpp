@@ -40,8 +40,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 // используется встроенный блер, так что необходимости в данной функции более нет, отключено
 uint16_t XY(uint8_t x, uint8_t y) {return 0;}
 
-using namespace EffectMath_PRIVATE;
-
 namespace EffectMath {
 
 static const uint8_t gamma_exp[] PROGMEM = {
@@ -286,28 +284,30 @@ bool isInteger(float val) {
 
 // Функция создает вспышки в разных местах матрицы, параметр 0-255. Чем меньше, тем чаще.
 void addGlitter(uint8_t chanceOfGlitter){
-  if ( random8() < chanceOfGlitter) leds[random16(num_leds)] += CRGB::Gray;
+  if ( random8() < chanceOfGlitter) mx[random16(num_leds)] += CRGB::Gray;
 }
 
 // Функция создает разноцветные конфетти в разных местах матрицы, параметр 0-255. Чем меньше, тем чаще.
 void confetti(byte density) {
-    uint16_t idx = random16(num_leds);
-    for (byte i=0; i < num_leds/256; i++)
-      if ( random8() < density)
-        if (RGBweight(leds, idx) < 32) leds[idx] = random(32, 16777216);
+  uint16_t idx = random16(num_leds);
+  for (byte i=0; i < num_leds/256; i++)
+    if ( random8() < density)
+      if (RGBweight(mx.fb->data(), idx) < 32) mx[idx] = random(32, 16777216);
 }
 
+// todo: fastled has similar methods
+//gamma correction function
 void gammaCorrection()
-{ //gamma correction function
+{
   byte r, g, b;
   for (uint16_t i = 0; i < num_leds; i++)
   {
-    r = leds[i].r;
-    g = leds[i].g;
-    b = leds[i].b;
-    leds[i].r = pgm_read_byte(gamma_exp + r);
-    leds[i].g = pgm_read_byte(gamma_exp + g);
-    leds[i].b = pgm_read_byte(gamma_exp + b);
+    r = mx[i].r;
+    g = mx[i].g;
+    b = mx[i].b;
+    mx[i].r = pgm_read_byte(gamma_exp + r);
+    mx[i].g = pgm_read_byte(gamma_exp + g);
+    mx[i].b = pgm_read_byte(gamma_exp + b);
   }
 }
 
@@ -315,8 +315,9 @@ uint32_t getPixColor(uint32_t thisSegm) // функция получения ц�
 {
   uint32_t thisPixel = thisSegm * SEGMENTS;
   if (thisPixel < num_leds ) 
-    return (((uint32_t)leds[thisPixel].r << 16) | ((uint32_t)leds[thisPixel].g << 8 ) | (uint32_t)leds[thisPixel].b);
-  else return (((uint32_t)overrun.r << 16) | ((uint32_t)overrun.g << 8 ) | (uint32_t)overrun.b);
+    return (((uint32_t)mx[thisPixel].r << 16) | ((uint32_t)mx[thisPixel].g << 8 ) | (uint32_t)mx[thisPixel].b);
+  else return 0;
+  //else return (((uint32_t)overrun.r << 16) | ((uint32_t)overrun.g << 8 ) | (uint32_t)overrun.b);
 }
 
 // Заливает матрицу выбраным цветом
@@ -324,7 +325,7 @@ void fillAll(const CRGB &color)
 {
   for (int32_t i = 0; i < num_leds; i++)
   {
-    leds[i] = color;
+    mx[i] = color;
   }
 }
 
@@ -694,17 +695,22 @@ void nightMode(CRGB *leds)
 }
 uint32_t getPixColorXY(int16_t x, int16_t y) { return getPixColor( getPixelNumber(x, y)); } // функция получения цвета пикселя в матрице по его координатам
 //void setLedsfadeToBlackBy(uint16_t idx, uint8_t val) { leds[idx].fadeToBlackBy(val); }
-void setLedsNscale8(uint16_t idx, uint8_t val) { leds[idx].nscale8(val); }
-void dimAll(uint8_t value) { for (uint16_t i = 0; i < num_leds; i++) {leds[i].nscale8(value); } }
-void blur2d(uint8_t val) { EffectMath::blur2d(leds,WIDTH,HEIGHT,val); }
+
+void setLedsNscale8(uint16_t idx, uint8_t val) { mx[idx].nscale8(val); }
+
+void dimAll(uint8_t value) { for (uint16_t i = 0; i < num_leds; i++) {mx[i].nscale8(value); } }
+
+void blur2d(uint8_t val) { EffectMath::blur2d(getUnsafeLedsArray(),WIDTH,HEIGHT,val); }
 
 CRGB &getLed(uint16_t idx) { 
+  return mx[idx];
+/*
   if(idx<num_leds){
     return leds[idx];
   } else {
     return overrun;
   }
-}
+*/}
 
 
 uint32_t getPixelNumberBuff(uint16_t x, uint16_t y, uint8_t W , uint8_t H) // получить номер пикселя в буфере по координатам
@@ -725,10 +731,11 @@ uint32_t getPixelNumberBuff(uint16_t x, uint16_t y, uint8_t W , uint8_t H) // п
 }
 
 CRGB &getPixel(uint16_t x, uint16_t y){
+  return mx.pixel(x,y);
   // Все, что не попадает в диапазон WIDTH x HEIGHT отправляем в "невидимый" светодиод.
-  if (y > getmaxHeightIndex() || x > getmaxWidthIndex())
-      return overrun;
-  return leds[getPixelNumber(x,y)];
+//  if (y > getmaxHeightIndex() || x > getmaxWidthIndex())
+//      return overrun;
+//  return leds[getPixelNumber(x,y)];
 }
 
 double fmap(const double x, const double in_min, const double in_max, const double out_min, const double out_max){
