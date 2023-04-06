@@ -40,6 +40,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "filehelpers.hpp"
 #include "LList.h"
 #include "effects_types.h"
+#include "ledfb.hpp"
 #include <vector>
 
 #ifdef MIC_EFFECTS
@@ -324,6 +325,7 @@ private:
     bool isMicActive = false; // признак включенного микрофона
     bool isMicOnState() {return lampstate!=nullptr ? lampstate->isMicOn : false;}
 protected:
+    LedFB &fb;          // Framebuffer to work on
     EFF_ENUM effect;        /**< энумератор эффекта */
     bool isDebug() {return lampstate!=nullptr ? lampstate->isDebug : false;}
     bool isRandDemo() {return lampstate!=nullptr ? lampstate->isRandDemo : false;}
@@ -368,6 +370,7 @@ protected:
     const String &getCtrlVal(unsigned idx);
 
 public:
+    EffectCalc(LedFB &framebuffer) : fb(framebuffer) {};
     /**
      * деструктор по-умолчанию пустой, может быть переопределен
      */
@@ -405,7 +408,7 @@ public:
      * @param ledarr - указатель на массив, пока не используется
      * @param opt - опция, пока не используется, вероятно нужно заменить на какую-нибудь расширяемую структуру
     */
-    virtual bool run(CRGB* ledarr, EffectWorker *opt=nullptr);
+    virtual bool run();
 
     /**
      * drynrun метод, всеми любимая затычка-проверка на "пустой" вызов
@@ -417,31 +420,6 @@ public:
      * status - статус воркера, если работает и загружен эффект, отдает true
      */
     virtual bool status();
-
-    ///
-    /// следующие методы дублируют устранку "яркости", "скорости", "шкалы" для эффекта.
-    /// Сейчас это не используется, но соображения "за" следующие:
-    ///  - эффекты можно программить со своими локальными переменными, не дергая конкретный
-    ///    экземпляр myLamp.effects.getXXX
-    ///  - эффекты могут по необходимости масштабировать параметры из байта в свою размерность, или можно расширить базовый класс
-    ///  - эфекты могут переопределять методы установки параметров и корректировать их с учетом микрофона, например
-    ///
-
-
-    // /**
-    //  * setBrt - установка яркости для воркера
-    //  */
-    // virtual void setbrt(const byte _brt);
-
-    // /**
-    //  * setSpd - установка скорости для воркера
-    //  */
-    // virtual void setspd(const byte _spd);
-
-    // /**
-    //  * setBrt - установка шкалы для воркера
-    //  */
-    // virtual void setscl(const byte _scl);
 
     /**
      * setDynCtrl - обработка для динамических контролов idx=3+
@@ -476,6 +454,7 @@ public:
 class EffectWorker {
 private:
     LAMPSTATE *lampstate;   // ссылка на состояние лампы
+    LedFB &fb;              // framebuffer to run EffectCalcs
     SORT_TYPE effSort;      // порядок сортировки в UI
 
     Effcfg curEff;          // конфигурация текущего эффекта, имя/версия и т.п.
@@ -529,13 +508,7 @@ private:
 
 public:
     // дефолтный конструктор
-    EffectWorker(LAMPSTATE *_lampstate);
-    // конструктор копий эффектов
-    //EffectWorker(const EffectListElem* base, const EffectListElem* copy);
-    // Конструктор для отложенного эффекта
-    //EffectWorker(uint16_t delayeffnb);
-
-    //EffectWorker(const EffectListElem* eff);
+    EffectWorker(LAMPSTATE *_lampstate, LedFB &framebuffer);
     //~EffectWorker();
 
     // указатель на экземпляр класса текущего эффекта

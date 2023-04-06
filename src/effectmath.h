@@ -37,7 +37,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 #pragma once
 
-#include "config.h"
 #include "ledfb.hpp"
 // Общий набор мат. функций и примитивов для обсчета эффектов
 
@@ -54,8 +53,8 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 namespace EffectMath {
   constexpr uint16_t maxDim = ((WIDTH>HEIGHT)?WIDTH:HEIGHT);
   constexpr uint16_t minDim = ((WIDTH<HEIGHT)?WIDTH:HEIGHT);
-  constexpr uint16_t maxHeightIndex = (int16_t)HEIGHT-1;
-  constexpr uint16_t maxWidthIndex = (int16_t)WIDTH-1;
+  constexpr uint16_t maxHeightIndex = HEIGHT-1;
+  constexpr uint16_t maxWidthIndex = WIDTH-1;
   constexpr uint16_t getmaxDim() {return maxDim;}
   constexpr uint16_t getminDim() {return minDim;}
   constexpr int16_t getmaxWidthIndex() {return maxWidthIndex;}
@@ -81,7 +80,6 @@ namespace EffectMath {
   uint8_t mapsincos8(bool map, uint8_t theta, uint8_t lowest = 0, uint8_t highest = 255);
   void MoveFractionalNoise(bool scale, const uint8_t noise3d[][WIDTH][HEIGHT], int8_t amplitude, float shift = 0);
   void fadePixel(uint8_t i, uint8_t j, uint8_t step);
-  void fader(uint8_t step);
   uint8_t ceil8(const uint8_t a, const uint8_t b);
   CRGB makeBrighter( const CRGB& color, fract8 howMuchBrighter = 5);
   CRGB makeDarker( const CRGB& color, fract8 howMuchDarker = 5);
@@ -91,15 +89,13 @@ namespace EffectMath {
   uint16_t RGBweight (CRGB *leds, uint16_t idx);
   void confetti(byte density);
   void addGlitter(uint8_t chanceOfGlitter = 127);
-  void nightMode(CRGB *leds);
+  void nightMode(LedFB &ledarr);
   void gammaCorrection();
 
     // функция получения цвета пикселя по его номеру
     uint32_t getPixColor(uint32_t thisSegm); 
     // функция получения цвета пикселя в матрице по его координатам
     uint32_t getPixColorXY(int16_t x, int16_t y); 
-    // залить все
-    void fillAll(const CRGB &color); 
     
     void drawPixelXY(int16_t x, int16_t y, const CRGB &color); // функция отрисовки точки по координатам X Y
     void wu_pixel(uint32_t x, uint32_t y, CRGB col);

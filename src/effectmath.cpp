@@ -232,18 +232,6 @@ void fadePixel(uint8_t i, uint8_t j, uint8_t step)
     }
 }
 
-// функция плавного угасания цвета для всех пикселей
-void fader(uint8_t step)
-{
-  for (uint8_t i = 0U; i < WIDTH; i++)
-  {
-    for (uint8_t j = 0U; j < HEIGHT; j++)
-    {
-      fadePixel(i, j, step);
-    }
-  }
-}
-
 /* kostyamat добавил
 функция увеличения яркости */
 CRGB makeBrighter( const CRGB& color, fract8 howMuchBrighter)
@@ -318,15 +306,6 @@ uint32_t getPixColor(uint32_t thisSegm) // функция получения ц�
     return (((uint32_t)mx[thisPixel].r << 16) | ((uint32_t)mx[thisPixel].g << 8 ) | (uint32_t)mx[thisPixel].b);
   else return 0;
   //else return (((uint32_t)overrun.r << 16) | ((uint32_t)overrun.g << 8 ) | (uint32_t)overrun.b);
-}
-
-// Заливает матрицу выбраным цветом
-void fillAll(const CRGB &color) 
-{
-  for (int32_t i = 0; i < num_leds; i++)
-  {
-    mx[i] = color;
-  }
 }
 
 void drawPixelXY(int16_t x, int16_t y, const CRGB &color) // функция отрисовки точки по координатам X Y
@@ -684,15 +663,14 @@ void fill_circleF(float cx, float cy, float radius, CRGB col) {
 
 uint16_t RGBweight (CRGB *leds, uint16_t idx) {return (leds[idx].r + leds[idx].g + leds[idx].b);}
 
-void nightMode(CRGB *leds)
-{
-    for (uint16_t i = 0; i < num_leds; i++)
-    {
-        leds[i].r = dim8_lin(leds[i].r); //dim8_video
-        leds[i].g = dim8_lin(leds[i].g);
-        leds[i].b = dim8_lin(leds[i].b);
+void nightMode(LedFB &ledarr){
+    for (auto &i : *ledarr.fb){
+        i.r = dim8_lin(i.r); //dim8_video
+        i.g = dim8_lin(i.g);
+        i.b = dim8_lin(i.b);
     }
 }
+
 uint32_t getPixColorXY(int16_t x, int16_t y) { return getPixColor( getPixelNumber(x, y)); } // функция получения цвета пикселя в матрице по его координатам
 //void setLedsfadeToBlackBy(uint16_t idx, uint8_t val) { leds[idx].fadeToBlackBy(val); }
 

@@ -52,7 +52,8 @@ class EffectNone : public EffectCalc {
 private:
     void load() override { FastLED.clear(); };
 public:
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override {return true;};
+    EffectNone(LedFB &framebuffer) : EffectCalc(framebuffer){}
+    bool run() override {return true;};
 };
 
 //-------------- Эффект "Часы"
@@ -66,11 +67,12 @@ private:
     uint32_t lastrun=0;     /**< счетчик времени для эффектов с "задержкой" */
     bool isMinute=false;
 
-    bool timePrintRoutine(CRGB *leds, EffectWorker *param);
-    bool palleteTest(CRGB *leds, EffectWorker *param);
+    bool timePrintRoutine();
+    bool palleteTest();
     void load() override;
 public:
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    EffectTime(LedFB &framebuffer) : EffectCalc(framebuffer){}
+    bool run() override;
 };
 
 /*
@@ -86,7 +88,8 @@ private:
 	String setDynCtrl(UIControl*_val) override;
     void load() override;
 public:
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    EffectMetaBalls(LedFB &framebuffer) : EffectCalc(framebuffer){}
+    bool run() override;
 };
 
 // ***** SINUSOID3 / СИНУСОИД3 *****
@@ -106,7 +109,8 @@ private:
 	String setDynCtrl(UIControl*_val) override;
 
 public:
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    EffectSinusoid3(LedFB &framebuffer) : EffectCalc(framebuffer){}
+    bool run() override;
 };
 
 
@@ -114,8 +118,6 @@ public:
 //----- Эффект "Прыгающие Мячики"
 // перевод на субпиксельную графику kostyamat
 class EffectBBalls : public EffectCalc {
-private:
-
     struct Ball {
         uint8_t color;              // прикручено при адаптации для разноцветных мячиков
         uint8_t brightness{156};
@@ -136,11 +138,12 @@ private:
     uint16_t _speed;
     std::vector<Ball> balls = std::vector<Ball>(bballsNUM_BALLS, Ball());
 
-    bool bBallsRoutine(CRGB *leds, EffectWorker *param);
+    bool bBallsRoutine();
     void load() override;
 	String setDynCtrl(UIControl*_val) override;
 public:
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    EffectBBalls(LedFB &framebuffer) : EffectCalc(framebuffer){}
+    bool run() override;
 };
 
 // ------------- Эффект "Пейнтбол" -------------
@@ -154,12 +157,12 @@ private:
 	String setDynCtrl(UIControl*_val) override;
 
 public:
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    EffectLightBalls(LedFB &framebuffer) : EffectCalc(framebuffer){}
+    bool run() override;
 };
 
 // ------- Эффект "Пульс"
 class EffectPulse : public EffectCalc {
-private:
     uint8_t pulse_hue;
     float pulse_step = 0;
     uint8_t centerX = random8(WIDTH - 5U) + 3U;
@@ -170,7 +173,8 @@ private:
     float speedFactor;
     String setDynCtrl(UIControl*_val) override;
 public:
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    EffectPulse(LedFB &framebuffer) : EffectCalc(framebuffer){}
+    bool run() override;
 };
 
 // ------------- эффект "Блуждающий кубик" -------------
@@ -186,8 +190,9 @@ private:
 	String setDynCtrl(UIControl*_val);
 	
 public:
-    void load();
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    EffectBall(LedFB &framebuffer) : EffectCalc(framebuffer){}
+    void load() override;
+    bool run() override;
 };
 
 // -------- Эффект "Светлячки со шлейфом"
@@ -200,11 +205,12 @@ private:
     int16_t ballColors[_AMOUNT];
     byte light[_AMOUNT];
     float speedFactor;
-    bool lighterTracersRoutine(CRGB *leds, EffectWorker *param);
+    bool lighterTracersRoutine();
 
 public:
+    EffectLighterTracers(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
     String setDynCtrl(UIControl*_val) override;
 };
 
@@ -218,7 +224,8 @@ private:
     bool rainbowDiagonalRoutine();
 
 public:
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    EffectRainbow(LedFB &framebuffer) : EffectCalc(framebuffer){}
+    bool run() override;
 };
 
 class EffectColors : public EffectCalc {
@@ -227,32 +234,35 @@ private:
     uint8_t mode;
     uint8_t modeColor;
 
-    bool colorsRoutine(CRGB *leds, EffectWorker *param);
+    bool colorsRoutine();
     //void setscl(const byte _scl) override;
     String setDynCtrl(UIControl*_val) override;
 public:
+    EffectColors(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 // ------ Эффект "Белая Лампа"
 class EffectWhiteColorStripe : public EffectCalc {
 private:
     uint8_t shift=0;
-    bool whiteColorStripeRoutine(CRGB *leds, EffectWorker *param);
+    bool whiteColorStripeRoutine();
     String setDynCtrl(UIControl*_val) override;
 public:
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    EffectWhiteColorStripe(LedFB &framebuffer) : EffectCalc(framebuffer){}
+    bool run() override;
 };
 
 // ---- Эффект "Конфетти"
 class EffectSparcles : public EffectCalc {
 private:
     uint8_t eff = 1;
-    bool sparklesRoutine(CRGB *leds, EffectWorker *param);
+    bool sparklesRoutine();
 
 public:
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    EffectSparcles(LedFB &framebuffer) : EffectCalc(framebuffer){}
+    bool run() override;
     String setDynCtrl(UIControl*_val) override;
 };
 
@@ -263,8 +273,9 @@ private:
     byte heat[WIDTH][HEIGHT];
 
 public:
+    EffectEverythingFall(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 // ============= FIRE 2012 /  ОГОНЬ 2012 ===============
@@ -288,11 +299,12 @@ private:
     uint8_t _scale = 1;
     const uint8_t fireSmoothing = 60U; // 90
     uint8_t noise3d[NUM_LAYERS][WIDTH][HEIGHT];
-    bool fire2012Routine(CRGB *leds, EffectWorker *param);
+    bool fire2012Routine();
     String setDynCtrl(UIControl*_val) override;
 public:
+    EffectFire2012(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 // ------------- класс Светлячки -------------
@@ -310,14 +322,15 @@ protected:
 private:
     String setDynCtrl(UIControl*_val) override;
 public:
+    EffectLighters(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 // ------------- Эффект "New Матрица" ---------------
 class EffectMatrix : public EffectLighters {
 private:
-    bool matrixRoutine(CRGB *leds, EffectWorker *param);
+    bool matrixRoutine();
     uint8_t _scale = 1;
     byte gluk = 1;
     uint8_t hue, _hue;
@@ -327,8 +340,9 @@ private:
     float speedFactor;
     String setDynCtrl(UIControl*_val) override;
 public:
+    EffectMatrix(LedFB &framebuffer) : EffectLighters(framebuffer){}
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 // ------------- звездопад/метель -------------
@@ -339,12 +353,13 @@ private:
     bool isNew = true;
     float fade;
     float speedFactor;
-    bool snowStormStarfallRoutine(CRGB *leds, EffectWorker *param);
+    bool snowStormStarfallRoutine();
     String setDynCtrl(UIControl*_val) override;
 
 public:
+    EffectStarFall(LedFB &framebuffer) : EffectLighters(framebuffer){}
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 // ----------- Эффекты "Лава, Зебра, etc"
@@ -368,8 +383,9 @@ private:
     #endif
 
 public:
+    Effect3DNoise(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
     String setDynCtrl(UIControl*_val) override;
 };
 
@@ -405,8 +421,9 @@ private:
   String setDynCtrl(UIControl*_val) override;
 
 public:
+    EffectSpiro(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 // ============= ЭФФЕКТ ПРИЗМАТА ===============
@@ -419,8 +436,9 @@ private:
     
     String setDynCtrl(UIControl*_val) override;
 public:
+    EffectPrismata(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 // ============= ЭФФЕКТ СТАЯ ===============
@@ -435,12 +453,13 @@ private:
   bool predatorPresent;
   float hueoffset;
 
-  bool flockRoutine(CRGB *leds, EffectWorker *param);
+  bool flockRoutine();
   String setDynCtrl(UIControl*_val) override;
   //void setspd(const byte _spd) override;
 public:
+    EffectFlock(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 // ***** RAINBOW COMET / РАДУЖНАЯ КОМЕТА *****
@@ -474,17 +493,18 @@ private:
     void drawFillRect2_fast(int8_t x1, int8_t y1, int8_t x2, int8_t y2, CRGB color);
     void FillNoise(int8_t layer);
 
-    bool rainbowCometRoutine(CRGB *leds, EffectWorker *param);
-    bool rainbowComet3Routine(CRGB *leds, EffectWorker *param);
-    bool firelineRoutine(CRGB *leds, EffectWorker *param);
-    bool fractfireRoutine(CRGB *leds, EffectWorker *param);
-    bool flsnakeRoutine(CRGB *leds, EffectWorker *param);
-    bool smokeRoutine(CRGB *leds, EffectWorker *param);
+    bool rainbowCometRoutine();
+    bool rainbowComet3Routine();
+    bool firelineRoutine();
+    bool fractfireRoutine();
+    bool flsnakeRoutine();
+    bool smokeRoutine();
     String setDynCtrl(UIControl*_val) override;
 
 public:
+    EffectComet(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 // ============= SWIRL /  ВОДОВОРОТ ===============
@@ -492,11 +512,12 @@ public:
 // Copyright (c) 2014 Mark Kriegsman
 class EffectSwirl : public EffectCalc {
 private:
-    bool swirlRoutine(CRGB *leds, EffectWorker *param);
+    bool swirlRoutine();
 
 public:
+    EffectSwirl(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 // ============= DRIFT / ДРИФТ ===============
@@ -512,12 +533,13 @@ private:
 	byte driftType = 0;
 
 	String setDynCtrl(UIControl*_val) override;
-	bool incrementalDriftRoutine(CRGB *leds, EffectWorker *param);
-	bool incrementalDriftRoutine2(CRGB *leds, EffectWorker *param);
+	bool incrementalDriftRoutine();
+	bool incrementalDriftRoutine2();
 
 public:
+    EffectDrift(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 // ------------------------------ ЭФФЕКТ МЕРЦАНИЕ ----------------------
@@ -528,13 +550,14 @@ private:
   uint8_t tnum;
   CRGB ledsbuff[num_leds];
   float speedFactor;
-  bool twinklesRoutine(CRGB *leds, EffectWorker *param);
+  bool twinklesRoutine();
   String setDynCtrl(UIControl*_val) override;
   //void setscl(const byte _scl) override;
 public:
+    EffectTwinkles(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
     void setup();
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 class EffectWaves : public EffectCalc {
@@ -543,11 +566,12 @@ private:
   float waveTheta;
   uint8_t _scale=1;
   float speedFactor;
-  bool wavesRoutine(CRGB *leds, EffectWorker *param);
+  bool wavesRoutine();
   String setDynCtrl(UIControl*_val) override;
 public:
+    EffectWaves(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 // ============= RADAR / РАДАР ===============
@@ -561,12 +585,13 @@ private:
     byte hue;
     const float width_adj_f = (float)(WIDTH < HEIGHT ? (HEIGHT - WIDTH) / 2. : 0);
     const float height_adj_f= (float)(HEIGHT < WIDTH ? (WIDTH - HEIGHT) / 2. : 0);
-    bool radarRoutine(CRGB *leds, EffectWorker *param);
+    bool radarRoutine();
     String setDynCtrl(UIControl *_val) override;
 
 public:
+    EffectRadar(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 class EffectFire2018 : public EffectCalc {
@@ -586,7 +611,8 @@ private:
   String setDynCtrl(UIControl*_val) override;
 
 public:
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    EffectFire2018(LedFB &framebuffer) : EffectCalc(framebuffer){}
+    bool run() override;
 };
 
 // -------------- Эффект "Кодовый замок"
@@ -605,11 +631,12 @@ private:
   uint8_t currentRing; // кольцо, которое в настоящий момент нужно провернуть
   uint8_t stepCount; // оставшееся количество шагов, на которое нужно провернуть активное кольцо - случайное от WIDTH/5 до WIDTH-3
   void ringsSet();
-  bool ringsRoutine(CRGB *leds, EffectWorker *param);
+  bool ringsRoutine();
   String setDynCtrl(UIControl*_val) override;
 public:
+    EffectRingsLock(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 // ------------------------------ ЭФФЕКТ КУБИК 2D ----------------------
@@ -636,17 +663,16 @@ private:
 
   void swapBuff();
   void cubesize();
-  bool cube2dRoutine(CRGB *leds, EffectWorker *param);
-  bool cube2dClassicRoutine(CRGB *leds, EffectWorker *param);
+  bool cube2dRoutine();
+  bool cube2dClassicRoutine();
   void cube2dmoveCols(uint8_t moveItem, bool movedirection);
   void cube2dmoveRows(uint8_t moveItem, bool movedirection);
   String setDynCtrl(UIControl*_val) override;
-  //void setscl(const byte _scl) override;
 
 public:
-    EffectCube2d() : sizeX(4), sizeY(4) { cubesize(); moveItems = std::vector<int8_t>(direction ? cntX : cntY, 0); }
+    EffectCube2d(LedFB &framebuffer) : EffectCalc(framebuffer), sizeX(4), sizeY(4)  { cubesize(); moveItems = std::vector<int8_t>(direction ? cntX : cntY, 0); }
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 // ------ Эффекты "Пикассо"
@@ -669,13 +695,13 @@ private:
 
     void generate(bool reset = false);
     void position();
-    bool picassoRoutine(CRGB *leds, EffectWorker *param);
-    bool metaBallsRoutine(CRGB *leds, EffectWorker *param);
+    bool picassoRoutine();
+    bool metaBallsRoutine();
     GradientPaletteList palettes;
 public:
-    EffectPicasso();
+    EffectPicasso(LedFB &framebuffer);
     virtual ~EffectPicasso(){}
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
     String setDynCtrl(UIControl*_val) override;
 };
 
@@ -699,8 +725,9 @@ private:
     void move_leaper(Leaper &l);
 	String setDynCtrl(UIControl*_val) override;
 public:
+    EffectLeapers(LedFB &framebuffer) : EffectCalc(framebuffer){}
 	void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 
 };
 
@@ -739,13 +766,13 @@ class EffectLiquidLamp : public EffectCalc {
     void generate(bool reset = false);
     void position();
     void physic();
-    bool routine(CRGB *leds, EffectWorker *param);
+    bool routine();
 
 public:
-    EffectLiquidLamp();
+    EffectLiquidLamp(LedFB &framebuffer);
     virtual ~EffectLiquidLamp() {};
     void load() override { generate(true); };
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override {return routine(ledarr, opt);};
+    bool run() override {return routine();};
     String setDynCtrl(UIControl*_val) override;
 };
 
@@ -766,11 +793,12 @@ private:
     const uint8_t ff_speed = 1; // чем выше этот параметр, тем короче переходы (градиенты) между цветами. 1 - это самое красивое
     const uint8_t ff_scale = 26; // чем больше этот параметр, тем больше "языков пламени" или как-то так. 26 - это норм
 
-    bool whirlRoutine(CRGB *leds, EffectWorker *param);
+    bool whirlRoutine();
     String setDynCtrl(UIControl*_val) override;
 public:
+    EffectWhirl(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 // ------------- Эффект "Блики на воде Цвета"
@@ -801,12 +829,13 @@ private:
 
     void nGlare(uint8_t bri);
     void nDrops(uint8_t bri);
-    void fillNoiseLED(CRGB *leds);
+    void fillNoiseLED(CRGB *fixme);
 
 public:
+    EffectAquarium(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
     String setDynCtrl(UIControl*_val) override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 
@@ -835,8 +864,9 @@ private:
 	String setDynCtrl(UIControl*_val) override;
 
 public:
+    EffectStar(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 //---------- Эффект "Фейерверк"
@@ -875,11 +905,11 @@ public:
     color.setRGB( 0, 0, 0);
   }
 
-  void Draw(CRGB *leds);
+  void Draw(LedFB &leds);
   void Move(DOTS_STORE &store, bool Flashing);
   void GroundLaunch(DOTS_STORE &store);
   void Skyburst( accum88 basex, accum88 basey, saccum78 basedv, CRGB& basecolor, uint8_t dim);
-  CRGB &piXY(CRGB *leds, byte x, byte y);
+  CRGB &piXY(LedFB &leds, byte x, byte y);
 
   int16_t scale15by8_local( int16_t i, fract8 _scale )
   {
@@ -907,15 +937,16 @@ private:
     uint8_t valDim;
     uint8_t cnt;
     bool flashing = false;
-    bool fireworksRoutine(CRGB *leds, EffectWorker *param);
+    bool fireworksRoutine();
     void sparkGen();
     Dot gDot[SPARK];
     Dot gSparks[NUM_SPARKS];
     String setDynCtrl(UIControl*_val) override;
 
 public:
+    EffectFireworks(LedFB &framebuffer) : EffectCalc(framebuffer){}
     //void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 // ------------ Эффект "Тихий Океан"
@@ -933,8 +964,9 @@ private:
 	String setDynCtrl(UIControl*_val) override;
 
 public:
+    EffectPacific(LedFB &framebuffer) : EffectCalc(framebuffer){}
     //void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 #ifdef MIC_EFFECTS
@@ -957,8 +989,8 @@ private:
     
 
 public:
-    //void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    EffectOsc(LedFB &framebuffer) : EffectCalc(framebuffer){}
+    bool run() override;
 };
 #endif
 
@@ -976,11 +1008,12 @@ private:
     uint8_t minDimLocal = maxDim > 32 ? 32 : 16;
 
     String setDynCtrl(UIControl*_val) override;
-    bool munchRoutine(CRGB *leds, EffectWorker *param);
+    bool munchRoutine();
 
 public:
+    EffectMunch(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 // ------ Эффект "Цветной шум" 
@@ -1002,8 +1035,9 @@ private:
 	String setDynCtrl(UIControl*_val) override;
 
 public:
+    EffectNoise(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 // ---- Эффект "Мотыльки"
@@ -1030,8 +1064,9 @@ private:
 	String setDynCtrl(UIControl*_val) override;
 
 public:
+    EffectButterfly(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 // ---- Эффект "Тени"
@@ -1043,7 +1078,8 @@ private:
     uint16_t sHue16 = 0;
 
 public:
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    EffectShadows(LedFB &framebuffer) : EffectCalc(framebuffer){}
+    bool run() override;
 };
 
 // ---- Эффект "Узоры"
@@ -1083,11 +1119,12 @@ private:
 
     String setDynCtrl(UIControl*_val) override;
     void drawPicture_XY();
-    bool patternsRoutine(CRGB *leds, EffectWorker *param);
+    bool patternsRoutine();
 
 public:
+    EffectPatterns(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 
@@ -1117,8 +1154,9 @@ private:
 
     String setDynCtrl(UIControl*_val) override;
 public:
+    EffectArrows(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 // ------ Эффект "Дикие шарики"
@@ -1131,13 +1169,14 @@ private:
     byte beat1, beat2 = 0;
     byte balls = 4;
     void balls_timer();
-    void blur(CRGB *leds);
-    bool nballsRoutine(CRGB *leds, EffectWorker *param);
+    void blur();
+    bool nballsRoutine();
 
     String setDynCtrl(UIControl*_val) override;
 
 public:
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    EffectNBals(LedFB &framebuffer) : EffectCalc(framebuffer){}
+    bool run() override;
 };
 
 // ------ Эффект "Притяжение"
@@ -1173,13 +1212,13 @@ private:
     }
 
 public:
-    EffectAttract() {
+    EffectAttract(LedFB &framebuffer) : EffectCalc(framebuffer) {
         location = PVector(spirocenterX, spirocenterY);
         mass = 10;
         G = .5;
     }
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 //------------ Эффект "Змейки"
@@ -1288,8 +1327,9 @@ struct Snake
     Snake snakes[MAX_SNAKES];
     String setDynCtrl(UIControl*_val) override;
 public:
+    EffectSnake(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 //------------ Эффект "Nexus"
@@ -1319,7 +1359,8 @@ class EffectNexus: public EffectCalc {
     String setDynCtrl(UIControl*_val) override;
 
   public:
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    EffectNexus(LedFB &framebuffer) : EffectCalc(framebuffer){}
+    bool run() override;
     void load() override;
 };
 
@@ -1345,8 +1386,9 @@ private:
     void regen();
 
 public:
+    EffectTest(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 // ----------- Эфеект "Попкорн"
@@ -1377,8 +1419,9 @@ private:
     //void setscl(const byte _scl) override; // перегрузка для масштаба
 
 public:
+    EffectPopcorn(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 //-------- Эффект "Детские сны"
@@ -1406,8 +1449,9 @@ class EffectSmokeballs: public EffectCalc {
     void regen();
     String setDynCtrl(UIControl*_val) override;
   public:
+    EffectSmokeballs(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 // ----------- Эффект "Ёлки-Палки"
@@ -1428,13 +1472,14 @@ class EffectCell: public EffectCalc {
     int16_t a;
 
 	float speedFactor;
-    void cell(CRGB *leds);
-    void spider(CRGB *leds);
-    void spruce(CRGB *leds);
-    void vals(CRGB *leds);
+    void cell();
+    void spider();
+    void spruce();
+    void vals();
 
   public:
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    EffectCell(LedFB &framebuffer) : EffectCalc(framebuffer){}
+    bool run() override;
     String setDynCtrl(UIControl*_val) override;
 };
 
@@ -1451,11 +1496,12 @@ class EffectTLand: public EffectCalc {
     byte shift = 0;
     byte fine = 1;
     double t;
-    void processFrame(CRGB *leds, double t, double x, double y);
+    void processFrame(LedFB &fb, double t, double x, double y);
     float code(double i, double x, double y);
     String setDynCtrl(UIControl*_val);
   public:
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    EffectTLand(LedFB &framebuffer) : EffectCalc(framebuffer){}
+    bool run() override;
 };
 
 // ----------- Эффект "Осцилятор"
@@ -1485,7 +1531,8 @@ class EffectOscilator: public EffectCalc {
     void setCellColors(uint8_t x, uint8_t y);
     //String setDynCtrl(UIControl*_val) override;
   public:
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    EffectOscilator(LedFB &framebuffer) : EffectCalc(framebuffer){}
+    bool run() override;
     void load() override;
 };
 
@@ -1526,7 +1573,8 @@ class EffectWrain: public EffectCalc {
     void Clouds(bool flash);
 
   public:
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    EffectWrain(LedFB &framebuffer) : EffectCalc(framebuffer){}
+    bool run() override;
     void load() override;
 };
 
@@ -1572,14 +1620,15 @@ private:
     void particlesUpdate(uint8_t i);
     void fairyEmit(uint8_t i);
     void fountEmit(uint8_t i);
-    bool fairy(CRGB *leds);
-    void fount(CRGB *leds);
+    bool fairy();
+    void fount();
     //void setscl(const byte _scl) override; // перегрузка для масштаба
     String setDynCtrl(UIControl*_val) override;
 
 public:
+    EffectFairy(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 // ---------- Эффект "Бульбулятор"
@@ -1621,12 +1670,13 @@ private:
 
     Circle circles[NUMBER_OF_CIRCLES] = {};
 
-    void drawCircle(CRGB *leds, Circle circle);
+    void drawCircle(LedFB &fb, Circle circle);
     String setDynCtrl(UIControl*_val) override;
 
 public:
+    EffectCircles(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 
 }; 
 
@@ -1656,8 +1706,9 @@ private:
 
 
 public:
+    EffectBengalL(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 // ----------- Эффект "Шары"
@@ -1682,8 +1733,9 @@ private:
 
 
 public:
+    EffectBalls(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 // ---------- Эффект-игра "Лабиринт"
@@ -1727,7 +1779,8 @@ private:
     String setDynCtrl(UIControl*_val) override;
     //void setspd(const byte _spd) override; // перегрузка для скорости
 public:
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    EffectMaze(LedFB &framebuffer) : EffectCalc(framebuffer){}
+    bool run() override;
 
 }; 
 
@@ -1740,8 +1793,9 @@ private:
     //String setDynCtrl(UIControl*_val) override;
 
 public:
+    EffectFrizzles(LedFB &framebuffer) : EffectCalc(framebuffer){}
     //void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 // --------- Эффект "Северное Сияние"
@@ -1770,8 +1824,9 @@ private:
     void palettesload() override;
 
 public:
+    EffectPolarL(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 // --------- Эффект "Космо-Гонщик"
@@ -1800,8 +1855,9 @@ private:
     String setDynCtrl(UIControl*_val) override;
 
 public:
+    EffectRacer(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 // ----------------- Эффект "Магма"
@@ -1836,8 +1892,9 @@ private:
     String setDynCtrl(UIControl*_val) override;
 
 public:
+    EffectMagma(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 // ------------- Эффект "Флаги"
@@ -1994,8 +2051,9 @@ private:
     String setDynCtrl(UIControl*_val) override;
 
 public:
+    EffectFlags(LedFB &framebuffer) : EffectCalc(framebuffer){}
     //void load () override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 // --------------------- Эффект "Звездный Десант"
@@ -2019,7 +2077,8 @@ private:
     String setDynCtrl(UIControl*_val) override;
 
 public:
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    EffectStarShips(LedFB &framebuffer) : EffectCalc(framebuffer){}
+    bool run() override;
     void load() override;
 };
 #ifdef MIC_EFFECTS
@@ -2070,7 +2129,8 @@ private:
     void waterfall(uint8_t band, uint8_t barHeight);
 
 public:
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    EffectVU(LedFB &framebuffer) : EffectCalc(framebuffer){}
+    bool run() override;
     void load() override;
 };
 #endif
@@ -2134,8 +2194,9 @@ private:
     void palettesload() override;
 
 public:
+    EffectFire2021(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 // ----------- Эффект "Пятнашки"
@@ -2168,8 +2229,9 @@ private:
     String setDynCtrl(UIControl*_val) override;
 
 public:
+    EffectPuzzles(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 // ============= Эффект Цветные драже ===============
@@ -2182,8 +2244,9 @@ private:
     String setDynCtrl(UIControl*_val) override;
 
 public:
+    EffectPile(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 // ============= Эффект ДНК ===============
@@ -2203,8 +2266,9 @@ private:
     String setDynCtrl(UIControl*_val) override;
 
 public:
+    EffectDNA(LedFB &framebuffer) : EffectCalc(framebuffer){}
     //void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 // ----------- Эффект "Дым"
@@ -2219,8 +2283,9 @@ private:
     String setDynCtrl(UIControl*_val) override;
 
 public:
+    EffectSmoker(LedFB &framebuffer) : EffectCalc(framebuffer){}
 
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 // ----------- Эффект "Мираж"
@@ -2242,7 +2307,8 @@ private:
     void blur();
 
 public:
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    EffectMirage(LedFB &framebuffer) : EffectCalc(framebuffer){}
+    bool run() override;
 };
 
 // -------------------- Эффект "Акварель"
@@ -2319,8 +2385,9 @@ private:
     String setDynCtrl(UIControl*_val) override;
 
 public:
+    EffectWcolor(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 // ----------- Эффект "Неопалимая купина"
@@ -2345,8 +2412,9 @@ private:
     void palettesload();
 
 public:
+    EffectRadialFire(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };
 
 class EffectSplashBals : public EffectCalc {
@@ -2372,6 +2440,7 @@ private:
     String setDynCtrl(UIControl*_val) override;
 
 public:
+    EffectSplashBals(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    bool run() override;
 };

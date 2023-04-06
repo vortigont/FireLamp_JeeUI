@@ -39,7 +39,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "effectmath.h"
 #include "fontHEX.h"
 
-LAMP::LAMP(LedFB &m) : mx(m), tmStringStepTime(DEFAULT_TEXT_SPEED), tmNewYearMessage(0), effects(&lampState){
+LAMP::LAMP(LedFB &m) : mx(m), tmStringStepTime(DEFAULT_TEXT_SPEED), tmNewYearMessage(0), effects(&lampState, m){
   lampState.isOptPass = false; // введен ли пароль для опций
   lampState.isInitCompleted = false; // завершилась ли инициализация лампы
   lampState.isStringPrinting = false; // печатается ли прямо сейчас строка?
@@ -189,7 +189,7 @@ void LAMP::effectsTick(){
         memcpy(getUnsafeLedsArray(), sledsbuff, num_leds);
       }
       // посчитать текущий эффект (сохранить кадр в буфер, если ОК)
-      if(effects.worker ? effects.worker->run(getUnsafeLedsArray(), &effects) : 1) {
+      if(effects.worker ? effects.worker->run() : 1) {
 #if defined(PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED)
         HeapSelectIram ephemeral;
 #endif
@@ -1093,7 +1093,7 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
 
   // отрисовать текущий эффект (только если лампа включена, иначе бессмысленно)
   if(effects.worker && flags.ONflag && !lampState.isEffectsDisabledUntilText){
-    effects.worker->run(getUnsafeLedsArray(), &effects);
+    effects.worker->run();
 #if defined(PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED)
     HeapSelectIram ephemeral;
 #endif
@@ -1193,16 +1193,16 @@ void LAMP::warningHelper(){
     uint16_t cnt = warningTask->getWarn_duration()/(warningTask->getWarn_blinkHalfPeriod()*2);
     uint8_t xPos = (WIDTH+LET_WIDTH*(cnt>99?3:cnt>9?2:1))/2;    
     switch(lampState.warnType){
-      case 0: EffectMath::fillAll(warningTask->getWarn_color());
+      case 0: mx.fill(warningTask->getWarn_color());
         break;
       case 1: {
-        EffectMath::fillAll(warningTask->getWarn_color());
+        mx.fill(warningTask->getWarn_color());
         if (!isPrintingNow())
           sendStringToLamp(msg.isEmpty() ? String(cnt).c_str() : msg.c_str(), warningTask->getWarn_color(), true, false, -128, xPos);
         break;
       }
       case 2: {
-        EffectMath::fillAll(warningTask->getWarn_color());
+        mx.fill(warningTask->getWarn_color());
         if (!isPrintingNow())
           sendStringToLamp(msg.isEmpty() ? String(cnt).c_str() : msg.c_str(), -warningTask->getWarn_color(), true, false, -128, xPos);
         break;

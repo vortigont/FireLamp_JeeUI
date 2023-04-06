@@ -43,7 +43,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #endif
 
 // Led matrix frame buffer
-LedFB mx;
+LedFB mx(WIDTH, HEIGHT);
 
 // глобальные переменные для работы с ними в программе
 LAMP myLamp(mx);

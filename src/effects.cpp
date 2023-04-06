@@ -43,10 +43,10 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 // EffectCalc::~EffectCalc(){LOG(println, "Effect object destroyed");}
 
 // ------------- Эффект "Конфетти" --------------
-bool EffectSparcles::run(CRGB *ledarr, EffectWorker *opt){
+bool EffectSparcles::run(){
   if (dryrun(3.0))
     return false;
-  return sparklesRoutine(*&ledarr, &*opt);
+  return sparklesRoutine();
 }
 
 // !--
@@ -56,17 +56,18 @@ String EffectSparcles::setDynCtrl(UIControl*_val){
   return String();
 }
 
-bool EffectSparcles::sparklesRoutine(CRGB *leds, EffectWorker *param)
+bool EffectSparcles::sparklesRoutine()
 {
 
 #ifdef MIC_EFFECTS
   uint8_t mic = getMicMapMaxPeak();
   uint8_t mic_f = map(getMicMapFreq(), LOW_FREQ_MAP_VAL, HI_FREQ_MAP_VAL, 0, 255);
   if (isMicOn() && eff > 5)
-    fadeToBlackBy(leds, num_leds, 255 - mic);
-  EffectMath::fader(isMicOn() ? map(scale, 1, 255, 100, 1) : map(scale, 1, 255, 50, 1));
+    fb.fade(255 - mic);
+
+  fb.fade(isMicOn() ? map(scale, 1, 255, 100, 1) : map(scale, 1, 255, 50, 1));
 #else
-  EffectMath::fader(map(scale, 1, 255, 1, 50));
+  fb.fade(map(scale, 1, 255, 1, 50));
 #endif
 
   CHSV currentHSV;
@@ -118,8 +119,8 @@ bool EffectSparcles::sparklesRoutine(CRGB *leds, EffectWorker *param)
 
 // ------ Эффект "Белая Лампа"
 // ------------- белый свет (светится горизонтальная полоса по центру лампы; масштаб - высота центральной горизонтальной полосы; скорость - регулировка от холодного к тёплому; яркость - общая яркость) -------------
-bool EffectWhiteColorStripe::run(CRGB *ledarr, EffectWorker *opt){
-  return whiteColorStripeRoutine(*&ledarr, &*opt);
+bool EffectWhiteColorStripe::run(){
+  return whiteColorStripeRoutine();
 }
 
 // !--
@@ -129,7 +130,7 @@ String EffectWhiteColorStripe::setDynCtrl(UIControl*_val){
   return String();
 }
 
-bool EffectWhiteColorStripe::whiteColorStripeRoutine(CRGB *leds, EffectWorker *param)
+bool EffectWhiteColorStripe::whiteColorStripeRoutine()
 {
   FastLED.clear();
 
@@ -201,7 +202,7 @@ void EffectEverythingFall::load(){
 // Higher chance = more roaring fire.  Lower chance = more flickery fire.
 // Default 120, suggested range 50-200.
 #define SPARKINGNEW 80U // 50 // 30 // 120 // 90 // 60
-bool EffectEverythingFall::run(CRGB *ledarr, EffectWorker *opt){
+bool EffectEverythingFall::run(){
   if (dryrun(4.0))
     return false;
 
@@ -245,7 +246,7 @@ String EffectPulse::setDynCtrl(UIControl*_val){
   return String();
 }
 
-bool EffectPulse::run(CRGB *leds, EffectWorker *param) {
+bool EffectPulse::run() {
   // if (dryrun(3.0))
   //   return false;
 
@@ -267,7 +268,7 @@ bool EffectPulse::run(CRGB *leds, EffectWorker *param) {
   #define BLUR 10U
 #endif
 
-  //fadeToBlackBy(leds, num_leds, FADE);
+  //fb.fade(FADE);
   if (pulse_step <= currentRadius) {
     for (uint8_t i = 0; i < pulse_step; i++ ) {
       uint8_t _dark = qmul8( 2U, cos8 (128U / (pulse_step + 1U) * (i + 1U))) ;
@@ -310,7 +311,7 @@ bool EffectPulse::run(CRGB *leds, EffectWorker *param) {
       EffectMath::drawCircle(centerX, centerY, i, _pulse_color);
     }
   } else {
-    fadeToBlackBy(leds, num_leds, FADE);
+    fb.fade(FADE);
     centerX = random8(WIDTH - 5U) + 3U;
     centerY = random8(HEIGHT - 5U) + 3U;
     _pulse_hueall += _pulse_delta;
@@ -325,7 +326,7 @@ bool EffectPulse::run(CRGB *leds, EffectWorker *param) {
 
 // радуги 2D
 // ------------- радуга вертикальная/горизонтальная ----------------
-bool EffectRainbow::run(CRGB *ledarr, EffectWorker *opt){
+bool EffectRainbow::run(){
   // коэф. влияния замаплен на скорость, 4 ползунок нафиг не нужен
   hue += (6.0 * (speed / 255.0) + 0.05 ); // скорость смещения цвета зависит от кривизны наклна линии, коэф. 6.0 и 0.05
 #ifdef MIC_EFFECTS
@@ -374,11 +375,11 @@ bool EffectRainbow::rainbowDiagonalRoutine()
 
 // ------------- цвета -----------------
 void EffectColors::load(){
-    EffectMath::fillAll(CHSV(scale, 255U, 55U));
+    fb.fill(CHSV(scale, 255U, 55U));
 }
 
-bool EffectColors::run(CRGB *ledarr, EffectWorker *opt){
-  return colorsRoutine(*&ledarr, &*opt);
+bool EffectColors::run(){
+  return colorsRoutine();
 }
 
 // void EffectColors::setscl(const byte _scl){
@@ -394,7 +395,7 @@ String EffectColors::setDynCtrl(UIControl*_val){
   return String();
 }
 
-bool EffectColors::colorsRoutine(CRGB *leds, EffectWorker *param)
+bool EffectColors::colorsRoutine()
 {
   static unsigned int step = 0; // доп. задержка
   unsigned int delay = (speed==1)?4294967294:255-speed+1; // на скорости 1 будет очень долгое ожидание)))
@@ -426,7 +427,7 @@ EVERY_N_SECONDS(1){
       EffectMath::dimAll(254); // плавно гасим
     } else {
       if(mmp>scale) // если амплитуда превышает масштаб
-        EffectMath::fillAll(CHSV(constrain(mmf*(2.0*speed/255.0),1,255), 255U, constrain(mmp*(2.0*scale/127.0+1.5),1,255))); // превышает минимаьный уровень громкости, значит выводим текущую частоту
+        fb.fill(CHSV(constrain(mmf*(2.0*speed/255.0),1,255), 255U, constrain(mmp*(2.0*scale/127.0+1.5),1,255))); // превышает минимаьный уровень громкости, значит выводим текущую частоту
       else
         EffectMath::dimAll(252); // плавно гасим
     }
@@ -437,7 +438,7 @@ EVERY_N_SECONDS(1){
         if(!step){
           if(!modeColor){
             modeColor = scale;
-            EffectMath::fillAll(CHSV(modeColor, 255U, 255U));
+            fb.fill(CHSV(modeColor, 255U, 255U));
           }
           else {
             modeColor = 0;
@@ -446,7 +447,7 @@ EVERY_N_SECONDS(1){
         }
         break;
       case 2:
-        EffectMath::fillAll(CHSV(ihue, 255U, 255U));
+        fb.fill(CHSV(ihue, 255U, 255U));
         break;
       case 3:
         if(!step){
@@ -454,15 +455,15 @@ EVERY_N_SECONDS(1){
             modeColor = ~modeColor;
           else
             modeColor = modeColor ? 0 : map(scale,128,255,1,255);
-          EffectMath::fillAll(CHSV(modeColor, 255U, 255U));
+          fb.fill(CHSV(modeColor, 255U, 255U));
         }
         break;
       default:
-        EffectMath::fillAll(CHSV(ihue, 255U, 255U));      
+        fb.fill(CHSV(ihue, 255U, 255U));      
     }
   }
 #else
-  EffectMath::fillAll(CHSV(ihue, 255U, 255U));
+  fb.fill(CHSV(ihue, 255U, 255U));
 #endif
   } else {
     ihue += scale; // смещаемся на следущий
@@ -493,8 +494,8 @@ String EffectMatrix::setDynCtrl(UIControl*_val)
   return String();
 }
 
-bool EffectMatrix::run(CRGB *ledarr, EffectWorker *opt){
-  return matrixRoutine(*&ledarr, &*opt);
+bool EffectMatrix::run(){
+  return matrixRoutine();
 }
 
 void EffectMatrix::load(){
@@ -510,7 +511,7 @@ void EffectMatrix::load(){
   }
 }
 
-bool EffectMatrix::matrixRoutine(CRGB *leds, EffectWorker *param)
+bool EffectMatrix::matrixRoutine()
 {
   
   EffectMath::dimAll(map(speed, 1, 255, 252, 240));
@@ -557,8 +558,8 @@ bool EffectMatrix::matrixRoutine(CRGB *leds, EffectWorker *param)
 }
 
 // ------------- звездопад/метель -------------
-bool EffectStarFall::run(CRGB *ledarr, EffectWorker *opt){
-  return snowStormStarfallRoutine(*&ledarr, &*opt);
+bool EffectStarFall::run(){
+  return snowStormStarfallRoutine();
 }
 
 void EffectStarFall::load(){
@@ -584,7 +585,7 @@ String EffectStarFall::setDynCtrl(UIControl*_val) {
   return String();
 }
 
-bool EffectStarFall::snowStormStarfallRoutine(CRGB *leds, EffectWorker *param)
+bool EffectStarFall::snowStormStarfallRoutine()
 {
   EffectMath::dimAll(255 - (effId == 2 ? 70 : 60) * speedFactor);
   CHSV color;
@@ -661,9 +662,9 @@ String EffectLighters::setDynCtrl(UIControl*_val) {
   return String();
 }
 
-bool EffectLighters::run(CRGB *leds, EffectWorker *param)
+bool EffectLighters::run()
 {
-  memset8( leds, 0, num_leds * 3);
+  fb.clear();
 
   EVERY_N_MILLIS(333)
   {
@@ -736,15 +737,15 @@ void EffectLighterTracers::load(){
 }
 
 
-bool EffectLighterTracers::run(CRGB *ledarr, EffectWorker *opt){
+bool EffectLighterTracers::run(){
 
-  return lighterTracersRoutine(*&ledarr, &*opt);
+  return lighterTracersRoutine();
 }
 
-bool EffectLighterTracers::lighterTracersRoutine(CRGB *leds, EffectWorker *param)
+bool EffectLighterTracers::lighterTracersRoutine()
 {
 
-  fadeToBlackBy(leds, num_leds, map(speed, 1, 255, 6, 55)); // размер шлейфа должен сохранять размер, не зависимо от скорости
+  fb.fade(map(speed, 1, 255, 6, 55)); // размер шлейфа должен сохранять размер, не зависимо от скорости
 
   // движение шариков
   uint8_t maxBalls = cnt;
@@ -780,7 +781,7 @@ bool EffectLighterTracers::lighterTracersRoutine(CRGB *leds, EffectWorker *param
     }
     EffectMath::drawPixelXYF(coord[j][0U], coord[j][1U], CHSV(ballColors[j], 200U, 255U));
   }
-  EffectMath::blur2d(leds, WIDTH, HEIGHT, 5);
+  EffectMath::blur2d(fb.data(), fb.cfg.w, fb.cfg.h, 5);
   return true;
 }
 
@@ -792,14 +793,14 @@ String EffectLightBalls::setDynCtrl(UIControl*_val){
   return String();
 }
 
-bool EffectLightBalls::run(CRGB *leds, EffectWorker *param)
+bool EffectLightBalls::run()
 {
 
   // Apply some blurring to whatever's already on the matrix
   // Note that we never actually clear the matrix, we just constantly
   // blur it repeatedly.  Since the blurring is 'lossy', there's
   // an automatic trend toward black -- by design.
-  EffectMath::blur2d(leds, WIDTH, HEIGHT, dim8_raw(beatsin8(3,64,100)));
+  EffectMath::blur2d(fb.data(), fb.cfg.w, fb.cfg.h, dim8_raw(beatsin8(3,64,100)));
 
   // Use two out-of-sync sine waves
   uint16_t  i = beatsin16( 79 * speedFactor, 0, 255); //91
@@ -848,7 +849,7 @@ void EffectBall::load() {
   }
 }
 
-bool EffectBall::run(CRGB *leds, EffectWorker *param) {
+bool EffectBall::run() {
 // каждые 5 секунд коррекция направления
   EVERY_N_MILLISECONDS(map(speed, 1, 255, 6000, 3000)) {
     //LOG(println,ballSize);
@@ -893,11 +894,11 @@ bool EffectBall::run(CRGB *leds, EffectWorker *param) {
   }
 
   if (scale <= 85)  // при масштабе до 85 выводим кубик без шлейфа
-    memset8( leds, 0, num_leds * 3);
+    fb.clear();
   else if (scale > 85 and scale <= 170)
-    fadeToBlackBy(leds, num_leds, 255 - map(speed, 1, 255, 245, 200)); // выводим кубик со шлейфом, длинна которого зависит от скорости.
+    fb.fade(255 - map(speed, 1, 255, 245, 200)); // выводим кубик со шлейфом, длинна которого зависит от скорости.
   else
-    fadeToBlackBy(leds, num_leds, 255 - map(speed, 1, 255, 253, 248)); // выводим кубик с длинным шлейфом, длинна которого зависит от скорости.
+    fb.fade(255 - map(speed, 1, 255, 253, 248)); // выводим кубик с длинным шлейфом, длинна которого зависит от скорости.
 
   for (uint8_t i = 0; i < ballSize; i++)
   {
@@ -1004,7 +1005,7 @@ String Effect3DNoise::setDynCtrl(UIControl*_val) {
   return String();
 }
 
-bool Effect3DNoise::run(CRGB *ledarr, EffectWorker *opt){
+bool Effect3DNoise::run(){
   #ifdef MIC_EFFECTS
     uint8_t mmf = isMicOn() ? getMicMapFreq() : 0;
     uint8_t mmp = isMicOn() ? getMicMapMaxPeak() : 0;
@@ -1027,8 +1028,8 @@ bool Effect3DNoise::run(CRGB *ledarr, EffectWorker *opt){
 //  With BIG thanks to the FastLED community!
 //  адаптация от SottNick
 // перевод на субпиксельную графику kostyamat
-bool EffectBBalls::run(CRGB *ledarr, EffectWorker *opt){
-  return bBallsRoutine(ledarr, opt);
+bool EffectBBalls::run(){
+  return bBallsRoutine();
 }
 
 void EffectBBalls::load(){
@@ -1063,9 +1064,9 @@ String EffectBBalls::setDynCtrl(UIControl*_val){
   return String();
 }
 
-bool EffectBBalls::bBallsRoutine(CRGB *leds, EffectWorker *param)
+bool EffectBBalls::bBallsRoutine()
 {
-  fadeToBlackBy(leds, num_leds, _scale <= 16 ? 255 : 50);
+  fb.fade(_scale <= 16 ? 255 : 50);
   hue += (float)speed/ 1024;
   for (auto &bball : balls){
     bballsTCycle =  millis() - bball.tlast;     // Calculate the time since the last time the ball was on the ground
@@ -1135,7 +1136,7 @@ String EffectSinusoid3::setDynCtrl(UIControl*_val){
   return String();
 }
 
-bool EffectSinusoid3::run(CRGB *leds, EffectWorker *param) {
+bool EffectSinusoid3::run() {
   float time_shift = millis()&0xFFFFF; // на больших значениях будет страннео поведение, поэтому уменьшаем точность, хоть и будет иногда срыв картинки, но в 18 минут, так что - хрен с ним
 
   
@@ -1239,7 +1240,7 @@ String EffectMetaBalls::setDynCtrl(UIControl*_val){
 void EffectMetaBalls::load(){
 palettesload();}
 
-bool EffectMetaBalls::run(CRGB *leds, EffectWorker *param)
+bool EffectMetaBalls::run()
 {
   // get some 3 random moving points
   unsigned long t = millis() * speedFactor;
@@ -1311,7 +1312,7 @@ String EffectSpiro::setDynCtrl(UIControl*_val) {
   return String();
 }
 
-bool EffectSpiro::run(CRGB *leds, EffectWorker *param) {
+bool EffectSpiro::run() {
   // страхуемся от креша
   if (curPalette == nullptr) {
     return false;
@@ -1431,36 +1432,36 @@ String EffectComet::setDynCtrl(UIControl*_val) {
   return String();
 }
 
-bool EffectComet::run(CRGB *ledarr, EffectWorker *opt){
+bool EffectComet::run(){
   speedy = map(speed, 1, 255, 20, 255);
   
   effId = _scale;
   switch (effId)
   {
   case 1 :
-    return rainbowCometRoutine(*&ledarr, &*opt);
+    return rainbowCometRoutine();
     break;
   case 2 :
-    return rainbowComet3Routine(*&ledarr, &*opt);
+    return rainbowComet3Routine();
     break;
   case 3 :
-    return firelineRoutine(*&ledarr, &*opt);
+    return firelineRoutine();
     break;
   case 4 :
-    return fractfireRoutine(*&ledarr, &*opt);
+    return fractfireRoutine();
     break;
   case 5 :
-    return flsnakeRoutine(*&ledarr, &*opt);
+    return flsnakeRoutine();
     break;
   case 6 :
-    return smokeRoutine(*&ledarr, &*opt);
+    return smokeRoutine();
     break;
   default:
     return false;
   }
 }
 
-bool EffectComet::smokeRoutine(CRGB *leds, EffectWorker *param) {
+bool EffectComet::smokeRoutine() {
   // if(isDebug()){
   //   FastLED.clear(); // для отладки чистим матрицу, чтобы показать перемещение точек
   // }
@@ -1505,9 +1506,9 @@ bool EffectComet::smokeRoutine(CRGB *leds, EffectWorker *param) {
   return true;
 }
 
-bool EffectComet::firelineRoutine(CRGB *leds, EffectWorker *param) {
+bool EffectComet::firelineRoutine() {
   // if(!isDebug()) 
-    fadeToBlackBy(leds, num_leds, map(blur, 1, 64, 20, 5)); 
+    fb.fade(map(blur, 1, 64, 20, 5)); 
   // else FastLED.clear();
 
   count ++;
@@ -1535,10 +1536,10 @@ bool EffectComet::firelineRoutine(CRGB *leds, EffectWorker *param) {
   return true;
 }
 
-bool EffectComet::fractfireRoutine(CRGB *leds, EffectWorker *param) {
+bool EffectComet::fractfireRoutine() {
 
   // if(!isDebug()) 
-    fadeToBlackBy(leds, num_leds, map(blur, 1, 64, 20, 5)); 
+    fb.fade(map(blur, 1, 64, 20, 5)); 
   // else FastLED.clear();
 
   float beat = (float)beatsin88(5 * speedy, 50, 100) / 100 ;
@@ -1564,7 +1565,7 @@ bool EffectComet::fractfireRoutine(CRGB *leds, EffectWorker *param) {
   return true;
 }
 
-bool EffectComet::flsnakeRoutine(CRGB *leds, EffectWorker *param) {
+bool EffectComet::flsnakeRoutine() {
   // if(!isDebug()) 
     EffectMath::dimAll(blur); 
   // else FastLED.clear();
@@ -1596,7 +1597,7 @@ bool EffectComet::flsnakeRoutine(CRGB *leds, EffectWorker *param) {
   return true;
 }
 
-bool EffectComet::rainbowCometRoutine(CRGB *leds, EffectWorker *param)
+bool EffectComet::rainbowCometRoutine()
 { // Rainbow Comet by PalPalych
 /*
   Follow the Rainbow Comet Efect by PalPalych
@@ -1608,7 +1609,7 @@ bool EffectComet::rainbowCometRoutine(CRGB *leds, EffectWorker *param)
 */
 
   EffectMath::blur2d(e_com_BLUR);    // < -- размытие хвоста
-  if (blur < 64) fadeToBlackBy(leds, num_leds, map(blur, 1, 64, 32, 0));
+  if (blur < 64) fb.fade(map(blur, 1, 64, 32, 0));
 
   // if(isDebug()){
   //   FastLED.clear(); // для отладки чистим матрицу, чтобы показать перемещение точек
@@ -1641,11 +1642,11 @@ bool EffectComet::rainbowCometRoutine(CRGB *leds, EffectWorker *param)
   return true;
 }
 
-bool EffectComet::rainbowComet3Routine(CRGB *leds, EffectWorker *param)
+bool EffectComet::rainbowComet3Routine()
 { 
   count++;
   EffectMath::blur2d(e_com_BLUR);    // < -- размытие хвоста
-  if (blur < 64) fadeToBlackBy(leds, num_leds, map(blur, 1, 64, 32, 0));
+  if (blur < 64) fb.fade(map(blur, 1, 64, 32, 0));
 
   if (count%2 == 0) hue++;
 
@@ -1696,12 +1697,12 @@ void EffectPrismata::load(){
   palettesload();
 }
 
-bool EffectPrismata::run(CRGB *leds, EffectWorker *opt) {
+bool EffectPrismata::run() {
   EVERY_N_MILLIS(100) {
     spirohueoffset += 1;
   }
 
-  fadeToBlackBy(leds, num_leds, map(fadelvl, 1, 255, 130, 2)); // делаем шлейф
+  fb.fade(map(fadelvl, 1, 255, 130, 2)); // делаем шлейф
 
   for (byte x = 0; x < WIDTH; x++) {
       float y = (float)beatsin16((uint8_t)x + speedFactor, 0, EffectMath::getmaxHeightIndex()* 10) / 10.0f;
@@ -1757,17 +1758,17 @@ String EffectFlock::setDynCtrl(UIControl*_val) {
   return String();
 }
 
-bool EffectFlock::run(CRGB *ledarr, EffectWorker *opt){
+bool EffectFlock::run(){
   if (curPalette == nullptr) {
     return false;
   }
-  return flockRoutine(*&ledarr, &*opt);
+  return flockRoutine();
 }
 
-bool EffectFlock::flockRoutine(CRGB *leds, EffectWorker *param) {
+bool EffectFlock::flockRoutine() {
   hueoffset += (speedFactor/5.0+0.1);
 
-  fadeToBlackBy(leds, num_leds, map(speed, 1, 255, 220, 10));
+  fb.fade(map(speed, 1, 255, 220, 10));
 
   bool applyWind = random(0, 255) > 240;
   if (applyWind) {
@@ -1810,12 +1811,12 @@ void EffectSwirl::load(){
   palettesload();    // подгружаем дефолтные палитры
 }
 
-bool EffectSwirl::run(CRGB *ledarr, EffectWorker *opt){
-  return swirlRoutine(*&ledarr, &*opt);
+bool EffectSwirl::run(){
+  return swirlRoutine();
 }
 
 #define e_swi_BORDER (1U)  // размытие экрана за активный кадр
-bool EffectSwirl::swirlRoutine(CRGB *leds, EffectWorker *param)
+bool EffectSwirl::swirlRoutine()
 {
   if (curPalette == nullptr) {
     return false;
@@ -1873,11 +1874,11 @@ String EffectDrift::setDynCtrl(UIControl*_val){
   return String();
 }
 
-bool EffectDrift::run(CRGB *ledarr, EffectWorker *opt){
+bool EffectDrift::run(){
   if (driftType == 1 or driftType == 2)
     FastLED.clear();
   else
-    fadeToBlackBy(ledarr, num_leds, beatsin88(350. * EffectMath::fmap((float)speed, 1., 255., 1., 5.), 512, 4096) / 256);
+    fb.fade(beatsin88(350. * EffectMath::fmap((float)speed, 1., 255., 1., 5.), 512, 4096) / 256);
 
   
   _dri_delta = beatsin8(1U);
@@ -1888,18 +1889,18 @@ bool EffectDrift::run(CRGB *ledarr, EffectWorker *opt){
   {
   case 1:
   case 3:
-    return incrementalDriftRoutine(*&ledarr, &*opt);
+    return incrementalDriftRoutine();
     break;
   case 2:
   case 4:
-    return incrementalDriftRoutine2(*&ledarr, &*opt);
+    return incrementalDriftRoutine2();
     break;
   default:
     return false;
   }
 }
 
-bool EffectDrift::incrementalDriftRoutine(CRGB *leds, EffectWorker *param)
+bool EffectDrift::incrementalDriftRoutine()
 {
   if (curPalette == nullptr) {
     return false;
@@ -1918,7 +1919,7 @@ bool EffectDrift::incrementalDriftRoutine(CRGB *leds, EffectWorker *param)
 // v1.0 - Updating for GuverLamp v1.7 by SottNick 12.04.2020
 // v1.1 - +dither, +phase shifting by PalPalych 12.04.2020
 // https://github.com/pixelmatix/aurora/blob/master/PatternIncrementalDrift2.h
-bool EffectDrift::incrementalDriftRoutine2(CRGB *leds, EffectWorker *param)
+bool EffectDrift::incrementalDriftRoutine2()
 {
   if (curPalette == nullptr) {
     return false;
@@ -1981,11 +1982,11 @@ String EffectTwinkles::setDynCtrl(UIControl*_val) {
 }
 
 
-bool EffectTwinkles::run(CRGB *ledarr, EffectWorker *opt){
-  return twinklesRoutine(*&ledarr, &*opt);
+bool EffectTwinkles::run(){
+  return twinklesRoutine();
 }
 
-bool EffectTwinkles::twinklesRoutine(CRGB *leds, EffectWorker *param)
+bool EffectTwinkles::twinklesRoutine()
 {
   if (curPalette == nullptr) {
     return false;
@@ -2037,8 +2038,8 @@ void EffectRadar::load(){
   palettesload();    // подгружаем дефолтные палитры
 }
 
-bool EffectRadar::run(CRGB *ledarr, EffectWorker *opt){
-  return radarRoutine(*&ledarr, &*opt);
+bool EffectRadar::run(){
+  return radarRoutine();
 }
 
 // !++
@@ -2048,14 +2049,14 @@ String EffectRadar::setDynCtrl(UIControl*_val) {
   return String();
 }
 
-bool EffectRadar::radarRoutine(CRGB *leds, EffectWorker *param)
+bool EffectRadar::radarRoutine()
 {
   if (curPalette == nullptr)
     return false;
 
   if (subPix)
   {
-    fadeToBlackBy(leds, num_leds, 5 + 20 * (float)speed / 255);
+    fb.fade(5 + 20 * (float)speed / 255);
     for (float offset = 0.0f; offset < (float)maxDim /2; offset +=0.25)
     {
       float x = (float)EffectMath::mapsincos8(false, eff_theta, offset * 4, maxDim * 4 - offset * 4) / 4.  - width_adj_f;
@@ -2097,9 +2098,9 @@ void EffectWaves::load(){
   palettesload();    // подгружаем дефолтные палитры
 }
 
-bool EffectWaves::run(CRGB *ledarr, EffectWorker *opt){
+bool EffectWaves::run(){
   //fpsmeter();
-  return wavesRoutine(*&ledarr, &*opt);
+  return wavesRoutine();
 }
 
 // !++
@@ -2110,7 +2111,7 @@ String EffectWaves::setDynCtrl(UIControl*_val){
   return String();
 }
 
-bool EffectWaves::wavesRoutine(CRGB *leds, EffectWorker *param) {
+bool EffectWaves::wavesRoutine() {
   if (curPalette == nullptr) {
     return false;
   }
@@ -2192,7 +2193,7 @@ String EffectFire2012::setDynCtrl(UIControl*_val){
   return String();
 }
 
-bool EffectFire2012::run(CRGB *ledarr, EffectWorker *opt) {
+bool EffectFire2012::run() {
   if (curPalette == nullptr) {
     return false;
   }
@@ -2201,10 +2202,10 @@ bool EffectFire2012::run(CRGB *ledarr, EffectWorker *opt) {
 #ifdef MIC_EFFECTS
   cooling = isMicOn() ? 255 - getMicMapMaxPeak() : 130;
 #endif
-  return fire2012Routine(*&ledarr, &*opt);
+  return fire2012Routine();
 }
 
-bool EffectFire2012::fire2012Routine(CRGB *leds, EffectWorker *opt) {
+bool EffectFire2012::fire2012Routine() {
   sparking = 64 + _scale;
 
 #if HEIGHT / 6 > 6
@@ -2255,7 +2256,7 @@ String EffectFire2018::setDynCtrl(UIControl*_val){
   return String();
 }
 
-bool EffectFire2018::run(CRGB *leds, EffectWorker *param)
+bool EffectFire2018::run()
 {
   // some changing values
   uint16_t ctrl1 = inoise16(11 * millis(), 0, 0);
@@ -2373,10 +2374,10 @@ bool EffectFire2018::run(CRGB *leds, EffectWorker *param)
 ////ringHueShift2[ringsCount]; // обычная скорость переливания оттенка всего кольца -8 - +8 случайное число
 //uint8_t currentRing; // кольцо, которое в настоящий момент нужно провернуть
 //uint8_t stepCount; // оставшееся количество шагов, на которое нужно провернуть активное кольцо - случайное от WIDTH/5 до WIDTH-3
-bool EffectRingsLock::run(CRGB *ledarr, EffectWorker *opt){
+bool EffectRingsLock::run(){
   if (dryrun(3.0))
     return false;
-  return ringsRoutine(*&ledarr, &*opt);
+  return ringsRoutine();
 }
 
 void EffectRingsLock::load(){
@@ -2413,7 +2414,7 @@ void EffectRingsLock::ringsSet(){
   }
 }
 
-bool EffectRingsLock::ringsRoutine(CRGB *leds, EffectWorker *param)
+bool EffectRingsLock::ringsRoutine()
 {
   uint8_t h, x, y;
   FastLED.clear();
@@ -2486,13 +2487,13 @@ void EffectCube2d::swapBuff() {
   }
 }
 
-bool EffectCube2d::run(CRGB *ledarr, EffectWorker *opt){
+bool EffectCube2d::run(){
   if (dryrun(classic ? 4. : 3., classic ? 3 : EFFECTS_RUN_TIMER))
     return false;
   if (classic)
-    return cube2dClassicRoutine(*&ledarr, &*opt);
+    return cube2dClassicRoutine();
   else
-    return cube2dRoutine(*&ledarr, &*opt);
+    return cube2dRoutine();
 }
 
 // !++
@@ -2572,7 +2573,7 @@ void EffectCube2d::cubesize() {
   }
 }
 
-bool EffectCube2d::cube2dRoutine(CRGB *leds, EffectWorker *param)
+bool EffectCube2d::cube2dRoutine()
 {
   if (curPalette == nullptr) {
     return false;
@@ -2698,7 +2699,7 @@ void EffectCube2d::cube2dmoveRows(uint8_t moveItem, bool movedirection){
     ledbuff[EffectMath::getPixelNumberBuff(anim0, m, fieldX, fieldY)] = color;
 }
 
-bool EffectCube2d::cube2dClassicRoutine(CRGB *leds, EffectWorker *param)
+bool EffectCube2d::cube2dClassicRoutine()
 {
   CRGB color, color2;
   int8_t shift, shiftAll;
@@ -2903,9 +2904,9 @@ bool EffectCube2d::cube2dClassicRoutine(CRGB *leds, EffectWorker *param)
 }
 
 //-------------- Эффект "Часы"
-bool EffectTime::run(CRGB *ledarr, EffectWorker *opt){
+bool EffectTime::run(){
   // if(isDebug())
-  //   return palleteTest(ledarr, opt);
+  //   return palleteTest(fb, opt);
   // else {
     if((millis() - lastrun - EFFECTS_RUN_TIMER) < (unsigned)((255-speed)) && (speed==1 || speed==255)){
         EffectMath::dimAll(254);
@@ -2915,7 +2916,7 @@ bool EffectTime::run(CRGB *ledarr, EffectWorker *opt){
       if (myLamp.isPrintingNow()) // если выводится бегущая строка, то эффект приостанавливаем! Специально обученный костыль, т.к. вывод статического и динамического текста одноверенно не совместимы
         return true;
     }
-    return timePrintRoutine(ledarr, opt);
+    return timePrintRoutine();
   // }
 }
 
@@ -2931,7 +2932,7 @@ void EffectTime::load(){
   }
 }
 
-bool EffectTime::palleteTest(CRGB *leds, EffectWorker *param)
+bool EffectTime::palleteTest()
 {
   FastLED.clear();
   float sf = 0.996078431372549+speed/255.; // смещение, для скорости 1 смещения не будет, т.к. суммарный коэф. == 1
@@ -2941,7 +2942,7 @@ bool EffectTime::palleteTest(CRGB *leds, EffectWorker *param)
   return true;
 }
 
-bool EffectTime::timePrintRoutine(CRGB *leds, EffectWorker *param)
+bool EffectTime::timePrintRoutine()
 {
   if (speed==254 || speed==1 || speed==255){
     EVERY_N_SECONDS(5){
@@ -3003,7 +3004,7 @@ bool EffectTime::timePrintRoutine(CRGB *leds, EffectWorker *param)
 }
 
 // ----------- Эффекты "Пикассо" (c) obliterator
-EffectPicasso::EffectPicasso(){
+EffectPicasso::EffectPicasso(LedFB &framebuffer) : EffectCalc(framebuffer){
   palettes.add(MBVioletColors_gp, 0, 16); // будет заменен генератором
   palettes.add(MBVioletColors_gp, 0, 16);
 
@@ -3088,7 +3089,7 @@ void EffectPicasso::position(){
   };
 }
 
-bool EffectPicasso::picassoRoutine(CRGB *leds, EffectWorker *param){
+bool EffectPicasso::picassoRoutine(){
   generate();
   position();
   if (effId > 1) EffectMath::dimAll(180);
@@ -3149,7 +3150,7 @@ String EffectPicasso::setDynCtrl(UIControl*_val) {
   return String();
 }
 
-bool EffectPicasso::metaBallsRoutine(CRGB *leds, EffectWorker *param){
+bool EffectPicasso::metaBallsRoutine(){
   generate();
   position();
 
@@ -3184,14 +3185,14 @@ bool EffectPicasso::metaBallsRoutine(CRGB *leds, EffectWorker *param){
   return true;
 }
 
-bool EffectPicasso::run(CRGB *ledarr, EffectWorker *opt){
+bool EffectPicasso::run(){
   switch (effect)
   {
   case EFF_PICASSO:
-    picassoRoutine(*&ledarr, &*opt);
+    picassoRoutine();
     break;
   case EFF_PICASSO4:
-    metaBallsRoutine(*&ledarr, &*opt);
+    metaBallsRoutine();
     break;
   default:
     break;
@@ -3288,7 +3289,7 @@ String EffectLeapers::setDynCtrl(UIControl*_val) {
   return String();
 }
 
-bool EffectLeapers::run(CRGB *leds, EffectWorker *param){
+bool EffectLeapers::run(){
   EVERY_N_SECONDS(30) {
     randomSeed(millis());
   }
@@ -3309,7 +3310,7 @@ bool EffectLeapers::run(CRGB *leds, EffectWorker *param){
 
 
 // ----------- Эффекты "Лавовая лампа" (c) obliterator
-EffectLiquidLamp::EffectLiquidLamp() {
+EffectLiquidLamp::EffectLiquidLamp(LedFB &framebuffer) : EffectCalc(framebuffer) {
   // эта палитра создана под эффект
   palettes.add(MBVioletColors_gp, 0, 16);
   // палитры частично подогнаные под эффект
@@ -3434,7 +3435,7 @@ String EffectLiquidLamp::setDynCtrl(UIControl*_val) {
   return String();
 }
 
-bool EffectLiquidLamp::routine(CRGB *leds, EffectWorker *param){
+bool EffectLiquidLamp::routine(){
   generate();
   position();
   if (physic_on) physic();
@@ -3501,9 +3502,9 @@ bool EffectLiquidLamp::routine(CRGB *leds, EffectWorker *param){
 // Based on Aurora : https://github.com/pixelmatix/aurora/blob/master/PatternFlowField.h
 // Copyright(c) 2014 Jason Coon
 //адаптация SottNick
-bool EffectWhirl::run(CRGB *ledarr, EffectWorker *opt){
+bool EffectWhirl::run(){
 
-  return whirlRoutine(*&ledarr, &*opt);
+  return whirlRoutine();
 }
 
 void EffectWhirl::load(){
@@ -3524,11 +3525,11 @@ String EffectWhirl::setDynCtrl(UIControl*_val){
   return String();
 }
 
-bool EffectWhirl::whirlRoutine(CRGB *leds, EffectWorker *param) {
+bool EffectWhirl::whirlRoutine() {
 #ifdef MIC_EFFECTS
   micPick = isMicOn() ? getMicMaxPeak() : 0;
 #endif
-  fadeToBlackBy(leds, num_leds, 15. * speedFactor);
+  fb.fade(15. * speedFactor);
 
   for (uint8_t i = 0; i < AVAILABLE_BOID_COUNT; i++) {
     Boid * boid = &boids[i];
@@ -3595,7 +3596,7 @@ void EffectAquarium::nDrops(uint8_t bri) {
   currentPalette[9] = CHSV(hue, 255 - satur, 210);
   currentPalette[8] = CHSV(hue, 255 - satur, 210);
   currentPalette[7] = CHSV(hue, satur - 60, 255);
-  EffectMath::fillAll(ColorFromPalette(currentPalette, 1));
+  fb.fill(ColorFromPalette(currentPalette, 1));
   for (uint8_t i = amountDrops - 1; i > 0; i--) {
     EffectMath::drawCircle(posX[i], posY[i], radius[i], ColorFromPalette(currentPalette, (256/16)*8.5-radius[i]));
     EffectMath::drawCircle(posX[i], posY[i], radius[i] - 1., ColorFromPalette(currentPalette,(256/16)*7.5-radius[i] , 256/radius[i]));
@@ -3623,7 +3624,7 @@ void EffectAquarium::nGlare(uint8_t bri) {
   EffectMath::blur2d(getUnsafeLedsArray(), WIDTH, HEIGHT, 100);
 }
 
-void EffectAquarium::fillNoiseLED(CRGB *leds) {
+void EffectAquarium::fillNoiseLED(CRGB *fixme) {
   uint8_t  dataSmoothing = 200 - (_speed * 4);
   for (uint8_t i = 0; i < MAX_DIMENSION; i++) {
     int32_t ioffset = _scale * i;
@@ -3655,7 +3656,7 @@ void EffectAquarium::fillNoiseLED(CRGB *leds) {
   }
 }
 
-bool EffectAquarium::run(CRGB *leds, EffectWorker *param) {
+bool EffectAquarium::run() {
 #ifdef MIC_EFFECTS
   byte _video = isMicOn() ? constrain(getMicMaxPeak() * EffectMath::fmap(scale, 1.0f, 255.0f, 1.25f, 5.0f), 48U, 255U) : 255;
 #else
@@ -3745,13 +3746,13 @@ void EffectStar::drawStar(float xlocl, float ylocl, float biggy, float little, i
     }
 }
 
-bool EffectStar::run(CRGB *leds, EffectWorker *param) {
+bool EffectStar::run() {
 
 #ifdef MIC_EFFECTS
   micPick = getMicMaxPeak();
-  fadeToBlackBy(leds, num_leds, 255U - (isMicOn() ? micPick*2 : 90)); // работает быстрее чем dimAll
+  fb.fade(255U - (isMicOn() ? micPick*2 : 90)); // работает быстрее чем dimAll
 #else
-  fadeToBlackBy(leds, num_leds, 165);
+  fb.fade(165);
 #endif
 
   float speedFactor = ((float)speed/380.0+0.05);
@@ -3803,13 +3804,10 @@ String EffectFireworks::setDynCtrl(UIControl*_val) {
   return String();
 }
 
-CRGB &Dot::piXY(CRGB *leds, byte x, byte y) {
+CRGB &Dot::piXY(LedFB &leds, byte x, byte y) {
   x -= PIXEL_X_OFFSET;
   y -= PIXEL_Y_OFFSET;
-  if( x < WIDTH && y < HEIGHT) {
-    return EffectMath::getPixel(x,y);
-  } else
-    return empty; // fixed
+  return leds.pixel(x,y);
 }
 
 void Dot::Skyburst( accum88 basex, accum88 basey, saccum78 basedv, CRGB& basecolor, uint8_t dim)
@@ -3897,8 +3895,7 @@ void Dot::GroundLaunch(DOTS_STORE &store)
 
   }
 
-void Dot::Draw(CRGB *leds)
-  {
+void Dot::Draw(LedFB &leds){
     if( !show) return;
     byte ix, xe, xc;
     byte iy, ye, yc;
@@ -3931,7 +3928,7 @@ void Dot::Draw(CRGB *leds)
     piXY(leds, ix + 1, iy + 1) += c11;
   }
 
-bool EffectFireworks::run(CRGB *ledarr, EffectWorker *opt)
+bool EffectFireworks::run()
 {
   random16_add_entropy(millis());
   dim = beatsin8(100, 20, 100);
@@ -3939,7 +3936,7 @@ bool EffectFireworks::run(CRGB *ledarr, EffectWorker *opt)
     valDim = random8(25, 50);
   }
   EVERY_N_MILLISECONDS(10) {
-    return fireworksRoutine(*&ledarr, &*opt);
+    return fireworksRoutine();
   }
   return false;
 }
@@ -3968,20 +3965,20 @@ void EffectFireworks::sparkGen() {
   //EffectMath::blur2d(20);
 }
 
-bool EffectFireworks::fireworksRoutine(CRGB *leds, EffectWorker *param)
+bool EffectFireworks::fireworksRoutine()
 {
 
-  fadeToBlackBy(leds, num_leds, valDim);
+  fb.fade(valDim);
   sparkGen();
   //memset8( leds, 0, num_leds * 3);
 
   for (byte a = 0; a < cnt; a++) {
     gDot[a].Move(store, flashing);
-    gDot[a].Draw(leds);
+    gDot[a].Draw(fb);
   }
   for( byte b = 0; b < NUM_SPARKS; b++) {
     gSparks[b].Move(store, flashing);
-    gSparks[b].Draw(leds);
+    gSparks[b].Draw(fb);
   }
     return true;
 }
@@ -4046,7 +4043,7 @@ String EffectPacific::setDynCtrl(UIControl*_val) {
   return String();
 }
 
-bool EffectPacific::run(CRGB *leds, EffectWorker *param)
+bool EffectPacific::run()
 {
   // Increment the four "color index start" counters, one for each wave layer.
   // Each is incremented at a different speed, and the speeds vary over time.
@@ -4066,7 +4063,7 @@ bool EffectPacific::run(CRGB *leds, EffectWorker *param)
   sCIStart4 -= (deltams2 * beatsin88(257,4,6));
 
   // Clear out the LED array to a dim background blue-green
-  fill_solid( leds, num_leds, CRGB( 2, 6, 10));
+  fill_solid( fb.data(), fb.size(), CRGB( 2, 6, 10));
 
   // Render each of four layers, with different scales and speeds, that vary over time
   pacifica_one_layer(pacifica_palette_1, sCIStart1, beatsin16( 3, 11 * 256, 14 * 256), beatsin8( 10, 70, 130), 0-beat16( 301) );
@@ -4111,13 +4108,13 @@ String EffectOsc::setDynCtrl(UIControl*_val) {
   return String();
 }
 
-bool EffectOsc::run(CRGB *leds, EffectWorker *param) {
+bool EffectOsc::run() {
   if((millis() - lastrun ) <= (isMicOn() ? 15U : map(speed, speed <= 127 ? 1 : 128, speed <= 12 ? 128 : 255, 15, 60))) 
     return false;
   else {
     lastrun = millis();
   }
-  //fadeToBlackBy(leds, num_leds, 200);
+  //fb.fade(200);
   FastLED.clear();
 
   if (scale == 1) {
@@ -4163,14 +4160,14 @@ String EffectMunch::setDynCtrl(UIControl*_val){
   return String();
 }
 
- bool EffectMunch::run(CRGB *ledarr, EffectWorker *opt) {
+bool EffectMunch::run() {
    if (dryrun(2.0))
     return false;
-  return munchRoutine(*&ledarr, &*opt);
+  return munchRoutine();
 }
 
-bool EffectMunch::munchRoutine(CRGB *leds, EffectWorker *param) {
-  //fadeToBlackBy(leds, num_leds, 200); EffectMath::setPixel(
+bool EffectMunch::munchRoutine() {
+  //fb.fade(200); EffectMath::setPixel(
   if (flag) rand = beat8(5)/32; // Хрень, конечно, но хоть какое-то разнообразие.
   CRGB color;
   for (uint8_t x = 0; x < minDimLocal; x++) {
@@ -4223,7 +4220,7 @@ String EffectNoise::setDynCtrl(UIControl*_val){
   return String();
 }
 
-bool EffectNoise::run(CRGB *leds, EffectWorker *param) {
+bool EffectNoise::run() {
   EffectMath::dimAll(200U);
     uint8_t layer = 0;
 
@@ -4280,7 +4277,7 @@ bool EffectNoise::run(CRGB *leds, EffectWorker *param) {
 
   //make it looking nice
   if (palettepos != 4) {
-    if (type) EffectMath::nightMode(*&leds);
+    if (type) EffectMath::nightMode(fb);
     else EffectMath::gammaCorrection();
     EffectMath::blur2d(32);
   } else EffectMath::blur2d(48);
@@ -4326,7 +4323,7 @@ String EffectButterfly::setDynCtrl(UIControl*_val) {
   return String();
 }
 
-bool EffectButterfly::run(CRGB *leds, EffectWorker *param)
+bool EffectButterfly::run()
 {
   byte _scale = cnt;
 
@@ -4340,7 +4337,7 @@ bool EffectButterfly::run(CRGB *leds, EffectWorker *param)
   hue2 = (_scale == 1U) ? 100U : 190U; // вычисление базового оттенка
 
   if (wings && isColored)
-    fadeToBlackBy(leds, num_leds, 200);
+    fb.fade(200);
   else
     FastLED.clear();
 
@@ -4479,7 +4476,7 @@ bool EffectButterfly::run(CRGB *leds, EffectWorker *param)
 
 // ---- Эффект "Тени"
 // https://github.com/vvip-68/GyverPanelWiFi/blob/master/firmware/GyverPanelWiFi_v1.02/effects.ino
-bool EffectShadows::run(CRGB *leds, EffectWorker *param) {
+bool EffectShadows::run() {
 
   uint8_t sat8 = beatsin88( 87, 220, 250);
   uint8_t brightdepth = beatsin88( 341, 96, 224);
@@ -4533,8 +4530,8 @@ String EffectPatterns::setDynCtrl(UIControl*_val) {
   return String();
 }
 
-bool EffectPatterns::run(CRGB *ledarr, EffectWorker *opt) {
-  return patternsRoutine(*&ledarr, &*opt);
+bool EffectPatterns::run() {
+  return patternsRoutine();
 }
 
 void EffectPatterns::drawPicture_XY() {
@@ -4582,7 +4579,7 @@ void EffectPatterns::load() {
   }
 }
 
-bool EffectPatterns::patternsRoutine(CRGB *leds, EffectWorker *param)
+bool EffectPatterns::patternsRoutine()
 {
   _speedX = EffectMath::fmap(_scale, -32, 32, 0.75, -0.75);
   _speedY = EffectMath::fmap(_speed, -32, 32, 0.75, -0.75);
@@ -4649,7 +4646,7 @@ String EffectArrows::setDynCtrl(UIControl*_val){
   return String();
 }
 
-bool EffectArrows::run(CRGB *leds, EffectWorker *param) {
+bool EffectArrows::run() {
   if (_scale == 1) {
     EVERY_N_SECONDS((3000U / speed))
     {
@@ -4992,13 +4989,13 @@ String EffectNBals::setDynCtrl(UIControl*_val){
   return String();
 }
 
-bool EffectNBals::run(CRGB *leds, EffectWorker *param) {
+bool EffectNBals::run() {
   balls_timer();
-  blur(*&leds);
+  blur();
   return true;
 }
 
-void EffectNBals::blur(CRGB *leds) {
+void EffectNBals::blur() {
   EffectMath::blur2d(beatsin8(2, 0, 60));
   // Use two out-of-sync sine waves
   uint8_t  i = beatsin8( beat1, 0, EffectMath::getmaxWidthIndex());
@@ -5090,9 +5087,9 @@ void EffectAttract::setup(){
   }
 }
 
-bool EffectAttract::run(CRGB *leds, EffectWorker *param) {
+bool EffectAttract::run() {
   uint8_t dim = beatsin8(3, 170, 250);
-  fadeToBlackBy(leds, num_leds, 255U - dim);
+  fb.fade(255U - dim);
 
   for (int i = 0; i < count; i++) // count
   {
@@ -5134,8 +5131,8 @@ String EffectSnake::setDynCtrl(UIControl*_val) {
   return String();
 }
 
-bool EffectSnake::run(CRGB *leds, EffectWorker *param) {
-  fadeToBlackBy(leds, num_leds, speed<25 ? 5 : speed/2 ); // длина хвоста будет зависеть от скорости
+bool EffectSnake::run() {
+  fb.fade(speed<25 ? 5 : speed/2 ); // длина хвоста будет зависеть от скорости
 #ifdef MIC_EFFECTS
   hue+=(speedFactor/snakeCount+(isMicOn() ? getMicMapFreq()/127.0 : 0));
 #else
@@ -5227,8 +5224,8 @@ void EffectNexus::load() {
   reload();
 }
 
-bool EffectNexus::run(CRGB *leds, EffectWorker *opt) {
-  fadeToBlackBy(leds, num_leds, map(speed, 1, 255, 11, 33));
+bool EffectNexus::run() {
+  fb.fade(map(speed, 1, 255, 11, 33));
 
   for (auto &nx : nxdots){
     switch (nx.direct){
@@ -5338,7 +5335,7 @@ void EffectTest::regen() {
   }
 }
 
-bool EffectTest::run(CRGB *leds, EffectWorker *param) {
+bool EffectTest::run() {
   FastLED.clear(); 
   int8_t dx = 0, dy = 0;
   for (uint8_t i = 0; i < map(SnakeNum, 1, 10, 2, MAX_SNAKES); i++)
@@ -5557,9 +5554,9 @@ void EffectPopcorn::reload(){
   }
 }
 
-bool EffectPopcorn::run(CRGB *leds, EffectWorker *param) {
+bool EffectPopcorn::run() {
   randomSeed(micros());
-  if (blurred) fadeToBlackBy(leds, num_leds, 30. * speedFactor);
+  if (blurred) fb.fade( 30. * speedFactor);
   else FastLED.clear();
   float popcornGravity = 0.1 * speedFactor;
 
@@ -5664,7 +5661,7 @@ void EffectSmokeballs::regen() {
   }
 }
 
-bool EffectSmokeballs::run(CRGB *ledarr, EffectWorker *opt){
+bool EffectSmokeballs::run(){
   uint8_t _amount = map(_scale, 1, 16, 2, WAVES_AMOUNT);
   shiftUp();
   EffectMath::dimAll(240);
@@ -5695,22 +5692,19 @@ void EffectSmokeballs::shiftUp(){
 // ----------- Эффект "Ёлки-Палки"
 // "Cell" (C) Elliott Kember из примеров программы Soulmate
 // Spaider и Spruce (c) stepko
-void EffectCell::cell(CRGB *leds) {
+void EffectCell::cell(){
   speedFactor = EffectMath::fmap((float)speed, 1., 255., .33*EffectCalc::speedfactor, 3.*EffectCalc::speedfactor);
   offsetX = beatsin16(6. * speedFactor, -180, 180);
   offsetY = beatsin16(6. * speedFactor, -180, 180, 12000);
   for (uint8_t x = 0; x < WIDTH; x++) {
     for (uint8_t y = 0; y < HEIGHT; y++) {
-      //int16_t index = myLamp.getPixelNumber(x, y);
-      //if (index < 0) break;
-
       int16_t hue = x * beatsin16(10. * speedFactor, 1, 10) + offsetY;
       EffectMath::drawPixelXY(x, y, CHSV(hue, 200, sin8(x * 30 + offsetX)));
       hue = y * 3 + offsetX;
       EffectMath::getPixel(x, y) += CHSV(hue, 200, sin8(y * 30 + offsetY));
     }
   }
-  EffectMath::nightMode(leds); // пригасим немного, чтобы видить структуру, и убрать пересветы
+  EffectMath::nightMode(fb); // пригасим немного, чтобы видить структуру, и убрать пересветы
 } 
 
 // !++ Тут лучше все оставить как есть, пускай в теле эффекта скорость пересчитывает
@@ -5723,7 +5717,7 @@ String EffectCell::setDynCtrl(UIControl*_val) {
   return String();
 }
 
-bool EffectCell::run(CRGB *leds, EffectWorker *opt){
+bool EffectCell::run(){
   if (_scale == 0) {
     EVERY_N_SECONDS(60) {
       effId ++;
@@ -5735,18 +5729,18 @@ bool EffectCell::run(CRGB *leds, EffectWorker *opt){
   switch (effId)
   {
   case 1:
-    cell(leds);
+    cell();
     break;
   case 2:
   case 3:
   case 4:
-    spruce(leds);
+    spruce();
     break;
   case 5:
-    spider(leds);
+    spider();
     break;
   case 6:
-    vals(leds);
+    vals();
     break;
   default:
     break;
@@ -5755,9 +5749,9 @@ bool EffectCell::run(CRGB *leds, EffectWorker *opt){
   return true;
 }
 
-void EffectCell::spruce(CRGB *leds) {
+void EffectCell::spruce() {
   hue++;
-  fadeToBlackBy(leds, num_leds, map(speed, 1, 255, 1, 10));
+  fb.fade( map(speed, 1, 255, 1, 10));
   uint8_t z;
   if (effId == 3) z = triwave8(hue);
   else z = beatsin8(1, 1, 255);
@@ -5778,9 +5772,9 @@ void EffectCell::spruce(CRGB *leds) {
   if (glitch) EffectMath::confetti(density);
 }
 
-void EffectCell::spider(CRGB *leds) {
+void EffectCell::spider() {
   speedFactor = EffectMath::fmap(speed, 1, 255, 20., 2.) * EffectCalc::speedfactor;
-  fadeToBlackBy(leds, num_leds, 50);
+  fb.fade( 50);
   for (uint8_t c = 0; c < Lines; c++) {
     float xx = 2. + sin8((float)(millis() & 0x7FFFFF) / speedFactor + 1000 * c * Scale) / 12.;
     float yy = 2. + cos8((float)(millis() & 0x7FFFFF) / speedFactor + 1500 * c * Scale) / 12.;
@@ -5789,9 +5783,9 @@ void EffectCell::spider(CRGB *leds) {
   }
 }
 
-void EffectCell::vals(CRGB *leds) {
+void EffectCell::vals() {
   speedFactor = map(speed, 1, 255, 100, 512) * speedfactor;
-  fadeToBlackBy(leds, num_leds, 128);
+  fb.fade(128);
   a += 1;
   for (byte i = 0; i < 12; i++) {
     EffectMath::drawLineF((float)beatsin88((10 + i) * speedFactor, 0, EffectMath::getmaxWidthIndex() * 2, i * i) / 2, (float)beatsin88((12 - i) * speedFactor, 0, EffectMath::getmaxHeightIndex() * 2, i * 5) / 2, (float)beatsin88((8 + i) * speedFactor, 0, EffectMath::getmaxWidthIndex() * 2, i * 20) / 2, (float)beatsin88((14 - i) * speedFactor, 0, EffectMath::getmaxHeightIndex() * 2, i * 5) / 2, CHSV(21 * i + (byte)a * i, 255, 255));
@@ -5810,7 +5804,7 @@ String EffectTLand::setDynCtrl(UIControl*_val){
   return String();
 }
 
-bool EffectTLand::run(CRGB *leds, EffectWorker *opt) {
+bool EffectTLand::run() {
   t = (double)(millis()&0xFFFFF) / map(speed, 1, 255, 1200, 128); ; // на больших значениях будет странное поведение, поэтому уменьшаем точность, хоть и будет иногда срыв картинки, но в 18 минут, так что - хрен с ним
   shift = (shift+1)%fine; // 0...3
   if(!ishue) hue++;
@@ -5820,7 +5814,7 @@ bool EffectTLand::run(CRGB *leds, EffectWorker *opt) {
     for( byte y = 0; y < HEIGHT; y++) {
       //if(myLamp.getPixelNumber(x,y)%fine==shift)
       if((x*WIDTH+y)%fine==shift)
-        processFrame(leds, t, x, y);
+        processFrame(fb, t, x, y);
     }
   }
   
@@ -5832,7 +5826,7 @@ bool EffectTLand::run(CRGB *leds, EffectWorker *opt) {
   return true;
 }
 
-void EffectTLand::processFrame(CRGB *leds, double t, double x, double y) {
+void EffectTLand::processFrame(LedFB &fb, double t, double x, double y) {
   double i = (y * WIDTH) + x;
   int16_t frame = constrain(code(i, x, y), -1, 1) * 255;
 
@@ -6087,7 +6081,7 @@ float EffectTLand::code(double i, double x, double y) {
 
 // ----------- Эффект "Осцилятор"
 // (c) Сотнег (SottNick)
-bool EffectOscilator::run(CRGB *leds, EffectWorker *opt) {
+bool EffectOscilator::run() {
   if (millis() - timer < (unsigned)map(speed, 1U, 255U, 70, 15)) return true;
   else timer = millis(); // не могу сообразить, как по другому скоростью управлять
   CRGB currColors[3];
@@ -6287,7 +6281,7 @@ void EffectWrain::load() {
   reload();
 }
 
-bool EffectWrain::run(CRGB *leds, EffectWorker *opt) {
+bool EffectWrain::run() {
 
   if (_flash and (millis() - timer < 500)) 
     _flash = true;
@@ -6302,15 +6296,15 @@ bool EffectWrain::run(CRGB *leds, EffectWorker *opt) {
       break;
     case 2:
     case 6:
-      fadeToBlackBy(leds, num_leds, 200. * speedFactor);
+      fb.fade(200. * speedFactor);
       break;
     case 3:
     case 7:
-      fadeToBlackBy(leds, num_leds, 100. * speedFactor);
+      fb.fade(100. * speedFactor);
       break;
     case 4:
     case 8:
-      fadeToBlackBy(leds, num_leds, 50. * speedFactor);
+      fb.fade(50. * speedFactor);
       break;
     default:
       break;
@@ -6506,7 +6500,7 @@ void EffectFairy::fountEmit(uint8_t i) {
   trackingObjectIsShift[i] = true; 
 }
 
-void EffectFairy::fount(CRGB *leds){
+void EffectFairy::fount(){
   step = deltaValue; //счётчик количества частиц в очереди на зарождение в этом цикле
 
   EffectMath::dimAll(EffectMath::fmap(speed, 1, 255, 180, 127)); //ахах-ха. очередной эффект, к которому нужно будет "подобрать коэффициенты"
@@ -6553,7 +6547,7 @@ void EffectFairy::fairyEmit(uint8_t i) {
     trackingObjectIsShift[i] = true; 
 }
 
-bool EffectFairy::fairy(CRGB *leds) {
+bool EffectFairy::fairy() {
   step = deltaValue; //счётчик количества частиц в очереди на зарождение в этом цикле
   
 #ifdef FAIRY_BEHAVIOR
@@ -6638,7 +6632,7 @@ bool EffectFairy::fairy(CRGB *leds) {
   return true;
 }
 
-bool EffectFairy::run(CRGB *leds, EffectWorker *opt) {
+bool EffectFairy::run() {
 #ifdef MIC_EFFECTS
    _video = isMicOn() ? constrain(getMicMaxPeak() * EffectMath::fmap(gain, 1.0f, 255.0f, 1.25f, 5.0f), 48U, 255U) : 255;
 #endif
@@ -6646,10 +6640,10 @@ bool EffectFairy::run(CRGB *leds, EffectWorker *opt) {
   switch (effect)
   {
   case EFF_FAIRY:
-    return fairy(leds);
+    return fairy();
     break;
   case EFF_FOUNT:
-    fount(leds);
+    fount();
     break; 
   default:
     break;
@@ -6721,7 +6715,7 @@ void EffectCircles::load() {
   }
 }
 
-void EffectCircles::drawCircle(CRGB *leds, Circle circle) {
+void EffectCircles::drawCircle(LedFB &fb, Circle circle) {
   int16_t centerX = circle.centerX;
   int16_t centerY = circle.centerY;
   uint8_t hue = circle.hue;
@@ -6751,7 +6745,7 @@ void EffectCircles::drawCircle(CRGB *leds, Circle circle) {
   }
 }
 
-bool EffectCircles::run(CRGB *leds, EffectWorker *opt) {
+bool EffectCircles::run() {
 #ifdef MIC_EFFECTS
   _video = isMicOn() ? constrain(getMicMaxPeak() * EffectMath::fmap(gain, 1.0f, 255.0f, 1.25f, 5.0f), 48U, 255U) : 255;
 #endif
@@ -6767,7 +6761,7 @@ bool EffectCircles::run(CRGB *leds, EffectWorker *opt) {
 #endif
       circles[i].move();
     }
-    drawCircle(leds, circles[i]);
+    drawCircle(fb, circles[i]);
   }
   return true;
 }
@@ -6816,8 +6810,8 @@ void EffectBengalL::regen(byte id) {
 }
 
 
-bool EffectBengalL::run(CRGB *leds, EffectWorker *opt) {
-  fadeToBlackBy(leds, num_leds, beatsin8(5, 20, 100));
+bool EffectBengalL::run() {
+  fb.fade(beatsin8(5, 20, 100));
   if (centerRun) {
     gPos[0] = beatsin16(_x, 0, EffectMath::getmaxWidthIndex() * 10);
     gPos[1] = beatsin16(_y, 0, EffectMath::getmaxHeightIndex() * 10);
@@ -6868,8 +6862,8 @@ String EffectBalls::setDynCtrl(UIControl*_val){
   return String();
 }
 
-bool EffectBalls::run(CRGB *leds, EffectWorker *opt) {
-  fadeToBlackBy(leds, num_leds, map(speed, 1, 255, 5, 20));
+bool EffectBalls::run() {
+  fb.fade(map(speed, 1, 255, 5, 20));
 
   for (byte i = 0; i < map(scale, 1, 255, 2, ballsAmount); i++) {
     if (rrad[i]) {  // тут у нас шарики надуваются\сдуваются по ходу движения
@@ -6927,7 +6921,7 @@ bool EffectBalls::run(CRGB *leds, EffectWorker *opt) {
       ball[i][1] = EffectMath::getmaxWidthIndex();
     }
   }
-  EffectMath::blur2d(leds, WIDTH, HEIGHT, 48);
+  EffectMath::blur2d(fb.data(), fb.cfg.w, fb.cfg.h, 48);
   return true;
 }
 
@@ -6984,7 +6978,7 @@ void EffectMaze::newGameMaze() {
   mazeStarted = false;  
 }
 
-bool EffectMaze::run(CRGB *ledarr, EffectWorker *opt) {
+bool EffectMaze::run() {
   if (loadingFlag || gameOverFlag) {  
     if (loadingFlag) FastLED.clear();
     gameTimer = map(speed, 1, 255, 500, 50);   // установить начальную скорость
@@ -7215,14 +7209,14 @@ String EffectMaze::setDynCtrl(UIControl*_val){
 // --------- Эффект "Вьющийся Цвет"
 // (c) Stepko https://wokwi.com/arduino/projects/283705656027906572
 // доработка - kostyamat
-bool EffectFrizzles::run(CRGB *leds, EffectWorker *opt) {
+bool EffectFrizzles::run() {
   _speed = EffectMath::fmap(speed, 1, 255, 0.25, 3);
   if (scale <= 127) _scale = EffectMath::fmap(scale, 1, 255, 1, 8);
   else _scale = EffectMath::fmap(scale, 1, 255, 8, 1);
 
   for(float i= (float)8 * _scale; i> 0; i--)
     EffectMath::drawPixelXY(beatsin8(12. * _speed + i * _speed, 0, EffectMath::getmaxWidthIndex()), beatsin8(15. * _speed + i * _speed, 0, EffectMath::getmaxHeightIndex()), CHSV(beatsin8(12. * _speed, 0, 255), scale > 127 ? 255 - i*8 : 255, scale > 127 ? 127 + i*8 : 255));
-  EffectMath::blur2d(leds, WIDTH, HEIGHT, 16);
+  EffectMath::blur2d(fb.data(), fb.cfg.w, fb.cfg.h, 16);
   return true;
 }
 
@@ -7278,7 +7272,7 @@ String EffectPolarL::setDynCtrl(UIControl*_val){
   return String();
 }
 
-bool EffectPolarL::run(CRGB *leds, EffectWorker *opt) {
+bool EffectPolarL::run() {
   
   for (byte x = 0; x < WIDTH; x++) {
     for (byte y = 0; y < HEIGHT; y++) {
@@ -7331,8 +7325,8 @@ String EffectRacer::setDynCtrl(UIControl*_val){
   return String();
 }
 
-bool EffectRacer::run(CRGB *leds, EffectWorker *opt) {
-  fadeToBlackBy(leds, num_leds, 16. * speedFactor);
+bool EffectRacer::run() {
+  fb.fade(16. * speedFactor);
 
   if (round(posX / 4) > aimX) {
     posX -= speedFactor;
@@ -7442,8 +7436,8 @@ void EffectMagma::regen() {
   }
 }
 
-bool EffectMagma::run(CRGB *leds, EffectWorker *opt) {
-  fadeToBlackBy(leds, num_leds, 50);
+bool EffectMagma::run() {
+  fb.fade(50);
   
 
   for (auto &i : particles){
@@ -7460,7 +7454,7 @@ bool EffectMagma::run(CRGB *leds, EffectWorker *opt) {
 
   ff_y += speedFactor * 2;
   ff_z += speedFactor;
-  //EffectMath::blur2d(leds, WIDTH, HEIGHT, 32);
+  //EffectMath::blur2d(fb.data(), fb.cfg.w, fb.cfg.h, 32);
   return true;
 }
 
@@ -7528,8 +7522,8 @@ void EffectStarShips::load() {
   FastLED.clear();
 }
 
-bool EffectStarShips::run(CRGB *leds, EffectWorker *opt) {
-  fadeToBlackBy(leds, num_leds, _fade);
+bool EffectStarShips::run() {
+  fb.fade(_fade);
   switch (dir) {
     case 0: // Up
       for (byte x = 0; x < WIDTH; x++) {
@@ -7633,9 +7627,9 @@ String EffectFlags::setDynCtrl(UIControl*_val){
   return String();
 }
 
-bool EffectFlags::run(CRGB *leds, EffectWorker *opt) {
+bool EffectFlags::run() {
   changeFlags();
-  fadeToBlackBy(leds, num_leds, 32);
+  fb.fade(32);
   for (uint8_t i = 0; i < WIDTH; i++) {
     thisVal = inoise8((float) i * DEVIATOR, counter, (int)count/*(float)i * SPEED_ADJ/2*/);
     thisMax = map(thisVal, 0, 255, 0, EffectMath::getmaxHeightIndex());
@@ -7677,7 +7671,7 @@ bool EffectFlags::run(CRGB *leds, EffectWorker *opt) {
     }
 
   }
-  EffectMath::blur2d(leds, WIDTH, HEIGHT, 32);
+  EffectMath::blur2d(fb.data(), fb.cfg.w, fb.cfg.h, 32);
   counter += (float)_speed * SPEED_ADJ;
   return true;
 }
@@ -7741,7 +7735,7 @@ void EffectVU::load() {
 
 }
 
-bool EffectVU::run(CRGB *leds, EffectWorker *opt) {
+bool EffectVU::run() {
 #ifdef MIC_EFFECTS
   setMicAnalyseDivider(0); // отключить авто-работу микрофона, т.к. тут все анализируется отдельно, т.е. не нужно выполнять одну и ту же работу дважды
 #endif
@@ -8045,7 +8039,7 @@ String EffectFire2021::setDynCtrl(UIControl*_val) {
   return String();
 }
 
-bool EffectFire2021::run(CRGB *leds, EffectWorker *param) {
+bool EffectFire2021::run() {
   t += speedFactor;
 
   if (withSparks)
@@ -8129,7 +8123,7 @@ void EffectPuzzles::draw_squareF(float x1, float y1, float x2, float y2, byte co
   }
 }
 
-bool EffectPuzzles::run(CRGB *leds, EffectWorker *param) { 
+bool EffectPuzzles::run() { 
   for (byte x = 0; x < PCols; x++) {
     for (byte y = 0; y < PRows; y++) {
       draw_square(x * PSizeX, y * PSizeY, (x + 1) * PSizeX, (y + 1) * PSizeY, puzzle[x][y]);
@@ -8193,7 +8187,7 @@ void EffectPile::load() {
   palettesload();    // подгружаем палитры
 }
 
-bool EffectPile::run(CRGB *leds, EffectWorker *param) {
+bool EffectPile::run() {
   if (dryrun(2.5))
     return false;
     // если насыпалось уже достаточно, бахаем рандомные песчинки
@@ -8275,8 +8269,8 @@ String EffectDNA::setDynCtrl(UIControl*_val) {
   return String();
 }
 
-bool EffectDNA::run(CRGB *leds, EffectWorker *param) {
-  fadeToBlackBy(leds, num_leds, 32);
+bool EffectDNA::run() {
+  fb.fade(32);
   t += speedFactor; // (float)millis()/10;
   if (type == 0) {
     EVERY_N_SECONDS(30) {
@@ -8333,7 +8327,7 @@ bool EffectDNA::run(CRGB *leds, EffectWorker *param) {
       EffectMath::drawPixelXYF(x1, y1, CHSV(~(byte)sin1, 255, brightBack));
     flag = !flag; 
   }
-  blur2d(leds, WIDTH, HEIGHT, 64);
+  blur2d(fb.data(), fb.cfg.w, fb.cfg.h, 64);
 
   return true;
 }
@@ -8350,7 +8344,7 @@ String EffectSmoker::setDynCtrl(UIControl*_val) {
   return String();
 }
 
-bool EffectSmoker::run(CRGB *leds, EffectWorker *param) {
+bool EffectSmoker::run() {
   t += speedFactor;
   for (byte x = 0; x < WIDTH; x++) {
     for (byte y = 0; y < HEIGHT; y++) { 
@@ -8412,7 +8406,7 @@ void EffectMirage::blur() {
   }
 }
 
-bool EffectMirage::run(CRGB *leds, EffectWorker *param) {
+bool EffectMirage::run() {
   blur();
   float x1 = (float)beatsin88(15UL * _speed, div, width) / div;
   float y1 = (float)beatsin88(20UL * _speed, div, height) / div;
@@ -8459,8 +8453,8 @@ void EffectWcolor::load() {
   }
 }
 
-bool EffectWcolor::run(CRGB *leds, EffectWorker *param) {
-  fadeToBlackBy(leds, num_leds, blur);
+bool EffectWcolor::run() {
+  fb.fade(blur);
   for (byte i = 0; i < bCounts; i++) {
     blots[i].drawing();
     blots[i].appendXY( mode ? ((float)inoise8(t+= speedFactor, 0, i * 100) / 256) - 0.5f : 0, -speedFactor);
@@ -8469,7 +8463,7 @@ bool EffectWcolor::run(CRGB *leds, EffectWorker *param) {
       random16_set_seed(millis());
     }
   }
-  //EffectMath::blur2d(leds, WIDTH, HEIGHT, 32); 
+  //EffectMath::blur2d(fb.data(), fb.cfg.w, fb.cfg.h, 32); 
   return true;
 }
 
@@ -8519,7 +8513,7 @@ void EffectRadialFire::palettesload(){
   scale2pallete();    // выставляем текущую палитру
 }
 
-bool EffectRadialFire::run(CRGB *leds, EffectWorker *param) {
+bool EffectRadialFire::run() {
   t += speedFactor;
   for (uint8_t x = 0; x < maximum; x++) {
     for (uint8_t y = 0; y < maximum; y++) {
@@ -8556,8 +8550,8 @@ void EffectSplashBals::load() {
   palettesload();
 }
 
-bool EffectSplashBals::run(CRGB *leds, EffectWorker *param) {
-  fadeToBlackBy(leds, num_leds, 100);
+bool EffectSplashBals::run() {
+  fb.fade(100);
   hue++;
 
   for (auto &b : balls){
@@ -8571,7 +8565,7 @@ bool EffectSplashBals::run(CRGB *leds, EffectWorker *param) {
       }
     EffectMath::fill_circleF(b.x1, b.y1, EffectMath::fmap(fabs(float(WIDTH / 2) - b.x1), 0, WIDTH / 2, R, 0.2), ColorFromPalette(*curPalette, 256 - 256/HEIGHT * fabs(float(HEIGHT/2) - b.y1)));
   }
-  EffectMath::blur2d(leds, WIDTH, HEIGHT, 48);
+  EffectMath::blur2d(fb.data(), fb.cfg.w, fb.cfg.h, 48);
   return true;
 }
 
