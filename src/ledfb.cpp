@@ -115,3 +115,7 @@ uint32_t LedFB::transpose(uint16_t x, uint16_t y){
 }
 
 CRGB& LedFB::at(size_t i){ return i < fb->size() ? fb->at(i) : blackhole; };
+
+void LedFB::fill(const CRGB &color){ fb->fill(color); };
+
+void LedFB::clear(){ fill(CRGB::Black); };

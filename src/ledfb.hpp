@@ -40,23 +40,33 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "config.h"
 #include <FastLED.h>
 
-constexpr uint16_t num_leds = WIDTH * HEIGHT;
+constexpr uint16_t num_leds = WIDTH * HEIGHT;       // for backward compat
 
 // TODO: design templated container object with common array's methods to access trasposed data based on matrix configuration type
 struct LedFB {
     struct mtrx_t {
-        //bool mxtype;        // matrix type 0:zigzag, 1:parallel   (not implemented yet)
-        //uint8_t direction;  // strip direction        (not implemented yet)
-        //uint8_t angle;      // strip connection angle (not implemented yet)
-        bool vmirror{0};    // зеркалирование по вертикали
-        bool hmirror{0};    // зеркалирование по горизонтали
+        const uint16_t w, h;    // width, height
+        //bool mxtype;          // matrix type 0:zigzag, 1:parallel   (not implemented yet)
+        //uint8_t direction;    // strip direction        (not implemented yet)
+        //uint8_t angle;        // strip connection angle (not implemented yet)
+        bool vmirror{0};        // зеркалирование по вертикали
+        bool hmirror{0};        // зеркалирование по горизонтали
+        mtrx_t(uint16_t w, uint16_t h) : w(w), h(h) {};
     };
 
     mtrx_t cfg;
     std::array<CRGB, num_leds> *fb;     // main frame buffer
 
-    LedFB(){ fb = new(std::nothrow) std::array<CRGB, num_leds>; }
+    LedFB(uint16_t w, uint16_t h) : cfg(w,h) { fb = new(std::nothrow) std::array<CRGB, num_leds>; }
 
+    /**
+     * @brief return size of FB in pixels
+     * 
+     */
+    static constexpr size_t size() { return num_leds; }
+
+    // get direct access to FB array
+    CRGB* data(){ return fb->data(); }
     inline CRGB *getUnsafeLedsArray(){ return fb->data(); };    // obsolete, left for compatibility
 
     /**
@@ -91,7 +101,29 @@ struct LedFB {
      * @param i offset index
      * @return CRGB& 
      */
-    inline CRGB& operator[](size_t i){ return at(i); };
+    CRGB& operator[](size_t i){ return at(i); };
+
+
+    /*      color operations        */
+
+    /**
+     * @brief apply FastLED fadeToBlackBy() func to buffer
+     * 
+     * @param v 
+     */
+    void fade(uint8_t v){ fadeToBlackBy(data(), size(), v); }
+
+    /**
+     * @brief fill the buffer with solid color
+     * 
+     */
+    void fill(const CRGB &color);
+
+    /**
+     * @brief clear buffer to black
+     * 
+     */
+    void clear();
 };
 
 /* a backward compatible wrappers for accessing LedMatrix obj instance,
