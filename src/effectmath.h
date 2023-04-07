@@ -51,53 +51,64 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #define NUM_LAYERS2            (2U)                 // The coordinates for 3 16-bit noise spaces.
 
 namespace EffectMath {
-  constexpr uint16_t maxDim = ((WIDTH>HEIGHT)?WIDTH:HEIGHT);
-  constexpr uint16_t minDim = ((WIDTH<HEIGHT)?WIDTH:HEIGHT);
-  constexpr uint16_t maxHeightIndex = HEIGHT-1;
-  constexpr uint16_t maxWidthIndex = WIDTH-1;
-  constexpr uint16_t getmaxDim() {return maxDim;}
-  constexpr uint16_t getminDim() {return minDim;}
-  constexpr int16_t getmaxWidthIndex() {return maxWidthIndex;}
-  constexpr int16_t getmaxHeightIndex() {return maxHeightIndex;}
+    constexpr uint16_t maxDim = ((WIDTH>HEIGHT)?WIDTH:HEIGHT);
+    constexpr uint16_t minDim = ((WIDTH<HEIGHT)?WIDTH:HEIGHT);
+    constexpr uint16_t maxHeightIndex = HEIGHT-1;
+    constexpr uint16_t maxWidthIndex = WIDTH-1;
+    constexpr uint16_t getmaxDim() {return maxDim;}
+    constexpr uint16_t getminDim() {return minDim;}
+    constexpr int16_t getmaxWidthIndex() {return maxWidthIndex;}
+    constexpr int16_t getmaxHeightIndex() {return maxHeightIndex;}
 
-  /** полезные обертки **/
-  constexpr uint8_t wrapX(int8_t x){ return (x + WIDTH) % WIDTH; }
-  constexpr uint8_t wrapY(int8_t y){ return (y + HEIGHT) % HEIGHT; }
+    /** полезные обертки **/
+    constexpr uint8_t wrapX(int8_t x){ return (x + WIDTH) % WIDTH; }
+    constexpr uint8_t wrapY(int8_t y){ return (y + HEIGHT) % HEIGHT; }
 
-  /*    Наложение эффектов на буфер, работа с цветами     */
+    /*    Наложение эффектов на буфер, рисование, работа с цветами     */
 
-  // затенение
-  void nightMode(LedFB &ledarr);
+    // затенение
+    void nightMode(LedFB &ledarr);
 
-  /**
+    /**
    * @brief добавить пиксель случайного цвета в случайном месте
    * 
    * @param density lesser number -> higher chance
    */
-  void confetti(LedFB &leds, byte density);
+    void confetti(LedFB &leds, byte density);
 
-  /**
+    /**
    * @brief с некоторой вероятностью добавляет вспышку в случайном месте 
    * 
    * @param leds 
    * @param chanceOfGlitter lesser number -> higher chance
    */
-  void addGlitter(LedFB &leds, uint8_t chanceOfGlitter = 127);
+    void addGlitter(LedFB &leds, uint8_t chanceOfGlitter = 127);
 
-  /**
-   * @brief FastLED's blur2d function over LedFB
-   * 
-   * @param leds framebuffer
-   * @param blur_amount 
-   */
-  void blur2d(LedFB &leds, fract8 blur_amount);
-  // blurRows: perform a blur1d on every row of a rectangular matrix
-  void blurRows(LedFB &leds, fract8 blur_amount);
-  // blurColumns: perform a blur1d on each column of a rectangular matrix
-  void blurColumns(LedFB &leds, fract8 blur_amount);
+    CRGB makeBrighter( const CRGB& color, fract8 howMuchBrighter = 5);
+    CRGB makeDarker( const CRGB& color, fract8 howMuchDarker = 5);
+
+
+    /**
+     * @brief FastLED's blur2d function over LedFB
+     * 
+     * @param leds framebuffer
+     * @param blur_amount 
+     */
+    void blur2d(LedFB &leds, fract8 blur_amount);
+    // blurRows: perform a blur1d on every row of a rectangular matrix
+    void blurRows(LedFB &leds, fract8 blur_amount);
+    // blurColumns: perform a blur1d on each column of a rectangular matrix
+    void blurColumns(LedFB &leds, fract8 blur_amount);
+
+    // нарисовать линию в буфере
+    void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, const CRGB &color, LedFB &fb);
+
+    // нарисовать окружность в буфере
+    void drawCircle(int x0, int y0, int radius, const CRGB &color, LedFB &fb);
+
 
     // ***************************
-    /***  Математические      ***/
+    // ***  Математические     ***
     // ***************************
 
   uint8_t mapsincos8(bool map, uint8_t theta, uint8_t lowest = 0, uint8_t highest = 255);
@@ -117,18 +128,28 @@ namespace EffectMath {
 
     // TODO: below methods needs revision
 
-  // для работы с буфером
-  uint32_t getPixelNumberBuff(uint16_t x, uint16_t y, uint8_t W , uint8_t H); // получить номер пикселя в буфере по координатам
-  
-  /*  some other funcs depends on this */
-  CRGB &getPixel(uint16_t x, uint16_t y);
+    // для работы с буфером
+    uint32_t getPixelNumberBuff(uint16_t x, uint16_t y, uint8_t W , uint8_t H); // получить номер пикселя в буфере по координатам
+    
+    /*  some other funcs depends on this */
+    CRGB &getPixel(uint16_t x, uint16_t y);
+
+    // в extra_tasks.h есть странные объекты, которые прибиты гвоздями к этой функции
+    void drawPixelXY(int16_t x, int16_t y, const CRGB &color); // функция отрисовки точки по координатам X Y
+
+
+
+
+
+
+
+
+
 
   void MoveFractionalNoise(bool scale, const uint8_t noise3d[][WIDTH][HEIGHT], int8_t amplitude, float shift = 0);
   
   
-    /*      UNUSED of obsolete      */
-    //CRGB makeBrighter( const CRGB& color, fract8 howMuchBrighter = 5);
-    //CRGB makeDarker( const CRGB& color, fract8 howMuchDarker = 5);
+    /*      UNUSED or obsolete      */
     // функция возвращает true, если float ~= целое (первая цифра после запятой == 0)
     //bool isInteger(float val);
 
@@ -141,8 +162,7 @@ namespace EffectMath {
     // функция получения цвета пикселя в матрице по его координатам
     uint32_t getPixColorXY(int16_t x, int16_t y); 
     
-    void drawPixelXY(int16_t x, int16_t y, const CRGB &color); // функция отрисовки точки по координатам X Y
-    void wu_pixel(uint32_t x, uint32_t y, CRGB col);
+    void wu_pixel(uint32_t x, uint32_t y, CRGB col, LedFB &fb);
     void drawPixelXYF(float x, float y, const CRGB &color, uint8_t darklevel=25); // darklevel - насколько затемнять картинку
     void drawPixelXYF_Y(int16_t x, float y, const CRGB &color, uint8_t darklevel=50);
     void drawPixelXYF_X(float x, int16_t y, const CRGB &color, uint8_t darklevel=50);
@@ -156,10 +176,8 @@ namespace EffectMath {
     CRGB getPixColorXYF_Y(int16_t x, float y);
     CRGB getPixColorXYF(float x, float y);
 
-    void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, const CRGB &color);
     void drawLineF(float x1, float y1, float x2, float y2, const CRGB &color);
 	void drawSquareF(float x, float y, float leg, CRGB color);
-    void drawCircle(int x0, int y0, int radius, const CRGB &color);
     void drawCircleF(float x0, float y0, float radius, const CRGB &color, float step = 0.25);
     void fill_circleF(float cx, float cy, float radius, CRGB col);
     void setLedsNscale8(uint16_t idx, uint8_t val);

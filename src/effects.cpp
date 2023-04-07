@@ -101,7 +101,7 @@ bool EffectSparcles::sparklesRoutine()
   }
 
 #endif
-    if (EffectMath::getPixColorXY(x, y) == 0U) {
+    if (fb.pixel(x, y)) {
 #ifdef MIC_EFFECTS
       if (isMicOn()) {
         currentHSV = CHSV(mic_f, 255U - getMicMapMaxPeak()/3, constrain(mic * 1.25f, 48, 255));
@@ -308,7 +308,7 @@ bool EffectPulse::run() {
         _pulse_hue = pulse_hue;
         _pulse_color = CHSV(_pulse_hue, _sat, _dark);
       }
-      EffectMath::drawCircle(centerX, centerY, i, _pulse_color);
+      EffectMath::drawCircle(centerX, centerY, i, _pulse_color, fb);
     }
   } else {
     fb.fade(FADE);
@@ -1847,12 +1847,12 @@ bool EffectSwirl::swirlRoutine()
 
   // The color of each point shifts over time, each at a different speed.
   uint16_t ms = millis();
-  EffectMath::drawPixelXY(xi, yj, CRGB(EffectMath::getPixColorXY(xi, yj)) + ColorFromPalette(*curPalette, ms / 11));
-  EffectMath::drawPixelXY(xj, yi, CRGB(EffectMath::getPixColorXY(xj, yi)) + ColorFromPalette(*curPalette, ms / 13));
-  EffectMath::drawPixelXY(nxi, nyj, CRGB(EffectMath::getPixColorXY(nxi, nyj)) + ColorFromPalette(*curPalette, ms / 17));
-  EffectMath::drawPixelXY(nxj, nyi, CRGB(EffectMath::getPixColorXY(nxj, nyi)) + ColorFromPalette(*curPalette, ms / 29));
-  EffectMath::drawPixelXY(xi, nyj, CRGB(EffectMath::getPixColorXY(xi, nyj)) + ColorFromPalette(*curPalette, ms / 37));
-  EffectMath::drawPixelXY(nxi, yj, CRGB(EffectMath::getPixColorXY(nxi, yj)) + ColorFromPalette(*curPalette, ms / 41));
+  EffectMath::drawPixelXY(xi, yj, CRGB(fb.pixel(xi, yj)) + ColorFromPalette(*curPalette, ms / 11));
+  EffectMath::drawPixelXY(xj, yi, CRGB(fb.pixel(xj, yi)) + ColorFromPalette(*curPalette, ms / 13));
+  EffectMath::drawPixelXY(nxi, nyj, CRGB(fb.pixel(nxi, nyj)) + ColorFromPalette(*curPalette, ms / 17));
+  EffectMath::drawPixelXY(nxj, nyi, CRGB(fb.pixel(nxj, nyi)) + ColorFromPalette(*curPalette, ms / 29));
+  EffectMath::drawPixelXY(xi, nyj, CRGB(fb.pixel(xi, nyj)) + ColorFromPalette(*curPalette, ms / 37));
+  EffectMath::drawPixelXY(nxi, yj, CRGB(fb.pixel(nxi, yj)) + ColorFromPalette(*curPalette, ms / 41));
 
   return true;
 }
@@ -1909,7 +1909,7 @@ bool EffectDrift::incrementalDriftRoutine()
   for (uint8_t i = 1; i < maxDim / 2U; i++) { // возможно, стоит здесь использовать const MINLENGTH
     int8_t x = beatsin8((float)(maxDim/2 - i) * _dri_speed, maxDim / 2U - 1 - i, maxDim / 2U - 1 + 1U + i, 0, 64U + dri_phase); // используем константы центра матрицы из эффекта Кометы
     int8_t y = beatsin8((float)(maxDim/2 - i) * _dri_speed, maxDim / 2U - 1 - i, maxDim / 2U - 1 + 1U + i, 0, dri_phase);       // используем константы центра матрицы из эффекта Кометы
-    EffectMath::wu_pixel((x-width_adj) * 256, (y-height_adj) * 256, ColorFromPalette(RainbowColors_p, (i - 1U) * maxDim_steps + _dri_delta));
+    EffectMath::wu_pixel((x-width_adj) * 256, (y-height_adj) * 256, ColorFromPalette(RainbowColors_p, (i - 1U) * maxDim_steps + _dri_delta), fb);
   }
   EffectMath::blur2d(fb, beatsin8(3U, 5, 100));
   return true;
@@ -1925,8 +1925,7 @@ bool EffectDrift::incrementalDriftRoutine2()
     return false;
   }
 
-  for (uint8_t i = 0; i < maxDim; i++)
-  {
+  for (uint8_t i = 0; i < maxDim; i++){
     int8_t x = 0;
     int8_t y = 0;
     CRGB color;
@@ -1942,7 +1941,7 @@ bool EffectDrift::incrementalDriftRoutine2()
       y = beatsin8((maxDim - i) * _dri_speed, maxDim - 1 - i, i + 1U, 0, 64U + dri_phase);
       color = ColorFromPalette(RainbowColors_p, ~(i * maxDim_steps + _dri_delta)); 
     }
-    EffectMath::wu_pixel((x-width_adj) * 256, (y-height_adj) * 256, color);
+    EffectMath::wu_pixel((x-width_adj) * 256, (y-height_adj) * 256, color, fb);
   }
   EffectMath::blur2d(fb, beatsin8(3U, 5, 100));
   return true;
@@ -2354,7 +2353,7 @@ bool EffectFire2018::run()
       EffectMath::drawPixelXY(x, EffectMath::getmaxHeightIndex() - y, color);
 
       // dim the result based on 2nd noise layer
-      color = EffectMath::getPixColorXY(x, EffectMath::getmaxHeightIndex() - y);
+      color = fb.pixel(x, EffectMath::getmaxHeightIndex() - y);
       color.nscale8(noise3dx[1][x][y]);
       EffectMath::drawPixelXY(x, EffectMath::getmaxHeightIndex() - y, color);
     }
@@ -2645,7 +2644,7 @@ void EffectCube2d::cube2dmoveCols(uint8_t moveItem, bool movedirection){
       color = ledbuff[EffectMath::getPixelNumberBuff(x,anim0+fieldY-1, fieldX, fieldY)];
       for (uint8_t k = anim0+fieldY-1; k > anim0 ; k--)
       {
-        //color2 = EffectMath::getPixColorXY(x,k-1);                                   // берём цвет от строчки под нашей
+        //color2 = fb.pixel(x,k-1);                                   // берём цвет от строчки под нашей
         color2 = ledbuff[EffectMath::getPixelNumberBuff(x, k-1, fieldX, fieldY)];
         for (uint8_t m = x; m < x + sizeX; m++)
           // копируем его на всю нашу строку
@@ -2667,11 +2666,11 @@ void EffectCube2d::cube2dmoveRows(uint8_t moveItem, bool movedirection){
   // крутим строку влево
   if (!movedirection)
   {
-    //color = EffectMath::getPixColorXY(anim0, y);                            // берём цвет от левой колонки (левого пикселя)
+    //color = fb.pixel(anim0, y);                            // берём цвет от левой колонки (левого пикселя)
     color = ledbuff[EffectMath::getPixelNumberBuff(anim0, y, fieldX, fieldY)];
     for (uint8_t k = anim0; k < anim0+fieldX-1; k++)
     {
-      //color2 = EffectMath::getPixColorXY(k+1, y);                           // берём цвет от колонки (пикселя) правее
+      //color2 = fb.pixel(k+1, y);                           // берём цвет от колонки (пикселя) правее
       color2 = ledbuff[EffectMath::getPixelNumberBuff(k+1, y, fieldX, fieldY)];
       for (uint8_t m = y; m < y + sizeY; m++)
         // копируем его на всю нашу колонку
@@ -3100,7 +3099,7 @@ bool EffectPicasso::picassoRoutine(){
     Particle &p2 = particles[particles.size()-1-i];
     switch (effId){
     case 1:
-      EffectMath::drawLine(static_cast<int>(p1.position_x), static_cast<int>(p1.position_y), static_cast<int>(p2.position_x), static_cast<int>(p2.position_y), p1.color);
+      EffectMath::drawLine(static_cast<int>(p1.position_x), static_cast<int>(p1.position_y), static_cast<int>(p2.position_x), static_cast<int>(p2.position_y), p1.color, fb);
       break;
     case 2:
       EffectMath::drawLineF(p1.position_x, p1.position_y, p2.position_x, p2.position_y, p1.color);
@@ -3598,8 +3597,8 @@ void EffectAquarium::nDrops(uint8_t bri) {
   currentPalette[7] = CHSV(hue, satur - 60, 255);
   fb.fill(ColorFromPalette(currentPalette, 1));
   for (uint8_t i = amountDrops - 1; i > 0; i--) {
-    EffectMath::drawCircle(posX[i], posY[i], radius[i], ColorFromPalette(currentPalette, (256/16)*8.5-radius[i]));
-    EffectMath::drawCircle(posX[i], posY[i], radius[i] - 1., ColorFromPalette(currentPalette,(256/16)*7.5-radius[i] , 256/radius[i]));
+    EffectMath::drawCircle(posX[i], posY[i], radius[i], ColorFromPalette(currentPalette, (256/16)*8.5-radius[i]), fb);
+    EffectMath::drawCircle(posX[i], posY[i], radius[i] - 1., ColorFromPalette(currentPalette,(256/16)*7.5-radius[i] , 256/radius[i]), fb);
     if (radius[i] >= maxRadius) {
       radius[i] = -1;
       posX[i] = random(WIDTH);
@@ -3736,12 +3735,12 @@ void EffectStar::drawStar(float xlocl, float ylocl, float biggy, float little, i
   for (int i = 0; i < points; i++)
   {
 #ifdef MIC_EFFECTS
-    EffectMath::drawLine(xlocl + ((little * (sin8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128), ylocl + ((little * (cos8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128), xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128), ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128), isMicOn() ? CHSV(koler+getMicMapFreq(), 255-micPick, constrain(micPick * EffectMath::fmap(scale, 1.0f, 255.0f, 1.25f, 5.0f), 48, 255)) : ColorFromPalette(*curPalette, koler));
-    EffectMath::drawLine(xlocl + ((little * (sin8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128), ylocl + ((little * (cos8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128), xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128), ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128), isMicOn() ? CHSV(koler+getMicMapFreq(), 255-micPick, constrain(micPick * EffectMath::fmap(scale, 1.0f, 255.0f, 1.25f, 5.0f), 48, 255)) : ColorFromPalette(*curPalette, koler));
+    EffectMath::drawLine(xlocl + ((little * (sin8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128), ylocl + ((little * (cos8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128), xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128), ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128), isMicOn() ? CHSV(koler+getMicMapFreq(), 255-micPick, constrain(micPick * EffectMath::fmap(scale, 1.0f, 255.0f, 1.25f, 5.0f), 48, 255)) : ColorFromPalette(*curPalette, koler), fb);
+    EffectMath::drawLine(xlocl + ((little * (sin8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128), ylocl + ((little * (cos8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128), xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128), ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128), isMicOn() ? CHSV(koler+getMicMapFreq(), 255-micPick, constrain(micPick * EffectMath::fmap(scale, 1.0f, 255.0f, 1.25f, 5.0f), 48, 255)) : ColorFromPalette(*curPalette, koler), fb);
 
 #else
-    EffectMath::drawLine(xlocl + ((little * (sin8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128), ylocl + ((little * (cos8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128), xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128), ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128), ColorFromPalette(*curPalette, koler));
-    EffectMath::drawLine(xlocl + ((little * (sin8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128), ylocl + ((little * (cos8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128), xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128), ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128), ColorFromPalette(*curPalette, koler));
+    EffectMath::drawLine(xlocl + ((little * (sin8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128), ylocl + ((little * (cos8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128), xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128), ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128), ColorFromPalette(*curPalette, koler), fb);
+    EffectMath::drawLine(xlocl + ((little * (sin8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128), ylocl + ((little * (cos8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128), xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128), ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128), ColorFromPalette(*curPalette, koler), fb);
 #endif
     }
 }
@@ -5684,7 +5683,7 @@ bool EffectSmokeballs::run(){
 void EffectSmokeballs::shiftUp(){       
   for (byte x = 0; x < WIDTH; x++) {
     for (int16_t y = HEIGHT; y > 0; --y) {
-      EffectMath::drawPixelXY(x, y, EffectMath::getPixColorXY(x, y - 1));
+      EffectMath::drawPixelXY(x, y, fb.pixel(x, y - 1));
     }
   }
 }
@@ -6200,7 +6199,7 @@ void EffectOscilator::drawPixelXYFseamless(float x, float y, CRGB color)
   for (uint8_t i = 0; i < 4; i++) {
     uint8_t xn = (int8_t)(x + (i & 1)) % WIDTH;
     uint8_t yn = (int8_t)(y + ((i >> 1) & 1)) % HEIGHT;
-    CRGB clr = EffectMath::getPixColorXY(xn, yn);
+    CRGB clr = fb.pixel(xn, yn);
     clr.r = qadd8(clr.r, (color.r * wu[i]) >> 8);
     clr.g = qadd8(clr.g, (color.g * wu[i]) >> 8);
     clr.b = qadd8(clr.b, (color.b * wu[i]) >> 8);
@@ -7005,7 +7004,7 @@ void EffectMaze::buttonsTickMaze() {
       btnPressed = true;
       int8_t newPos = playerPos[0] - 1;
       if (newPos >= 0 && newPos <= EffectMath::getmaxWidthIndex())
-        if (EffectMath::getPixColorXY(newPos, playerPos[1]) == 0) {
+        if (fb.pixel(newPos, playerPos[1])) {
           movePlayer(newPos, playerPos[1], playerPos[0], playerPos[1]);
           playerPos[0] = newPos;
         }
@@ -7014,7 +7013,7 @@ void EffectMaze::buttonsTickMaze() {
       btnPressed = true;
       int8_t newPos = playerPos[0] + 1;
       if (newPos >= 0 && newPos <= EffectMath::getmaxWidthIndex())
-        if (EffectMath::getPixColorXY(newPos, playerPos[1]) == 0) {
+        if (fb.pixel(newPos, playerPos[1])) {
           movePlayer(newPos, playerPos[1], playerPos[0], playerPos[1]);
           playerPos[0] = newPos;
         }
@@ -7023,7 +7022,7 @@ void EffectMaze::buttonsTickMaze() {
       btnPressed = true;
       int8_t newPos = playerPos[1] + 1;
       if (newPos >= 0 && newPos <= EffectMath::getmaxHeightIndex())
-        if (EffectMath::getPixColorXY(playerPos[0], newPos) == 0) {
+        if (fb.pixel(playerPos[0], newPos)) {
           movePlayer(playerPos[0], newPos, playerPos[0], playerPos[1]);
           playerPos[1] = newPos;
         }
@@ -7032,7 +7031,7 @@ void EffectMaze::buttonsTickMaze() {
       btnPressed = true;
       int8_t newPos = playerPos[1] - 1;
       if (newPos >= 0 && newPos <= EffectMath::getmaxHeightIndex())
-        if (EffectMath::getPixColorXY(playerPos[0], newPos) == 0) {
+        if (fb.pixel(playerPos[0], newPos)) {
           movePlayer(playerPos[0], newPos, playerPos[0], playerPos[1]);
           playerPos[1] = newPos;
         }
@@ -7289,7 +7288,7 @@ bool EffectPolarL::run() {
             )
           ));
       if (flag == 1) { // Тут я модифицирую стандартные палитры 
-        CRGB tmpColor = EffectMath::getPixColorXY(x, y);
+        CRGB tmpColor = fb.pixel(x, y);
         CRGB led = tmpColor;
         led.g = tmpColor.r;
         led.r = tmpColor.g;
@@ -7297,7 +7296,7 @@ bool EffectPolarL::run() {
         led.r += led.r < 206 ? 48 : 0;
         EffectMath::drawPixelXY(x, y, led);
       } else if (flag == 3) {
-        CRGB led = EffectMath::getPixColorXY(x, y);
+        CRGB led = fb.pixel(x, y);
         led.b += 48;
         led.g += led.g < 206 ? 48 : 0;
         EffectMath::drawPixelXY(x, y, led);

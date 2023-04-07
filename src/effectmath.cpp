@@ -197,24 +197,22 @@ void MoveFractionalNoise(bool _scale, const uint8_t noise3d[][WIDTH][HEIGHT], in
 uint8_t ceil8(uint8_t a, uint8_t b){ return a/b + !!(a%b); }
 
 /* kostyamat добавил
-функция увеличения яркости 
+функция увеличения яркости  */
 CRGB makeBrighter( const CRGB& color, fract8 howMuchBrighter)
 {
   CRGB incrementalColor = color;
   incrementalColor.nscale8( howMuchBrighter);
   return color + incrementalColor;
 }
-*/
 
 /* kostyamat добавил
- функция уменьшения яркости 
+ функция уменьшения яркости */
 CRGB makeDarker( const CRGB& color, fract8 howMuchDarker )
 {
-  CRGB newcolor = color;
+  CRGB newcolor(color);
   newcolor.nscale8( 255 - howMuchDarker);
   return newcolor;
 }
-*/
 
 float randomf(float min, float max)
 {
@@ -277,24 +275,24 @@ void drawPixelXY(int16_t x, int16_t y, const CRGB &color) // функция от
   getPixel(x,y) = color;
 }
 
-void wu_pixel(uint32_t x, uint32_t y, CRGB col) {      //awesome wu_pixel procedure by reddit u/sutaburosu
+void wu_pixel(uint32_t x, uint32_t y, CRGB col, LedFB &fb) {      //awesome wu_pixel procedure by reddit u/sutaburosu
   // extract the fractional parts and derive their inverses
   uint8_t xx = x & 0xff, yy = y & 0xff, ix = 255 - xx, iy = 255 - yy;
   // calculate the intensities for each affected pixel
   #define WU_WEIGHT(a,b) ((uint8_t) (((a)*(b)+(a)+(b))>>8))
   uint8_t wu[4] = {WU_WEIGHT(ix, iy), WU_WEIGHT(xx, iy),
                    WU_WEIGHT(ix, yy), WU_WEIGHT(xx, yy)};
+  #undef WU_WEIGHT
   // multiply the intensities by the colour, and saturating-add them to the pixels
   for (uint8_t i = 0; i < 4; i++) {
     uint16_t xn = (x >> 8) + (i & 1); uint16_t yn = (y >> 8) + ((i >> 1) & 1);
-    CRGB clr = getLed(getPixelNumber(xn, yn));
+    CRGB clr = fb.pixel(xn,yn);
     clr.r = qadd8(clr.r, (col.r * wu[i]) >> 8);
     clr.g = qadd8(clr.g, (col.g * wu[i]) >> 8);
     clr.b = qadd8(clr.b, (col.b * wu[i]) >> 8);
 
-    drawPixelXY(xn, yn, clr);
+    fb.pixel(xn, yn) = clr;
   }
-  #undef WU_WEIGHT
 }
 
 CRGB colorsmear(const CRGB &col1, const CRGB &col2, byte l) {
@@ -483,7 +481,7 @@ CRGB getPixColorXYF_Y(int16_t x, float y)
     @param    y1  End point y coordinate
     @param    color CRGB Color to draw with
 */
-void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, const CRGB &color) {
+void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, const CRGB &color, LedFB &fb) {
   int16_t steep = abs(y1 - y0) > abs(x1 - x0);
   if (steep) {
     std::swap(x0, y0);
@@ -510,9 +508,9 @@ void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, const CRGB &color)
 
   for (; x0 <= x1; x0++) {
     if (steep) {
-      drawPixelXY(y0, x0, color);
+      fb.pixel(y0, x0) = color;
     } else {
-      drawPixelXY(x0, y0, color);
+      fb.pixel(x0, y0) = color;
     }
     err -= dy;
     if (err < 0) {
@@ -556,24 +554,24 @@ void drawSquareF(float x, float y, float leg, CRGB color) {
   drawLineF(x-leg,y+leg,x+leg,y+leg,color);
 }
 
-void drawCircle(int x0, int y0, int radius, const CRGB &color){
+void drawCircle(int x0, int y0, int radius, const CRGB &color, LedFB &fb){
   int a = radius, b = 0;
   int radiusError = 1 - a;
 
   if (radius == 0) {
-    drawPixelXY(x0, y0, color);
+    fb.pixel(x0, y0) = color;
     return;
   }
 
   while (a >= b)  {
-    drawPixelXY(a + x0, b + y0, color);
-    drawPixelXY(b + x0, a + y0, color);
-    drawPixelXY(-a + x0, b + y0, color);
-    drawPixelXY(-b + x0, a + y0, color);
-    drawPixelXY(-a + x0, -b + y0, color);
-    drawPixelXY(-b + x0, -a + y0, color);
-    drawPixelXY(a + x0, -b + y0, color);
-    drawPixelXY(b + x0, -a + y0, color);
+    fb.pixel(a + x0, b + y0) = color;
+    fb.pixel(b + x0, a + y0) = color;
+    fb.pixel(-a + x0, b + y0) = color;
+    fb.pixel(-b + x0, a + y0) = color;
+    fb.pixel(-a + x0, -b + y0) = color;
+    fb.pixel(-b + x0, -a + y0) = color;
+    fb.pixel(a + x0, -b + y0) = color;
+    fb.pixel(b + x0, -a + y0) = color;
     b++;
     if (radiusError < 0)
       radiusError += 2 * b + 1;
