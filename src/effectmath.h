@@ -65,13 +65,17 @@ namespace EffectMath {
   constexpr uint8_t wrapY(int8_t y){ return (y + HEIGHT) % HEIGHT; }
 
 
-
-  void blur1d( CRGB* leds, uint16_t numLeds, fract8 blur_amount);
-  void blur2d( CRGB* leds, uint8_t width, uint8_t height, fract8 blur_amount);
+  /**
+   * @brief FastLED's blur2d function over LedFB
+   * 
+   * @param leds framebuffer
+   * @param blur_amount 
+   */
+  void blur2d(LedFB &leds, fract8 blur_amount);
   // blurRows: perform a blur1d on every row of a rectangular matrix
-  void blurRows( CRGB* leds, uint8_t width, uint8_t height, fract8 blur_amount);
+  void blurRows(LedFB &leds, fract8 blur_amount);
   // blurColumns: perform a blur1d on each column of a rectangular matrix
-  void blurColumns(CRGB* leds, uint8_t width, uint8_t height, fract8 blur_amount);
+  void blurColumns(LedFB &leds, fract8 blur_amount);
 
   // для работы с буфером
   uint32_t getPixelNumberBuff(uint16_t x, uint16_t y, uint8_t W , uint8_t H); // получить номер пикселя в буфере по координатам
@@ -121,7 +125,6 @@ namespace EffectMath {
     void setLedsNscale8(uint16_t idx, uint8_t val);
     void dimAll(uint8_t value);
     CRGB &getLed(uint16_t idx);
-    void blur2d(uint8_t val);
 
     /** аналог ардуино функции map(), но только для float   */
     double fmap(const double x, const double in_min, const double in_max, const double out_min, const double out_max);

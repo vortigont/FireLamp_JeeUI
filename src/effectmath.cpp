@@ -100,31 +100,14 @@ static const PROGMEM float LUT[102] = {
 //         calls to 'blur' will also result in the light fading,
 //         eventually all the way to black; this is by design so that
 //         it can be used to (slowly) clear the LEDs to black.
-void blur1d( CRGB* leds, uint16_t numLeds, fract8 blur_amount)
+void blur2d( LedFB &leds, fract8 blur_amount)
 {
-    uint8_t keep = 255 - blur_amount;
-    uint8_t seep = blur_amount >> 1;
-    CRGB carryover = CRGB::Black;
-    for( uint16_t i = 0; i < numLeds; ++i) {
-        CRGB cur = leds[i];
-        CRGB part = cur;
-        part.nscale8( seep);
-        cur.nscale8( keep);
-        cur += carryover;
-        if( i) leds[i-1] += part;
-        leds[i] = cur;
-        carryover = part;
-    }
-}
-
-void blur2d( CRGB* leds, uint8_t width, uint8_t height, fract8 blur_amount)
-{
-    EffectMath::blurRows(leds, width, height, blur_amount);
-    EffectMath::blurColumns(leds, width, height, blur_amount);
+    EffectMath::blurRows(leds, blur_amount);
+    EffectMath::blurColumns(leds, blur_amount);
 }
 
 // blurRows: perform a blur1d on every row of a rectangular matrix
-void blurRows( CRGB* leds, uint8_t width, uint8_t height, fract8 blur_amount)
+void blurRows( LedFB &leds, fract8 blur_amount)
 {
 /*    for( uint8_t row = 0; row < height; ++row) {
         CRGB* rowbase = leds + (row * width);
@@ -134,37 +117,37 @@ void blurRows( CRGB* leds, uint8_t width, uint8_t height, fract8 blur_amount)
     // blur rows same as columns, for irregular matrix
     uint8_t keep = 255 - blur_amount;
     uint8_t seep = blur_amount >> 1;
-    for( uint8_t row = 0; row < height; row++) {
+    for( uint8_t row = 0; row < leds.cfg.h; row++) {
         CRGB carryover = CRGB::Black;
-        for( uint8_t i = 0; i < width; i++) {
-            CRGB cur = leds[getPixelNumber(i,row)];
+        for( uint8_t i = 0; i < leds.cfg.w; i++) {
+            CRGB cur = leds.pixel(i,row);
             CRGB part = cur;
             part.nscale8( seep);
             cur.nscale8( keep);
             cur += carryover;
-            if( i) leds[getPixelNumber(i-1,row)] += part;
-            leds[getPixelNumber(i,row)] = cur;
+            if( i) leds.pixel(i-1,row) += part;
+            leds.pixel(i,row) = cur;
             carryover = part;
         }
     }
 }
 
 // blurColumns: perform a blur1d on each column of a rectangular matrix
-void blurColumns(CRGB* leds, uint8_t width, uint8_t height, fract8 blur_amount)
+void blurColumns(LedFB &leds, fract8 blur_amount)
 {
     // blur columns
     uint8_t keep = 255 - blur_amount;
     uint8_t seep = blur_amount >> 1;
-    for( uint8_t col = 0; col < width; ++col) {
+    for( uint8_t col = 0; col < leds.cfg.w; ++col) {
         CRGB carryover = CRGB::Black;
-        for( uint8_t i = 0; i < height; ++i) {
-            CRGB cur = leds[getPixelNumber(col,i)];
+        for( uint8_t i = 0; i < leds.cfg.h; ++i) {
+            CRGB cur = leds.pixel(col,i);
             CRGB part = cur;
             part.nscale8( seep);
             cur.nscale8( keep);
             cur += carryover;
-            if( i) leds[getPixelNumber(col,i-1)] += part;
-            leds[getPixelNumber(col,i)] = cur;
+            if( i) leds.pixel(col,i-1) += part;
+            leds.pixel(col,i) = cur;
             carryover = part;
         }
     }
@@ -677,8 +660,6 @@ uint32_t getPixColorXY(int16_t x, int16_t y) { return getPixColor( getPixelNumbe
 void setLedsNscale8(uint16_t idx, uint8_t val) { mx[idx].nscale8(val); }
 
 void dimAll(uint8_t value) { for (uint16_t i = 0; i < num_leds; i++) {mx[i].nscale8(value); } }
-
-void blur2d(uint8_t val) { EffectMath::blur2d(getUnsafeLedsArray(),WIDTH,HEIGHT,val); }
 
 CRGB &getLed(uint16_t idx) { 
   return mx[idx];

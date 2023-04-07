@@ -320,7 +320,7 @@ bool EffectPulse::run() {
     pulse_step = 0;
   }
   pulse_step+=speedFactor;
-  EffectMath::blur2d(BLUR);
+  EffectMath::blur2d(fb, BLUR);
   return true;
 }
 
@@ -781,7 +781,7 @@ bool EffectLighterTracers::lighterTracersRoutine()
     }
     EffectMath::drawPixelXYF(coord[j][0U], coord[j][1U], CHSV(ballColors[j], 200U, 255U));
   }
-  EffectMath::blur2d(fb.data(), fb.cfg.w, fb.cfg.h, 5);
+  EffectMath::blur2d(fb, 5);
   return true;
 }
 
@@ -800,7 +800,7 @@ bool EffectLightBalls::run()
   // Note that we never actually clear the matrix, we just constantly
   // blur it repeatedly.  Since the blurring is 'lossy', there's
   // an automatic trend toward black -- by design.
-  EffectMath::blur2d(fb.data(), fb.cfg.w, fb.cfg.h, dim8_raw(beatsin8(3,64,100)));
+  EffectMath::blur2d(fb, dim8_raw(beatsin8(3,64,100)));
 
   // Use two out-of-sync sine waves
   uint16_t  i = beatsin16( 79 * speedFactor, 0, 255); //91
@@ -1372,7 +1372,7 @@ bool EffectSpiro::run() {
     }
   }
 
-  EffectMath::blur2d(32);
+  EffectMath::blur2d(fb, 32);
   return true;
 }
 
@@ -1501,7 +1501,7 @@ bool EffectComet::smokeRoutine() {
     EffectMath::MoveFractionalNoise(MOVE_X, noise3d, WIDTH / (getCtrlVal(3).toInt() + 2));//4
     EffectMath::MoveFractionalNoise(MOVE_Y, noise3d, HEIGHT / 8, 0.33);//4
 
-    EffectMath::blur2d(64); // без размытия как-то пиксельно, наверное...  
+    EffectMath::blur2d(fb,64); // без размытия как-то пиксельно, наверное...  
   // }
   return true;
 }
@@ -1561,7 +1561,7 @@ bool EffectComet::fractfireRoutine() {
 
   EffectMath::MoveFractionalNoise(MOVE_Y, noise3d, 2, beat);
   EffectMath::MoveFractionalNoise(MOVE_X, noise3d, 3);
-  EffectMath::blur2d(32); // нужно ли размытие?
+  EffectMath::blur2d(fb, 32); // нужно ли размытие?
   return true;
 }
 
@@ -1608,7 +1608,7 @@ bool EffectComet::rainbowCometRoutine()
           255 - white
 */
 
-  EffectMath::blur2d(e_com_BLUR);    // < -- размытие хвоста
+  EffectMath::blur2d(fb,e_com_BLUR);    // < -- размытие хвоста
   if (blur < 64) fb.fade(map(blur, 1, 64, 32, 0));
 
   // if(isDebug()){
@@ -1645,7 +1645,7 @@ bool EffectComet::rainbowCometRoutine()
 bool EffectComet::rainbowComet3Routine()
 { 
   count++;
-  EffectMath::blur2d(e_com_BLUR);    // < -- размытие хвоста
+  EffectMath::blur2d(fb,e_com_BLUR);    // < -- размытие хвоста
   if (blur < 64) fb.fade(map(blur, 1, 64, 32, 0));
 
   if (count%2 == 0) hue++;
@@ -1828,10 +1828,10 @@ bool EffectSwirl::swirlRoutine()
   // an automatic trend toward black -- by design.
 #if (WIDTH < 25)
   byte blurAmount = beatsin8(2, 10, 180);
-  EffectMath::blur2d(blurAmount);
+  EffectMath::blur2d(fb,blurAmount);
 #else
   // Never mind, on my 64x96 array, the dots are just too small
-   EffectMath::blur2d(172);
+   EffectMath::blur2d(fb,172);
 #endif
 
   // Use two out-of-sync sine waves
@@ -1911,7 +1911,7 @@ bool EffectDrift::incrementalDriftRoutine()
     int8_t y = beatsin8((float)(maxDim/2 - i) * _dri_speed, maxDim / 2U - 1 - i, maxDim / 2U - 1 + 1U + i, 0, dri_phase);       // используем константы центра матрицы из эффекта Кометы
     EffectMath::wu_pixel((x-width_adj) * 256, (y-height_adj) * 256, ColorFromPalette(RainbowColors_p, (i - 1U) * maxDim_steps + _dri_delta));
   }
-  EffectMath::blur2d(beatsin8(3U, 5, 100));
+  EffectMath::blur2d(fb, beatsin8(3U, 5, 100));
   return true;
 }
 
@@ -1944,7 +1944,7 @@ bool EffectDrift::incrementalDriftRoutine2()
     }
     EffectMath::wu_pixel((x-width_adj) * 256, (y-height_adj) * 256, color);
   }
-  EffectMath::blur2d(beatsin8(3U, 5, 100));
+  EffectMath::blur2d(fb, beatsin8(3U, 5, 100));
   return true;
 }
 
@@ -2029,7 +2029,7 @@ bool EffectTwinkles::twinklesRoutine()
     else
       EffectMath::getLed(idx) = ColorFromPalette(*curPalette, ledsbuff[idx].r, ledsbuff[idx].b);
     }
-  EffectMath::blur2d(32); // так они не только разгороються, но и раздуваються. Красивше :)
+  EffectMath::blur2d(fb, 32); // так они не только разгороються, но и раздуваються. Красивше :)
   return true;
 }
 
@@ -2068,7 +2068,7 @@ bool EffectRadar::radarRoutine()
   else
   {
     uint8_t _scale = palettescale; // диапазоны внутри палитры, влияют на степень размытия хвоста
-    EffectMath::blur2d(beatsin8(5U, 3U, 10U));
+    EffectMath::blur2d(fb, beatsin8(5U, 3U, 10U));
     EffectMath::dimAll(255U - (0 + _scale * 1.5));
 
     for (uint8_t offset = 0; offset < maxDim /2; offset++)
@@ -2117,7 +2117,7 @@ bool EffectWaves::wavesRoutine() {
   }
   
   EffectMath::dimAll(255 - 10 * speedFactor); // димирование зависит от скорости, чем быстрее - тем больше димировать
-  EffectMath::blur2d(20); // @Palpalych советует делать размытие. вот в этом эффекте его явно не хватает... (есть сабпиксель, он сам размывает)
+  EffectMath::blur2d(fb, 20); // @Palpalych советует делать размытие. вот в этом эффекте его явно не хватает... (есть сабпиксель, он сам размывает)
   
   float n = 0;
   for (float i = 0.0; i < (_scale <=4 ? WIDTH : HEIGHT); i+= 0.5) {
@@ -3117,7 +3117,7 @@ bool EffectPicasso::picassoRoutine(){
     generate(true);
   }
 
-  EffectMath::blur2d(80);
+  EffectMath::blur2d(fb, 80);
   return true;
 }
 
@@ -3303,7 +3303,7 @@ bool EffectLeapers::run(){
     EffectMath::drawPixelXYF(l.x, l.y, CHSV(l.color, 255, 255));
   };
 
-  EffectMath::blur2d(20);
+  EffectMath::blur2d(fb, 20);
   return true;
 }
 
@@ -3556,7 +3556,7 @@ bool EffectWhirl::whirlRoutine() {
       boid->location.y = 0;
     }
   }
-  EffectMath::blur2d(30U);
+  EffectMath::blur2d(fb, 30U);
 
   hue += speedFactor;
   ff_x += speedFactor;
@@ -3608,7 +3608,7 @@ void EffectAquarium::nDrops(uint8_t bri) {
       radius[i] += 0.25;
   }
 
-  EffectMath::blur2d(getUnsafeLedsArray(), WIDTH, HEIGHT, 128);
+  EffectMath::blur2d(fb, 128);
 }
 
 void EffectAquarium::nGlare(uint8_t bri) {
@@ -3621,7 +3621,7 @@ void EffectAquarium::nGlare(uint8_t bri) {
 
   fillNoiseLED(getUnsafeLedsArray());
   
-  EffectMath::blur2d(getUnsafeLedsArray(), WIDTH, HEIGHT, 100);
+  EffectMath::blur2d(fb, 100);
 }
 
 void EffectAquarium::fillNoiseLED(CRGB *fixme) {
@@ -3786,9 +3786,9 @@ bool EffectStar::run() {
     }
   }
 #ifdef MIC_EFFECTS
-  EffectMath::blur2d(isMicOn() ? micPick/2 : 30U); //fadeToBlackBy() сам блурит, уменьшил блур под микрофон
+  EffectMath::blur2d(fb, isMicOn() ? micPick/2 : 30U); //fadeToBlackBy() сам блурит, уменьшил блур под микрофон
 #else
-  EffectMath::blur2d(30U);
+  EffectMath::blur2d(fb, 30U);
 #endif
   return true;
 }
@@ -3962,7 +3962,7 @@ void EffectFireworks::sparkGen() {
       store.gSkyburst = false;
     }
   }
-  //EffectMath::blur2d(20);
+  //EffectMath::blur2d(fb, 20);
 }
 
 bool EffectFireworks::fireworksRoutine()
@@ -4077,7 +4077,7 @@ bool EffectPacific::run()
   // Deepen the blues and greens a bit
   pacifica_deepen_colors();
 
-  EffectMath::blur2d(20);
+  EffectMath::blur2d(fb, 20);
   return true;
 }
 
@@ -4279,8 +4279,8 @@ bool EffectNoise::run() {
   if (palettepos != 4) {
     if (type) EffectMath::nightMode(fb);
     else EffectMath::gammaCorrection();
-    EffectMath::blur2d(32);
-  } else EffectMath::blur2d(48);
+    EffectMath::blur2d(fb, 32);
+  } else EffectMath::blur2d(fb, 48);
   //and show it!
  return true;
 }
@@ -4996,7 +4996,7 @@ bool EffectNBals::run() {
 }
 
 void EffectNBals::blur() {
-  EffectMath::blur2d(beatsin8(2, 0, 60));
+  EffectMath::blur2d(fb, beatsin8(2, 0, 60));
   // Use two out-of-sync sine waves
   uint8_t  i = beatsin8( beat1, 0, EffectMath::getmaxWidthIndex());
   uint8_t  j = beatsin8(fabs(beat1 - beat2), 0, EffectMath::getmaxHeightIndex());
@@ -5665,7 +5665,7 @@ bool EffectSmokeballs::run(){
   uint8_t _amount = map(_scale, 1, 16, 2, WAVES_AMOUNT);
   shiftUp();
   EffectMath::dimAll(240);
-  EffectMath::blur2d(20);
+  EffectMath::blur2d(fb, 20);
   for (byte j = 0; j < _amount; j++) {
     waves[j].pos = beatsin16((uint8_t)(waves[j].sSpeed * (speedFactor * 5.)), waves[j].reg, waves[j].maxMin + waves[j].reg, waves[j].waveColors*256, waves[j].waveColors*8);
     EffectMath::drawPixelXYF((float)waves[j].pos / 10., 0.05, ColorFromPalette(*curPalette, waves[j].waveColors));
@@ -6522,7 +6522,7 @@ void EffectFairy::fount(){
       EffectMath::drawPixelXYF(trackingObjectPosX[i], trackingObjectPosY[i], baseRGB, 0);
     }
   }
-  if (blur) EffectMath::blur2d(blur * 10); // Размытие 
+  if (blur) EffectMath::blur2d(fb, blur * 10); // Размытие 
 }
 
 // ============= ЭФФЕКТ ФЕЯ ===============
@@ -6921,7 +6921,7 @@ bool EffectBalls::run() {
       ball[i][1] = EffectMath::getmaxWidthIndex();
     }
   }
-  EffectMath::blur2d(fb.data(), fb.cfg.w, fb.cfg.h, 48);
+  EffectMath::blur2d(fb, 48);
   return true;
 }
 
@@ -7216,7 +7216,7 @@ bool EffectFrizzles::run() {
 
   for(float i= (float)8 * _scale; i> 0; i--)
     EffectMath::drawPixelXY(beatsin8(12. * _speed + i * _speed, 0, EffectMath::getmaxWidthIndex()), beatsin8(15. * _speed + i * _speed, 0, EffectMath::getmaxHeightIndex()), CHSV(beatsin8(12. * _speed, 0, 255), scale > 127 ? 255 - i*8 : 255, scale > 127 ? 127 + i*8 : 255));
-  EffectMath::blur2d(fb.data(), fb.cfg.w, fb.cfg.h, 16);
+  EffectMath::blur2d(fb, 16);
   return true;
 }
 
@@ -7601,7 +7601,7 @@ bool EffectStarShips::run() {
     dir = _dir - 1;
   else dir = count%8;
   if (dir == 0) randomSeed(millis());
-  EffectMath::blur2d(16);
+  EffectMath::blur2d(fb, 16);
   return true;
 }
 
@@ -7671,7 +7671,7 @@ bool EffectFlags::run() {
     }
 
   }
-  EffectMath::blur2d(fb.data(), fb.cfg.w, fb.cfg.h, 32);
+  EffectMath::blur2d(fb, 32);
   counter += (float)_speed * SPEED_ADJ;
   return true;
 }
@@ -8327,7 +8327,7 @@ bool EffectDNA::run() {
       EffectMath::drawPixelXYF(x1, y1, CHSV(~(byte)sin1, 255, brightBack));
     flag = !flag; 
   }
-  blur2d(fb.data(), fb.cfg.w, fb.cfg.h, 64);
+  EffectMath::blur2d(fb, 64);
 
   return true;
 }
@@ -8565,7 +8565,7 @@ bool EffectSplashBals::run() {
       }
     EffectMath::fill_circleF(b.x1, b.y1, EffectMath::fmap(fabs(float(WIDTH / 2) - b.x1), 0, WIDTH / 2, R, 0.2), ColorFromPalette(*curPalette, 256 - 256/HEIGHT * fabs(float(HEIGHT/2) - b.y1)));
   }
-  EffectMath::blur2d(fb.data(), fb.cfg.w, fb.cfg.h, 48);
+  EffectMath::blur2d(fb, 48);
   return true;
 }
 
