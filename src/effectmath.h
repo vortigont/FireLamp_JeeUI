@@ -64,6 +64,25 @@ namespace EffectMath {
   constexpr uint8_t wrapX(int8_t x){ return (x + WIDTH) % WIDTH; }
   constexpr uint8_t wrapY(int8_t y){ return (y + HEIGHT) % HEIGHT; }
 
+  /*    Наложение эффектов на буфер, работа с цветами     */
+
+  // затенение
+  void nightMode(LedFB &ledarr);
+
+  /**
+   * @brief добавить пиксель случайного цвета в случайном месте
+   * 
+   * @param density lesser number -> higher chance
+   */
+  void confetti(LedFB &leds, byte density);
+
+  /**
+   * @brief с некоторой вероятностью добавляет вспышку в случайном месте 
+   * 
+   * @param leds 
+   * @param chanceOfGlitter lesser number -> higher chance
+   */
+  void addGlitter(LedFB &leds, uint8_t chanceOfGlitter = 127);
 
   /**
    * @brief FastLED's blur2d function over LedFB
@@ -76,6 +95,8 @@ namespace EffectMath {
   void blurRows(LedFB &leds, fract8 blur_amount);
   // blurColumns: perform a blur1d on each column of a rectangular matrix
   void blurColumns(LedFB &leds, fract8 blur_amount);
+
+    // TODO: below methods needs revision
 
   // для работы с буфером
   uint32_t getPixelNumberBuff(uint16_t x, uint16_t y, uint8_t W , uint8_t H); // получить номер пикселя в буфере по координатам
@@ -91,9 +112,6 @@ namespace EffectMath {
   bool isInteger(float val);
   // Функция возврашает "вес" яркости пикселя от 0 (черный) до 765 (белый). Может использоваться для проверки не "пустое ли место"
   uint16_t RGBweight (CRGB *leds, uint16_t idx);
-  void confetti(byte density);
-  void addGlitter(uint8_t chanceOfGlitter = 127);
-  void nightMode(LedFB &ledarr);
   void gammaCorrection();
 
     // функция получения цвета пикселя по его номеру

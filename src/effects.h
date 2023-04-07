@@ -1919,7 +1919,7 @@ private:
     {
         for (uint8_t j = 0; j < HEIGHT; j++)
         {
-            EffectMath::getPixel(i, j) += 
+            fb.pixel(i, j) += 
             (j < thisMax - HEIGHT / 4) ? CHSV(68, 255, thisVal) : (j < thisMax + HEIGHT / 4) ? CHSV(0, 255, thisVal)
             : CHSV(0, 0, thisVal / 2.5);
         }
@@ -1930,7 +1930,7 @@ private:
     {
         for (uint8_t j = 0; j < HEIGHT; j++)
         {
-            EffectMath::getPixel(i, j) += 
+            fb.pixel(i, j) += 
             (j < thisMax) ? CHSV(50, 255, thisVal) : CHSV(150, 255, thisVal);
         }
     }
@@ -1940,7 +1940,7 @@ private:
     {
         for (uint8_t j = 0; j < HEIGHT; j++)
         {
-            EffectMath::getPixel(i, j) += 
+            fb.pixel(i, j) += 
             (j < thisMax - HEIGHT / 4) ? CHSV(0, 224, thisVal) : (j < thisMax + HEIGHT / 4) ? CHSV(0, 0, thisVal)
             : CHSV(0, 224, thisVal);
         }
@@ -1951,7 +1951,7 @@ private:
     {
         for (uint8_t j = 0; j < HEIGHT; j++)
         {
-            EffectMath::getPixel(i, j) += 
+            fb.pixel(i, j) += 
             (j < thisMax - HEIGHT / 4) ? CHSV(0, 255, thisVal) : (j < thisMax + HEIGHT / 4) ? CHSV(150, 255, thisVal)
             : CHSV(0, 0, thisVal);
         }
@@ -1962,7 +1962,7 @@ private:
     {
         for (uint8_t j = 0; j < HEIGHT; j++)
         {
-            EffectMath::getPixel(i, j) += 
+            fb.pixel(i, j) += 
             (j < thisMax + 1) ? CHSV(248, 214, (float)thisVal * 0.83) : CHSV(25, 3, (float)thisVal * 0.91);
         }
     }
@@ -1972,7 +1972,7 @@ private:
     {
         for (uint8_t j = 0; j < HEIGHT; j++)
         {
-            EffectMath::getPixel(i, j) +=
+            fb.pixel(i, j) +=
             ((i <= WIDTH / 2) && (j + thisMax > HEIGHT - 1 + HEIGHT / 16)) ? 
             ((i % 2 && ((int)j - HEIGHT / 16 + thisMax) % 2) ? 
             CHSV(160, 0, thisVal) : CHSV(160, 255, thisVal)) 
@@ -1985,7 +1985,7 @@ private:
     {
         for (uint8_t j = 0; j < HEIGHT; j++)
         {
-            EffectMath::getPixel(i, j) += 
+            fb.pixel(i, j) += 
             (i < WIDTH / 3) ? CHSV(90, 255, thisVal) : (i < WIDTH - 1 - WIDTH / 3) ? CHSV(0, 0, thisVal)
             : CHSV(0, 255, thisVal);
         }
@@ -1996,7 +1996,7 @@ private:
     {
         for (uint8_t j = 0; j < HEIGHT; j++)
         {
-            EffectMath::getPixel(i, j) += 
+            fb.pixel(i, j) += 
             (i < WIDTH / 3) ? CHSV(160, 255, thisVal) : (i < WIDTH - 1 - WIDTH / 3) ? CHSV(0, 0, thisVal)
             : CHSV(0, 255, thisVal);
         }
@@ -2007,7 +2007,7 @@ private:
     {
         for (uint8_t j = 0; j < HEIGHT; j++)
         {
-            EffectMath::getPixel(i, j) += 
+            fb.pixel(i, j) += 
             (
                 (
                     (i > WIDTH / 2 + 1 || i < WIDTH / 2 - 2) && ((i - (int)(j + thisMax - (HEIGHT * 2 - WIDTH) / 2) > -2) && (i - (j + thisMax - (HEIGHT * 2 - WIDTH) / 2) < 2))
@@ -2039,7 +2039,7 @@ private:
     {
         for (uint8_t j = 0; j < HEIGHT; j++)
         {
-            EffectMath::getPixel(i, j) += 
+            fb.pixel(i, j) += 
             (j < thisMax - HEIGHT / 3) ? 
             CHSV(250, 224, (float)thisVal * 0.68) : (j < thisMax + HEIGHT / 3) ? CHSV(64, 255, (float)thisVal * 0.98)
             : CHSV(250, 224, (float)thisVal * 0.68);
@@ -2164,11 +2164,9 @@ private:
             y += ny * speedy;
         }
 
-        float getY() {
-        return y;
-        }
+        float getY() { return y; }
 
-        void reset() {
+        void reset(LedFB &fb) {
             uint32_t peak = 0;
             speedy = (float)random(5, 30) / 10;
             y = random((HEIGHT/4) * 5, (HEIGHT /2) * 5) / 5;
@@ -2179,7 +2177,7 @@ private:
                     peak = temp;
                 }
             }
-            color = EffectMath::getPixel(x, y);
+            color = fb.pixel(x, y);
         }
 
         void draw() {

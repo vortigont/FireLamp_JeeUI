@@ -230,7 +230,7 @@ bool EffectEverythingFall::run(){
       // Scale the heat value from 0-255 down to 0-240
       // for best results with color palettes.
       byte colorindex = scale8(heat[x][(uint8_t)j], 240);
-      nblend(EffectMath::getPixel(x, EffectMath::getmaxHeightIndex() - j), ColorFromPalette(*curPalette, colorindex /*, heat[x][j]*/), 50);
+      nblend(fb.pixel(x, EffectMath::getmaxHeightIndex() - j), ColorFromPalette(*curPalette, colorindex /*, heat[x][j]*/), 50);
     }
   }
   return true;
@@ -811,10 +811,10 @@ bool EffectLightBalls::run()
   // The color of each point shifts over time, each at a different speed.
   uint16_t ms = millis() / (scale /16 + 1);
 
-  EffectMath::getPixel( highByte(i * paintWidth) + BORDERTHICKNESS, highByte(j * paintHeight) + BORDERTHICKNESS) += CHSV( ms / 29, 200U, 255U);
-  EffectMath::getPixel( highByte(j * paintWidth) + BORDERTHICKNESS, highByte(k * paintHeight) + BORDERTHICKNESS) += CHSV( ms / 41, 200U, 255U);
-  EffectMath::getPixel( highByte(k * paintWidth) + BORDERTHICKNESS, highByte(m * paintHeight) + BORDERTHICKNESS) += CHSV( ms / 37, 200U, 255U);
-  EffectMath::getPixel( highByte(m * paintWidth) + BORDERTHICKNESS, highByte(i * paintHeight) + BORDERTHICKNESS) += CHSV( ms / 53, 200U, 255U);
+  fb.pixel( highByte(i * paintWidth) + BORDERTHICKNESS, highByte(j * paintHeight) + BORDERTHICKNESS) += CHSV( ms / 29, 200U, 255U);
+  fb.pixel( highByte(j * paintWidth) + BORDERTHICKNESS, highByte(k * paintHeight) + BORDERTHICKNESS) += CHSV( ms / 41, 200U, 255U);
+  fb.pixel( highByte(k * paintWidth) + BORDERTHICKNESS, highByte(m * paintHeight) + BORDERTHICKNESS) += CHSV( ms / 37, 200U, 255U);
+  fb.pixel( highByte(m * paintWidth) + BORDERTHICKNESS, highByte(i * paintHeight) + BORDERTHICKNESS) += CHSV( ms / 53, 200U, 255U);
 
   return true;
 }
@@ -1332,7 +1332,7 @@ bool EffectSpiro::run() {
     uint8_t x2 = EffectMath::mapsincos8(MAP_SIN, spirotheta2 + i * spirooffset, x - spiroradiusx, x + spiroradiusx);
     uint8_t y2 = EffectMath::mapsincos8(MAP_COS, spirotheta2 + i * spirooffset, y - spiroradiusy, y + spiroradiusy);
     CRGB color = ColorFromPalette(*curPalette, (spirohueoffset + i * spirooffset), 128U);
-    EffectMath::getPixel(x2, y2) += color;
+    fb.pixel(x2, y2) += color;
 
     if(x2 == spirocenterX && y2 == spirocenterY) change = true; // в центре могут находится некоторое время
   }
@@ -1385,7 +1385,7 @@ void EffectComet::drawFillRect2_fast(int8_t x1, int8_t y1, int8_t x2, int8_t y2,
   {
     for (int8_t yP = y1; yP <= y2; yP++)
     {
-      EffectMath::getPixel(xP, yP) += color;
+      fb.pixel(xP, yP) += color;
     }
   }
 }
@@ -1518,7 +1518,7 @@ bool EffectComet::firelineRoutine() {
   else hue = colorId;
 
   for (uint8_t i = 1; i < WIDTH; i += 2) {
-    EffectMath::getPixel( i, e_centerY) += CHSV(hue + i * 2 , colorId == 255 ? 64 : 255, 255);
+    fb.pixel( i, e_centerY) += CHSV(hue + i * 2 , colorId == 255 ? 64 : 255, 255);
   }
   // Noise
   float beat2 = (10.0 -  (float)beatsin88(3 * speedy, 10, 20)) / 10.;
@@ -1550,7 +1550,7 @@ bool EffectComet::fractfireRoutine() {
   else hue = colorId;
 
   for (uint8_t i = 1; i < WIDTH; i += 2) {
-    EffectMath::getPixel(i, EffectMath::getmaxHeightIndex()) += CHSV(hue + i * 2, colorId == 255 ? 64 : 255, 255);
+    fb.pixel(i, EffectMath::getmaxHeightIndex()) += CHSV(hue + i * 2, colorId == 255 ? 64 : 255, 255);
   }
   // Noise
   e_y[0] += 12 * speedy; // 3000;
@@ -1578,10 +1578,10 @@ bool EffectComet::flsnakeRoutine() {
 
   for (uint8_t y = 2; y < EffectMath::getmaxHeightIndex(); y += 5) {
     for (uint8_t x = 2; x < EffectMath::getmaxWidthIndex(); x += 5) {
-      EffectMath::getPixel(x, y) += CHSV(x * y + hue, colorId == 255 ? 64 : 255, 255);
-      EffectMath::getPixel(x + 1, y) += CHSV((x + 4) * y + hue, colorId == 255 ? 64 : 255, 255);
-      EffectMath::getPixel(x, y + 1) += CHSV(x * (y + 4) + hue, colorId == 255 ? 64 : 255, 255);
-      EffectMath::getPixel(x + 1, y + 1) += CHSV((x + 4) * (y + 4) + hue, colorId == 255 ? 64 : 255, 255);
+      fb.pixel(x, y) += CHSV(x * y + hue, colorId == 255 ? 64 : 255, 255);
+      fb.pixel(x + 1, y) += CHSV((x + 4) * y + hue, colorId == 255 ? 64 : 255, 255);
+      fb.pixel(x, y + 1) += CHSV(x * (y + 4) + hue, colorId == 255 ? 64 : 255, 255);
+      fb.pixel(x + 1, y + 1) += CHSV((x + 4) * (y + 4) + hue, colorId == 255 ? 64 : 255, 255);
     }
   }
   // Noise
@@ -2239,7 +2239,7 @@ bool EffectFire2012::fire2012Routine() {
     // Step 4.  Map from heat cells to LED colors
     for (uint8_t y = 0; y < HEIGHT; y++)
     {
-      nblend(EffectMath::getPixel(x, y), ColorFromPalette(*curPalette, ((noise3d[0][x][y] * 0.7) + (noise3d[0][EffectMath::wrapX(x + 1)][y] * 0.3))), fireSmoothing);
+      nblend(fb.pixel(x, y), ColorFromPalette(*curPalette, ((noise3d[0][x][y] * 0.7) + (noise3d[0][EffectMath::wrapX(x + 1)][y] * 0.3))), fireSmoothing);
     }
   }
   return true;
@@ -4173,10 +4173,10 @@ bool EffectMunch::munchRoutine() {
   for (uint8_t x = 0; x < minDimLocal; x++) {
     for (uint8_t y = 0; y < minDimLocal; y++) {
       color = (x ^ y ^ flip) < count ? ColorFromPalette(*curPalette, ((x ^ y) << rand) + generation) : CRGB::Black;
-      if (x < WIDTH and y < HEIGHT) EffectMath::getPixel(x, y) = color;
-      if (x + minDimLocal < WIDTH and y < HEIGHT) EffectMath::getPixel(x + minDimLocal, y) = color;
-      if (y + minDimLocal < HEIGHT and x < WIDTH) EffectMath::getPixel(x, y + minDimLocal) = color;
-      if (x + minDimLocal < WIDTH and y + minDimLocal < HEIGHT) EffectMath::getPixel(x + minDimLocal, y + minDimLocal) = color;
+      if (x < WIDTH and y < HEIGHT) fb.pixel(x, y) = color;
+      if (x + minDimLocal < WIDTH and y < HEIGHT) fb.pixel(x + minDimLocal, y) = color;
+      if (y + minDimLocal < HEIGHT and x < WIDTH) fb.pixel(x, y + minDimLocal) = color;
+      if (x + minDimLocal < WIDTH and y + minDimLocal < HEIGHT) fb.pixel(x + minDimLocal, y + minDimLocal) = color;
       
     }
   }
@@ -5008,21 +5008,21 @@ void EffectNBals::blur() {
 
   switch(balls){
   case 1:
-    EffectMath::getPixel(ni, nj) += CHSV( ms / 17, 200, 255);
+    fb.pixel(ni, nj) += CHSV( ms / 17, 200, 255);
     break;
   case 3:
-    EffectMath::getPixel(ni, nj) += CHSV( ms / 17, 200, 255);
-    EffectMath::getPixel(ni, j) += CHSV( ms / 41, 200, 255);
+    fb.pixel(ni, nj) += CHSV( ms / 17, 200, 255);
+    fb.pixel(ni, j) += CHSV( ms / 41, 200, 255);
     break;
   case 4:
-    EffectMath::getPixel(ni, nj) += CHSV( ms / 17, 200, 255);
-    EffectMath::getPixel(ni, j) += CHSV( ms / 41, 200, 255);
-    EffectMath::getPixel( i,nj) += CHSV( ms / 37, 200, 255);
-    EffectMath::getPixel( i, j) += CHSV( ms / 11, 200, 255);
+    fb.pixel(ni, nj) += CHSV( ms / 17, 200, 255);
+    fb.pixel(ni, j) += CHSV( ms / 41, 200, 255);
+    fb.pixel( i,nj) += CHSV( ms / 37, 200, 255);
+    fb.pixel( i, j) += CHSV( ms / 11, 200, 255);
     break;
   case 2:
-    EffectMath::getPixel(ni, j) += CHSV( ms / 41, 200, 255);
-    EffectMath::getPixel( i, j) += CHSV( ms / 13, 200, 255);
+    fb.pixel(ni, j) += CHSV( ms / 41, 200, 255);
+    fb.pixel( i, j) += CHSV( ms / 13, 200, 255);
     break;
   }
 }
@@ -5701,7 +5701,7 @@ void EffectCell::cell(){
       int16_t hue = x * beatsin16(10. * speedFactor, 1, 10) + offsetY;
       EffectMath::drawPixelXY(x, y, CHSV(hue, 200, sin8(x * 30 + offsetX)));
       hue = y * 3 + offsetX;
-      EffectMath::getPixel(x, y) += CHSV(hue, 200, sin8(y * 30 + offsetY));
+      fb.pixel(x, y) += CHSV(hue, 200, sin8(y * 30 + offsetY));
     }
   }
   EffectMath::nightMode(fb); // пригасим немного, чтобы видить структуру, и убрать пересветы
@@ -5765,11 +5765,11 @@ void EffectCell::spruce() {
       EffectMath::drawPixelXYF_X(x/4 + height_adj, i, CHSV(hue + i * z, 255, 255));
   }
   if (!(WIDTH& 0x01))
-    EffectMath::getPixel(WIDTH/2 - ((millis()>>9) & 0x01 ? 1:0), minDim - 1 - ((millis()>>8) & 0x01 ? 1:0)) = CHSV(0, 255, 255);
+    fb.pixel(WIDTH/2 - ((millis()>>9) & 0x01 ? 1:0), minDim - 1 - ((millis()>>8) & 0x01 ? 1:0)) = CHSV(0, 255, 255);
   else
-    EffectMath::getPixel(WIDTH/2, minDim - 1) = CHSV(0, (millis()>>9) & 0x01 ? 0 : 255, 255);
+    fb.pixel(WIDTH/2, minDim - 1) = CHSV(0, (millis()>>9) & 0x01 ? 0 : 255, 255);
 
-  if (glitch) EffectMath::confetti(density);
+  if (glitch) EffectMath::confetti(fb, density);
 }
 
 void EffectCell::spider() {
@@ -6438,7 +6438,7 @@ void EffectWrain::Clouds(bool flash)
       if (flash)
         EffectMath::drawPixelXY(x, HEIGHT - z - 1, CHSV(random8(20,30), 250, random8(64, 100)));
       else 
-        nblend(EffectMath::getPixel(x, EffectMath::getmaxHeightIndex() - z), ColorFromPalette(*curPalette, _noise[x * cloudHeight + z], _noise[x * cloudHeight + z]), (500 / cloudHeight));
+        nblend(fb.pixel(x, EffectMath::getmaxHeightIndex() - z), ColorFromPalette(*curPalette, _noise[x * cloudHeight + z], _noise[x * cloudHeight + z]), (500 / cloudHeight));
     }
     noiseZ++;
   }
@@ -6740,7 +6740,7 @@ void EffectCircles::drawCircle(LedFB &fb, Circle circle) {
         float fraction = 1.0 - percentage;
         brightness = (float)_video * fraction;
       }
-      EffectMath::getPixel(x, y) += ColorFromPalette(*curPalette, hue, brightness);
+      fb.pixel(x, y) += ColorFromPalette(*curPalette, hue, brightness);
     }
   }
 }
@@ -7448,7 +7448,7 @@ bool EffectMagma::run() {
 
   for (uint8_t i = 0; i < WIDTH; i++) {
     for (uint8_t j = 0; j < HEIGHT; j++) {
-     EffectMath::getPixel(i, EffectMath::getmaxHeightIndex() - j) += ColorFromPalette(*curPalette, qsub8(inoise8(i * deltaValue, (j + ff_y + random8(2)) * deltaHue, ff_z), shiftHue[j]), 127U);
+     fb.pixel(i, EffectMath::getmaxHeightIndex() - j) += ColorFromPalette(*curPalette, qsub8(inoise8(i * deltaValue, (j + ff_y + random8(2)) * deltaHue, ff_z), shiftHue[j]), 127U);
     }
   }
 
@@ -7529,7 +7529,7 @@ bool EffectStarShips::run() {
       for (byte x = 0; x < WIDTH; x++) {
 		    if (!_dir and x > WIDTH/2 and random8(chance) == DIR_CHARGE) {count++; break;}
         for (float y = 0; y < HEIGHT; y+=speedFactor) {
-          EffectMath::getPixel(x, y) = (((int)y == EffectMath::getmaxHeightIndex()) ? CRGB::Black : EffectMath::getPixel(x, y + 1));
+          fb.pixel(x, y) = (((int)y == EffectMath::getmaxHeightIndex()) ? CRGB::Black : fb.pixel(x, y + 1));
         }
       }
       break;
@@ -7537,7 +7537,7 @@ bool EffectStarShips::run() {
       for (float x = 0; x < WIDTH; x+=speedFactor) {
         if (!_dir and (uint8_t)x > WIDTH/2 and random(chance) == DIR_CHARGE) {count++; break;}
         for (byte y = 0; y < HEIGHT; y++) {
-          EffectMath::getPixel(x, y) = ((y == EffectMath::getmaxHeightIndex() or (int)x == EffectMath::getmaxWidthIndex()) ? CRGB::Black : EffectMath::getPixel(x + 1, y + 1));
+          fb.pixel(x, y) = ((y == EffectMath::getmaxHeightIndex() or (int)x == EffectMath::getmaxWidthIndex()) ? CRGB::Black : fb.pixel(x + 1, y + 1));
         }
       }
       break;
@@ -7545,7 +7545,7 @@ bool EffectStarShips::run() {
       for (float x = 0; x < WIDTH; x+=speedFactor) {
         if (!_dir and (uint8_t)x > WIDTH/2 and random(chance) == DIR_CHARGE) {count++; break;}
         for (uint8_t y = EffectMath::getmaxHeightIndex(); y > 0; y--) {
-          EffectMath::getPixel(x, y) = (((int)x == EffectMath::getmaxWidthIndex()) ? CRGB::Black : EffectMath::getPixel(x + 1, y));
+          fb.pixel(x, y) = (((int)x == EffectMath::getmaxWidthIndex()) ? CRGB::Black : fb.pixel(x + 1, y));
         }
       }
       break;
@@ -7553,7 +7553,7 @@ bool EffectStarShips::run() {
       for (float x = 0; x < WIDTH; x+=speedFactor) {
         if (!_dir and (uint8_t)x > WIDTH/2 and random(chance) == DIR_CHARGE) {count++; break;}
         for (uint8_t y = EffectMath::getmaxHeightIndex(); y > 0; y--) {
-          EffectMath::getPixel(x, y) = (((int)x == EffectMath::getmaxWidthIndex() or y == 0) ? CRGB::Black : EffectMath::getPixel(x + 1, y - 1));
+          fb.pixel(x, y) = (((int)x == EffectMath::getmaxWidthIndex() or y == 0) ? CRGB::Black : fb.pixel(x + 1, y - 1));
         }
       }
       break;
@@ -7561,7 +7561,7 @@ bool EffectStarShips::run() {
       for (byte x = 0; x < WIDTH; x++) {
 		    if (!_dir and x < WIDTH/2 and random(chance) == DIR_CHARGE) {count++; break;}
         for (float y = EffectMath::getmaxHeightIndex(); y > 0; y-=speedFactor) {
-          EffectMath::getPixel(x, y) = (((int)y == 0) ? CRGB::Black : EffectMath::getPixel(x, y - 1));
+          fb.pixel(x, y) = (((int)y == 0) ? CRGB::Black : fb.pixel(x, y - 1));
         }
       }
       break;
@@ -7569,7 +7569,7 @@ bool EffectStarShips::run() {
       for (float x = EffectMath::getmaxWidthIndex(); x > 0; x-=speedFactor) {
         if (!_dir and (uint8_t)x < WIDTH/2 and random(chance) == DIR_CHARGE) {count++; break;}
         for (uint8_t y = EffectMath::getmaxHeightIndex(); y > 0; y--) {
-          EffectMath::getPixel(x, y) = ((y == 0 or (int)x == 0) ? CRGB::Black : EffectMath::getPixel(x - 1, y - 1));
+          fb.pixel(x, y) = ((y == 0 or (int)x == 0) ? CRGB::Black : fb.pixel(x - 1, y - 1));
         }
       }
       break;
@@ -7577,7 +7577,7 @@ bool EffectStarShips::run() {
       for (float x = EffectMath::getmaxWidthIndex(); x > 0; x-=speedFactor) {
         if (!_dir and (uint8_t)x < WIDTH/2 and random(chance) == DIR_CHARGE) {count++; break;}
         for (uint8_t y = EffectMath::getmaxHeightIndex(); y > 0; y--) {
-          EffectMath::getPixel(x, y) = ((int)x == 0 ? CRGB::Black : EffectMath::getPixel(x - 1, y));
+          fb.pixel(x, y) = ((int)x == 0 ? CRGB::Black : fb.pixel(x - 1, y));
         }
       }
       break;
@@ -7585,7 +7585,7 @@ bool EffectStarShips::run() {
       for (float x = WIDTH -1; x >0; x-=speedFactor) {
         if (!_dir and (uint8_t)x < WIDTH/2 and random(chance) == DIR_CHARGE) {count++; break;}
         for (uint8_t y = EffectMath::getmaxHeightIndex(); y > 0; y--) {
-          EffectMath::getPixel(x, y) = ((y == EffectMath::getmaxHeightIndex() or (int)x == 0) ? CRGB::Black : EffectMath::getPixel(x - 1, y + 1));
+          fb.pixel(x, y) = ((y == EffectMath::getmaxHeightIndex() or (int)x == 0) ? CRGB::Black : fb.pixel(x - 1, y + 1));
         }
       }
       break;
@@ -7990,7 +7990,7 @@ void EffectVU::waterfall(uint8_t band, uint8_t barHeight) {
   if (band == NUM_BANDS - 1){
     for (byte x = 0; x < WIDTH; x++) {
       for (byte y = 0; y < HEIGHT; y++) {
-        EffectMath::getPixel(x, y) = (((int)y == EffectMath::getmaxHeightIndex()) ? CRGB::Black : EffectMath::getPixel(x, y + 1));
+        fb.pixel(x, y) = (((int)y == EffectMath::getmaxHeightIndex()) ? CRGB::Black : fb.pixel(x, y + 1));
       }
     }
   }
@@ -8026,7 +8026,7 @@ void EffectFire2021::palettesload(){
   
   sparks.resize(sparksCount);
   for (byte i = 0; i < sparksCount; i++) 
-    sparks[i].reset();
+    sparks[i].reset(fb);
 }
 
 
@@ -8046,7 +8046,7 @@ bool EffectFire2021::run() {
     for (byte i = 0; i < sparksCount; i++) {
       sparks[i].addXY((float)random(-1, 2) / 2, 0.5 * speedfactor);
       if (sparks[i].getY() > HEIGHT && !random(0, 50))
-        sparks[i].reset();
+        sparks[i].reset(fb);
       else
         sparks[i].draw();
     }
@@ -8057,7 +8057,7 @@ bool EffectFire2021::run() {
       int16_t bri= inoise8(x * _scale, (y * _scale) - t) - ((withSparks ? y + spacer : y) * (256 / WIDTH));
       byte col = bri;
       if(bri<0){bri= 0;} if(bri!=0) {bri= 256 - (bri* 0.2);}
-      nblend(EffectMath::getPixel(x, y), ColorFromPalette(*curPalette, col, bri), speedFactor);}
+      nblend(fb.pixel(x, y), ColorFromPalette(*curPalette, col, bri), speedFactor);}
   }
   return true;
 }
@@ -8105,10 +8105,10 @@ void EffectPuzzles::regen() {
 void EffectPuzzles::draw_square(byte x1, byte y1, byte x2, byte y2, byte col) {
   for (byte x = x1; x < x2; x++) {
     for (byte y = y1; y < y2; y++) {
-      if (col == 0) { EffectMath::getPixel(x, y) = CRGB(0, 0, 0); } 
+      if (col == 0) { fb.pixel(x, y) = CRGB(0, 0, 0); } 
       else if ((x == x1 || x == x2 - 1) || (y == y1 || y == y2 - 1))
-        EffectMath::getPixel(x, y) = ColorFromPalette(*curPalette, col);
-      else EffectMath::getPixel(x, y) = CHSV(0, 0, 96);
+        fb.pixel(x, y) = ColorFromPalette(*curPalette, col);
+      else fb.pixel(x, y) = CHSV(0, 0, 96);
     }
   }
 }
@@ -8207,49 +8207,49 @@ bool EffectPile::run() {
     for (uint8_t y = 0; y < pcnt; y++)
       for (uint8_t x = 0; x < WIDTH; x++)
         if (!random(temp))
-          EffectMath::getPixel(x,y) = 0;
+          fb.pixel(x,y) = 0;
   }
 
   pcnt = 0U;
   // осыпаем всё, что есть на экране
   for (uint8_t y = 1; y < HEIGHT; y++)
     for (uint8_t x = 0; x < WIDTH; x++)
-      if (EffectMath::getPixel(x, y))
+      if (fb.pixel(x, y))
       { // проверяем для каждой песчинки
-        if (!EffectMath::getPixel(x, y - 1))
+        if (!fb.pixel(x, y - 1))
         { // если под нами пусто, просто падаем
-          EffectMath::getPixel(x, y - 1) = EffectMath::getPixel(x, y);
-          EffectMath::getPixel(x, y) = 0;
+          fb.pixel(x, y - 1) = fb.pixel(x, y);
+          fb.pixel(x, y) = 0;
         }
-        else if (x > 0U && !EffectMath::getPixel(x - 1, y - 1) && x < WIDTH - 1 && !EffectMath::getPixel(x + 1, y - 1))
+        else if (x > 0U && !fb.pixel(x - 1, y - 1) && x < WIDTH - 1 && !fb.pixel(x + 1, y - 1))
         { // если под нами пик
           if (random8(2U))
-            EffectMath::getPixel(x - 1, y - 1) = EffectMath::getPixel(x, y);
+            fb.pixel(x - 1, y - 1) = fb.pixel(x, y);
           else
-            EffectMath::getPixel(x - 1, y - 1) = EffectMath::getPixel(x, y);
-          EffectMath::getPixel(x, y) = 0;
+            fb.pixel(x - 1, y - 1) = fb.pixel(x, y);
+          fb.pixel(x, y) = 0;
           pcnt = y - 1;
         }
-        else if (x > 0U && !EffectMath::getPixel(x - 1, y - 1))
+        else if (x > 0U && !fb.pixel(x - 1, y - 1))
         { // если под нами склон налево
-          EffectMath::getPixel(x - 1, y - 1) = EffectMath::getPixel(x, y);
-          EffectMath::getPixel(x, y) = 0;
+          fb.pixel(x - 1, y - 1) = fb.pixel(x, y);
+          fb.pixel(x, y) = 0;
           pcnt = y - 1;
         }
-        else if (x < WIDTH - 1 && !EffectMath::getPixel(x + 1, y - 1))
+        else if (x < WIDTH - 1 && !fb.pixel(x + 1, y - 1))
         { // если под нами склон направо
-          EffectMath::getPixel(x + 1, y - 1) = EffectMath::getPixel(x, y);
-          EffectMath::getPixel(x, y) = 0;
+          fb.pixel(x + 1, y - 1) = fb.pixel(x, y);
+          fb.pixel(x, y) = 0;
           pcnt = y - 1;
         }
         else // если под нами плато
           pcnt = y;
       }
   // эмиттер новых песчинок
-  if (!EffectMath::getPixel(CENTER_X_MINOR, HEIGHT - 2) && !EffectMath::getPixel(CENTER_X_MAJOR, HEIGHT - 2) && !random(3))
+  if (!fb.pixel(CENTER_X_MINOR, HEIGHT - 2) && !fb.pixel(CENTER_X_MAJOR, HEIGHT - 2) && !random(3))
   {
     temp = random(2) ? CENTER_X_MINOR : CENTER_X_MAJOR;
-    EffectMath::getPixel(temp, HEIGHT - 1) = ColorFromPalette(*curPalette, random8());
+    fb.pixel(temp, HEIGHT - 1) = ColorFromPalette(*curPalette, random8());
   }
   return true;
 }
@@ -8349,7 +8349,7 @@ bool EffectSmoker::run() {
   for (byte x = 0; x < WIDTH; x++) {
     for (byte y = 0; y < HEIGHT; y++) { 
       uint8_t bri= inoise8(x * beatsin8(glitch, 20, 40), (y * _scale) - t);
-      nblend(EffectMath::getPixel(x, y), CHSV(color, saturation, bri), speedFactor);}
+      nblend(fb.pixel(x, y), CHSV(color, saturation, bri), speedFactor);}
   }
   
   EVERY_N_SECONDS(random8(10, 31)) {
@@ -8422,7 +8422,7 @@ bool EffectMirage::run() {
   drawDot(x3 + 1, y3, 200);
   for (byte x = 1; x < WIDTH + 1; x++) {
     for (byte y = 1; y < HEIGHT + 1; y++) {
-      EffectMath::getPixel(x - 1, y - 1) = CHSV(colorShift ? color++ : color, buff[x][y], 255);
+      fb.pixel(x - 1, y - 1) = CHSV(colorShift ? color++ : color, buff[x][y], 255);
     }
   }
   return true;
@@ -8523,7 +8523,7 @@ bool EffectRadialFire::run() {
       byte Col = Bri;
       if (Bri < 0) Bri = 0; 
       if(Bri != 0) Bri = 256 - (Bri * 0.2);
-        nblend(EffectMath::getPixel(x+X, y+Y), ColorFromPalette(*curPalette, Col, Bri), speed);
+        nblend(fb.pixel(x+X, y+Y), ColorFromPalette(*curPalette, Col, Bri), speed);
     }
   }
   return true;

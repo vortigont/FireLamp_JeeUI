@@ -254,16 +254,16 @@ bool isInteger(float val) {
 }
 
 // Функция создает вспышки в разных местах матрицы, параметр 0-255. Чем меньше, тем чаще.
-void addGlitter(uint8_t chanceOfGlitter){
-  if ( random8() < chanceOfGlitter) mx[random16(num_leds)] += CRGB::Gray;
+void addGlitter(LedFB &leds, uint8_t chanceOfGlitter){
+  if ( random8() < chanceOfGlitter) leds.at(random16(leds.size())) += CRGB::Gray;
 }
 
 // Функция создает разноцветные конфетти в разных местах матрицы, параметр 0-255. Чем меньше, тем чаще.
-void confetti(byte density) {
-  uint16_t idx = random16(num_leds);
+void confetti(LedFB &leds, byte density) {
   for (byte i=0; i < num_leds/256; i++)
     if ( random8() < density)
-      if (RGBweight(mx.fb->data(), idx) < 32) mx[idx] = random(32, 16777216);
+      leds[random16(leds.size())] = random(32, 16777216);
+//      if (RGBweight(mx.fb->data(), idx) < 32) mx[idx] = random(32, 16777216);
 }
 
 // todo: fastled has similar methods
