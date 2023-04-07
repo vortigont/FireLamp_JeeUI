@@ -194,48 +194,28 @@ void MoveFractionalNoise(bool _scale, const uint8_t noise3d[][WIDTH][HEIGHT], in
   memcpy(leds, ledsbuff, sizeof(CRGB)* num_leds);
 }
 
-/**
- * Возвращает частное от а,б округленное до большего целого
- */
-uint8_t ceil8(const uint8_t a, const uint8_t b){
-  return a/b + !!(a%b);
-}
-
-// новый фейдер
-void fadePixel(uint8_t i, uint8_t j, uint8_t step)
-{
-    CRGB &led = getPixel(i,j);
-    if (!led) return; // см. приведение к bool для CRGB, это как раз тест на 0
-    
-    if (led.r >= 30U || led.g >= 30U || led.b >= 30U){
-        led.fadeToBlackBy(step);
-    }
-    else{
-        drawPixelXY(i, j, 0U);
-    }
-}
+uint8_t ceil8(uint8_t a, uint8_t b){ return a/b + !!(a%b); }
 
 /* kostyamat добавил
-функция увеличения яркости */
+функция увеличения яркости 
 CRGB makeBrighter( const CRGB& color, fract8 howMuchBrighter)
 {
   CRGB incrementalColor = color;
   incrementalColor.nscale8( howMuchBrighter);
   return color + incrementalColor;
 }
+*/
 
 /* kostyamat добавил
- функция уменьшения яркости */
+ функция уменьшения яркости 
 CRGB makeDarker( const CRGB& color, fract8 howMuchDarker )
 {
   CRGB newcolor = color;
   newcolor.nscale8( 255 - howMuchDarker);
   return newcolor;
 }
+*/
 
-/* kostyamat добавил
- функция возвращает рандомное значение float между min и max 
- с шагом 1/1024 */
 float randomf(float min, float max)
 {
   return fmap(random(1024), 0, 1023, min, max);
@@ -243,7 +223,7 @@ float randomf(float min, float max)
 
 /* kostyamat добавил
  функция возвращает true, если float
- ~= целое (первая цифра после запятой == 0) */
+ ~= целое (первая цифра после запятой == 0)
 bool isInteger(float val) {
     float val1;
     val1 = val - (int)val;
@@ -252,6 +232,7 @@ bool isInteger(float val) {
     else
         return false;
 }
+ */
 
 // Функция создает вспышки в разных местах матрицы, параметр 0-255. Чем меньше, тем чаще.
 void addGlitter(LedFB &leds, uint8_t chanceOfGlitter){
@@ -689,6 +670,7 @@ uint32_t getPixelNumberBuff(uint16_t x, uint16_t y, uint8_t W , uint8_t H) // п
 
 }
 
+/*  some other funcs depends on this */
 CRGB &getPixel(uint16_t x, uint16_t y){
   return mx.pixel(x,y);
   // Все, что не попадает в диапазон WIDTH x HEIGHT отправляем в "невидимый" светодиод.

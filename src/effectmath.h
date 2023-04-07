@@ -96,20 +96,42 @@ namespace EffectMath {
   // blurColumns: perform a blur1d on each column of a rectangular matrix
   void blurColumns(LedFB &leds, fract8 blur_amount);
 
+    // ***************************
+    /***  Математические      ***/
+    // ***************************
+
+  uint8_t mapsincos8(bool map, uint8_t theta, uint8_t lowest = 0, uint8_t highest = 255);
+
+    /**
+     * Возвращает частное от а,б округленное до большего целого
+     */
+    uint8_t ceil8(uint8_t a, uint8_t b);
+
+    /**
+     функция возвращает рандомное значение float между min и max с шагом 1/1024
+     kostyamat добавил
+    */
+    float randomf(float min, float max);
+
+
+
     // TODO: below methods needs revision
 
   // для работы с буфером
   uint32_t getPixelNumberBuff(uint16_t x, uint16_t y, uint8_t W , uint8_t H); // получить номер пикселя в буфере по координатам
   
+  /*  some other funcs depends on this */
   CRGB &getPixel(uint16_t x, uint16_t y);
-  uint8_t mapsincos8(bool map, uint8_t theta, uint8_t lowest = 0, uint8_t highest = 255);
+
   void MoveFractionalNoise(bool scale, const uint8_t noise3d[][WIDTH][HEIGHT], int8_t amplitude, float shift = 0);
-  void fadePixel(uint8_t i, uint8_t j, uint8_t step);
-  uint8_t ceil8(const uint8_t a, const uint8_t b);
-  CRGB makeBrighter( const CRGB& color, fract8 howMuchBrighter = 5);
-  CRGB makeDarker( const CRGB& color, fract8 howMuchDarker = 5);
-  float randomf(float min, float max);
-  bool isInteger(float val);
+  
+  
+    /*      UNUSED of obsolete      */
+    //CRGB makeBrighter( const CRGB& color, fract8 howMuchBrighter = 5);
+    //CRGB makeDarker( const CRGB& color, fract8 howMuchDarker = 5);
+    // функция возвращает true, если float ~= целое (первая цифра после запятой == 0)
+    //bool isInteger(float val);
+
   // Функция возврашает "вес" яркости пикселя от 0 (черный) до 765 (белый). Может использоваться для проверки не "пустое ли место"
   uint16_t RGBweight (CRGB *leds, uint16_t idx);
   void gammaCorrection();
