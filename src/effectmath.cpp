@@ -42,6 +42,7 @@ uint16_t XY(uint8_t x, uint8_t y) {return 0;}
 
 namespace EffectMath {
 
+/*
 static const uint8_t gamma_exp[] PROGMEM = {
 0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   1,   1,   1,
 1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,
@@ -60,6 +61,7 @@ static const uint8_t gamma_exp[] PROGMEM = {
 160, 162, 164, 165, 167, 169, 171, 173, 175, 177, 179, 181, 183, 185, 187,
 190, 192, 194, 196, 198, 200, 202, 204, 207, 209, 211, 213, 216, 218, 220,
 222, 225, 227, 229, 232, 234, 236, 239, 241, 244, 246, 249, 251, 253, 254, 255};
+*/
 
 // lookup table for fast atan func
 static const PROGMEM float LUT[102] = {
@@ -245,8 +247,9 @@ void confetti(LedFB &leds, byte density) {
 //      if (RGBweight(mx.fb->data(), idx) < 32) mx[idx] = random(32, 16777216);
 }
 
-// todo: fastled has similar methods
+/*
 //gamma correction function
+// pretty cloce to much mem-cheap fastled's dim8*
 void gammaCorrection()
 {
   byte r, g, b;
@@ -260,7 +263,9 @@ void gammaCorrection()
     mx[i].b = pgm_read_byte(gamma_exp + b);
   }
 }
+*/
 
+/*
 uint32_t getPixColor(uint32_t thisSegm) // функция получения цвета пикселя по его номеру
 {
   uint32_t thisPixel = thisSegm * SEGMENTS;
@@ -269,6 +274,7 @@ uint32_t getPixColor(uint32_t thisSegm) // функция получения ц�
   else return 0;
   //else return (((uint32_t)overrun.r << 16) | ((uint32_t)overrun.g << 8 ) | (uint32_t)overrun.b);
 }
+*/
 
 void drawPixelXY(int16_t x, int16_t y, const CRGB &color) // функция отрисовки точки по координатам X Y
 {
@@ -632,23 +638,6 @@ void nightMode(LedFB &ledarr){
         i.b = dim8_lin(i.b);
     }
 }
-
-uint32_t getPixColorXY(int16_t x, int16_t y) { return getPixColor( getPixelNumber(x, y)); } // функция получения цвета пикселя в матрице по его координатам
-//void setLedsfadeToBlackBy(uint16_t idx, uint8_t val) { leds[idx].fadeToBlackBy(val); }
-
-void setLedsNscale8(uint16_t idx, uint8_t val) { mx[idx].nscale8(val); }
-
-void dimAll(uint8_t value) { for (uint16_t i = 0; i < num_leds; i++) {mx[i].nscale8(value); } }
-
-CRGB &getLed(uint16_t idx) { 
-  return mx[idx];
-/*
-  if(idx<num_leds){
-    return leds[idx];
-  } else {
-    return overrun;
-  }
-*/}
 
 
 uint32_t getPixelNumberBuff(uint16_t x, uint16_t y, uint8_t W , uint8_t H) // получить номер пикселя в буфере по координатам

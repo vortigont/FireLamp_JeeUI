@@ -100,6 +100,8 @@ namespace EffectMath {
     // blurColumns: perform a blur1d on each column of a rectangular matrix
     void blurColumns(LedFB &leds, fract8 blur_amount);
 
+    void wu_pixel(uint32_t x, uint32_t y, CRGB col, LedFB &fb);
+
     // нарисовать линию в буфере
     void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, const CRGB &color, LedFB &fb);
 
@@ -111,7 +113,7 @@ namespace EffectMath {
     // ***  Математические     ***
     // ***************************
 
-  uint8_t mapsincos8(bool map, uint8_t theta, uint8_t lowest = 0, uint8_t highest = 255);
+    uint8_t mapsincos8(bool map, uint8_t theta, uint8_t lowest = 0, uint8_t highest = 255);
 
     /**
      * Возвращает частное от а,б округленное до большего целого
@@ -123,6 +125,16 @@ namespace EffectMath {
      kostyamat добавил
     */
     float randomf(float min, float max);
+
+    // finds distance between two points defined by floating coordinates
+    float distance(float x1, float y1, float x2, float y2);
+
+    // чуть менее точная, зато в 3 раза быстрее
+    float sqrt(float x);
+    float tan2pi_fast(float x);
+    float atan2_fast(float y, float x);
+    float atan_fast(float x);
+
 
 
 
@@ -138,31 +150,24 @@ namespace EffectMath {
     void drawPixelXY(int16_t x, int16_t y, const CRGB &color); // функция отрисовки точки по координатам X Y
 
 
-
-
-
-
-
-
-
-
   void MoveFractionalNoise(bool scale, const uint8_t noise3d[][WIDTH][HEIGHT], int8_t amplitude, float shift = 0);
   
   
     /*      UNUSED or obsolete      */
     // функция возвращает true, если float ~= целое (первая цифра после запятой == 0)
     //bool isInteger(float val);
+    //  some gamma curve, not sure why need it if brightness control is done with dim8() already
+    //  void gammaCorrection();
+
 
   // Функция возврашает "вес" яркости пикселя от 0 (черный) до 765 (белый). Может использоваться для проверки не "пустое ли место"
   uint16_t RGBweight (CRGB *leds, uint16_t idx);
-  void gammaCorrection();
 
     // функция получения цвета пикселя по его номеру
-    uint32_t getPixColor(uint32_t thisSegm); 
+    //uint32_t getPixColor(uint32_t thisSegm); 
+  
     // функция получения цвета пикселя в матрице по его координатам
-    uint32_t getPixColorXY(int16_t x, int16_t y); 
     
-    void wu_pixel(uint32_t x, uint32_t y, CRGB col, LedFB &fb);
     void drawPixelXYF(float x, float y, const CRGB &color, uint8_t darklevel=25); // darklevel - насколько затемнять картинку
     void drawPixelXYF_Y(int16_t x, float y, const CRGB &color, uint8_t darklevel=50);
     void drawPixelXYF_X(float x, int16_t y, const CRGB &color, uint8_t darklevel=50);
@@ -180,20 +185,10 @@ namespace EffectMath {
 	void drawSquareF(float x, float y, float leg, CRGB color);
     void drawCircleF(float x0, float y0, float radius, const CRGB &color, float step = 0.25);
     void fill_circleF(float cx, float cy, float radius, CRGB col);
-    void setLedsNscale8(uint16_t idx, uint8_t val);
-    void dimAll(uint8_t value);
-    CRGB &getLed(uint16_t idx);
 
     /** аналог ардуино функции map(), но только для float   */
     double fmap(const double x, const double in_min, const double in_max, const double out_min, const double out_max);
 
-    // finds distance between two points defined by floating coordinates
-    float distance(float x1, float y1, float x2, float y2);
-    // чуть менее точная, зато в 3 раза быстрее
-    float sqrt(float x);
-    float tan2pi_fast(float x);
-    float atan2_fast(float y, float x);
-    float atan_fast(float x);
 
     // аналог fmap, но не линейная. (linear == fmap)
     float mapcurve(const float x, const float in_min, const float in_max, const float out_min, const float out_max, float (*curve)(float,float,float,float));

@@ -221,8 +221,8 @@ void LAMP::effectsTick(){
       mi = mi > drawbuff[i].b ? mi : drawbuff[i].b;
       if(mi>=5) {
         getUnsafeLedsArray()[i] = drawbuff[i];
-      } else if(mi && mi<5) {
-        EffectMath::setLedsNscale8(i, map(mi,1,4,128,10)); // 5 градаций прозрачности, где 0 - полностью прозрачный
+      } else if(mi) {
+        getUnsafeLedsArray()[i].nscale8(map(mi,1,4,128,10)); // 5 градаций прозрачности, где 0 - полностью прозрачный
       }
     }
   }

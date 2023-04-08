@@ -424,12 +424,12 @@ EVERY_N_SECONDS(1){
           EffectMath::drawPixelXY(x, EffectMath::getmaxHeightIndex() - y, CHSV(mmf / 1.5, 255U, constrain(mmp * (2.0 * (scale >> 1) / 127.0 + 0.33), 1, 255)));
         }
       }
-      EffectMath::dimAll(254); // плавно гасим
+      fb.dim(254); // плавно гасим
     } else {
       if(mmp>scale) // если амплитуда превышает масштаб
         fb.fill(CHSV(constrain(mmf*(2.0*speed/255.0),1,255), 255U, constrain(mmp*(2.0*scale/127.0+1.5),1,255))); // превышает минимаьный уровень громкости, значит выводим текущую частоту
       else
-        EffectMath::dimAll(252); // плавно гасим
+        fb.dim(252); // плавно гасим
     }
   } else {
     // выключен микрофон
@@ -514,7 +514,7 @@ void EffectMatrix::load(){
 bool EffectMatrix::matrixRoutine()
 {
   
-  EffectMath::dimAll(map(speed, 1, 255, 252, 240));
+  fb.dim(map(speed, 1, 255, 252, 240));
   
   CHSV color;
 
@@ -587,7 +587,7 @@ String EffectStarFall::setDynCtrl(UIControl*_val) {
 
 bool EffectStarFall::snowStormStarfallRoutine()
 {
-  EffectMath::dimAll(255 - (effId == 2 ? 70 : 60) * speedFactor);
+  fb.dim(255 - (effId == 2 ? 70 : 60) * speedFactor);
   CHSV color;
   for (uint8_t i = 0U; i < map(_scale, 1, 10, LIGHTERS_AM/8, LIGHTERS_AM); i++) // LIGHTERS_AM
   {
@@ -1321,10 +1321,10 @@ bool EffectSpiro::run() {
   bool change = false;
   uint8_t spirooffset = 256 / spirocount;
 
-  //EffectMath::dimAll(254U - palettescale);
-  //EffectMath::dimAll(250-speed_factor*7);
+  //fb.dim(254U - palettescale);
+  //fb.dim(250-speed_factor*7);
   uint8_t dim = beatsin8(16. / speedFactor, 5, 10);
-  EffectMath::dimAll(254 - dim);
+  fb.dim(254 - dim);
 
   for (int i = 0; i < spirocount; i++) {
     uint8_t  x = EffectMath::mapsincos8(MAP_SIN, spirotheta1 + i * spirooffset, spirominx, spiromaxx);
@@ -1567,7 +1567,7 @@ bool EffectComet::fractfireRoutine() {
 
 bool EffectComet::flsnakeRoutine() {
   // if(!isDebug()) 
-    EffectMath::dimAll(blur); 
+    fb.dim(blur); 
   // else FastLED.clear();
   
   count ++;
@@ -2024,9 +2024,9 @@ bool EffectTwinkles::twinklesRoutine()
         ledsbuff[idx].b = ledsbuff[idx].b - ledsbuff[idx].g + TWINKLES_SPEEDS - speedFactor;
     }
     if (ledsbuff[idx].b == 0)
-      EffectMath::getLed(idx) = CRGB::Black;
+      fb[idx] = CRGB::Black;
     else
-      EffectMath::getLed(idx) = ColorFromPalette(*curPalette, ledsbuff[idx].r, ledsbuff[idx].b);
+      fb[idx] = ColorFromPalette(*curPalette, ledsbuff[idx].r, ledsbuff[idx].b);
     }
   EffectMath::blur2d(fb, 32); // так они не только разгороються, но и раздуваються. Красивше :)
   return true;
@@ -2068,7 +2068,7 @@ bool EffectRadar::radarRoutine()
   {
     uint8_t _scale = palettescale; // диапазоны внутри палитры, влияют на степень размытия хвоста
     EffectMath::blur2d(fb, beatsin8(5U, 3U, 10U));
-    EffectMath::dimAll(255U - (0 + _scale * 1.5));
+    fb.dim(255U - (0 + _scale * 1.5));
 
     for (uint8_t offset = 0; offset < maxDim /2; offset++)
     {
@@ -2115,7 +2115,7 @@ bool EffectWaves::wavesRoutine() {
     return false;
   }
   
-  EffectMath::dimAll(255 - 10 * speedFactor); // димирование зависит от скорости, чем быстрее - тем больше димировать
+  fb.dim(255 - 10 * speedFactor); // димирование зависит от скорости, чем быстрее - тем больше димировать
   EffectMath::blur2d(fb, 20); // @Palpalych советует делать размытие. вот в этом эффекте его явно не хватает... (есть сабпиксель, он сам размывает)
   
   float n = 0;
@@ -2908,7 +2908,7 @@ bool EffectTime::run(){
   //   return palleteTest(fb, opt);
   // else {
     if((millis() - lastrun - EFFECTS_RUN_TIMER) < (unsigned)((255-speed)) && (speed==1 || speed==255)){
-        EffectMath::dimAll(254);
+        fb.dim(254);
       return true;
     } else {
       lastrun = millis();
@@ -2968,7 +2968,7 @@ bool EffectTime::timePrintRoutine()
     EVERY_N_SECONDS(5){
       isMinute=!isMinute;
     }
-    EffectMath::dimAll(250-speed/3); // небольшой шлейф, чисто как визуальный эффект :)
+    fb.dim(250-speed/3); // небольшой шлейф, чисто как визуальный эффект :)
     int16_t xPos = curTimePos;
     if((xPos<=(signed)LET_WIDTH*2-((signed)LET_WIDTH/2)) || (xPos>=(signed)WIDTH+((signed)LET_WIDTH/2))){
       if(xPos<=(signed)LET_WIDTH*2){
@@ -3091,7 +3091,7 @@ void EffectPicasso::position(){
 bool EffectPicasso::picassoRoutine(){
   generate();
   position();
-  if (effId > 1) EffectMath::dimAll(180);
+  if (effId > 1) fb.dim(180);
 
   unsigned iter = (particles.size() - particles.size()%2) / 2;
   for (unsigned i = 0; i != iter; ++i) {
@@ -3293,7 +3293,7 @@ bool EffectLeapers::run(){
     randomSeed(millis());
   }
 
-  //EffectMath::dimAll(0);
+  //fb.dim(0);
   FastLED.clear();
 
   //for (unsigned i = 0; i < numParticles; i++) {
@@ -4003,7 +4003,7 @@ void EffectPacific::pacifica_one_layer(const TProgmemRGBPalette16& p, uint16_t c
     uint16_t sindex16 = sin16( ci) + 32768;
     uint8_t sindex8 = scale16( sindex16, 240);
     CRGB c = ColorFromPalette( p, sindex8, bri, LINEARBLEND);
-    EffectMath::getLed(i) += c;
+    fb[i] += c;
   }
 }
 
@@ -4016,11 +4016,11 @@ void EffectPacific::pacifica_add_whitecaps()
   for( uint16_t i = 0; i < num_leds; i++) {
     uint8_t threshold = scale8( sin8( wave), 20) + basethreshold;
     wave += 7;
-    uint8_t l = EffectMath::getLed(i).getAverageLight();
+    uint8_t l = fb[i].getAverageLight();
     if( l > threshold) {
       uint8_t overage = l - threshold;
       uint8_t overage2 = qadd8( overage, overage);
-      EffectMath::getLed(i) += CRGB( overage, overage2, qadd8( overage2, overage2));
+      fb[i] += CRGB( overage, overage2, qadd8( overage2, overage2));
     }
   }
 }
@@ -4029,9 +4029,9 @@ void EffectPacific::pacifica_add_whitecaps()
 void EffectPacific::pacifica_deepen_colors()
 {
   for( uint16_t i = 0; i < num_leds; i++) {
-    EffectMath::getLed(i).blue = scale8( EffectMath::getLed(i).blue,  145);
-    EffectMath::getLed(i).green= scale8( EffectMath::getLed(i).green, 200);
-    EffectMath::getLed(i) |= CRGB( 2, 5, 7);
+    fb[i].blue = scale8( fb[i].blue,  145);
+    fb[i].green= scale8( fb[i].green, 200);
+    fb[i] |= CRGB( 2, 5, 7);
   }
 }
 
@@ -4220,7 +4220,7 @@ String EffectNoise::setDynCtrl(UIControl*_val){
 }
 
 bool EffectNoise::run() {
-  EffectMath::dimAll(200U);
+  fb.dim(200U);
     uint8_t layer = 0;
 
   CRGBPalette16 Pal( pit );
@@ -4277,7 +4277,7 @@ bool EffectNoise::run() {
   //make it looking nice
   if (palettepos != 4) {
     if (type) EffectMath::nightMode(fb);
-    else EffectMath::gammaCorrection();
+    //else EffectMath::gammaCorrection();   // why need this additional gamma correction, if brigtness already adjusted with dim8*?
     EffectMath::blur2d(fb, 32);
   } else EffectMath::blur2d(fb, 48);
   //and show it!
@@ -4468,7 +4468,7 @@ bool EffectButterfly::run()
     if (_scale == 1U)
       if (++deltaHue == 0U) hue++;
     for (uint16_t i = 0U; i < num_leds; i++)
-      EffectMath::getLed(i) = CHSV(hue, hue2, 255U - EffectMath::getLed(i).r);
+      fb[i] = CHSV(hue, hue2, 255U - fb[i].r);
   }
   return true;
 }
@@ -4509,7 +4509,7 @@ bool EffectShadows::run() {
     uint8_t bri8 = (uint32_t)(((uint32_t)bri16) * brightdepth) / 65536U;
     bri8 += (255 - brightdepth);
 
-    nblend(EffectMath::getLed((num_leds-1) - i), CHSV( hue8, sat8, map8(bri8, map(effectBrightness, 1, 255, 32, 125), map(effectBrightness, 1, 255, 125, 250))), 64);
+    nblend(fb[fb.size()-1-i], CHSV( hue8, sat8, map8(bri8, map(effectBrightness, 1, 255, 32, 125), map(effectBrightness, 1, 255, 125, 250))), 64);
   }
   return true;
 }
@@ -4538,8 +4538,7 @@ void EffectPatterns::drawPicture_XY() {
   vx = modff(xsin, &f);
   vy = modff(ysin, &f);
 
-  //FastLED.clear();
-  EffectMath::dimAll(127);
+  fb.dim(127);
 
   for (int16_t x = -1; x < (int)WIDTH+1; x++)
   {
@@ -5663,7 +5662,7 @@ void EffectSmokeballs::regen() {
 bool EffectSmokeballs::run(){
   uint8_t _amount = map(_scale, 1, 16, 2, WAVES_AMOUNT);
   shiftUp();
-  EffectMath::dimAll(240);
+  fb.dim(240);
   EffectMath::blur2d(fb, 20);
   for (byte j = 0; j < _amount; j++) {
     waves[j].pos = beatsin16((uint8_t)(waves[j].sSpeed * (speedFactor * 5.)), waves[j].reg, waves[j].maxMin + waves[j].reg, waves[j].waveColors*256, waves[j].waveColors*8);
@@ -6502,7 +6501,7 @@ void EffectFairy::fountEmit(uint8_t i) {
 void EffectFairy::fount(){
   step = deltaValue; //счётчик количества частиц в очереди на зарождение в этом цикле
 
-  EffectMath::dimAll(EffectMath::fmap(speed, 1, 255, 180, 127)); //ахах-ха. очередной эффект, к которому нужно будет "подобрать коэффициенты"
+  fb.dim(EffectMath::fmap(speed, 1, 255, 180, 127)); //ахах-ха. очередной эффект, к которому нужно будет "подобрать коэффициенты"
 
   //go over particles and update matrix cells on the way
   for (int i = 0; i < enlargedObjectNUM; i++) {
@@ -6606,7 +6605,7 @@ bool EffectFairy::fairy() {
     }
   }
 
-  EffectMath::dimAll(EffectMath::fmap(speed, 1, 255, 180, 127));
+  fb.dim(EffectMath::fmap(speed, 1, 255, 180, 127));
 
   //go over particles and update matrix cells on the way
   for(int i = 0; i<enlargedObjectNUM; i++) {

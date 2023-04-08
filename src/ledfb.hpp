@@ -114,6 +114,13 @@ struct LedFB {
     void fade(uint8_t v){ fadeToBlackBy(data(), size(), v); }
 
     /**
+     * @brief apply FastLED nscale8() func to buffer
+     * i.e.dim whole buffer to black
+     * @param v 
+     */
+    void dim(uint8_t v){ nscale8(data(), size(), v); }
+
+    /**
      * @brief fill the buffer with solid color
      * 
      */
