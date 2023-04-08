@@ -30,6 +30,9 @@ __[CHANGELOG](/CHANGELOG.md)__ | [![PlatformIO CI](https://github.com/vortigont/
 для пользователей Windows OS можно использовать builder скрипт. Билдер был изначально написан @kostyamat (за что ему спасибо), адаптирован под форк текущей комадой (@andy040670).
 Запускаете билдер и последовательно проходите шаги установки питона, гит, платформио, клонирование репозитория и сборку требуемого варианта прошивки.
 
+### Готовые сборки
+Свежие сборки от тов. @andy040670 вместе с инструкцией по заливке с помощью esp flashdownload tool можно найти в [этом](https://community.alexgyver.ru/threads/wifi-lampa-budilnik-obsuzhdenie-proshivki-firelamp_embui.7257/post-140904) сообщении.
+
 ## Как скачать/обновлять проект
 
 Актуальный срез проекта всегда можно скачать в виде zip-архива [по ссылке](https://github.com/vortigont/FireLamp_JeeUI/archive/master.zip), либо перейдя по ссылке последнего релиза.
