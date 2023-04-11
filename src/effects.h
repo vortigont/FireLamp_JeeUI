@@ -812,7 +812,7 @@ public:
 
 // ----------- Эффект "Звезды"
 // (c) SottNick
-#define STARS_NUM (16)
+#define STARS_NUM (1)
 class EffectStar : public EffectCalc {
 private:
     float driftx;
@@ -825,7 +825,7 @@ private:
     uint8_t points[STARS_NUM] ;                       // количество углов в звезде
     unsigned int cntdelay[STARS_NUM] ;                   // задержка пуска звезды относительно счётчика
     float counter = 0;                                // счетчик для реализации смещений, наростания и т.д.
-	float speedFactor;
+	float _speedFactor{1};
 	float _speed;
     bool setup = true;
     uint8_t micPick = 0;

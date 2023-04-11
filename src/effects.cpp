@@ -3703,7 +3703,7 @@ bool EffectAquarium::run(CRGB *leds, EffectWorker *param) {
 // !++
 String EffectStar::setDynCtrl(UIControl*_val){
   if(_val->getId()==1) {
-    speedFactor = ((float)EffectCalc::setDynCtrl(_val).toInt()/380.0+0.05) * EffectCalc::speedfactor;
+    _speedFactor = ((float)EffectCalc::setDynCtrl(_val).toInt()/380.0+0.05) * speedfactor;
     _speed = getCtrlVal(1).toInt();
   }
   else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
@@ -3735,6 +3735,15 @@ void EffectStar::drawStar(float xlocl, float ylocl, float biggy, float little, i
   radius2 = 255.0 / points;
   for (int i = 0; i < points; i++)
   {
+    LOG(printf_P, "Line1: %f\t%f\t%f\t%f\n", xlocl + ((little * (sin8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128),
+                          ylocl + ((little * (cos8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128),
+                          xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128),
+                          ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128));
+    LOG(printf_P, "Line2: %f\t%f\t%f\t%f\n\n", xlocl + ((little * (sin8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128),
+                          ylocl + ((little * (cos8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128),
+                          xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128),
+                          ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128));
+
 #ifdef MIC_EFFECTS
     EffectMath::drawLineF( xlocl + ((little * (sin8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128),
                           ylocl + ((little * (cos8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128),
@@ -3770,7 +3779,7 @@ bool EffectStar::run(CRGB *leds, EffectWorker *param) {
   fadeToBlackBy(leds, num_leds, 165);
 #endif
 
-  float speedFactor = ((float)speed/380.0+0.05);
+  _speedFactor = ((float)speed/380.0+0.05);
 
   counter+=speedFactor; // определяет то, с какой скоростью будет приближаться звезда
 
@@ -3779,7 +3788,7 @@ bool EffectStar::run(CRGB *leds, EffectWorker *param) {
   if (driftx < spirocenterX / 2U)//change directin of drift if you get near the right 1/4 of the screen
     cangle = fabs(cangle);
   if ((uint16_t)counter % CENTER_DRIFT_SPEED == 0)
-    driftx = driftx + (cangle * speedFactor);//move the x center every so often
+    driftx = driftx + (cangle * _speedFactor);//move the x center every so often
 
   if (drifty > ( HEIGHT - spirocenterY / 2U))// if y gets too big, reverse
     sangle = 0 - fabs(sangle);
@@ -3787,14 +3796,15 @@ bool EffectStar::run(CRGB *leds, EffectWorker *param) {
     sangle = fabs(sangle);
   //if ((counter + CENTER_DRIFT_SPEED / 2U) % CENTER_DRIFT_SPEED == 0)
   if ((uint16_t)counter % CENTER_DRIFT_SPEED == 0)
-    drifty =  drifty + (sangle * speedFactor);//move the y center every so often
+    drifty =  drifty + (sangle * _speedFactor);//move the y center every so often
 
   for (uint8_t num = 0; num < stars_count; num++) {
     if (counter >= cntdelay[num])//(counter >= ringdelay)
     {
       if (counter - cntdelay[num] <= WIDTH + 5) {
+        LOG(println, "Draw a star");
         EffectStar::drawStar(driftx, drifty, 2 * (counter - cntdelay[num]), (counter - cntdelay[num]), points[num], STAR_BLENDER + color[num], color[num]);
-        color[num]+=speedFactor; // в зависимости от знака - направление вращения
+        color[num]+=_speedFactor; // в зависимости от знака - направление вращения
       }
       else
         cntdelay[num] = counter + (stars_count << 1) + 1U; // задержка следующего пуска звезды
@@ -3805,6 +3815,8 @@ bool EffectStar::run(CRGB *leds, EffectWorker *param) {
 #else
   EffectMath::blur2d(30U);
 #endif
+  LOG(println, "star run ended");
+  delay(1000);
   return true;
 }
 
