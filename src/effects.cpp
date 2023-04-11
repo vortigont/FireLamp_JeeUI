@@ -38,6 +38,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "lamp.h"
 #include "patterns.h"
 #include "effects.h"
+#include "log.h"   // LOG macro
 
 // непустой дефолтный деструктор (если понадобится)
 // EffectCalc::~EffectCalc(){LOG(println, "Effect object destroyed");}
@@ -3714,8 +3715,8 @@ void EffectStar::load(){
   counter = 0.0;
 
   // стартуем с центра
-  driftx = (float)WIDTH/2.0;
-  drifty = (float)HEIGHT/2.0;
+  driftx = WIDTH/2.0;
+  drifty = HEIGHT/2.0;
 
   cangle = (float)(sin8(random8(25, 220)) - 128.0f) / 128.0f; //angle of movement for the center of animation gives a float value between -1 and 1
   sangle = (float)(sin8(random8(25, 220)) - 128.0f) / 128.0f; //angle of movement for the center of animation in the y direction gives a float value between -1 and 1
@@ -3724,7 +3725,7 @@ void EffectStar::load(){
   if (stars_count > STARS_NUM) stars_count = STARS_NUM;
   for (uint8_t num = 0; num < stars_count; num++) {
     points[num] = random8(3, 9); // количество углов в звезде
-    delay[num] = _speed / 5 + (num << 2) + 1U; // задержка следующего пуска звезды
+    cntdelay[num] = _speed / 5 + (num << 2) + 1U; // задержка следующего пуска звезды
     color[num] = random8();
   }
 }
@@ -3735,18 +3736,33 @@ void EffectStar::drawStar(float xlocl, float ylocl, float biggy, float little, i
   for (int i = 0; i < points; i++)
   {
 #ifdef MIC_EFFECTS
-    EffectMath::drawLine(xlocl + ((little * (sin8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128), ylocl + ((little * (cos8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128), xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128), ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128), isMicOn() ? CHSV(koler+getMicMapFreq(), 255-micPick, constrain(micPick * EffectMath::fmap(scale, 1.0f, 255.0f, 1.25f, 5.0f), 48, 255)) : ColorFromPalette(*curPalette, koler));
-    EffectMath::drawLine(xlocl + ((little * (sin8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128), ylocl + ((little * (cos8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128), xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128), ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128), isMicOn() ? CHSV(koler+getMicMapFreq(), 255-micPick, constrain(micPick * EffectMath::fmap(scale, 1.0f, 255.0f, 1.25f, 5.0f), 48, 255)) : ColorFromPalette(*curPalette, koler));
+    EffectMath::drawLineF( xlocl + ((little * (sin8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128),
+                          ylocl + ((little * (cos8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128),
+                          xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128),
+                          ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128),
+                          isMicOn() ? CHSV(koler+getMicMapFreq(),255-micPick, constrain(micPick * EffectMath::fmap(scale, 1.0f, 255.0f, 1.25f, 5.0f), 48, 255)) : ColorFromPalette(*curPalette, koler));
+    EffectMath::drawLineF( xlocl + ((little * (sin8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128),
+                          ylocl + ((little * (cos8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128),
+                          xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128),
+                          ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128),
+                          isMicOn() ? CHSV(koler+getMicMapFreq(), 255-micPick, constrain(micPick * EffectMath::fmap(scale, 1.0f, 255.0f, 1.25f, 5.0f), 48, 255)) : ColorFromPalette(*curPalette, koler));
 
 #else
-    EffectMath::drawLine(xlocl + ((little * (sin8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128), ylocl + ((little * (cos8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128), xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128), ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128), ColorFromPalette(*curPalette, koler));
-    EffectMath::drawLine(xlocl + ((little * (sin8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128), ylocl + ((little * (cos8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128), xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128), ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128), ColorFromPalette(*curPalette, koler));
+    EffectMath::drawLineF( xlocl + ((little * (sin8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128),
+                          ylocl + ((little * (cos8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128),
+                          xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128),
+                          ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128),
+                          ColorFromPalette(*curPalette, koler));
+    EffectMath::drawLineF( xlocl + ((little * (sin8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128),
+                          ylocl + ((little * (cos8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128),
+                          xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128),
+                          ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128),
+                          ColorFromPalette(*curPalette, koler));
 #endif
-    }
+  }
 }
 
 bool EffectStar::run(CRGB *leds, EffectWorker *param) {
-
 #ifdef MIC_EFFECTS
   micPick = getMicMaxPeak();
   fadeToBlackBy(leds, num_leds, 255U - (isMicOn() ? micPick*2 : 90)); // работает быстрее чем dimAll
@@ -3774,14 +3790,14 @@ bool EffectStar::run(CRGB *leds, EffectWorker *param) {
     drifty =  drifty + (sangle * speedFactor);//move the y center every so often
 
   for (uint8_t num = 0; num < stars_count; num++) {
-    if (counter >= delay[num])//(counter >= ringdelay)
+    if (counter >= cntdelay[num])//(counter >= ringdelay)
     {
-      if (counter - delay[num] <= WIDTH + 5) {
-        EffectStar::drawStar(driftx, drifty, 2 * (counter - delay[num]), (counter - delay[num]), points[num], STAR_BLENDER + color[num], color[num]);
+      if (counter - cntdelay[num] <= WIDTH + 5) {
+        EffectStar::drawStar(driftx, drifty, 2 * (counter - cntdelay[num]), (counter - cntdelay[num]), points[num], STAR_BLENDER + color[num], color[num]);
         color[num]+=speedFactor; // в зависимости от знака - направление вращения
       }
       else
-        delay[num] = counter + (stars_count << 1) + 1U; // задержка следующего пуска звезды
+        cntdelay[num] = counter + (stars_count << 1) + 1U; // задержка следующего пуска звезды
     }
   }
 #ifdef MIC_EFFECTS

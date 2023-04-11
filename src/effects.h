@@ -823,7 +823,7 @@ private:
     uint8_t stars_count;
     float color[STARS_NUM] ;                        // цвет звезды
     uint8_t points[STARS_NUM] ;                       // количество углов в звезде
-    unsigned int delay[STARS_NUM] ;                   // задержка пуска звезды относительно счётчика
+    unsigned int cntdelay[STARS_NUM] ;                   // задержка пуска звезды относительно счётчика
     float counter = 0;                                // счетчик для реализации смещений, наростания и т.д.
 	float speedFactor;
 	float _speed;
