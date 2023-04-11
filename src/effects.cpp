@@ -3781,7 +3781,7 @@ bool EffectStar::run(CRGB *leds, EffectWorker *param) {
 
   _speedFactor = ((float)speed/380.0+0.05);
 
-  counter+=speedFactor; // определяет то, с какой скоростью будет приближаться звезда
+  counter+=_speedFactor; // определяет то, с какой скоростью будет приближаться звезда
 
   if (driftx > (WIDTH - spirocenterX / 2U))//change directin of drift if you get near the right 1/4 of the screen
     cangle = 0 - fabs(cangle);
