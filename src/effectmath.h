@@ -54,12 +54,12 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 namespace EffectMath {
   constexpr uint16_t maxDim = ((WIDTH>HEIGHT)?WIDTH:HEIGHT);
   constexpr uint16_t minDim = ((WIDTH<HEIGHT)?WIDTH:HEIGHT);
-  constexpr uint16_t maxHeightIndex = (int16_t)HEIGHT-1;
-  constexpr uint16_t maxWidthIndex = (int16_t)WIDTH-1;
+  constexpr uint16_t maxHeightIndex = HEIGHT-1;
+  constexpr uint16_t maxWidthIndex = WIDTH-1;
   constexpr uint16_t getmaxDim() {return maxDim;}
   constexpr uint16_t getminDim() {return minDim;}
-  constexpr int16_t getmaxWidthIndex() {return maxWidthIndex;}
-  constexpr int16_t getmaxHeightIndex() {return maxHeightIndex;}
+  constexpr uint16_t getmaxWidthIndex() {return maxWidthIndex;}
+  constexpr uint16_t getmaxHeightIndex() {return maxHeightIndex;}
 
   /** полезные обертки **/
   constexpr uint8_t wrapX(int8_t x){ return (x + WIDTH) % WIDTH; }

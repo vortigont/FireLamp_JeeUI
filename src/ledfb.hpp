@@ -60,9 +60,10 @@ struct LedFB {
     inline CRGB *getUnsafeLedsArray(){ return fb->data(); };    // obsolete, left for compatibility
 
     /**
-     * @brief Transpose poxel coordinate x:y int framebuffer's array index
+     * @brief Transpose pixel coordinate x:y into framebuffer's array index
      * it calculates array index based on matrix orientation and configuration
      * no checking performed for supplied coordinates to be out of bound of pixel buffer!
+     * for signed negative arguments the behaviour is undefined
      * @param x 
      * @param y 
      * @return size_t 
@@ -71,11 +72,11 @@ struct LedFB {
 
     /**
      * @brief access pixel at coordinates x:y
-     * if oob coordinates supplied returns element at (0,0)
+     * if oob coordinates supplied returns blackhole element
      * @param x coordinate starting from top left corner
      * @param y coordinate starting from top left corner
      */
-    inline CRGB& pixel(uint16_t x, uint16_t y){ return at(transpose(x,y)); };
+    CRGB& pixel(uint16_t x, uint16_t y){ return at(transpose(x,y)); };
 
     /**
      * @brief access CRGB pixel at specified position

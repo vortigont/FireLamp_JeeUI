@@ -331,6 +331,7 @@ void fillAll(const CRGB &color)
 
 void drawPixelXY(int16_t x, int16_t y, const CRGB &color) // функция отрисовки точки по координатам X Y
 {
+  if (x<0 || y<0 || x>maxWidthIndex || y>maxHeightIndex) return; // skip out of canvas drawing
   getPixel(x,y) = color;
 }
 
@@ -397,6 +398,7 @@ void sDrawPixelXYF_Y(int16_t x, float y, const CRGB &color) {
 
 void drawPixelXYF(float x, float y, const CRGB &color, uint8_t darklevel)
 {
+  if (x<0 || y<0 || x>maxWidthIndex || y>maxHeightIndex) return; // skip out of canvas drawing
 #define WU_WEIGHT(a,b) ((uint8_t) (((a)*(b)+(a)+(b))>>8))
   // extract the fractional parts and derive their inverses
   uint8_t xx = (x - (int)x) * 255, yy = (y - (int)y) * 255, ix = 255 - xx, iy = 255 - yy;
@@ -541,6 +543,13 @@ CRGB getPixColorXYF_Y(int16_t x, float y)
     @param    color CRGB Color to draw with
 */
 void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, const CRGB &color) {
+  // discard lines that for sure goes out of canvas,
+  // the rest will be caught on pixel access level 
+  if (x0<0 && x1<0) return;
+  if (y0<0 && y1<0) return;
+  if (x0>maxWidthIndex && x1>maxWidthIndex) return;
+  if (y0>maxHeightIndex && y1>maxHeightIndex) return;
+
   int16_t steep = abs(y1 - y0) > abs(x1 - x0);
   if (steep) {
     std::swap(x0, y0);
@@ -580,6 +589,13 @@ void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, const CRGB &color)
 }
 
 void drawLineF(float x1, float y1, float x2, float y2, const CRGB &color){
+  // discard lines that for sure goes out of canvas,
+  // the rest will be caught on pixel access level 
+  if (x1<0 && x2<0) return;
+  if (y1<0 && y2<0) return;
+  if (x1>maxWidthIndex && x2>maxWidthIndex) return;
+  if (y1>maxHeightIndex && y2>maxHeightIndex) return;
+
   float deltaX = fabs(x2 - x1);
   float deltaY = fabs(y2 - y1);
   float error = deltaX - deltaY;

@@ -3735,6 +3735,7 @@ void EffectStar::drawStar(float xlocl, float ylocl, float biggy, float little, i
   radius2 = 255.0 / points;
   for (int i = 0; i < points; i++)
   {
+/*
     LOG(printf_P, "Line1: %f\t%f\t%f\t%f\n", xlocl + ((little * (sin8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128),
                           ylocl + ((little * (cos8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128),
                           xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128),
@@ -3743,26 +3744,27 @@ void EffectStar::drawStar(float xlocl, float ylocl, float biggy, float little, i
                           ylocl + ((little * (cos8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128),
                           xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128),
                           ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128));
-
+*/
+// TODO: have no idea why all calculations were done using floats, but drawing is done with ints, looks like Kostyamat's implementation
 #ifdef MIC_EFFECTS
-    EffectMath::drawLineF( xlocl + ((little * (sin8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128),
+    EffectMath::drawLine( xlocl + ((little * (sin8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128),
                           ylocl + ((little * (cos8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128),
                           xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128),
                           ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128),
                           isMicOn() ? CHSV(koler+getMicMapFreq(),255-micPick, constrain(micPick * EffectMath::fmap(scale, 1.0f, 255.0f, 1.25f, 5.0f), 48, 255)) : ColorFromPalette(*curPalette, koler));
-    EffectMath::drawLineF( xlocl + ((little * (sin8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128),
+    EffectMath::drawLine( xlocl + ((little * (sin8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128),
                           ylocl + ((little * (cos8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128),
                           xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128),
                           ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128),
                           isMicOn() ? CHSV(koler+getMicMapFreq(), 255-micPick, constrain(micPick * EffectMath::fmap(scale, 1.0f, 255.0f, 1.25f, 5.0f), 48, 255)) : ColorFromPalette(*curPalette, koler));
 
 #else
-    EffectMath::drawLineF( xlocl + ((little * (sin8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128),
+    EffectMath::drawLine( xlocl + ((little * (sin8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128),
                           ylocl + ((little * (cos8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128),
                           xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128),
                           ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128),
                           ColorFromPalette(*curPalette, koler));
-    EffectMath::drawLineF( xlocl + ((little * (sin8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128),
+    EffectMath::drawLine( xlocl + ((little * (sin8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128),
                           ylocl + ((little * (cos8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128),
                           xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128),
                           ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128),
