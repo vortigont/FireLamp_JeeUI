@@ -38,6 +38,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "lamp.h"
 #include "patterns.h"
 #include "effects.h"
+#include "log.h"   // LOG macro
 
 // непустой дефолтный деструктор (если понадобится)
 // EffectCalc::~EffectCalc(){LOG(println, "Effect object destroyed");}
@@ -3699,7 +3700,7 @@ bool EffectAquarium::run() {
 // !++
 String EffectStar::setDynCtrl(UIControl*_val){
   if(_val->getId()==1) {
-    speedFactor = ((float)EffectCalc::setDynCtrl(_val).toInt()/380.0+0.05) * EffectCalc::speedfactor;
+    _speedFactor = ((float)EffectCalc::setDynCtrl(_val).toInt()/380.0+0.05) * speedfactor;
     _speed = getCtrlVal(1).toInt();
   }
   else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
@@ -3711,8 +3712,8 @@ void EffectStar::load(){
   counter = 0.0;
 
   // стартуем с центра
-  driftx = (float)WIDTH/2.0;
-  drifty = (float)HEIGHT/2.0;
+  driftx = WIDTH/2.0;
+  drifty = HEIGHT/2.0;
 
   cangle = (float)(sin8(random8(25, 220)) - 128.0f) / 128.0f; //angle of movement for the center of animation gives a float value between -1 and 1
   sangle = (float)(sin8(random8(25, 220)) - 128.0f) / 128.0f; //angle of movement for the center of animation in the y direction gives a float value between -1 and 1
@@ -3721,7 +3722,7 @@ void EffectStar::load(){
   if (stars_count > STARS_NUM) stars_count = STARS_NUM;
   for (uint8_t num = 0; num < stars_count; num++) {
     points[num] = random8(3, 9); // количество углов в звезде
-    delay[num] = _speed / 5 + (num << 2) + 1U; // задержка следующего пуска звезды
+    cntdelay[num] = _speed / 5 + (num << 2) + 1U; // задержка следующего пуска звезды
     color[num] = random8();
   }
 }
@@ -3731,15 +3732,42 @@ void EffectStar::drawStar(float xlocl, float ylocl, float biggy, float little, i
   radius2 = 255.0 / points;
   for (int i = 0; i < points; i++)
   {
+/*
+    LOG(printf_P, "Line1: %f\t%f\t%f\t%f\n", xlocl + ((little * (sin8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128),
+                          ylocl + ((little * (cos8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128),
+                          xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128),
+                          ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128));
+    LOG(printf_P, "Line2: %f\t%f\t%f\t%f\n\n", xlocl + ((little * (sin8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128),
+                          ylocl + ((little * (cos8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128),
+                          xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128),
+                          ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128));
+*/
+// TODO: have no idea why all calculations were done using floats, but drawing is done with ints, looks like Kostyamat's implementation
 #ifdef MIC_EFFECTS
-    EffectMath::drawLine(xlocl + ((little * (sin8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128), ylocl + ((little * (cos8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128), xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128), ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128), isMicOn() ? CHSV(koler+getMicMapFreq(), 255-micPick, constrain(micPick * EffectMath::fmap(scale, 1.0f, 255.0f, 1.25f, 5.0f), 48, 255)) : ColorFromPalette(*curPalette, koler), fb);
-    EffectMath::drawLine(xlocl + ((little * (sin8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128), ylocl + ((little * (cos8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128), xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128), ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128), isMicOn() ? CHSV(koler+getMicMapFreq(), 255-micPick, constrain(micPick * EffectMath::fmap(scale, 1.0f, 255.0f, 1.25f, 5.0f), 48, 255)) : ColorFromPalette(*curPalette, koler), fb);
+    EffectMath::drawLine( xlocl + ((little * (sin8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128),
+                          ylocl + ((little * (cos8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128),
+                          xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128),
+                          ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128),
+                          isMicOn() ? CHSV(koler+getMicMapFreq(),255-micPick, constrain(micPick * EffectMath::fmap(scale, 1.0f, 255.0f, 1.25f, 5.0f), 48, 255)) : ColorFromPalette(*curPalette, koler));
+    EffectMath::drawLine( xlocl + ((little * (sin8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128),
+                          ylocl + ((little * (cos8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128),
+                          xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128),
+                          ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128),
+                          isMicOn() ? CHSV(koler+getMicMapFreq(), 255-micPick, constrain(micPick * EffectMath::fmap(scale, 1.0f, 255.0f, 1.25f, 5.0f), 48, 255)) : ColorFromPalette(*curPalette, koler));
 
 #else
-    EffectMath::drawLine(xlocl + ((little * (sin8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128), ylocl + ((little * (cos8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128), xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128), ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128), ColorFromPalette(*curPalette, koler), fb);
-    EffectMath::drawLine(xlocl + ((little * (sin8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128), ylocl + ((little * (cos8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128), xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128), ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128), ColorFromPalette(*curPalette, koler), fb);
+    EffectMath::drawLine( xlocl + ((little * (sin8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128),
+                          ylocl + ((little * (cos8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128),
+                          xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128),
+                          ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128),
+                          ColorFromPalette(*curPalette, koler));
+    EffectMath::drawLine( xlocl + ((little * (sin8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128),
+                          ylocl + ((little * (cos8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128),
+                          xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128),
+                          ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128),
+                          ColorFromPalette(*curPalette, koler));
 #endif
-    }
+  }
 }
 
 bool EffectStar::run() {
@@ -3751,16 +3779,16 @@ bool EffectStar::run() {
   fb.fade(165);
 #endif
 
-  float speedFactor = ((float)speed/380.0+0.05);
+  _speedFactor = ((float)speed/380.0+0.05);
 
-  counter+=speedFactor; // определяет то, с какой скоростью будет приближаться звезда
+  counter+=_speedFactor; // определяет то, с какой скоростью будет приближаться звезда
 
   if (driftx > (WIDTH - spirocenterX / 2U))//change directin of drift if you get near the right 1/4 of the screen
     cangle = 0 - fabs(cangle);
   if (driftx < spirocenterX / 2U)//change directin of drift if you get near the right 1/4 of the screen
     cangle = fabs(cangle);
   if ((uint16_t)counter % CENTER_DRIFT_SPEED == 0)
-    driftx = driftx + (cangle * speedFactor);//move the x center every so often
+    driftx = driftx + (cangle * _speedFactor);//move the x center every so often
 
   if (drifty > ( HEIGHT - spirocenterY / 2U))// if y gets too big, reverse
     sangle = 0 - fabs(sangle);
@@ -3768,17 +3796,18 @@ bool EffectStar::run() {
     sangle = fabs(sangle);
   //if ((counter + CENTER_DRIFT_SPEED / 2U) % CENTER_DRIFT_SPEED == 0)
   if ((uint16_t)counter % CENTER_DRIFT_SPEED == 0)
-    drifty =  drifty + (sangle * speedFactor);//move the y center every so often
+    drifty =  drifty + (sangle * _speedFactor);//move the y center every so often
 
   for (uint8_t num = 0; num < stars_count; num++) {
-    if (counter >= delay[num])//(counter >= ringdelay)
+    if (counter >= cntdelay[num])//(counter >= ringdelay)
     {
-      if (counter - delay[num] <= WIDTH + 5) {
-        EffectStar::drawStar(driftx, drifty, 2 * (counter - delay[num]), (counter - delay[num]), points[num], STAR_BLENDER + color[num], color[num]);
-        color[num]+=speedFactor; // в зависимости от знака - направление вращения
+      if (counter - cntdelay[num] <= WIDTH + 5) {
+        LOG(println, "Draw a star");
+        EffectStar::drawStar(driftx, drifty, 2 * (counter - cntdelay[num]), (counter - cntdelay[num]), points[num], STAR_BLENDER + color[num], color[num]);
+        color[num]+=_speedFactor; // в зависимости от знака - направление вращения
       }
       else
-        delay[num] = counter + (stars_count << 1) + 1U; // задержка следующего пуска звезды
+        cntdelay[num] = counter + (stars_count << 1) + 1U; // задержка следующего пуска звезды
     }
   }
 #ifdef MIC_EFFECTS
@@ -3786,6 +3815,8 @@ bool EffectStar::run() {
 #else
   EffectMath::blur2d(fb, 30U);
 #endif
+  LOG(println, "star run ended");
+  delay(1000);
   return true;
 }
 
