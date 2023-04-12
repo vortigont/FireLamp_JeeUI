@@ -1395,11 +1395,9 @@ void EffectComet::FillNoise(int8_t layer) {
     int32_t ioffset = e_scaleX[layer] * (i - e_centerX);
     for (uint8_t j = 0; j < HEIGHT; j++) {
       int32_t joffset = e_scaleY[layer] * (j - e_centerY);
-      int8_t data = inoise16(e_x[layer] + ioffset, e_y[layer] + joffset, e_z[layer]) >> 8;
-      int8_t olddata = noise3d[layer][i][j];
-      int8_t newdata = scale8( olddata, eNs_noisesmooth ) + scale8( data, 255 - eNs_noisesmooth );
-      data = newdata;
-      noise3d[layer][i][j] = data;
+      uint8_t data = inoise16(e_x[layer] + ioffset, e_y[layer] + joffset, e_z[layer]) >> 8;
+      uint8_t olddata = noise3d[layer][i][j];
+      noise3d[layer][i][j] = scale8( olddata, eNs_noisesmooth ) + scale8( data, 255 - eNs_noisesmooth );
     }
   }
 }
@@ -1626,7 +1624,6 @@ bool EffectComet::rainbowCometRoutine()
   }
 
   drawFillRect2_fast(e_centerX, e_centerY, e_centerX + 1, e_centerY + 1, _eNs_color);
-  isDebug();
 
   // if(!isDebug()){
     // Noise

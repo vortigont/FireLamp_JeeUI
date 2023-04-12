@@ -162,8 +162,7 @@ uint8_t mapsincos8(bool map, uint8_t theta, uint8_t lowest, uint8_t highest) {
 }
 
 void MoveFractionalNoise(bool _scale, const uint8_t noise3d[][WIDTH][HEIGHT], int8_t amplitude, float shift) {
-  uint8_t zD;
-  uint8_t zF;
+  uint8_t zD, zF;
   CRGB *leds = getUnsafeLedsArray(); // unsafe
   CRGB ledsbuff[num_leds];
   uint16_t _side_a = _scale ? HEIGHT : WIDTH;
@@ -629,7 +628,7 @@ void fill_circleF(float cx, float cy, float radius, CRGB col) {
   }
 }
 
-uint16_t RGBweight (CRGB *leds, uint16_t idx) {return (leds[idx].r + leds[idx].g + leds[idx].b);}
+//uint16_t RGBweight (CRGB *leds, uint16_t idx) {return (leds[idx].r + leds[idx].g + leds[idx].b);}
 
 void nightMode(LedFB &ledarr){
     for (auto &i : *ledarr.fb){
@@ -666,7 +665,10 @@ CRGB &getPixel(uint16_t x, uint16_t y){
 //  return leds[getPixelNumber(x,y)];
 }
 
-double fmap(const double x, const double in_min, const double in_max, const double out_min, const double out_max){
+float fmap(const float x, const float in_min, const float in_max, const float out_min, const float out_max){
+  return (out_max - out_min) * (x - in_min) / (in_max - in_min) + out_min;
+}
+double dmap(const double x, const double in_min, const double in_max, const double out_min, const double out_max){
   return (out_max - out_min) * (x - in_min) / (in_max - in_min) + out_min;
 }
 

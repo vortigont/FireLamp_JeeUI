@@ -2171,10 +2171,9 @@ private:
             speedy = (float)random(5, 30) / 10;
             y = random((HEIGHT/4) * 5, (HEIGHT /2) * 5) / 5;
             for (uint8_t i=0; i < WIDTH; i++) {
-                uint32_t temp = EffectMath::RGBweight(getUnsafeLedsArray(), getPixelNumber(i, y));
-                if (temp > peak) {
+                if (fb.pixel(i, y).getLuma() > peak){
+                    peak = fb.pixel(i, y).getLuma();
                     x = i;
-                    peak = temp;
                 }
             }
             color = fb.pixel(x, y);
