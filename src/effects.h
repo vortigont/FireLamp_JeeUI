@@ -1321,7 +1321,7 @@ struct Snake
     }
   }
 
-  void draw(CRGB colors[SNAKE_LENGTH], int snakenb, bool subpix, bool isDebug=false);
+  void draw(CRGB colors[SNAKE_LENGTH], int snakenb, bool subpix, LedFB &fb, bool isDebug=false);
 };
 
     Snake snakes[MAX_SNAKES];
@@ -2158,8 +2158,8 @@ private:
         float x, y, speedy = 1;
     
     public:
-        void addXY(float nx, float ny) {
-            EffectMath::drawPixelXYF(x, y, 0);
+        void addXY(float nx, float ny, LedFB &fb) {
+            EffectMath::drawPixelXYF(x, y, 0, fb);
             x += nx;
             y += ny * speedy;
         }
@@ -2179,9 +2179,9 @@ private:
             color = fb.pixel(x, y);
         }
 
-        void draw() {
+        void draw(LedFB &fb) {
             color.fadeLightBy(256 / (HEIGHT));
-            EffectMath::drawPixelXYF(x, y, color);
+            EffectMath::drawPixelXYF(x, y, color, fb);
         }
     }; 
 
@@ -2366,11 +2366,11 @@ private:
             return result;
         }
 
-        void drawing() {
+        void drawing(LedFB &fb) {
             for (uint8_t i = 0; i < BLOT_SIZE; i++) {
-                byte bright = constrain((float)bri / (float)HEIGHT * (y[i] + HEIGHT - y0), 32, 255);
+                byte bright = constrain((float)bri / fb.cfg.h() * (y[i] + fb.cfg.h() - y0), 32, 255);
                 if (y[i] > -0.1)
-                    EffectMath::drawPixelXYF(x[i], y[i], CHSV(hue, sat, bright), 0);
+                    EffectMath::drawPixelXYF(x[i], y[i], CHSV(hue, sat, bright), fb, 0);
             }
         }
 

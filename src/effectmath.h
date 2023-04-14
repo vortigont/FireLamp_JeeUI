@@ -154,6 +154,43 @@ namespace EffectMath {
     // в extra_tasks.h есть странные объекты, которые прибиты гвоздями к этой функции
     void drawPixelXY(int16_t x, int16_t y, const CRGB &color); // функция отрисовки точки по координатам X Y
 
+    /**
+     * @brief draw a dot in a framebuffer defined by non integer coordinates
+     * will dissolve into four surrounding pixels
+     * @param x 
+     * @param y 
+     * @param color 
+     * @param fb 
+     * @param darklevel - насколько затемнять картинку
+     */
+    void drawPixelXYF(float x, float y, const CRGB &color, LedFB &fb, uint8_t darklevel=25);
+
+    /**
+     * @brief draw a line in a framebuffer defined by non integer coordinates
+     * 
+     * @param x1 
+     * @param y1 
+     * @param x2 
+     * @param y2 
+     * @param color 
+     */
+    void drawLineF(float x1, float y1, float x2, float y2, const CRGB &color, LedFB &fb);
+
+    /**
+     * @brief draw a circle in a framebuffer defined by non integer coordinates
+     * 
+     * @param x0 
+     * @param y0 
+     * @param radius 
+     * @param color 
+     * @param fb 
+     * @param step 
+     */
+    void drawCircleF(float x0, float y0, float radius, const CRGB &color, LedFB &fb, float step = 0.25);
+
+    void fill_circleF(float cx, float cy, float radius, CRGB col, LedFB &fb);
+
+	void drawSquareF(float x, float y, float leg, CRGB color, LedFB &fb);
 
     void MoveFractionalNoise(bool scale, const uint8_t noise3d[][WIDTH][HEIGHT], int8_t amplitude, float shift = 0);
   
@@ -168,9 +205,6 @@ namespace EffectMath {
     uint16_t RGBweight (CRGB *leds, uint16_t idx);  */
 
 
-
-    // функция получения цвета пикселя в матрице по его координатам    
-    void drawPixelXYF(float x, float y, const CRGB &color, uint8_t darklevel=25); // darklevel - насколько затемнять картинку
     void drawPixelXYF_Y(int16_t x, float y, const CRGB &color, uint8_t darklevel=50);
     void drawPixelXYF_X(float x, int16_t y, const CRGB &color, uint8_t darklevel=50);
     
@@ -182,11 +216,6 @@ namespace EffectMath {
     CRGB getPixColorXYF_X(float x, int16_t y);
     CRGB getPixColorXYF_Y(int16_t x, float y);
     CRGB getPixColorXYF(float x, float y);
-
-    void drawLineF(float x1, float y1, float x2, float y2, const CRGB &color);
-	void drawSquareF(float x, float y, float leg, CRGB color);
-    void drawCircleF(float x0, float y0, float radius, const CRGB &color, float step = 0.25);
-    void fill_circleF(float cx, float cy, float radius, CRGB col);
 
     // аналог fmap, но не линейная. (linear == fmap)
     float mapcurve(const float x, const float in_min, const float in_max, const float out_min, const float out_max, float (*curve)(float,float,float,float));

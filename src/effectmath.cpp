@@ -342,9 +342,9 @@ void sDrawPixelXYF_Y(int16_t x, float y, const CRGB &color) {
   getPixel(x, ay+1) += col2; 
 }
 
-void drawPixelXYF(float x, float y, const CRGB &color, uint8_t darklevel)
+void drawPixelXYF(float x, float y, const CRGB &color, LedFB &fb, uint8_t darklevel)
 {
-  if (x<0 || y<0 || x>maxWidthIndex || y>maxHeightIndex) return; // skip out of canvas drawing
+  if (x<-1 || y<-1 || x>fb.cfg.w() || y>fb.cfg.h()) return; // skip out of canvas drawing, allow 1 px tradeoff
 #define WU_WEIGHT(a,b) ((uint8_t) (((a)*(b)+(a)+(b))>>8))
   // extract the fractional parts and derive their inverses
   uint8_t xx = (x - (int)x) * 255, yy = (y - (int)y) * 255, ix = 255 - xx, iy = 255 - yy;
@@ -356,14 +356,14 @@ void drawPixelXYF(float x, float y, const CRGB &color, uint8_t darklevel)
     int16_t xn = x + (i & 1), yn = y + ((i >> 1) & 1);
     // тут нам, ИМХО, незачем гонять через прокладки, и потом сдвигать регистры. А в случае сегмента подразумевается, 
     // что все ЛЕД в одном сегменте одинакового цвета, и достаточно получить цвет любого из них.
-    CRGB clr = getPixel(xn, yn); 
+    CRGB clr(fb.pixel(xn, yn));
     clr.r = qadd8(clr.r, (color.r * wu[i]) >> 8);
     clr.g = qadd8(clr.g, (color.g * wu[i]) >> 8);
     clr.b = qadd8(clr.b, (color.b * wu[i]) >> 8);
     if (darklevel > 0) getPixel(xn, yn) = makeDarker(clr, darklevel);
-    else getPixel(xn, yn) = clr;
+    else fb.pixel(xn, yn) = clr;
   }
-  #undef WU_WEIGHT
+#undef WU_WEIGHT
 }
 
 void drawPixelXYF_X(float x, int16_t y, const CRGB &color, uint8_t darklevel)
@@ -534,13 +534,13 @@ void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, const CRGB &color,
   }
 }
 
-void drawLineF(float x1, float y1, float x2, float y2, const CRGB &color){
+void drawLineF(float x1, float y1, float x2, float y2, const CRGB &color, LedFB &fb){
   // discard lines that for sure goes out of canvas,
   // the rest will be caught on pixel access level 
   if (x1<0 && x2<0) return;
   if (y1<0 && y2<0) return;
-  if (x1>maxWidthIndex && x2>maxWidthIndex) return;
-  if (y1>maxHeightIndex && y2>maxHeightIndex) return;
+  if (x1>fb.cfg.maxWidthIndex() && x2>fb.cfg.maxWidthIndex()) return;
+  if (y1>fb.cfg.maxHeightIndex() && y2>fb.cfg.maxHeightIndex()) return;
 
   float deltaX = fabs(x2 - x1);
   float deltaY = fabs(y2 - y1);
@@ -554,7 +554,7 @@ void drawLineF(float x1, float y1, float x2, float y2, const CRGB &color){
       break;
     if ((signY > 0. && y1 > y2 + signY) || (signY < 0. && y1 < y2 + signY))
       break;
-    drawPixelXYF(x1, y1, color);
+    drawPixelXYF(x1, y1, color, fb);
     float error2 = error;
     if (error2 > -deltaY)
     {
@@ -568,11 +568,11 @@ void drawLineF(float x1, float y1, float x2, float y2, const CRGB &color){
   }
 }
 
-void drawSquareF(float x, float y, float leg, CRGB color) {
-  drawLineF(x+leg,y+leg,x+leg,y-leg,color);
-  drawLineF(x+leg,y-leg,x-leg,y-leg,color);
-  drawLineF(x-leg,y-leg,x-leg,y+leg,color);
-  drawLineF(x-leg,y+leg,x+leg,y+leg,color);
+void drawSquareF(float x, float y, float leg, CRGB color, LedFB &fb) {
+  drawLineF(x+leg,y+leg,x+leg,y-leg,color, fb);
+  drawLineF(x+leg,y-leg,x-leg,y-leg,color, fb);
+  drawLineF(x-leg,y-leg,x-leg,y+leg,color, fb);
+  drawLineF(x-leg,y+leg,x+leg,y+leg,color, fb);
 }
 
 void drawCircle(int x0, int y0, int radius, const CRGB &color, LedFB &fb){
@@ -604,24 +604,24 @@ void drawCircle(int x0, int y0, int radius, const CRGB &color, LedFB &fb){
   }
 }
 
-void drawCircleF(float x0, float y0, float radius, const CRGB &color, float step){
+void drawCircleF(float x0, float y0, float radius, const CRGB &color, LedFB &fb, float step){
   float a = radius, b = 0.;
   float radiusError = step - a;
 
   if (radius <= step*2) {
-    drawPixelXYF(x0, y0, color);
+    drawPixelXYF(x0, y0, color, fb);
     return;
   }
 
   while (a >= b)  {
-      drawPixelXYF(a + x0, b + y0, color, 50);
-      drawPixelXYF(b + x0, a + y0, color, 50);
-      drawPixelXYF(-a + x0, b + y0, color, 50);
-      drawPixelXYF(-b + x0, a + y0, color, 50);
-      drawPixelXYF(-a + x0, -b + y0, color, 50);
-      drawPixelXYF(-b + x0, -a + y0, color, 50);
-      drawPixelXYF(a + x0, -b + y0, color, 50);
-      drawPixelXYF(b + x0, -a + y0, color, 50);
+      drawPixelXYF(a + x0, b + y0, color, fb, 50);
+      drawPixelXYF(b + x0, a + y0, color, fb, 50);
+      drawPixelXYF(-a + x0, b + y0, color, fb, 50);
+      drawPixelXYF(-b + x0, a + y0, color, fb, 50);
+      drawPixelXYF(-a + x0, -b + y0, color, fb, 50);
+      drawPixelXYF(-b + x0, -a + y0, color, fb, 50);
+      drawPixelXYF(a + x0, -b + y0, color, fb, 50);
+      drawPixelXYF(b + x0, -a + y0, color, fb, 50);
 
     b+= step;
     if (radiusError < 0.)
@@ -634,12 +634,12 @@ void drawCircleF(float x0, float y0, float radius, const CRGB &color, float step
   }
 }
 
-void fill_circleF(float cx, float cy, float radius, CRGB col) {
+void fill_circleF(float cx, float cy, float radius, CRGB col, LedFB &fb) {
   int8_t rad = radius;
   for (float y = -radius; y < radius; y += (fabs(y) < rad ? 1 : 0.2)) {
     for (float x = -radius; x < radius; x += (fabs(x) < rad ? 1 : 0.2)) {
       if (x * x + y * y < radius * radius)
-        drawPixelXYF(cx + x, cy + y, col, 0);
+        drawPixelXYF(cx + x, cy + y, col, fb, 0);
     }
   }
 }

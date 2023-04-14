@@ -617,7 +617,7 @@ bool EffectStarFall::snowStormStarfallRoutine()
       lightersPos[1U][i] -= lightersSpeed[1U][0] * (speedFactor / 2);
     }
 
-    EffectMath::drawPixelXYF(lightersPos[0U][i], lightersPos[1U][i], color, 0);
+    EffectMath::drawPixelXYF(lightersPos[0U][i], lightersPos[1U][i], color, fb, 0);
 
     if(lightersPos[1U][i] < -1) {
       if (isNew) {
@@ -705,7 +705,7 @@ bool EffectLighters::run()
     }
 
     if (subPix)
-      EffectMath::drawPixelXYF(lightersPos[0U][i], lightersPos[1U][i], CHSV(lightersColor[i], 255U-(i*2), light[i]), 0);
+      EffectMath::drawPixelXYF(lightersPos[0U][i], lightersPos[1U][i], CHSV(lightersColor[i], 255U-(i*2), light[i]), fb, 0);
     else
       EffectMath::drawPixelXY((uint8_t)lightersPos[0U][i], (uint8_t)lightersPos[1U][i], CHSV(lightersColor[i], 255U-(i*2), light[i]));
   }
@@ -780,7 +780,7 @@ bool EffectLighterTracers::lighterTracersRoutine()
         light[j] = 255;
       else light[j] = 127;
     }
-    EffectMath::drawPixelXYF(coord[j][0U], coord[j][1U], CHSV(ballColors[j], 200U, 255U));
+    EffectMath::drawPixelXYF(coord[j][0U], coord[j][1U], CHSV(ballColors[j], 200U, 255U), fb);
   }
   EffectMath::blur2d(fb, 5);
   return true;
@@ -905,7 +905,7 @@ bool EffectBall::run() {
   {
     for (uint8_t j = 0; j < ballSize; j++)
     {
-      EffectMath::drawPixelXYF(coordB[0U] + (float)i, coordB[1U] + (float)j, ballColor, 0);
+      EffectMath::drawPixelXYF(coordB[0U] + (float)i, coordB[1U] + (float)j, ballColor, fb, 0);
     }
   }
   return true;
@@ -1106,7 +1106,7 @@ bool EffectBBalls::bBallsRoutine()
   // Adjust balls brightness
   for (unsigned i = 0; i != balls.size(); ++i){
     if (halo){ // если ореол включен
-      EffectMath::drawCircleF(balls[i].x, balls[i].pos + 2.75, 3., CHSV(balls[i].color + (byte)hue, 225, balls[i].brightness));
+      EffectMath::drawCircleF(balls[i].x, balls[i].pos + 2.75, 3., CHSV(balls[i].color + (byte)hue, 225, balls[i].brightness), fb);
     } else {
       if (!i){
         balls[i].brightness = 156;
@@ -1482,8 +1482,8 @@ bool EffectComet::smokeRoutine() {
     float n = (float)quadwave8(i * 4. + spiral) / (256. / (float)WIDTH + 1.0);
     float n2 = (float)quadwave8(i * 5. + beatsin8((smooth*3) * speedFactor)) / (256. / (float)WIDTH + 1.0);
 
-    EffectMath::drawPixelXYF(n, (float)EffectMath::getmaxHeightIndex() - i, color, 0);
-    EffectMath::drawPixelXYF((float)EffectMath::getmaxWidthIndex() - n2, (float)EffectMath::getmaxHeightIndex() - i, color, 0);
+    EffectMath::drawPixelXYF(n, (float)EffectMath::getmaxHeightIndex() - i, color, fb, 0);
+    EffectMath::drawPixelXYF((float)EffectMath::getmaxWidthIndex() - n2, (float)EffectMath::getmaxHeightIndex() - i, color, fb, 0);
 
   }
   
@@ -1657,7 +1657,7 @@ bool EffectComet::rainbowComet3Routine()
   if (colorId == 1) color.hue += hue;
   else if (colorId == 255) color.sat = 64;
   else color.hue += colorId;
-  EffectMath::drawPixelXYF((float)WIDTH / 2, (float)HEIGHT / 2, color, 0); // зеленый стоит по центру
+  EffectMath::drawPixelXYF((float)WIDTH / 2, (float)HEIGHT / 2, color, fb, 0); // зеленый стоит по центру
 
   color = rgb2hsv_approximate(CRGB::Red);
   if (colorId == 1) color.hue += hue;
@@ -1665,7 +1665,7 @@ bool EffectComet::rainbowComet3Routine()
   else color.hue += colorId;
   float xx = 2. + (float)sin8( millis() / (10. / speedFactor)) / 22.;
   float yy = 2. + (float)cos8( millis() / (9. / speedFactor)) / 22.;
-  EffectMath::drawPixelXYF(xx, yy, color, 0);
+  EffectMath::drawPixelXYF(xx, yy, color, fb, 0);
 
   xx = 4. + (float)sin8( millis() / (10. / speedFactor)) / 32.;
   yy = 4. + (float)sin8( millis() / (7. / speedFactor)) / 32.;
@@ -1673,7 +1673,7 @@ bool EffectComet::rainbowComet3Routine()
   if (colorId == 1) color.hue += hue;
   else if (colorId == 255) color.sat = 64;
   else color.hue += colorId;
-  EffectMath::drawPixelXYF(xx, yy, color, 0);
+  EffectMath::drawPixelXYF(xx, yy, color, fb, 0);
 
   // if(!isDebug()){
     e_x[0] += 3000 * speedFactor;
@@ -1785,7 +1785,7 @@ bool EffectFlock::flockRoutine() {
     boid->run(boids, AVAILABLE_BOID_COUNT);
     boid->wrapAroundBorders();
     PVector location = boid->location;
-    EffectMath::drawPixelXYF(location.x, location.y, color);
+    EffectMath::drawPixelXYF(location.x, location.y, color, fb);
     if (applyWind) {
           boid->applyForce(wind);
           applyWind = false;
@@ -1796,7 +1796,7 @@ bool EffectFlock::flockRoutine() {
     predator.wrapAroundBorders();
     color = ColorFromPalette(*curPalette, hueoffset + 128, 255);
     PVector location = predator.location;
-    EffectMath::drawPixelXYF(location.x, location.y, color);
+    EffectMath::drawPixelXYF(location.x, location.y, color, fb);
   }
 
   return true;
@@ -2059,7 +2059,7 @@ bool EffectRadar::radarRoutine()
       float x = (float)EffectMath::mapsincos8(false, eff_theta, offset * 4, maxDim * 4 - offset * 4) / 4.  - width_adj_f;
       float y = (float)EffectMath::mapsincos8(true, eff_theta, offset * 4, maxDim * 4 - offset * 4) / 4.  - height_adj_f;
       CRGB color = ColorFromPalette(*curPalette, hue, 255 / random8(1, 12));
-      EffectMath::drawPixelXYF(x, y, color);
+      EffectMath::drawPixelXYF(x, y, color, fb);
     }
   }
   else
@@ -2121,32 +2121,32 @@ bool EffectWaves::wavesRoutine() {
     n = (float)quadwave8(i * 4 + waveTheta) / (256.0 / ((float)(_scale <=4 ? HEIGHT : WIDTH) -1));
     switch (_scale) {
       case 1: // одна волна горизонтально, справа на лево 
-        EffectMath::drawPixelXYF(i, n, ColorFromPalette(*curPalette, whue + i));
+        EffectMath::drawPixelXYF(i, n, ColorFromPalette(*curPalette, whue + i), fb);
         break;
       case 2: // две волны горизонтально, справа на лево
-        EffectMath::drawPixelXYF(i, n, ColorFromPalette(*curPalette, whue + i));
-        EffectMath::drawPixelXYF(i, (float)EffectMath::getmaxHeightIndex() - n, ColorFromPalette(*curPalette, whue + i));
+        EffectMath::drawPixelXYF(i, n, ColorFromPalette(*curPalette, whue + i), fb);
+        EffectMath::drawPixelXYF(i, (float)EffectMath::getmaxHeightIndex() - n, ColorFromPalette(*curPalette, whue + i), fb);
         break;
       case 3: // одна волна горизонтально, слева на право 
-        EffectMath::drawPixelXYF((float)EffectMath::getmaxWidthIndex() - i, n, ColorFromPalette(*curPalette, whue + i));
+        EffectMath::drawPixelXYF((float)EffectMath::getmaxWidthIndex() - i, n, ColorFromPalette(*curPalette, whue + i), fb);
         break;
       case 4: // две волны горизонтально, слева на право
-        EffectMath::drawPixelXYF((float)EffectMath::getmaxWidthIndex() - i, n, ColorFromPalette(*curPalette, whue + i));
-        EffectMath::drawPixelXYF((float)EffectMath::getmaxWidthIndex() - i, (float)EffectMath::getmaxHeightIndex() - n, ColorFromPalette(*curPalette, whue + i));
+        EffectMath::drawPixelXYF((float)EffectMath::getmaxWidthIndex() - i, n, ColorFromPalette(*curPalette, whue + i), fb);
+        EffectMath::drawPixelXYF((float)EffectMath::getmaxWidthIndex() - i, (float)EffectMath::getmaxHeightIndex() - n, ColorFromPalette(*curPalette, whue + i), fb);
         break;
       case 5: // одна волна вертликально, сверху вниз
-        EffectMath::drawPixelXYF(n, i, ColorFromPalette(*curPalette, whue + i));
+        EffectMath::drawPixelXYF(n, i, ColorFromPalette(*curPalette, whue + i), fb);
         break;
       case 6: // две волны вертликально, сверху вниз
-        EffectMath::drawPixelXYF(n, i, ColorFromPalette(*curPalette, whue + i));
-        EffectMath::drawPixelXYF((float)EffectMath::getmaxWidthIndex() - n, i, ColorFromPalette(*curPalette, whue + i));
+        EffectMath::drawPixelXYF(n, i, ColorFromPalette(*curPalette, whue + i), fb);
+        EffectMath::drawPixelXYF((float)EffectMath::getmaxWidthIndex() - n, i, ColorFromPalette(*curPalette, whue + i), fb);
       break;
       case 7: // одна волна верликально, снизу вверх
-        EffectMath::drawPixelXYF(n, (float)EffectMath::getmaxHeightIndex() - i, ColorFromPalette(*curPalette, whue + i));
+        EffectMath::drawPixelXYF(n, (float)EffectMath::getmaxHeightIndex() - i, ColorFromPalette(*curPalette, whue + i), fb);
         break;
       case 8: // две волны верликально, снизу вверх
-        EffectMath::drawPixelXYF(n, (float)EffectMath::getmaxHeightIndex() - i, ColorFromPalette(*curPalette, whue + i));
-        EffectMath::drawPixelXYF((float)EffectMath::getmaxWidthIndex() - n, (float)EffectMath::getmaxHeightIndex() - i, ColorFromPalette(*curPalette, whue + i));
+        EffectMath::drawPixelXYF(n, (float)EffectMath::getmaxHeightIndex() - i, ColorFromPalette(*curPalette, whue + i), fb);
+        EffectMath::drawPixelXYF((float)EffectMath::getmaxWidthIndex() - n, (float)EffectMath::getmaxHeightIndex() - i, ColorFromPalette(*curPalette, whue + i), fb);
       break;
     }
   }
@@ -3100,13 +3100,13 @@ bool EffectPicasso::picassoRoutine(){
       EffectMath::drawLine(static_cast<int>(p1.position_x), static_cast<int>(p1.position_y), static_cast<int>(p2.position_x), static_cast<int>(p2.position_y), p1.color, fb);
       break;
     case 2:
-      EffectMath::drawLineF(p1.position_x, p1.position_y, p2.position_x, p2.position_y, p1.color);
+      EffectMath::drawLineF(p1.position_x, p1.position_y, p2.position_x, p2.position_y, p1.color, fb);
       break;
     case 3:
-      EffectMath::drawCircleF(fabs(p1.position_x - p2.position_x), fabs(p1.position_y - p2.position_y), fabs(p1.position_x - p1.position_y), p1.color);
+      EffectMath::drawCircleF(fabs(p1.position_x - p2.position_x), fabs(p1.position_y - p2.position_y), fabs(p1.position_x - p1.position_y), p1.color, fb);
       break;
   	default:
-      EffectMath::drawSquareF(fabs(p1.position_x - p2.position_x), fabs(p1.position_y - p2.position_y), fabs(p1.position_x - p1.position_y), p1.color);
+      EffectMath::drawSquareF(fabs(p1.position_x - p2.position_x), fabs(p1.position_y - p2.position_y), fabs(p1.position_x - p1.position_y), p1.color, fb);
     }
   }
 
@@ -3297,7 +3297,7 @@ bool EffectLeapers::run(){
   //for (unsigned i = 0; i < numParticles; i++) {
   for (auto &l : leapers){
     move_leaper(l);
-    EffectMath::drawPixelXYF(l.x, l.y, CHSV(l.color, 255, 255));
+    EffectMath::drawPixelXYF(l.x, l.y, CHSV(l.color, 255, 255), fb);
   };
 
   EffectMath::blur2d(fb, 20);
@@ -3541,12 +3541,12 @@ bool EffectWhirl::whirlRoutine() {
     boid->update();
 #ifdef MIC_EFFECTS
     if (!isMicOn())
-      EffectMath::drawPixelXYF(boid->location.x, boid->location.y, ColorFromPalette(*curPalette, angle + (uint8_t)hue)); // + hue постепенно сдвигает палитру по кругу
+      EffectMath::drawPixelXYF(boid->location.x, boid->location.y, ColorFromPalette(*curPalette, angle + (uint8_t)hue), fb); // + hue постепенно сдвигает палитру по кругу
     else
-      EffectMath::drawPixelXYF(boid->location.x, boid->location.y, CHSV(getMicMapFreq(), 255-micPick, constrain(micPick * EffectMath::fmap(scale, 1.0f, 255.0f, 1.25f, 5.0f), 48, 255))); // + hue постепенно сдвигает палитру по кругу
+      EffectMath::drawPixelXYF(boid->location.x, boid->location.y, CHSV(getMicMapFreq(), 255-micPick, constrain(micPick * EffectMath::fmap(scale, 1.0f, 255.0f, 1.25f, 5.0f), 48, 255)), fb); // + hue постепенно сдвигает палитру по кругу
 
 #else
-    EffectMath::drawPixelXYF(boid->location.x, boid->location.y, ColorFromPalette(*curPalette, angle + (uint8_t)hue)); // + hue постепенно сдвигает палитру по кругу
+    EffectMath::drawPixelXYF(boid->location.x, boid->location.y, ColorFromPalette(*curPalette, angle + (uint8_t)hue), fb); // + hue постепенно сдвигает палитру по кругу
 #endif
     if (boid->location.x < 0 || boid->location.x >= WIDTH || boid->location.y < 0 || boid->location.y >= HEIGHT) {
       boid->location.x = EffectMath::randomf(0, WIDTH);
@@ -4159,9 +4159,9 @@ bool EffectOsc::run() {
 
   for (float x = 0.; x < oscHV; x += div) {
     if (speed < 128)
-      EffectMath::drawLineF(y[0], x, y[1], (x + div), color);
+      EffectMath::drawLineF(y[0], x, y[1], (x + div), color, fb);
     else
-      EffectMath::drawLineF(x, y[0], (x + div), y[1], color);
+      EffectMath::drawLineF(x, y[0], (x + div), y[1], color, fb);
 
     y[0] = y[1];
     y[1] = EffectMath::fmap(
@@ -4301,8 +4301,8 @@ bool EffectNoise::run() {
       if (palettepos == 14) overlay = CHSV(160,255 - noise[layer][x][y], noise[layer][EffectMath::getmaxWidthIndex()][EffectMath::getmaxHeightIndex()] + noise[layer][x][y]);
       else overlay = CHSV(noise[layer][y][x], 255, noise[layer][x][y]);
       //here the actual colormapping happens - note the additional colorshift caused by the down right pixel noise[layer][15][15]
-      if (palettepos == 4) EffectMath::drawPixelXYF(x, EffectMath::getmaxHeightIndex() - y, CHSV(160, 0 , noise[layer][x][y]), 35);
-      else EffectMath::drawPixelXY(x, y, ColorFromPalette(palettepos > 0 ? *curPalette : Pal, noise[layer][EffectMath::getmaxWidthIndex()][EffectMath::getmaxHeightIndex()] + noise[layer][x][y]) + overlay);
+      if (palettepos == 4) EffectMath::drawPixelXYF(x, EffectMath::getmaxHeightIndex() - y, CHSV(160, 0 , noise[layer][x][y]), fb, 35);
+      else fb.pixel(x, y) = ColorFromPalette(palettepos > 0 ? *curPalette : Pal, noise[layer][EffectMath::getmaxWidthIndex()][EffectMath::getmaxHeightIndex()] + noise[layer][x][y]) + overlay;
     }
   }
 
@@ -4484,9 +4484,9 @@ bool EffectButterfly::run()
     }
 
     if (wings)
-      EffectMath::drawPixelXYF(butterflysPosX[i], butterflysPosY[i], CHSV(butterflysColor[i], 255U, (butterflysBrightness[i] == 255U) ? 255U : 128U + random8(2U) * 111U)); // это процедура рисования с нецелочисленными координатами. ищите её в прошивке
+      EffectMath::drawPixelXYF(butterflysPosX[i], butterflysPosY[i], CHSV(butterflysColor[i], 255U, (butterflysBrightness[i] == 255U) ? 255U : 128U + random8(2U) * 111U), fb);
     else
-      EffectMath::drawPixelXYF(butterflysPosX[i], butterflysPosY[i], CHSV(butterflysColor[i], 255U, butterflysBrightness[i])); // это процедура рисования с нецелочисленными координатами. ищите её в прошивке
+      EffectMath::drawPixelXYF(butterflysPosX[i], butterflysPosY[i], CHSV(butterflysColor[i], 255U, butterflysBrightness[i]), fb);
   }
 
   // постобработка кадра
@@ -4585,7 +4585,7 @@ void EffectPatterns::drawPicture_XY() {
         else if(!_scale)
           EffectMath::drawPixelXYF_Y(((float)x-vx), (float)((float)y-vy), color2, 0);
         else{
-            EffectMath::drawPixelXYF(((float)x-vx), (float)((float)y-vy), color2, 0);
+            EffectMath::drawPixelXYF(((float)x-vx), (float)((float)y-vy), color2, fb, 0);
         }
       } else {
         EffectMath::drawPixelXY(x, y, color2);
@@ -5130,7 +5130,7 @@ bool EffectAttract::run() {
     boid.applyForce(force);
 
     boid.update();
-    EffectMath::drawPixelXYF(boid.location.x, boid.location.y, ColorFromPalette(*curPalette, boid.colorIndex));
+    EffectMath::drawPixelXYF(boid.location.x, boid.location.y, ColorFromPalette(*curPalette, boid.colorIndex), fb);
 
     boids[i] = boid;
   }
@@ -5196,12 +5196,12 @@ bool EffectSnake::run() {
 #endif
 
     snake.move(speedFactor);
-    snake.draw(colors, i, subPix, false /*isDebug()*/);
+    snake.draw(colors, i, subPix, fb, false /*isDebug()*/);
   }
   return true;
 }
 
-void EffectSnake::Snake::draw(CRGB colors[SNAKE_LENGTH], int snakenb, bool subpix, bool isDebug)
+void EffectSnake::Snake::draw(CRGB colors[SNAKE_LENGTH], int snakenb, bool subpix, LedFB &fb, bool isDebug)
 {
   int len= isDebug ? 1 : (int)SNAKE_LENGTH;
   for (int i = 0; i < len; i++) // (int)SNAKE_LENGTH
@@ -5211,11 +5211,12 @@ void EffectSnake::Snake::draw(CRGB colors[SNAKE_LENGTH], int snakenb, bool subpi
     }
 
     if (subpix){
-      EffectMath::drawPixelXYF(pixels[i].x, pixels[i].y, colors[i]);
+      EffectMath::drawPixelXYF(pixels[i].x, pixels[i].y, colors[i], fb);
     }
     else {
       if(i!=0)
-        EffectMath::drawPixelXY(pixels[i].x, pixels[i].y, colors[i]);
+        //EffectMath::drawPixelXY(pixels[i].x, pixels[i].y, colors[i]);
+        fb.pixel(pixels[i].x, pixels[i].y) = colors[i];
       else if(direction<LEFT)
         EffectMath::drawPixelXYF_Y(pixels[i].x, pixels[i].y, colors[i]);
       else
@@ -5500,12 +5501,12 @@ bool EffectTest::run() {
     long temp = snakeLast[i];
     uint8_t x = snakePosX[i];
     uint8_t y = snakePosY[i];
-    EffectMath::drawPixelXYF(x, y, ColorFromPalette(*curPalette, snakeColor[i], snakeSpeedY[i] * 255));
+    EffectMath::drawPixelXYF(x, y, ColorFromPalette(*curPalette, snakeColor[i], snakeSpeedY[i] * 255), fb);
     for (uint8_t m = 0; m < SNAKE_LENGTH; m++)
     { // 16 бит распаковываем, 14 ещё остаётся без дела в запасе, 2 на хвостик
       x = (WIDTH + x + dx) % WIDTH;
       y = (HEIGHT + y + dy) % HEIGHT;  
-      EffectMath::drawPixelXYF(x, y, ColorFromPalette(*curPalette, snakeColor[i] + m * 4U, 255U));
+      EffectMath::drawPixelXYF(x, y, ColorFromPalette(*curPalette, snakeColor[i] + m * 4U, 255U), fb);
 
       if (temp & B01)
       { // младший бит = поворот, старший = направо
@@ -5545,7 +5546,7 @@ bool EffectTest::run() {
     }
     x = (WIDTH + x + dx) % WIDTH;
     y = (HEIGHT + y + dy) % HEIGHT;
-    EffectMath::drawPixelXYF(x, y, ColorFromPalette(*curPalette, snakeColor[i] + SNAKE_LENGTH * 4U, (1 - snakeSpeedY[i]) * 255)); // хвостик
+    EffectMath::drawPixelXYF(x, y, ColorFromPalette(*curPalette, snakeColor[i] + SNAKE_LENGTH * 4U, (1 - snakeSpeedY[i]) * 255), fb); // хвостик
   }
 
   return true;
@@ -5639,13 +5640,16 @@ bool EffectPopcorn::run() {
 
     // make the acme gray, because why not
     if (-0.004 > rockets[r].yd and rockets[r].yd < 0.004)
-      EffectMath::drawPixelXYF(rockets[r].x, rockets[r].y, revCol ?
-                ColorFromPalette(*curPalette, rockets[r].hue) 
-              : CRGB::Pink, blurred ? 35 : 0);
+      EffectMath::drawPixelXYF(rockets[r].x,
+                rockets[r].y,
+                revCol ? ColorFromPalette(*curPalette, rockets[r].hue) : CRGB::Pink,
+                fb,
+                blurred ? 35 : 0);
     else
-      EffectMath::drawPixelXYF(rockets[r].x, rockets[r].y, revCol ? 
-                CRGB::Gray 
-              : ColorFromPalette(*curPalette, rockets[r].hue), blurred ? 35 : 0);
+      EffectMath::drawPixelXYF(rockets[r].x, rockets[r].y,
+                revCol ? CRGB::Gray : ColorFromPalette(*curPalette, rockets[r].hue),
+                fb,
+                blurred ? 35 : 0);
   }
   return true;
 }
@@ -5698,7 +5702,7 @@ bool EffectSmokeballs::run(){
   EffectMath::blur2d(fb, 20);
   for (byte j = 0; j < _amount; j++) {
     waves[j].pos = beatsin16((uint8_t)(waves[j].sSpeed * (speedFactor * 5.)), waves[j].reg, waves[j].maxMin + waves[j].reg, waves[j].waveColors*256, waves[j].waveColors*8);
-    EffectMath::drawPixelXYF((float)waves[j].pos / 10., 0.05, ColorFromPalette(*curPalette, waves[j].waveColors));
+    EffectMath::drawPixelXYF((float)waves[j].pos / 10., 0.05, ColorFromPalette(*curPalette, waves[j].waveColors), fb);
   }
   EVERY_N_SECONDS(20){
     for (byte j = 0; j < _amount; j++) {
@@ -5808,7 +5812,7 @@ void EffectCell::spider() {
   for (uint8_t c = 0; c < Lines; c++) {
     float xx = 2. + sin8((float)(millis() & 0x7FFFFF) / speedFactor + 1000 * c * Scale) / 12.;
     float yy = 2. + cos8((float)(millis() & 0x7FFFFF) / speedFactor + 1500 * c * Scale) / 12.;
-    EffectMath::drawLineF(xx, yy, (float)WIDTH - xx - 1, (float)HEIGHT - yy - 1, CHSV(c * (256 / Lines), 200, 255));
+    EffectMath::drawLineF(xx, yy, (float)WIDTH - xx - 1, (float)HEIGHT - yy - 1, CHSV(c * (256 / Lines), 200, 255), fb);
     
   }
 }
@@ -5818,7 +5822,7 @@ void EffectCell::vals() {
   fb.fade(128);
   a += 1;
   for (byte i = 0; i < 12; i++) {
-    EffectMath::drawLineF((float)beatsin88((10 + i) * speedFactor, 0, EffectMath::getmaxWidthIndex() * 2, i * i) / 2, (float)beatsin88((12 - i) * speedFactor, 0, EffectMath::getmaxHeightIndex() * 2, i * 5) / 2, (float)beatsin88((8 + i) * speedFactor, 0, EffectMath::getmaxWidthIndex() * 2, i * 20) / 2, (float)beatsin88((14 - i) * speedFactor, 0, EffectMath::getmaxHeightIndex() * 2, i * 5) / 2, CHSV(21 * i + (byte)a * i, 255, 255));
+    EffectMath::drawLineF((float)beatsin88((10 + i) * speedFactor, 0, EffectMath::getmaxWidthIndex() * 2, i * i) / 2, (float)beatsin88((12 - i) * speedFactor, 0, EffectMath::getmaxHeightIndex() * 2, i * 5) / 2, (float)beatsin88((8 + i) * speedFactor, 0, EffectMath::getmaxWidthIndex() * 2, i * 20) / 2, (float)beatsin88((14 - i) * speedFactor, 0, EffectMath::getmaxHeightIndex() * 2, i * 5) / 2, CHSV(21 * i + (byte)a * i, 255, 255), fb);
   }
 }
 
@@ -6364,18 +6368,18 @@ bool EffectWrain::run() {
       drops[i].posX = 0;
 
     if (randColor) {
-      if (dotDirect) EffectMath::drawPixelXYF(drops[i].posX, drops[i].posY, CHSV(drops[i].color, 256U - beatsin88(2 * speed, 1, 196), beatsin88(1 * speed, 64, 255)));
+      if (dotDirect) EffectMath::drawPixelXYF(drops[i].posX, drops[i].posY, CHSV(drops[i].color, 256U - beatsin88(2 * speed, 1, 196), beatsin88(1 * speed, 64, 255)), fb);
       else EffectMath::drawPixelXYF_Y(drops[i].posX, drops[i].posY, CHSV(drops[i].color, 256U - beatsin88(2 * speed, 1, 196), beatsin88(1 * speed, 64, 255)));
     } else if (white) {
       CHSV color = rgb2hsv_approximate(CRGB::Gray);
       color.value = drops[i].bri - 48;
-      if (dotDirect) EffectMath::drawPixelXYF(drops[i].posX, drops[i].posY, color);
+      if (dotDirect) EffectMath::drawPixelXYF(drops[i].posX, drops[i].posY, color, fb);
       else EffectMath::drawPixelXYF_Y(drops[i].posX, drops[i].posY, color);
     }
     else {
       CHSV color = rgb2hsv_approximate(ColorFromPalette(*curPalette, drops[i].color, drops[i].bri));
       color.sat = 128;
-      if (dotDirect) EffectMath::drawPixelXYF(drops[i].posX, drops[i].posY, color);
+      if (dotDirect) EffectMath::drawPixelXYF(drops[i].posX, drops[i].posY, color, fb);
       else EffectMath::drawPixelXYF_Y(drops[i].posX, drops[i].posY, color);
     }
   }
@@ -6475,7 +6479,7 @@ void EffectWrain::Clouds(bool flash)
   if (millis() - timer < 300) {
     for (uint8_t i = 0; i < WIDTH; i++)
     {
-        EffectMath::drawPixelXYF(i, EffectMath::randomf((float)HEIGHT - 4.5, (float)HEIGHT - 2.5), CHSV(0, 250, random8(120, 200)), 0);
+        EffectMath::drawPixelXYF(i, EffectMath::randomf((float)HEIGHT - 4.5, (float)HEIGHT - 2.5), CHSV(0, 250, random8(120, 200)), fb, 0);
     }
   }
 }
@@ -6549,7 +6553,7 @@ void EffectFairy::fount(){
         baseRGB = CHSV(trackingObjectHue[i], 255, _video); 
 
       baseRGB.nscale8(trackingObjectState[i]);
-      EffectMath::drawPixelXYF(trackingObjectPosX[i], trackingObjectPosY[i], baseRGB, 0);
+      EffectMath::drawPixelXYF(trackingObjectPosX[i], trackingObjectPosY[i], baseRGB, fb, 0);
     }
   }
   if (blur) EffectMath::blur2d(fb, blur * 10); // Размытие 
@@ -6654,11 +6658,11 @@ bool EffectFairy::fairy() {
       CRGB baseRGB = CHSV(trackingObjectHue[i], 255,255); 
 
       baseRGB.nscale8(trackingObjectState[i]);//эквивалент
-      EffectMath::drawPixelXYF(trackingObjectPosX[i], trackingObjectPosY[i], baseRGB, 0);
+      EffectMath::drawPixelXYF(trackingObjectPosX[i], trackingObjectPosY[i], baseRGB, fb, 0);
     }
   }
 
-  EffectMath::drawPixelXYF(boids[0].location.x, boids[0].location.y, CHSV(hue, 160U, 255U) /*temp*/, 0);  
+  EffectMath::drawPixelXYF(boids[0].location.x, boids[0].location.y, CHSV(hue, 160U, 255U) /*temp*/, fb, 0);  
   return true;
 }
 
@@ -6853,7 +6857,7 @@ bool EffectBengalL::run() {
     phisics(i);
     if (sparksPos[1][i] < (EffectMath::getmaxHeightIndex() * 10) and sparksPos[1][i] >= 0)
       if (sparksPos[0][i] < (EffectMath::getmaxWidthIndex() * 10) and sparksPos[0][i] >= 0)
-        EffectMath::drawPixelXYF(sparksPos[0][i] / 10,  sparksPos[1][i] / 10, CHSV(sparksColor[i], constrain(sparksSat[i], 5, 255), constrain(sparksFade[i], 32, 255)));
+        EffectMath::drawPixelXYF(sparksPos[0][i] / 10,  sparksPos[1][i] / 10, CHSV(sparksColor[i], constrain(sparksSat[i], 5, 255), constrain(sparksFade[i], 32, 255)), fb);
   }
 
   EVERY_N_SECONDS(period) {
@@ -6912,9 +6916,9 @@ bool EffectBalls::run() {
 
     //EffectMath::drawCircleF(ball[i][1], ball[i][0], radius[i], ColorFromPalette(*curPalette, color[i]), 0.5);
     if (radius[i] > 1) 
-      EffectMath::fill_circleF(ball[i][1], ball[i][0], radius[i], ColorFromPalette(*curPalette, color[i]));
+      EffectMath::fill_circleF(ball[i][1], ball[i][0], radius[i], ColorFromPalette(*curPalette, color[i]), fb);
     else 
-      EffectMath::drawPixelXYF(ball[i][1], ball[i][0], ColorFromPalette(*curPalette, color[i]));
+      EffectMath::drawPixelXYF(ball[i][1], ball[i][0], ColorFromPalette(*curPalette, color[i]), fb);
 
 
     if (ball[i][0] + radius[i] >= EffectMath::getmaxHeightIndex())
@@ -7378,7 +7382,7 @@ bool EffectRacer::run() {
   switch (hue%3)
   {
   case 0:
-    EffectMath::drawCircleF(aimX, aimY, radius, color); // рисуем круг
+    EffectMath::drawCircleF(aimX, aimY, radius, color, fb); // рисуем круг
     break;  
   case 1:
     drawStarF(aimX, aimY, 1.3 * radius, radius, 4, angle, color); // рисуем квадрат
@@ -7388,7 +7392,7 @@ bool EffectRacer::run() {
     break;
   }
   
-  EffectMath::drawPixelXYF(posX / 4, posY / 4, CHSV(0, 0, 255)); // отрисовываем бегуна
+  EffectMath::drawPixelXYF(posX / 4, posY / 4, CHSV(0, 0, 255), fb); // отрисовываем бегуна
 
   return true;
 }
@@ -7409,9 +7413,8 @@ void EffectRacer::aimChange() {
 void EffectRacer::drawStarF(float x, float y, float biggy, float little, int16_t points, float dangle, CRGB color) {
   float radius2 = 255.0 / points;
   for (int i = 0; i < points; i++) {
-    EffectMath::drawLineF(x + ((little * (sin8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128), y + ((little * (cos8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128), x + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128), y + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128), color);
-    EffectMath::drawLineF(x + ((little * (sin8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128), y + ((little * (cos8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128), x + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128), y + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128), color);
-
+    EffectMath::drawLineF(x + ((little * (sin8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128), y + ((little * (cos8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128), x + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128), y + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128), color, fb);
+    EffectMath::drawLineF(x + ((little * (sin8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128), y + ((little * (cos8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128), x + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128), y + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128), color, fb);
   }
 }
 
@@ -7473,7 +7476,7 @@ bool EffectMagma::run() {
   for (auto &i : particles){
     leapersMove_leaper(i);
     i.hue = 50U;
-    EffectMath::drawPixelXYF(i.posX, i.posY, ColorFromPalette(*curPalette, i.hue), 0);
+    EffectMath::drawPixelXYF(i.posX, i.posY, ColorFromPalette(*curPalette, i.hue), fb, 0);
   }
 
   for (uint8_t i = 0; i < WIDTH; i++) {
@@ -7636,12 +7639,12 @@ bool EffectStarShips::run() {
 }
 
 void EffectStarShips::draw(float x, float y, CRGB color) {
-  EffectMath::drawPixelXYF(x, y, color);
+  EffectMath::drawPixelXYF(x, y, color, fb);
   if (WIDTH > 24 || HEIGHT > 24) {
-    if (x < WIDTH - 2) EffectMath::drawPixelXYF(x + 1, y, color);
-    if (x > 1) EffectMath::drawPixelXYF(x - 1, y, color);
-    if (y < HEIGHT - 2) EffectMath::drawPixelXYF(x, y + 1, color);
-    if (y > 1) EffectMath::drawPixelXYF(x, y - 1, color);
+    if (x < WIDTH - 2) EffectMath::drawPixelXYF(x + 1, y, color, fb);
+    if (x > 1) EffectMath::drawPixelXYF(x - 1, y, color, fb);
+    if (y < HEIGHT - 2) EffectMath::drawPixelXYF(x, y + 1, color, fb);
+    if (y > 1) EffectMath::drawPixelXYF(x, y - 1, color, fb);
   }
 }
 
@@ -8074,11 +8077,11 @@ bool EffectFire2021::run() {
 
   if (withSparks)
     for (byte i = 0; i < sparksCount; i++) {
-      sparks[i].addXY((float)random(-1, 2) / 2, 0.5 * speedfactor);
+      sparks[i].addXY((float)random(-1, 2) / 2, 0.5 * speedfactor, fb);
       if (sparks[i].getY() > HEIGHT && !random(0, 50))
         sparks[i].reset(fb);
       else
-        sparks[i].draw();
+        sparks[i].draw(fb);
     }
 
   for (byte x = 0; x < WIDTH; x++) {
@@ -8147,8 +8150,8 @@ void EffectPuzzles::draw_squareF(float x1, float y1, float x2, float y2, byte co
   for (float x = x1; x < x2; x++) {
     for (float y = y1; y < y2; y++) {
       if ((x == x1 || x == x2 - 1) || (y == y1 || y == y2 - 1))
-        EffectMath::drawPixelXYF(x, y, ColorFromPalette(*curPalette, col));
-      else EffectMath::drawPixelXYF(x, y, CHSV(0, 0, 96));
+        EffectMath::drawPixelXYF(x, y, ColorFromPalette(*curPalette, col), fb);
+      else EffectMath::drawPixelXYF(x, y, CHSV(0, 0, 96), fb);
     }
   }
 }
@@ -8351,10 +8354,10 @@ bool EffectDNA::run() {
     }
 
     if (flag or !bals) {
-      EffectMath::drawPixelXYF(x, y, CHSV(sin1, 255, brightFront));
+      EffectMath::drawPixelXYF(x, y, CHSV(sin1, 255, brightFront), fb);
     }
     if (!flag or !bals)
-      EffectMath::drawPixelXYF(x1, y1, CHSV(~(byte)sin1, 255, brightBack));
+      EffectMath::drawPixelXYF(x1, y1, CHSV(~(byte)sin1, 255, brightBack), fb);
     flag = !flag; 
   }
   EffectMath::blur2d(fb, 64);
@@ -8486,7 +8489,7 @@ void EffectWcolor::load() {
 bool EffectWcolor::run() {
   fb.fade(blur);
   for (byte i = 0; i < bCounts; i++) {
-    blots[i].drawing();
+    blots[i].drawing(fb);
     blots[i].appendXY( mode ? ((float)inoise8(t+= speedFactor, 0, i * 100) / 256) - 0.5f : 0, -speedFactor);
     if(blots[i].getY() < -0.1) {
       blots[i].reset(i, bCounts);
@@ -8591,9 +8594,9 @@ bool EffectSplashBals::run() {
     b.y2 = (float)beatsin88(((10UL + b.iniY2) * 256) * speedFactor, 0, (HEIGHT - 1) * dev) / dev;
       float a = dist(b.x1, b.y1, b.x2, b.y2);
       if (a <= float(min(WIDTH, HEIGHT) / 2)) {
-        EffectMath::drawLineF(b.x1, b.y1, b.x2, b.y2, CHSV(0, 0, EffectMath::fmap(a, min(WIDTH, HEIGHT), 0, 48, 255)));
+        EffectMath::drawLineF(b.x1, b.y1, b.x2, b.y2, CHSV(0, 0, EffectMath::fmap(a, min(WIDTH, HEIGHT), 0, 48, 255)), fb);
       }
-    EffectMath::fill_circleF(b.x1, b.y1, EffectMath::fmap(fabs(float(WIDTH / 2) - b.x1), 0, WIDTH / 2, R, 0.2), ColorFromPalette(*curPalette, 256 - 256/HEIGHT * fabs(float(HEIGHT/2) - b.y1)));
+    EffectMath::fill_circleF(b.x1, b.y1, EffectMath::fmap(fabs(float(WIDTH / 2) - b.x1), 0, WIDTH / 2, R, 0.2), ColorFromPalette(*curPalette, 256 - 256/HEIGHT * fabs(float(HEIGHT/2) - b.y1)), fb);
   }
   EffectMath::blur2d(fb, 48);
   return true;
