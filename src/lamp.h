@@ -401,8 +401,8 @@ public:
     void setONMP3(bool flag) {flags.isOnMP3=flag;}
     bool isShowSysMenu() {return flags.isShowSysMenu;}
     void setIsShowSysMenu(bool flag) {flags.isShowSysMenu=flag;}
-    void setMIRR_V(bool flag) {if (flag!=flags.MIRR_V) { flags.MIRR_V = flag; mx.cfg.vmirror = flag; FastLED.clear();}}
-    void setMIRR_H(bool flag) {if (flag!=flags.MIRR_H) { flags.MIRR_H = flag; mx.cfg.hmirror = flag; FastLED.clear();}}
+    void setMIRR_V(bool flag) {if (flag!=flags.MIRR_V) { flags.MIRR_V = flag; mx.cfg.vmirror(flag); mx.clear();}}
+    void setMIRR_H(bool flag) {if (flag!=flags.MIRR_H) { flags.MIRR_H = flag; mx.cfg.hmirror(flag); mx.clear();}}
     void setTextMovingSpeed(uint8_t val) {tmStringStepTime.setInterval(val);}
     uint32_t getTextMovingSpeed() {return tmStringStepTime.getInterval();}
     void setTextOffset(uint8_t val) { txtOffset=val;}

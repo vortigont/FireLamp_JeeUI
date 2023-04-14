@@ -39,35 +39,66 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #pragma once
 #include "config.h"
 #include <FastLED.h>
+#include <vector>
 
 constexpr uint16_t num_leds = WIDTH * HEIGHT;       // for backward compat
 
+/**
+ * @brief matrix configuration for LedFB
+ * 
+ */
+class Mtrx_cfg {
+friend class LedFB;
+    uint16_t _w, _h;          // matrix width, height
+    //bool mxtype;          // matrix type 0:zigzag, 1:parallel   (not implemented yet)
+    //uint8_t direction;    // strip direction        (not implemented yet)
+    //uint8_t angle;        // strip connection angle (not implemented yet)
+    bool _vmirror{0};        // vertical flip
+    bool _hmirror{0};        // horizontal flip
+
+public:
+    Mtrx_cfg(uint16_t w, uint16_t h) : _w(w), _h(h) {};
+
+    // get configured matrix width
+    uint16_t w() const {return _w;}
+    // get configured matrix height
+    uint16_t h() const {return _h;}
+
+    bool vmirror() const {return _vmirror;}
+    bool hmirror() const {return _hmirror;}
+
+    // return length of the longest side
+    uint16_t maxDim() const { return _w>_h ? _w : _h; }
+    // return length of the shortest side
+    uint16_t minDim() const { return _w<_h ? _w : _h; }
+
+    uint16_t maxHeightIndex() const { return _h-1; }
+    uint16_t maxWidthIndex()  const { return _w-1; }
+
+
+    // setters
+    void vmirror(bool m){_vmirror=m;}
+    void hmirror(bool m){_hmirror=m;}
+};
+
 // TODO: design templated container object with common array's methods to access trasposed data based on matrix configuration type
-struct LedFB {
-    struct mtrx_t {
-        const uint16_t w, h;    // width, height
-        //bool mxtype;          // matrix type 0:zigzag, 1:parallel   (not implemented yet)
-        //uint8_t direction;    // strip direction        (not implemented yet)
-        //uint8_t angle;        // strip connection angle (not implemented yet)
-        bool vmirror{0};        // зеркалирование по вертикали
-        bool hmirror{0};        // зеркалирование по горизонтали
-        mtrx_t(uint16_t w, uint16_t h) : w(w), h(h) {};
-    };
+class LedFB {
 
-    mtrx_t cfg;
-    std::array<CRGB, num_leds> *fb;     // main frame buffer
+    std::vector<CRGB> fb;     // main frame buffer
 
-    LedFB(uint16_t w, uint16_t h) : cfg(w,h) { fb = new(std::nothrow) std::array<CRGB, num_leds>; }
+public:
+    LedFB(uint16_t w, uint16_t h) : fb(w*h), cfg(w,h) {}
+
+    Mtrx_cfg cfg;
 
     /**
      * @brief return size of FB in pixels
      * 
      */
-    static constexpr size_t size() { return num_leds; }
+    size_t size() const { return fb.size(); }
 
     // get direct access to FB array
-    CRGB* data(){ return fb->data(); }
-    inline CRGB *getUnsafeLedsArray(){ return fb->data(); };    // obsolete, left for compatibility
+    CRGB* data(){ return fb.data(); }
 
     /**
      * @brief Transpose pixel coordinate x:y into framebuffer's array index
@@ -78,7 +109,7 @@ struct LedFB {
      * @param y 
      * @return size_t 
      */
-    size_t transpose(uint16_t x, uint16_t y);
+    size_t transpose(uint16_t x, uint16_t y) const;
 
     /**
      * @brief access pixel at coordinates x:y
@@ -104,6 +135,12 @@ struct LedFB {
      */
     CRGB& operator[](size_t i){ return at(i); };
 
+    /*
+        iterators
+        TODO: need proper declaration for this
+    */
+    inline std::vector<CRGB>::iterator begin(){ return fb.begin(); };
+    inline std::vector<CRGB>::iterator end(){ return fb.end(); };
 
     /*      color operations        */
 
@@ -137,6 +174,6 @@ struct LedFB {
 /* a backward compatible wrappers for accessing LedMatrix obj instance,
 should be removed once other code refactoring is complete
 */
-#define getUnsafeLedsArray      mx.getUnsafeLedsArray
+#define getUnsafeLedsArray      mx.data
 #define getPixelNumber(X,Y)     mx.transpose(X,Y)
 extern LedFB mx;

@@ -119,9 +119,9 @@ void blurRows( LedFB &leds, fract8 blur_amount)
     // blur rows same as columns, for irregular matrix
     uint8_t keep = 255 - blur_amount;
     uint8_t seep = blur_amount >> 1;
-    for( uint8_t row = 0; row < leds.cfg.h; row++) {
+    for( uint8_t row = 0; row < leds.cfg.h(); row++) {
         CRGB carryover = CRGB::Black;
-        for( uint8_t i = 0; i < leds.cfg.w; i++) {
+        for( uint8_t i = 0; i < leds.cfg.w(); i++) {
             CRGB cur = leds.pixel(i,row);
             CRGB part = cur;
             part.nscale8( seep);
@@ -140,9 +140,9 @@ void blurColumns(LedFB &leds, fract8 blur_amount)
     // blur columns
     uint8_t keep = 255 - blur_amount;
     uint8_t seep = blur_amount >> 1;
-    for( uint8_t col = 0; col < leds.cfg.w; ++col) {
+    for( uint8_t col = 0; col < leds.cfg.w(); ++col) {
         CRGB carryover = CRGB::Black;
-        for( uint8_t i = 0; i < leds.cfg.h; ++i) {
+        for( uint8_t i = 0; i < leds.cfg.h(); ++i) {
             CRGB cur = leds.pixel(col,i);
             CRGB part = cur;
             part.nscale8( seep);
@@ -488,7 +488,7 @@ CRGB getPixColorXYF_Y(int16_t x, float y)
     @param    y1  End point y coordinate
     @param    color CRGB Color to draw with
 */
-void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, const CRGB &color) {
+void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, const CRGB &color, LedFB &fb) {
   // discard lines that for sure goes out of canvas,
   // the rest will be caught on pixel access level 
   if (x0<0 && x1<0) return;
@@ -647,7 +647,7 @@ void fill_circleF(float cx, float cy, float radius, CRGB col) {
 //uint16_t RGBweight (CRGB *leds, uint16_t idx) {return (leds[idx].r + leds[idx].g + leds[idx].b);}
 
 void nightMode(LedFB &ledarr){
-    for (auto &i : *ledarr.fb){
+    for (auto &i : ledarr){
         i.r = dim8_lin(i.r); //dim8_video
         i.g = dim8_lin(i.g);
         i.b = dim8_lin(i.b);

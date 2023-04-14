@@ -47,47 +47,47 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 // ************* НАСТРОЙКА МАТРИЦЫ *****
 #if (CONNECTION_ANGLE == 0 && STRIP_DIRECTION == 0)
-#define _WIDTH WIDTH
-#define THIS_X (cfg.vmirror ? (WIDTH - x - 1) : x)
-#define THIS_Y (cfg.hmirror ? (HEIGHT - y - 1) : y)
+#define _WIDTH cfg._w
+#define THIS_X (cfg._vmirror ? (cfg._w - x - 1) : x)
+#define THIS_Y (cfg._hmirror ? (cfg._h - y - 1) : y)
 
 #elif (CONNECTION_ANGLE == 0 && STRIP_DIRECTION == 1)
-#define _WIDTH HEIGHT
-#define THIS_X (cfg.vmirror ? (HEIGHT - y - 1) : y)
-#define THIS_Y (cfg.hmirror ? (WIDTH - x - 1) : x)
+#define _WIDTH cfg._h
+#define THIS_X (cfg._vmirror ? (cfg._h - y - 1) : y)
+#define THIS_Y (cfg._hmirror ? (cfg._w - x - 1) : x)
 
 #elif (CONNECTION_ANGLE == 1 && STRIP_DIRECTION == 0)
-#define _WIDTH WIDTH
-#define THIS_X (cfg.vmirror ? (WIDTH - x - 1) : x)
-#define THIS_Y (cfg.hmirror ?  y : (HEIGHT - y - 1))
+#define _WIDTH cfg._w
+#define THIS_X (cfg._vmirror ? (cfg._w - x - 1) : x)
+#define THIS_Y (cfg._hmirror ?  y : (cfg._h - y - 1))
 
 #elif (CONNECTION_ANGLE == 1 && STRIP_DIRECTION == 3)
-#define _WIDTH HEIGHT
-#define THIS_X (cfg.vmirror ? y : (HEIGHT - y - 1))
-#define THIS_Y (cfg.hmirror ? (WIDTH - x - 1) : x)
+#define _WIDTH cfg._h
+#define THIS_X (cfg._vmirror ? y : (cfg._h - y - 1))
+#define THIS_Y (cfg._hmirror ? (cfg._w - x - 1) : x)
 
 #elif (CONNECTION_ANGLE == 2 && STRIP_DIRECTION == 2)
-#define _WIDTH WIDTH
-#define THIS_X (cfg.vmirror ?  x : (WIDTH - x - 1))
-#define THIS_Y (cfg.hmirror ? y : (HEIGHT - y - 1))
+#define _WIDTH cfg._w
+#define THIS_X (cfg._vmirror ?  x : (cfg._w - x - 1))
+#define THIS_Y (cfg._hmirror ? y : (cfg._h - y - 1))
 
 #elif (CONNECTION_ANGLE == 2 && STRIP_DIRECTION == 3)
-#define _WIDTH HEIGHT
-#define THIS_X (cfg.vmirror ? y : (HEIGHT - y - 1))
-#define THIS_Y (cfg.hmirror ?  x : (WIDTH - x - 1))
+#define _WIDTH cfg._h
+#define THIS_X (cfg._vmirror ? y : (cfg._h - y - 1))
+#define THIS_Y (cfg._hmirror ?  x : (cfg._w - x - 1))
 
 #elif (CONNECTION_ANGLE == 3 && STRIP_DIRECTION == 2)
-#define _WIDTH WIDTH
-#define THIS_X (cfg.vmirror ?  x : (WIDTH - x - 1))
-#define THIS_Y (cfg.hmirror ? (HEIGHT - y - 1) : y)
+#define _WIDTH cfg._w
+#define THIS_X (cfg._vmirror ?  x : (cfg._w - x - 1))
+#define THIS_Y (cfg._hmirror ? (cfg._h - y - 1) : y)
 
 #elif (CONNECTION_ANGLE == 3 && STRIP_DIRECTION == 1)
-#define _WIDTH HEIGHT
-#define THIS_X (cfg.vmirror ? (HEIGHT - y - 1) : y)
-#define THIS_Y (cfg.hmirror ?  x : (WIDTH - x - 1))
+#define _WIDTH cfg._h
+#define THIS_X (cfg._vmirror ? (cfg._h - y - 1) : y)
+#define THIS_Y (cfg._hmirror ?  x : (cfg._w - x - 1))
 
 #else
-#define _WIDTH WIDTH
+#define _WIDTH cfg._w
 #define THIS_X x
 #define THIS_Y y
 #pragma warning "Wrong matrix parameters! Set to default"
@@ -96,9 +96,9 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 static CRGB blackhole;              // Kostyamat's invisible pixel :) current effects code can't live w/o it
 
-uint32_t LedFB::transpose(uint16_t x, uint16_t y){
+uint32_t LedFB::transpose(uint16_t x, uint16_t y) const {
 #if defined(XY_EXTERN)
-    return pgm_read_dword(&XYTable[y * WIDTH + x]);
+    return pgm_read_dword(&XYTable[y * cfg._w + x]);
 #elif defined(MATRIXx4)
     return matrix4_XY(x, y);
 #else
@@ -114,8 +114,8 @@ uint32_t LedFB::transpose(uint16_t x, uint16_t y){
 #endif
 }
 
-CRGB& LedFB::at(size_t i){ return i < fb->size() ? fb->at(i) : blackhole; };
+CRGB& LedFB::at(size_t i){ return i < fb.size() ? fb.at(i) : blackhole; };
 
-void LedFB::fill(const CRGB &color){ fb->fill(color); };
+void LedFB::fill(const CRGB &color){ fb.assign(fb.size(), color); };
 
 void LedFB::clear(){ fill(CRGB::Black); };

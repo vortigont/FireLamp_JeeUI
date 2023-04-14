@@ -3748,24 +3748,28 @@ void EffectStar::drawStar(float xlocl, float ylocl, float biggy, float little, i
                           ylocl + ((little * (cos8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128),
                           xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128),
                           ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128),
-                          isMicOn() ? CHSV(koler+getMicMapFreq(),255-micPick, constrain(micPick * EffectMath::fmap(scale, 1.0f, 255.0f, 1.25f, 5.0f), 48, 255)) : ColorFromPalette(*curPalette, koler));
+                          isMicOn() ? CHSV(koler+getMicMapFreq(),255-micPick, constrain(micPick * EffectMath::fmap(scale, 1.0f, 255.0f, 1.25f, 5.0f), 48, 255)) : ColorFromPalette(*curPalette, koler),
+                          fb);
     EffectMath::drawLine( xlocl + ((little * (sin8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128),
                           ylocl + ((little * (cos8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128),
                           xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128),
                           ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128),
-                          isMicOn() ? CHSV(koler+getMicMapFreq(), 255-micPick, constrain(micPick * EffectMath::fmap(scale, 1.0f, 255.0f, 1.25f, 5.0f), 48, 255)) : ColorFromPalette(*curPalette, koler));
+                          isMicOn() ? CHSV(koler+getMicMapFreq(), 255-micPick, constrain(micPick * EffectMath::fmap(scale, 1.0f, 255.0f, 1.25f, 5.0f), 48, 255)) : ColorFromPalette(*curPalette, koler),
+                          fb);
 
 #else
     EffectMath::drawLine( xlocl + ((little * (sin8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128),
                           ylocl + ((little * (cos8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128),
                           xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128),
                           ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128),
-                          ColorFromPalette(*curPalette, koler));
+                          ColorFromPalette(*curPalette, koler),
+                          fb);
     EffectMath::drawLine( xlocl + ((little * (sin8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128),
                           ylocl + ((little * (cos8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128),
                           xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128),
                           ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128),
-                          ColorFromPalette(*curPalette, koler));
+                          ColorFromPalette(*curPalette, koler),
+                          fb);
 #endif
   }
 }
