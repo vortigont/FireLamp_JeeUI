@@ -3806,7 +3806,6 @@ bool EffectStar::run() {
     if (counter >= cntdelay[num])//(counter >= ringdelay)
     {
       if (counter - cntdelay[num] <= WIDTH + 5) {
-        LOG(println, "Draw a star");
         EffectStar::drawStar(driftx, drifty, 2 * (counter - cntdelay[num]), (counter - cntdelay[num]), points[num], STAR_BLENDER + color[num], color[num]);
         color[num]+=_speedFactor; // в зависимости от знака - направление вращения
       }
@@ -3819,8 +3818,6 @@ bool EffectStar::run() {
 #else
   EffectMath::blur2d(fb, 30U);
 #endif
-  LOG(println, "star run ended");
-  delay(1000);
   return true;
 }
 

@@ -841,7 +841,7 @@ public:
 
 // ----------- Эффект "Звезды"
 // (c) SottNick
-#define STARS_NUM (1)
+#define STARS_NUM (5)
 class EffectStar : public EffectCalc {
 private:
     float driftx;
