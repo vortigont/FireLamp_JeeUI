@@ -100,13 +100,62 @@ namespace EffectMath {
     // blurColumns: perform a blur1d on each column of a rectangular matrix
     void blurColumns(LedFB &leds, fract8 blur_amount);
 
-    void wu_pixel(uint32_t x, uint32_t y, CRGB col, LedFB &fb);
-
     // нарисовать линию в буфере
     void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, const CRGB &color, LedFB &fb);
 
     // нарисовать окружность в буфере
     void drawCircle(int x0, int y0, int radius, const CRGB &color, LedFB &fb);
+
+    /*
+     * AA plotting and drawing
+     * wu aa sutaburosu code  https://wokwi.com/projects/306764419316056642
+     * https://www.reddit.com/r/FastLED/comments/p2twhw/supersample_crgb_array/
+     */
+
+    // wu weights for AA
+    uint8_t wu_weight(uint8_t a, uint8_t b){return (a*b+a+b)>>8;};
+
+    // plot a wu pixel in buffer
+    void wu_pixel(uint32_t x, uint32_t y, CRGB col, LedFB &fb);
+
+    /**
+     * @brief draw a dot in a framebuffer defined by non integer coordinates
+     * will dissolve into four surrounding pixels
+     * @param x 
+     * @param y 
+     * @param color 
+     * @param fb 
+     * @param darklevel - насколько затемнять картинку
+     */
+    void drawPixelXYF(float x, float y, const CRGB &color, LedFB &fb, uint8_t darklevel=25);
+
+    /**
+     * @brief draw a line in a framebuffer defined by non integer coordinates
+     * 
+     * @param x1 
+     * @param y1 
+     * @param x2 
+     * @param y2 
+     * @param color 
+     */
+    void drawLineF(float x1, float y1, float x2, float y2, const CRGB &color, LedFB &fb);
+
+    /**
+     * @brief draw a circle in a framebuffer defined by non integer coordinates
+     * 
+     * @param x0 
+     * @param y0 
+     * @param radius 
+     * @param color 
+     * @param fb 
+     * @param step 
+     */
+    void drawCircleF(float x0, float y0, float radius, const CRGB &color, LedFB &fb, float step = 0.25);
+
+    void fill_circleF(float cx, float cy, float radius, CRGB col, LedFB &fb);
+
+    void drawSquareF(float x, float y, float leg, CRGB color, LedFB &fb);
+
 
 
     // ***************************
@@ -154,43 +203,6 @@ namespace EffectMath {
     // в extra_tasks.h есть странные объекты, которые прибиты гвоздями к этой функции
     void drawPixelXY(int16_t x, int16_t y, const CRGB &color); // функция отрисовки точки по координатам X Y
 
-    /**
-     * @brief draw a dot in a framebuffer defined by non integer coordinates
-     * will dissolve into four surrounding pixels
-     * @param x 
-     * @param y 
-     * @param color 
-     * @param fb 
-     * @param darklevel - насколько затемнять картинку
-     */
-    void drawPixelXYF(float x, float y, const CRGB &color, LedFB &fb, uint8_t darklevel=25);
-
-    /**
-     * @brief draw a line in a framebuffer defined by non integer coordinates
-     * 
-     * @param x1 
-     * @param y1 
-     * @param x2 
-     * @param y2 
-     * @param color 
-     */
-    void drawLineF(float x1, float y1, float x2, float y2, const CRGB &color, LedFB &fb);
-
-    /**
-     * @brief draw a circle in a framebuffer defined by non integer coordinates
-     * 
-     * @param x0 
-     * @param y0 
-     * @param radius 
-     * @param color 
-     * @param fb 
-     * @param step 
-     */
-    void drawCircleF(float x0, float y0, float radius, const CRGB &color, LedFB &fb, float step = 0.25);
-
-    void fill_circleF(float cx, float cy, float radius, CRGB col, LedFB &fb);
-
-	void drawSquareF(float x, float y, float leg, CRGB color, LedFB &fb);
 
     void MoveFractionalNoise(bool scale, const uint8_t noise3d[][WIDTH][HEIGHT], int8_t amplitude, float shift = 0);
   

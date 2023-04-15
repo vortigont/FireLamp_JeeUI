@@ -281,14 +281,13 @@ void drawPixelXY(int16_t x, int16_t y, const CRGB &color) // функция от
   getPixel(x,y) = color;
 }
 
-void wu_pixel(uint32_t x, uint32_t y, CRGB col, LedFB &fb) {      //awesome wu_pixel procedure by reddit u/sutaburosu
+//awesome wu_pixel procedure by reddit u/sutaburosu
+void wu_pixel(uint32_t x, uint32_t y, CRGB col, LedFB &fb) {
   // extract the fractional parts and derive their inverses
   uint8_t xx = x & 0xff, yy = y & 0xff, ix = 255 - xx, iy = 255 - yy;
   // calculate the intensities for each affected pixel
-  #define WU_WEIGHT(a,b) ((uint8_t) (((a)*(b)+(a)+(b))>>8))
-  uint8_t wu[4] = {WU_WEIGHT(ix, iy), WU_WEIGHT(xx, iy),
-                   WU_WEIGHT(ix, yy), WU_WEIGHT(xx, yy)};
-  #undef WU_WEIGHT
+  uint8_t wu[4] = {wu_weight(ix, iy), wu_weight(xx, iy),
+                   wu_weight(ix, yy), wu_weight(xx, yy)};
   // multiply the intensities by the colour, and saturating-add them to the pixels
   for (uint8_t i = 0; i < 4; i++) {
     uint16_t xn = (x >> 8) + (i & 1); uint16_t yn = (y >> 8) + ((i >> 1) & 1);
@@ -345,12 +344,14 @@ void sDrawPixelXYF_Y(int16_t x, float y, const CRGB &color) {
 void drawPixelXYF(float x, float y, const CRGB &color, LedFB &fb, uint8_t darklevel)
 {
   if (x<-1 || y<-1 || x>fb.cfg.w() || y>fb.cfg.h()) return; // skip out of canvas drawing, allow 1 px tradeoff
-#define WU_WEIGHT(a,b) ((uint8_t) (((a)*(b)+(a)+(b))>>8))
   // extract the fractional parts and derive their inverses
-  uint8_t xx = (x - (int)x) * 255, yy = (y - (int)y) * 255, ix = 255 - xx, iy = 255 - yy;
+  uint8_t xx = (x - static_cast<int32_t>(x)) * 255;
+  uint8_t yy = (y - static_cast<int32_t>(y)) * 255;
+  uint8_t ix = 255 - xx;
+  uint8_t iy = 255 - yy;
   // calculate the intensities for each affected pixel
-  uint8_t wu[4] = {WU_WEIGHT(ix, iy), WU_WEIGHT(xx, iy),
-                  WU_WEIGHT(ix, yy), WU_WEIGHT(xx, yy)};
+  uint8_t wu[4] = {wu_weight(ix, iy), wu_weight(xx, iy),
+                  wu_weight(ix, yy), wu_weight(xx, yy)};
   // multiply the intensities by the colour, and saturating-add them to the pixels
   for (uint8_t i = 0; i < 4; i++) {
     int16_t xn = x + (i & 1), yn = y + ((i >> 1) & 1);
@@ -360,10 +361,9 @@ void drawPixelXYF(float x, float y, const CRGB &color, LedFB &fb, uint8_t darkle
     clr.r = qadd8(clr.r, (color.r * wu[i]) >> 8);
     clr.g = qadd8(clr.g, (color.g * wu[i]) >> 8);
     clr.b = qadd8(clr.b, (color.b * wu[i]) >> 8);
-    if (darklevel > 0) getPixel(xn, yn) = makeDarker(clr, darklevel);
+    if (darklevel > 0) fb.pixel(xn, yn) = makeDarker(clr, darklevel);
     else fb.pixel(xn, yn) = clr;
   }
-#undef WU_WEIGHT
 }
 
 void drawPixelXYF_X(float x, int16_t y, const CRGB &color, uint8_t darklevel)
@@ -371,7 +371,7 @@ void drawPixelXYF_X(float x, int16_t y, const CRGB &color, uint8_t darklevel)
   if (x<-1.0 || y<-1 || x>((float)WIDTH) || y>((float)HEIGHT)) return;
 
   // extract the fractional parts and derive their inverses
-  uint8_t xx = (x - (int)x) * 255, ix = 255 - xx;
+  uint8_t xx = (x - static_cast<int32_t>(x)) * 255, ix = 255 - xx;
   // calculate the intensities for each affected pixel
   uint8_t wu[2] = {ix, xx};
   // multiply the intensities by the colour, and saturating-add them to the pixels
@@ -391,7 +391,7 @@ void drawPixelXYF_Y(int16_t x, float y, const CRGB &color, uint8_t darklevel)
   if (x<-1 || y<-1.0 || x>((float)WIDTH) || y>((float)HEIGHT)) return;
 
   // extract the fractional parts and derive their inverses
-  uint8_t yy = (y - (int)y) * 255, iy = 255 - yy;
+  uint8_t yy = (y - static_cast<int32_t>(y)) * 255, iy = 255 - yy;
   // calculate the intensities for each affected pixel
   uint8_t wu[2] = {iy, yy};
   // multiply the intensities by the colour, and saturating-add them to the pixels
@@ -409,11 +409,13 @@ void drawPixelXYF_Y(int16_t x, float y, const CRGB &color, uint8_t darklevel)
 CRGB getPixColorXYF(float x, float y)
 {
   // extract the fractional parts and derive their inverses
-  uint8_t xx = (x - (int)x) * 255, yy = (y - (int)y) * 255, ix = 255 - xx, iy = 255 - yy;
+  uint8_t xx = (x - static_cast<int32_t>(x)) * 255;
+  uint8_t yy = (y - static_cast<int32_t>(y)) * 255;
+  uint8_t ix = 255 - xx;
+  uint8_t iy = 255 - yy;
   // calculate the intensities for each affected pixel
-  #define WU_WEIGHT(a,b) ((uint8_t) (((a)*(b)+(a)+(b))>>8))
-  uint8_t wu[4] = {WU_WEIGHT(ix, iy), WU_WEIGHT(xx, iy),
-                   WU_WEIGHT(ix, yy), WU_WEIGHT(xx, yy)};
+  uint8_t wu[4] = {wu_weight(ix, iy), wu_weight(xx, iy),
+                   wu_weight(ix, yy), wu_weight(xx, yy)};
   // multiply the intensities by the colour, and saturating-add them to the pixels
   CRGB clr=CRGB::Black;
   for (uint8_t i = 0; i < 4; i++) {
@@ -428,7 +430,6 @@ CRGB getPixColorXYF(float x, float y)
     }
   }
   return clr;
-  #undef WU_WEIGHT
 }
 
 CRGB getPixColorXYF_X(float x, int16_t y)
@@ -436,7 +437,7 @@ CRGB getPixColorXYF_X(float x, int16_t y)
   if (x<-1.0 || y<-1.0 || x>((float)WIDTH) || y>((float)HEIGHT)) return CRGB::Black;
 
   // extract the fractional parts and derive their inverses
-  uint8_t xx = (x - (int)x) * 255, ix = 255 - xx;
+  uint8_t xx = (x - static_cast<int32_t>(x)) * 255, ix = 255 - xx;
   // calculate the intensities for each affected pixel
   uint8_t wu[2] = {ix, xx};
   // multiply the intensities by the colour, and saturating-add them to the pixels
@@ -460,7 +461,7 @@ CRGB getPixColorXYF_Y(int16_t x, float y)
   if (x<-1 || y<-1.0 || x>((float)WIDTH) || y>((float)HEIGHT)) return CRGB::Black;
 
   // extract the fractional parts and derive their inverses
-  uint8_t yy = (y - (int)y) * 255, iy = 255 - yy;
+  uint8_t yy = (y - static_cast<int32_t>(y)) * 255, iy = 255 - yy;
   // calculate the intensities for each affected pixel
   uint8_t wu[2] = {iy, yy};
   // multiply the intensities by the colour, and saturating-add them to the pixels
