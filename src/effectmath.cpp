@@ -366,9 +366,9 @@ void drawPixelXYF(float x, float y, const CRGB &color, LedFB &fb, uint8_t darkle
   }
 }
 
-void drawPixelXYF_X(float x, int16_t y, const CRGB &color, uint8_t darklevel)
+void drawPixelXYF_X(float x, int16_t y, const CRGB &color, LedFB &fb, uint8_t darklevel)
 {
-  if (x<-1.0 || y<-1 || x>((float)WIDTH) || y>((float)HEIGHT)) return;
+  if (x<-1.0 || y<-1 || x>fb.cfg.w() || y>fb.cfg.h()) return;   // skip out of canvas drawing
 
   // extract the fractional parts and derive their inverses
   uint8_t xx = (x - static_cast<int32_t>(x)) * 255, ix = 255 - xx;
@@ -377,18 +377,18 @@ void drawPixelXYF_X(float x, int16_t y, const CRGB &color, uint8_t darklevel)
   // multiply the intensities by the colour, and saturating-add them to the pixels
   for (int8_t i = 1; i >= 0; i--) {
     int16_t xn = x + (i & 1);
-    CRGB clr = getPixel(xn, y);
+    CRGB clr = fb.pixel(xn, y);
     clr.r = qadd8(clr.r, (color.r * wu[i]) >> 8);
     clr.g = qadd8(clr.g, (color.g * wu[i]) >> 8);
     clr.b = qadd8(clr.b, (color.b * wu[i]) >> 8);
-    if (darklevel > 0) getPixel(xn, y) = makeDarker(clr, darklevel);
-    else getPixel(xn, y) = clr;
+    if (darklevel > 0) fb.pixel(xn, y) = makeDarker(clr, darklevel);
+    else fb.pixel(xn, y) = clr;
   }
 }
 
-void drawPixelXYF_Y(int16_t x, float y, const CRGB &color, uint8_t darklevel)
+void drawPixelXYF_Y(int16_t x, float y, const CRGB &color, LedFB &fb, uint8_t darklevel)
 {
-  if (x<-1 || y<-1.0 || x>((float)WIDTH) || y>((float)HEIGHT)) return;
+  if (x<-1 || y<-1.0 || x>fb.cfg.w() || y>fb.cfg.h()) return;
 
   // extract the fractional parts and derive their inverses
   uint8_t yy = (y - static_cast<int32_t>(y)) * 255, iy = 255 - yy;
@@ -397,15 +397,15 @@ void drawPixelXYF_Y(int16_t x, float y, const CRGB &color, uint8_t darklevel)
   // multiply the intensities by the colour, and saturating-add them to the pixels
   for (int8_t i = 1; i >= 0; i--) {
     int16_t yn = y + (i & 1);
-    CRGB clr = getPixel(x, yn);
+    CRGB clr = fb.pixel(x, yn);
     clr.r = qadd8(clr.r, (color.r * wu[i]) >> 8);
     clr.g = qadd8(clr.g, (color.g * wu[i]) >> 8);
     clr.b = qadd8(clr.b, (color.b * wu[i]) >> 8);
-    if (darklevel > 0) getPixel(x, yn) = makeDarker(clr, darklevel);
-    else getPixel(x, yn) = clr;
+    if (darklevel > 0) fb.pixel(x, yn) = makeDarker(clr, darklevel);
+    else fb.pixel(x, yn) = clr;
   }
 }
-
+/*
 CRGB getPixColorXYF(float x, float y)
 {
   // extract the fractional parts and derive their inverses
@@ -479,7 +479,7 @@ CRGB getPixColorXYF_Y(int16_t x, float y)
   }
   return clr;
 }
-
+*/
 /*!
    @brief    Write a line.  Bresenham's algorithm - thx wikpedia
    https://github.com/adafruit/Adafruit-GFX-Library

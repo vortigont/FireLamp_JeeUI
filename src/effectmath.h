@@ -113,7 +113,7 @@ namespace EffectMath {
      */
 
     // wu weights for AA
-    uint8_t wu_weight(uint8_t a, uint8_t b){return (a*b+a+b)>>8;};
+    constexpr uint8_t wu_weight(uint8_t a, uint8_t b){return (a*b+a+b)>>8;};
 
     // plot a wu pixel in buffer
     void wu_pixel(uint32_t x, uint32_t y, CRGB col, LedFB &fb);
@@ -128,6 +128,9 @@ namespace EffectMath {
      * @param darklevel - насколько затемнять картинку
      */
     void drawPixelXYF(float x, float y, const CRGB &color, LedFB &fb, uint8_t darklevel=25);
+
+    void drawPixelXYF_Y(int16_t x, float y, const CRGB &color, LedFB &fb, uint8_t darklevel=50);
+    void drawPixelXYF_X(float x, int16_t y, const CRGB &color, LedFB &fb, uint8_t darklevel=50);
 
     /**
      * @brief draw a line in a framebuffer defined by non integer coordinates
@@ -215,19 +218,17 @@ namespace EffectMath {
     /* Функция возврашает "вес" яркости пикселя от 0 (черный) до 765 (белый). Может использоваться для проверки не "пустое ли место"
     для этого есть FastLED CRGB::getLuma
     uint16_t RGBweight (CRGB *leds, uint16_t idx);  */
+/*
+    CRGB getPixColorXYF_X(float x, int16_t y);
+    CRGB getPixColorXYF_Y(int16_t x, float y);
+    CRGB getPixColorXYF(float x, float y);
+*/
 
 
-    void drawPixelXYF_Y(int16_t x, float y, const CRGB &color, uint8_t darklevel=50);
-    void drawPixelXYF_X(float x, int16_t y, const CRGB &color, uint8_t darklevel=50);
-    
     // Вариант субпикселя от @stepko, в некоторых случаях работает лучше, но в некоторых хуже
     void sDrawPixelXYF(float x, float y, const CRGB &color); 
     void sDrawPixelXYF_Y(int16_t x, float y, const CRGB &color);
     void sDrawPixelXYF_X(float x, int16_t y, const CRGB &color);
-
-    CRGB getPixColorXYF_X(float x, int16_t y);
-    CRGB getPixColorXYF_Y(int16_t x, float y);
-    CRGB getPixColorXYF(float x, float y);
 
     // аналог fmap, но не линейная. (linear == fmap)
     float mapcurve(const float x, const float in_min, const float in_max, const float out_min, const float out_max, float (*curve)(float,float,float,float));
