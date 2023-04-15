@@ -40,6 +40,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "config.h"
 #include <FastLED.h>
 #include <vector>
+#include "log.h"
 
 constexpr uint16_t num_leds = WIDTH * HEIGHT;       // for backward compat
 
@@ -57,7 +58,8 @@ friend class LedFB;
     bool _hmirror{0};        // horizontal flip
 
 public:
-    Mtrx_cfg(uint16_t w, uint16_t h) : _w(w), _h(h) {};
+    Mtrx_cfg(uint16_t w, uint16_t h, bool vm=false, bool hm=false) : _w(w), _h(h), _vmirror(vm), _hmirror(hm) {};
+    Mtrx_cfg(Mtrx_cfg const & rhs) : _w(rhs._w), _h(rhs._h), _vmirror(rhs._vmirror), _hmirror(rhs._hmirror) {};
 
     // get configured matrix width
     uint16_t w() const {return _w;}
@@ -81,14 +83,37 @@ public:
     void hmirror(bool m){_hmirror=m;}
 };
 
-// TODO: design templated container object with common array's methods to access trasposed data based on matrix configuration type
 class LedFB {
 
+    /**
+     * @brief a poor-man's mutex
+     * points to the instance that owns global FastLED's buffer reference
+     */
+    CLEDController *cled = nullptr;
     std::vector<CRGB> fb;     // main frame buffer
+
+    /**
+     * @brief if this buffer is bound to CLED controller,
+     * than reset it's pointer to this buffer's data array
+     * required to call on iterator invalidation or move semantics
+     */
+    void _reset_cled(){ if (cled) cled->setLeds(fb.data(), fb.size()); };
 
 public:
     LedFB(uint16_t w, uint16_t h) : fb(w*h), cfg(w,h) {}
 
+    // copy c-tor
+    LedFB(LedFB const & rhs) : fb(rhs.fb), cfg(rhs.cfg) {};
+    LedFB& operator=(LedFB const & rhs);
+
+    // move semantics
+    LedFB(LedFB&& rhs) noexcept;// : fb(std::move(rhs.fb)), cfg(rhs.cfg){ LOG(printf, "Move Constructing: %u From: %u\n", reinterpret_cast<size_t>(&fb), reinterpret_cast<size_t>(&rhs.fb)); };
+    LedFB& operator=(LedFB&& rhs);
+
+    // d-tor
+    ~LedFB();
+
+    // buffer topology configuration
     Mtrx_cfg cfg;
 
     /**
@@ -169,6 +194,15 @@ public:
      * 
      */
     void clear();
+
+    /**
+     * @brief bind this framebuffer to a CLEDController instance
+     * 
+     * @param pLed instanle of the CLEDController
+     * @return true if bind success
+     * @return false if this instance is already bound to CLEDController
+     */
+    bool bind(CLEDController *pLed);
 };
 
 /* a backward compatible wrappers for accessing LedMatrix obj instance,

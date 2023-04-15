@@ -96,6 +96,49 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 static CRGB blackhole;              // Kostyamat's invisible pixel :) current effects code can't live w/o it
 
+LedFB::LedFB(LedFB&& rhs) noexcept : fb(std::move(rhs.fb)), cfg(rhs.cfg){
+    cled = rhs.cled;
+    if (rhs.cled){  // steal cled pointer, if set
+        rhs.cled = nullptr;
+    }
+    _reset_cled();      // if we moved data from rhs, than need to reset cled controller
+    LOG(printf, "Move Constructing: %u From: %u\n", reinterpret_cast<size_t>(&fb), reinterpret_cast<size_t>(&rhs.fb));
+};
+
+LedFB& LedFB::operator=(LedFB const& rhs){
+    fb = rhs.fb;
+    cfg=rhs.cfg;
+    return *this;
+}
+
+LedFB& LedFB::operator=(LedFB&& rhs){
+    fb = std::move(rhs.fb);
+    cfg=rhs.cfg;
+
+    if (cled && rhs.cled && (cled != rhs.cled)){
+        /* oops... we are moving from a buff binded to some other cled controller
+        * since there is no method to detach active controller from CFastLED
+        * than let's use a dirty WA - bind a blackhole to our cled and steal rhs's ptr
+        */
+        cled->setLeds(&blackhole, 1);
+    }
+
+    if (rhs.cled){ cled = rhs.cled; rhs.cled = nullptr; }   // steal a pointer from rhs
+    _reset_cled();      // if we moved data from rhs, than need to reset cled controller
+    LOG(printf, "Move assign: %u from: %u\n", reinterpret_cast<size_t>(&fb), reinterpret_cast<size_t>(&rhs.fb));
+    return *this;
+}
+
+LedFB::~LedFB(){
+    if (cled){
+        /* oops... somehow we ended up in destructor with binded cled controller
+        * since there is no method to detach active controller from CFastLED
+        * than let's use a dirty WA - bind a blackhole to cled
+        */
+       cled->setLeds(&blackhole, 1);
+    }
+}
+
 uint32_t LedFB::transpose(uint16_t x, uint16_t y) const {
 #if defined(XY_EXTERN)
     return pgm_read_dword(&XYTable[y * cfg._w + x]);
@@ -119,3 +162,17 @@ CRGB& LedFB::at(size_t i){ return i < fb.size() ? fb.at(i) : blackhole; };
 void LedFB::fill(const CRGB &color){ fb.assign(fb.size(), color); };
 
 void LedFB::clear(){ fill(CRGB::Black); };
+
+bool LedFB::bind(CLEDController *pLed){
+    if (!pLed) return false;  // some empty pointer
+
+    /* since there is no method to unbind CRGB buffer from CLEDController,
+    than if there is a pointer already exist we refuse to rebind to a new cled.
+    It's up to user to deal with it
+    */
+    if (cled && (cled !=pLed)) return false;
+
+    cled = pLed;
+    _reset_cled();
+    return true;
+}
