@@ -97,7 +97,7 @@ class LedFB {
      * than reset it's pointer to this buffer's data array
      * required to call on iterator invalidation or move semantics
      */
-    void _reset_cled(){ if (cled) cled->setLeds(fb.data(), fb.size()); };
+    void _reset_cled(){ if (cled) {cled->setLeds(fb.data(), fb.size());} };
 
 public:
     LedFB(uint16_t w, uint16_t h) : fb(w*h), cfg(w,h) {}
@@ -110,11 +110,26 @@ public:
     LedFB(LedFB&& rhs) noexcept;// : fb(std::move(rhs.fb)), cfg(rhs.cfg){ LOG(printf, "Move Constructing: %u From: %u\n", reinterpret_cast<size_t>(&fb), reinterpret_cast<size_t>(&rhs.fb)); };
     LedFB& operator=(LedFB&& rhs);
 
+    // create from config struct
+    LedFB(Mtrx_cfg &c) : fb(c.w(), c.h()), cfg(c) {};
+
     // d-tor
     ~LedFB();
 
     // buffer topology configuration
     Mtrx_cfg cfg;
+
+    /**
+     * @brief zero-copy swap CRGB data within two framebuffers
+     * only CRGB data is swapped, config struct in untouched.
+     * If buffer sizes are different, then no swap occurs.
+     * Only buffer sizes have to equal, other configuration mismatch ignored,
+     * have to deal with it elsewhere
+     * @param rhs 
+     * @return true if swap occured
+     * @return false if buffer sizes are different
+     */
+    bool swap(LedFB&& rhs);
 
     /**
      * @brief return size of FB in pixels

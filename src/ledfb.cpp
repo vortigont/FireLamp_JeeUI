@@ -102,7 +102,7 @@ LedFB::LedFB(LedFB&& rhs) noexcept : fb(std::move(rhs.fb)), cfg(rhs.cfg){
         rhs.cled = nullptr;
     }
     _reset_cled();      // if we moved data from rhs, than need to reset cled controller
-    LOG(printf, "Move Constructing: %u From: %u\n", reinterpret_cast<size_t>(&fb), reinterpret_cast<size_t>(&rhs.fb));
+    //LOG(printf, "Move Constructing: %u From: %u\n", reinterpret_cast<size_t>(fb.data()), reinterpret_cast<size_t>(rhs.fb.data()));
 };
 
 LedFB& LedFB::operator=(LedFB const& rhs){
@@ -125,7 +125,7 @@ LedFB& LedFB::operator=(LedFB&& rhs){
 
     if (rhs.cled){ cled = rhs.cled; rhs.cled = nullptr; }   // steal a pointer from rhs
     _reset_cled();      // if we moved data from rhs, than need to reset cled controller
-    LOG(printf, "Move assign: %u from: %u\n", reinterpret_cast<size_t>(&fb), reinterpret_cast<size_t>(&rhs.fb));
+    //LOG(printf, "Move assign: %u from: %u\n", reinterpret_cast<size_t>(fb.data()), reinterpret_cast<size_t>(rhs.fb.data()));
     return *this;
 }
 
@@ -133,7 +133,8 @@ LedFB::~LedFB(){
     if (cled){
         /* oops... somehow we ended up in destructor with binded cled controller
         * since there is no method to detach active controller from CFastLED
-        * than let's use a dirty WA - bind a blackhole to cled
+        * than let's use a dirty WA - bind a blackhole to cled untill some other buffer
+        * regains control
         */
        cled->setLeds(&blackhole, 1);
     }
@@ -174,5 +175,14 @@ bool LedFB::bind(CLEDController *pLed){
 
     cled = pLed;
     _reset_cled();
+    return true;
+}
+
+bool LedFB::swap(LedFB&& rhs){
+    if (rhs.fb.size() != fb.size()) return false;   // won't swap buffers of different size
+    std::swap(fb, rhs.fb);
+    // update CLEDControllers
+    _reset_cled();
+    rhs._reset_cled();
     return true;
 }
