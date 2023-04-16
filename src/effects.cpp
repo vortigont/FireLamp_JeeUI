@@ -1391,16 +1391,49 @@ void EffectComet::drawFillRect2_fast(int8_t x1, int8_t y1, int8_t x2, int8_t y2,
   }
 }
 
-void EffectComet::FillNoise(int8_t layer) {
-  for (uint8_t i = 0; i < WIDTH; i++) {
+void EffectComet::fillNoise(int8_t layer) {
+  for (uint8_t i = 0; i < noise3d.w; i++) {
     int32_t ioffset = e_scaleX[layer] * (i - e_centerX);
-    for (uint8_t j = 0; j < HEIGHT; j++) {
+    for (uint8_t j = 0; j < noise3d.h; j++) {
       int32_t joffset = e_scaleY[layer] * (j - e_centerY);
       uint8_t data = inoise16(e_x[layer] + ioffset, e_y[layer] + joffset, e_z[layer]) >> 8;
-      uint8_t olddata = noise3d[layer][i][j];
-      noise3d[layer][i][j] = scale8( olddata, eNs_noisesmooth ) + scale8( data, 255 - eNs_noisesmooth );
+      noise3d.map[layer][noise3d.xy(i,j)] = scale8( noise3d.map[layer][noise3d.xy(i,j)], eNs_noisesmooth ) + scale8( data, 255 - eNs_noisesmooth );
     }
   }
+}
+
+void EffectComet::moveFractionalNoise(bool direction, int8_t amplitude, float shift) {
+  uint8_t zD, zF;
+  uint16_t _side_a = direction ? fb.cfg.h() : fb.cfg.w();
+  uint16_t _side_b = direction ? fb.cfg.w() : fb.cfg.h();
+
+  for (auto &i : noise3d.map)
+    for (uint16_t a = 0; a < _side_a; a++) {
+      uint8_t _pixel = direction ? i.at(noise3d.xy(0,a)) : i.at(noise3d.xy(a,0));
+      int16_t amount = ((int16_t)(_pixel - 128) * 2 * amplitude + shift * 256);
+      int8_t delta = ((uint16_t)fabs(amount) >> 8) ;
+      int8_t fraction = ((uint16_t)fabs(amount) & 255);
+      for (uint8_t b = 0 ; b < _side_b; b++) {
+        if (amount < 0) {
+          zD = b - delta; zF = zD - 1;
+        } else {
+          zD = b + delta; zF = zD + 1;
+        }
+        CRGB PixelA = CRGB::Black  ;
+        if ((zD >= 0) && (zD < _side_b))
+          PixelA = direction ? fb.pixel(zD%fb.cfg.w(), a%fb.cfg.h()) : fb.pixel(a%fb.cfg.w(), zD%fb.cfg.h());
+
+        CRGB PixelB = CRGB::Black ;
+        if ((zF >= 0) && (zF < _side_b))
+          PixelB = direction ? fb.pixel(zF%fb.cfg.w(), a%fb.cfg.h()) : fb.pixel(a%fb.cfg.w(), zF%fb.cfg.h());
+        uint16_t x = direction ? b : a;
+        uint16_t y = direction ? a : b;
+        noise3d.result.pixel(x%fb.cfg.w(), y%fb.cfg.h()) = (PixelA.nscale8(ease8InOutApprox(255 - fraction))) + (PixelB.nscale8(ease8InOutApprox(fraction)));   // lerp8by8(PixelA, PixelB, fraction );
+      }
+    }
+
+  // flip the buffer
+  fb.swap(std::move(noise3d.result));
 }
 
 void EffectComet::load() {
@@ -1475,16 +1508,18 @@ bool EffectComet::smokeRoutine() {
 
 
   spiral += 3. * speedFactor ;
-  if (random8(WIDTH) != 0U) // встречная спираль движется не всегда синхронно основной
+  if (random8(fb.cfg.w()) != 0U) // встречная спираль движется не всегда синхронно основной
     spiral2 += 3. * speedFactor ;
 
-  for (float i = 0; i < HEIGHT; i+= 0.5) {
-    float n = (float)quadwave8(i * 4. + spiral) / (256. / (float)WIDTH + 1.0);
-    float n2 = (float)quadwave8(i * 5. + beatsin8((smooth*3) * speedFactor)) / (256. / (float)WIDTH + 1.0);
+  for (float i = 0; i < fb.cfg.h(); i+= 0.5) {
+    float n = (float)quadwave8(i * 4. + spiral) / (256. / (float)fb.cfg.h() + 1.0);
+    float n2 = (float)quadwave8(i * 5. + beatsin8((smooth*3) * speedFactor)) / (256. / (float)fb.cfg.w() + 1.0);
 
-    EffectMath::drawPixelXYF(n, (float)EffectMath::getmaxHeightIndex() - i, color, fb, 0);
-    EffectMath::drawPixelXYF((float)EffectMath::getmaxWidthIndex() - n2, (float)EffectMath::getmaxHeightIndex() - i, color, fb, 0);
+    EffectMath::drawPixelXYF(n, fb.cfg.maxHeightIndex() - i, color, fb, 0);
+    EffectMath::drawPixelXYF(fb.cfg.maxWidthIndex() - n2, fb.cfg.maxHeightIndex() - i, color, fb, 0);
 
+    EffectMath::drawPixelXYF(n, fb.cfg.maxHeightIndex() - i, color, fb, 0);
+    EffectMath::drawPixelXYF(fb.cfg.maxWidthIndex() - n2, fb.cfg.maxHeightIndex() - i, color, fb, 0);
   }
   
   // скорость движения по массиву noise
@@ -1495,10 +1530,10 @@ bool EffectComet::smokeRoutine() {
     e_scaleX[0] = 2000 * (blur/5);//12000;
     e_scaleY[0] = 1333 * smooth;
 
-    FillNoise(0);
+    fillNoise(0);
 
-    EffectMath::MoveFractionalNoise(MOVE_X, noise3d, WIDTH / (getCtrlVal(3).toInt() + 2));//4
-    EffectMath::MoveFractionalNoise(MOVE_Y, noise3d, HEIGHT / 8, 0.33);//4
+    moveFractionalNoise(MOVE_X, fb.cfg.w() / (getCtrlVal(3).toInt() + 2));//4
+    moveFractionalNoise(MOVE_Y, fb.cfg.h() / 8, 0.33);//4
 
     EffectMath::blur2d(fb,64); // без размытия как-то пиксельно, наверное...  
   // }
@@ -1516,7 +1551,7 @@ bool EffectComet::firelineRoutine() {
   }
   else hue = colorId;
 
-  for (uint8_t i = 1; i < WIDTH; i += 2) {
+  for (uint8_t i = 1; i < fb.cfg.w(); i += 2) {
     fb.pixel( i, e_centerY) += CHSV(hue + i * 2 , colorId == 255 ? 64 : 255, 255);
   }
   // Noise
@@ -1528,10 +1563,10 @@ bool EffectComet::firelineRoutine() {
   e_scaleY[0] = 1333 * smooth; // 8000;
   count ++;
 
-  FillNoise(0);
+  fillNoise(0);
 
-  EffectMath::MoveFractionalNoise(MOVE_Y, noise3d, 3);
-  EffectMath::MoveFractionalNoise(MOVE_X, noise3d, 3, beat2);
+  moveFractionalNoise(MOVE_Y, 3);
+  moveFractionalNoise(MOVE_X, 3, beat2);
   return true;
 }
 
@@ -1549,18 +1584,18 @@ bool EffectComet::fractfireRoutine() {
   else hue = colorId;
 
   for (uint8_t i = 1; i < WIDTH; i += 2) {
-    fb.pixel(i, EffectMath::getmaxHeightIndex()) += CHSV(hue + i * 2, colorId == 255 ? 64 : 255, 255);
+    fb.pixel(i, fb.cfg.maxHeightIndex()) += CHSV(hue + i * 2, colorId == 255 ? 64 : 255, 255);
   }
   // Noise
   e_y[0] += 12 * speedy; // 3000;
   e_z[0] += 12 * speedy; // 3000;
   e_scaleX[0] = 1333 * smooth; // 8000;
   e_scaleY[0] = 1333 * smooth; // 8000;
-  FillNoise(0);
+  fillNoise(0);
 
-  EffectMath::MoveFractionalNoise(MOVE_Y, noise3d, 2, beat);
-  EffectMath::MoveFractionalNoise(MOVE_X, noise3d, 3);
-  EffectMath::blur2d(fb, 32); // нужно ли размытие?
+  moveFractionalNoise(MOVE_Y, 2, beat);
+  moveFractionalNoise(MOVE_X, 3);
+  //EffectMath::blur2d(fb, 32); // нужно ли размытие?
   return true;
 }
 
@@ -1575,8 +1610,8 @@ bool EffectComet::flsnakeRoutine() {
   }
   else hue = colorId;
 
-  for (uint8_t y = 2; y < EffectMath::getmaxHeightIndex(); y += 5) {
-    for (uint8_t x = 2; x < EffectMath::getmaxWidthIndex(); x += 5) {
+  for (uint8_t y = 2; y < fb.cfg.maxHeightIndex(); y += 5) {
+    for (uint8_t x = 2; x < fb.cfg.maxWidthIndex(); x += 5) {
       fb.pixel(x, y) += CHSV(x * y + hue, colorId == 255 ? 64 : 255, 255);
       fb.pixel(x + 1, y) += CHSV((x + 4) * y + hue, colorId == 255 ? 64 : 255, 255);
       fb.pixel(x, y + 1) += CHSV(x * (y + 4) + hue, colorId == 255 ? 64 : 255, 255);
@@ -1589,10 +1624,10 @@ bool EffectComet::flsnakeRoutine() {
   e_z[0] += 12 * speedy; // 3000;
   e_scaleX[0] = 1333 * smooth; //8000;
   e_scaleY[0] = 1333 * smooth; //8000;
-  FillNoise(0);
+  fillNoise(0);
 
-  EffectMath::MoveFractionalNoise(MOVE_X, noise3d, 5);
-  EffectMath::MoveFractionalNoise(MOVE_Y, noise3d, 5);
+  moveFractionalNoise(MOVE_X, 5);
+  moveFractionalNoise(MOVE_Y, 5);
   return true;
 }
 
@@ -1617,7 +1652,7 @@ bool EffectComet::rainbowCometRoutine()
   if (colorId == 255) {
     _eNs_color= CRGB::White;
   } else if (colorId == 1) {
-    _eNs_color = CHSV(noise3d[0][0][0] * e_com_3DCOLORSPEED , 255, 255);
+    _eNs_color = CHSV(noise3d.map[0][0] * e_com_3DCOLORSPEED , 255, 255);
   } else if (colorId >1 && colorId < 128) {
     _eNs_color = CHSV(millis() / ((uint16_t)colorId + 1U) * 4 + 10, 255, 255);
   } else {
@@ -1633,9 +1668,9 @@ bool EffectComet::rainbowCometRoutine()
     e_z[0] += 12 * speedy; // 2000;
     e_scaleX[0] = 667 * smooth; //4000;
     e_scaleY[0] = 667 * smooth; //4000;
-    FillNoise(0);
-    EffectMath::MoveFractionalNoise(MOVE_X, noise3d, WIDTH / 3U);
-    EffectMath::MoveFractionalNoise(MOVE_Y, noise3d, HEIGHT / 3U, 0.5);
+    fillNoise(0);
+    moveFractionalNoise(MOVE_X, fb.cfg.w() / 3U);
+    moveFractionalNoise(MOVE_Y, fb.cfg.h() / 3U, 0.5);
   // }
   return true;
 }
@@ -1657,7 +1692,7 @@ bool EffectComet::rainbowComet3Routine()
   if (colorId == 1) color.hue += hue;
   else if (colorId == 255) color.sat = 64;
   else color.hue += colorId;
-  EffectMath::drawPixelXYF((float)WIDTH / 2, (float)HEIGHT / 2, color, fb, 0); // зеленый стоит по центру
+  EffectMath::drawPixelXYF(fb.cfg.w() / 2, fb.cfg.h() / 2, color, fb, 0); // зеленый стоит по центру
 
   color = rgb2hsv_approximate(CRGB::Red);
   if (colorId == 1) color.hue += hue;
@@ -1681,9 +1716,9 @@ bool EffectComet::rainbowComet3Routine()
     e_z[0] += 3000 * speedFactor;
     e_scaleX[0] = 667 * smooth; // 4000;
     e_scaleY[0] = 667 * smooth; // 4000;
-    FillNoise(0);
-    EffectMath::MoveFractionalNoise(MOVE_X, noise3d, WIDTH / 6);
-    EffectMath::MoveFractionalNoise(MOVE_Y, noise3d, HEIGHT / 6, 0.33);
+    fillNoise(0);
+    moveFractionalNoise(MOVE_X, fb.cfg.w() / 6);
+    moveFractionalNoise(MOVE_Y, fb.cfg.h() / 6, 0.33);
   // }
 
   return true;

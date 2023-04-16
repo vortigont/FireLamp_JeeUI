@@ -207,8 +207,6 @@ namespace EffectMath {
     void drawPixelXY(int16_t x, int16_t y, const CRGB &color); // функция отрисовки точки по координатам X Y
 
 
-    void MoveFractionalNoise(bool scale, const uint8_t noise3d[][WIDTH][HEIGHT], int8_t amplitude, float shift = 0);
-  
   
     /*      UNUSED or obsolete      */
     // функция возвращает true, если float ~= целое (первая цифра после запятой == 0)
@@ -224,6 +222,7 @@ namespace EffectMath {
     CRGB getPixColorXYF(float x, float y);
 */
 
+    // TODO
 
     // Вариант субпикселя от @stepko, в некоторых случаях работает лучше, но в некоторых хуже
     void sDrawPixelXYF(float x, float y, const CRGB &color); 

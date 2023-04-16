@@ -161,40 +161,6 @@ uint8_t mapsincos8(bool map, uint8_t theta, uint8_t lowest, uint8_t highest) {
   return lowest + scale8(beat, highest - lowest);
 }
 
-void MoveFractionalNoise(bool _scale, const uint8_t noise3d[][WIDTH][HEIGHT], int8_t amplitude, float shift) {
-  uint8_t zD, zF;
-  CRGB *leds = getUnsafeLedsArray(); // unsafe
-  CRGB ledsbuff[num_leds];
-  uint16_t _side_a = _scale ? HEIGHT : WIDTH;
-  uint16_t _side_b = _scale ? WIDTH : HEIGHT;
-
-  for(uint8_t i=0; i<NUM_LAYERS; i++)
-    for (uint16_t a = 0; a < _side_a; a++) {
-      uint8_t _pixel = _scale ? noise3d[i][0][a] : noise3d[i][a][0];
-      int16_t amount = ((int16_t)(_pixel - 128) * 2 * amplitude + shift * 256);
-      int8_t delta = ((uint16_t)fabs(amount) >> 8) ;
-      int8_t fraction = ((uint16_t)fabs(amount) & 255);
-      for (uint8_t b = 0 ; b < _side_b; b++) {
-        if (amount < 0) {
-          zD = b - delta; zF = zD - 1;
-        } else {
-          zD = b + delta; zF = zD + 1;
-        }
-        CRGB PixelA = CRGB::Black  ;
-        if ((zD >= 0) && (zD < _side_b))
-          PixelA = _scale ? getPixel(zD%WIDTH, a%HEIGHT) : getPixel(a%WIDTH, zD%HEIGHT);
-
-        CRGB PixelB = CRGB::Black ;
-        if ((zF >= 0) && (zF < _side_b))
-          PixelB = _scale ? getPixel(zF%WIDTH, a%HEIGHT) : getPixel(a%WIDTH, zF%HEIGHT);
-        uint16_t x = _scale ? b : a;
-        uint16_t y = _scale ? a : b;
-        ledsbuff[getPixelNumber(x%WIDTH, y%HEIGHT)] = (PixelA.nscale8(ease8InOutApprox(255 - fraction))) + (PixelB.nscale8(ease8InOutApprox(fraction)));   // lerp8by8(PixelA, PixelB, fraction );
-      }
-    }
-  memcpy(leds, ledsbuff, sizeof(CRGB)* num_leds);
-}
-
 uint8_t ceil8(uint8_t a, uint8_t b){ return a/b + !!(a%b); }
 
 /* kostyamat добавил

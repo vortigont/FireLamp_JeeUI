@@ -466,7 +466,17 @@ public:
 // ***** Парящий огонь, Кровавые Небеса, Радужный Змей и т.п.
 // базис (c) Stefan Petrick
 class EffectComet : public EffectCalc {
-private:
+struct Noise3dMap {
+    uint8_t w, h;
+    std::vector<std::vector<uint8_t>> map;
+    LedFB result;
+    Noise3dMap(uint8_t layers, Mtrx_cfg &c) : w(c.w()), h(c.h()),
+                map(std::vector<std::vector<uint8_t>>(layers, std::vector<uint8_t>(c.w()*c.h()))),
+                result(c) {}
+    // turn x,y into array index
+    size_t xy(uint8_t x, uint8_t y) const { return x*y + x; }
+};
+
     byte hue;
     byte hue2;
     uint8_t eNs_noisesmooth;
@@ -475,11 +485,10 @@ private:
     uint32_t e_z[NUM_LAYERS];
     uint32_t e_scaleX[NUM_LAYERS];
     uint32_t e_scaleY[NUM_LAYERS];
-    uint8_t noise3d[NUM_LAYERS][WIDTH][HEIGHT];
+    Noise3dMap noise3d;
     uint8_t count;
     uint8_t speedy;
-    float spiral;
-    float spiral2;
+    float spiral, spiral2;
     float speedFactor;
     uint8_t _scale = 1;
     uint8_t effId = 1;      // 2, 1-6
@@ -487,11 +496,12 @@ private:
     uint8_t smooth = 1;     // 4, 1-12
     uint8_t blur;           // 5, 1-64
 
-    const uint8_t e_centerX =  (WIDTH / 2) -  ((WIDTH - 1) & 0x01);
-    const uint8_t e_centerY = (HEIGHT / 2) - ((HEIGHT - 1) & 0x01);
+    const uint8_t e_centerX = (fb.cfg.w() / 2) - ((fb.cfg.w() - 1) & 0x01);
+    const uint8_t e_centerY = (fb.cfg.h() / 2) - ((fb.cfg.h() - 1) & 0x01);
 
     void drawFillRect2_fast(int8_t x1, int8_t y1, int8_t x2, int8_t y2, CRGB color);
-    void FillNoise(int8_t layer);
+    void fillNoise(int8_t layer);
+    void moveFractionalNoise(bool direction, int8_t amplitude, float shift = 0);
 
     bool rainbowCometRoutine();
     bool rainbowComet3Routine();
@@ -502,7 +512,7 @@ private:
     String setDynCtrl(UIControl*_val) override;
 
 public:
-    EffectComet(LedFB &framebuffer) : EffectCalc(framebuffer){}
+    EffectComet(LedFB &framebuffer) :  EffectCalc(framebuffer), noise3d(NUM_LAYERS, framebuffer.cfg) {}
     void load() override;
     bool run() override;
 };
