@@ -61,9 +61,10 @@ void LAMP::lamp_init(const uint16_t curlimit)
 {
   setcurLimit(curlimit);
 
+  // moved into main.cpp
   //FastLED.addLeds<WS2812B, LAMP_PIN, COLOR_ORDER>(leds, num_leds).setCorrection(TypicalLEDStrip);
   //FastLED.addLeds<WS2812B, LAMP_PIN, COLOR_ORDER>(leds, num_leds).setCorrection(TypicalPixelString);
-  FastLED.addLeds<WS2812B, LAMP_PIN, COLOR_ORDER>(getUnsafeLedsArray(), num_leds);
+  //FastLED.addLeds<WS2812B, LAMP_PIN, COLOR_ORDER>(getUnsafeLedsArray(), num_leds);
 
   brightness(0, false);                          // начинаем с полностью потушеной матрицы 1-й яркости
   if (curlimit > 0){

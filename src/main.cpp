@@ -44,9 +44,12 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 // Led matrix frame buffer
 LedFB mx(WIDTH, HEIGHT);
+// FastLED controller
+CLEDController *cled;
 
-// глобальные переменные для работы с ними в программе
+// объект лампы
 LAMP myLamp(mx);
+
 #ifdef ESP_USE_BUTTON
 Buttons *myButtons;
 #endif
@@ -80,6 +83,11 @@ void setup() {
 #ifdef ESP32
     LOG(printf_P, PSTR("setup: free PSRAM  : %d\n"), ESP.getFreePsram()); // 4194252
 #endif
+
+    // setup LED matrix
+    cled = &FastLED.addLeds<WS2812B, LAMP_PIN, COLOR_ORDER>(mx.data(), mx.size());
+    // hook framebuffer to contoller
+    mx.bind(cled);
 
 #ifdef AUX_PIN
 	pinMode(AUX_PIN, OUTPUT);
