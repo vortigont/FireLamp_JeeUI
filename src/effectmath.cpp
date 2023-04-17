@@ -628,7 +628,7 @@ uint32_t getPixelNumberBuff(uint16_t x, uint16_t y, uint8_t W , uint8_t H) // п
   uint16_t _THIS_Y = y;
   uint16_t _THIS_X = x;
   
-  if ((_THIS_Y % 2 == 0) || MATRIX_TYPE)                     // если чётная строка
+  if ((y % 2 == 0) || MATRIX_TYPE)                     // если чётная строка
   {
       return ((uint32_t)_THIS_Y * SEGMENTS * W + _THIS_X);
   }
@@ -1028,4 +1028,20 @@ bool Boid::bounceOffBorders(float bounce) {
   }
 
   return bounced;
+}
+
+
+/*  non effect */
+
+void Noise3dMap::fillNoise(uint8_t smooth){
+    for (uint8_t l = 0; l != map.size(); ++l ){
+        for (uint8_t i = 0; i < w; i++) {
+            int32_t ioffset = opt[l].e_scaleX * (i - e_centerX);
+            for (uint8_t j = 0; j < h; j++) {
+                int32_t joffset = opt[l].e_scaleY * (j - e_centerY);
+                uint8_t data = inoise16(opt[l].e_x + ioffset, opt[l].e_y + joffset, opt[l].e_z) >> 8;
+                map[l][xy(i,j)] = smooth ? scale8( map[l][xy(i,j)], smooth ) + scale8( data, 255 - smooth ) : data;
+            }
+        }
+    }
 }

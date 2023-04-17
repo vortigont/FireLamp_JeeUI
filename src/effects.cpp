@@ -1391,17 +1391,6 @@ void EffectComet::drawFillRect2_fast(int8_t x1, int8_t y1, int8_t x2, int8_t y2,
   }
 }
 
-void EffectComet::fillNoise(int8_t layer) {
-  for (uint8_t i = 0; i < noise3d.w; i++) {
-    int32_t ioffset = e_scaleX[layer] * (i - e_centerX);
-    for (uint8_t j = 0; j < noise3d.h; j++) {
-      int32_t joffset = e_scaleY[layer] * (j - e_centerY);
-      uint8_t data = inoise16(e_x[layer] + ioffset, e_y[layer] + joffset, e_z[layer]) >> 8;
-      noise3d.map[layer][noise3d.xy(i,j)] = scale8( noise3d.map[layer][noise3d.xy(i,j)], eNs_noisesmooth ) + scale8( data, 255 - eNs_noisesmooth );
-    }
-  }
-}
-
 void EffectComet::moveFractionalNoise(bool direction, int8_t amplitude, float shift) {
   uint8_t zD, zF;
   uint16_t _side_a = direction ? fb.cfg.h() : fb.cfg.w();
@@ -1428,22 +1417,21 @@ void EffectComet::moveFractionalNoise(bool direction, int8_t amplitude, float sh
           PixelB = direction ? fb.pixel(zF%fb.cfg.w(), a%fb.cfg.h()) : fb.pixel(a%fb.cfg.w(), zF%fb.cfg.h());
         uint16_t x = direction ? b : a;
         uint16_t y = direction ? a : b;
-        noise3d.result.pixel(x%fb.cfg.w(), y%fb.cfg.h()) = (PixelA.nscale8(ease8InOutApprox(255 - fraction))) + (PixelB.nscale8(ease8InOutApprox(fraction)));   // lerp8by8(PixelA, PixelB, fraction );
+        result.pixel(x%fb.cfg.w(), y%fb.cfg.h()) = (PixelA.nscale8(ease8InOutApprox(255 - fraction))) + (PixelB.nscale8(ease8InOutApprox(fraction)));   // lerp8by8(PixelA, PixelB, fraction );
       }
     }
 
   // flip the buffer
-  fb.swap(std::move(noise3d.result));
+  fb.swap(std::move(result));
 }
 
 void EffectComet::load() {
-  eNs_noisesmooth = 200;
-  for (uint8_t i = 0; i < NUM_LAYERS; i++) {
-    e_x[i] = random16();
-    e_y[i] = random16();
-    e_z[i] = random16();
-    e_x[i] = 6000;
-    e_y[i] = 6000;
+  for (auto &i : noise3d.opt){
+    i.e_x = random16();
+    i.e_y = random16();
+    i.e_z = random16();
+    i.e_scaleX = 6000;
+    i.e_scaleY = 6000;
   }
 }
 
@@ -1524,13 +1512,14 @@ bool EffectComet::smokeRoutine() {
   
   // скорость движения по массиву noise
   // if(!isDebug()){
-    e_x[0] += 1000 * speedFactor; //1000;
-    e_y[0] += 1000 * speedFactor; //1000;
-    e_z[0] += 1000 * speedFactor; //1000;
-    e_scaleX[0] = 2000 * (blur/5);//12000;
-    e_scaleY[0] = 1333 * smooth;
+    noise3d.opt[0].e_x += 1000 * speedFactor; //1000;
+    noise3d.opt[0].e_y += 1000 * speedFactor; //1000;
+    noise3d.opt[0].e_z += 1000 * speedFactor; //1000;
+    noise3d.opt[0].e_scaleX = 2000 * (blur/5);//12000;
+    noise3d.opt[0].e_scaleY = 1333 * smooth;
 
-    fillNoise(0);
+    // fill noise map
+    noise3d.fillNoise(eNs_noisesmooth);
 
     moveFractionalNoise(MOVE_X, fb.cfg.w() / (getCtrlVal(3).toInt() + 2));//4
     moveFractionalNoise(MOVE_Y, fb.cfg.h() / 8, 0.33);//4
@@ -1556,14 +1545,14 @@ bool EffectComet::firelineRoutine() {
   }
   // Noise
   float beat2 = (10.0 -  (float)beatsin88(3 * speedy, 10, 20)) / 10.;
-  e_x[0] += 12 * speedy; // 3000;
-  e_y[0] += 12 * speedy; // 3000;
-  e_z[0] += 12 * speedy; // 3000;
-  e_scaleX[0] = 1333 * smooth; // 8000
-  e_scaleY[0] = 1333 * smooth; // 8000;
+  noise3d.opt[0].e_x += 12 * speedy; // 3000;
+  noise3d.opt[0].e_y += 12 * speedy; // 3000;
+  noise3d.opt[0].e_z += 12 * speedy; // 3000;
+  noise3d.opt[0].e_scaleX = 1333 * smooth; // 8000
+  noise3d.opt[0].e_scaleY = 1333 * smooth; // 8000;
   count ++;
 
-  fillNoise(0);
+  noise3d.fillNoise(eNs_noisesmooth);
 
   moveFractionalNoise(MOVE_Y, 3);
   moveFractionalNoise(MOVE_X, 3, beat2);
@@ -1587,11 +1576,11 @@ bool EffectComet::fractfireRoutine() {
     fb.pixel(i, fb.cfg.maxHeightIndex()) += CHSV(hue + i * 2, colorId == 255 ? 64 : 255, 255);
   }
   // Noise
-  e_y[0] += 12 * speedy; // 3000;
-  e_z[0] += 12 * speedy; // 3000;
-  e_scaleX[0] = 1333 * smooth; // 8000;
-  e_scaleY[0] = 1333 * smooth; // 8000;
-  fillNoise(0);
+  noise3d.opt[0].e_y += 12 * speedy; // 3000;
+  noise3d.opt[0].e_z += 12 * speedy; // 3000;
+  noise3d.opt[0].e_scaleX = 1333 * smooth; // 8000;
+  noise3d.opt[0].e_scaleY = 1333 * smooth; // 8000;
+  noise3d.fillNoise(eNs_noisesmooth);
 
   moveFractionalNoise(MOVE_Y, 2, beat);
   moveFractionalNoise(MOVE_X, 3);
@@ -1619,12 +1608,12 @@ bool EffectComet::flsnakeRoutine() {
     }
   }
   // Noise
-  e_x[0] += 12 * speedy; // 3000;
-  e_y[0] += 12 * speedy; // 3000;
-  e_z[0] += 12 * speedy; // 3000;
-  e_scaleX[0] = 1333 * smooth; //8000;
-  e_scaleY[0] = 1333 * smooth; //8000;
-  fillNoise(0);
+  noise3d.opt[0].e_x += 12 * speedy; // 3000;
+  noise3d.opt[0].e_y += 12 * speedy; // 3000;
+  noise3d.opt[0].e_z += 12 * speedy; // 3000;
+  noise3d.opt[0].e_scaleX = 1333 * smooth; // 8000
+  noise3d.opt[0].e_scaleY = 1333 * smooth; // 8000;
+  noise3d.fillNoise(eNs_noisesmooth);
 
   moveFractionalNoise(MOVE_X, 5);
   moveFractionalNoise(MOVE_Y, 5);
@@ -1663,12 +1652,12 @@ bool EffectComet::rainbowCometRoutine()
 
   // if(!isDebug()){
     // Noise
-    e_x[0] += 12 * speedy; // 2000;
-    e_y[0] += 12 * speedy; // 2000;
-    e_z[0] += 12 * speedy; // 2000;
-    e_scaleX[0] = 667 * smooth; //4000;
-    e_scaleY[0] = 667 * smooth; //4000;
-    fillNoise(0);
+    noise3d.opt[0].e_x += 12 * speedy; // 3000;
+    noise3d.opt[0].e_y += 12 * speedy; // 3000;
+    noise3d.opt[0].e_z += 12 * speedy; // 3000;
+    noise3d.opt[0].e_scaleX = 667 * smooth; // 8000
+    noise3d.opt[0].e_scaleY = 667 * smooth; // 8000;
+    noise3d.fillNoise(eNs_noisesmooth);
     moveFractionalNoise(MOVE_X, fb.cfg.w() / 3U);
     moveFractionalNoise(MOVE_Y, fb.cfg.h() / 3U, 0.5);
   // }
@@ -1711,14 +1700,14 @@ bool EffectComet::rainbowComet3Routine()
   EffectMath::drawPixelXYF(xx, yy, color, fb, 0);
 
   // if(!isDebug()){
-    e_x[0] += 3000 * speedFactor;
-    e_y[0] += 3000 * speedFactor;
-    e_z[0] += 3000 * speedFactor;
-    e_scaleX[0] = 667 * smooth; // 4000;
-    e_scaleY[0] = 667 * smooth; // 4000;
-    fillNoise(0);
-    moveFractionalNoise(MOVE_X, fb.cfg.w() / 6);
-    moveFractionalNoise(MOVE_Y, fb.cfg.h() / 6, 0.33);
+  noise3d.opt[0].e_x += 3000 * speedFactor;
+  noise3d.opt[0].e_y += 3000 * speedFactor;
+  noise3d.opt[0].e_z += 3000 * speedFactor;
+  noise3d.opt[0].e_scaleX = 667 * smooth; // 4000;
+  noise3d.opt[0].e_scaleY = 667 * smooth; // 4000;
+  noise3d.fillNoise(eNs_noisesmooth);
+  moveFractionalNoise(MOVE_X, fb.cfg.w() / 6);
+  moveFractionalNoise(MOVE_Y, fb.cfg.h() / 6, 0.33);
   // }
 
   return true;
@@ -2306,89 +2295,63 @@ bool EffectFire2018::run()
   // EVERY_N_SECONDS(3){
   //   LOG(printf_P, PSTR("%d %d\n"), _speed, ctrl);
   // }
-
-  noise32_x[0] = 3 * ctrl * _speed;
-  noise32_y[0] = 20 * millis() * _speed;
-  noise32_z[0] = 5 * millis() * _speed;
-  scale32_x[0] = ctrl1 / 2;
-  scale32_y[0] = ctrl2 / 2;
-
-  //calculate the noise data
-  uint8_t layer = 0;
-
-  for (uint8_t i = 0; i < WIDTH; i++)
-  {
-    uint32_t ioffset = scale32_x[layer] * (i - CentreX);
-    for (uint8_t j = 0; j < HEIGHT; j++)
-    {
-      uint32_t joffset = scale32_y[layer] * (j - CentreY);
-      uint16_t data = ((inoise16(noise32_x[layer] + ioffset, noise32_y[layer] + joffset, noise32_z[layer])) + 1);
-      noise3dx[layer][i][j] = data >> 8;
-    }
+  for (auto &i : noise.opt){
+    i.e_x = 3 * ctrl * _speed;
+    i.e_y = 20 * millis() * _speed;
+    i.e_z = 5 * millis() * _speed;
+    i.e_x = ctrl1 / 2;
+    i.e_y = ctrl2 / 2;
+    _speed -= _speed/4;
   }
 
-  // parameters for te brightness mask
-  _speed = _speed - _speed/4;
-  noise32_x[1] = 3 * ctrl * _speed;
-  noise32_y[1] = 20 * millis() * _speed;
-  noise32_z[1] = 5 * millis() * _speed;
-  scale32_x[1] = ctrl1 / 2;
-  scale32_y[1] = ctrl2 / 2;
+  //calculate noise data
+  noise.fillNoise();
 
-  //calculate the noise data
-  layer = 1;
-  for (uint8_t i = 0; i < WIDTH; i++)
+  // shift the buffer one line up, last line goes to first, but we will overwrite it later
+  for (uint8_t y = fb.cfg.maxHeightIndex(); y; --y)
   {
-    uint32_t ioffset = scale32_x[layer] * (i - CentreX);
-    for (uint8_t j = 0; j < HEIGHT; j++)
-    {
-      uint32_t joffset = scale32_y[layer] * (j - CentreY);
-      uint16_t data = ((inoise16(noise32_x[layer] + ioffset, noise32_y[layer] + joffset, noise32_z[layer])) + 1);
-      noise3dx[layer][i][j] = data >> 8;
-    }
+    //for (uint8_t x = 0; x != noise.result.cfg.maxWidthIndex; x++){
+    std::swap(fire18heat[y], fire18heat[y-1]);
+      //fire18heat[EffectMath::getPixelNumberBuff(x, y, WIDTH, HEIGHT)] = fire18heat[EffectMath::getPixelNumberBuff(x, y + 1, WIDTH, HEIGHT)];
+    //}
   }
 
-  // draw lowest line - seed the fire
-  for (uint8_t x = 0; x < WIDTH; x++)
+  // draw lowest line - seed the fire somewhere from the middle of the noise map
+  std::memcpy(fire18heat[0].data(), noise.map[0].data() + noise.xy(0, noise.e_centerY), noise.w);
+/*  for (uint8_t x = 0; x < noise.w; x++)
   {
     fire18heat[EffectMath::getPixelNumberBuff(x, EffectMath::getmaxHeightIndex(), WIDTH, HEIGHT)] = noise3dx[0][EffectMath::getmaxWidthIndex() - x][CentreY - 1]; // хз, почему взято с середины. вожможно, нужно просто с 7 строки вне зависимости от высоты матрицы
-  }
+  }*/
 
-  //copy everything one line up
-  for (uint8_t y = 0; y < EffectMath::getmaxHeightIndex(); y++)
-  {
-    for (uint8_t x = 0; x < WIDTH; x++)
-    {
-      fire18heat[EffectMath::getPixelNumberBuff(x, y, WIDTH, HEIGHT)] = fire18heat[EffectMath::getPixelNumberBuff(x, y + 1, WIDTH, HEIGHT)];
-    }
-  }
 
   //dim
-  for (uint8_t y = 0; y < EffectMath::getmaxHeightIndex(); y++)
-  {
-    for (uint8_t x = 0; x < WIDTH; x++)
+  for (uint8_t y = 0; y != noise.h-1; y++)
+    for (uint8_t x = 0; x != noise.w-1; x++)
     {
-      uint8_t dim = noise3dx[0][x][y];
+      uint8_t dim = 255 - noise.map_lxy(0, x, y) / 1.7 * constrain(0.05*brightness+0.01,0.01,1.0);  // todo: wtf??? this constrain has a range of ~0-20 ints, why floats for this???
+      fire18heat[y][x] = scale8(fire18heat[y][x], dim);
+      //uint8_t dim = noise3dx[0][x][y];
       // high value = high flames
       //dim = dim / 1.7 * constrain(0.05*myLamp.effects.getBrightness()+0.01,0.01,1.0); //точно нужен прямой доступ?
-      dim = dim / 1.7 * constrain(0.05*brightness+0.01,0.01,1.0);
-      dim = 255 - dim;
-      fire18heat[EffectMath::getPixelNumberBuff(x, y, WIDTH, HEIGHT)] = scale8(fire18heat[EffectMath::getPixelNumberBuff(x, y, WIDTH, HEIGHT)], dim);
+      //dim = 255 - dim;
+      //fire18heat[EffectMath::getPixelNumberBuff(x, y, WIDTH, HEIGHT)] = scale8(fire18heat[EffectMath::getPixelNumberBuff(x, y, WIDTH, HEIGHT)], dim);
     }
-  }
 
-  for (uint8_t y = 0; y < HEIGHT; y++)
+  for (uint8_t y = 0; y != noise.h-1; y++)
   {
-    for (uint8_t x = 0; x < WIDTH; x++)
+    for (uint8_t x = 0; x != noise.w-1; x++)
     {
       // map the colors based on heatmap
-      CRGB color = CRGB(fire18heat[EffectMath::getPixelNumberBuff(x, y, WIDTH, HEIGHT)], (float)fire18heat[EffectMath::getPixelNumberBuff(x, y, WIDTH, HEIGHT)] * (scale/5.0) * 0.01, 0); color*=2.5;
-      EffectMath::drawPixelXY(x, EffectMath::getmaxHeightIndex() - y, color);
+      CRGB color(fire18heat[y][x], (float)fire18heat[y][x] * (scale/5.0) * 0.01, 0);  // todo: wtf??? more nifty floats
+      //CRGB color = CRGB(fire18heat[EffectMath::getPixelNumberBuff(x, y, WIDTH, HEIGHT)], (float)fire18heat[EffectMath::getPixelNumberBuff(x, y, WIDTH, HEIGHT)] * (scale/5.0) * 0.01, 0);
+      color*=2.5;
+      //EffectMath::drawPixelXY(x, EffectMath::getmaxHeightIndex() - y, color);
 
       // dim the result based on 2nd noise layer
-      color = fb.pixel(x, EffectMath::getmaxHeightIndex() - y);
-      color.nscale8(noise3dx[1][x][y]);
-      EffectMath::drawPixelXY(x, EffectMath::getmaxHeightIndex() - y, color);
+      //color = fb.pixel(x, EffectMath::getmaxHeightIndex() - y);
+      color.nscale8(noise.map_lxy(1,x,y));
+      fb.pixel(x, y) = color;
+      //EffectMath::drawPixelXY(x, EffectMath::getmaxHeightIndex() - y, color);
     }
   }
   return true;

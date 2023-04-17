@@ -46,7 +46,6 @@ const byte minDim = min(WIDTH, HEIGHT);
 const byte width_adj = (WIDTH < HEIGHT ? (HEIGHT - WIDTH) /2 : 0);
 const byte height_adj = (HEIGHT < WIDTH ? (WIDTH - HEIGHT) /2: 0);
 
-
 //-------------- Специально обученный пустой эффект :)
 class EffectNone : public EffectCalc {
 private:
@@ -465,27 +464,10 @@ public:
 // ***** RAINBOW COMET / РАДУЖНАЯ КОМЕТА *****
 // ***** Парящий огонь, Кровавые Небеса, Радужный Змей и т.п.
 // базис (c) Stefan Petrick
+#define COMET_NOISE_LAYERS  1
 class EffectComet : public EffectCalc {
-struct Noise3dMap {
-    uint8_t w, h;
-    std::vector<std::vector<uint8_t>> map;
-    LedFB result;
-    Noise3dMap(uint8_t layers, Mtrx_cfg &c) : w(c.w()), h(c.h()),
-                map(std::vector<std::vector<uint8_t>>(layers, std::vector<uint8_t>(c.w()*c.h()))),
-                result(c) {}
-    // turn x,y into array index
-    size_t xy(uint8_t x, uint8_t y) const { return x*y + x; }
-};
-
-    byte hue;
-    byte hue2;
-    uint8_t eNs_noisesmooth;
-    uint32_t e_x[NUM_LAYERS];
-    uint32_t e_y[NUM_LAYERS];
-    uint32_t e_z[NUM_LAYERS];
-    uint32_t e_scaleX[NUM_LAYERS];
-    uint32_t e_scaleY[NUM_LAYERS];
-    Noise3dMap noise3d;
+    byte hue, hue2;
+    uint8_t eNs_noisesmooth = 200;
     uint8_t count;
     uint8_t speedy;
     float spiral, spiral2;
@@ -498,6 +480,11 @@ struct Noise3dMap {
 
     const uint8_t e_centerX = (fb.cfg.w() / 2) - ((fb.cfg.w() - 1) & 0x01);
     const uint8_t e_centerY = (fb.cfg.h() / 2) - ((fb.cfg.h() - 1) & 0x01);
+
+    // 3D Noise map
+    Noise3dMap noise3d;
+    // secondary buffer
+    LedFB result;
 
     void drawFillRect2_fast(int8_t x1, int8_t y1, int8_t x2, int8_t y2, CRGB color);
     void fillNoise(int8_t layer);
@@ -512,7 +499,7 @@ struct Noise3dMap {
     String setDynCtrl(UIControl*_val) override;
 
 public:
-    EffectComet(LedFB &framebuffer) :  EffectCalc(framebuffer), noise3d(NUM_LAYERS, framebuffer.cfg) {}
+    EffectComet(LedFB &framebuffer) :  EffectCalc(framebuffer), noise3d(COMET_NOISE_LAYERS, framebuffer.cfg.w(), framebuffer.cfg.w()), result(framebuffer.cfg) {}
     void load() override;
     bool run() override;
 };
@@ -605,23 +592,28 @@ public:
 };
 
 class EffectFire2018 : public EffectCalc {
+#define FIRE_NUM_LAYERS     2
 private:
-  const uint8_t CentreY = HEIGHT / 2 + (HEIGHT % 2);
-  const uint8_t CentreX = WIDTH / 2 + (WIDTH % 2);
+  //const uint8_t centreY = fb.cfg.h() / 2 + (fb.cfg.h() % 2);
+  //const uint8_t centreX = fb.cfg.w() / 2 + (fb.cfg.w() % 2);
   bool isLinSpeed = true;
-
-  uint32_t noise32_x[NUM_LAYERS2];
-  uint32_t noise32_y[NUM_LAYERS2];
-  uint32_t noise32_z[NUM_LAYERS2];
-  uint32_t scale32_x[NUM_LAYERS2];
-  uint32_t scale32_y[NUM_LAYERS2];
-  uint8_t fire18heat[num_leds];
-  uint8_t noise3dx[NUM_LAYERS2][WIDTH][HEIGHT];
+/*
+  uint32_t noise32_x[FIRE_NUM_LAYERS];
+  uint32_t noise32_y[FIRE_NUM_LAYERS];
+  uint32_t noise32_z[FIRE_NUM_LAYERS];
+  uint32_t scale32_x[FIRE_NUM_LAYERS];
+  uint32_t scale32_y[FIRE_NUM_LAYERS];*/
+  // use vector of vectors to take benefit of swap operations
+  std::vector<std::vector<uint8_t>> fire18heat;
+  Noise3dMap noise;
 
   String setDynCtrl(UIControl*_val) override;
 
 public:
-    EffectFire2018(LedFB &framebuffer) : EffectCalc(framebuffer){}
+    EffectFire2018(LedFB &framebuffer) : 
+        EffectCalc(framebuffer),
+        fire18heat(std::vector<std::vector<uint8_t>>(framebuffer.cfg.h(), std::vector<uint8_t>(framebuffer.cfg.w()))),
+        noise(FIRE_NUM_LAYERS, framebuffer.cfg.w(), framebuffer.cfg.h()) {}
     bool run() override;
 };
 

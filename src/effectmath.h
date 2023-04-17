@@ -504,3 +504,35 @@ class Boid {
       // backgroundLayer.drawPixel(location.x, location.y, CRGB::Blue);
     }
 };
+
+// 3D Noise map structure
+struct Noise3dMap {
+    struct Deviation
+    {
+        uint32_t e_x, e_y, e_z;
+        uint32_t e_scaleX, e_scaleY;
+    };
+    
+    const uint8_t w, h;
+    const uint8_t e_centerX = w / 2 + (w % 2);
+    const uint8_t e_centerY = h / 2 + (h % 2);
+    std::vector<Deviation> opt;
+    std::vector<std::vector<uint8_t>> map;
+
+    Noise3dMap(uint8_t layers, uint8_t w, uint8_t h) : w(w), h(h),
+                opt(std::vector<Deviation>(layers)),
+                map(std::vector<std::vector<uint8_t>>(layers, std::vector<uint8_t>(w*h))) {}
+    // turn x,y into array index
+    inline size_t xy(uint8_t x, uint8_t y) const { return w*y + x; }
+
+    // return a reference to map element via layer,x,y coordinates
+    uint8_t &map_lxy(uint8_t layer, uint8_t x, uint8_t y){ return map[layer].at(w*y + x); }
+
+    /**
+     * @brief fill noise map
+     * 
+     * @param smooth if > 0 apply smooth 
+     */
+    void fillNoise(uint8_t smooth = 0);
+
+};
