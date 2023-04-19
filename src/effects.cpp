@@ -1417,7 +1417,7 @@ void EffectComet::moveFractionalNoise(bool direction, int8_t amplitude, float sh
           PixelB = direction ? fb.pixel(zF%fb.cfg.w(), a%fb.cfg.h()) : fb.pixel(a%fb.cfg.w(), zF%fb.cfg.h());
         uint16_t x = direction ? b : a;
         uint16_t y = direction ? a : b;
-        result.pixel(x%fb.cfg.w(), y%fb.cfg.h()) = (PixelA.nscale8(ease8InOutApprox(255 - fraction))) + (PixelB.nscale8(ease8InOutApprox(fraction)));   // lerp8by8(PixelA, PixelB, fraction );
+        result.pixel(x%fb.cfg.w(), y%fb.cfg.h()) = PixelA.nscale8(ease8InOutApprox(255 - fraction)) + PixelB.nscale8(ease8InOutApprox(fraction));   // lerp8by8(PixelA, PixelB, fraction );
       }
     }
 
@@ -1641,7 +1641,7 @@ bool EffectComet::rainbowCometRoutine()
   if (colorId == 255) {
     _eNs_color= CRGB::White;
   } else if (colorId == 1) {
-    _eNs_color = CHSV(noise3d.map[0][0] * e_com_3DCOLORSPEED , 255, 255);
+    _eNs_color = CHSV(noise3d.map_lxy(0,0,0) * e_com_3DCOLORSPEED , 255, 255);
   } else if (colorId >1 && colorId < 128) {
     _eNs_color = CHSV(millis() / ((uint16_t)colorId + 1U) * 4 + 10, 255, 255);
   } else {
@@ -1676,8 +1676,7 @@ bool EffectComet::rainbowComet3Routine()
   //   FastLED.clear(); // для отладки чистим матрицу, чтобы показать перемещение точек
   // }
 
-  CHSV color;
-  color = rgb2hsv_approximate(CRGB::Green);
+  CHSV color = rgb2hsv_approximate(CRGB::Green);
   if (colorId == 1) color.hue += hue;
   else if (colorId == 255) color.sat = 64;
   else color.hue += colorId;
@@ -2299,8 +2298,8 @@ bool EffectFire2018::run()
     i.e_x = 3 * ctrl * _speed;
     i.e_y = 20 * millis() * _speed;
     i.e_z = 5 * millis() * _speed;
-    i.e_x = ctrl1 / 2;
-    i.e_y = ctrl2 / 2;
+    i.e_scaleX = ctrl1 / 2;
+    i.e_scaleY = ctrl2 / 2;
     _speed -= _speed/4;
   }
 

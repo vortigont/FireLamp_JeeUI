@@ -140,7 +140,7 @@ LedFB::~LedFB(){
     }
 }
 
-uint32_t LedFB::transpose(uint16_t x, uint16_t y) const {
+size_t LedFB::transpose(uint16_t x, uint16_t y) const {
 #if defined(XY_EXTERN)
     return pgm_read_dword(&XYTable[y * cfg._w + x]);
 #elif defined(MATRIXx4)
