@@ -3823,22 +3823,26 @@ bool EffectStar::run() {
 //https://gist.github.com/jasoncoon/0cccc5ba7ab108c0a373
 // !++
 String EffectFireworks::setDynCtrl(UIControl*_val) {
-  if(_val->getId()==3) cnt = EffectCalc::setDynCtrl(_val).toInt();
+  if(_val->getId()==3) {
+    gDot.assign(EffectCalc::setDynCtrl(_val).toInt(), Dot());
+    gDot.shrink_to_fit();
+    sparkGen();
+  }
   else if(_val->getId()==4) flashing = EffectCalc::setDynCtrl(_val).toInt();
   else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
   return String();
 }
-
+/*
 CRGB &Dot::piXY(LedFB &leds, byte x, byte y) {
   x -= PIXEL_X_OFFSET;
   y -= PIXEL_Y_OFFSET;
   return leds.pixel(x,y);
 }
-
+*/
 void Dot::Skyburst( accum88 basex, accum88 basey, saccum78 basedv, CRGB& basecolor, uint8_t dim)
   {
-    yv = (int16_t)0 + (int16_t)random16(1500) - (int16_t)500;
-    xv = basedv + (int16_t)random16(2000) - (int16_t)1000;
+    yv = 0 + random16(1500) - 500;
+    xv = basedv + random16(2000) - 1000;
     y = basey;
     x = basex;
     color = basecolor;
@@ -3848,19 +3852,17 @@ void Dot::Skyburst( accum88 basex, accum88 basey, saccum78 basedv, CRGB& basecol
     show = 1;
   }
 
-void Dot::GroundLaunch(DOTS_STORE &store)
-  {
+void Dot::GroundLaunch(DotsStore &store){
     yv = 600 + random16(400 + (25 * HEIGHT));
     if(yv > 1200) yv = 1200;
-    xv = (int16_t)random16(600) - (int16_t)300;
+    xv = random16(600) - 300;
     y = 0;
     x = 0x8000;
     color = CHSV(0, 0, 130); // цвет запускаемого снаряда
     show = 1;
-  }
+}
 
-  void Dot::Move(DOTS_STORE &store, bool Flashing)
-  {
+void Dot::Move(DotsStore &store, bool flashing){
     if( !show) return;
     yv -= gGravity;
     xv = scale15by8_local( xv, gDrag);
@@ -3890,7 +3892,7 @@ void Dot::GroundLaunch(DOTS_STORE &store)
       // pinnacle
       if( theType == 1 ) {
 
-        if( (y > (uint16_t)(0x8000)) && (random8() < 32) && Flashing) {
+        if( (y > (uint16_t)(0x8000)) && (random8() < 32) && flashing) {
           // boom
           LEDS.showColor( CRGB::Gray);
           LEDS.showColor( CRGB::Black);
@@ -3917,41 +3919,40 @@ void Dot::GroundLaunch(DOTS_STORE &store)
       x += xv;
     }
     y += yv;
+}
 
-  }
-
-void Dot::Draw(LedFB &leds){
-    if( !show) return;
+void EffectFireworks::draw(Dot &d){
+    if( !d.show) return;
     byte ix, xe, xc;
     byte iy, ye, yc;
-    screenscale( x, MODEL_WIDTH, ix, xe);
-    screenscale( y, MODEL_HEIGHT, iy, ye);
+    _screenscale( d.x, _model_w(), ix, xe);
+    _screenscale( d.y, _model_h(), iy, ye);
     yc = 255 - ye;
     xc = 255 - xe;
 
-    CRGB c00 = CRGB( dim8_video( scale8( scale8( color.r, yc), xc)),
-                     dim8_video( scale8( scale8( color.g, yc), xc)),
-                     dim8_video( scale8( scale8( color.b, yc), xc))
+    CRGB c00 = CRGB( dim8_video( scale8( scale8( d.color.r, yc), xc)),
+                     dim8_video( scale8( scale8( d.color.g, yc), xc)),
+                     dim8_video( scale8( scale8( d.color.b, yc), xc))
                      );
-    CRGB c01 = CRGB( dim8_video( scale8( scale8( color.r, ye), xc)),
-                     dim8_video( scale8( scale8( color.g, ye), xc)),
-                     dim8_video( scale8( scale8( color.b, ye), xc))
-                     );
-
-    CRGB c10 = CRGB( dim8_video( scale8( scale8( color.r, yc), xe)),
-                     dim8_video( scale8( scale8( color.g, yc), xe)),
-                     dim8_video( scale8( scale8( color.b, yc), xe))
-                     );
-    CRGB c11 = CRGB( dim8_video( scale8( scale8( color.r, ye), xe)),
-                     dim8_video( scale8( scale8( color.g, ye), xe)),
-                     dim8_video( scale8( scale8( color.b, ye), xe))
+    CRGB c01 = CRGB( dim8_video( scale8( scale8( d.color.r, ye), xc)),
+                     dim8_video( scale8( scale8( d.color.g, ye), xc)),
+                     dim8_video( scale8( scale8( d.color.b, ye), xc))
                      );
 
-    piXY(leds, ix, iy) += c00;
-    piXY(leds, ix, iy + 1) += c01;
-    piXY(leds, ix + 1, iy) += c10;
-    piXY(leds, ix + 1, iy + 1) += c11;
-  }
+    CRGB c10 = CRGB( dim8_video( scale8( scale8( d.color.r, yc), xe)),
+                     dim8_video( scale8( scale8( d.color.g, yc), xe)),
+                     dim8_video( scale8( scale8( d.color.b, yc), xe))
+                     );
+    CRGB c11 = CRGB( dim8_video( scale8( scale8( d.color.r, ye), xe)),
+                     dim8_video( scale8( scale8( d.color.g, ye), xe)),
+                     dim8_video( scale8( scale8( d.color.b, ye), xe))
+                     );
+
+    fb.pixel(ix - _x_offset(), iy - _y_offset()) += c00;          //piXY(leds, ix, iy) 
+    fb.pixel(ix - _x_offset(), iy + 1 - _y_offset()) += c01;      //piXY(leds, ix, iy + 1) += c01;
+    fb.pixel(ix + 1 - _x_offset(), iy - _y_offset()) += c10;      //piXY(leds, ix + 1, iy) += c10;
+    fb.pixel(ix + 1 - _x_offset(), iy + 1 - _y_offset()) += c11;  //piXY(leds, ix + 1, iy + 1) += c11;
+}
 
 bool EffectFireworks::run()
 {
@@ -3960,27 +3961,27 @@ bool EffectFireworks::run()
   EVERY_N_MILLISECONDS(EFFECTS_RUN_TIMER * 10) {
     valDim = random8(25, 50);
   }
-  EVERY_N_MILLISECONDS(10) {
+  //EVERY_N_MILLISECONDS(10) {    // WHY?
     return fireworksRoutine();
-  }
-  return false;
+  //}
+  //return false;
 }
 
 void EffectFireworks::sparkGen() {
-  for (byte c = 0; c < cnt; c++) {
-    if( gDot[c].show == 0 ) {
-      if( launchcountdown[c] == 0) {
-        gDot[c].GroundLaunch(this->store);
-        gDot[c].theType = 1;
-        launchcountdown[c] = random16(1200 - speed*4) + 1;
+  for (auto &c : gDot){
+    if( c.show == 0 ) {
+      if( c.cntdown == 0) {
+        c.GroundLaunch(store);
+        c.theType = 1;
+        c.cntdown = random16(1200 - speed*4) + 1;
       } else {
-        launchcountdown[c] --;
+        --c.cntdown;
       }
     }
   }
 
   if( store.gSkyburst) {
-    byte nsparks = random8( NUM_SPARKS / 2, NUM_SPARKS + 1);
+    byte nsparks = random8( gSparks.size() / 2, gSparks.size() - 1);
     for( byte b = 0; b < nsparks; b++) {
       store.gBurstcolor = CHSV(random8(), 200, 100);
       gSparks[b].Skyburst( store.gBurstx, store.gBursty, store.gBurstyv, store.gBurstcolor, dim);
@@ -3995,17 +3996,24 @@ bool EffectFireworks::fireworksRoutine()
 
   fb.fade(valDim);
   sparkGen();
-  //memset8( leds, 0, num_leds * 3);
 
-  for (byte a = 0; a < cnt; a++) {
-    gDot[a].Move(store, flashing);
-    gDot[a].Draw(fb);
+  for (auto &a : gDot){
+    a.Move(store, flashing);
+    draw(a);
   }
-  for( byte b = 0; b < NUM_SPARKS; b++) {
-    gSparks[b].Move(store, flashing);
-    gSparks[b].Draw(fb);
+
+  for( auto &b : gSparks) {
+    b.Move(store, flashing);
+    draw(b);
   }
     return true;
+}
+
+void EffectFireworks::_screenscale(accum88 a, byte N, byte &screen, byte &screenerr){
+  byte ia = a >> 8;
+  screen = scale8(ia, N);
+  byte m = screen * (256 / N);
+  screenerr = (ia - m) * scale8(255, N);
 }
 
 // ------------ Эффект "Тихий Океан"

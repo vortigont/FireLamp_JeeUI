@@ -872,81 +872,74 @@ public:
 };
 
 //---------- Эффект "Фейерверк"
-//адаптация и переписал - kostyamat
-//https://gist.github.com/jasoncoon/0cccc5ba7ab108c0a373
-typedef struct _DOTS_STORE {
+// адаптация и переписал - kostyamat
+// https://gist.github.com/jasoncoon/0cccc5ba7ab108c0a373
+// vortigont переписал за kostyamat'ом
+
+#define MIN_RCKTS   2U
+#define MAX_RCKTS   8U     // максимальное количество снарядов
+#define NUM_SPARKS  16U    // количество разлитающихся петард (частей снаряда)
+
+struct DotsStore {
     accum88 gBurstx;
     accum88 gBursty;
     saccum78 gBurstxv;
     saccum78 gBurstyv;
     CRGB gBurstcolor;
     bool gSkyburst = false;
-} DOTS_STORE;
+};
 
-class Dot {    // класс для создания снарядов и петард
-private:
-  CRGB empty = CRGB(0,0,0);
-public:
-  byte    show;
-  byte    theType;
-  accum88 x;
-  accum88 y;
-  saccum78 xv;
-  saccum78 yv;
-  accum88 r;
-  CRGB color;
+struct Dot {    // класс для создания снарядов и петард
 
-  Dot() {
-    show = 0;
-    theType = 0;
-    x =  0;
-    y =  0;
-    xv = 0;
-    yv = 0;
-    r  = 0;
-    color.setRGB( 0, 0, 0);
-  }
+  static constexpr saccum78 gGravity = 10;
+  static constexpr fract8  gBounce = 127;
+  static constexpr fract8  gDrag = 255;
 
-  void Draw(LedFB &leds);
-  void Move(DOTS_STORE &store, bool Flashing);
-  void GroundLaunch(DOTS_STORE &store);
+  byte    show{0};
+  byte    theType{0};
+  accum88 x{0}, y{0};
+  saccum78 xv{0}, yv{0};
+  accum88 r{0};
+  CRGB color{CRGB::Black};
+  uint16_t cntdown{0};
+
+  //Dot()
+  void Move(DotsStore &store, bool flashing);
+  void GroundLaunch(DotsStore &store);
   void Skyburst( accum88 basex, accum88 basey, saccum78 basedv, CRGB& basecolor, uint8_t dim);
-  CRGB &piXY(LedFB &leds, byte x, byte y);
+  //CRGB &piXY(LedFB &leds, byte x, byte y);
 
-  int16_t scale15by8_local( int16_t i, fract8 _scale )
-  {
-    int16_t result;
-    result = (int32_t)((int32_t)i * _scale) / 256;
-    return result;
-  };
-
-  void screenscale(accum88 a, byte N, byte &screen, byte &screenerr)
-  {
-    byte ia = a >> 8;
-    screen = scale8(ia, N);
-    byte m = screen * (256 / N);
-    screenerr = (ia - m) * scale8(255, N);
-    return;
-  };
+  int16_t scale15by8_local( int16_t i, fract8 _scale ){ return (i * _scale / 256); };
 };
 
 class EffectFireworks : public EffectCalc {
+//#define MODEL_BORDER (fb.cfg.w() - 4U)  
+//#define MODEL_WIDTH  (2*MODEL_BORDER + fb.cfg.w()) // не трогать, - матиматика
+//#define MODEL_HEIGHT (2*MODEL_BORDER + fb.cfg.h()) // -//-
+//#define PIXEL_X_OFFSET ((MODEL_WIDTH  - fb.cfg.w() ) / 2) // -//-
+//#define PIXEL_Y_OFFSET ((MODEL_HEIGHT - fb.cfg.h()) / 2) // -//-
 
-private:
-    DOTS_STORE store;
-    uint16_t launchcountdown[SPARK];
+    DotsStore store;
     byte dim;
     uint8_t valDim;
-    uint8_t cnt;
+    //uint8_t cnt;
     bool flashing = false;
     bool fireworksRoutine();
     void sparkGen();
-    Dot gDot[SPARK];
-    Dot gSparks[NUM_SPARKS];
+    std::vector<Dot> gDot;
+    std::vector<Dot> gSparks;
+    //Dot gDot[MAX_RCKTS];
+    //Dot gSparks[NUM_SPARKS];
     String setDynCtrl(UIControl*_val) override;
+    void draw(Dot &d);
+    int16_t _model_w(){ return 2*(fb.cfg.w() - 4) + fb.cfg.w(); };  // как далеко за экран может вылетить снаряд, если снаряд вылетает за экран, то всышка белого света (не особо логично)
+    int16_t _model_h(){ return 2*(fb.cfg.h() - 4) + fb.cfg.h(); };
+    int16_t _x_offset(){ return (_model_w()-fb.cfg.w())/2; };
+    int16_t _y_offset(){ return (_model_h()-fb.cfg.h())/2; };
+    void _screenscale(accum88 a, byte N, byte &screen, byte &screenerr);
 
 public:
-    EffectFireworks(LedFB &framebuffer) : EffectCalc(framebuffer){}
+    EffectFireworks(LedFB &framebuffer) : EffectCalc(framebuffer), gDot(std::vector<Dot>(MIN_RCKTS)), gSparks(std::vector<Dot>(NUM_SPARKS)) {}
     //void load() override;
     bool run() override;
 };

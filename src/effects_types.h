@@ -417,22 +417,6 @@ static const char* const T_EFFUICFG[] PROGMEM = {
 #define CENTER_DRIFT_SPEED 6U         // скорость перемещения плавающего центра возникновения звёзд
 #define STAR_BLENDER 128U             // хз что это
 
-//---------- Эффект "Фейерверк" адаптация kostyamat
-//https://gist.github.com/jasoncoon/0cccc5ba7ab108c0a373
-
-#define MODEL_BORDER (HEIGHT - 4U)  // как далеко за экран может вылетить снаряд, если снаряд вылетает за экран, то всышка белого света (не особо логично)
-#define MODEL_WIDTH  (MODEL_BORDER + WIDTH  + MODEL_BORDER) // не трогать, - матиматика
-#define MODEL_HEIGHT (MODEL_BORDER + HEIGHT + MODEL_BORDER) // -//-
-#define PIXEL_X_OFFSET ((MODEL_WIDTH  - WIDTH ) / 2) // -//-
-#define PIXEL_Y_OFFSET ((MODEL_HEIGHT - HEIGHT) / 2) // -//-
-
-#define SPARK 8U // максимальное количество снарядов
-#define NUM_SPARKS WIDTH // количество разлитающихся петард (частей снаряда)
-const saccum78 gGravity = 10;
-const fract8  gBounce = 127;
-const fract8  gDrag = 255;
-
-
 // ---- Эффект "Мотыльки"
 // (с) Сотнег, https://community.alexgyver.ru/threads/wifi-lampa-budilnik-obsuzhdenie-proekta.1411/post-49262
 #define BUTTERFLY_MAX_COUNT           (64U) // максимальное количество мотыльков
