@@ -1034,13 +1034,13 @@ bool Boid::bounceOffBorders(float bounce) {
 /*  non effect */
 
 void Noise3dMap::fillNoise(uint8_t smooth){
-  for (uint8_t l = 0; l != map.size(); ++l ){
-    for (uint8_t i = 0; i < w; i++) {
-      int32_t ioffset = opt[l].e_scaleX * (i - e_centerX);
-      for (uint8_t j = 0; j < h; j++) {
-        int32_t joffset = opt[l].e_scaleY * (j - e_centerY);
-        uint8_t data = inoise16(opt[l].e_x + ioffset, opt[l].e_y + joffset, opt[l].e_z) >> 8;
-        map_lxy(l,i,j) = smooth ? scale8( map_lxy(l,i,j), smooth ) + scale8( data, 255 - smooth ) : data;
+  for (auto l = 0; l != map.size(); ++l ){
+    for (uint8_t y = 0; y < h; ++y) {
+      int32_t yoffset = opt[l].e_scaleY * (y - e_centerY);
+      for (uint8_t x = 0; x < w; ++x) {
+        int32_t xoffset = opt[l].e_scaleX * (x - e_centerX);
+        uint8_t data = (inoise16(opt[l].e_x + xoffset, opt[l].e_y + yoffset, opt[l].e_z) + 1) >> 8;
+        map_lxy(l,y,x) = smooth ? scale8( map[l][xy(x,y)], smooth ) + scale8( data, 255 - smooth ) : data;
       }
     }
   }
