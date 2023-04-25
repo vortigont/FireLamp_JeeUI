@@ -2442,3 +2442,13 @@ public:
     void load() override;
     bool run() override;
 };
+
+/* Эффект "Цветение"
+т.к. эффект отсутсвует, ставим сюда настроечную таблицу для проверки ориентации матрицы
+*/
+class EffectMira : public EffectCalc {
+public:
+    EffectMira(LedFB &framebuffer) : EffectCalc(framebuffer){}
+    void load() override;
+    bool run() override { return false; };
+};

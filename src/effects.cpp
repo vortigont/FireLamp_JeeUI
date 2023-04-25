@@ -8619,3 +8619,19 @@ float EffectSplashBals::dist(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2) {
   a += b;
   return EffectMath::sqrt(a);
 };
+
+// Effect Mira
+void EffectMira::load(){
+    // 0,0
+    fb.pixel(0,0) = fb.pixel(1,0) = fb.pixel(2,0) = fb.pixel(2,0) = fb.pixel(0,1) = CRGB::Red;
+
+    // w,0
+    fb.pixel(mx.cfg.w()-3,0) = fb.pixel(mx.cfg.w()-2,0) = fb.pixel(mx.cfg.w()-1,0) = fb.pixel(mx.cfg.w()-1,1) = CRGB::Green;
+
+    // 0,h
+    fb.pixel(1,mx.cfg.h()-2) = fb.pixel(1,mx.cfg.h()-1) = CRGB::Red;
+
+    // w,h
+    fb.pixel(mx.cfg.w()-2,mx.cfg.h()-2) = fb.pixel(mx.cfg.w()-2,mx.cfg.h()-1) = CRGB::Green;
+}
+
