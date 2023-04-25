@@ -476,8 +476,13 @@ EVERY_N_SECONDS(1){
 // !--
 String EffectMatrix::setDynCtrl(UIControl*_val)
 {
-  if(_val->getId()==1) speedFactor = EffectMath::fmap((float)EffectCalc::setDynCtrl(_val).toInt(), 1., 255., 0.06, 0.4)*EffectCalc::speedfactor;
-  else if(_val->getId()==3) _scale = EffectCalc::setDynCtrl(_val).toInt();
+  if(_val->getId()==1) _speed = EffectMath::fmap((float)EffectCalc::setDynCtrl(_val).toInt(), 1., 255., 0.06, 0.4)*EffectCalc::speedfactor;
+  else if(_val->getId()==3){
+    _scale = EffectCalc::setDynCtrl(_val).toInt();
+    lighters.assign( map(_scale, 1, 32, 1, fb.cfg.w()), Lighter() );
+    lighters.shrink_to_fit();
+    load();
+  }
   else if(_val->getId()==4) _hue = EffectCalc::setDynCtrl(_val).toInt();
   else if(_val->getId()==5) gluk = EffectCalc::setDynCtrl(_val).toInt();
   else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
@@ -500,15 +505,14 @@ bool EffectMatrix::run(){
 }
 
 void EffectMatrix::load(){
-  randomSeed(millis());
-  for (uint8_t i = 0U; i < LIGHTERS_AM; i++)
-  {
-    lightersPos[0U][i] = random(0, WIDTH);
-    lightersPos[1U][i] = EffectMath::randomf(HEIGHT - HEIGHT /2, HEIGHT);
-    lightersSpeed[0U][i] = 1;
-    lightersSpeed[1U][i] = (float)random(10, 20) / 10.0f;
-    lightersColor[i] = hue;
-    light[i] = random(196,255);
+  randomSeed(micros());
+  for (auto &i : lighters){
+    i.posX = random(0, fb.cfg.w());
+    i.posY = EffectMath::randomf(fb.cfg.h() - fb.cfg.h() /2, fb.cfg.h());
+    i.spdX = 1;
+    i.spdY = (float)random(10, 20) / 10.0f;
+    i.color = hue;
+    i.light = random(196,255);
   }
 }
 
@@ -519,39 +523,38 @@ bool EffectMatrix::matrixRoutine()
   
   CHSV color;
 
-  for (uint8_t i = 0U; i < map(_scale, 1, 32, 1, LIGHTERS_AM); i++)
-  {
-    lightersPos[1U][i] -= lightersSpeed[1U][i] * speedFactor;
+  for (auto &i : lighters){
+    i.posY -= i.spdY * _speed;
 
     if (white) {
       color = rgb2hsv_approximate(CRGB::Gray);
-      color.val = light[i];
+      color.val = i.light;
     } else if (randColor) {
-      EVERY_N_MILLIS(600*EffectCalc::speedfactor / speedFactor) {
+      EVERY_N_MILLIS(600 * speedfactor / _speed) {
         hue = random(1, 250);
       }
-      color = CHSV(hue, 255, light[i]);
+      color = CHSV(hue, 255, i.light);
     } else {
-      color = CHSV(_hue, 255, light[i]);
+      color = CHSV(_hue, 255, i.light);
     }
 
 
-    EffectMath::drawPixelXYF_Y(lightersPos[0U][i], lightersPos[1U][i], color, fb);
+    EffectMath::drawPixelXYF_Y(i.posX, i.posY, color, fb);
 
     count += speedFactor;
 
     if (gluk > 1 and (uint8_t)count%2 == 0) 
       if (random8() < gluk * 2) {
-        lightersPos[0U][i] = lightersPos[0U][i] + random(-1, 2);
-        light[i] = random(196,255);
+        i.posX = i.posX + random(-1, 2);
+        i.light = random(196,255);
       }
 
-    if(lightersPos[1U][i] < -1) {
-      lightersPos[0U][i] = random(0, WIDTH);
-      lightersPos[1U][i] = EffectMath::randomf(HEIGHT - HEIGHT /2, HEIGHT);
-      lightersSpeed[1U][i] = EffectMath::randomf(1.5, 2.5); 
-      light[i] = random(127U, 255U);
-      lightersColor[i] = hue;
+    if(i.posY < -1) {
+      i.posX = random(0, fb.cfg.maxWidthIndex());
+      i.posY = EffectMath::randomf(fb.cfg.h() - fb.cfg.h() /2, fb.cfg.h());
+      i.spdY = EffectMath::randomf(1.5, 2.5);
+      i.light = random(127U, 255U);
+      i.color = hue;
     }
   }
 
@@ -565,74 +568,76 @@ bool EffectStarFall::run(){
 
 void EffectStarFall::load(){
   randomSeed(millis());
-  for (uint8_t i = 0U; i < LIGHTERS_AM; i++)
-  {
-    lightersPos[0U][i] = random(-(int)WIDTH, WIDTH);
-    lightersPos[1U][i] = random(EffectMath::getmaxHeightIndex(), HEIGHT + 4);
-    lightersSpeed[0U][i] = EffectMath::randomf(-1, 1);  // X
-    lightersSpeed[1U][i] = EffectMath::randomf(1, 2);   // Y
-    lightersColor[i] = random(0U, 255U);
-    light[i] = 255;
+  for (auto &i : lighters){
+    i.posX = random(-fb.cfg.w(), fb.cfg.w());
+    i.posY = random(fb.cfg.maxHeightIndex(), fb.cfg.h() + 4);
+    i.spdX = EffectMath::randomf(-1, 1);  // X
+    i.spdY = EffectMath::randomf(1, 2);   // Y
+    i.color = random(0U, 255U);
+    i.light = 255;
   }
 }
 
 // !++
 String EffectStarFall::setDynCtrl(UIControl*_val) {
-  if(_val->getId()==1) speedFactor = EffectMath::fmap(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 0.25, .5)*EffectCalc::speedfactor;
-  else if(_val->getId()==3) _scale = EffectCalc::setDynCtrl(_val).toInt();
+  if(_val->getId()==1) _speed = EffectMath::fmap(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 0.25, .5)*EffectCalc::speedfactor;
+  else if(_val->getId()==3){
+    _scale = EffectCalc::setDynCtrl(_val).toInt();
+    lighters.assign( map(_scale, 1, 10, LIGHTERS_MAX/8, LIGHTERS_MAX), Lighter() );
+    lighters.shrink_to_fit();
+    load();
+  }
   else if(_val->getId()==4) effId = EffectCalc::setDynCtrl(_val).toInt();
   else if(_val->getId()==5) isNew = EffectCalc::setDynCtrl(_val).toInt();
   else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
   return String();
 }
 
-bool EffectStarFall::snowStormStarfallRoutine()
-{
-  fb.dim(255 - (effId == 2 ? 70 : 60) * speedFactor);
+bool EffectStarFall::snowStormStarfallRoutine(){
+  fb.dim(255 - (effId == 2 ? 70 : 60) * _speed);
   CHSV color;
-  for (uint8_t i = 0U; i < map(_scale, 1, 10, LIGHTERS_AM/8, LIGHTERS_AM); i++) // LIGHTERS_AM
-  {
+  for (auto &i : lighters){
     //color = CHSV((effId > 1 ? lightersColor[i] : 255), (effId > 1 ? light[i] : 0), (effId > 1 ? 255 : light[i]));
     switch (effId)
     {
     case 1:
-      color = CHSV(127, 0, light[i]);
+      color = CHSV(127, 0, i.light);
       break;
     case 2:
-      if (light[i] > 10) { byte tmp = light[i] - 10 * speedFactor; color = CHSV(lightersColor[i], 255 - light[i], tmp); light[i]=tmp; }
+      if (i.light > 10) { byte tmp = i.light - 10 * _speed; color = CHSV(i.color, 255 - i.light, tmp); i.light=tmp; }
       else color = rgb2hsv_approximate( CRGB::Black);
       break;
     case 3:
-      color = CHSV(lightersColor[i], 255, light[i]);
+      color = CHSV(i.color, 255, i.light);
       break;
     default:
       break;
     }
 
     if (isNew) {
-      lightersPos[0U][i] -= lightersSpeed[0U][effId == 1 ? 0 : i] * speedFactor;
-      lightersPos[1U][i] -= 1 * speedFactor;
+      i.spdX -= _speed * (effId == 1 ? lighters[0].spdX : i.spdX);
+      i.posY -= 1 * _speed;
     } else {
-      lightersPos[0U][i] += lightersSpeed[0U][i] * (speedFactor / 2);
-      lightersPos[1U][i] -= lightersSpeed[1U][0] * (speedFactor / 2);
+      i.posX += i.posX * (_speed / 2);
+      i.posY -= i.spdY * (_speed / 2);
     }
 
-    EffectMath::drawPixelXYF(lightersPos[0U][i], lightersPos[1U][i], color, fb, 0);
+    EffectMath::drawPixelXYF(i.posX, i.posY, color, fb, 0);
 
-    if(lightersPos[1U][i] < -1) {
+    if(i.posY < -1) {
       if (isNew) {
-        lightersPos[0U][i] = random(-(int)WIDTH, WIDTH);
-        lightersPos[1U][i] = effId > 1 ? random(HEIGHT / 2, HEIGHT + 4) : random(EffectMath::getmaxHeightIndex(), HEIGHT + 4);
-        lightersSpeed[0U][i] = EffectMath::randomf(-1, 1);  // X
-        lightersSpeed[1U][i] = EffectMath::randomf(1, 2);   // Y
+        i.posX = random(-fb.cfg.w(), fb.cfg.w());
+        i.posY = effId > 1 ? random(fb.cfg.h() / 2, fb.cfg.h() + 4) : random(fb.cfg.maxHeightIndex(), fb.cfg.h() + 4);
+        i.spdX = EffectMath::randomf(-1, 1);  // X
+        i.spdY = EffectMath::randomf(1, 2);   // Y
       } else {
-        lightersPos[0U][i] = (float)random(-(WIDTH * 10 - 2), (WIDTH * 10 - 2)) / 10.0f;
-        lightersPos[1U][i] = random(HEIGHT, HEIGHT + 4);
-        lightersSpeed[0U][i] = (float)random(15, 25) / 10.0f;   // X
-        lightersSpeed[1U][i] = lightersSpeed[0U][i]; // Y
+        i.posX = (float)random(-(fb.cfg.w() * 10 - 2), (fb.cfg.w() * 10 - 2)) / 10.0f;
+        i.posY = random(fb.cfg.h(), fb.cfg.h() + 4);
+        i.spdX = (float)random(15, 25) / 10.0f;   // X
+        i.spdY = i.spdX; // Y
       }
-      lightersColor[i] = random(0U, 255U);
-      light[i] = random(127U, 255U);
+      i.color = random(0U, 255U);
+      i.light = random(127U, 255U);
     }
   }
   return true;
@@ -641,73 +646,75 @@ bool EffectStarFall::snowStormStarfallRoutine()
 // ------------- светлячки --------------
 //#define LIGHTERS_AM           (100U)
 void EffectLighters::load(){
-  randomSeed(millis());
-  for (uint8_t i = 0U; i < LIGHTERS_AM; i++)
-  {
-    lightersIdx=0;
-    lightersPos[0U][i] = random(0, WIDTH);
-    lightersPos[1U][i] = random(0, HEIGHT);
-    lightersSpeed[0U][i] = (float)random(-200, 200) / 10.0f;
-    lightersSpeed[1U][i] = (float)random(-200, 200) / 10.0f;
-    lightersColor[i] = random(0U, 255U);
-    light[i] = random(1U, 3U)*127U;
+  randomSeed(micros());
+  for (auto &i : lighters){
+    i.posX = static_cast<float>(random(0, fb.cfg.w()));
+    i.posY = static_cast<float>(random(0, fb.cfg.h()));
+
+    i.spdX = random(-fb.cfg.w()/2, fb.cfg.w()/2);
+    i.spdY = random(-fb.cfg.h()/2, fb.cfg.h()/2);
+
+    i.color = random(0U, 255U);
+    i.light = random(1U, 3U)*127U;
   }
 }
 
 // !++
 String EffectLighters::setDynCtrl(UIControl*_val) {
   if(_val->getId()==1) speedFactor = ((float)EffectCalc::setDynCtrl(_val).toInt() / 4096.0f + 0.005f)*EffectCalc::speedfactor;
-  else if(_val->getId()==3) cnt = EffectCalc::setDynCtrl(_val).toInt();
+  else if(_val->getId()==3) {
+    lighters.assign(EffectCalc::setDynCtrl(_val).toInt(), Lighter());
+    lighters.shrink_to_fit();
+    load();
+  }
   else if(_val->getId()==4) subPix = EffectCalc::setDynCtrl(_val).toInt();
   else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
   return String();
 }
 
-bool EffectLighters::run()
-{
-  fb.clear();
+bool EffectLighters::run(){
+  fb.fade(50);
 
-  EVERY_N_MILLIS(333)
+  EVERY_N_MILLIS(333)   // randomize lighters motion
   {
-    lightersIdx = (lightersIdx+1)%constrain(cnt,1,LIGHTERS_AM);
-    lightersSpeed[0U][lightersIdx] += random(-10, 10);
-    lightersSpeed[1U][lightersIdx] += random(-10, 10);
-    lightersSpeed[0U][lightersIdx] = fmod(lightersSpeed[0U][lightersIdx], 21);
-    lightersSpeed[1U][lightersIdx] = fmod(lightersSpeed[1U][lightersIdx], 21);
-    light[lightersIdx] = random(255U-(cnt*8),255U);
-    if(!random(cnt+3))
-      light[lightersIdx] = 127;
+    for (auto &i : lighters){
+      i.spdX += random(-fb.cfg.w()/4, fb.cfg.w()/4) + random(0, 10)/10.0;
+      i.spdY += random(-fb.cfg.h()/4, fb.cfg.h()/4) + random(0, 10)/10.0;
+
+      i.spdX = fmod(i.spdX, 21);
+      i.spdY = fmod(i.spdY, 21);
+
+      i.light = random(255U-(lighters.size()*8), 255U);
+      if(!lighters.size())
+        i.light = 127;
+    }
   }
 
-  for (uint8_t i = 0U; i < constrain(cnt,1,LIGHTERS_AM); i++) // масштабируем на LIGHTERS_AM, чтобы не было выхода за диапазон
-  {
-    // EVERY_N_SECONDS(1)
-    // {
-    //   LOG.printf_P("S0:%d S1:%d P0:%3.2f P1:%3.2f, cnt:%3.2f\n", lightersSpeed[0U][i], lightersSpeed[1U][i],lightersPos[0U][i],lightersPos[1U][i],speedFactor);
-    // }
-    lightersPos[0U][i] += lightersSpeed[0U][i]*speedFactor;
-    lightersPos[1U][i] += lightersSpeed[1U][i]*speedFactor;
+  int c = 0;  // some color shifter
+  for (auto &i : lighters){
+    // EVERY_N_SECONDS(1) { LOG.printf_P("S0:%d S1:%d P0:%3.2f P1:%3.2f, cnt:%3.2f\n", lightersSpeed[0U][i], lightersSpeed[1U][i],lightersPos[0U][i],lightersPos[1U][i],speedFactor); }
+    i.posX += i.spdX*speedFactor;
+    i.posY += i.spdY*speedFactor;
 
-    if (lightersPos[0U][i] < 0) lightersPos[0U][i] = (float)EffectMath::getmaxWidthIndex();
-    if (lightersPos[0U][i] >= (float)WIDTH) lightersPos[0U][i] = 0.0f;
+    if (i.posX < 0) i.posX = (float)fb.cfg.maxWidthIndex();
+    if (i.posX > fb.cfg.maxWidthIndex()) i.posX = 0.0f;
 
-    if (lightersPos[1U][i] <= 0.0f)
-    {
-      lightersPos[1U][i] = 0.0f;
-      lightersSpeed[1U][i] = -lightersSpeed[1U][i];
-      lightersSpeed[0U][i] = -lightersSpeed[0U][i];
+    if (i.posY < 0.0f){
+      i.posY = fb.cfg.maxHeightIndex();
+      i.spdY = -i.spdY/10.0;
+      i.spdX = -i.spdX/10.0;
     }
-    if (lightersPos[1U][i] >= (int32_t)(EffectMath::getmaxHeightIndex()))
-    {
-      lightersPos[1U][i] = (EffectMath::getmaxHeightIndex());
-      lightersSpeed[1U][i] = -lightersSpeed[1U][i];
-      lightersSpeed[0U][i] = -lightersSpeed[0U][i];
+    if (i.posY > fb.cfg.maxHeightIndex()){
+      i.posY = 0;
+      i.spdY = -i.spdY/10.0;
+      i.spdX = -i.spdX/10.0;
     }
+    //LOG(printf, "Draw P0:%3.2f P1:%3.2f S0:%3.2f S1:%3.2f\n", lightersPos[0U][i], lightersPos[1U][i], lightersSpeed[0U][i], lightersSpeed[1U][i]);
 
     if (subPix)
-      EffectMath::drawPixelXYF(lightersPos[0U][i], lightersPos[1U][i], CHSV(lightersColor[i], 255U-(i*2), light[i]), fb, 0);
+      EffectMath::drawPixelXYF(i.posX, i.posY, CHSV(i.color, 255U-(++c*2), i.light), fb, 0);
     else
-      EffectMath::drawPixelXY((uint8_t)lightersPos[0U][i], (uint8_t)lightersPos[1U][i], CHSV(lightersColor[i], 255U-(i*2), light[i]));
+      fb.pixel(static_cast<int>(i.posX), static_cast<int>(i.posY)) = CHSV(i.color, 255U-(++c*2), i.light);
   }
   return true;
 }
@@ -4602,6 +4609,7 @@ void EffectPatterns::load() {
    // Цвета с индексом 6 и 7 - случайные, определяются в момент настройки эффекта
   colorMR[6] = CHSV(random8(), 255U, 255U);
   colorMR[7].hue = colorMR[6].hue + 96; //(beatsin8(1, 0, 255, 0, 127), 255U, 255U);
+
   for (byte x = 0; x < 20U; x++)
   {
     for (byte y = 0; y < 20U; y++)

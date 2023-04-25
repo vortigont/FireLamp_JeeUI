@@ -308,20 +308,24 @@ public:
 
 // ------------- класс Светлячки -------------
 // нужен для некоторых эффектов
+#define LIGHTERS_MAX    10
 class EffectLighters : public EffectCalc {
 protected:
-    uint8_t cnt = 1;
+struct Lighter {
+    uint8_t color;
+    uint8_t light;
+    float spdX, spdY;
+    float posX, posY;
+};
+
     bool subPix = false;
-    uint16_t lightersIdx;
-    float lightersSpeed[2U][LIGHTERS_AM];
-    uint8_t lightersColor[LIGHTERS_AM];
-    float lightersPos[2U][LIGHTERS_AM];
-    byte light[LIGHTERS_AM];
-    float speedFactor;
+    //uint16_t lightersIdx;
+    float speedFactor{0.1};
+    std::vector<Lighter> lighters;
 private:
     String setDynCtrl(UIControl*_val) override;
 public:
-    EffectLighters(LedFB &framebuffer) : EffectCalc(framebuffer){}
+    EffectLighters(LedFB &framebuffer) : EffectCalc(framebuffer), lighters(std::vector<Lighter>(10)) {}
     void load() override;
     bool run() override;
 };
@@ -335,8 +339,8 @@ private:
     uint8_t hue, _hue;
     bool randColor = false;
     bool white = false;
-    float count;
-    float speedFactor;
+    float count{0};
+    float _speed{1};
     String setDynCtrl(UIControl*_val) override;
 public:
     EffectMatrix(LedFB &framebuffer) : EffectLighters(framebuffer){}
@@ -351,7 +355,7 @@ private:
     uint8_t effId = 1;
     bool isNew = true;
     float fade;
-    float speedFactor;
+    float _speed{1};
     bool snowStormStarfallRoutine();
     String setDynCtrl(UIControl*_val) override;
 
@@ -1081,6 +1085,7 @@ public:
 // (c) kostyamat (Kostyantyn Matviyevskyy) 2020
 // переделано kDn
 // идея отсюда https://github.com/vvip-68/GyverPanelWiFi/
+#define PATTERNS_BUFFSIZE   20
 class EffectPatterns : public EffectCalc {
 private:
     int8_t patternIdx = -1;
@@ -1092,6 +1097,7 @@ private:
     byte csum = 0;
     byte _bri = 255U;
     byte buff[20 * 20];
+    //LedFB buff(PATTERNS_BUFFSIZE, PATTERNS_BUFFSIZE);
     float xsin, ysin;
     unsigned long lastrun2;
     byte _sc = 0;
