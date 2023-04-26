@@ -2199,23 +2199,18 @@ public:
 // (c) Stepko 10.12.21
 class EffectPuzzles : public EffectCalc {
 private:
-    byte PSizeX = 4;
-    byte PSizeY = 4;
-    float Ecols = (WIDTH / PSizeX);
-    float Erows = (HEIGHT / PSizeY);
-    bool Ca = (WIDTH % PSizeX)? 1 : 0;
-    bool Ra = (HEIGHT % PSizeY)? 1 : 0;
-    uint8_t PCols = round(Ecols) + Ca;
-    uint8_t PRows = round(Erows) + Ra;
+private:
+    const byte psizeX = 4;
+    const byte psizeY = 4;
+    uint8_t pcols, prows;
     float speedFactor = 0.1;
-    std::vector<std::vector<uint8_t>> puzzle = std::vector<std::vector<uint8_t>>(PCols, std::vector<uint8_t>(PRows, 0));
+    std::vector< std::vector<uint8_t> > puzzle;
     byte color;
     byte z_dot[2];
     byte step;
-    int8_t move[2];
+    int8_t move[2] = {0, 0};
     float shift[2] = { 0, 0 };
     bool XorY;
-
 
     void draw_square(byte x1, byte y1, byte x2, byte y2, byte col);
     void draw_squareF(float x1, float y1, float x2, float y2, byte col);
@@ -2224,7 +2219,7 @@ private:
     String setDynCtrl(UIControl*_val) override;
 
 public:
-    EffectPuzzles(LedFB &framebuffer) : EffectCalc(framebuffer){}
+    EffectPuzzles(LedFB &framebuffer) : EffectCalc(framebuffer){ regen(); }
     void load() override;
     bool run() override;
 };

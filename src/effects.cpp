@@ -8112,25 +8112,20 @@ void EffectPuzzles::load() {
 }
 
 void EffectPuzzles::regen() {
-  Ecols = (WIDTH / PSizeX);
-  Erows = (HEIGHT / PSizeY);
-  Ca = (WIDTH % PSizeX)? 1 : 0;
-  Ra = (HEIGHT % PSizeY)? 1 : 0;
-  PCols = round(Ecols) + Ca;
-  PRows = round(Erows) + Ra;
+  pcols = fb.cfg.w() / psizeX + !!(fb.cfg.w() % psizeX);
+  prows = fb.cfg.h() / psizeY + !!(fb.cfg.w() % psizeY);
+
   step = 0;
-  puzzle = std::vector<std::vector<uint8_t>>(PCols, std::vector<uint8_t>(PRows, 0));
+  puzzle = std::vector< std::vector<uint8_t> >(pcols, std::vector<uint8_t>(prows));
 
   byte n = 0;
-  for (byte x = 0; x < PCols; x++) {
-    for (byte y = 0; y < PRows; y++) { 
-      n++;
-      puzzle[x][y] = (255/ (PCols*PRows)) * n; 
+  for (auto &c : puzzle) {
+    for (auto &r : c) { 
+      r = (255/ (pcols*prows)) * ++n; 
     }
   }
-  z_dot[0] = random(0, PCols);
-  z_dot[1] = random(0, PRows);
-
+  z_dot[0] = random(0, pcols);
+  z_dot[1] = random(0, prows);
 }
 
 void EffectPuzzles::draw_square(byte x1, byte y1, byte x2, byte y2, byte col) {
@@ -8155,21 +8150,22 @@ void EffectPuzzles::draw_squareF(float x1, float y1, float x2, float y2, byte co
 }
 
 bool EffectPuzzles::run() { 
-  for (byte x = 0; x < PCols; x++) {
-    for (byte y = 0; y < PRows; y++) {
-      draw_square(x * PSizeX, y * PSizeY, (x + 1) * PSizeX, (y + 1) * PSizeY, puzzle[x][y]);
+  for (byte x = 0; x < pcols; x++) {
+    for (byte y = 0; y < prows; y++) {
+      draw_square(x * psizeX, y * psizeY, (x + 1) * psizeX, (y + 1) * psizeY, puzzle[x][y]);
     }
   }
+
   switch (step) {
     case 0:
       XorY = !XorY;
       if (XorY) {
-        if (z_dot[0] == PCols - 1)
+        if (z_dot[0] == pcols - 1)
           move[0] = -1;
         else if (z_dot[0] == 0) move[0] = 1;
         else move[0] = (move[0] == 0) ? (random8() % 2) * 2 - 1 : move[0];
       } else {
-        if (z_dot[1] == PRows - 1)
+        if (z_dot[1] == prows - 1)
           move[1] = -1;
         else if (z_dot[1] == 0) move[1] = 1;
         else move[1] = (move[1] == 0) ? (random8() % 2) * 2 - 1 : move[1];
@@ -8183,10 +8179,10 @@ bool EffectPuzzles::run() {
       step = 2;
       break;
     case 2:
-      draw_squareF(((z_dot[0] + move[0]) * PSizeX) + shift[0], ((z_dot[1] + move[1]) * PSizeY) + shift[1], ((z_dot[0] + move[0] + 1) * PSizeX) + shift[0], (z_dot[1] + move[1] + 1) * PSizeY + shift[1], color);
+      draw_square(((z_dot[0] + move[0]) * psizeX) + shift[0], ((z_dot[1] + move[1]) * psizeY) + shift[1], ((z_dot[0] + move[0] + 1) * psizeX) + shift[0], (z_dot[1] + move[1] + 1) * psizeY + shift[1], color);
       shift[0] -= (move[0] * speedFactor);
       shift[1] -= (move[1] * speedFactor);
-      if ((fabs(shift[0]) >= WIDTH / PCols) || (fabs(shift[1]) >= HEIGHT / PRows)) {
+      if ((fabs(shift[0]) >= fb.cfg.w() / pcols) || (fabs(shift[1]) >= fb.cfg.h() / prows)) {
         shift[0] = 0;
         shift[1] = 0;
         puzzle[z_dot[0]][z_dot[1]] = color;
@@ -8198,6 +8194,8 @@ bool EffectPuzzles::run() {
       z_dot[1] += move[1];
       step = 0;
       break;
+    default :
+      step = 0;
   }
   return true;
 }
