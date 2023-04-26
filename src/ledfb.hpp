@@ -111,7 +111,7 @@ public:
     LedFB& operator=(LedFB&& rhs);
 
     // create from config struct
-    LedFB(Mtrx_cfg &c) : fb(c.w(), c.h()), cfg(c) {};
+    LedFB(Mtrx_cfg &c) : fb(c.w()*c.h()), cfg(c) {};
 
     // d-tor
     ~LedFB();
