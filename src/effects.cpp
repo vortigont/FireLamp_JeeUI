@@ -607,18 +607,15 @@ bool EffectStarFall::snowStormStarfallRoutine(){
       if (i.light > 10) { byte tmp = i.light - 10 * _speed; color = CHSV(i.color, 255 - i.light, tmp); i.light=tmp; }
       else color = rgb2hsv_approximate( CRGB::Black);
       break;
-    case 3:
-      color = CHSV(i.color, 255, i.light);
-      break;
     default:
-      break;
+      color = CHSV(i.color, 255, i.light);
     }
 
     if (isNew) {
-      i.spdX -= _speed * (effId == 1 ? lighters[0].spdX : i.spdX);
+      i.posX -= _speed * (effId == 1 ? lighters[0].spdX : i.spdX);
       i.posY -= 1 * _speed;
     } else {
-      i.posX += i.posX * (_speed / 2);
+      i.posX += i.spdX * (_speed / 2);
       i.posY -= i.spdY * (_speed / 2);
     }
 
