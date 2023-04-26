@@ -1045,3 +1045,20 @@ void Noise3dMap::fillNoise(uint8_t smooth){
     }
   }
 }
+
+/*
+// print noise map
+void Noise3dMap::printmap(){
+ for (auto z=0; z < map.size(); ++z){
+  Serial.printf("=== map layer:%d", z);
+  for (auto x=0; x < map.at(z).size(); ++x){
+    //Serial.printf("");
+    if (x % w == 0) Serial.printf("\n%u\t|", x % w);
+    Serial.printf("%d\t", map[z][x]);
+    //if (x % noise.w)
+  }
+  Serial.println("");
+  Serial.println("===");
+ }
+}
+*/

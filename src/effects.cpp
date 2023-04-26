@@ -1399,13 +1399,13 @@ void EffectComet::drawFillRect2_fast(int8_t x1, int8_t y1, int8_t x2, int8_t y2,
 }
 
 void EffectComet::moveFractionalNoise(bool direction, int8_t amplitude, float shift) {
-  uint8_t zD, zF;
+  int16_t zD, zF;
   uint16_t _side_a = direction ? fb.cfg.h() : fb.cfg.w();
   uint16_t _side_b = direction ? fb.cfg.w() : fb.cfg.h();
 
   for (auto &i : noise3d.map)
     for (uint16_t a = 0; a < _side_a; a++) {
-      uint8_t _pixel = direction ? i.at(noise3d.xy(0,a)) : i.at(noise3d.xy(a,0));
+      uint8_t _pixel = direction ? i.at(noise3d.xy(a,0)) : i.at(noise3d.xy(0,a));
       int16_t amount = ((int16_t)(_pixel - 128) * 2 * amplitude + shift * 256);
       int8_t delta = ((uint16_t)fabs(amount) >> 8) ;
       int8_t fraction = ((uint16_t)fabs(amount) & 255);
@@ -1415,21 +1415,20 @@ void EffectComet::moveFractionalNoise(bool direction, int8_t amplitude, float sh
         } else {
           zD = b + delta; zF = zD + 1;
         }
-        CRGB PixelA = CRGB::Black  ;
+        //Serial.printf("zD: %d, zF:%d\n", zD, zF);
+        CRGB pixelA(CRGB::Black);
         if ((zD >= 0) && (zD < _side_b))
-          PixelA = direction ? fb.pixel(zD%fb.cfg.w(), a%fb.cfg.h()) : fb.pixel(a%fb.cfg.w(), zD%fb.cfg.h());
+          pixelA = direction ? fb.pixel(zD%fb.cfg.w(), a%fb.cfg.h()) : fb.pixel(a%fb.cfg.w(), zD%fb.cfg.h());
 
-        CRGB PixelB = CRGB::Black ;
+        CRGB pixelB(CRGB::Black);
         if ((zF >= 0) && (zF < _side_b))
-          PixelB = direction ? fb.pixel(zF%fb.cfg.w(), a%fb.cfg.h()) : fb.pixel(a%fb.cfg.w(), zF%fb.cfg.h());
+          pixelB = direction ? fb.pixel(zF%fb.cfg.w(), a%fb.cfg.h()) : fb.pixel(a%fb.cfg.w(), zF%fb.cfg.h());
         uint16_t x = direction ? b : a;
         uint16_t y = direction ? a : b;
-        result.pixel(x%fb.cfg.w(), y%fb.cfg.h()) = PixelA.nscale8(ease8InOutApprox(255 - fraction)) + PixelB.nscale8(ease8InOutApprox(fraction));   // lerp8by8(PixelA, PixelB, fraction );
+        fb.pixel(x, y) = pixelA.nscale8(ease8InOutApprox(255 - fraction)) + pixelB.nscale8(ease8InOutApprox(fraction));   // lerp8by8(PixelA, PixelB, fraction );
+        //Serial.printf("x:%d, y:%d, r:%u g:%u b:%u\n", x, y, result.pixel(x, y).r, result.pixel(x, y).g, result.pixel(x, y).b);
       }
     }
-
-  // flip the buffer
-  fb.swap(std::move(result));
 }
 
 void EffectComet::load() {
@@ -1444,13 +1443,13 @@ void EffectComet::load() {
 
 //!++
 String EffectComet::setDynCtrl(UIControl*_val) {
-  if(_val->getId()==1) speedFactor = EffectMath::fmap((float)EffectCalc::setDynCtrl(_val).toInt(), 1., 255., 0.1, 1.0)*EffectCalc::speedfactor;
+  if(_val->getId()==1) _speed = EffectMath::fmap((float)EffectCalc::setDynCtrl(_val).toInt(), 1., 255., 0.1, 1.0)*EffectCalc::speedfactor;
   else if(_val->getId()==3) {
     _scale = EffectCalc::setDynCtrl(_val).toInt();
     if(_scale==6)
-      speedFactor = EffectMath::fmap(getCtrlVal(1).toInt(), 1., 255., 0.1, .5)*EffectCalc::speedfactor;
+      _speed = EffectMath::fmap(getCtrlVal(1).toInt(), 1., 255., 0.1, .5)*EffectCalc::speedfactor;
     else
-      speedFactor = EffectMath::fmap(getCtrlVal(1).toInt(), 1., 255., 0.1, 1.0)*EffectCalc::speedfactor;  
+      _speed = EffectMath::fmap(getCtrlVal(1).toInt(), 1., 255., 0.1, 1.0)*EffectCalc::speedfactor;  
   }
   else if(_val->getId()==4) colorId = EffectCalc::setDynCtrl(_val).toInt();
   else if(_val->getId()==5) smooth = EffectCalc::setDynCtrl(_val).toInt();
@@ -1502,16 +1501,13 @@ bool EffectComet::smokeRoutine() {
   hsv2rgb_spectrum(CHSV(hue, (colorId == 255) ? 0 : beatsin8(speed, 220, 255, 0, 180), beatsin8(speed / 2, 64, 255)), color);
 
 
-  spiral += 3. * speedFactor ;
+  spiral += 3. * _speed;
   if (random8(fb.cfg.w()) != 0U) // встречная спираль движется не всегда синхронно основной
-    spiral2 += 3. * speedFactor ;
+    spiral2 += 3. * _speed;
 
   for (float i = 0; i < fb.cfg.h(); i+= 0.5) {
     float n = (float)quadwave8(i * 4. + spiral) / (256. / (float)fb.cfg.h() + 1.0);
-    float n2 = (float)quadwave8(i * 5. + beatsin8((smooth*3) * speedFactor)) / (256. / (float)fb.cfg.w() + 1.0);
-
-    EffectMath::drawPixelXYF(n, fb.cfg.maxHeightIndex() - i, color, fb, 0);
-    EffectMath::drawPixelXYF(fb.cfg.maxWidthIndex() - n2, fb.cfg.maxHeightIndex() - i, color, fb, 0);
+    float n2 = (float)quadwave8(i * 5. + beatsin8((smooth*3) * _speed)) / (256. / (float)fb.cfg.w() + 1.0);
 
     EffectMath::drawPixelXYF(n, fb.cfg.maxHeightIndex() - i, color, fb, 0);
     EffectMath::drawPixelXYF(fb.cfg.maxWidthIndex() - n2, fb.cfg.maxHeightIndex() - i, color, fb, 0);
@@ -1519,9 +1515,9 @@ bool EffectComet::smokeRoutine() {
   
   // скорость движения по массиву noise
   // if(!isDebug()){
-    noise3d.opt[0].e_x += 1000 * speedFactor; //1000;
-    noise3d.opt[0].e_y += 1000 * speedFactor; //1000;
-    noise3d.opt[0].e_z += 1000 * speedFactor; //1000;
+    noise3d.opt[0].e_x += 1000 * _speed; //1000;
+    noise3d.opt[0].e_y += 1000 * _speed; //1000;
+    noise3d.opt[0].e_z += 1000 * _speed; //1000;
     noise3d.opt[0].e_scaleX = 2000 * (blur/5);//12000;
     noise3d.opt[0].e_scaleY = 1333 * smooth;
 
@@ -1531,7 +1527,7 @@ bool EffectComet::smokeRoutine() {
     moveFractionalNoise(MOVE_X, fb.cfg.w() / (getCtrlVal(3).toInt() + 2));//4
     moveFractionalNoise(MOVE_Y, fb.cfg.h() / 8, 0.33);//4
 
-    EffectMath::blur2d(fb,64); // без размытия как-то пиксельно, наверное...  
+    EffectMath::blur2d(fb,128); // без размытия как-то пиксельно, наверное...  
   // }
   return true;
 }
@@ -1567,7 +1563,6 @@ bool EffectComet::firelineRoutine() {
 }
 
 bool EffectComet::fractfireRoutine() {
-
   // if(!isDebug()) 
     fb.fade(map(blur, 1, 64, 20, 5)); 
   // else FastLED.clear();
@@ -1579,7 +1574,7 @@ bool EffectComet::fractfireRoutine() {
   }
   else hue = colorId;
 
-  for (uint8_t i = 1; i < WIDTH; i += 2) {
+  for (uint8_t i = 1; i < fb.cfg.w(); i += 2) {
     fb.pixel(i, fb.cfg.maxHeightIndex()) += CHSV(hue + i * 2, colorId == 255 ? 64 : 255, 255);
   }
   // Noise
@@ -1600,9 +1595,9 @@ bool EffectComet::flsnakeRoutine() {
     fb.dim(blur); 
   // else FastLED.clear();
   
-  count ++;
+  ++count;
   if (colorId == 1 or colorId == 255) {
-    if (count%2 == 0) hue ++;
+    if (count%2 == 0) ++hue;
   }
   else hue = colorId;
 
@@ -1657,17 +1652,16 @@ bool EffectComet::rainbowCometRoutine()
 
   drawFillRect2_fast(e_centerX, e_centerY, e_centerX + 1, e_centerY + 1, _eNs_color);
 
-  // if(!isDebug()){
-    // Noise
-    noise3d.opt[0].e_x += 12 * speedy; // 3000;
-    noise3d.opt[0].e_y += 12 * speedy; // 3000;
-    noise3d.opt[0].e_z += 12 * speedy; // 3000;
-    noise3d.opt[0].e_scaleX = 667 * smooth; // 8000
-    noise3d.opt[0].e_scaleY = 667 * smooth; // 8000;
-    noise3d.fillNoise(eNs_noisesmooth);
-    moveFractionalNoise(MOVE_X, fb.cfg.w() / 3U);
-    moveFractionalNoise(MOVE_Y, fb.cfg.h() / 3U, 0.5);
-  // }
+  // Noise
+  noise3d.opt[0].e_x += 12 * speedy; // 3000;
+  noise3d.opt[0].e_y += 12 * speedy; // 3000;
+  noise3d.opt[0].e_z += 12 * speedy; // 3000;
+  noise3d.opt[0].e_scaleX = 667 * smooth; // 8000
+  noise3d.opt[0].e_scaleY = 667 * smooth; // 8000;
+  noise3d.fillNoise(eNs_noisesmooth);
+  //noise3d.printmap();
+  moveFractionalNoise(MOVE_X, fb.cfg.w() / 3U);
+  moveFractionalNoise(MOVE_Y, fb.cfg.h() / 3U, 0.5);
   return true;
 }
 
@@ -1693,28 +1687,26 @@ bool EffectComet::rainbowComet3Routine()
   if (colorId == 1) color.hue += hue;
   else if (colorId == 255) color.sat = 64;
   else color.hue += colorId;
-  float xx = 2. + (float)sin8( millis() / (10. / speedFactor)) / 22.;
-  float yy = 2. + (float)cos8( millis() / (9. / speedFactor)) / 22.;
+  float xx = 2. + (float)sin8( millis() / (10. / _speed)) / 22.;
+  float yy = 2. + (float)cos8( millis() / (9. / _speed)) / 22.;
   EffectMath::drawPixelXYF(xx, yy, color, fb, 0);
 
-  xx = 4. + (float)sin8( millis() / (10. / speedFactor)) / 32.;
-  yy = 4. + (float)sin8( millis() / (7. / speedFactor)) / 32.;
+  xx = 4. + (float)sin8( millis() / (10. / _speed)) / 32.;
+  yy = 4. + (float)sin8( millis() / (7. / _speed)) / 32.;
   color = rgb2hsv_approximate(CRGB::Blue);
   if (colorId == 1) color.hue += hue;
   else if (colorId == 255) color.sat = 64;
   else color.hue += colorId;
   EffectMath::drawPixelXYF(xx, yy, color, fb, 0);
 
-  // if(!isDebug()){
-  noise3d.opt[0].e_x += 3000 * speedFactor;
-  noise3d.opt[0].e_y += 3000 * speedFactor;
-  noise3d.opt[0].e_z += 3000 * speedFactor;
+  noise3d.opt[0].e_x += 3000 * _speed;
+  noise3d.opt[0].e_y += 3000 * _speed;
+  noise3d.opt[0].e_z += 3000 * _speed;
   noise3d.opt[0].e_scaleX = 667 * smooth; // 4000;
   noise3d.opt[0].e_scaleY = 667 * smooth; // 4000;
   noise3d.fillNoise(eNs_noisesmooth);
   moveFractionalNoise(MOVE_X, fb.cfg.w() / 6);
   moveFractionalNoise(MOVE_Y, fb.cfg.h() / 6, 0.33);
-  // }
 
   return true;
 }

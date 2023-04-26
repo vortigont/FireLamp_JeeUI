@@ -473,25 +473,22 @@ class EffectComet : public EffectCalc {
     byte hue, hue2;
     uint8_t eNs_noisesmooth = 200;
     uint8_t count;
-    uint8_t speedy;
+    uint8_t speedy{100};
     float spiral, spiral2;
-    float speedFactor;
-    uint8_t _scale = 1;
+    float _speed{1};
+    uint8_t _scale = 4;     // effect switcher
     uint8_t effId = 1;      // 2, 1-6
     uint8_t colorId;        // 3, 1-255
     uint8_t smooth = 1;     // 4, 1-12
-    uint8_t blur;           // 5, 1-64
+    uint8_t blur{10};           // 5, 1-64
+    // 3D Noise map
+    Noise3dMap noise3d;
 
     const uint8_t e_centerX = (fb.cfg.w() / 2) - ((fb.cfg.w() - 1) & 0x01);
     const uint8_t e_centerY = (fb.cfg.h() / 2) - ((fb.cfg.h() - 1) & 0x01);
 
-    // 3D Noise map
-    Noise3dMap noise3d;
-    // secondary buffer
-    LedFB result;
 
     void drawFillRect2_fast(int8_t x1, int8_t y1, int8_t x2, int8_t y2, CRGB color);
-    void fillNoise(int8_t layer);
     void moveFractionalNoise(bool direction, int8_t amplitude, float shift = 0);
 
     bool rainbowCometRoutine();
@@ -503,7 +500,7 @@ class EffectComet : public EffectCalc {
     String setDynCtrl(UIControl*_val) override;
 
 public:
-    EffectComet(LedFB &framebuffer) :  EffectCalc(framebuffer), noise3d(COMET_NOISE_LAYERS, framebuffer.cfg.w(), framebuffer.cfg.w()), result(framebuffer.cfg) {}
+    EffectComet(LedFB &framebuffer) :  EffectCalc(framebuffer), noise3d(COMET_NOISE_LAYERS, framebuffer.cfg.w(), framebuffer.cfg.w()) {}
     void load() override;
     bool run() override;
 };

@@ -535,4 +535,6 @@ struct Noise3dMap {
      */
     void fillNoise(uint8_t smooth = 0);
 
+    // print noise map (debug)
+    //void printmap();
 };
