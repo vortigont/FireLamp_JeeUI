@@ -6958,6 +6958,13 @@ bool EffectBalls::run() {
 }
 
 // ---------- Эффект-игра "Лабиринт"
+EffectMaze::EffectMaze(LedFB &framebuffer) : EffectCalc(framebuffer),
+  _mwidth(fb.cfg.w()%2 ? fb.cfg.w() : fb.cfg.w()-1),
+  _mheight(fb.cfg.h()%2 ? fb.cfg.h() : fb.cfg.h()-1),
+  maxSolves(_mwidth*_mheight*5),
+  maze(std::vector<uint8_t>(_mwidth*_mheight))
+  {};
+
 void EffectMaze::newGameMaze() {
   playerPos[0] = !MAZE_SHIFT;
   playerPos[1] = !MAZE_SHIFT;
@@ -6965,34 +6972,32 @@ void EffectMaze::newGameMaze() {
   gameOverFlag = false;
   buttons = 4;
 
-  GenerateMaze(maze, MAZE_WIDTH, MAZE_HEIGHT);    // генерировать лабиринт обычным способом
-  SolveMaze(maze, MAZE_WIDTH, MAZE_HEIGHT);       // найти путь
+  GenerateMaze(maze, _mwidth, _mheight);    // генерировать лабиринт обычным способом
+  SolveMaze(maze, _mwidth, _mheight);       // найти путь
 
-  if (!(GAMEMODE || mazeMode)) {
-    for (byte y = 0; y < MAZE_HEIGHT; y++) {
-      for (byte x = 0; x < MAZE_WIDTH; x++) {
-        switch (maze[(y + MAZE_SHIFT) * MAZE_WIDTH + (x + MAZE_SHIFT)]) {
-          case 1:  EffectMath::drawPixelXY(x, y, color); break;
+  if (!(MAZE_GAMEMODE || mazeMode)) {
+    for (byte y = 0; y < _mheight; y++) {
+      for (byte x = 0; x < _mwidth; x++) {
+        switch (maze[(y + MAZE_SHIFT) * _mwidth + (x + MAZE_SHIFT)]) {
+          case 1:  fb.pixel(x, y)= color; break;
           case 2:
-            EffectMath::drawPixelXY(x, y, 0x000000);
+            fb.pixel(x, y) = 0x000000;
             break;
-          default: EffectMath::drawPixelXY(x, y, 0x000000); break;
+          default: fb.pixel(x, y) = 0x000000; break;
         }
       }
       // Отображаем сгенерированный лабиринт строка за строкой
-      FastLED.show();  // стоит убрать, и все начинает мерцать
-      delay(50);
+      //FastLED.show();  // стоит убрать, и все начинает мерцать
+      //delay(50);
     }
 
   } else {
-    for (byte y = 0; y < FOV; y++) {
-      for (byte x = 0; x < FOV; x++) {
-        switch (maze[(y + MAZE_SHIFT) * MAZE_WIDTH + (x + MAZE_SHIFT)]) {
-          case 1:  EffectMath::drawPixelXY(x, y, color);  break;
-          case 2:
-            EffectMath::drawPixelXY(x, y, 0x000000);
-            break;
-          default: EffectMath::drawPixelXY(x, y, 0x000000);  break;
+    for (byte y = 0; y < MAZE_FOV; y++) {
+      for (byte x = 0; x < MAZE_FOV; x++) {
+        switch (maze[(y + MAZE_SHIFT) * _mwidth + (x + MAZE_SHIFT)]) {
+          case 1:  fb.pixel(x, y) = color;  break;
+          default:
+            fb.pixel(x, y) = 0x000000;
         }
       }
     }
@@ -7002,17 +7007,17 @@ void EffectMaze::newGameMaze() {
   // Слева от начальной позиции делаем дыру - это вход
   if (playerPos[0]>0) {
     playerPos[0] = playerPos[0] - 1;
-    EffectMath::drawPixelXY(playerPos[0], playerPos[1], 0x000000);
+    fb.pixel(playerPos[0], playerPos[1]) = 0x000000;
   }
   
-  EffectMath::drawPixelXY(playerPos[0], playerPos[1],  playerColor);
+  fb.pixel(playerPos[0], playerPos[1]) = playerColor;
 
   mazeStarted = false;  
 }
 
 bool EffectMaze::run() {
   if (loadingFlag || gameOverFlag) {  
-    if (loadingFlag) FastLED.clear();
+    if (loadingFlag) fb.clear();
     gameTimer = map(speed, 1, 255, 500, 50);   // установить начальную скорость
     loadingFlag = false;
     newGameMaze();
@@ -7036,8 +7041,8 @@ void EffectMaze::buttonsTickMaze() {
     if (buttons == 3) {   // кнопка нажата
       btnPressed = true;
       int8_t newPos = playerPos[0] - 1;
-      if (newPos >= 0 && newPos <= EffectMath::getmaxWidthIndex())
-        if (fb.pixel(newPos, playerPos[1])) {
+      if (newPos >= 0 && newPos <= fb.cfg.maxWidthIndex())
+        if (!fb.pixel(newPos, playerPos[1])) {
           movePlayer(newPos, playerPos[1], playerPos[0], playerPos[1]);
           playerPos[0] = newPos;
         }
@@ -7045,8 +7050,8 @@ void EffectMaze::buttonsTickMaze() {
     if (buttons == 1) {   // кнопка нажата
       btnPressed = true;
       int8_t newPos = playerPos[0] + 1;
-      if (newPos >= 0 && newPos <= EffectMath::getmaxWidthIndex())
-        if (fb.pixel(newPos, playerPos[1])) {
+      if (newPos >= 0 && newPos <= fb.cfg.maxWidthIndex())
+        if (!fb.pixel(newPos, playerPos[1])) {
           movePlayer(newPos, playerPos[1], playerPos[0], playerPos[1]);
           playerPos[0] = newPos;
         }
@@ -7054,8 +7059,8 @@ void EffectMaze::buttonsTickMaze() {
     if (buttons == 0) {   // кнопка нажата
       btnPressed = true;
       int8_t newPos = playerPos[1] + 1;
-      if (newPos >= 0 && newPos <= EffectMath::getmaxHeightIndex())
-        if (fb.pixel(playerPos[0], newPos)) {
+      if (newPos >= 0 && newPos <= fb.cfg.maxHeightIndex())
+        if (!fb.pixel(playerPos[0], newPos)) {
           movePlayer(playerPos[0], newPos, playerPos[0], playerPos[1]);
           playerPos[1] = newPos;
         }
@@ -7063,8 +7068,8 @@ void EffectMaze::buttonsTickMaze() {
     if (buttons == 2) {   // кнопка нажата
       btnPressed = true;
       int8_t newPos = playerPos[1] - 1;
-      if (newPos >= 0 && newPos <= EffectMath::getmaxHeightIndex())
-        if (fb.pixel(playerPos[0], newPos)) {
+      if (newPos >= 0 && newPos <= fb.cfg.maxHeightIndex())
+        if (!fb.pixel(playerPos[0], newPos)) {
           movePlayer(playerPos[0], newPos, playerPos[0], playerPos[1]);
           playerPos[1] = newPos;
         }
@@ -7078,23 +7083,23 @@ void EffectMaze::buttonsTickMaze() {
 }
 
 void EffectMaze::movePlayer(int8_t nowX, int8_t nowY, int8_t prevX, int8_t prevY) {
-  if (!track) EffectMath::drawPixelXY(prevX, prevY, 0x000000);
-  EffectMath::drawPixelXY(nowX, nowY,  playerColor);
+  if (!track) fb.pixel(prevX, prevY) = 0x000000;
+  fb.pixel(nowX, nowY) = playerColor;
 
-  if ((nowX == (MAZE_WIDTH - 2) - MAZE_SHIFT) && (nowY == (MAZE_HEIGHT - 1) - MAZE_SHIFT)) {
+  if ((nowX == (_mwidth - 2) - MAZE_SHIFT) && (nowY == (_mheight - 1) - MAZE_SHIFT)) {
     gameOverFlag = true;
     return;
   }
 
-  if (GAMEMODE || mazeMode) {
-    for (int8_t y = nowY - FOV; y < nowY + FOV; y++) {
-      for (int8_t x = nowX - FOV; x < nowX + FOV; x++) {
-        if (x < 0 || x > EffectMath::getmaxWidthIndex() || y < 0 || y > EffectMath::getmaxHeightIndex()) continue;
-        if (maze[(y + MAZE_SHIFT) * MAZE_WIDTH + (x + MAZE_SHIFT)] == 1) {
-          EffectMath::drawPixelXY(x, y, CRGB::Aqua);
+  if (MAZE_GAMEMODE || mazeMode) {
+    for (int8_t y = nowY - MAZE_FOV; y < nowY + MAZE_FOV; y++) {
+      for (int8_t x = nowX - MAZE_FOV; x < nowX + MAZE_FOV; x++) {
+        if (x < 0 || x > fb.cfg.maxWidthIndex() || y < 0 || y > fb.cfg.maxHeightIndex()) continue;
+        if (maze[(y + MAZE_SHIFT) * _mwidth + (x + MAZE_SHIFT)] == 1) {
+          fb.pixel(x, y) = CRGB::Aqua;
         }
       }
-      FastLED.show();
+      //FastLED.show();
     }
   }
 }
@@ -7108,15 +7113,15 @@ void EffectMaze::demoMaze() {
 
 bool EffectMaze::checkPath(int8_t x, int8_t y) {
   // если проверяемая клетка является путью к выходу
-  if ( (maze[(playerPos[1] + y + MAZE_SHIFT) * MAZE_WIDTH + (playerPos[0] + x + MAZE_SHIFT)]) == 2) {
-    maze[(playerPos[1] + MAZE_SHIFT) * MAZE_WIDTH + (playerPos[0] + MAZE_SHIFT)] = 4;   // убираем текущую клетку из пути (2 - метка пути, ставим любое число, например 4)
+  if ( (maze[(playerPos[1] + y + MAZE_SHIFT) * _mwidth + (playerPos[0] + x + MAZE_SHIFT)]) == 2) {
+    maze[(playerPos[1] + MAZE_SHIFT) * _mwidth + (playerPos[0] + MAZE_SHIFT)] = 4;   // убираем текущую клетку из пути (2 - метка пути, ставим любое число, например 4)
     return true;
   }
-  else return false;
+  return false;
 }
 
 // копаем лабиринт
-void EffectMaze::CarveMaze(std::array<uint8_t, MAZE_WIDTH * MAZE_HEIGHT> &maze, int width, int height, int x, int y) {
+void EffectMaze::CarveMaze(std::vector<uint8_t> &maze, int width, int height, int x, int y) {
   int x1, y1;
   int x2, y2;
   int dx, dy;
@@ -7150,12 +7155,11 @@ void EffectMaze::CarveMaze(std::array<uint8_t, MAZE_WIDTH * MAZE_HEIGHT> &maze, 
   }
 }
 
-// генерацтор лабиринта
-void EffectMaze::GenerateMaze(std::array<uint8_t, MAZE_WIDTH * MAZE_HEIGHT> &maze, int width, int height) {
+// генератор лабиринта
+void EffectMaze::GenerateMaze(std::vector<uint8_t> &maze, int width, int height) {
   int x, y;
-  for (x = 0; x < width * height; x++) {
-    maze[x] = 1;
-  }
+  maze.assign(maze.size(), 1);
+
   maze[1 * width + 1] = 0;
   for (y = 1; y < height; y += 2) {
     for (x = 1; x < width; x += 2) {
@@ -7179,20 +7183,15 @@ void EffectMaze::GenerateMaze(std::array<uint8_t, MAZE_WIDTH * MAZE_HEIGHT> &maz
 }
 
 // решатель (ищет путь)
-void EffectMaze::SolveMaze(std::array<uint8_t, MAZE_WIDTH * MAZE_HEIGHT> &maze, int width, int height) {
-  int dir, count;
-  int x, y;
+void EffectMaze::SolveMaze(std::vector<uint8_t> &maze, int width, int height) {
+  int dir{0}, count{0};
+  int x{1}, y{1};
   int dx, dy;
-  int forward;
+  int forward = 1;
   // Remove the entry and exit. 
   maze[0 * width + 1] = 1;
   maze[(height - 1) * width + (width - 2)] = 1;
 
-  forward = 1;
-  dir = 0;
-  count = 0;
-  x = 1;
-  y = 1;
   unsigned int attempts = 0;
   while (x != width - 2 || y != height - 2) {
     if (attempts++ > maxSolves) {   // если решатель не может найти решение (maxSolves в 5 раз больше числа клеток лабиринта)
