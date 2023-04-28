@@ -1773,7 +1773,7 @@ private:
     String setDynCtrl(UIControl*_val) override;
     //void setspd(const byte _spd) override; // перегрузка для скорости
 public:
-    EffectMaze(LedFB &framebuffer) : EffectCalc(framebuffer){}
+    EffectMaze(LedFB &framebuffer);
     bool run() override;
 
 }; 
@@ -2196,8 +2196,8 @@ public:
 class EffectPuzzles : public EffectCalc {
 private:
 private:
-    const byte psizeX = 4;
-    const byte psizeY = 4;
+    byte psizeX = 4;
+    byte psizeY = 4;
     uint8_t pcols, prows;
     float speedFactor = 0.1;
     std::vector< std::vector<uint8_t> > puzzle;

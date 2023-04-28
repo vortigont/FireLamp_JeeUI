@@ -8098,7 +8098,7 @@ bool EffectFire2021::run() {
 String EffectPuzzles::setDynCtrl(UIControl*_val) {
   if(_val->getId()==1) speedFactor = EffectMath::fmap(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 0.05, 0.5);
   else if(_val->getId()==3) {
-    PSizeX = PSizeY = EffectCalc::setDynCtrl(_val).toInt();
+    psizeX = psizeY = EffectCalc::setDynCtrl(_val).toInt();
     regen();
   }
   else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
