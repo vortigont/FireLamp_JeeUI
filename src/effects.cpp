@@ -2292,7 +2292,7 @@ bool EffectFire2018::run()
   // }
   for (auto &i : noise.opt){
     i.e_x = 3 * ctrl * _speed;
-    i.e_y = 20 * millis() * _speed;
+    i.e_y = 5 * millis() * _speed;
     i.e_z = 5 * millis() * _speed;
     i.e_scaleX = ctrl1 / 2;
     i.e_scaleY = ctrl2 / 2;
