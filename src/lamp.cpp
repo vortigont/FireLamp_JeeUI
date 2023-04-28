@@ -592,7 +592,7 @@ String &LAMP::prepareText(String &source){
   source.replace(F("%EN"), effects.getEffectName());
   const tm *tm = localtime(embui.timeProcessor.now());
   char buffer[11]; //"xx.xx.xxxx"
-  sprintf_P(buffer,PSTR("%02d.%02d.%04d"),tm->tm_mday,tm->tm_mon+1,tm->tm_year+EMBUI_TM_BASE_YEAR);
+  sprintf_P(buffer,PSTR("%02d.%02d.%04d"),tm->tm_mday,tm->tm_mon+1,tm->tm_year+ TM_BASE_YEAR);
   source.replace(F("%DT"), buffer);
 #ifdef LAMP_DEBUG  
   if(!source.isEmpty() && effects.getCurrent()!=EFF_ENUM::EFF_TIME && !isWarning()) // спам эффекта часы и предупреждений убираем костыльным способом :)
@@ -744,15 +744,14 @@ void LAMP::doPrintStringToLamp(const char* text,  const CRGB &letterColor, const
 
 void LAMP::newYearMessageHandle()
 {
-  if(!tmNewYearMessage.isReady() || embui.timeProcessor.isDirtyTime())
+  if(!tmNewYearMessage.isReady())
     return;
 
-  {
     char strMessage[256]; // буфер
     time_t calc = NEWYEAR_UNIXDATETIME - embui.timeProcessor.getUnixTime();
 
     if(calc<0) {
-      sprintf_P(strMessage, NY_MDG_STRING2, localtime(embui.timeProcessor.now())->tm_year+EMBUI_TM_BASE_YEAR);
+      sprintf_P(strMessage, NY_MDG_STRING2, localtime(embui.timeProcessor.now())->tm_year+ TM_BASE_YEAR);
     } else if(calc<300){
       sprintf_P(strMessage, NY_MDG_STRING1, (int)calc, String(FPSTR(TINTF_0C1)).c_str());
     } else if(calc/60<60){
@@ -796,7 +795,6 @@ void LAMP::newYearMessageHandle()
 
     LOG(printf_P, PSTR("Prepared message: %s\n"), strMessage);
     sendStringToLamp(strMessage, LETTER_COLOR);
-  }
 }
 
 // при вызове - вывозит на лампу текущее время

@@ -212,6 +212,7 @@ static const char TCONST_Version[] PROGMEM = "Version";
 static const char TCONST_wcpass[] PROGMEM = "wcpass";
 static const char TCONST_White[] PROGMEM = "White";
 static const char TCONST_width[] PROGMEM = "width";
+static const char TCONST_XLOAD[] PROGMEM = "xload";
 static const char TCONST__5f9ea0[] PROGMEM = "#5f9ea0";
 static const char TCONST__708090[] PROGMEM = "#708090";
 static const char TCONST__backup_btn_[] PROGMEM = "/backup/btn/";

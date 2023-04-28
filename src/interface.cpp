@@ -240,7 +240,7 @@ void pubCallback(Interface *interf){
     }
 #endif
     char fuptime[16];
-    uint32_t tm = embui.getUptime();
+    uint32_t tm = millis()/1000;
     sprintf_P(fuptime, PSTR("%u.%02u:%02u:%02u"),tm/86400,(tm/3600)%24,(tm/60)%60,tm%60);
     interf->value(FPSTR(TCONST_pUptime), String(fuptime), true);
     interf->value(FPSTR(TCONST_pFS), String(myLamp.getLampState().fsfreespace), true);
@@ -434,7 +434,7 @@ void block_effects_config(Interface *interf, JsonObject *data){
 
     if(LittleFS.exists(FPSTR(TCONST_eff_fulllist_json))){
         // формируем и отправляем кадр с запросом подгрузки внешнего ресурса
-        interf->json_frame_custom(FPSTR(T_XLOAD));
+        interf->json_frame(FPSTR(TCONST_XLOAD));
         interf->json_section_content();
         interf->select(FPSTR(TCONST_effListConf), String((int)confEff->eff_nb), String(FPSTR(TINTF_00A)),
                         true,   // direct
@@ -826,7 +826,7 @@ void block_effects_main(Interface *interf, JsonObject *data, bool fast=true){
 
     if(LittleFS.exists(FPSTR(TCONST_eff_list_json))){
         // формируем и отправляем кадр с запросом подгрузки внешнего ресурса
-        interf->json_frame_custom(FPSTR(T_XLOAD));
+        interf->json_frame_custom(FPSTR(TCONST_XLOAD));
         interf->json_section_content();
         // side load drop-down list from /eff_list.json file
         interf->select(FPSTR(TCONST_effListMain), String(myLamp.effects.getEffnum()), String(FPSTR(TINTF_00A)), true, false, FPSTR(TCONST_eff_list_json));
@@ -1211,7 +1211,7 @@ void set_text_config(Interface *interf, JsonObject *data){
     localtime_r(TimeProcessor::now(), tm);  // reset struct to local now()
 
     // set desired date
-    tm->tm_year = newYearTime.substring(0,4).toInt()-EMBUI_TM_BASE_YEAR;
+    tm->tm_year = newYearTime.substring(0,4).toInt()-TM_BASE_YEAR;
     tm->tm_mon  = newYearTime.substring(5,7).toInt()-1;
     tm->tm_mday = newYearTime.substring(8,10).toInt();
     tm->tm_hour = newYearTime.substring(11,13).toInt();
@@ -1321,8 +1321,8 @@ void set_settings_mp3(Interface *interf, JsonObject *data){
     SETPARAM(FPSTR(TCONST_mp3volume)); // тоже пишет в плеер, разносим во времени
 
     save_lamp_flags();
-    //BasicUI::section_settings_frame(interf, data);
-    section_settings_frame(interf, data);
+    basicui::section_settings_frame(interf, data);
+    //section_settings_frame(interf, data);
 }
 #endif
 
@@ -1376,8 +1376,8 @@ void set_settings_mic(Interface *interf, JsonObject *data){
     SETPARAM(FPSTR(TCONST_micNoise), myLamp.getLampState().setMicNoise(noise));
     SETPARAM(FPSTR(TCONST_micnRdcLvl), myLamp.getLampState().setMicNoiseRdcLevel(rdl));
 
-    //BasicUI::section_settings_frame(interf, data);
-    section_settings_frame(interf, data);
+    basicui::section_settings_frame(interf, data);
+    //section_settings_frame(interf, data);
 }
 
 void set_micflag(Interface *interf, JsonObject *data){
@@ -1401,10 +1401,10 @@ void set_settings_mic_calib(Interface *interf, JsonObject *data){
     show_settings_mic(interf, data);
 }
 #endif
-
+/*
 // после завершения сканирования обновляем список WiFi
 void scan_complete(int n){
-    Interface *interf = EmbUI::GetInstance()->ws.count()? new Interface(EmbUI::GetInstance(), &EmbUI::GetInstance()->ws) : nullptr;
+    Interface *interf = embui.ws.count()? new Interface(&embui, &embui.ws) : nullptr;
     LOG(printf_P, PSTR("UI WiFi: Scan complete %d networks found\n"), n);
     if(interf){
         interf->json_frame_interface();
@@ -1428,7 +1428,7 @@ void scan_complete(int n){
         TASK_SECOND,
         TASK_ONCE, [](){
             if (WiFi.scanComplete() >= 0) {
-                EmbUI::GetInstance()->sysData.isWiFiScanning = false;
+                embui.sysData.isWiFiScanning = false;
                 WiFi.scanDelete();
                 LOG(printf_P, PSTR("UI WiFi: Scan List deleted\n"));
             }
@@ -1442,19 +1442,19 @@ void set_scan_wifi(Interface *interf, JsonObject *data){
 
     if (WiFi.scanComplete() == -2) {
         LOG(printf_P, PSTR("UI WiFi: WiFi scan starting\n"));
-        interf->json_frame_custom(FPSTR(T_XLOAD));
+        interf->json_frame_custom(FPSTR(TCONST_XLOAD));
         interf->json_section_content();
         interf->constant(FPSTR(T_SET_SCAN), FPSTR(TINTF_0DA), true, FPSTR(P_GREEN), 22);
         interf->json_section_end();
         interf->json_frame_flush();
 
         Task *t = new Task(300, TASK_ONCE, nullptr, &ts, false, nullptr, [](){
-            EmbUI::GetInstance()->sysData.isWiFiScanning = true;
+            embui.sysData.isWiFiScanning = true;
             #ifdef ESP8266
             WiFi.scanNetworksAsync(scan_complete);     // Сканируем с коллбеком, по завершению скана запустится scan_complete()
             #endif
             #ifdef ESP32
-            EmbUI::GetInstance()->setWiFiScanCB(&scan_complete);
+            embui.setWiFiScanCB(&scan_complete);
             WiFi.scanNetworks(true);         // У ESP нет метода с коллбеком, поэтому просто сканируем
             #endif
         }, true);
@@ -1535,8 +1535,8 @@ void show_settings_wifi(Interface *interf, JsonObject *data){
     interf->json_frame_interface();
     block_settings_wifi(interf, data);
     interf->json_frame_flush();
-    if(!EmbUI::GetInstance()->sysData.isWiFiScanning){ // автосканирование при входе в настройки
-        EmbUI::GetInstance()->sysData.isWiFiScanning = true;
+    if(!embui.sysData.isWiFiScanning){ // автосканирование при входе в настройки
+        embui.sysData.isWiFiScanning = true;
         set_scan_wifi(interf, data);
     }
 }
@@ -1545,19 +1545,19 @@ void show_settings_wifi(Interface *interf, JsonObject *data){
 void set_settings_wifi(Interface *interf, JsonObject *data){
     if (!data) return;
 
-    BasicUI::set_settings_wifi(interf, data);
-    section_settings_frame(interf, data);
+    basicui::set_settings_wifi(interf, data);
+    basicui::section_settings_frame(interf, data);
 }
-
+*/
 #ifdef EMBUI_USE_MQTT
 void set_settings_mqtt(Interface *interf, JsonObject *data){
     if (!data) return;
-    BasicUI::set_settings_mqtt(interf,data);
+    basicui::set_settings_mqtt(interf,data);
     embui.mqttReconnect();
     int interval = (*data)[FPSTR(P_m_tupd)];
     LOG(print, F("New MQTT interval: ")); LOG(println, interval);
     myLamp.setmqtt_int(interval);
-    section_settings_frame(interf, data);
+    basicui::section_settings_frame(interf, data);
 }
 #endif
 
@@ -1566,8 +1566,8 @@ void set_settings_mqtt(Interface *interf, JsonObject *data){
 void set_ftp(Interface *interf, JsonObject *data){
     if (!data) return;
 
-    BasicUI::set_ftp(interf, data);
-    section_settings_frame(interf, data);
+    basicui::set_ftp(interf, data);
+    basicui::section_settings_frame(interf, data);
 }
 #endif
 
@@ -1669,9 +1669,9 @@ void set_settings_other(Interface *interf, JsonObject *data){
     );
     _t->enableDelayed();
 
-    //BasicUI::section_settings_frame(interf, data);
+    //basicui::section_settings_frame(interf, data);
     if(interf)
-        section_settings_frame(interf, data);
+        basicui::section_settings_frame(interf, data);
 }
 
 // страницу-форму настроек времени строим методом фреймворка (ломает переводы, возвращено обратно)
@@ -1706,7 +1706,7 @@ void show_settings_time(Interface *interf, JsonObject *data){
 
     // формируем и отправляем кадр с запросом подгрузки внешнего ресурса со списком правил временных зон
     // полученные данные заместят предыдущее поле выпадающим списком с данными о всех временных зонах
-    interf->json_frame_custom(FPSTR(T_XLOAD));
+    interf->json_frame_custom(FPSTR(TCONST_XLOAD));
     interf->json_section_content();
                     //id            val                         label   direct  skipl URL for external data
     interf->select(FPSTR(P_TZSET), embui.param(FPSTR(P_TZSET)), "",     false,  true, F("/js/tz.json"));
@@ -1715,12 +1715,12 @@ void show_settings_time(Interface *interf, JsonObject *data){
 }
 
 void set_settings_time(Interface *interf, JsonObject *data){
-    BasicUI::set_settings_time(interf, data);
+    basicui::set_settings_time(interf, data);
     myLamp.sendString(String(F("%TM")).c_str(), CRGB::Green);
 #ifdef RTC
     rtc.updateRtcTime();
 #endif
-    section_settings_frame(interf, data);
+    basicui::section_settings_frame(interf, data);
 }
 
 void block_settings_update(Interface *interf, JsonObject *data){
@@ -1827,7 +1827,7 @@ void set_event_conf(Interface *interf, JsonObject *data){
     localtime_r(TimeProcessor::now(), tm);  // reset struct to local now()
 
     // set desired date
-    tm->tm_year=tmEvent.substring(0,4).toInt()-EMBUI_TM_BASE_YEAR;
+    tm->tm_year=tmEvent.substring(0,4).toInt()-TM_BASE_YEAR;
     tm->tm_mon = tmEvent.substring(5,7).toInt()-1;
     tm->tm_mday=tmEvent.substring(8,10).toInt();
     tm->tm_hour=tmEvent.substring(11,13).toInt();
@@ -2260,7 +2260,7 @@ void set_settings_enc(Interface *interf, JsonObject *data){
     setEncTxtColor((CRGB)strtol(tmpStr2.c_str(), NULL, 0));
     (*data)[FPSTR(TCONST_encTxtDel)]=JsonUInt(110U-(*data)[FPSTR(TCONST_encTxtDel)].as<int>());
     SETPARAM(FPSTR(TCONST_encTxtDel), setEncTxtDelay((*data)[FPSTR(TCONST_encTxtDel)]))
-    section_settings_frame(interf, data);
+    basicui::section_settings_frame(interf, data);
 }
 #endif  // ENCODER
 
@@ -2452,7 +2452,7 @@ void set_streaming_universe(Interface *interf, JsonObject *data){
 #endif
 // Точка входа в настройки
 void user_settings_frame(Interface *interf, JsonObject *data);
-
+/*
 void section_settings_frame(Interface *interf, JsonObject *data){
     // Страница "Настройки"
     if (!interf) return;
@@ -2482,7 +2482,7 @@ void section_settings_frame(Interface *interf, JsonObject *data){
     interf->json_section_end();
     interf->json_frame_flush();
 }
-
+*/
 #ifdef OPTIONS_PASSWORD
 void set_opt_pass(Interface *interf, JsonObject *data){
     if(!data) return;
@@ -2492,7 +2492,7 @@ void set_opt_pass(Interface *interf, JsonObject *data){
         myLamp.getLampState().isOptPass = true;
         Task *_t = new Task(TASK_MINUTE*10, TASK_ONCE, [](){ myLamp.getLampState().isOptPass = false; }, &ts, false, nullptr, nullptr, true ); // через 10 минут отключаем
         _t->enableDelayed();
-        section_settings_frame(interf, nullptr);
+        basicui::section_settings_frame(interf, nullptr);
     }
 }
 #endif  // OPTIONS_PASSWORD
@@ -2540,8 +2540,8 @@ void section_main_frame(Interface *interf, JsonObject *data){
             block_only_wifi(interf, data);
             interf->json_section_end();
         interf->json_frame_flush();
-        if(!EmbUI::GetInstance()->sysData.isWiFiScanning){ // автосканирование при входе в настройки
-            EmbUI::GetInstance()->sysData.isWiFiScanning = true;
+        if(!embui.sysData.isWiFiScanning){ // автосканирование при входе в настройки
+            embui.sysData.isWiFiScanning = true;
             set_scan_wifi(interf, data);
         }
     }
@@ -2777,7 +2777,7 @@ void create_parameters(){
     *  - базовые настройки MQTT
     *  - OTA обновление прошивки и образа файловой системы
     */
-    BasicUI::add_sections(true); //
+    basicui::add_sections(true); //
 
     embui.section_handle_add(FPSTR(TCONST_sysSettings), set_sys_settings);
 
@@ -2825,6 +2825,7 @@ void create_parameters(){
     embui.section_handle_add(FPSTR(TCONST_drawClear), set_clear);
     embui.section_handle_add(FPSTR(TCONST_drawbuff), set_drawflag);
 
+/*
     // меняю обработчики для страницы настроек :)
     embui.section_handle_remove(FPSTR(T_SETTINGS));
     embui.section_handle_add(FPSTR(T_SETTINGS), section_settings_frame); // своя главная страница настроек, со своим переводом
@@ -2851,10 +2852,10 @@ void create_parameters(){
 
     embui.section_handle_remove(FPSTR(T_SET_SCAN));
     embui.section_handle_add(FPSTR(T_SET_SCAN), set_scan_wifi);         // обработка сканирования WiFi
+*/
 
     embui.section_handle_add(FPSTR(TCONST_show_other), show_settings_other);
     embui.section_handle_add(FPSTR(TCONST_set_other), set_settings_other);
-
     #ifdef OPTIONS_PASSWORD
     embui.section_handle_add(FPSTR(TCONST_set_opt_pass), set_opt_pass);
     #endif // OPTIONS_PASSWORD
@@ -3430,7 +3431,7 @@ void remote_action(RA action, ...){
             }
             break;
         case RA::RA_WIFI_REC:
-            //CALL_INTF(FPSTR(TINTF_028), FPSTR(TCONST_STA), BasicUI::set_settings_wifi);
+            //CALL_INTF(FPSTR(TINTF_028), FPSTR(TCONST_STA), basicui::set_settings_wifi);
             CALL_INTF(FPSTR(TINTF_028), FPSTR(TCONST_STA), set_settings_wifi);
             break;
         case RA::RA_LAMP_CONFIG:
