@@ -3539,14 +3539,13 @@ bool EffectWhirl::whirlRoutine() {
 
 void EffectAquarium::load(){
   currentPalette = PartyColors_p;
-  for (uint8_t i = 0; i < amountDrops-1; i++) {
-    posX[i] = random(WIDTH);
-    posY[i] = random(HEIGHT);
-    radius[i] = EffectMath::randomf(-1, maxRadius);
+  for (auto &i : drops) {
+    i.posX = random(fb.cfg.w());
+    i.posY = random(fb.cfg.h());
+    i.radius = EffectMath::randomf(-1, maxRadius());
   }
 }
 
-// !++
 String EffectAquarium::setDynCtrl(UIControl*_val){
   if(_val->getId()==1) speedFactor = EffectMath::fmap(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 0.1, 1.);
   else if(_val->getId()==2) scale = EffectCalc::setDynCtrl(_val).toInt();
@@ -3564,15 +3563,16 @@ void EffectAquarium::nDrops(uint8_t bri) {
   currentPalette[8] = CHSV(hue, 255 - satur, 210);
   currentPalette[7] = CHSV(hue, satur - 60, 255);
   fb.fill(ColorFromPalette(currentPalette, 1));
-  for (uint8_t i = amountDrops - 1; i > 0; i--) {
-    EffectMath::drawCircle(posX[i], posY[i], radius[i], ColorFromPalette(currentPalette, (256/16)*8.5-radius[i]), fb);
-    EffectMath::drawCircle(posX[i], posY[i], radius[i] - 1., ColorFromPalette(currentPalette,(256/16)*7.5-radius[i] , 256/radius[i]), fb);
-    if (radius[i] >= maxRadius) {
-      radius[i] = -1;
-      posX[i] = random(WIDTH);
-      posY[i] = random(HEIGHT);
+
+  for (auto &i : drops) {
+    EffectMath::drawCircle(i.posX, i.posY, i.radius, ColorFromPalette(currentPalette, (256/16)*8.5-i.radius), fb);
+    EffectMath::drawCircle(i.posX, i.posY, i.radius - 1., ColorFromPalette(currentPalette,(256/16)*7.5-i.radius, 256/i.radius), fb);
+    if (i.radius >= maxRadius()) {
+      i.radius = -1;
+      i.posX = random(fb.cfg.w());
+      i.posY = random(fb.cfg.h());
     } else
-      radius[i] += 0.25;
+      i.radius += 0.25;
   }
 
   EffectMath::blur2d(fb, 128);
@@ -3586,41 +3586,29 @@ void EffectAquarium::nGlare(uint8_t bri) {
   currentPalette[8] = CHSV(hue, 255 - satur, 180);
   currentPalette[7] = CHSV(hue, satur - 60, 225);
 
-  fillNoiseLED(getUnsafeLedsArray());
+  fillNoiseLED();
   
   EffectMath::blur2d(fb, 100);
 }
 
-void EffectAquarium::fillNoiseLED(CRGB *fixme) {
+void EffectAquarium::fillNoiseLED() {
   uint8_t  dataSmoothing = 200 - (_speed * 4);
-  for (uint8_t i = 0; i < MAX_DIMENSION; i++) {
+  for (uint8_t i = 0; i < fb.cfg.h(); i++) {
     int32_t ioffset = _scale * i;
-    for (uint8_t j = 0; j < MAX_DIMENSION; j++) {
+    for (uint8_t j = 0; j < fb.cfg.w(); j++) {
       int32_t joffset = _scale * j;
       
       uint8_t data = inoise8(x + ioffset, y + joffset, z);
       
       data = qsub8(data, 16);
       data = qadd8(data, scale8(data, 39));
-      
-      uint8_t newdata = scale8(ledbuff[EffectMath::getPixelNumberBuff(j, i, WIDTH, HEIGHT)], dataSmoothing) + scale8(data, 256 - dataSmoothing);
-      data = newdata;
-      
-      ledbuff[EffectMath::getPixelNumberBuff(j, i, WIDTH, HEIGHT)] = data;
+      noise.map_lxy(0, j, i) = scale8(noise.map_lxy(0, j, i), dataSmoothing) + scale8(data, 256 - dataSmoothing);
+      fb.pixel(j, i) = ColorFromPalette(currentPalette, noise.map_lxy(0, j, i));
     }
   }
   z += _speed;
   x += _speed / 16 * sin8(millis() / 10000);
   y += _speed / 16 * cos8(millis() / 10000);
-  
-  for (uint8_t i = 0; i < WIDTH; i++) {
-    for (uint8_t j = 0; j < HEIGHT; j++) {
-      uint8_t index = ledbuff[EffectMath::getPixelNumberBuff(j, i, WIDTH, HEIGHT)];
-
-      CRGB color = ColorFromPalette(currentPalette, index);
-      EffectMath::drawPixelXY(i, j, color);
-    }
-  }
 }
 
 bool EffectAquarium::run() {
@@ -3630,16 +3618,14 @@ bool EffectAquarium::run() {
   byte _video = 255;
 #endif
   switch (glare) { //
-  case 0:
-    break;
   case 2:
     nGlare(_video);
     break;
   default:
     nDrops(_video);
-    break;
   }
 
+/*  абсолютно непонятная одноцветная заливка
   if (!glare) {// если блики выключены
     for (byte x = 0; x < WIDTH; x++)
     for (byte y = 0U; y < HEIGHT; y++)
@@ -3656,6 +3642,7 @@ bool EffectAquarium::run() {
 #endif
     }
   }
+*/
   if (speed == 1) {
     hue = scale;
   }
@@ -3665,6 +3652,7 @@ bool EffectAquarium::run() {
 
   return true;
 }
+
 
 // ------- Эффект "Звезды"
 // !++

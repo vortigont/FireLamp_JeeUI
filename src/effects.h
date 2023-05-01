@@ -809,32 +809,36 @@ public:
 // Генератор бликов (c) stepko
 class EffectAquarium : public EffectCalc {
 private:
-#define MAX_DIMENSION max(WIDTH, HEIGHT)
+
+struct Drop{
+    uint8_t posX, posY;
+    float radius;
+};
+
     CRGBPalette16 currentPalette;
     const uint8_t _scale = 25;
     const uint8_t _speed = 3;
 
     float hue = 0.;
-    uint16_t x;
-    uint16_t y;
-    uint16_t z;
-    byte ledbuff[WIDTH*2 * HEIGHT*2];
-#define amountDrops ((HEIGHT + WIDTH) / 6)
-    const uint8_t maxRadius = WIDTH + HEIGHT;
-    uint8_t posX[amountDrops];
-    uint8_t posY[amountDrops];
-    float radius[amountDrops];
+    uint16_t x{0}, y{0}, z{0};
+    Noise3dMap noise;
+
+    inline uint8_t maxRadius(){return fb.cfg.w() + fb.cfg.h();};
+    std::vector<Drop> drops;
     uint8_t satur;
     uint8_t glare = 0;
     uint8_t iconIdx = 0;
-	float speedFactor;
+	float speedFactor{1};
 
     void nGlare(uint8_t bri);
     void nDrops(uint8_t bri);
-    void fillNoiseLED(CRGB *fixme);
+    void fillNoiseLED();
 
 public:
-    EffectAquarium(LedFB &framebuffer) : EffectCalc(framebuffer){}
+    EffectAquarium(LedFB &framebuffer) : EffectCalc(framebuffer),
+        noise(1, framebuffer.cfg.w(), framebuffer.cfg.h()),
+        drops(std::vector<Drop>((fb.cfg.h() + fb.cfg.w()) / 6)) {}
+
     void load() override;
     String setDynCtrl(UIControl*_val) override;
     bool run() override;
