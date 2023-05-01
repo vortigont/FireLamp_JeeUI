@@ -2470,9 +2470,9 @@ bool EffectRingsLock::ringsRoutine()
 #define PAUSE_MAX 7
 
 void EffectCube2d::swapBuff() {
-  for (uint8_t x = 0; x < WIDTH; x++) { // переписываем виртуальный экран в настоящий
-    for(uint8_t y = 0; y < HEIGHT; y++) {
-      EffectMath::drawPixelXY(x, y, ledbuff[EffectMath::getPixelNumberBuff(x, y, fieldX, fieldY)]);
+  for (uint8_t y = 0; y < fb.cfg.h(); y++) { // переписываем виртуальный экран в настоящий
+    for(uint8_t x = 0; x < fb.cfg.w(); x++) {
+      fb.pixel(x,y) = ledbuff.pixel(x,y);
     }
   }
 }
@@ -2490,11 +2490,11 @@ bool EffectCube2d::run(){
 String EffectCube2d::setDynCtrl(UIControl*_val)
 {
   if(_val->getId()==3) { EffectCalc::setDynCtrl(_val).toInt(); cubesize(); }
-  else if(_val->getId()==4) sizeX = EffectCalc::setDynCtrl(_val).toInt();
-  else if(_val->getId()==5) sizeY = EffectCalc::setDynCtrl(_val).toInt();
-  else if(_val->getId()==6) classic = EffectCalc::setDynCtrl(_val).toInt();
+  else if(_val->getId()==4) { sizeX = EffectCalc::setDynCtrl(_val).toInt(); cubesize(); }
+  else if(_val->getId()==5) { sizeY = EffectCalc::setDynCtrl(_val).toInt(); cubesize(); }
+  else if(_val->getId()==6) { classic = EffectCalc::setDynCtrl(_val).toInt(); cubesize(); }
   else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
-  cubesize();
+
   return String();
 }
 
@@ -2509,15 +2509,15 @@ void EffectCube2d::cubesize() {
     return;
   }
 
-  FastLED.clear();          // wtf??? looks like Kostyamat's code :)
+  fb.clear();
 
-  cntY = ceil((float)HEIGHT / (float)(sizeY + 1U));   // wtf??? floats??? looks like Kostyamat's code :)
+  cntY = fb.cfg.h() / (sizeY+1) + !!(fb.cfg.h() / (sizeY+1));
 	fieldY = (sizeY + 1U) * cntY;
 
-  cntX = ceil((float)WIDTH / (float)(sizeX + 1U));    // wtf??? floats??? looks like Kostyamat's code :)
+  cntX = fb.cfg.w() / (sizeX+1) + !!(fb.cfg.w() / (sizeX+1));
 	fieldX = (sizeX + 1U) * cntX;
 
-  ledbuff = std::vector<CRGB>(fieldX * fieldY, CRGB(0, 0, 0));   // создаем виртуальную матрицу, размером кратную размеру кубика+1
+  ledbuff = LedFB(fieldX, fieldY);   // создаем виртуальную матрицу, размером кратную размеру кубика+1
 
   //LOG(printf_P, PSTR("CUBE2D Size: scX=%d, scY=%d, scaleY=%d, cntX=%d, cntY=%d\n"), cubeScaleX, cubeScaleY, scaleY, cntX, cntY);
   uint8_t x=0, y = 0;
@@ -2531,28 +2531,27 @@ void EffectCube2d::cubesize() {
       x = i * (sizeX + 1U);
       if (scale == FASTLED_PALETTS_COUNT + 1U)
         color = CHSV(46U, 0U, 32U + random8(256U-32U));
-      else
-
-      while (1) // немного потенциально опасно, но у нас, если палитры не подгружены, - return, думаю это сводит опасность практически к нулю, иначе сработает вачдог
-        // не вижу другого способа перестать получать почти черные кубики, это раздражает, впечатление будто лампе глаз выбили, или зуб :))
-      {
-
-        color = scale > 0 ? ColorFromPalette(*curPalette, random(1024)>>1, random8(128, 255)) : CRGB(random8(), random8(), random8());
-        if (color >= CRGB(10,10,10)) break;  // Не хотелось бы получать слишком тёмные кубики
+      else {
+        int cnt = 10;
+        while (--cnt){
+          color = scale > 0 ? ColorFromPalette(*curPalette, random(1024)>>1, random8(128, 255)) : CRGB(random8(), random8(), random8());
+          if (color >= CRGB(10,10,10)) break;  // Не хотелось бы получать слишком тёмные кубики
+        }
       }
 
       for (uint8_t k = 0U; k < sizeY; k++){
         for (uint8_t m = 0U; m < sizeX; m++){
-          ledbuff[EffectMath::getPixelNumberBuff(x+m, y+k, fieldX, fieldY)] = color;
+          ledbuff.pixel(x+m, y+k) = color;
         }
       }
     }
   }
   if (classic) {
+    storage.assign(fb.cfg.w(), std::vector<uint8_t>(fb.cfg.h()) );    // todo: get rid of this
     currentStep = 4U; // текущий шаг сдвига первоначально с перебором (от 0 до shiftSteps-1)
     shiftSteps = 4U; // всего шагов сдвига (от 3 до 4)
     pauseSteps = 0U; // осталось шагов паузы
-    seamlessX = (fieldX == WIDTH);
+    seamlessX = (fieldX == fb.cfg.w());
     globalShiftX = 0;
     globalShiftY = 0;
     gX = 0;
@@ -2578,7 +2577,7 @@ bool EffectCube2d::cube2dRoutine()
     // ====== определяем направление прокруток на будущий цикл
     pauseSteps = CUBE2D_PAUSE_FRAMES;
     direction = random8()%2;  // сдвиг 0 - строки, 1 - столбцы
-    moveItems = std::vector<int8_t>(direction ? cntX : cntY, 0);
+    moveItems.assign(direction ? cntX : cntY, 0);
 
     for ( auto &item : moveItems ){
       item = random8()%3; // 1 - fwd, 0 - bkw, 2 - none
@@ -2598,52 +2597,49 @@ bool EffectCube2d::cube2dRoutine()
 
     direction ? cube2dmoveCols(i, moveItems.at(i)) : cube2dmoveRows(i, moveItems.at(i));
   }
-
   swapBuff();
   return true;
 }
 
 // идём по горизонтали, крутим по вертикали (столбцы двигаются)
 void EffectCube2d::cube2dmoveCols(uint8_t moveItem, bool movedirection){
-      uint16_t x, anim0;
+  uint16_t x, anim0;
   CRGB color, color2;
 
-      x = moveItem * (sizeX + 1U);
-      anim0 = 0;
+  x = moveItem * (sizeX + 1U);
+  anim0 = 0;
 
       // если крутим столбец вниз
-      if (!movedirection)
-        {
+      if (!movedirection){
           // берём цвет от нижней строчки
-          color = ledbuff[EffectMath::getPixelNumberBuff(x, anim0, fieldX, fieldY)];
+          color = ledbuff.pixel(x, anim0);
           for (uint8_t k = anim0; k < anim0+fieldY-1; k++)
           {
             // берём цвет от строчки над нашей
-            color2 = ledbuff[EffectMath::getPixelNumberBuff(x, k+1, fieldX, fieldY)];
+            color2 = ledbuff.pixel(x, k+1);
             for (uint8_t m = x; m < x + sizeX; m++)
               // копируем его на всю нашу строку
-              ledbuff[EffectMath::getPixelNumberBuff(m, k, fieldX, fieldY)] = color2;
+              ledbuff.pixel(m, k) = color2;
           }
           for   (uint8_t m = x; m < x + sizeX; m++)
             // цвет нижней строчки копируем на всю верхнюю
-            ledbuff[EffectMath::getPixelNumberBuff(m, anim0+fieldY-1, fieldX, fieldY)] = color;
+            ledbuff.pixel(m, anim0+fieldY-1) = color;
           return;
         }
 
       // крутим столбец вверх
       // берём цвет от верхней строчки
-      color = ledbuff[EffectMath::getPixelNumberBuff(x,anim0+fieldY-1, fieldX, fieldY)];
+      color = ledbuff.pixel(x,anim0+fieldY-1);
       for (uint8_t k = anim0+fieldY-1; k > anim0 ; k--)
       {
-        //color2 = fb.pixel(x,k-1);                                   // берём цвет от строчки под нашей
-        color2 = ledbuff[EffectMath::getPixelNumberBuff(x, k-1, fieldX, fieldY)];
+        color2 = ledbuff.pixel(x, k-1);
         for (uint8_t m = x; m < x + sizeX; m++)
           // копируем его на всю нашу строку
-          ledbuff[EffectMath::getPixelNumberBuff(m, k , fieldX, fieldY)] = color2;
+          ledbuff.pixel(m, k ) = color2;
       }
       for   (uint8_t m = x; m < x + sizeX; m++)
         // цвет верхней строчки копируем на всю нижнюю
-        ledbuff[EffectMath::getPixelNumberBuff(m, anim0, fieldX, fieldY)] = color;
+        ledbuff.pixel(m, anim0) = color;
 }
 
 // идём по вертикали, крутим по горизонтали (строки двигаются)
@@ -2655,38 +2651,35 @@ void EffectCube2d::cube2dmoveRows(uint8_t moveItem, bool movedirection){
   anim0 = 0;
 
   // крутим строку влево
-  if (!movedirection)
-  {
-    //color = fb.pixel(anim0, y);                            // берём цвет от левой колонки (левого пикселя)
-    color = ledbuff[EffectMath::getPixelNumberBuff(anim0, y, fieldX, fieldY)];
+  if (!movedirection){
+    color = ledbuff.pixel(anim0, y);                            // берём цвет от левой колонки (левого пикселя)
     for (uint8_t k = anim0; k < anim0+fieldX-1; k++)
     {
-      //color2 = fb.pixel(k+1, y);                           // берём цвет от колонки (пикселя) правее
-      color2 = ledbuff[EffectMath::getPixelNumberBuff(k+1, y, fieldX, fieldY)];
+      color2 = ledbuff.pixel(k+1, y);                           // берём цвет от колонки (пикселя) правее
       for (uint8_t m = y; m < y + sizeY; m++)
         // копируем его на всю нашу колонку
-        ledbuff[EffectMath::getPixelNumberBuff(k, m, fieldX, fieldY)] = color2;
+        ledbuff.pixel(k,m) = color2;
     }
     for   (uint8_t m = y; m < y + sizeY; m++)
       // цвет левой колонки копируем на всю правую
-      ledbuff[EffectMath::getPixelNumberBuff(anim0+fieldX-1, m, fieldX, fieldY)] = color;
+      ledbuff.pixel(anim0+fieldX-1, m) = color;
    return;
   }
 
   //  крутим строку вправо
   // берём цвет от правой колонки
-  color = ledbuff[EffectMath::getPixelNumberBuff(anim0+fieldX-1, y, fieldX, fieldY)];
+  color = ledbuff.pixel(anim0+fieldX-1, y);
   for (uint8_t k = anim0+fieldX-1; k > anim0 ; k--)
   {
     // берём цвет от колонки левее
-    color2 = ledbuff[EffectMath::getPixelNumberBuff(k-1, y, fieldX, fieldY)];
+    color2 = ledbuff.pixel(k-1, y);
     for (uint8_t m = y; m < y + sizeY; m++)
       // копируем его на всю нашу колонку
-      ledbuff[EffectMath::getPixelNumberBuff(k, m, fieldX, fieldY)] = color2;
+      ledbuff.pixel(k, m) = color2;
   }
   for   (uint8_t m = y; m < y + sizeY; m++)
     // цвет правой колонки копируем на всю левую
-    ledbuff[EffectMath::getPixelNumberBuff(anim0, m, fieldX, fieldY)] = color;
+    ledbuff.pixel(anim0, m) = color;
 }
 
 bool EffectCube2d::cube2dClassicRoutine()
@@ -2703,7 +2696,7 @@ bool EffectCube2d::cube2dClassicRoutine()
     {
       for (uint8_t i = 0U; i < cntX; i++)
       {
-        x = (gX + i * (sizeX + 1U)) % WIDTH;
+        x = (gX + i * (sizeX + 1U)) % fb.cfg.w();
         if (storage[i][0] > 0) // в нулевой ячейке храним оставшееся количество ходов прокрутки
         {
           storage[i][0]--;
@@ -2718,35 +2711,27 @@ bool EffectCube2d::cube2dClassicRoutine()
 
           if (shift < 0) // если крутим столбец вниз
           {
-            //color = myLamp.getPixColorXY(x, anim0); // берём цвет от нижней строчки
-            color = ledbuff[EffectMath::getPixelNumberBuff(x, anim0, fieldX, fieldY)];
+            color = ledbuff.pixel(x, anim0);
             for (uint8_t k = anim0; k < anim0 + fieldY - 1; k++)
             {
-              //color2 = myLamp.getPixColorXY(x, k + 1); // берём цвет от строчки над нашей
-              color2 = ledbuff[EffectMath::getPixelNumberBuff(x, k + 1, fieldX, fieldY)];
+              color2 = ledbuff.pixel(x, k + 1); // берём цвет от строчки над нашей
               for (uint8_t m = x; m < x + sizeX; m++)
-                ledbuff[EffectMath::getPixelNumberBuff(m % fieldX, k, fieldX, fieldY)] = color2;
-                //myLamp.setLeds(myLamp.getPixelNumber(m % WIDTH, k), color2); // копируем его на всю нашу строку
+                ledbuff.pixel(m % fieldX, k) = color2;    // копируем его на всю нашу строку
             }
             for (uint8_t m = x; m < x + sizeX; m++)
-              //myLamp.setLeds(myLamp.getPixelNumber(m % WIDTH, anim0 + fieldY - 1), color); // цвет нижней строчки копируем на всю верхнюю
-              ledbuff[EffectMath::getPixelNumberBuff(m % fieldX, anim0 + fieldY - 1, fieldX, fieldY)] = color;
+              ledbuff.pixel(m % fieldX, anim0 + fieldY - 1) = color;  // цвет нижней строчки копируем на всю верхнюю
           }
           else if (shift > 0) // если крутим столбец вверх
           {
-            //color = myLamp.getPixColorXY(x, anim0 + fieldY - 1); // берём цвет от верхней строчки
-            color = ledbuff[EffectMath::getPixelNumberBuff(x, anim0 + fieldY - 1, fieldX, fieldY)];
+            color =  ledbuff.pixel(x, anim0 + fieldY - 1); // берём цвет от верхней строчки
             for (uint8_t k = anim0 + fieldY - 1; k > anim0; k--)
             {
-              //color2 = myLamp.getPixColorXY(x, k - 1); // берём цвет от строчки под нашей
-              color2 = ledbuff[EffectMath::getPixelNumberBuff(x, k - 1, fieldX, fieldY)];
+              color2 = ledbuff.pixel(x, k - 1); // берём цвет от строчки под нашей
               for (uint8_t m = x; m < x + sizeX; m++)
-                ledbuff[EffectMath::getPixelNumberBuff(m % fieldX, k, fieldX, fieldY)] = color2;
-                //myLamp.setLeds(myLamp.getPixelNumber(m % WIDTH, k), color2); // копируем его на всю нашу строку
+                ledbuff.pixel(m % fb.cfg.w(), k) = color2; // копируем его на всю нашу строку
             }
             for (uint8_t m = x; m < x + sizeX; m++)
-              //myLamp.setLeds(myLamp.getPixelNumber(m % WIDTH, anim0), color); // цвет верхней строчки копируем на всю нижнюю
-              ledbuff[EffectMath::getPixelNumberBuff(m % fieldX, anim0, fieldX, fieldY)] = color;
+              ledbuff.pixel(m % fb.cfg.w(), anim0) = color; // цвет верхней строчки копируем на всю нижнюю
           }
         }
       }
@@ -2755,7 +2740,7 @@ bool EffectCube2d::cube2dClassicRoutine()
     {
       for (uint8_t j = 0U; j < cntY; j++)
       {
-        y = gY + j * (sizeY + 1U);
+        y = (gY + j * (sizeY + 1U))  % fb.cfg.h();
         if (storage[0][j] > 0) // в нулевой ячейке храним оставшееся количество ходов прокрутки
         {
           storage[0][j]--;
@@ -2772,35 +2757,27 @@ bool EffectCube2d::cube2dClassicRoutine()
 
           if (shift < 0) // если крутим строку влево
           {
-            //color = myLamp.getPixColorXY(anim0, y); // берём цвет от левой колонки (левого пикселя)
-            color = ledbuff[EffectMath::getPixelNumberBuff(anim0, y, fieldX, fieldY)];
+            color = ledbuff.pixel(anim0, y); // берём цвет от левой колонки (левого пикселя)
             for (uint8_t k = anim0; k < anim0 + fieldX - 1; k++)
             {
-              //color2 = myLamp.getPixColorXY(k + 1, y); // берём цвет от колонки (пикселя) правее
-              color2 = ledbuff[EffectMath::getPixelNumberBuff(k + 1, y, fieldX, fieldY)];
+              color2 = ledbuff.pixel(k + 1, y); // берём цвет от колонки (пикселя) правее
               for (uint8_t m = y; m < y + sizeY; m++)
-                //myLamp.setLeds(myLamp.getPixelNumber(k, m), color2); // копируем его на всю нашу колонку
-                ledbuff[EffectMath::getPixelNumberBuff(k, m, fieldX, fieldY)] = color2;
+                ledbuff.pixel(k, m) = color2; // копируем его на всю нашу колонку
             }
             for (uint8_t m = y; m < y + sizeY; m++)
-              //myLamp.setLeds(myLamp.getPixelNumber(anim0 + fieldX - 1, m), color); // цвет левой колонки копируем на всю правую
-              ledbuff[EffectMath::getPixelNumberBuff(anim0 + fieldX - 1, m, fieldX, fieldY)] = color;
+              ledbuff.pixel(anim0 + fieldX - 1, m) = color;   // цвет левой колонки копируем на всю правую
           }
           else if (shift > 0) // если крутим столбец вверх
           {
-            //color = myLamp.getPixColorXY(anim0 + fieldX - 1, y); // берём цвет от правой колонки
-            color = ledbuff[EffectMath::getPixelNumberBuff(anim0 + fieldX - 1, y, fieldX, fieldY)];
+            color = ledbuff.pixel(anim0 + fieldX - 1, y); // берём цвет от правой колонки
             for (uint8_t k = anim0 + fieldX - 1; k > anim0; k--)
             {
-              //color2 = myLamp.getPixColorXY(k - 1, y); // берём цвет от колонки левее
-              color2 = ledbuff[EffectMath::getPixelNumberBuff(k - 1, y, fieldX, fieldY)];
+              color2 = ledbuff.pixel(k - 1, y); // берём цвет от колонки левее
               for (uint8_t m = y; m < y + sizeY; m++)
-                //myLamp.setLeds(myLamp.getPixelNumber(k, m), color2); // копируем его на всю нашу колонку
-                ledbuff[EffectMath::getPixelNumberBuff(k, m, fieldX, fieldY)] = color2;
+                ledbuff.pixel(k, m) = color2; // копируем его на всю нашу колонку
             }
             for (uint8_t m = y; m < y + sizeY; m++)
-              //myLamp.setLeds(myLamp.getPixelNumber(anim0, m), color); // цвет правой колонки копируем на всю левую
-              ledbuff[EffectMath::getPixelNumberBuff(anim0, m, fieldX, fieldY)] = color;
+              ledbuff.pixel(anim0, m) = color; // цвет правой колонки копируем на всю левую
           }
         }
       }
@@ -2817,7 +2794,7 @@ bool EffectCube2d::cube2dClassicRoutine()
     gY = gY + globalShiftY; //+= globalShiftY;
     globalShiftY = 0;
     //gX += globalShiftX; для бесшовной не годится
-    gX = (WIDTH + gX + globalShiftX) % WIDTH;
+    gX = (fb.cfg.w() + gX + globalShiftX) % fb.cfg.w();
     globalShiftX = 0;
 
     //пришла пора выбрать следующие параметры вращения
@@ -2834,7 +2811,7 @@ bool EffectCube2d::cube2dClassicRoutine()
         else if (shift != 0 && shiftAll != shift)
           shiftAll = 50;
       }
-      shiftSteps = sizeY + ((gY - shiftAll >= 0 && gY - shiftAll + fieldY < (int)HEIGHT) ? random8(2U) : 1U);
+      shiftSteps = sizeY + ((gY - shiftAll >= 0 && gY - shiftAll + fieldY < (int)fb.cfg.h()) ? random8(2U) : 1U);
 
       if (shiftSteps == sizeY) // значит полюбому shiftAll было = (-1, 0, +1) - и для нуля в том числе мы двигаем весь куб на 1 пиксель
       {
@@ -2868,7 +2845,7 @@ bool EffectCube2d::cube2dClassicRoutine()
       if (seamlessX)
         shiftSteps = sizeX + ((shiftAll < 50) ? random8(2U) : 1U);
       else
-        shiftSteps = sizeX + ((gX - shiftAll >= 0 && gX - shiftAll + fieldX < (int)WIDTH) ? random8(2U) : 1U);
+        shiftSteps = sizeX + ((gX - shiftAll >= 0 && gX - shiftAll + fieldX < (int)fb.cfg.w()) ? random8(2U) : 1U);
 
       if (shiftSteps == sizeX) // значит полюбому shiftAll было = (-1, 0, +1) - и для нуля в том числе мы двигаем весь куб на 1 пиксель
       {
