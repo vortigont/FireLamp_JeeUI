@@ -1740,13 +1740,12 @@ String EffectPrismata::setDynCtrl(UIControl*_val){
 // Адаптация от (c) SottNick
 void EffectFlock::load(){
   palettesload();    // подгружаем дефолтные палитры
-  for (uint8_t i = 0; i < AVAILABLE_BOID_COUNT; i++)
-  {
-    boids[i] = Boid(random8(0,WIDTH), random(0, HEIGHT));
-    boids[i].maxspeed = 0.380 * speedFactor + 0.380 / 2;
-    boids[i].maxforce = 0.015 * speedFactor + 0.015 / 2;
+  Boid::spawn(boids, fb.cfg.w(), fb.cfg.h());
+  for (auto &b : boids){
+    b.maxspeed = 0.380 * speedFactor + 0.380 / 2;
+    b.maxforce = 0.015 * speedFactor + 0.015 / 2;
   }
-  predator = Boid(random8(0,WIDTH), random(0, HEIGHT) );
+  predator = Boid( random8(0,fb.cfg.w()), random(0, fb.cfg.h()) );
   predator.maxspeed = 0.385 * speedFactor + 0.385 / 2;
   predator.maxforce = 0.020 * speedFactor + 0.020 / 2;
   predator.neighbordist = 8.0;
@@ -1794,25 +1793,23 @@ bool EffectFlock::flockRoutine() {
   }
 
   CRGB color = ColorFromPalette(*curPalette, hueoffset, 170);
-  for (uint8_t i = 0; i < AVAILABLE_BOID_COUNT; i++) {
-
-    Boid * boid = &boids[i];
+  for (auto &boid : boids){
     if (predatorPresent) {
           // flee from predator
-          boid->repelForce(predator.location, 8);
+          boid.repelForce(predator.location, 8);
         }
-    boid->run(boids, AVAILABLE_BOID_COUNT);
-    boid->wrapAroundBorders();
-    PVector location = boid->location;
+    boid.run(boids);
+    boid.wrapAroundBorders(fb.cfg.w(), fb.cfg.h());
+    PVector location = boid.location;
     EffectMath::drawPixelXYF(location.x, location.y, color, fb);
     if (applyWind) {
-          boid->applyForce(wind);
+          boid.applyForce(wind);
           applyWind = false;
         }
   }
   if (predatorPresent) {
-    predator.run(boids, AVAILABLE_BOID_COUNT);
-    predator.wrapAroundBorders();
+    predator.run(boids);
+    predator.wrapAroundBorders(fb.cfg.w(), fb.cfg.h());
     color = ColorFromPalette(*curPalette, hueoffset + 128, 255);
     PVector location = predator.location;
     EffectMath::drawPixelXYF(location.x, location.y, color, fb);
@@ -3452,9 +3449,8 @@ void EffectWhirl::load(){
   ff_x = random16();
   ff_y = random16();
   ff_z = random16();
-  for (uint8_t i = 0; i < AVAILABLE_BOID_COUNT; i++) {
-      boids[i] = Boid(EffectMath::randomf(0, WIDTH), 0);
-  }
+  for (auto &boid : boids)
+    boid = Boid(EffectMath::randomf(0, fb.cfg.w()), 0);
 
 }
 
@@ -3471,29 +3467,27 @@ bool EffectWhirl::whirlRoutine() {
 #endif
   fb.fade(15. * speedFactor);
 
-  for (uint8_t i = 0; i < AVAILABLE_BOID_COUNT; i++) {
-    Boid * boid = &boids[i];
-
-    float ioffset = (float)ff_scale * boid->location.x;
-    float joffset = (float)ff_scale * boid->location.y;
+  for (auto &boid : boids){
+    float ioffset = (float)ff_scale * boid.location.x;
+    float joffset = (float)ff_scale * boid.location.y;
 
     byte angle = inoise8(ff_x + ioffset, ff_y + joffset, ff_z);
 
-    boid->velocity.x = ((float)sin8(angle) * 0.0078125 - speedFactor);
-    boid->velocity.y = -((float)cos8(angle) * 0.0078125 - speedFactor);
-    boid->update();
+    boid.velocity.x = ((float)sin8(angle) * 0.0078125 - speedFactor);
+    boid.velocity.y = -((float)cos8(angle) * 0.0078125 - speedFactor);
+    boid.update();
 #ifdef MIC_EFFECTS
     if (!isMicOn())
-      EffectMath::drawPixelXYF(boid->location.x, boid->location.y, ColorFromPalette(*curPalette, angle + (uint8_t)hue), fb); // + hue постепенно сдвигает палитру по кругу
+      EffectMath::drawPixelXYF(boid.location.x, boid.location.y, ColorFromPalette(*curPalette, angle + (uint8_t)hue), fb); // + hue постепенно сдвигает палитру по кругу
     else
-      EffectMath::drawPixelXYF(boid->location.x, boid->location.y, CHSV(getMicMapFreq(), 255-micPick, constrain(micPick * EffectMath::fmap(scale, 1.0f, 255.0f, 1.25f, 5.0f), 48, 255)), fb); // + hue постепенно сдвигает палитру по кругу
+      EffectMath::drawPixelXYF(boid.location.x, boid.location.y, CHSV(getMicMapFreq(), 255-micPick, constrain(micPick * EffectMath::fmap(scale, 1.0f, 255.0f, 1.25f, 5.0f), 48, 255)), fb); // + hue постепенно сдвигает палитру по кругу
 
 #else
-    EffectMath::drawPixelXYF(boid->location.x, boid->location.y, ColorFromPalette(*curPalette, angle + (uint8_t)hue), fb); // + hue постепенно сдвигает палитру по кругу
+    EffectMath::drawPixelXYF(boid.location.x, boid.location.y, ColorFromPalette(*curPalette, angle + (uint8_t)hue), fb); // + hue постепенно сдвигает палитру по кругу
 #endif
-    if (boid->location.x < 0 || boid->location.x >= WIDTH || boid->location.y < 0 || boid->location.y >= HEIGHT) {
-      boid->location.x = EffectMath::randomf(0, WIDTH);
-      boid->location.y = 0;
+    if (boid.location.x < 0 || boid.location.x >= WIDTH || boid.location.y < 0 || boid.location.y >= HEIGHT) {
+      boid.location.x = EffectMath::randomf(0, WIDTH);
+      boid.location.y = 0;
     }
   }
   EffectMath::blur2d(fb, 30U);

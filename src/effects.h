@@ -41,6 +41,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "effectworker.h"
 #include "effectmath.h"
 #define NUMPALETTES 10
+#define NUM_LAYERS  1       // layers for noice effetcs
 
 //-------------- Специально обученный пустой эффект :)
 class EffectNone : public EffectCalc {
@@ -447,7 +448,7 @@ public:
 // Адаптация от (c) SottNick
 class EffectFlock : public EffectCalc {
 private:
-  Boid boids[AVAILABLE_BOID_COUNT];
+  std::vector<Boid> boids;
   Boid predator;
   PVector wind;
   float speedFactor;
@@ -459,7 +460,8 @@ private:
   String setDynCtrl(UIControl*_val) override;
   //void setspd(const byte _spd) override;
 public:
-    EffectFlock(LedFB &framebuffer) : EffectCalc(framebuffer){}
+    EffectFlock(LedFB &framebuffer) : EffectCalc(framebuffer),
+        boids( std::vector<Boid>(AVAILABLE_BOID_COUNT) ) {}
     void load() override;
     bool run() override;
 };
@@ -793,7 +795,7 @@ private:
     float ff_y;
     float ff_z;
     float hue;
-    Boid boids[AVAILABLE_BOID_COUNT];
+    std::vector<Boid> boids;
     uint8_t micPick = 0;
 	float speedFactor;
 
@@ -803,7 +805,7 @@ private:
     bool whirlRoutine();
     String setDynCtrl(UIControl*_val) override;
 public:
-    EffectWhirl(LedFB &framebuffer) : EffectCalc(framebuffer){}
+    EffectWhirl(LedFB &framebuffer) : EffectCalc(framebuffer), boids( std::vector<Boid>(AVAILABLE_BOID_COUNT) ) {}
     void load() override;
     bool run() override;
 };
@@ -1200,7 +1202,6 @@ private:
     static const uint8_t count = HEIGHT *2 - WIDTH /2;
     bool loadingFlag = true;
     byte csum = 0;
-    //Boid boids[AVAILABLE_BOID_COUNT];
     Boid boids[count];
     PVector location;   // Location
     String setDynCtrl(UIControl*_val) override;
