@@ -4513,7 +4513,6 @@ bool EffectShadows::run() {
 // (c) kostyamat (Kostyantyn Matviyevskyy) 2020
 // переделано kDn
 // идея https://github.com/vvip-68/GyverPanelWiFi/blob/master/firmware/GyverPanelWiFi_v1.02/patterns.ino
-// !++
 String EffectPatterns::setDynCtrl(UIControl*_val) {
   if(_val->getId()==3) _speed = EffectCalc::setDynCtrl(_val).toInt();
   else if(_val->getId()==4) _scale = EffectCalc::setDynCtrl(_val).toInt();
@@ -4535,11 +4534,10 @@ void EffectPatterns::drawPicture_XY() {
 
   fb.dim(127);
 
-  for (int16_t x = -1; x < (int)WIDTH+1; x++)
-  {
-    for (int16_t y = -1; y < (int)HEIGHT+1; y++)
-    {
-      byte in = buff[EffectMath::getPixelNumberBuff((int)(xsin + x) % 20U, (int)(ysin + y) % 20U, 20U, 20U)];
+  for (int16_t y = -1; y < fb.cfg.h(); y++){
+    for (int16_t x = -1; x < fb.cfg.h(); x++){
+
+      auto &in = buff[abs((int)(ysin + y)) % PATTERNS_BUFFSIZE] [abs((int)(xsin + x)) % PATTERNS_BUFFSIZE];
       CHSV color2 = colorMR[in]; // CHSV(HUE_BLUE, 255, 255);
 
       if(_subpixel){
@@ -4551,7 +4549,7 @@ void EffectPatterns::drawPicture_XY() {
             EffectMath::drawPixelXYF(((float)x-vx), (float)((float)y-vy), color2, fb, 0);
         }
       } else {
-        EffectMath::drawPixelXY(x, y, color2);
+        fb.pixel(x, y) = color2;
       }
     }
   }
@@ -4564,11 +4562,10 @@ void EffectPatterns::load() {
   colorMR[6] = CHSV(random8(), 255U, 255U);
   colorMR[7].hue = colorMR[6].hue + 96; //(beatsin8(1, 0, 255, 0, 127), 255U, 255U);
 
-  for (byte x = 0; x < 20U; x++)
-  {
-    for (byte y = 0; y < 20U; y++)
-    {
-      buff[EffectMath::getPixelNumberBuff(x, 19-y, 20U, 20U)] = (pgm_read_byte(&patterns[patternIdx][y % 10U][x % 10U]));
+  // this is ugly, could use 4 times less buffer for sprite
+  for (byte y = 0; y < PATTERNS_BUFFSIZE; y++){
+    for (byte x = 0; x < PATTERNS_BUFFSIZE; x++){
+      buff[y][x] = pgm_read_byte(&patterns[patternIdx][y % 10U][x % 10U]);
     }
   }
 }
@@ -4594,13 +4591,9 @@ bool EffectPatterns::patternsRoutine()
   } else patternIdx = _sc%(sizeof(patterns)/sizeof(Pattern));
 
   if(chkIdx != patternIdx){
-    for (byte x = 0; x < 20U; x++)
-    {
-      for (byte y = 0; y < 20U; y++)
-      {
-        buff[EffectMath::getPixelNumberBuff(x, 19-y, 20U, 20U)] = (pgm_read_byte(&patterns[patternIdx][y % 10U][x % 10U]));
-      }
-    }
+    for (byte y = 0; y < PATTERNS_BUFFSIZE; y++)
+      for (byte x = 0; x < PATTERNS_BUFFSIZE; x++)
+        buff[y][x] = pgm_read_byte(&patterns[patternIdx][y % 10U][x % 10U]);
   }
 
   double corr = fabs(_speedX) + fabs(_speedY);

@@ -1096,7 +1096,7 @@ private:
     bool dir = false;
     byte csum = 0;
     byte _bri = 255U;
-    byte buff[20 * 20];
+    std::vector< std::vector<uint8_t> > buff{ std::vector< std::vector<uint8_t> >(PATTERNS_BUFFSIZE, std::vector<uint8_t>(PATTERNS_BUFFSIZE)) };
     //LedFB buff(PATTERNS_BUFFSIZE, PATTERNS_BUFFSIZE);
     float xsin, ysin;
     unsigned long lastrun2;
