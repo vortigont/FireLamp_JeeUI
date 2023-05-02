@@ -230,23 +230,6 @@ void gammaCorrection()
 }
 */
 
-/*
-uint32_t getPixColor(uint32_t thisSegm) // функция получения цвета пикселя по его номеру
-{
-  uint32_t thisPixel = thisSegm * SEGMENTS;
-  if (thisPixel < num_leds ) 
-    return (((uint32_t)mx[thisPixel].r << 16) | ((uint32_t)mx[thisPixel].g << 8 ) | (uint32_t)mx[thisPixel].b);
-  else return 0;
-  //else return (((uint32_t)overrun.r << 16) | ((uint32_t)overrun.g << 8 ) | (uint32_t)overrun.b);
-}
-*/
-
-void drawPixelXY(int16_t x, int16_t y, const CRGB &color) // функция отрисовки точки по координатам X Y
-{
-  if (x<0 || y<0 || x>maxWidthIndex || y>maxHeightIndex) return; // skip out of canvas drawing
-  getPixel(x,y) = color;
-}
-
 //awesome wu_pixel procedure by reddit u/sutaburosu
 void wu_pixel(uint32_t x, uint32_t y, CRGB col, LedFB &fb) {
   // extract the fractional parts and derive their inverses

@@ -199,11 +199,6 @@ namespace EffectMath {
 
     /*  some other funcs depends on this */
     CRGB &getPixel(uint16_t x, uint16_t y);
-
-    // в extra_tasks.h есть странные объекты, которые прибиты гвоздями к этой функции
-    void drawPixelXY(int16_t x, int16_t y, const CRGB &color); // функция отрисовки точки по координатам X Y
-
-
   
     /*      UNUSED or obsolete      */
     // функция возвращает true, если float ~= целое (первая цифра после запятой == 0)
