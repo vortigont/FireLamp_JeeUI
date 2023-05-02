@@ -255,7 +255,7 @@ CRGB colorsmear(const CRGB &col1, const CRGB &col2, byte l) {
   return temp1;
 }
 
-void sDrawPixelXYF(float x, float y, const CRGB &color) {
+void sDrawPixelXYF(float x, float y, const CRGB &color, LedFB &fb) {
   byte ax = byte(x);
   byte xsh = (x - byte(x)) * 255;
   byte ay = byte(y);
@@ -266,28 +266,28 @@ void sDrawPixelXYF(float x, float y, const CRGB &color) {
   CRGB col3 = colorsmear(CRGB(0, 0, 0),colP1, ysh);
   CRGB col4 = colorsmear(CRGB(0, 0, 0),col2, ysh);
 
-  getPixel(ax, ay) += col1;
-  getPixel(ax+1, ay) += col2;
-  getPixel(ax, ay+1) += col3;
-  getPixel(ax+1, ay+1) += col4;
+  fb.pixel(ax, ay) += col1;
+  fb.pixel(ax+1, ay) += col2;
+  fb.pixel(ax, ay+1) += col3;
+  fb.pixel(ax+1, ay+1) += col4;
 }
 
-void sDrawPixelXYF_X(float x, int16_t y, const CRGB &color) {
+void sDrawPixelXYF_X(float x, int16_t y, const CRGB &color, LedFB &fb) {
   byte ax = byte(x);
   byte xsh = (x - byte(x)) * 255;
   CRGB col1 = colorsmear(color, CRGB(0, 0, 0), xsh);
   CRGB col2 = colorsmear(CRGB(0, 0, 0), color, xsh);
-  getPixel(ax, y) += col1;
-  getPixel(ax + 1, y) += col2;
+  fb.pixel(ax, y) += col1;
+  fb.pixel(ax + 1, y) += col2;
 }
 
-void sDrawPixelXYF_Y(int16_t x, float y, const CRGB &color) {
+void sDrawPixelXYF_Y(int16_t x, float y, const CRGB &color, LedFB &fb) {
   byte ay = byte(y);
   byte ysh = (y - byte(y)) * 255;
   CRGB col1 = colorsmear(color, CRGB(0, 0, 0), ysh);
   CRGB col2 = colorsmear(CRGB(0, 0, 0), color, ysh);
-  getPixel(x, ay) += col1;
-  getPixel(x, ay+1) += col2; 
+  fb.pixel(x, ay) += col1;
+  fb.pixel(x, ay+1) += col2; 
 }
 
 void drawPixelXYF(float x, float y, const CRGB &color, LedFB &fb, uint8_t darklevel)
@@ -354,81 +354,7 @@ void drawPixelXYF_Y(int16_t x, float y, const CRGB &color, LedFB &fb, uint8_t da
     else fb.pixel(x, yn) = clr;
   }
 }
-/*
-CRGB getPixColorXYF(float x, float y)
-{
-  // extract the fractional parts and derive their inverses
-  uint8_t xx = (x - static_cast<int32_t>(x)) * 255;
-  uint8_t yy = (y - static_cast<int32_t>(y)) * 255;
-  uint8_t ix = 255 - xx;
-  uint8_t iy = 255 - yy;
-  // calculate the intensities for each affected pixel
-  uint8_t wu[4] = {wu_weight(ix, iy), wu_weight(xx, iy),
-                   wu_weight(ix, yy), wu_weight(xx, yy)};
-  // multiply the intensities by the colour, and saturating-add them to the pixels
-  CRGB clr=CRGB::Black;
-  for (uint8_t i = 0; i < 4; i++) {
-    int16_t xn = x + (i & 1), yn = y + ((i >> 1) & 1);
-    if(!i){
-      clr = getPixel(xn, yn);
-    } else {
-      CRGB tmpColor = getPixel(xn, yn);
-      clr.r = qadd8(clr.r, (tmpColor.r * wu[i]) >> 8);
-      clr.g = qadd8(clr.g, (tmpColor.g * wu[i]) >> 8);
-      clr.b = qadd8(clr.b, (tmpColor.b * wu[i]) >> 8);
-    }
-  }
-  return clr;
-}
 
-CRGB getPixColorXYF_X(float x, int16_t y)
-{
-  if (x<-1.0 || y<-1.0 || x>((float)WIDTH) || y>((float)HEIGHT)) return CRGB::Black;
-
-  // extract the fractional parts and derive their inverses
-  uint8_t xx = (x - static_cast<int32_t>(x)) * 255, ix = 255 - xx;
-  // calculate the intensities for each affected pixel
-  uint8_t wu[2] = {ix, xx};
-  // multiply the intensities by the colour, and saturating-add them to the pixels
-  CRGB clr=CRGB::Black;
-  for (int8_t i = 1; i >= 0; i--) {
-      int16_t xn = x + (i & 1);
-      if(i){
-        clr = getPixel(xn, y);
-      } else {
-        CRGB tmpColor = getPixel(xn, y);
-        clr.r = qadd8(clr.r, (tmpColor.r * wu[i]) >> 8);
-        clr.g = qadd8(clr.g, (tmpColor.g * wu[i]) >> 8);
-        clr.b = qadd8(clr.b, (tmpColor.b * wu[i]) >> 8);
-      }
-  }
-  return clr;
-}
-
-CRGB getPixColorXYF_Y(int16_t x, float y)
-{
-  if (x<-1 || y<-1.0 || x>((float)WIDTH) || y>((float)HEIGHT)) return CRGB::Black;
-
-  // extract the fractional parts and derive their inverses
-  uint8_t yy = (y - static_cast<int32_t>(y)) * 255, iy = 255 - yy;
-  // calculate the intensities for each affected pixel
-  uint8_t wu[2] = {iy, yy};
-  // multiply the intensities by the colour, and saturating-add them to the pixels
-  CRGB clr=CRGB::Black;
-  for (int8_t i = 1; i >= 0; i--) {
-      int16_t yn = y + (i & 1);
-      if(i){
-        clr = getPixel(x, yn);
-      } else {
-        CRGB tmpColor = getPixel(x, yn);
-        clr.r = qadd8(clr.r, (tmpColor.r * wu[i]) >> 8);
-        clr.g = qadd8(clr.g, (tmpColor.g * wu[i]) >> 8);
-        clr.b = qadd8(clr.b, (tmpColor.b * wu[i]) >> 8);
-      }
-  }
-  return clr;
-}
-*/
 /*!
    @brief    Write a line.  Bresenham's algorithm - thx wikpedia
    https://github.com/adafruit/Adafruit-GFX-Library
@@ -602,15 +528,6 @@ void nightMode(LedFB &ledarr){
         i.g = dim8_lin(i.g);
         i.b = dim8_lin(i.b);
     }
-}
-
-/*  some other funcs depends on this */
-CRGB &getPixel(uint16_t x, uint16_t y){
-  return mx.pixel(x,y);
-  // Все, что не попадает в диапазон WIDTH x HEIGHT отправляем в "невидимый" светодиод.
-//  if (y > getfb.cfg.maxHeightIndex()() || x > getfb.cfg.maxWidthIndex()())
-//      return overrun;
-//  return leds[getPixelNumber(x,y)];
 }
 
 float fmap(const float x, const float in_min, const float in_max, const float out_min, const float out_max){

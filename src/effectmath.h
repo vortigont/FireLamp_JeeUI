@@ -119,6 +119,11 @@ namespace EffectMath {
     void drawPixelXYF_Y(int16_t x, float y, const CRGB &color, LedFB &fb, uint8_t darklevel=50);
     void drawPixelXYF_X(float x, int16_t y, const CRGB &color, LedFB &fb, uint8_t darklevel=50);
 
+    // Вариант субпикселя от @stepko, в некоторых случаях работает лучше, но в некоторых хуже
+    void sDrawPixelXYF(float x, float y, const CRGB &color, LedFB &fb); 
+    void sDrawPixelXYF_Y(int16_t x, float y, const CRGB &color, LedFB &fb);
+    void sDrawPixelXYF_X(float x, int16_t y, const CRGB &color, LedFB &fb);
+
     /**
      * @brief draw a line in a framebuffer defined by non integer coordinates
      * 
@@ -180,13 +185,6 @@ namespace EffectMath {
     float atan_fast(float x);
 
 
-
-
-    // TODO: below methods needs revision
-
-    /*  some other funcs depends on this */
-    CRGB &getPixel(uint16_t x, uint16_t y);
-  
     /*      UNUSED or obsolete      */
     // функция возвращает true, если float ~= целое (первая цифра после запятой == 0)
     //bool isInteger(float val);
@@ -195,18 +193,6 @@ namespace EffectMath {
     /* Функция возврашает "вес" яркости пикселя от 0 (черный) до 765 (белый). Может использоваться для проверки не "пустое ли место"
     для этого есть FastLED CRGB::getLuma
     uint16_t RGBweight (CRGB *leds, uint16_t idx);  */
-/*
-    CRGB getPixColorXYF_X(float x, int16_t y);
-    CRGB getPixColorXYF_Y(int16_t x, float y);
-    CRGB getPixColorXYF(float x, float y);
-*/
-
-    // TODO
-
-    // Вариант субпикселя от @stepko, в некоторых случаях работает лучше, но в некоторых хуже
-    void sDrawPixelXYF(float x, float y, const CRGB &color); 
-    void sDrawPixelXYF_Y(int16_t x, float y, const CRGB &color);
-    void sDrawPixelXYF_X(float x, int16_t y, const CRGB &color);
 
     // аналог fmap, но не линейная. (linear == fmap)
     float mapcurve(const float x, const float in_min, const float in_max, const float out_min, const float out_max, float (*curve)(float,float,float,float));
