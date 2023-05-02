@@ -42,11 +42,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "effectmath.h"
 #define NUMPALETTES 10
 
-const byte maxDim = max(WIDTH, HEIGHT);
-const byte minDim = min(WIDTH, HEIGHT);
-const byte width_adj = (WIDTH < HEIGHT ? (HEIGHT - WIDTH) /2 : 0);
-const byte height_adj = (HEIGHT < WIDTH ? (WIDTH - HEIGHT) /2: 0);
-
 //-------------- Специально обученный пустой эффект :)
 class EffectNone : public EffectCalc {
 private:
@@ -537,6 +532,9 @@ private:
 	String setDynCtrl(UIControl*_val) override;
 	bool incrementalDriftRoutine();
 	bool incrementalDriftRoutine2();
+    // some adjustments
+    int width_adj(){ return (fb.cfg.w() < fb.cfg.h() ? (fb.cfg.h() - fb.cfg.w()) /2 : 0); };
+    int height_adj(){ return (fb.cfg.h() < fb.cfg.w() ? (fb.cfg.w() - fb.cfg.h()) /2: 0); };
 
 public:
     EffectDrift(LedFB &framebuffer) : EffectCalc(framebuffer){}
@@ -587,6 +585,9 @@ private:
     byte hue;
     const float width_adj_f = (float)(WIDTH < HEIGHT ? (HEIGHT - WIDTH) / 2. : 0);
     const float height_adj_f= (float)(HEIGHT < WIDTH ? (WIDTH - HEIGHT) / 2. : 0);
+    int width_adj(){ return (fb.cfg.w() < fb.cfg.h() ? (fb.cfg.h() - fb.cfg.w()) /2 : 0); };
+    int height_adj(){ return (fb.cfg.h() < fb.cfg.w() ? (fb.cfg.w() - fb.cfg.h()) /2: 0); };
+
     bool radarRoutine();
     String setDynCtrl(UIControl *_val) override;
 
@@ -1008,7 +1009,7 @@ private:
     byte mic[2];
     byte rand;
     bool flag = false;
-    uint8_t minDimLocal = maxDim > 32 ? 32 : 16;
+    uint8_t minDimLocal = fb.cfg.maxDim() > 32 ? 32 : 16;
 
     String setDynCtrl(UIControl*_val) override;
     bool munchRoutine();
@@ -1465,7 +1466,7 @@ class EffectSmokeballs: public EffectCalc {
 class EffectCell: public EffectCalc {
   private:
     const uint8_t Lines = 5;
-	const bool glitch = abs((int)WIDTH-(int)HEIGHT) >= minDim/4;
+	const bool glitch = abs((int)WIDTH-(int)HEIGHT) >= fb.cfg.minDim()/4;
 	const byte density = 50;
     uint8_t Scale = 6;
     uint8_t _scale = 1;
@@ -1481,6 +1482,9 @@ class EffectCell: public EffectCalc {
     void spider();
     void spruce();
     void vals();
+
+    int width_adj(){ return (fb.cfg.w() < fb.cfg.h() ? (fb.cfg.h() - fb.cfg.w()) /2 : 0); };
+    int height_adj(){ return (fb.cfg.h() < fb.cfg.w() ? (fb.cfg.w() - fb.cfg.h()) /2: 0); };
 
   public:
     EffectCell(LedFB &framebuffer) : EffectCalc(framebuffer){}

@@ -1923,10 +1923,10 @@ bool EffectDrift::incrementalDriftRoutine()
     return false;
   }
 
-  for (uint8_t i = 1; i < maxDim / 2U; i++) { // возможно, стоит здесь использовать const MINLENGTH
-    int8_t x = beatsin8((float)(maxDim/2 - i) * _dri_speed, maxDim / 2U - 1 - i, maxDim / 2U - 1 + 1U + i, 0, 64U + dri_phase); // используем константы центра матрицы из эффекта Кометы
-    int8_t y = beatsin8((float)(maxDim/2 - i) * _dri_speed, maxDim / 2U - 1 - i, maxDim / 2U - 1 + 1U + i, 0, dri_phase);       // используем константы центра матрицы из эффекта Кометы
-    EffectMath::wu_pixel((x-width_adj) * 256, (y-height_adj) * 256, ColorFromPalette(RainbowColors_p, (i - 1U) * maxDim_steps + _dri_delta), fb);
+  for (uint8_t i = 1; i < fb.cfg.maxDim() / 2U; i++) { // возможно, стоит здесь использовать const MINLENGTH
+    int8_t x = beatsin8((float)(fb.cfg.maxDim()/2 - i) * _dri_speed, fb.cfg.maxDim() / 2U - 1 - i, fb.cfg.maxDim() / 2U - 1 + 1U + i, 0, 64U + dri_phase); // используем константы центра матрицы из эффекта Кометы
+    int8_t y = beatsin8((float)(fb.cfg.maxDim()/2 - i) * _dri_speed, fb.cfg.maxDim() / 2U - 1 - i, fb.cfg.maxDim() / 2U - 1 + 1U + i, 0, dri_phase);       // используем константы центра матрицы из эффекта Кометы
+    EffectMath::wu_pixel((x-width_adj()) * 256, (y-height_adj()) * 256, ColorFromPalette(RainbowColors_p, (i - 1U) * maxDim_steps + _dri_delta), fb);
   }
   EffectMath::blur2d(fb, beatsin8(3U, 5, 100));
   return true;
@@ -1942,23 +1942,23 @@ bool EffectDrift::incrementalDriftRoutine2()
     return false;
   }
 
-  for (uint8_t i = 0; i < maxDim; i++){
+  for (uint8_t i = 0; i < fb.cfg.maxDim(); i++){
     int8_t x = 0;
     int8_t y = 0;
     CRGB color;
-    if (i < maxDim / 2U)
+    if (i < fb.cfg.maxDim() / 2U)
     {
-      x = beatsin8((i + 1) * _dri_speed, i + 1U, maxDim- 1 - i, 0, 64U + dri_phase);
-      y = beatsin8((i + 1) * _dri_speed, i + 1U, maxDim - 1 - i, 0, dri_phase);
+      x = beatsin8((i + 1) * _dri_speed, i + 1U, fb.cfg.maxDim()- 1 - i, 0, 64U + dri_phase);
+      y = beatsin8((i + 1) * _dri_speed, i + 1U, fb.cfg.maxDim() - 1 - i, 0, dri_phase);
       color = ColorFromPalette(RainbowColors_p, i * maxDim_steps * 2U + _dri_delta);
     }
     else
     {
-      x = beatsin8((maxDim - i) * _dri_speed, maxDim - 1 - i, i + 1U, 0, dri_phase);
-      y = beatsin8((maxDim - i) * _dri_speed, maxDim - 1 - i, i + 1U, 0, 64U + dri_phase);
+      x = beatsin8((fb.cfg.maxDim() - i) * _dri_speed, fb.cfg.maxDim() - 1 - i, i + 1U, 0, dri_phase);
+      y = beatsin8((fb.cfg.maxDim() - i) * _dri_speed, fb.cfg.maxDim() - 1 - i, i + 1U, 0, 64U + dri_phase);
       color = ColorFromPalette(RainbowColors_p, ~(i * maxDim_steps + _dri_delta)); 
     }
-    EffectMath::wu_pixel((x-width_adj) * 256, (y-height_adj) * 256, color, fb);
+    EffectMath::wu_pixel((x-width_adj()) * 256, (y-height_adj()) * 256, color, fb);
   }
   EffectMath::blur2d(fb, beatsin8(3U, 5, 100));
   return true;
@@ -2073,10 +2073,10 @@ bool EffectRadar::radarRoutine()
   if (subPix)
   {
     fb.fade(5 + 20 * (float)speed / 255);
-    for (float offset = 0.0f; offset < (float)maxDim /2; offset +=0.25)
+    for (float offset = 0.0f; offset < (float)fb.cfg.maxDim() /2; offset +=0.25)
     {
-      float x = (float)EffectMath::mapsincos8(false, eff_theta, offset * 4, maxDim * 4 - offset * 4) / 4.  - width_adj_f;
-      float y = (float)EffectMath::mapsincos8(true, eff_theta, offset * 4, maxDim * 4 - offset * 4) / 4.  - height_adj_f;
+      float x = (float)EffectMath::mapsincos8(false, eff_theta, offset * 4, fb.cfg.maxDim() * 4 - offset * 4) / 4.  - width_adj_f;
+      float y = (float)EffectMath::mapsincos8(true, eff_theta, offset * 4, fb.cfg.maxDim() * 4 - offset * 4) / 4.  - height_adj_f;
       CRGB color = ColorFromPalette(*curPalette, hue, 255 / random8(1, 12));
       EffectMath::drawPixelXYF(x, y, color, fb);
     }
@@ -2087,10 +2087,10 @@ bool EffectRadar::radarRoutine()
     EffectMath::blur2d(fb, beatsin8(5U, 3U, 10U));
     fb.dim(255U - (0 + _scale * 1.5));
 
-    for (uint8_t offset = 0; offset < maxDim /2; offset++)
+    for (uint8_t offset = 0; offset < fb.cfg.maxDim() /2; offset++)
     {
-      fb.pixel(EffectMath::mapsincos8(false, eff_theta, offset, maxDim - offset) - width_adj,
-               EffectMath::mapsincos8(true, eff_theta, offset, maxDim - offset) - height_adj) = ColorFromPalette(*curPalette, 255U - (offset * 16U + eff_offset));
+      fb.pixel(EffectMath::mapsincos8(false, eff_theta, offset, fb.cfg.maxDim() - offset) - width_adj(),
+               EffectMath::mapsincos8(true, eff_theta, offset, fb.cfg.maxDim() - offset) - height_adj()) = ColorFromPalette(*curPalette, 255U - (offset * 16U + eff_offset));
     }
   }
   //EVERY_N_MILLIS(EFFECTS_RUN_TIMER) {
@@ -5718,19 +5718,19 @@ void EffectCell::spruce() {
   uint8_t z;
   if (effId == 3) z = triwave8(hue);
   else z = beatsin8(1, 1, 255);
-  for (uint8_t i = 0; i < minDim; i++) {
+  for (uint8_t i = 0; i < fb.cfg.minDim(); i++) {
     x = beatsin16(i * (map(speed, 1, 255, 3, 20)), 
                      i * 2, 
-                     (minDim * 4 - 2) - (i * 2 + 2));
+                     (fb.cfg.minDim() * 4 - 2) - (i * 2 + 2));
     if (effId == 2) 
-      EffectMath::drawPixelXYF_X(x/4 + height_adj, i, random8(10) == 0 ? CHSV(random8(), random8(32, 255), 255) : CHSV(100, 255, map(speed, 1, 255, 128, 100)), fb);
+      EffectMath::drawPixelXYF_X(x/4 + height_adj(), i, random8(10) == 0 ? CHSV(random8(), random8(32, 255), 255) : CHSV(100, 255, map(speed, 1, 255, 128, 100)), fb);
     else
-      EffectMath::drawPixelXYF_X(x/4 + height_adj, i, CHSV(hue + i * z, 255, 255), fb);
+      EffectMath::drawPixelXYF_X(x/4 + height_adj(), i, CHSV(hue + i * z, 255, 255), fb);
   }
   if (!(WIDTH& 0x01))
-    fb.pixel(WIDTH/2 - ((millis()>>9) & 0x01 ? 1:0), minDim - 1 - ((millis()>>8) & 0x01 ? 1:0)) = CHSV(0, 255, 255);
+    fb.pixel(WIDTH/2 - ((millis()>>9) & 0x01 ? 1:0), fb.cfg.minDim() - 1 - ((millis()>>8) & 0x01 ? 1:0)) = CHSV(0, 255, 255);
   else
-    fb.pixel(WIDTH/2, minDim - 1) = CHSV(0, (millis()>>9) & 0x01 ? 0 : 255, 255);
+    fb.pixel(WIDTH/2, fb.cfg.minDim() - 1) = CHSV(0, (millis()>>9) & 0x01 ? 0 : 255, 255);
 
   if (glitch) EffectMath::confetti(fb, density);
 }
