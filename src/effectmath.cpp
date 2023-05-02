@@ -443,8 +443,8 @@ void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, const CRGB &color,
   // the rest will be caught on pixel access level 
   if (x0<0 && x1<0) return;
   if (y0<0 && y1<0) return;
-  if (x0>maxWidthIndex && x1>maxWidthIndex) return;
-  if (y0>maxHeightIndex && y1>maxHeightIndex) return;
+  if (x0>fb.cfg.maxWidthIndex() && x1>fb.cfg.maxWidthIndex()) return;
+  if (y0>fb.cfg.maxHeightIndex() && y1>fb.cfg.maxHeightIndex()) return;
 
   int16_t steep = abs(y1 - y0) > abs(x1 - x0);
   if (steep) {
@@ -608,7 +608,7 @@ void nightMode(LedFB &ledarr){
 CRGB &getPixel(uint16_t x, uint16_t y){
   return mx.pixel(x,y);
   // Все, что не попадает в диапазон WIDTH x HEIGHT отправляем в "невидимый" светодиод.
-//  if (y > getmaxHeightIndex() || x > getmaxWidthIndex())
+//  if (y > getfb.cfg.maxHeightIndex()() || x > getfb.cfg.maxWidthIndex()())
 //      return overrun;
 //  return leds[getPixelNumber(x,y)];
 }

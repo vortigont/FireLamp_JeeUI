@@ -51,15 +51,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #define NUM_LAYERS2            (2U)                 // The coordinates for 3 16-bit noise spaces.
 
 namespace EffectMath {
-    constexpr uint16_t maxDim = ((WIDTH>HEIGHT)?WIDTH:HEIGHT);
-    constexpr uint16_t minDim = ((WIDTH<HEIGHT)?WIDTH:HEIGHT);
-    constexpr uint16_t maxHeightIndex = HEIGHT-1;
-    constexpr uint16_t maxWidthIndex = WIDTH-1;
-    constexpr uint16_t getmaxDim() {return maxDim;}
-    constexpr uint16_t getminDim() {return minDim;}
-    constexpr int16_t getmaxWidthIndex() {return maxWidthIndex;}
-    constexpr int16_t getmaxHeightIndex() {return maxHeightIndex;}
-
     /** полезные обертки **/
     constexpr uint8_t wrapX(int8_t x){ return (x + WIDTH) % WIDTH; }
     constexpr uint8_t wrapY(int8_t y){ return (y + HEIGHT) % HEIGHT; }
