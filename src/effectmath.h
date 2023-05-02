@@ -47,9 +47,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #define MOVE_X 1
 #define MOVE_Y 0
 
-#define NUM_LAYERS             (1U)                 // The coordinates for 3 16-bit noise spaces.
-#define NUM_LAYERS2            (2U)                 // The coordinates for 3 16-bit noise spaces.
-
 namespace EffectMath {
     /*    Наложение эффектов на буфер, рисование, работа с цветами     */
 
@@ -374,7 +371,6 @@ typedef Vector2<float> PVector;
 // Methods for Separation, Cohesion, Alignment added
 class Boid {
   public:
-
     PVector location;
     PVector velocity;
     PVector acceleration;
@@ -390,13 +386,7 @@ class Boid {
 
     Boid() {}
 
-    Boid(float x, float y) {
-      acceleration = PVector(0, 0);
-      velocity = PVector(randomf(), randomf());
-      location = PVector(x, y);
-      maxspeed = 1.5;
-      maxforce = 0.05;
-    }
+    Boid(float x, float y);
 
     static float randomf() {
       return mapfloat(random(0, 255), 0, 255, -.5, .5);
@@ -406,8 +396,8 @@ class Boid {
       return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
     }
 
-    void run(Boid boids [], uint8_t boidCount) {
-      flock(boids, boidCount);
+    void run(std::vector<Boid> boids) {
+      flock(boids);
       update();
       // wrapAroundBorders();
       // render();
@@ -424,19 +414,19 @@ class Boid {
     void repelForce(PVector obstacle, float radius);
 
     // We accumulate a new acceleration each time based on three rules
-    void flock(Boid boids [], uint8_t boidCount);
+    void flock(std::vector<Boid> &boids);
 
     // Separation
     // Method checks for nearby boids and steers away
-    PVector separate(Boid boids [], uint8_t boidCount);
+    PVector separate(std::vector<Boid> &boids);
 
     // Alignment
     // For every nearby boid in the system, calculate the average velocity
-    PVector align(Boid boids [], uint8_t boidCount);
+    PVector align(std::vector<Boid> &boids);
 
     // Cohesion
     // For the average location (i.e. center) of all nearby boids, calculate steering vector towards that location
-    PVector cohesion(Boid boids [], uint8_t boidCount);
+    PVector cohesion(std::vector<Boid> &boids);
 
     // A method that calculates and applies a steering force towards a target
     // STEER = DESIRED MINUS VELOCITY
@@ -446,11 +436,11 @@ class Boid {
     // STEER = DESIRED MINUS VELOCITY
     void arrive(PVector target);
 
-    void wrapAroundBorders();
+    void wrapAroundBorders(uint16_t w, uint16_t h);
 
-    void avoidBorders();
+    void avoidBorders(uint16_t w, uint16_t h);
 
-    bool bounceOffBorders(float bounce);
+    bool bounceOffBorders(float bounce, uint16_t w, uint16_t h);
 
     void render() {
       // // Draw a triangle rotated in the direction of velocity
@@ -468,6 +458,13 @@ class Boid {
       // popMatrix();
       // backgroundLayer.drawPixel(location.x, location.y, CRGB::Blue);
     }
+
+    /**
+     * @brief spawn Boids at random location
+     * 
+     * @param boids 
+     */
+    static void spawn(std::vector<Boid> &boids, uint16_t w, uint16_t h);
 };
 
 // 3D Noise map structure

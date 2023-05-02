@@ -729,10 +729,10 @@ void Boid::repelForce(PVector obstacle, float radius) {
   }
 }
 
-void Boid::flock(Boid boids [], uint8_t boidCount) {
-  PVector sep = separate(boids, boidCount);   // Separation
-  PVector ali = align(boids, boidCount);      // Alignment
-  PVector coh = cohesion(boids, boidCount);   // Cohesion
+void Boid::flock(std::vector<Boid> &boids) {
+  PVector sep = separate(boids);   // Separation
+  PVector ali = align(boids);      // Alignment
+  PVector coh = cohesion(boids);   // Cohesion
   // Arbitrarily weight these forces
   sep *= 1.5;
   ali *= 1.0;
@@ -743,19 +743,18 @@ void Boid::flock(Boid boids [], uint8_t boidCount) {
   applyForce(coh);
 }
 
-PVector Boid::separate(Boid boids [], uint8_t boidCount) {
-  PVector steer = PVector(0, 0);
+PVector Boid::separate(std::vector<Boid> &boids) {
+  PVector steer(0, 0);
   int count = 0;
   // For every boid in the system, check if it's too close
-  for (int i = 0; i < boidCount; i++) {
-    Boid other = boids[i];
-    if (!other.enabled)
+  for (auto &i : boids){
+    if (!i.enabled)
       continue;
-    float d = location.dist(other.location);
+    float d = location.dist(i.location);
     // If the distance is greater than 0 and less than an arbitrary amount (0 when you are yourself)
     if ((d > 0) && (d < desiredseparation)) {
       // Calculate vector pointing away from neighbor
-      PVector diff = location - other.location;
+      PVector diff = location - i.location;
       diff.normalize();
       diff /= d;        // Weight by distance
       steer += diff;
@@ -778,11 +777,10 @@ PVector Boid::separate(Boid boids [], uint8_t boidCount) {
   return steer;
 }
 
-PVector Boid::align(Boid boids [], uint8_t boidCount) {
-  PVector sum = PVector(0, 0);
+PVector Boid::align(std::vector<Boid> &boids) {
+  PVector sum(0, 0);
   int count = 0;
-  for (int i = 0; i < boidCount; i++) {
-    Boid other = boids[i];
+  for (auto &other : boids){
     if (!other.enabled)
       continue;
     float d = location.dist(other.location);
@@ -804,11 +802,10 @@ PVector Boid::align(Boid boids [], uint8_t boidCount) {
   }
 }
 
-PVector Boid::cohesion(Boid boids [], uint8_t boidCount) {
-  PVector sum = PVector(0, 0);   // Start with empty vector to accumulate all locations
+PVector Boid::cohesion(std::vector<Boid> &boids) {
+  PVector sum(0, 0);   // Start with empty vector to accumulate all locations
   int count = 0;
-  for (int i = 0; i < boidCount; i++) {
-    Boid other = boids[i];
+  for (auto &other : boids){
     if (!other.enabled)
       continue;
     float d = location.dist(other.location);
@@ -856,21 +853,20 @@ void Boid::arrive(PVector target) {
   applyForce(steer);
 }
 
-void Boid::wrapAroundBorders() {
-  if (location.x < 0) location.x = WIDTH - 1;
-  if (location.y < 0) location.y = HEIGHT - 1;
-  if (location.x >= WIDTH) location.x = 0;
-  if (location.y >= HEIGHT) location.y = 0;
+void Boid::wrapAroundBorders(uint16_t w, uint16_t h) {
+  if (location.x < 0) location.x = w - 1;
+  if (location.y < 0) location.y = h - 1;
+  if (location.x >= w) location.x = 0;
+  if (location.y >= h) location.y = 0;
 }
 
-
-void Boid::avoidBorders() {
+void Boid::avoidBorders(uint16_t w, uint16_t h) {
   PVector desired = velocity;
 
   if (location.x < 8) desired = PVector(maxspeed, velocity.y);
-  if (location.x >= WIDTH - 8) desired = PVector(-maxspeed, velocity.y);
+  if (location.x >= w - 8) desired = PVector(-maxspeed, velocity.y);
   if (location.y < 8) desired = PVector(velocity.x, maxspeed);
-  if (location.y >= HEIGHT - 8) desired = PVector(velocity.x, -maxspeed);
+  if (location.y >= h - 8) desired = PVector(velocity.x, -maxspeed);
 
   if (desired != velocity) {
     PVector steer = desired - velocity;
@@ -880,15 +876,15 @@ void Boid::avoidBorders() {
 
   if (location.x < 0) location.x = 0;
   if (location.y < 0) location.y = 0;
-  if (location.x >= WIDTH) location.x = WIDTH - 1;
-  if (location.y >= HEIGHT) location.y = HEIGHT - 1;
+  if (location.x >= w) location.x = w - 1;
+  if (location.y >= h) location.y = h - 1;
 }
 
-bool Boid::bounceOffBorders(float bounce) {
+bool Boid::bounceOffBorders(float bounce, uint16_t w, uint16_t h) {
   bool bounced = false;
 
-  if (location.x >= WIDTH) {
-    location.x = WIDTH - 1;
+  if (location.x >= w) {
+    location.x = w - 1;
     velocity.x *= -bounce;
     bounced = true;
   }
@@ -898,8 +894,8 @@ bool Boid::bounceOffBorders(float bounce) {
     bounced = true;
   }
 
-  if (location.y >= HEIGHT) {
-    location.y = HEIGHT - 1;
+  if (location.y >= h) {
+    location.y = h - 1;
     velocity.y *= -bounce;
     bounced = true;
   }
@@ -910,6 +906,18 @@ bool Boid::bounceOffBorders(float bounce) {
   }
 
   return bounced;
+}
+
+Boid::Boid(float x, float y) :
+  location(PVector(x, y)),
+  velocity(PVector(randomf(), randomf())),
+  acceleration(PVector(0, 0)),
+  maxforce(0.05),
+  maxspeed(1.5)  {}
+
+void Boid::spawn(std::vector<Boid> &boids, uint16_t w, uint16_t h){
+  for (auto &b : boids)
+    b = Boid(random8(0,w), random(0,h));
 }
 
 
