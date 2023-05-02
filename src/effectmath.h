@@ -51,10 +51,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #define NUM_LAYERS2            (2U)                 // The coordinates for 3 16-bit noise spaces.
 
 namespace EffectMath {
-    /** полезные обертки **/
-    constexpr uint8_t wrapX(int8_t x){ return (x + WIDTH) % WIDTH; }
-    constexpr uint8_t wrapY(int8_t y){ return (y + HEIGHT) % HEIGHT; }
-
     /*    Наложение эффектов на буфер, рисование, работа с цветами     */
 
     // затенение

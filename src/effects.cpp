@@ -2201,7 +2201,6 @@ void EffectFire2012::load(){
   random16_add_entropy(millis());
 }
 
-// !++
 String EffectFire2012::setDynCtrl(UIControl*_val){
   if(_val->getId()==3) _scale = EffectCalc::setDynCtrl(_val).toInt();
   else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
@@ -2222,40 +2221,29 @@ bool EffectFire2012::run() {
 
 bool EffectFire2012::fire2012Routine() {
   sparking = 64 + _scale;
-
-#if HEIGHT / 6 > 6
-  #define FIRE_BASE 6
-#else
-  #define FIRE_BASE HEIGHT / 6 + 1
-#endif
+  int fire_base = (fb.cfg.h()/6)>6 ? 6 : fb.cfg.h()/6 + 1;
 
   // Loop for each column individually
-  for (uint8_t x = 0; x < WIDTH; x++)
+  for (uint8_t x = 0; x < fb.cfg.w(); x++)
   {
     // Step 1.  Cool down every cell a little
-    for (uint8_t i = 0; i < HEIGHT; i++)
-    {
-      noise3d[0][x][i] = qsub8(noise3d[0][x][i], random(0, ((cooling * 10) / HEIGHT) + 2));
-    }
+    for (uint8_t y = 0; y < fb.cfg.h(); y++)
+      noise3d.map_lxy(0,x,y) = qsub8(noise3d.map_lxy(0,x,y), random(0, ((cooling * 10) / fb.cfg.h()) + 2));
 
     // Step 2.  Heat from each cell drifts 'up' and diffuses a little
-    for (uint8_t k = HEIGHT; k > 1; k--)
-    {
-      noise3d[0][x][EffectMath::wrapY(k)] = (noise3d[0][x][k - 1] + noise3d[0][x][EffectMath::wrapY(k - 2)] + noise3d[0][x][EffectMath::wrapY(k - 2)]) / 3;
-    }
+    for (uint8_t k = fb.cfg.maxHeightIndex(); k > 2; k--)
+      noise3d.map_lxy(0,x,k) = (noise3d.map_lxy(0,x,k - 1) + noise3d.map_lxy(0,x,k - 2) + noise3d.map_lxy(0,x,k - 3)) / 3;
 
     // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
     if (random(255) < sparking)
     {
-      int j = random(FIRE_BASE);
-      noise3d[0][x][j] = qadd8(noise3d[0][x][j], random(96, 255)); // 196, 255
+      int j = random(fire_base);
+      noise3d.map_lxy(0,x,j) = qadd8(noise3d.map_lxy(0,x,j), random(96, 255)); // 196, 255
     }
 
     // Step 4.  Map from heat cells to LED colors
-    for (uint8_t y = 0; y < HEIGHT; y++)
-    {
-      nblend(fb.pixel(x, y), ColorFromPalette(*curPalette, ((noise3d[0][x][y] * 0.7) + (noise3d[0][EffectMath::wrapX(x + 1)][y] * 0.3))), fireSmoothing);
-    }
+    for (uint8_t y = 0; y < fb.cfg.h(); y++)
+      nblend(fb.pixel(x, y), ColorFromPalette(*curPalette, ((noise3d.map_lxy(0,x,y) * 0.7) + noise3d.map_lxy(0, wrapX(x + 1), y) * 0.3)), fireSmoothing);
   }
   return true;
 }

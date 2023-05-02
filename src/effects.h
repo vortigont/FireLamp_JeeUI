@@ -40,6 +40,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "color_palette.h"
 #include "effectworker.h"
 #include "effectmath.h"
+#define NUMPALETTES 10
 
 const byte maxDim = max(WIDTH, HEIGHT);
 const byte minDim = min(WIDTH, HEIGHT);
@@ -285,8 +286,6 @@ public:
  */
 class EffectFire2012 : public EffectCalc {
 private:
-#define NUMPALETTES 10
-
   // COOLING: How much does the air cool as it rises?
   // Less cooling = taller flames.  More cooling = shorter flames.
     uint8_t cooling = 80U; // 70
@@ -297,11 +296,16 @@ private:
   // Lower = more blending and smoother flames. Higher = less blending and flickery flames
     uint8_t _scale = 1;
     const uint8_t fireSmoothing = 60U; // 90
-    uint8_t noise3d[NUM_LAYERS][WIDTH][HEIGHT];
+    Noise3dMap noise3d;
     bool fire2012Routine();
     String setDynCtrl(UIControl*_val) override;
+
+    /** полезные обертки **/
+    uint8_t wrapX(int8_t x){ return (x + fb.cfg.w()) % fb.cfg.w(); }
+    uint8_t wrapY(int8_t y){ return (y + fb.cfg.h()) % fb.cfg.h(); }
+
 public:
-    EffectFire2012(LedFB &framebuffer) : EffectCalc(framebuffer){}
+    EffectFire2012(LedFB &framebuffer) : EffectCalc(framebuffer), noise3d(1, fb.cfg.w(), fb.cfg.h()) {}
     void load() override;
     bool run() override;
 };
