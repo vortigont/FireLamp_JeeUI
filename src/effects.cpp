@@ -2304,20 +2304,10 @@ bool EffectFire2018::run()
 
   // shift the buffer one line up, last line goes to first, but we will overwrite it later
   for (uint8_t y = fb.cfg.maxHeightIndex(); y; --y)
-  {
-    //for (uint8_t x = 0; x != noise.result.cfg.maxWidthIndex; x++){
     std::swap(fire18heat[y], fire18heat[y-1]);
-      //fire18heat[EffectMath::getPixelNumberBuff(x, y, WIDTH, HEIGHT)] = fire18heat[EffectMath::getPixelNumberBuff(x, y + 1, WIDTH, HEIGHT)];
-    //}
-  }
 
   // draw lowest line - seed the fire somewhere from the middle of the noise map
   std::memcpy(fire18heat[0].data(), noise.map[0].data() + noise.xy(0, noise.e_centerY), noise.w);
-/*  for (uint8_t x = 0; x < noise.w; x++)
-  {
-    fire18heat[EffectMath::getPixelNumberBuff(x, EffectMath::getmaxHeightIndex(), WIDTH, HEIGHT)] = noise3dx[0][EffectMath::getmaxWidthIndex() - x][CentreY - 1]; // хз, почему взято с середины. вожможно, нужно просто с 7 строки вне зависимости от высоты матрицы
-  }*/
-
 
   //dim
   for (uint8_t y = 0; y != noise.h-1; y++)
@@ -2329,7 +2319,6 @@ bool EffectFire2018::run()
       // high value = high flames
       //dim = dim / 1.7 * constrain(0.05*myLamp.effects.getBrightness()+0.01,0.01,1.0); //точно нужен прямой доступ?
       //dim = 255 - dim;
-      //fire18heat[EffectMath::getPixelNumberBuff(x, y, WIDTH, HEIGHT)] = scale8(fire18heat[EffectMath::getPixelNumberBuff(x, y, WIDTH, HEIGHT)], dim);
     }
 
   for (uint8_t y = 0; y != noise.h-1; y++)
@@ -2338,7 +2327,6 @@ bool EffectFire2018::run()
     {
       // map the colors based on heatmap
       CRGB color(fire18heat[y][x], (float)fire18heat[y][x] * (scale/5.0) * 0.01, 0);  // todo: wtf??? more nifty floats
-      //CRGB color = CRGB(fire18heat[EffectMath::getPixelNumberBuff(x, y, WIDTH, HEIGHT)], (float)fire18heat[EffectMath::getPixelNumberBuff(x, y, WIDTH, HEIGHT)] * (scale/5.0) * 0.01, 0);
       color*=2.5;
       //EffectMath::drawPixelXY(x, EffectMath::getmaxHeightIndex() - y, color);
 

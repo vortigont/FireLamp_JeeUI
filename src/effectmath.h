@@ -197,9 +197,6 @@ namespace EffectMath {
 
     // TODO: below methods needs revision
 
-    // для работы с буфером
-    uint32_t getPixelNumberBuff(uint16_t x, uint16_t y, uint8_t W , uint8_t H); // получить номер пикселя в буфере по координатам
-    
     /*  some other funcs depends on this */
     CRGB &getPixel(uint16_t x, uint16_t y);
 

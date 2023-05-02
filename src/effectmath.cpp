@@ -621,24 +621,6 @@ void nightMode(LedFB &ledarr){
     }
 }
 
-
-uint32_t getPixelNumberBuff(uint16_t x, uint16_t y, uint8_t W , uint8_t H) // получить номер пикселя в буфере по координатам
-{
-
-  uint16_t _THIS_Y = y;
-  uint16_t _THIS_X = x;
-  
-  if ((y % 2 == 0) || MATRIX_TYPE)                     // если чётная строка
-  {
-      return ((uint32_t)_THIS_Y * SEGMENTS * W + _THIS_X);
-  }
-  else                                                      // если нечётная строка
-  {
-      return ((uint32_t)_THIS_Y * SEGMENTS * W + W - _THIS_X - 1);
-  }
-
-}
-
 /*  some other funcs depends on this */
 CRGB &getPixel(uint16_t x, uint16_t y){
   return mx.pixel(x,y);
