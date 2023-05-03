@@ -1225,99 +1225,33 @@ private:
     int snakeCount;
     bool subPix = false;
     bool onecolor = false;
-    enum Direction
-{
-  UP,
-  DOWN,
-  LEFT,
-  RIGHT
-};
+    enum class dir_t:uint8_t {
+        UP,
+        DOWN,
+        LEFT,
+        RIGHT
+    };
 
-struct Pixel
-{
-    float x;
-    float y;
-};
+    struct Pixel{
+        float x;
+        float y;
+    };
 
-CRGB colors[SNAKE_LENGTH];
-struct Snake
-{
-  float internal_counter = 0.0;
-  float internal_speedf = 1.0;
-  Pixel pixels[SNAKE_LENGTH];
+    CRGB colors[SNAKE_LENGTH];
 
-  Direction direction;
+    struct Snake {
+        float internal_counter = 0.0;
+        float internal_speedf = 1.0;
+        Pixel pixels[SNAKE_LENGTH];
 
-  void newDirection()
-  {
-    switch (direction)
-    {
-    case UP:
-    case DOWN:
-      direction = random(0, 2) == 1 ? RIGHT : LEFT;
-      break;
+        dir_t direction;
 
-    case LEFT:
-    case RIGHT:
-      direction = random(0, 2) == 1 ? DOWN : UP;
-
-    default:
-      break;
-    }
-  };
-
-  void shuffleDown(float speedy, bool subpix)
-  {
-    internal_counter+=speedy*internal_speedf;
-
-    if(internal_counter>1.0){
-        for (byte i = (byte)SNAKE_LENGTH - 1; i > 0; i--)
-        {
-            if(subpix)
-                pixels[i] = pixels[i - 1];
-            else {
-                pixels[i].x = (uint8_t)pixels[i - 1].x;
-                pixels[i].y = (uint8_t)pixels[i - 1].y;
-            }
-        }
-        double f;
-        internal_counter=modf(internal_counter, &f);
-    }
-  }
-
-  void reset()
-  {
-    direction = UP;
-    for (int i = 0; i < (int)SNAKE_LENGTH; i++)
-    {
-      pixels[i].x = 0;
-      pixels[i].y = 0;
-    }
-  }
-
-  void move(float speedy)
-  {
-    float inc = speedy*internal_speedf;
-
-    switch (direction)
-    {
-    case UP:
-      pixels[0].y = pixels[0].y >= HEIGHT ? inc : (pixels[0].y + inc);
-      break;
-    case LEFT:
-      pixels[0].x = pixels[0].x >= WIDTH ? inc : (pixels[0].x + inc);
-      break;
-    case DOWN:
-      pixels[0].y = pixels[0].y <= 0 ? HEIGHT - inc : pixels[0].y - inc;
-      break;
-    case RIGHT:
-      pixels[0].x = pixels[0].x <= 0 ? WIDTH - inc : pixels[0].x - inc;
-      break;
-    }
-  }
-
-  void draw(CRGB colors[SNAKE_LENGTH], int snakenb, bool subpix, LedFB &fb, bool isDebug=false);
-};
+        void newDirection();
+        void shuffleDown(float speedy, bool subpix);
+        void reset();
+        void move(float speedy, uint16_t w,  uint16_t h);
+        void draw(CRGB colors[SNAKE_LENGTH], int snakenb, bool subpix, LedFB &fb, bool isDebug=false);
+    };
 
     Snake snakes[MAX_SNAKES];
     String setDynCtrl(UIControl*_val) override;

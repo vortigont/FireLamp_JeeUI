@@ -5051,7 +5051,7 @@ void EffectSnake::load() {
     snakes[i].reset();
     snakes[i].pixels[0].x = fb.cfg.w() / 2; // пусть расползаются из центра
     snakes[i].pixels[0].y = fb.cfg.h() / 2; // так будет интереснее
-    snakes[i].direction = (EffectSnake::Direction)random(4);
+    snakes[i].direction = (dir_t)(random8(4));
     snakes[i].internal_speedf = ((random(2) ? 0.5 : 0.33)+1.0/(random(i+1)+1))+0.5;
   }
 }
@@ -5100,7 +5100,7 @@ bool EffectSnake::run() {
     }
 #endif
 
-    snake.move(speedFactor);
+    snake.move(speedFactor, fb.cfg.w(), fb.cfg.h());
     snake.draw(colors, i, subPix, fb, false /*isDebug()*/);
   }
   return true;
@@ -5110,24 +5110,91 @@ void EffectSnake::Snake::draw(CRGB colors[SNAKE_LENGTH], int snakenb, bool subpi
 {
   int len= isDebug ? 1 : (int)SNAKE_LENGTH;
   for (int i = 0; i < len; i++) // (int)SNAKE_LENGTH
-  {
+  {/*
     if(isDebug){ // тест сабпикселя
       FastLED.clear(); 
     }
-
+  */
     if (subpix){
       EffectMath::drawPixelXYF(pixels[i].x, pixels[i].y, colors[i], fb);
     }
     else {
       if(i!=0)
         fb.pixel(pixels[i].x, pixels[i].y) = colors[i];
-      else if(direction<LEFT)
+      else if(direction< dir_t::LEFT)
         EffectMath::drawPixelXYF_Y(pixels[i].x, pixels[i].y, colors[i], fb);
       else
         EffectMath::drawPixelXYF_X(pixels[i].x, pixels[i].y, colors[i], fb);
     }
   }
 }
+
+void EffectSnake::Snake::move(float speedy, uint16_t w,  uint16_t h){
+  float inc = speedy*internal_speedf;
+
+  switch (direction){
+  case dir_t::UP:
+    pixels[0].y = pixels[0].y >= h ? inc : (pixels[0].y + inc);
+    break;
+  case dir_t::LEFT:
+    pixels[0].x = pixels[0].x >= w ? inc : (pixels[0].x + inc);
+    break;
+  case dir_t::DOWN:
+    pixels[0].y = pixels[0].y <= 0 ? h - inc : pixels[0].y - inc;
+    break;
+  case dir_t::RIGHT:
+    pixels[0].x = pixels[0].x <= 0 ? w - inc : pixels[0].x - inc;
+    break;
+  }
+}
+
+void EffectSnake::Snake::newDirection(){
+    switch (direction)
+    {
+    case dir_t::UP:
+    case dir_t::DOWN:
+    direction = random(0, 2) == 1 ? dir_t::RIGHT : dir_t::LEFT;
+    break;
+
+    case dir_t::LEFT:
+    case dir_t::RIGHT:
+    direction = random(0, 2) == 1 ? dir_t::DOWN : dir_t::UP;
+
+    default:
+    break;
+    }
+};
+
+void EffectSnake::Snake::shuffleDown(float speedy, bool subpix)
+{
+    internal_counter+=speedy*internal_speedf;
+
+    if(internal_counter>1.0){
+        for (byte i = (byte)SNAKE_LENGTH - 1; i > 0; i--)
+        {
+            if(subpix)
+                pixels[i] = pixels[i - 1];
+            else {
+                pixels[i].x = (uint8_t)pixels[i - 1].x;
+                pixels[i].y = (uint8_t)pixels[i - 1].y;
+            }
+        }
+        double f;
+        internal_counter=modf(internal_counter, &f);
+    }
+}
+
+void EffectSnake::Snake::reset()
+{
+    direction = dir_t::UP;
+    for (int i = 0; i < (int)SNAKE_LENGTH; i++)
+    {
+    pixels[i].x = 0;
+    pixels[i].y = 0;
+    }
+}
+
+
 
 //------------ Эффект "Nexus"
 // (с) kostyamat 4.12.2020
