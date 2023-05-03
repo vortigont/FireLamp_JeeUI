@@ -133,7 +133,7 @@ String EffectWhiteColorStripe::setDynCtrl(UIControl*_val){
 
 bool EffectWhiteColorStripe::whiteColorStripeRoutine()
 {
-  FastLED.clear();
+  fb.clear();
 
 #ifdef MIC_EFFECTS
   byte _scale = isMicOn() ? (256.0/getMicMapMaxPeak()+0.3)*scale : scale;
@@ -443,7 +443,7 @@ EVERY_N_SECONDS(1){
           }
           else {
             modeColor = 0;
-            FastLED.clear();
+            fb.clear();
           }          
         }
         break;
@@ -1029,7 +1029,7 @@ bool EffectBBalls::run(){
 }
 
 void EffectBBalls::load(){
-  FastLED.clear();
+  fb.clear();
   if (_scale <= 16) {
     bballsNUM_BALLS =  map(_scale, 1, 16, 1, bballsMaxNUM_BALLS);
   } else {
@@ -1477,7 +1477,7 @@ bool EffectComet::run(){
 
 bool EffectComet::smokeRoutine() {
   // if(isDebug()){
-  //   FastLED.clear(); // для отладки чистим матрицу, чтобы показать перемещение точек
+  //   fb.clear(); // для отладки чистим матрицу, чтобы показать перемещение точек
   // }
   count ++;
   if (colorId == 1) {
@@ -1523,7 +1523,7 @@ bool EffectComet::smokeRoutine() {
 bool EffectComet::firelineRoutine() {
   // if(!isDebug()) 
     fb.fade(map(blur, 1, 64, 20, 5)); 
-  // else FastLED.clear();
+  // else fb.clear();
 
   count ++;
   if (colorId == 1) {
@@ -1553,7 +1553,7 @@ bool EffectComet::firelineRoutine() {
 bool EffectComet::fractfireRoutine() {
   // if(!isDebug()) 
     fb.fade(map(blur, 1, 64, 20, 5)); 
-  // else FastLED.clear();
+  // else fb.clear();
 
   float beat = (float)beatsin88(5 * speedy, 50, 100) / 100 ;
   count ++;
@@ -1581,7 +1581,7 @@ bool EffectComet::fractfireRoutine() {
 bool EffectComet::flsnakeRoutine() {
   // if(!isDebug()) 
     fb.dim(blur); 
-  // else FastLED.clear();
+  // else fb.clear();
   
   ++count;
   if (colorId == 1 or colorId == 255) {
@@ -1625,7 +1625,7 @@ bool EffectComet::rainbowCometRoutine()
   if (blur < 64) fb.fade(map(blur, 1, 64, 32, 0));
 
   // if(isDebug()){
-  //   FastLED.clear(); // для отладки чистим матрицу, чтобы показать перемещение точек
+  //   fb.clear(); // для отладки чистим матрицу, чтобы показать перемещение точек
   // }
   CRGB _eNs_color;
   if (colorId == 255) {
@@ -1662,7 +1662,7 @@ bool EffectComet::rainbowComet3Routine()
   if (count%2 == 0) hue++;
 
   // if(isDebug()){
-  //   FastLED.clear(); // для отладки чистим матрицу, чтобы показать перемещение точек
+  //   fb.clear(); // для отладки чистим матрицу, чтобы показать перемещение точек
   // }
 
   CHSV color = rgb2hsv_approximate(CRGB::Green);
@@ -1881,7 +1881,7 @@ String EffectDrift::setDynCtrl(UIControl*_val){
 
 bool EffectDrift::run(){
   if (driftType == 1 or driftType == 2)
-    FastLED.clear();
+    fb.clear();
   else
     fb.fade(beatsin88(350. * EffectMath::fmap((float)speed, 1., 255., 1., 5.), 512, 4096) / 256);
 
@@ -2348,7 +2348,7 @@ void EffectRingsLock::ringsSet(){
   if (curPalette == nullptr) {
     return;
   }
-  //FastLED.clear();
+  //fb.clear();
 
   ringNb = (float)fb.cfg.h() / ringWidth + ((fb.cfg.h() % ringWidth == 0U) ? 0U : 1U)%fb.cfg.h(); // количество колец
   upRingHue = ringWidth - (ringWidth * ringNb - fb.cfg.h()) / 2U; // толщина верхнего кольца. может быть меньше нижнего
@@ -2849,7 +2849,7 @@ bool EffectTime::run(){
 }
 
 void EffectTime::load(){
-  FastLED.clear();
+  fb.clear();
   palettesload();    // подгружаем дефолтные палитры
 
   if(((curTimePos<=(signed)LET_WIDTH*2-(LET_WIDTH/2)) || (curTimePos>=(signed)fb.cfg.w()+(LET_WIDTH/2))) )
@@ -2862,7 +2862,7 @@ void EffectTime::load(){
 
 bool EffectTime::palleteTest()
 {
-  FastLED.clear();
+  fb.clear();
   float sf = 0.996078431372549+speed/255.; // смещение, для скорости 1 смещения не будет, т.к. суммарный коэф. == 1
   for(uint8_t y=0; y<fb.cfg.h(); y++)
     for(uint8_t x=0; x<fb.cfg.w(); x++)
@@ -2874,7 +2874,7 @@ bool EffectTime::timePrintRoutine()
 {
   if (speed==254 || speed==1 || speed==255){
     EVERY_N_SECONDS(5){
-      FastLED.clear();
+      fb.clear();
 
       String tmp = embui.timeProcessor.getFormattedShortTime();
       if(fb.cfg.h()>=16){
@@ -2892,7 +2892,7 @@ bool EffectTime::timePrintRoutine()
       }
     }
   } else {
-    //FastLED.clear();
+    //fb.clear();
     EVERY_N_SECONDS(5){
       isMinute=!isMinute;
     }
@@ -3222,7 +3222,7 @@ bool EffectLeapers::run(){
   }
 
   //fb.dim(0);
-  FastLED.clear();
+  fb.clear();
 
   //for (unsigned i = 0; i < numParticles; i++) {
   for (auto &l : leapers){
@@ -4066,7 +4066,7 @@ bool EffectOsc::run() {
     lastrun = millis();
   }
   //fb.fade(200);
-  FastLED.clear();
+  fb.clear();
 
   if (scale == 1) {
     byte micPick = (isMicOn()? getMicMaxPeak() : random8(200));
@@ -4290,7 +4290,7 @@ bool EffectButterfly::run()
   if (wings && isColored)
     fb.fade(200);
   else
-    FastLED.clear();
+    fb.clear();
 
   float maxspeed;
   uint8_t tmp;
@@ -4566,7 +4566,7 @@ bool EffectPatterns::patternsRoutine()
 
 // ***************************** "Стрелки" *****************************
 void EffectArrows::load(){
-    FastLED.clear();
+    fb.clear();
     arrow_complete = false;
     arrow_mode_orig = _scale-1;
     arrow_mode = arrow_mode_orig == 0 ? random8(1,5) : arrow_mode_orig;
@@ -4598,7 +4598,7 @@ bool EffectArrows::run() {
     }
   }
 
-  FastLED.clear();
+  fb.clear();
 
   CHSV color;
   // движение стрелки - cлева направо
@@ -5103,7 +5103,7 @@ void EffectSnake::Snake::draw(CRGB colors[SNAKE_LENGTH], int snakenb, bool subpi
   for (int i = 0; i < len; i++) // (int)SNAKE_LENGTH
   {/*
     if(isDebug){ // тест сабпикселя
-      FastLED.clear(); 
+      fb.clear(); 
     }
   */
     if (subpix){
@@ -5329,7 +5329,7 @@ void EffectTest::regen() {
 }
 
 bool EffectTest::run() {
-  FastLED.clear(); 
+  fb.clear(); 
   int8_t dx = 0, dy = 0;
   for (uint8_t i = 0; i < map(SnakeNum, 1, 10, 2, MAX_SNAKES); i++)
   {
@@ -5547,7 +5547,7 @@ void EffectPopcorn::reload(){
 bool EffectPopcorn::run() {
   randomSeed(micros());
   if (blurred) fb.fade( 30. * speedFactor);
-  else FastLED.clear();
+  else fb.clear();
   float popcornGravity = 0.1 * speedFactor;
 
   for (uint8_t r = 0; r < numRockets; r++) {
@@ -6070,7 +6070,7 @@ bool EffectOscilator::run() {
   // расчёт химической реакции и отрисовка мира
   uint16_t colorCount[3] = {0U, 0U, 0U};
   hue++;
-  FastLED.clear();
+  fb.clear();
   for (uint8_t x = 0; x < fb.cfg.w(); x++) {
       for (uint8_t y = 0; y < fb.cfg.h(); y++) {
           if (oscillatingWorld[x][y].red){
@@ -6270,7 +6270,7 @@ bool EffectWrain::run() {
     {
     case 1:
     case 5:
-      FastLED.clear();
+      fb.clear();
       break;
     case 2:
     case 6:
@@ -6728,7 +6728,7 @@ bool EffectCircles::run() {
   _video = isMicOn() ? constrain(getMicMaxPeak() * EffectMath::fmap(gain, 1.0f, 255.0f, 1.25f, 5.0f), 48U, 255U) : 255;
 #endif
   randomSeed(millis());
-  FastLED.clear();
+  fb.clear();
   for (uint8_t i = 0; i < count; i++) {
     circles[i].bpm += speedFactor;
     if (circles[i].radius() < 0.001) {
@@ -7499,7 +7499,7 @@ String EffectStarShips::setDynCtrl(UIControl*_val){
 
 void EffectStarShips::load() {
   palettesload();
-  FastLED.clear();
+  fb.clear();
 }
 
 bool EffectStarShips::run() {
@@ -7769,7 +7769,7 @@ bool EffectVU::run() {
   }
 #endif
 */
-  FastLED.clear();
+  fb.clear();
 
   // Process the FFT data into bar heights
   for (byte band = 0; band < NUM_BANDS; band++) {
