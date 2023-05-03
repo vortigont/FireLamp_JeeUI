@@ -161,7 +161,7 @@ public:
 class EffectPulse : public EffectCalc {
     uint8_t pulse_hue;
     float pulse_step = 0;
-    uint8_t centerX = random8(WIDTH - 5U) + 3U;
+    uint8_t centerX = random8(fb.cfg.w() - 5U) + 3U;
     uint8_t centerY = random8(HEIGHT - 5U) + 3U;
     uint8_t currentRadius = 4;
     float _pulse_hue = 0;
@@ -401,11 +401,11 @@ public:
  */
 class EffectSpiro : public EffectCalc {
 private:
-  const uint8_t spiroradiusx = WIDTH /4; //((!WIDTH & 1) ? (WIDTH -1) : WIDTH) / 4;
-  const uint8_t spiroradiusy = HEIGHT /4;//(!(HEIGHT & 1) ? (HEIGHT-1) : HEIGHT) / 4;
+  const uint8_t spiroradiusx = WIDTH /4;
+  const uint8_t spiroradiusy = HEIGHT /4;
 
-  const uint8_t spirocenterX = WIDTH /2; //(!(WIDTH & 1) ? (WIDTH -1) : WIDTH) / 2;
-  const uint8_t spirocenterY = HEIGHT /2; //(!(HEIGHT & 1) ? (HEIGHT-1) : HEIGHT) / 2;
+  const uint8_t spirocenterX = WIDTH /2;
+  const uint8_t spirocenterY = HEIGHT /2;
 
   const uint8_t spirominx = spirocenterX - spiroradiusx;
   const uint8_t spiromaxx = spirocenterX + spiroradiusx - (WIDTH%2 == 0 ? 1:0);// + 1;
@@ -525,7 +525,7 @@ public:
 // https://github.com/pixelmatix/aurora/blob/master/PatternIncrementalDrift.h
 class EffectDrift : public EffectCalc {
 private:
-	const byte maxDim_steps = 256 / max(WIDTH, HEIGHT);
+	byte maxDim_steps(){ return 256 / fb.cfg.maxDim(); }
 	uint8_t dri_phase;
 	float _dri_speed;
 	uint8_t _dri_delta;
@@ -924,11 +924,6 @@ struct Dot {    // класс для создания снарядов и пет
 };
 
 class EffectFireworks : public EffectCalc {
-//#define MODEL_BORDER (fb.cfg.w() - 4U)  
-//#define MODEL_WIDTH  (2*MODEL_BORDER + fb.cfg.w()) // не трогать, - матиматика
-//#define MODEL_HEIGHT (2*MODEL_BORDER + fb.cfg.h()) // -//-
-//#define PIXEL_X_OFFSET ((MODEL_WIDTH  - fb.cfg.w() ) / 2) // -//-
-//#define PIXEL_Y_OFFSET ((MODEL_HEIGHT - fb.cfg.h()) / 2) // -//-
 
     DotsStore store;
     byte dim;
@@ -1027,7 +1022,7 @@ public:
 class EffectNoise : public EffectCalc {
 private:
 
-    uint8_t CentreX =  (WIDTH / 2) - 1;
+    uint8_t CentreX =  (fb.cfg.w() / 2) - 1;
     uint8_t CentreY = (HEIGHT / 2) - 1;
     uint32_t x[NUM_LAYERS];
     uint32_t y[NUM_LAYERS];
@@ -1192,7 +1187,7 @@ public:
 // доведено до ума - kostyamat
 class EffectAttract : public EffectCalc {
 private:
-    const uint8_t spirocenterX = WIDTH / 2;
+    const uint8_t spirocenterX = fb.cfg.w() / 2;
     const uint8_t spirocenterY = HEIGHT / 2;
     float speedFactor;
     float mass;    // Mass, tied to size
@@ -1377,7 +1372,6 @@ class EffectNexus: public EffectCalc {
 // адаптация и доработки kostyamat
 class EffectTest : public EffectCalc {
 private:
-//#define MAX_SNAKES    (WIDTH * 2)          // максимальное количество червяков
     uint8_t SnakeNum;                        // выбранное количество червяков
     long  snakeLast[MAX_SNAKES] ;            // тут будет траектория тела червяка
     float snakePosX[MAX_SNAKES];             // тут будет позиция головы
@@ -1409,7 +1403,7 @@ private:
     bool revCol = false;
     //bool tiltDirec;
     float speedFactor;
-    float center = (float)WIDTH / 2.;
+    float center = (float)fb.cfg.w() / 2.;
 
     typedef struct
     {
@@ -1839,9 +1833,9 @@ public:
 // (c) Stepko + kostyamat https://editor.soulmatelights.com/my-patterns/655
 class EffectRacer: public EffectCalc {
 private:
-    float posX = random(0, WIDTH-1);
+    float posX = random(0, fb.cfg.w()-1);
     float posY = random(0, HEIGHT-1);
-    uint8_t aimX = random(0, WIDTH)-1;
+    uint8_t aimX = random(0, fb.cfg.w())-1;
     uint8_t aimY = random(0, HEIGHT-1);
     float radius = 0;
     byte hue = millis()>>1; //random(0, 255);
@@ -1923,10 +1917,10 @@ private:
     //Germany
     void germany(uint8_t i)
     {
-        for (uint8_t j = 0; j < HEIGHT; j++)
+        for (uint8_t j = 0; j < fb.cfg.h(); j++)
         {
             fb.pixel(i, j) += 
-            (j < thisMax - HEIGHT / 4) ? CHSV(68, 255, thisVal) : (j < thisMax + HEIGHT / 4) ? CHSV(0, 255, thisVal)
+            (j < thisMax - fb.cfg.h() / 4) ? CHSV(68, 255, thisVal) : (j < thisMax + fb.cfg.h() / 4) ? CHSV(0, 255, thisVal)
             : CHSV(0, 0, thisVal / 2.5);
         }
     }
@@ -1934,7 +1928,7 @@ private:
     //Ukraine
     void ukraine(uint8_t i)
     {
-        for (uint8_t j = 0; j < HEIGHT; j++)
+        for (uint8_t j = 0; j < fb.cfg.h(); j++)
         {
             fb.pixel(i, j) += 
             (j < thisMax) ? CHSV(50, 255, thisVal) : CHSV(150, 255, thisVal);
@@ -1944,10 +1938,10 @@ private:
     //Belarus
     void belarus(uint8_t i)
     {
-        for (uint8_t j = 0; j < HEIGHT; j++)
+        for (uint8_t j = 0; j < fb.cfg.h(); j++)
         {
             fb.pixel(i, j) += 
-            (j < thisMax - HEIGHT / 4) ? CHSV(0, 224, thisVal) : (j < thisMax + HEIGHT / 4) ? CHSV(0, 0, thisVal)
+            (j < thisMax - fb.cfg.h() / 4) ? CHSV(0, 224, thisVal) : (j < thisMax + fb.cfg.h() / 4) ? CHSV(0, 0, thisVal)
             : CHSV(0, 224, thisVal);
         }
     }
@@ -1955,10 +1949,10 @@ private:
     //Russia
     void russia(uint8_t i)
     {
-        for (uint8_t j = 0; j < HEIGHT; j++)
+        for (uint8_t j = 0; j < fb.cfg.h(); j++)
         {
             fb.pixel(i, j) += 
-            (j < thisMax - HEIGHT / 4) ? CHSV(0, 255, thisVal) : (j < thisMax + HEIGHT / 4) ? CHSV(150, 255, thisVal)
+            (j < thisMax - fb.cfg.h() / 4) ? CHSV(0, 255, thisVal) : (j < thisMax + fb.cfg.h() / 4) ? CHSV(150, 255, thisVal)
             : CHSV(0, 0, thisVal);
         }
     }
@@ -1966,7 +1960,7 @@ private:
     //Poland
     void poland(uint8_t i)
     {
-        for (uint8_t j = 0; j < HEIGHT; j++)
+        for (uint8_t j = 0; j < fb.cfg.h(); j++)
         {
             fb.pixel(i, j) += 
             (j < thisMax + 1) ? CHSV(248, 214, (float)thisVal * 0.83) : CHSV(25, 3, (float)thisVal * 0.91);
@@ -1976,11 +1970,11 @@ private:
     //The USA
     void usa(uint8_t i)
     {
-        for (uint8_t j = 0; j < HEIGHT; j++)
+        for (uint8_t j = 0; j < fb.cfg.h(); j++)
         {
             fb.pixel(i, j) +=
-            ((i <= WIDTH / 2) && (j + thisMax > HEIGHT - 1 + HEIGHT / 16)) ? 
-            ((i % 2 && ((int)j - HEIGHT / 16 + thisMax) % 2) ? 
+            ((i <= fb.cfg.w() / 2) && (j + thisMax > fb.cfg.h() - 1 + fb.cfg.h() / 16)) ? 
+            ((i % 2 && ((int)j - fb.cfg.h() / 16 + thisMax) % 2) ? 
             CHSV(160, 0, thisVal) : CHSV(160, 255, thisVal)) 
             : ((j + 1 + thisMax) % 6 < 3 ? CHSV(0, 0, thisVal) : CHSV(0, 255, thisVal));
         }
@@ -1989,10 +1983,10 @@ private:
     //Italy
     void italy(uint8_t i)
     {
-        for (uint8_t j = 0; j < HEIGHT; j++)
+        for (uint8_t j = 0; j < fb.cfg.h(); j++)
         {
             fb.pixel(i, j) += 
-            (i < WIDTH / 3) ? CHSV(90, 255, thisVal) : (i < WIDTH - 1 - WIDTH / 3) ? CHSV(0, 0, thisVal)
+            (i < fb.cfg.w() / 3) ? CHSV(90, 255, thisVal) : (i < fb.cfg.w() - 1 - fb.cfg.w() / 3) ? CHSV(0, 0, thisVal)
             : CHSV(0, 255, thisVal);
         }
     }
@@ -2000,10 +1994,10 @@ private:
     //France
     void france(uint8_t i)
     {
-        for (uint8_t j = 0; j < HEIGHT; j++)
+        for (uint8_t j = 0; j < fb.cfg.h(); j++)
         {
             fb.pixel(i, j) += 
-            (i < WIDTH / 3) ? CHSV(160, 255, thisVal) : (i < WIDTH - 1 - WIDTH / 3) ? CHSV(0, 0, thisVal)
+            (i < fb.cfg.w() / 3) ? CHSV(160, 255, thisVal) : (i < fb.cfg.w() - 1 - fb.cfg.w() / 3) ? CHSV(0, 0, thisVal)
             : CHSV(0, 255, thisVal);
         }
     }
@@ -2011,30 +2005,30 @@ private:
     //UK
     void uk(uint8_t i)
     {
-        for (uint8_t j = 0; j < HEIGHT; j++)
+        for (uint8_t j = 0; j < fb.cfg.h(); j++)
         {
             fb.pixel(i, j) += 
             (
                 (
-                    (i > WIDTH / 2 + 1 || i < WIDTH / 2 - 2) && ((i - (int)(j + thisMax - (HEIGHT * 2 - WIDTH) / 2) > -2) && (i - (j + thisMax - (HEIGHT * 2 - WIDTH) / 2) < 2))
+                    (i > fb.cfg.w() / 2 + 1 || i < fb.cfg.w() / 2 - 2) && ((i - (int)(j + thisMax - (fb.cfg.h() * 2 - fb.cfg.w()) / 2) > -2) && (i - (j + thisMax - (fb.cfg.h() * 2 - fb.cfg.w()) / 2) < 2))
                 )
                     ||
                 (
-                    (i > WIDTH / 2 + 1 || i < WIDTH / 2 - 2) && ( (((int)WIDTH - 1 - i - ((int)j + thisMax - (int)(HEIGHT * 2 - WIDTH) / 2) > -2) && (WIDTH - 1 - i - (int)(j + thisMax - (HEIGHT * 2 - WIDTH) / 2) < 2)) )
+                    (i > fb.cfg.w() / 2 + 1 || i < fb.cfg.w() / 2 - 2) && ( (((int)fb.cfg.w() - 1 - i - ((int)j + thisMax - (int)(fb.cfg.h() * 2 - fb.cfg.w()) / 2) > -2) && (fb.cfg.w() - 1 - i - (int)(j + thisMax - (fb.cfg.h() * 2 - fb.cfg.w()) / 2) < 2)) )
                 )
             || 
-            (WIDTH / 2 - i == 0) || (WIDTH / 2 - 1 - i == 0) 
+            (fb.cfg.w() / 2 - i == 0) || (fb.cfg.w() / 2 - 1 - i == 0) 
             || 
-            ((HEIGHT - (j + thisMax)) == 0) || ((HEIGHT - 1 - (j + thisMax)) == 0)) ? 
+            ((fb.cfg.h() - (j + thisMax)) == 0) || ((fb.cfg.h() - 1 - (j + thisMax)) == 0)) ? 
             CHSV(0, 255, thisVal) 
             : 
-            (((i - (int)(j + thisMax - (HEIGHT * 2 - WIDTH) / 2) > -4) 
-            && (i - (j + thisMax - (HEIGHT * 2 - WIDTH) / 2) < 4)) 
+            (((i - (int)(j + thisMax - (fb.cfg.h() * 2 - fb.cfg.w()) / 2) > -4) 
+            && (i - (j + thisMax - (fb.cfg.h() * 2 - fb.cfg.w()) / 2) < 4)) 
             || 
-            (((int)WIDTH - 1 - i - (int)(j + thisMax - (HEIGHT * 2 - WIDTH) / 2) > -4) 
-            && (WIDTH - 1 - i - (int)(j + thisMax - (HEIGHT * 2 - WIDTH) / 2) < 4)) 
-            || (WIDTH / 2 + 1 - i == 0) || (WIDTH / 2 - 2 - i == 0) 
-            || (HEIGHT + 1 - (j + thisMax) == 0) || (HEIGHT - 2 - (int)(j + thisMax) == 0)) ? 
+            (((int)fb.cfg.w() - 1 - i - (int)(j + thisMax - (fb.cfg.h() * 2 - fb.cfg.w()) / 2) > -4) 
+            && (fb.cfg.w() - 1 - i - (int)(j + thisMax - (fb.cfg.h() * 2 - fb.cfg.w()) / 2) < 4)) 
+            || (fb.cfg.w() / 2 + 1 - i == 0) || (fb.cfg.w() / 2 - 2 - i == 0) 
+            || (fb.cfg.h() + 1 - (j + thisMax) == 0) || (fb.cfg.h() - 2 - (int)(j + thisMax) == 0)) ? 
             CHSV(0, 0, thisVal)
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   : CHSV(150, 255, thisVal);
         }
@@ -2043,11 +2037,11 @@ private:
     //Spain
     void spain(uint8_t i)
     {
-        for (uint8_t j = 0; j < HEIGHT; j++)
+        for (uint8_t j = 0; j < fb.cfg.h(); j++)
         {
             fb.pixel(i, j) += 
-            (j < thisMax - HEIGHT / 3) ? 
-            CHSV(250, 224, (float)thisVal * 0.68) : (j < thisMax + HEIGHT / 3) ? CHSV(64, 255, (float)thisVal * 0.98)
+            (j < thisMax - fb.cfg.h() / 3) ? 
+            CHSV(250, 224, (float)thisVal * 0.68) : (j < thisMax + fb.cfg.h() / 3) ? CHSV(64, 255, (float)thisVal * 0.98)
             : CHSV(250, 224, (float)thisVal * 0.68);
         }
     }
@@ -2101,7 +2095,7 @@ private:
     redyellow_gp, Colorfull_gp, es_ocean_breeze_068_gp
     };
     uint8_t NUM_BANDS = WIDTH;
-    uint8_t BAR_WIDTH =  (WIDTH  / (NUM_BANDS - 1));
+    uint8_t bar_width{1};
     uint8_t calcArray = 1; // уменьшение частоты пересчета массива
     uint8_t colorTimer = 0;
     const uint8_t colorDev = 256/TOP;
