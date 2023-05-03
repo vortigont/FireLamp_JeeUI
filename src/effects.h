@@ -79,8 +79,8 @@ https://gist.github.com/StefanPetrick/170fbf141390fafb9c0c76b8a0d34e54
 class EffectMetaBalls : public EffectCalc {
 private:
 	float speedFactor;
-	const float hormap = (256 / WIDTH);
-    const float vermap = (256 / HEIGHT);
+	const float hormap = (256 / fb.cfg.w());
+    const float vermap = (256 / fb.cfg.h());
 	String setDynCtrl(UIControl*_val) override;
     void load() override;
 public:
@@ -95,8 +95,8 @@ public:
 */
 class EffectSinusoid3 : public EffectCalc {
 private:
-	const uint8_t semiHeightMajor =  HEIGHT / 2 + (HEIGHT % 2);
-	const uint8_t semiWidthMajor =  WIDTH / 2  + (WIDTH % 2);
+	const uint8_t semiHeightMajor =  fb.cfg.h() / 2 + (fb.cfg.h() % 2);
+	const uint8_t semiWidthMajor =  fb.cfg.w() / 2  + (fb.cfg.w() % 2);
 	float e_s3_speed;
 	float e_s3_size;
 	uint8_t _scale;
@@ -146,8 +146,8 @@ public:
 class EffectLightBalls : public EffectCalc {
 private:
 	#define BORDERTHICKNESS       (1U)   // глубина бордюра для размытия яркой частицы: 0U - без границы (резкие края); 1U - 1 пиксель (среднее размытие) ; 2U - 2 пикселя (глубокое размытие)
-	const uint8_t paintWidth = WIDTH - BORDERTHICKNESS * 2;
-	const uint8_t paintHeight = HEIGHT - BORDERTHICKNESS * 2;
+	const uint8_t paintWidth = fb.cfg.w() - BORDERTHICKNESS * 2;
+	const uint8_t paintHeight = fb.cfg.h() - BORDERTHICKNESS * 2;
 	float speedFactor;
 	
 	String setDynCtrl(UIControl*_val) override;
@@ -162,7 +162,7 @@ class EffectPulse : public EffectCalc {
     uint8_t pulse_hue;
     float pulse_step = 0;
     uint8_t centerX = random8(fb.cfg.w() - 5U) + 3U;
-    uint8_t centerY = random8(HEIGHT - 5U) + 3U;
+    uint8_t centerY = random8(fb.cfg.h() - 5U) + 3U;
     uint8_t currentRadius = 4;
     float _pulse_hue = 0;
     uint8_t _pulse_hueall = 0;
@@ -401,16 +401,16 @@ public:
  */
 class EffectSpiro : public EffectCalc {
 private:
-  const uint8_t spiroradiusx = WIDTH /4;
-  const uint8_t spiroradiusy = HEIGHT /4;
+  const uint8_t spiroradiusx = fb.cfg.w() /4;
+  const uint8_t spiroradiusy = fb.cfg.h() /4;
 
-  const uint8_t spirocenterX = WIDTH /2;
-  const uint8_t spirocenterY = HEIGHT /2;
+  const uint8_t spirocenterX = fb.cfg.w() /2;
+  const uint8_t spirocenterY = fb.cfg.h() /2;
 
   const uint8_t spirominx = spirocenterX - spiroradiusx;
-  const uint8_t spiromaxx = spirocenterX + spiroradiusx - (WIDTH%2 == 0 ? 1:0);// + 1;
+  const uint8_t spiromaxx = spirocenterX + spiroradiusx - (fb.cfg.w()%2 == 0 ? 1:0);// + 1;
   const uint8_t spirominy = spirocenterY - spiroradiusy;
-  const uint8_t spiromaxy = spirocenterY + spiroradiusy - (HEIGHT%2 == 0 ? 1:0); // + 1;
+  const uint8_t spiromaxy = spirocenterY + spiroradiusy - (fb.cfg.h()%2 == 0 ? 1:0); // + 1;
 
   bool spiroincrement = false;
   bool spirohandledChange = false;
@@ -585,8 +585,8 @@ private:
     float eff_theta;  // глобальная переменная угла для работы эффектов
     bool subPix = false;
     byte hue;
-    const float width_adj_f = (float)(WIDTH < HEIGHT ? (HEIGHT - WIDTH) / 2. : 0);
-    const float height_adj_f= (float)(HEIGHT < WIDTH ? (WIDTH - HEIGHT) / 2. : 0);
+    const float width_adj_f = (float)(fb.cfg.w() < fb.cfg.h() ? (fb.cfg.h() - fb.cfg.w()) / 2. : 0);
+    const float height_adj_f= (float)(fb.cfg.h() < fb.cfg.w() ? (fb.cfg.w() - fb.cfg.h()) / 2. : 0);
     int width_adj(){ return (fb.cfg.w() < fb.cfg.h() ? (fb.cfg.h() - fb.cfg.w()) /2 : 0); };
     int height_adj(){ return (fb.cfg.h() < fb.cfg.w() ? (fb.cfg.w() - fb.cfg.h()) /2: 0); };
 
@@ -871,8 +871,8 @@ private:
 	float _speed;
     bool setup = true;
     uint8_t micPick = 0;
-    const uint8_t spirocenterX = WIDTH / 2;
-    const uint8_t spirocenterY = HEIGHT / 2;
+    const uint8_t spirocenterX = fb.cfg.w() / 2;
+    const uint8_t spirocenterY = fb.cfg.h() / 2;
     void drawStar(float xlocl, float ylocl, float biggy, float little, int16_t points, float dangle, uint8_t koler);
 	String setDynCtrl(UIControl*_val) override;
 
@@ -1388,7 +1388,7 @@ class EffectSmokeballs: public EffectCalc {
 class EffectCell: public EffectCalc {
   private:
     const uint8_t Lines = 5;
-	const bool glitch = abs((int)WIDTH-(int)HEIGHT) >= fb.cfg.minDim()/4;
+	const bool glitch = abs((int)fb.cfg.w()-(int)fb.cfg.h()) >= fb.cfg.minDim()/4;
 	const byte density = 50;
     uint8_t Scale = 6;
     uint8_t _scale = 1;
@@ -1482,7 +1482,7 @@ class EffectWrain: public EffectCalc {
         uint8_t bri{0};      // яркость капли
     };
 
-    static const uint8_t cloudHeight = HEIGHT / 5 + 1;
+    static const uint8_t cloudHeight = fb.cfg.h() / 5 + 1;
     float dotChaos;         // сила ветра
     int8_t dotDirect;       // направление ветра 
     bool clouds = false;
@@ -1627,8 +1627,8 @@ private:
 
     bool centerRun = true;
     byte period = 10;
-    byte _x = WIDTH/2;
-    byte _y = HEIGHT/2;
+    byte _x = fb.cfg.w()/2;
+    byte _y = fb.cfg.h()/2;
     float speedFactor;
 
     void regen(byte id);
@@ -1761,9 +1761,9 @@ public:
 class EffectRacer: public EffectCalc {
 private:
     float posX = random(0, fb.cfg.w()-1);
-    float posY = random(0, HEIGHT-1);
+    float posY = random(0, fb.cfg.h()-1);
     uint8_t aimX = random(0, fb.cfg.w())-1;
-    uint8_t aimY = random(0, HEIGHT-1);
+    uint8_t aimY = random(0, fb.cfg.h()-1);
     float radius = 0;
     byte hue = millis()>>1; //random(0, 255);
     CRGB color;
@@ -1807,10 +1807,10 @@ private:
     const byte deltaValue = 6U;     // 2-12 
     const byte deltaHue = 8U;       // высота языков пламени должна уменьшаться не так быстро, как ширина
     const float gravity = 0.1;
-    uint8_t step = WIDTH;
+    uint8_t step = fb.cfg.w();
     float speedFactor{0.1};
     std::array<uint8_t, HEIGHT> shiftHue;
-    std::vector<Magma> particles{std::vector<Magma>(WIDTH, Magma())};
+    std::vector<Magma> particles{std::vector<Magma>(fb.cfg.w(), Magma())};
 
     void palettesload();
     void regen();
@@ -1830,7 +1830,7 @@ public:
 // https://editor.soulmatelights.com/gallery/739-flags
 class EffectFlags: public EffectCalc {
 private:
-    const float DEVIATOR = 512. / WIDTH;
+    const float DEVIATOR = 512. / fb.cfg.w();
     float counter;
     uint8_t flag = 0;
     uint8_t _flag;
@@ -2021,7 +2021,7 @@ private:
     purple_gp,    rainbowsherbet_gp, 
     redyellow_gp, Colorfull_gp, es_ocean_breeze_068_gp
     };
-    uint8_t NUM_BANDS = WIDTH;
+    uint8_t NUM_BANDS = fb.cfg.w();
     uint8_t bar_width{1};
     uint8_t calcArray = 1; // уменьшение частоты пересчета массива
     uint8_t colorTimer = 0;
@@ -2043,7 +2043,7 @@ private:
     int effId = 0;
     bool type = false;
     bool colorShifting = false;
-    const float speedFactorVertical = (float)HEIGHT / 16;
+    const float speedFactorVertical = (float)fb.cfg.h() / 16;
     bool averaging = true;
 
     String setDynCtrl(UIControl*_val) override;
@@ -2074,8 +2074,8 @@ private:
     uint32_t t;
     bool withSparks = false;
 
-    const uint8_t sparksCount = WIDTH / 4;
-    const uint8_t spacer = HEIGHT/4;
+    const uint8_t sparksCount = fb.cfg.w() / 4;
+    const uint8_t spacer = fb.cfg.h()/4;
 
     class Spark {
     private:
@@ -2175,7 +2175,7 @@ public:
 //https://vk.com/ldirko программный код которого он запретил брать
 class EffectDNA : public EffectCalc {
 private:
-    float a = (256.0 / (float)WIDTH);
+    float a = (256.0 / (float)fb.cfg.w());
     float t = 0.0;
     float speedFactor = 0.5;
     bool flag = true; 
@@ -2212,7 +2212,7 @@ public:
 class EffectMirage : public EffectCalc {
 private:
     const float div = 10.;
-    const uint16_t width = (WIDTH - 1) * div, height = HEIGHT * div;
+    const uint16_t width = (fb.cfg.w() - 1) * div, height = fb.cfg.h() * div;
     uint16_t _speed;
     byte color;
     bool colorShift = false;
@@ -2315,12 +2315,12 @@ public:
 //23/12/21
 class EffectRadialFire : public EffectCalc {
 private:
-    const int8_t maximum = max(WIDTH, HEIGHT);
-    const int8_t centre = (max(WIDTH, HEIGHT) / 2);
-    const uint8_t X = WIDTH > HEIGHT ? 0: (WIDTH - HEIGHT) /2; 
-    const uint8_t Y = WIDTH < HEIGHT ? 0: (HEIGHT - WIDTH) /2;
-    std::vector<std::vector<float>> XY_angle = std::vector<std::vector<float>>(max(WIDTH, HEIGHT), std::vector<float>(max(WIDTH, HEIGHT), 0));
-    std::vector<std::vector<float>> XY_radius = std::vector<std::vector<float>>(max(WIDTH, HEIGHT), std::vector<float>(max(WIDTH, HEIGHT), 0));
+    const int8_t maximum = fb.cfg.maxDim();
+    const int8_t centre = fb.cfg.maxDim() / 2;
+    const uint8_t X = fb.cfg.w() > fb.cfg.h() ? 0: (fb.cfg.w() - fb.cfg.h()) /2; 
+    const uint8_t Y = fb.cfg.w() < fb.cfg.h() ? 0: (fb.cfg.h() - fb.cfg.w()) /2;
+    std::vector<std::vector<float>> XY_angle = std::vector<std::vector<float>>(fb.cfg.maxDim(), std::vector<float>(fb.cfg.maxDim(), 0));
+    std::vector<std::vector<float>> XY_radius = std::vector<std::vector<float>>(fb.cfg.maxDim(), std::vector<float>(fb.cfg.maxDim(), 0));
     float t;
     float speedFactor;
     uint8_t _scale;
