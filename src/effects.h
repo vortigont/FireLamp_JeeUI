@@ -627,8 +627,8 @@ private:
   uint8_t ringNb; // количество колец от 2 до height
   uint8_t downRingHue, upRingHue; // количество пикселей в нижнем (downRingHue) и верхнем (upRingHue) кольцах
 
-  uint8_t ringColor[HEIGHT]; // начальный оттенок каждого кольца (оттенка из палитры) 0-255
-  uint8_t huePos[HEIGHT]; // местоположение начального оттенка кольца 0-WIDTH-1
+  std::vector<uint8_t> ringColor{std::vector<uint8_t>(fb.cfg.h())}; //[HEIGHT];    // начальный оттенок каждого кольца (оттенка из палитры) 0-255
+  uint8_t huePos[HEIGHT];       // местоположение начального оттенка кольца 0-WIDTH-1
   uint8_t shiftHueDir[HEIGHT]; // 4 бита на ringHueShift, 4 на ringHueShift2
   ////ringHueShift[ringsCount]; // шаг градиета оттенка внутри кольца -8 - +8 случайное число
   ////ringHueShift2[ringsCount]; // обычная скорость переливания оттенка всего кольца -8 - +8 случайное число
@@ -1476,7 +1476,7 @@ class EffectWrain: public EffectCalc {
         uint8_t bri{0};      // яркость капли
     };
 
-    static const uint8_t cloudHeight = fb.cfg.h() / 5 + 1;
+    const uint8_t cloudHeight = fb.cfg.h() / 5 + 1;
     float dotChaos;         // сила ветра
     int8_t dotDirect;       // направление ветра 
     bool clouds = false;
@@ -1489,7 +1489,7 @@ class EffectWrain: public EffectCalc {
     float windProgress = 0;
     float speedFactor = 0.5;
     uint32_t timer = 0;
-    std::array<uint8_t, WIDTH * cloudHeight> _noise;
+    std::vector<uint8_t> _noise {std::vector<uint8_t>(fb.cfg.w() * cloudHeight)};
     std::vector<Drop> drops {std::vector<Drop>(DROP_CNT)};
 
     void reload();
@@ -1513,38 +1513,38 @@ class EffectWrain: public EffectCalc {
 // ============= ЭФФЕКТ Фея/Источник ===============
 // (c) SottNick
 
-#define trackingOBJECT_MAX_COUNT    (WIDTH * 3)  // максимальное количество отслеживаемых объектов (очень влияет на расход памяти)
-#define enlargedOBJECT_MAX_COUNT    (WIDTH * 3) // максимальное количество сложных отслеживаемых объектов (меньше, чем trackingOBJECT_MAX_COUNT)
+#define FAIRY_MIN_COUNT    4            // минимальное число объектов
+//#define trackingOBJECT_MAX_COUNT    (WIDTH * 3)  // максимальное количество отслеживаемых объектов (очень влияет на расход памяти)
+//#define enlargedOBJECT_MAX_COUNT    (WIDTH * 3) // максимальное количество сложных отслеживаемых объектов (меньше, чем trackingOBJECT_MAX_COUNT)
 
 class EffectFairy : public EffectCalc {
 private:
-    float   trackingObjectPosX[trackingOBJECT_MAX_COUNT];
-    float   trackingObjectPosY[trackingOBJECT_MAX_COUNT];
-    float   trackingObjectSpeedX[trackingOBJECT_MAX_COUNT];
-    float   trackingObjectSpeedY[trackingOBJECT_MAX_COUNT];
-    float   trackingObjectShift[trackingOBJECT_MAX_COUNT];
-    uint8_t trackingObjectHue[trackingOBJECT_MAX_COUNT];
-    float   trackingObjectState[trackingOBJECT_MAX_COUNT];
-    bool    trackingObjectIsShift[trackingOBJECT_MAX_COUNT];
-    uint8_t enlargedObjectNUM;                                       // используемое в эффекте количество объектов
+struct TObject {
+    float   posX, posY;
+    float   speedX, speedY;
+    float   shift;
+    float   state;
+    uint8_t hue;
+    bool    isShift;
+};
 
+    std::vector<TObject> units{std::vector<TObject>(FAIRY_MIN_COUNT)};
     Boid boids[2];
 
-    uint8_t hue;
-    uint8_t hue2;
+    uint8_t hue, hue2;
     uint8_t step;
     uint8_t deltaValue;
-    uint8_t deltaHue;
-    uint8_t deltaHue2;
+    uint8_t deltaHue, deltaHue2;
     float speedFactor;
-    byte type = false;
+    bool type = false;
     byte blur;
     uint8_t _video = 255;
     uint8_t gain;
 
-    void particlesUpdate(uint8_t i);
-    void fairyEmit(uint8_t i);
-    void fountEmit(uint8_t i);
+    int _max_units(){ return fb.cfg.minDim()*3; }
+    void particlesUpdate(TObject &i);
+    void fairyEmit(TObject &i);
+    void fountEmit(TObject &i);
     bool fairy();
     void fount();
     //void setscl(const byte _scl) override; // перегрузка для масштаба
