@@ -3779,8 +3779,8 @@ void Dot::Skyburst( accum88 basex, accum88 basey, saccum78 basedv, CRGB& basecol
     show = 1;
   }
 
-void Dot::GroundLaunch(DotsStore &store){
-    yv = 600 + random16(400 + (25 * HEIGHT));
+void Dot::GroundLaunch(DotsStore &store, uint16_t h){
+    yv = 600 + random16(400 + (25 * h));
     if(yv > 1200) yv = 1200;
     xv = random16(600) - 300;
     y = 0;
@@ -3898,7 +3898,7 @@ void EffectFireworks::sparkGen() {
   for (auto &c : gDot){
     if( c.show == 0 ) {
       if( c.cntdown == 0) {
-        c.GroundLaunch(store);
+        c.GroundLaunch(store, fb.cfg.h());
         c.theType = 1;
         c.cntdown = random16(1200 - speed*4) + 1;
       } else {
@@ -5000,20 +5000,7 @@ void EffectNBals::balls_timer() {
 void EffectAttract::load() {
   palettesload();
   //speedFactor = EffectMath::fmap((float)speed, 1., 255., 0.02*EffectCalc::speedfactor, 1.*EffectCalc::speedfactor);
-  for (int i = 0; i < count; i++)
-  {
-    int direction = 1-2*random(0, 2); // -1 или 1
-    Boid boid = Boid(15, 16 - i);
-    boid.mass = (float)random(1, map(_mass, 1, 255, 128, 1024)) / 100.0f * speedFactor; //(1.0/speed);
-    boid.velocity.x = (float)random(5, map(_energy, 1, 255, 16, 768)) / 500.0f; 
-    boid.velocity.x *= direction;
-    boid.velocity.y = 0;
-    boid.colorIndex = i * 32;
-    boid.location.x = EffectMath::randomf(0, fb.cfg.maxWidthIndex()); 
-    boid.location.y = EffectMath::randomf(0, fb.cfg.maxHeightIndex()); 
-    boids[i] = boid;
-  }
-
+  setup();
 }
 
 // !++
@@ -5027,16 +5014,16 @@ String EffectAttract::setDynCtrl(UIControl*_val) {
 }
 
 void EffectAttract::setup(){
-  for (int i = 0; i < count; i++)
-  {
+  int cnt = 0;
+  for (auto &i : boids){
     int direction = 1-2*random(0, 2); // -1 или 1
-    Boid boid = Boid(15, 16 - i);
+    Boid boid(15, 16 - cnt);
     boid.mass = (float)random(1, map(_mass, 1, 255, 128, 1024)) / 100.0f * speedFactor; //(1.0/speed);
     boid.velocity.x = (float)random(5, map(_energy, 1, 255, 16, 768)) / 500.0f; // * speedFactor; //(1.0/speed);
     boid.velocity.x *= direction;
     boid.velocity.y = 0;
-    boid.colorIndex = i * 32;
-    boids[i] = boid;
+    boid.colorIndex = cnt * 32;
+    i = boid;
   }
 }
 
@@ -5044,18 +5031,13 @@ bool EffectAttract::run() {
   uint8_t dim = beatsin8(3, 170, 250);
   fb.fade(255U - dim);
 
-  for (int i = 0; i < count; i++) // count
-  {
-
-    Boid boid = boids[i];
+  for (auto &boid : boids){
     //boid.acceleration *= speedFactor/10;
     PVector force = attract(boid);
     boid.applyForce(force);
 
     boid.update();
     EffectMath::drawPixelXYF(boid.location.x, boid.location.y, ColorFromPalette(*curPalette, boid.colorIndex), fb);
-
-    boids[i] = boid;
   }
   return true;
 }

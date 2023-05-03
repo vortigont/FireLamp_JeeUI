@@ -916,10 +916,8 @@ struct Dot {    // класс для создания снарядов и пет
 
   //Dot()
   void Move(DotsStore &store, bool flashing);
-  void GroundLaunch(DotsStore &store);
+  void GroundLaunch(DotsStore &store, uint16_t h);
   void Skyburst( accum88 basex, accum88 basey, saccum78 basedv, CRGB& basecolor, uint8_t dim);
-  //CRGB &piXY(LedFB &leds, byte x, byte y);
-
   int16_t scale15by8_local( int16_t i, fract8 _scale ){ return (i * _scale / 256); };
 };
 
@@ -928,14 +926,11 @@ class EffectFireworks : public EffectCalc {
     DotsStore store;
     byte dim;
     uint8_t valDim;
-    //uint8_t cnt;
     bool flashing = false;
     bool fireworksRoutine();
     void sparkGen();
     std::vector<Dot> gDot;
     std::vector<Dot> gSparks;
-    //Dot gDot[MAX_RCKTS];
-    //Dot gSparks[NUM_SPARKS];
     String setDynCtrl(UIControl*_val) override;
     void draw(Dot &d);
     int16_t _model_w(){ return 2*(fb.cfg.w() - 4) + fb.cfg.w(); };  // как далеко за экран может вылетить снаряд, если снаряд вылетает за экран, то всышка белого света (не особо логично)
@@ -1022,8 +1017,8 @@ public:
 class EffectNoise : public EffectCalc {
 private:
 
-    uint8_t CentreX =  (fb.cfg.w() / 2) - 1;
-    uint8_t CentreY = (HEIGHT / 2) - 1;
+    uint8_t CentreX = (fb.cfg.w() / 2) - 1;
+    uint8_t CentreY = (fb.cfg.h() / 2) - 1;
     uint32_t x[NUM_LAYERS];
     uint32_t y[NUM_LAYERS];
     uint32_t z[NUM_LAYERS];
@@ -1188,16 +1183,15 @@ public:
 class EffectAttract : public EffectCalc {
 private:
     const uint8_t spirocenterX = fb.cfg.w() / 2;
-    const uint8_t spirocenterY = HEIGHT / 2;
+    const uint8_t spirocenterY = fb.cfg.h() / 2;
     float speedFactor;
-    float mass;    // Mass, tied to size
-    float G;       // Gravitational Constant
+    float mass{10};    // Mass, tied to size
+    float G{0.5};      // Gravitational Constant
     uint8_t _mass = 127;
     uint8_t _energy = 127;
-    static const uint8_t count = HEIGHT *2 - WIDTH /2;
     bool loadingFlag = true;
     byte csum = 0;
-    Boid boids[count];
+    std::vector<Boid> boids;
     PVector location;   // Location
     String setDynCtrl(UIControl*_val) override;
     void setup();
@@ -1215,9 +1209,8 @@ private:
 
 public:
     EffectAttract(LedFB &framebuffer) : EffectCalc(framebuffer) {
+        boids.assign(fb.cfg.h() *2 - fb.cfg.w() /2, Boid());
         location = PVector(spirocenterX, spirocenterY);
-        mass = 10;
-        G = .5;
     }
     void load() override;
     bool run() override;
