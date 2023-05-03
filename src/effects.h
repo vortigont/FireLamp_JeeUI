@@ -374,19 +374,13 @@ private:
     uint8_t ihue;
     bool colorLoop;
 	bool blurIm;
-    float _speed;             // speed is set dynamically once we've started up
-    float _scale;             // scale is set dynamically once we've started up
-    float x;
-    float y;
-    float z;
-    #if (WIDTH > HEIGHT)
-    uint8_t noise[2*HEIGHT][WIDTH];
-    #else
-    uint8_t noise[2*WIDTH][HEIGHT];
-    #endif
+    float _speed{200};             // speed is set dynamically once we've started up
+    float _scale{10};             // scale is set dynamically once we've started up
+    float x{1}, y{1}, z{1};
+    Noise3dMap noise;
 
 public:
-    Effect3DNoise(LedFB &framebuffer) : EffectCalc(framebuffer){}
+    Effect3DNoise(LedFB &framebuffer) : EffectCalc(framebuffer), noise(1, 2*fb.cfg.w(), fb.cfg.h()) {}
     void load() override;
     bool run() override;
     String setDynCtrl(UIControl*_val) override;
@@ -1728,11 +1722,6 @@ public:
 // --------- Эффект "Северное Сияние"
 // (c) kostyamat 05.02.2021
 // идеи подсмотрены тут https://www.reddit.com/r/FastLED/comments/jyly1e/challenge_fastled_sketch_that_fits_entirely_in_a/
-
-// Палитры, специально созданные под этот эффект, огромная благодарность @Stepko
-static const TProgmemRGBPalette16 GreenAuroraColors_p FL_PROGMEM ={0x000000, 0x003300, 0x006600, 0x009900, 0x00cc00,0x00ff00, 0x33ff00, 0x66ff00, 0x99ff00,0xccff00, 0xffff00, 0xffcc00, 0xff9900, 0xff6600, 0xff3300, 0xff0000};
-static const TProgmemRGBPalette16 BlueAuroraColors_p FL_PROGMEM ={0x000000, 0x000033, 0x000066, 0x000099, 0x0000cc,0x0000ff, 0x3300ff, 0x6600ff, 0x9900ff,0xcc00ff, 0xff00ff, 0xff33ff, 0xff66ff, 0xff99ff, 0xffccff, 0xffffff};
-static const TProgmemRGBPalette16 NeonAuroraColors_p FL_PROGMEM ={0x000000, 0x003333, 0x006666, 0x009999, 0x00cccc,0x00ffff, 0x33ffff, 0x66ffff, 0x99ffff,0xccffff, 0xffffff, 0xffccff, 0xff99ff, 0xff66ff, 0xff33ff, 0xff00ff};
 
 class EffectPolarL : public EffectCalc {
 private:

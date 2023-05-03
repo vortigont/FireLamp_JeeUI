@@ -923,10 +923,10 @@ void Effect3DNoise::fillNoiseLED()
   {
     dataSmoothing = 200 - (speed * 4);
   }
-  for (uint8_t i = 0; i < fb.cfg.minDim()*2; i++)
+  for (uint8_t i = 0; i < noise.h; i++)
   {
     int32_t ioffset = _scale * i;
-    for (uint8_t j = 0; j < fb.cfg.maxDim(); j++)
+    for (uint8_t j = 0; j < noise.w; j++)
     {
       int32_t joffset = _scale * j;
 
@@ -937,12 +937,10 @@ void Effect3DNoise::fillNoiseLED()
 
       if (dataSmoothing)
       {
-        uint8_t olddata = noise[i][j];
-        uint8_t newdata = scale8( olddata, dataSmoothing) + scale8( data, 256 - dataSmoothing);
-        data = newdata;
+        data = scale8( noise.map_lxy(0,j,i), dataSmoothing) + scale8( data, 256 - dataSmoothing);
       }
 
-      noise[i][j] = data;
+      noise.map_lxy(0,j,i) = data;
     }
   }
   z += _speed;
@@ -951,27 +949,21 @@ void Effect3DNoise::fillNoiseLED()
   x += _speed * 0.125; // 1/8
   y -= _speed * 0.0625; // 1/16
 
-  for (uint8_t i = 0; i < fb.cfg.w(); i++)
-  {
-    for (uint8_t j = 0; j < fb.cfg.h(); j++)
-    {
-      uint8_t index = noise[j%(fb.cfg.minDim()*2)][i];
-      uint8_t bri =   noise[i%(fb.cfg.minDim()*2)][j];
+  for (uint8_t i = 0; i < fb.cfg.h(); i++){
+    for (uint8_t j = 0; j < fb.cfg.w(); j++){
+      uint8_t index = noise.map_lxy(0, j%(fb.cfg.w()*2), i);  //  [j%(fb.cfg.minDim()*2)][i];
+      uint8_t bri =   noise.map_lxy(0, j%(fb.cfg.w()*2), i); //noise[i%(fb.cfg.minDim()*2)][j];
       // if this palette is a 'loop', add a slowly-changing base value
       if ( colorLoop)
-      {
         index += ihue;
-      }
+
       // brighten up, as the color palette itself often contains the
       // light/dark dynamic range desired
       if ( bri > 127 && blurIm)
-      {
         bri = 255;
-      }
       else
-      {
         bri = dim8_raw( bri * 2);
-      }
+
       CRGB color = ColorFromPalette( *curPalette, index, bri);
 
       fb.pixel(i, j) = color;
@@ -982,13 +974,13 @@ void Effect3DNoise::fillNoiseLED()
 
 void Effect3DNoise::fillnoise8()
 {
-  for (uint8_t i = 0; i < fb.cfg.minDim()*2; i++)
+  for (uint8_t i = 0; i < noise.w; i++)
   {
     int32_t ioffset = _scale * i;
-    for (uint8_t j = 0; j < fb.cfg.maxDim(); j++)
+    for (uint8_t j = 0; j < noise.h; j++)
     {
       int32_t joffset = _scale * j;
-      noise[i][j] = inoise8(x + ioffset, y + joffset, z);
+      noise.map_lxy(0, i, j) = inoise8(x + ioffset, y + joffset, z);
     }
   }
   z += _speed;
@@ -999,7 +991,6 @@ void Effect3DNoise::load(){
   fillnoise8();
 }
 
-// !++
 String Effect3DNoise::setDynCtrl(UIControl*_val) {
   if(_val->getId()==3 && _val->getVal().toInt()==0 && !isRandDemo())
     curPalette = &ZeebraColors_p;
@@ -7209,6 +7200,11 @@ bool EffectFrizzles::run() {
 // --------- Эффект "Северное Сияние"
 // (c) kostyamat 05.02.2021
 // идеи подсмотрены тут https://www.reddit.com/r/FastLED/comments/jyly1e/challenge_fastled_sketch_that_fits_entirely_in_a/
+// Палитры, специально созданные под этот эффект, огромная благодарность @Stepko
+static const TProgmemRGBPalette16 GreenAuroraColors_p FL_PROGMEM ={0x000000, 0x003300, 0x006600, 0x009900, 0x00cc00,0x00ff00, 0x33ff00, 0x66ff00, 0x99ff00,0xccff00, 0xffff00, 0xffcc00, 0xff9900, 0xff6600, 0xff3300, 0xff0000};
+static const TProgmemRGBPalette16 BlueAuroraColors_p FL_PROGMEM ={0x000000, 0x000033, 0x000066, 0x000099, 0x0000cc,0x0000ff, 0x3300ff, 0x6600ff, 0x9900ff,0xcc00ff, 0xff00ff, 0xff33ff, 0xff66ff, 0xff99ff, 0xffccff, 0xffffff};
+static const TProgmemRGBPalette16 NeonAuroraColors_p FL_PROGMEM ={0x000000, 0x003333, 0x006666, 0x009999, 0x00cccc,0x00ffff, 0x33ffff, 0x66ffff, 0x99ffff,0xccffff, 0xffffff, 0xffccff, 0xff99ff, 0xff66ff, 0xff33ff, 0xff00ff};
+
 void EffectPolarL::load() {
   adjastHeight = EffectMath::fmap((float)fb.cfg.h(), 8, 32, 28, 12);
   adjScale = map((int)fb.cfg.w(), 8, 64, 310, 63);
