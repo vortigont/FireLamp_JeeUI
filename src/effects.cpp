@@ -3361,8 +3361,12 @@ String EffectLiquidLamp::setDynCtrl(UIControl*_val) {
     CRGBPalette32 pal;    pal.loadDynamicGradientPalette(dynpal);
     palettes.add(0, pal, 0, 16);
   }
-  else if(_val->getId()==5) filter = EffectCalc::setDynCtrl(_val).toInt();
-  else if(_val->getId()==6) physic_on = EffectCalc::setDynCtrl(_val).toInt();
+  else if(_val->getId()==5) { // enable filtering
+    filter = EffectCalc::setDynCtrl(_val).toInt();
+    if (filter < 2) { delete buff; buff = nullptr; delete buff2; buff2 = nullptr; return String(); }
+    if (!buff) buff = new Vector2D<uint8_t>(fb.cfg.w(), fb.cfg.h());
+    if (!buff2) buff2 = new Vector2D<float>(fb.cfg.w(), fb.cfg.h());
+  } else if(_val->getId()==6) physic_on = EffectCalc::setDynCtrl(_val).toInt();
   else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
   return String();
 }
@@ -3389,7 +3393,7 @@ bool EffectLiquidLamp::routine(){
       if (filter < 2) {
         fb.pixel(x, y) = palettes[pidx].GetColor(sum, filter? sum : 255);
       } else {
-        buff[x][y] = sum;
+        buff->at(x,y) = sum;
       }
     }
   }
@@ -3406,24 +3410,24 @@ bool EffectLiquidLamp::routine(){
 
         for (int v = -1; v != 2; ++v) {
           for (int h = -1; h != 2; ++h) {
-            gh += dh_scharr[idx] * buff[x+h][y+v];
-            gv += dv_scharr[idx] * buff[x+h][y+v];
+            gh += dh_scharr[idx] * buff->at(x+h,y+v);
+            gv += dv_scharr[idx] * buff->at(x+h,y+v);
             ++idx;
           }
         }
-        buff2[x][y] = EffectMath::sqrt((gh * gh) + (gv * gv));
-        if (buff2[x][y] < min) min = buff2[x][y];
-        if (buff2[x][y] > max) max = buff2[x][y];
+        buff2->at(x,y) = EffectMath::sqrt((gh * gh) + (gv * gv));
+        if (buff2->at(x,y) < min) min = buff2->at(x,y);
+        if (buff2->at(x,y) > max) max = buff2->at(x,y);
       }
     }
 
     for (unsigned x = 0; x < (unsigned)fb.cfg.maxWidthIndex(); x++) {
       for (unsigned y = 0; y < (unsigned)fb.cfg.maxHeightIndex(); y++) {
-        float val = buff2[x][y];
+        float val = buff2->at(x,y);
         val = 1 - (val - min) / (max - min);
         unsigned step = filter - 1;
         while (step) { val *= val; --step; } // почему-то это быстрее чем pow
-        fb.pixel(x, y) = palettes[pidx].GetColor(buff[x][y], val * 255);
+        fb.pixel(x, y) = palettes[pidx].GetColor(buff->at(x,y), val * 255);
       }
     }
 

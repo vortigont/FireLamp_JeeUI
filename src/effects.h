@@ -754,9 +754,8 @@ class EffectLiquidLamp : public EffectCalc {
     GradientPaletteList palettes;
 
     std::vector<Particle> particles{std::vector<Particle>(LIQLAMP_MIN_PARTICLES, Particle())};
-    // todo: allocate/deallocate those arrays dynamically only if needed by filter settings
-    uint8_t buff[WIDTH][HEIGHT];
-    float buff2[WIDTH][HEIGHT];
+    Vector2D<uint8_t> *buff = nullptr;
+    Vector2D<float> *buff2 = nullptr;
 
     void generate(bool reset = false);
     void position();
@@ -765,7 +764,7 @@ class EffectLiquidLamp : public EffectCalc {
 
 public:
     EffectLiquidLamp(LedFB &framebuffer);
-    virtual ~EffectLiquidLamp() {};
+    virtual ~EffectLiquidLamp() { delete buff; delete buff2; };
     void load() override { generate(true); };
     bool run() override {return routine();};
     String setDynCtrl(UIControl*_val) override;
