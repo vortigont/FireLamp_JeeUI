@@ -596,15 +596,7 @@ public:
 class EffectFire2018 : public EffectCalc {
 #define FIRE_NUM_LAYERS     2
 private:
-  //const uint8_t centreY = fb.cfg.h() / 2 + (fb.cfg.h() % 2);
-  //const uint8_t centreX = fb.cfg.w() / 2 + (fb.cfg.w() % 2);
   bool isLinSpeed = true;
-/*
-  uint32_t noise32_x[FIRE_NUM_LAYERS];
-  uint32_t noise32_y[FIRE_NUM_LAYERS];
-  uint32_t noise32_z[FIRE_NUM_LAYERS];
-  uint32_t scale32_x[FIRE_NUM_LAYERS];
-  uint32_t scale32_y[FIRE_NUM_LAYERS];*/
   // use vector of vectors to take benefit of swap operations
   std::vector<std::vector<uint8_t>> fire18heat;
   Noise3dMap noise;
@@ -627,9 +619,9 @@ private:
   uint8_t ringNb; // количество колец от 2 до height
   uint8_t downRingHue, upRingHue; // количество пикселей в нижнем (downRingHue) и верхнем (upRingHue) кольцах
 
-  std::vector<uint8_t> ringColor{std::vector<uint8_t>(fb.cfg.h())}; //[HEIGHT];    // начальный оттенок каждого кольца (оттенка из палитры) 0-255
-  uint8_t huePos[HEIGHT];       // местоположение начального оттенка кольца 0-WIDTH-1
-  uint8_t shiftHueDir[HEIGHT]; // 4 бита на ringHueShift, 4 на ringHueShift2
+  std::vector<uint8_t> ringColor{std::vector<uint8_t>(fb.cfg.h())};    // начальный оттенок каждого кольца (оттенка из палитры) 0-255
+  std::vector<uint8_t> huePos{std::vector<uint8_t>(fb.cfg.h())};       // местоположение начального оттенка кольца 0-WIDTH-1
+  std::vector<uint8_t> shiftHueDir{std::vector<uint8_t>(fb.cfg.h())};  // 4 бита на ringHueShift, 4 на ringHueShift2
   ////ringHueShift[ringsCount]; // шаг градиета оттенка внутри кольца -8 - +8 случайное число
   ////ringHueShift2[ringsCount]; // обычная скорость переливания оттенка всего кольца -8 - +8 случайное число
   uint8_t currentRing; // кольцо, которое в настоящий момент нужно провернуть
@@ -1011,14 +1003,9 @@ public:
 class EffectNoise : public EffectCalc {
 private:
 
-    uint8_t CentreX = (fb.cfg.w() / 2) - 1;
-    uint8_t CentreY = (fb.cfg.h() / 2) - 1;
-    uint32_t x[NUM_LAYERS];
-    uint32_t y[NUM_LAYERS];
-    uint32_t z[NUM_LAYERS];
-    uint32_t scale_x[NUM_LAYERS];
-    uint32_t scale_y[NUM_LAYERS];
-    uint8_t  noise[NUM_LAYERS][WIDTH][HEIGHT];
+    const uint8_t centreX = (fb.cfg.w() / 2) - 1;
+    const uint8_t centreY = (fb.cfg.h() / 2) - 1;
+    Noise3dMap  noise{Noise3dMap(1, fb.cfg.w(), fb.cfg.h())};
 	uint8_t speedFactor;
     bool type = false;
 
@@ -1289,7 +1276,6 @@ class EffectNexus: public EffectCalc {
 
 // ----------- Эфеект "Змеиный Остров"
 // (c) Сотнег
-// База https://community.alexgyver.ru/threads/wifi-lampa-budilnik-obsuzhdenie-proekta.1411/post-53132
 // адаптация и доработки kostyamat
 class EffectTest : public EffectCalc {
 private:
@@ -1299,7 +1285,6 @@ private:
     float snakePosY[MAX_SNAKES];             // тут будет позиция головы
     float snakeSpeedX[MAX_SNAKES];           // тут будет скорость червяка
     float snakeSpeedY[MAX_SNAKES];           // тут будет дробная часть позиции головы
-    //float snakeTurn[MAX_SNAKES];           //не пригодилось пока что
     uint8_t snakeColor[MAX_SNAKES];          // тут будет начальный цвет червяка
     uint8_t snakeDirect[MAX_SNAKES];         //тут будет направление червяка
 	float speedFactor;
@@ -1348,7 +1333,6 @@ public:
 
 //-------- Эффект "Детские сны"
 // (c) Stepko https://editor.soulmatelights.com/gallery/505
-#define WAVES_AMOUNT WIDTH
 class EffectSmokeballs: public EffectCalc {
   private:
     struct Wave {
@@ -1359,13 +1343,8 @@ class EffectSmokeballs: public EffectCalc {
         uint8_t waveColors;
     };
     uint8_t _scale = 1;
-    //uint16_t reg[WAVES_AMOUNT];
-    //uint16_t pos[WAVES_AMOUNT];
-    //float sSpeed[WAVES_AMOUNT];
-    //uint8_t maxMin[WAVES_AMOUNT];
-    //uint8_t waveColors[WAVES_AMOUNT];
     float speedFactor = 0.1;
-    std::array<Wave, WAVES_AMOUNT> waves;
+    std::vector<Wave> waves{std::vector<Wave>(fb.cfg.w())};
 
     void shiftUp();
     void regen();
@@ -1463,8 +1442,6 @@ class EffectOscilator: public EffectCalc {
 
 //------------ Эффект "Шторм" 
 // (с) kostyamat 1.12.2020
-#define DROP_CNT  (WIDTH*3)
-
 class EffectWrain: public EffectCalc {
   private:
 
@@ -1490,7 +1467,7 @@ class EffectWrain: public EffectCalc {
     float speedFactor = 0.5;
     uint32_t timer = 0;
     std::vector<uint8_t> _noise {std::vector<uint8_t>(fb.cfg.w() * cloudHeight)};
-    std::vector<Drop> drops {std::vector<Drop>(DROP_CNT)};
+    std::vector<Drop> drops {std::vector<Drop>(fb.cfg.w() * 3)};
 
     void reload();
     String setDynCtrl(UIControl*_val) override;
@@ -1514,8 +1491,6 @@ class EffectWrain: public EffectCalc {
 // (c) SottNick
 
 #define FAIRY_MIN_COUNT    4            // минимальное число объектов
-//#define trackingOBJECT_MAX_COUNT    (WIDTH * 3)  // максимальное количество отслеживаемых объектов (очень влияет на расход памяти)
-//#define enlargedOBJECT_MAX_COUNT    (WIDTH * 3) // максимальное количество сложных отслеживаемых объектов (меньше, чем trackingOBJECT_MAX_COUNT)
 
 class EffectFairy : public EffectCalc {
 private:
@@ -1559,43 +1534,36 @@ public:
 // ---------- Эффект "Бульбулятор"
 // "Circles" (C) Elliott Kember https://editor.soulmatelights.com/gallery/11
 // адаптация и переделка - kostyamat
-#define NUMBER_OF_CIRCLES (num_leds / 16U)
+#define CIRCLES_MIN 3
 class EffectCircles : public EffectCalc {
 private:
-    byte color;
-    byte count;
-    float speedFactor;
-    byte _video = 255;
-    byte gain;
-    class Circle
-    {
-    public:
-        //uint16_t offset;
-        int16_t centerX;
-        int16_t centerY;
+    struct Circle {
+        int16_t centerX, centerY;
         byte hue;
         float bpm = random(0, 255);
 
-        void move() {
-            centerX = random(0, WIDTH-1);
-            centerY = random(0, HEIGHT-1);
-        }
-        
-        void reset() {
-            centerX = random(0, WIDTH-1);
-            centerY = random(0, HEIGHT-1);
-            hue = random(0, 255);
-        }
-
         float radius() {
-            float radius = EffectMath::fmap(triwave8(bpm), 0, 254, 0, 5); //beatsin16(bpm, 0, 500, 0, offset) / 100.0;
-            return radius;
+            return EffectMath::fmap(triwave8(bpm), 0, 254, 0, 5); //beatsin16(bpm, 0, 500, 0, offset) / 100.0;
         }
     };
 
-    Circle circles[NUMBER_OF_CIRCLES] = {};
+    byte color;
+    float speedFactor;
+    byte _video = 255;
+    byte gain;
+    std::vector<Circle> circles{ std::vector<Circle>(CIRCLES_MIN) };
 
-    void drawCircle(LedFB &fb, Circle circle);
+    void move(Circle &c) {
+        c.centerX = random(0, fb.cfg.maxWidthIndex());
+        c.centerY = random(0, fb.cfg.maxHeightIndex());
+    }
+    
+    void reset(Circle &c) {
+        move(c);
+        c.hue = random(0, 255);
+    }
+
+    void drawCircle(LedFB &fb, Circle &circle);
     String setDynCtrl(UIControl*_val) override;
 
 public:
@@ -1609,24 +1577,27 @@ public:
 // (c) stepko https://wokwi.com/arduino/projects/289797125785520649
 // 06.02.2021
 class EffectBengalL : public EffectCalc {
-private:
-    #define sparksNum  WIDTH*4
+    struct Spark{
+        float posx, posy;
+        float speedx, speedy;
+        float sat;
+        float fade;
+        byte color;
+    };
 
-    float sparksPos[2][sparksNum];
-    float sparksSpeed[2][sparksNum];
-    byte sparksColor[sparksNum];
-    float sparksSat[sparksNum];
-    float sparksFade[sparksNum];
-    uint8_t gPos[2];
+    const uint8_t minSparks = 4;
+    const uint8_t maxSparks = fb.cfg.w() * 4;
+    uint8_t gPosx, gPosy;
 
     bool centerRun = true;
     byte period = 10;
     byte _x = fb.cfg.w()/2;
     byte _y = fb.cfg.h()/2;
     float speedFactor;
+    std::vector<Spark> sparks{ std::vector<Spark>(minSparks) };
 
-    void regen(byte id);
-    void phisics(byte id);
+    void regen(Spark &s);
+    void physics(Spark &s);
     String setDynCtrl(UIControl*_val) override;
 
 
@@ -1831,137 +1802,25 @@ private:
     uint8_t thisMax;
 
     //Germany
-    void germany(uint8_t i)
-    {
-        for (uint8_t j = 0; j < fb.cfg.h(); j++)
-        {
-            fb.pixel(i, j) += 
-            (j < thisMax - fb.cfg.h() / 4) ? CHSV(68, 255, thisVal) : (j < thisMax + fb.cfg.h() / 4) ? CHSV(0, 255, thisVal)
-            : CHSV(0, 0, thisVal / 2.5);
-        }
-    }
-
+    void germany(uint8_t i);
     //Ukraine
-    void ukraine(uint8_t i)
-    {
-        for (uint8_t j = 0; j < fb.cfg.h(); j++)
-        {
-            fb.pixel(i, j) += 
-            (j < thisMax) ? CHSV(50, 255, thisVal) : CHSV(150, 255, thisVal);
-        }
-    }
-
+    void ukraine(uint8_t i);
     //Belarus
-    void belarus(uint8_t i)
-    {
-        for (uint8_t j = 0; j < fb.cfg.h(); j++)
-        {
-            fb.pixel(i, j) += 
-            (j < thisMax - fb.cfg.h() / 4) ? CHSV(0, 224, thisVal) : (j < thisMax + fb.cfg.h() / 4) ? CHSV(0, 0, thisVal)
-            : CHSV(0, 224, thisVal);
-        }
-    }
-
+    void belarus(uint8_t i);
     //Russia
-    void russia(uint8_t i)
-    {
-        for (uint8_t j = 0; j < fb.cfg.h(); j++)
-        {
-            fb.pixel(i, j) += 
-            (j < thisMax - fb.cfg.h() / 4) ? CHSV(0, 255, thisVal) : (j < thisMax + fb.cfg.h() / 4) ? CHSV(150, 255, thisVal)
-            : CHSV(0, 0, thisVal);
-        }
-    }
-
+    void russia(uint8_t i);
     //Poland
-    void poland(uint8_t i)
-    {
-        for (uint8_t j = 0; j < fb.cfg.h(); j++)
-        {
-            fb.pixel(i, j) += 
-            (j < thisMax + 1) ? CHSV(248, 214, (float)thisVal * 0.83) : CHSV(25, 3, (float)thisVal * 0.91);
-        }
-    }
-
+    void poland(uint8_t i);
     //The USA
-    void usa(uint8_t i)
-    {
-        for (uint8_t j = 0; j < fb.cfg.h(); j++)
-        {
-            fb.pixel(i, j) +=
-            ((i <= fb.cfg.w() / 2) && (j + thisMax > fb.cfg.h() - 1 + fb.cfg.h() / 16)) ? 
-            ((i % 2 && ((int)j - fb.cfg.h() / 16 + thisMax) % 2) ? 
-            CHSV(160, 0, thisVal) : CHSV(160, 255, thisVal)) 
-            : ((j + 1 + thisMax) % 6 < 3 ? CHSV(0, 0, thisVal) : CHSV(0, 255, thisVal));
-        }
-    }
-
+    void usa(uint8_t i);
     //Italy
-    void italy(uint8_t i)
-    {
-        for (uint8_t j = 0; j < fb.cfg.h(); j++)
-        {
-            fb.pixel(i, j) += 
-            (i < fb.cfg.w() / 3) ? CHSV(90, 255, thisVal) : (i < fb.cfg.w() - 1 - fb.cfg.w() / 3) ? CHSV(0, 0, thisVal)
-            : CHSV(0, 255, thisVal);
-        }
-    }
-
+    void italy(uint8_t i);
     //France
-    void france(uint8_t i)
-    {
-        for (uint8_t j = 0; j < fb.cfg.h(); j++)
-        {
-            fb.pixel(i, j) += 
-            (i < fb.cfg.w() / 3) ? CHSV(160, 255, thisVal) : (i < fb.cfg.w() - 1 - fb.cfg.w() / 3) ? CHSV(0, 0, thisVal)
-            : CHSV(0, 255, thisVal);
-        }
-    }
-
+    void france(uint8_t i);
     //UK
-    void uk(uint8_t i)
-    {
-        for (uint8_t j = 0; j < fb.cfg.h(); j++)
-        {
-            fb.pixel(i, j) += 
-            (
-                (
-                    (i > fb.cfg.w() / 2 + 1 || i < fb.cfg.w() / 2 - 2) && ((i - (int)(j + thisMax - (fb.cfg.h() * 2 - fb.cfg.w()) / 2) > -2) && (i - (j + thisMax - (fb.cfg.h() * 2 - fb.cfg.w()) / 2) < 2))
-                )
-                    ||
-                (
-                    (i > fb.cfg.w() / 2 + 1 || i < fb.cfg.w() / 2 - 2) && ( (((int)fb.cfg.w() - 1 - i - ((int)j + thisMax - (int)(fb.cfg.h() * 2 - fb.cfg.w()) / 2) > -2) && (fb.cfg.w() - 1 - i - (int)(j + thisMax - (fb.cfg.h() * 2 - fb.cfg.w()) / 2) < 2)) )
-                )
-            || 
-            (fb.cfg.w() / 2 - i == 0) || (fb.cfg.w() / 2 - 1 - i == 0) 
-            || 
-            ((fb.cfg.h() - (j + thisMax)) == 0) || ((fb.cfg.h() - 1 - (j + thisMax)) == 0)) ? 
-            CHSV(0, 255, thisVal) 
-            : 
-            (((i - (int)(j + thisMax - (fb.cfg.h() * 2 - fb.cfg.w()) / 2) > -4) 
-            && (i - (j + thisMax - (fb.cfg.h() * 2 - fb.cfg.w()) / 2) < 4)) 
-            || 
-            (((int)fb.cfg.w() - 1 - i - (int)(j + thisMax - (fb.cfg.h() * 2 - fb.cfg.w()) / 2) > -4) 
-            && (fb.cfg.w() - 1 - i - (int)(j + thisMax - (fb.cfg.h() * 2 - fb.cfg.w()) / 2) < 4)) 
-            || (fb.cfg.w() / 2 + 1 - i == 0) || (fb.cfg.w() / 2 - 2 - i == 0) 
-            || (fb.cfg.h() + 1 - (j + thisMax) == 0) || (fb.cfg.h() - 2 - (int)(j + thisMax) == 0)) ? 
-            CHSV(0, 0, thisVal)
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  : CHSV(150, 255, thisVal);
-        }
-    }
-
+    void uk(uint8_t i);
     //Spain
-    void spain(uint8_t i)
-    {
-        for (uint8_t j = 0; j < fb.cfg.h(); j++)
-        {
-            fb.pixel(i, j) += 
-            (j < thisMax - fb.cfg.h() / 3) ? 
-            CHSV(250, 224, (float)thisVal * 0.68) : (j < thisMax + fb.cfg.h() / 3) ? CHSV(64, 255, (float)thisVal * 0.98)
-            : CHSV(250, 224, (float)thisVal * 0.68);
-        }
-    }
-
+    void spain(uint8_t i);
 
     void changeFlags();
     String setDynCtrl(UIControl*_val) override;
@@ -2006,19 +1865,19 @@ public:
 */
 class EffectVU: public EffectCalc {
 private:
-    CRGBPalette16 gradPal[5] = { 
-    purple_gp,    rainbowsherbet_gp, 
-    redyellow_gp, Colorfull_gp, es_ocean_breeze_068_gp
+    CRGBPalette16 gradPal[5] = {
+        purple_gp,    rainbowsherbet_gp, 
+        redyellow_gp, Colorfull_gp, es_ocean_breeze_068_gp
     };
-    uint8_t NUM_BANDS = fb.cfg.w();
+    uint8_t bands = fb.cfg.w();
     uint8_t bar_width{1};
-    uint8_t calcArray = 1; // уменьшение частоты пересчета массива
+    uint8_t calcArray = 1;          // уменьшение частоты пересчета массива
     uint8_t colorTimer = 0;
     const uint8_t colorDev = 256/TOP;
     // Sampling and FFT stuff
-    float peak[WIDTH];              // The length of these arrays must be >= NUM_BANDS
-    float oldBarHeights[WIDTH];
-    float bandValues[WIDTH];
+    std::vector<float> peak{std::vector<float>(fb.cfg.w())};              // The length of these arrays must be >= bands
+    std::vector<float> oldBarHeights{std::vector<float>(fb.cfg.w())};
+    std::vector<float> bandValues{std::vector<float>(fb.cfg.w())};
 
     float samp_freq;
     double last_freq = 0;
@@ -2074,31 +1933,13 @@ private:
         float x, y, speedy = 1;
     
     public:
-        void addXY(float nx, float ny, LedFB &fb) {
-            EffectMath::drawPixelXYF(x, y, 0, fb);
-            x += nx;
-            y += ny * speedy;
-        }
+        void addXY(float nx, float ny, LedFB &fb);
 
         float getY() { return y; }
 
-        void reset(LedFB &fb) {
-            uint32_t peak = 0;
-            speedy = (float)random(5, 30) / 10;
-            y = random((HEIGHT/4) * 5, (HEIGHT /2) * 5) / 5;
-            for (uint8_t i=0; i < WIDTH; i++) {
-                if (fb.pixel(i, y).getLuma() > peak){
-                    peak = fb.pixel(i, y).getLuma();
-                    x = i;
-                }
-            }
-            color = fb.pixel(x, y);
-        }
+        void reset(LedFB &fb);
 
-        void draw(LedFB &fb) {
-            color.fadeLightBy(256 / (HEIGHT));
-            EffectMath::drawPixelXYF(x, y, color, fb);
-        }
+        void draw(LedFB &fb);
     }; 
 
     std::vector<Spark> sparks{std::vector<Spark>(sparksCount, Spark())};
@@ -2205,10 +2046,9 @@ private:
     uint16_t _speed;
     byte color;
     bool colorShift = false;
-    byte buff[WIDTH + 2][HEIGHT + 2];
+    Noise3dMap buff{Noise3dMap(1, fb.cfg.w()+2, fb.cfg.h()+2)};
     bool a = true;
 	float speedFactor;
-
 
     String setDynCtrl(UIControl*_val) override;
     void drawDot(float x, float y, byte a);
