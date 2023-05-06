@@ -467,6 +467,36 @@ class Boid {
     static void spawn(std::vector<Boid> &boids, uint16_t w, uint16_t h);
 };
 
+/**
+ * @brief a 1D vector mapped to 2D array
+ * 
+ * @tparam T template type
+ */
+template <class T>
+class Vector2D {
+    size_t _w, _h;
+    std::vector<T> v;
+
+public:
+    Vector2D(size_t w, size_t h) : _w(w), _h(h), v(std::vector<T>(w*h)) {}
+
+    size_t idx(size_t x, size_t y) const { return _w*y + x; }
+    size_t w() const { return _w; };
+    size_t h() const { return _h; };
+    size_t size() const { return v.size(); };
+
+    T& at(size_t idx){ return v.at( idx ); };
+    T& at(size_t x, size_t y){ return v.at( idx(x,y) ); };
+    T* getData(){ return v.data(); }
+
+    void reset(size_t width, size_t height, T &val = T()){
+        _w = w, _h = h;
+        v.assign(_w*_h, val);
+        v.shrink_to_fit();
+    };
+
+};
+
 // 3D Noise map structure
 struct Noise3dMap {
     struct Deviation

@@ -928,10 +928,10 @@ void Effect3DNoise::fillNoiseLED()
   {
     dataSmoothing = 200 - (speed * 4);
   }
-  for (uint8_t i = 0; i < noise.h; i++)
+  for (uint8_t i = 0; i < noise.h(); i++)
   {
     int32_t ioffset = _scale * i;
-    for (uint8_t j = 0; j < noise.w; j++)
+    for (uint8_t j = 0; j < noise.w(); j++)
     {
       int32_t joffset = _scale * j;
 
@@ -942,10 +942,10 @@ void Effect3DNoise::fillNoiseLED()
 
       if (dataSmoothing)
       {
-        data = scale8( noise.map_lxy(0,j,i), dataSmoothing) + scale8( data, 256 - dataSmoothing);
+        data = scale8( noise.at(j,i), dataSmoothing) + scale8( data, 256 - dataSmoothing);
       }
 
-      noise.map_lxy(0,j,i) = data;
+      noise.at(j,i) = data;
     }
   }
   z += _speed;
@@ -956,8 +956,8 @@ void Effect3DNoise::fillNoiseLED()
 
   for (uint8_t i = 0; i < fb.cfg.h(); i++){
     for (uint8_t j = 0; j < fb.cfg.w(); j++){
-      uint8_t index = noise.map_lxy(0, j%(fb.cfg.w()*2), i);  //  [j%(fb.cfg.minDim()*2)][i];
-      uint8_t bri =   noise.map_lxy(0, j%(fb.cfg.w()*2), i); //noise[i%(fb.cfg.minDim()*2)][j];
+      uint8_t index = noise.at(j%(fb.cfg.w()*2), i);  //  [j%(fb.cfg.minDim()*2)][i];
+      uint8_t bri =   noise.at(j%(fb.cfg.w()*2), i); //noise[i%(fb.cfg.minDim()*2)][j];
       // if this palette is a 'loop', add a slowly-changing base value
       if ( colorLoop)
         index += ihue;
@@ -979,13 +979,13 @@ void Effect3DNoise::fillNoiseLED()
 
 void Effect3DNoise::fillnoise8()
 {
-  for (uint8_t i = 0; i < noise.w; i++)
+  for (uint8_t i = 0; i < noise.w(); i++)
   {
     int32_t ioffset = _scale * i;
-    for (uint8_t j = 0; j < noise.h; j++)
+    for (uint8_t j = 0; j < noise.h(); j++)
     {
       int32_t joffset = _scale * j;
-      noise.map_lxy(0, i, j) = inoise8(x + ioffset, y + joffset, z);
+      noise.at(i, j) = inoise8(x + ioffset, y + joffset, z);
     }
   }
   z += _speed;
@@ -2221,22 +2221,22 @@ bool EffectFire2012::fire2012Routine() {
   {
     // Step 1.  Cool down every cell a little
     for (uint8_t y = 0; y < fb.cfg.h(); y++)
-      noise3d.map_lxy(0,x,y) = qsub8(noise3d.map_lxy(0,x,y), random(0, ((cooling * 10) / fb.cfg.h()) + 2));
+      noise.at(x,y) = qsub8(noise.at(x,y), random(0, ((cooling * 10) / fb.cfg.h()) + 2));
 
     // Step 2.  Heat from each cell drifts 'up' and diffuses a little
     for (uint8_t k = fb.cfg.maxHeightIndex(); k > 2; k--)
-      noise3d.map_lxy(0,x,k) = (noise3d.map_lxy(0,x,k - 1) + noise3d.map_lxy(0,x,k - 2) + noise3d.map_lxy(0,x,k - 3)) / 3;
+      noise.at(x,k) = (noise.at(x,k - 1) + noise.at(x,k - 2) + noise.at(x,k - 3)) / 3;
 
     // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
     if (random(255) < sparking)
     {
       int j = random(fire_base);
-      noise3d.map_lxy(0,x,j) = qadd8(noise3d.map_lxy(0,x,j), random(96, 255)); // 196, 255
+      noise.at(x,j) = qadd8(noise.at(x,j), random(96, 255)); // 196, 255
     }
 
     // Step 4.  Map from heat cells to LED colors
     for (uint8_t y = 0; y < fb.cfg.h(); y++)
-      nblend(fb.pixel(x, y), ColorFromPalette(*curPalette, ((noise3d.map_lxy(0,x,y) * 0.7) + noise3d.map_lxy(0, wrapX(x + 1), y) * 0.3)), fireSmoothing);
+      nblend(fb.pixel(x, y), ColorFromPalette(*curPalette, ((noise.at(x,y) * 0.7) + noise.at( wrapX(x + 1), y) * 0.3)), fireSmoothing);
   }
   return true;
 }
@@ -3564,8 +3564,8 @@ void EffectAquarium::fillNoiseLED() {
       
       data = qsub8(data, 16);
       data = qadd8(data, scale8(data, 39));
-      noise.map_lxy(0, j, i) = scale8(noise.map_lxy(0, j, i), dataSmoothing) + scale8(data, 256 - dataSmoothing);
-      fb.pixel(j, i) = ColorFromPalette(currentPalette, noise.map_lxy(0, j, i));
+      noise.at(j, i) = scale8(noise.at(j, i), dataSmoothing) + scale8(data, 256 - dataSmoothing);
+      fb.pixel(j, i) = ColorFromPalette(currentPalette, noise.at(j, i));
     }
   }
   z += _speed;
@@ -6417,11 +6417,11 @@ void EffectWrain::Clouds(bool flash)
       int yoffset = noiseScale * z ;
       uint8_t noiseData = qsub8(inoise8(noiseX + xoffset, noiseY + yoffset, noiseZ), 16);
       noiseData = qadd8(noiseData, scale8(noiseData, 39));
-      _noise[x * cloudHeight + z] = scale8(_noise[x * cloudHeight + z], dataSmoothing) + scale8(noiseData, 256 - dataSmoothing);
+      _noise.at(x * cloudHeight + z) = scale8(_noise.at(x * cloudHeight + z), dataSmoothing) + scale8(noiseData, 256 - dataSmoothing);
       if (flash)
         fb.pixel(x, fb.cfg.h() - z - 1) = CHSV(random8(20,30), 250, random8(64, 100));
       else 
-        nblend(fb.pixel(x, fb.cfg.maxHeightIndex() - z), ColorFromPalette(*curPalette, _noise[x * cloudHeight + z], _noise[x * cloudHeight + z]), (500 / cloudHeight));
+        nblend(fb.pixel(x, fb.cfg.maxHeightIndex() - z), ColorFromPalette(*curPalette, _noise.at(x * cloudHeight + z), _noise.at(x * cloudHeight + z)), (500 / cloudHeight));
     }
     noiseZ++;
   }

@@ -287,12 +287,12 @@ private:
     uint8_t cooling = 80U; // 70
   // SPARKING: What chance (out of 255) is there that a new spark will be lit?
   // Higher chance = more roaring fire.  Lower chance = more flickery fire.
-     uint8_t sparking = 90U; // 130
+    uint8_t sparking = 90U; // 130
   // SMOOTHING; How much blending should be done between frames
   // Lower = more blending and smoother flames. Higher = less blending and flickery flames
     uint8_t _scale = 1;
     const uint8_t fireSmoothing = 60U; // 90
-    Noise3dMap noise3d;
+    Vector2D<uint8_t> noise;
     bool fire2012Routine();
     String setDynCtrl(UIControl*_val) override;
 
@@ -301,7 +301,7 @@ private:
     uint8_t wrapY(int8_t y){ return (y + fb.cfg.h()) % fb.cfg.h(); }
 
 public:
-    EffectFire2012(LedFB &framebuffer) : EffectCalc(framebuffer), noise3d(1, fb.cfg.w(), fb.cfg.h()) {}
+    EffectFire2012(LedFB &framebuffer) : EffectCalc(framebuffer), noise(fb.cfg.w(), fb.cfg.h()) {}
     void load() override;
     bool run() override;
 };
@@ -377,10 +377,10 @@ private:
     float _speed{200};             // speed is set dynamically once we've started up
     float _scale{10};             // scale is set dynamically once we've started up
     float x{1}, y{1}, z{1};
-    Noise3dMap noise;
+    Vector2D<uint8_t> noise;
 
 public:
-    Effect3DNoise(LedFB &framebuffer) : EffectCalc(framebuffer), noise(1, 2*fb.cfg.w(), fb.cfg.h()) {}
+    Effect3DNoise(LedFB &framebuffer) : EffectCalc(framebuffer), noise(2*fb.cfg.w(), fb.cfg.h()) {}
     void load() override;
     bool run() override;
     String setDynCtrl(UIControl*_val) override;
@@ -814,7 +814,7 @@ struct Drop{
 
     float hue = 0.;
     uint16_t x{0}, y{0}, z{0};
-    Noise3dMap noise;
+    Vector2D<uint8_t> noise;
 
     inline uint8_t maxRadius(){return fb.cfg.w() + fb.cfg.h();};
     std::vector<Drop> drops;
@@ -829,7 +829,7 @@ struct Drop{
 
 public:
     EffectAquarium(LedFB &framebuffer) : EffectCalc(framebuffer),
-        noise(1, framebuffer.cfg.w(), framebuffer.cfg.h()),
+        noise(framebuffer.cfg.w(), framebuffer.cfg.h()),
         drops(std::vector<Drop>((fb.cfg.h() + fb.cfg.w()) / 6)) {}
 
     void load() override;
@@ -1466,7 +1466,7 @@ class EffectWrain: public EffectCalc {
     float windProgress = 0;
     float speedFactor = 0.5;
     uint32_t timer = 0;
-    std::vector<uint8_t> _noise {std::vector<uint8_t>(fb.cfg.w() * cloudHeight)};
+    Vector2D<uint8_t> _noise {Vector2D<uint8_t>(fb.cfg.w(), cloudHeight)};
     std::vector<Drop> drops {std::vector<Drop>(fb.cfg.w() * 3)};
 
     void reload();
