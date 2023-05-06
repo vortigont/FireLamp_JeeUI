@@ -509,23 +509,34 @@ struct Noise3dMap {
     const uint8_t e_centerX = w / 2 + (w % 2);
     const uint8_t e_centerY = h / 2 + (h % 2);
     std::vector<Deviation> opt;
-    std::vector<std::vector<uint8_t>> map;
+    std::vector< Vector2D<uint8_t> > map;
 
     Noise3dMap(uint8_t layers, uint8_t w, uint8_t h) : w(w), h(h),
                 opt(std::vector<Deviation>(layers)),
-                map(std::vector<std::vector<uint8_t>>(layers, std::vector<uint8_t>(w*h))) {}
+                map(std::vector< Vector2D<uint8_t> >(layers, Vector2D<uint8_t>(w,h))) {}
     // turn x,y into array index
-    inline size_t xy(uint8_t x, uint8_t y) const { return w*y + x; }
+    inline size_t idx(uint8_t x, uint8_t y) const { return w*y + x; }
 
     // return a reference to map element via layer,x,y coordinates
-    uint8_t &map_lxy(uint8_t layer, uint8_t x, uint8_t y){ return map[layer].at(w*y + x); }
+    uint8_t &lxy(uint8_t layer, uint8_t x, uint8_t y){ return map.at(layer).at(idx(y, x)); }
 
     /**
      * @brief fill noise map
      * 
      * @param smooth if > 0 apply smooth 
      */
-    void fillNoise(uint8_t smooth = 0);
+    void fillNoise(uint8_t smooth = 0){
+        for (size_t l = 0; l != map.size(); ++l ){
+            for (uint8_t y = 0; y < h; ++y) {
+                int32_t yoffset = opt.at(l).e_scaleY * (y - e_centerY);
+                for (uint8_t x = 0; x < w; ++x) {
+                    int32_t xoffset = opt[l].e_scaleX * (x - e_centerX);
+                    uint8_t data = (inoise16(opt.at(l).e_x + xoffset, opt.at(l).e_y + yoffset, opt.at(l).e_z) + 1) >> 8;
+                    lxy(l,y,x) = smooth ? scale8( map.at(l).at(x,y), smooth ) + scale8( data, 255 - smooth ) : data;
+                }
+            }
+        }
+    };
 
     // print noise map (debug)
     //void printmap();

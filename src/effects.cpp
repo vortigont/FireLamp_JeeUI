@@ -1398,7 +1398,7 @@ void EffectComet::moveFractionalNoise(bool direction, int8_t amplitude, float sh
 
   for (auto &i : noise3d.map)
     for (uint16_t a = 0; a < _side_a; a++) {
-      uint8_t _pixel = direction ? i.at(noise3d.xy(a,0)) : i.at(noise3d.xy(0,a));
+      uint8_t _pixel = direction ? i.at(noise3d.lxy(0,a,0)) : i.at(noise3d.lxy(0,0,a));
       int16_t amount = ((int16_t)(_pixel - 128) * 2 * amplitude + shift * 256);
       int8_t delta = ((uint16_t)fabs(amount) >> 8) ;
       int8_t fraction = ((uint16_t)fabs(amount) & 255);
@@ -1636,7 +1636,7 @@ bool EffectComet::rainbowCometRoutine()
   if (colorId == 255) {
     _eNs_color= CRGB::White;
   } else if (colorId == 1) {
-    _eNs_color = CHSV(noise3d.map_lxy(0,0,0) * e_com_3DCOLORSPEED , 255, 255);
+    _eNs_color = CHSV(noise3d.lxy(0,0,0) * e_com_3DCOLORSPEED , 255, 255);
   } else if (colorId >1 && colorId < 128) {
     _eNs_color = CHSV(millis() / ((uint16_t)colorId + 1U) * 4 + 10, 255, 255);
   } else {
@@ -2287,13 +2287,13 @@ bool EffectFire2018::run()
     std::swap(fire18heat[y], fire18heat[y-1]);
 
   // draw lowest line - seed the fire somewhere from the middle of the noise map
-  std::memcpy(fire18heat[0].data(), noise.map[0].data() + noise.xy(0, noise.e_centerY), noise.w);
+  std::memcpy(fire18heat[0].data(), noise.map[0].getData() + noise.idx(0, noise.e_centerY), noise.w);
 
   //dim
   for (uint8_t y = 0; y != noise.h-1; y++)
     for (uint8_t x = 0; x != noise.w-1; x++)
     {
-      uint8_t dim = 255 - noise.map_lxy(0, x, y) / 1.7 * constrain(0.05*brightness+0.01,0.01,1.0);  // todo: wtf??? this constrain has a range of ~0-20 ints, why floats for this???
+      uint8_t dim = 255 - noise.lxy(0, x, y) / 1.7 * constrain(0.05*brightness+0.01,0.01,1.0);  // todo: wtf??? this constrain has a range of ~0-20 ints, why floats for this???
       fire18heat[y][x] = scale8(fire18heat[y][x], dim);
       //uint8_t dim = noise3dx[0][x][y];
       // high value = high flames
@@ -2311,7 +2311,7 @@ bool EffectFire2018::run()
 
       // dim the result based on 2nd noise layer
       //color = fb.pixel(x, fb.cfg.maxHeightIndex() - y);
-      color.nscale8(noise.map_lxy(1,x,y));
+      color.nscale8(noise.lxy(1,x,y));
       fb.pixel(x, y) = color;
     }
   }
@@ -4185,18 +4185,18 @@ bool EffectNoise::run() {
   //(here based on the top left pixel - it could be any position else)
   //the factor "2" defines the max speed of the x movement
   //the "-255" defines the median moving direction
-  noise.opt[0].e_x += noise.map_lxy(0,0,0) * speedFactor - 255U;
+  noise.opt[0].e_x += noise.lxy(0,0,0) * speedFactor - 255U;
   //modulate the position so that it increases/decreases y
   //(here based on the top right pixel - it could be any position else)
-  noise.opt[0].e_y += noise.map_lxy(0,fb.cfg.maxWidthIndex(),0) * speedFactor - 255U;
+  noise.opt[0].e_y += noise.lxy(0,fb.cfg.maxWidthIndex(),0) * speedFactor - 255U;
   //z just in one direction but with the additional "1" to make sure to never get stuck
   //in case the movement is stopped by a crazy parameter (noise data) combination
   //(here based on the down left pixel - it could be any position else)
-  noise.opt[0].e_z += 1 + noise.map_lxy(0,0,fb.cfg.maxHeightIndex()) / 4;
+  noise.opt[0].e_z += 1 + noise.lxy(0,0,fb.cfg.maxHeightIndex()) / 4;
   //set the scaling based on left and right pixel of the middle line
   //here you can set the range of the zoom in both dimensions
-  noise.opt[0].e_scaleX = 8000 + noise.map_lxy(0,0,centreY) * 16;
-  noise.opt[0].e_scaleY = 8000 + noise.map_lxy(0,fb.cfg.maxWidthIndex(), centreY) * 16;
+  noise.opt[0].e_scaleX = 8000 + noise.lxy(0,0,centreY) * 16;
+  noise.opt[0].e_scaleY = 8000 + noise.lxy(0,fb.cfg.maxWidthIndex(), centreY) * 16;
 
   //calculate the noise data
   for (uint8_t y = 0; y < noise.h; y++) {
@@ -4213,7 +4213,7 @@ bool EffectNoise::run() {
       // scale down that the result fits into a byte
       data /= 161;
       // store the result in the array
-      noise.map_lxy(0, x, y) = data;
+      noise.lxy(0, x, y) = data;
     }
   }
 
@@ -4223,11 +4223,11 @@ bool EffectNoise::run() {
       //I will add this overlay CRGB later for more colors
       //it´s basically a rainbow mapping with an inverted brightness mask
       CRGB overlay;
-      if (palettepos == 14) overlay = CHSV(160,255 - noise.map_lxy(0,x,y), noise.map_lxy(0,fb.cfg.maxWidthIndex(),fb.cfg.maxHeightIndex()) + noise.map_lxy(0,x,y));
-      else overlay = CHSV(noise.map_lxy(0,y,x), 255, noise.map_lxy(0,x,y));
+      if (palettepos == 14) overlay = CHSV(160,255 - noise.lxy(0,x,y), noise.lxy(0,fb.cfg.maxWidthIndex(),fb.cfg.maxHeightIndex()) + noise.lxy(0,x,y));
+      else overlay = CHSV(noise.lxy(0,y,x), 255, noise.lxy(0,x,y));
       //here the actual colormapping happens - note the additional colorshift caused by the down right pixel noise[layer][15][15]
-      if (palettepos == 4) EffectMath::drawPixelXYF(x, fb.cfg.maxHeightIndex() - y, CHSV(160, 0 , noise.map_lxy(0,x,y)), fb, 35);
-      else fb.pixel(x, y) = ColorFromPalette(palettepos > 0 ? *curPalette : Pal, noise.map_lxy(0,fb.cfg.maxWidthIndex(),fb.cfg.maxHeightIndex()) + noise.map_lxy(0,x,y)) + overlay;
+      if (palettepos == 4) EffectMath::drawPixelXYF(x, fb.cfg.maxHeightIndex() - y, CHSV(160, 0 , noise.lxy(0,x,y)), fb, 35);
+      else fb.pixel(x, y) = ColorFromPalette(palettepos > 0 ? *curPalette : Pal, noise.lxy(0,fb.cfg.maxWidthIndex(),fb.cfg.maxHeightIndex()) + noise.lxy(0,x,y)) + overlay;
     }
   }
 
@@ -8489,9 +8489,9 @@ uint8_t xx = (x - (int) x) * 255, yy = (y - (int) y) * 255, ix = 255 - xx, iy = 
   // multiply the intensities by the colour, and saturating-add them to the pixels
   for (uint8_t i = 0; i < 4; i++) {
     int16_t xn = x + (i & 1), yn = y + ((i >> 1) & 1);
-    byte clr = buff.map_lxy(0, xn, yn);
+    byte clr = buff.lxy(0, xn, yn);
     clr = constrain(qadd8(clr, (a * wu[i]) >> 8), 0, 240);
-    buff.map_lxy(0, xn, yn) = clr;
+    buff.lxy(0, xn, yn) = clr;
   }
 }
 
@@ -8499,13 +8499,13 @@ void EffectMirage::blur() {
   uint16_t sum;
   for (byte x = 1; x < fb.cfg.w() + 1; x++) {
     for (byte y = 1; y < fb.cfg.h() + 1; y++) {
-      sum = buff.map_lxy(0, x,y);
-      sum += buff.map_lxy(0, x + 1,y);
-      sum += buff.map_lxy(0, x,y - 1);
-      sum += buff.map_lxy(0, x,y + 1);
-      sum += buff.map_lxy(0, x - 1,y);
+      sum = buff.lxy(0, x,y);
+      sum += buff.lxy(0, x + 1,y);
+      sum += buff.lxy(0, x,y - 1);
+      sum += buff.lxy(0, x,y + 1);
+      sum += buff.lxy(0, x - 1,y);
       sum /= 5;
-      buff.map_lxy(0, x,y) = sum;
+      buff.lxy(0, x,y) = sum;
     }
   }
 }
@@ -8526,7 +8526,7 @@ bool EffectMirage::run() {
   drawDot(x3 + 1, y3, 200);
   for (byte y = 1; y < fb.cfg.h() + 1; y++) {
     for (byte x = 1; x < fb.cfg.w() + 1; x++) {
-      fb.pixel(x - 1, y - 1) = CHSV(colorShift ? color++ : color, buff.map_lxy(0, x,y), 255);
+      fb.pixel(x - 1, y - 1) = CHSV(colorShift ? color++ : color, buff.lxy(0, x,y), 255);
     }
   }
   return true;
