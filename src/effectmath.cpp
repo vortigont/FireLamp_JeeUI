@@ -922,6 +922,18 @@ void Boid::spawn(std::vector<Boid> &boids, uint16_t w, uint16_t h){
 
 
 /*  non effect */
+void Noise3dMap::fillNoise(uint8_t smooth){
+  for (size_t l = 0; l != map.size(); ++l ){
+    for (uint8_t y = 0; y < h; ++y) {
+      int32_t yoffset = opt.at(l).e_scaleY * (y - e_centerY);
+      for (uint8_t x = 0; x < w; ++x) {
+        int32_t xoffset = opt[l].e_scaleX * (x - e_centerX);
+        uint8_t data = (inoise16(opt.at(l).e_x + xoffset, opt.at(l).e_y + yoffset, opt.at(l).e_z) + 1) >> 8;
+        lxy(l,y,x) = smooth ? scale8( map.at(l).at(x,y), smooth ) + scale8( data, 255 - smooth ) : data;
+      }
+    }
+  }
+};
 
 /*
 // print noise map

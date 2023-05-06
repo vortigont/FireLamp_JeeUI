@@ -6080,24 +6080,24 @@ bool EffectOscilator::run() {
   uint16_t colorCount[3] = {0U, 0U, 0U};
   hue++;
   fb.clear();
-  for (uint8_t x = 0; x < fb.cfg.w(); x++) {
-      for (uint8_t y = 0; y < fb.cfg.h(); y++) {
-          if (oscillatingWorld[x][y].red){
+  for (uint8_t y = 0; y < oscillatingWorld.h(); y++) {
+      for (uint8_t x = 0; x < oscillatingWorld.w(); x++) {
+          if (oscillatingWorld.at(x,y).red){
              colorCount[0]++;
              if (greenNeighbours(x, y) > 2)
-                oscillatingWorld[x][y].color = 1U;
+                oscillatingWorld.at(x,y).color = 1U;
           }
-          else if (oscillatingWorld[x][y].green){
+          else if (oscillatingWorld.at(x,y).green){
              colorCount[1]++;
              if (blueNeighbours(x, y) > 2)
-                oscillatingWorld[x][y].color = 2U;
+                oscillatingWorld.at(x,y).color = 2U;
           }
-          else {//if (oscillatingWorld[x][y].blue){
+          else {//if (oscillatingWorld.at(x,y).blue){
              colorCount[2]++;
              if (redNeighbours(x, y) > 2)
-                oscillatingWorld[x][y].color = 0U;
+                oscillatingWorld.at(x,y).color = 0U;
           }
-          drawPixelXYFseamless((float)x + 0.5, (float)y + 0.5, currColors[oscillatingWorld[x][y].color]);
+          drawPixelXYFseamless((float)x + 0.5, (float)y + 0.5, currColors[oscillatingWorld.at(x,y).color]);
       }
   }
 
@@ -6122,12 +6122,12 @@ bool EffectOscilator::run() {
   // вброс хаоса
   if (hue == hue2){// чтобы не каждый ход
     hue2 += random8(220U) + 36U;
-    uint8_t tx = random8(fb.cfg.w());
-    deltaHue = oscillatingWorld[tx][0U].color + 1U;
+    uint8_t tx = random8(oscillatingWorld.w());
+    deltaHue = oscillatingWorld.at(tx, 0U).color + 1U;
     if (deltaHue > 2U) deltaHue = 0U;
-    oscillatingWorld[tx][0U].color = deltaHue;
-    oscillatingWorld[(tx + 1U) % fb.cfg.w()][0U].color = deltaHue;
-    oscillatingWorld[(tx + 2U) % fb.cfg.w()][0U].color = deltaHue;
+    oscillatingWorld.at(tx, 0U).color = deltaHue;
+    oscillatingWorld.at((tx + 1U) % oscillatingWorld.w(), 0U).color = deltaHue;
+    oscillatingWorld.at((tx + 2U) % oscillatingWorld.w(), 0U).color = deltaHue;
   }
 
   deltaHue = colorCount[0];
@@ -6138,24 +6138,24 @@ bool EffectOscilator::run() {
   for (uint8_t c = 0; c < 3; c++)
   {
     if (colorCount[c] < 6U){
-      uint8_t tx = random8(fb.cfg.w());
-      uint8_t ty = random8(fb.cfg.h());
+      uint8_t tx = random8(oscillatingWorld.w());
+      uint8_t ty = random8(oscillatingWorld.h());
       if (random8(2U)){
-        oscillatingWorld[tx][ty].color = c;
-        oscillatingWorld[(tx + 1U) % fb.cfg.w()][ty].color = c;
-        oscillatingWorld[(tx + 2U) % fb.cfg.w()][ty].color = c;
+        oscillatingWorld.at(tx, ty).color = c;
+        oscillatingWorld.at((tx + 1U) % oscillatingWorld.w(), ty).color = c;
+        oscillatingWorld.at((tx + 2U) % oscillatingWorld.w(), ty).color = c;
       }
       else {
-        oscillatingWorld[tx][ty].color = c;
-        oscillatingWorld[tx][(ty + 1U) % fb.cfg.h()].color = c;
-        oscillatingWorld[tx][(ty + 2U) % fb.cfg.h()].color = c;
+        oscillatingWorld.at(tx, ty).color = c;
+        oscillatingWorld.at(tx, (ty + 1U) % oscillatingWorld.h()).color = c;
+        oscillatingWorld.at(tx, (ty + 2U) % oscillatingWorld.h()).color = c;
       }
     }
   }
 
   // перенос на следующий цикл
-  for (uint8_t x = 0; x < fb.cfg.w(); x++) {
-      for (uint8_t y = 0; y < fb.cfg.h(); y++) {
+  for (uint8_t x = 0; x < oscillatingWorld.w(); x++) {
+      for (uint8_t y = 0; y < oscillatingWorld.h(); y++) {
           setCellColors(x, y);
       }
   }
@@ -6168,9 +6168,9 @@ void EffectOscilator::load() {
   palettesload();
   step = 0U;
  //случайное заполнение
-  for (uint8_t i = 0; i < fb.cfg.w(); i++) {
-    for (uint8_t j = 0; j < fb.cfg.h(); j++) {
-      oscillatingWorld[i][j].color = random8(3);
+  for (uint8_t i = 0; i < oscillatingWorld.w(); i++) {
+    for (uint8_t j = 0; j < oscillatingWorld.h(); j++) {
+      oscillatingWorld.at(i, j).color = random8(3);
       setCellColors(i, j);
     }
   }
@@ -6185,8 +6185,8 @@ void EffectOscilator::drawPixelXYFseamless(float x, float y, CRGB color)
                    EffectMath::wu_weight(ix, yy), EffectMath::wu_weight(xx, yy)};
   // multiply the intensities by the colour, and saturating-add them to the pixels
   for (uint8_t i = 0; i < 4; i++) {
-    uint8_t xn = (uint8_t)(x + (i & 1)) % fb.cfg.w();
-    uint8_t yn = (uint8_t)(y + ((i >> 1) & 1)) % fb.cfg.h();
+    uint8_t xn = (uint8_t)(x + (i & 1)) % oscillatingWorld.w();
+    uint8_t yn = (uint8_t)(y + ((i >> 1) & 1)) % oscillatingWorld.h();
     CRGB clr = fb.pixel(xn, yn);
     clr.r = qadd8(clr.r, (color.r * wu[i]) >> 8);
     clr.g = qadd8(clr.g, (color.g * wu[i]) >> 8);
@@ -6196,42 +6196,42 @@ void EffectOscilator::drawPixelXYFseamless(float x, float y, CRGB color)
 }
 
 int EffectOscilator::redNeighbours(uint8_t x, uint8_t y) {
-  return (oscillatingWorld[(x + 1) % fb.cfg.w()][y].red) +
-         (oscillatingWorld[x][(y + 1) % fb.cfg.h()].red) +
-         (oscillatingWorld[(x + fb.cfg.maxWidthIndex()) % fb.cfg.w()][y].red) +
-         (oscillatingWorld[x][(y + fb.cfg.maxHeightIndex()) % fb.cfg.h()].red) +
-         (oscillatingWorld[(x + 1) % fb.cfg.w()][(y + 1) % fb.cfg.h()].red) +
-         (oscillatingWorld[(x + fb.cfg.maxWidthIndex()) % fb.cfg.w()][(y + 1) % fb.cfg.h()].red) +
-         (oscillatingWorld[(x + fb.cfg.maxWidthIndex()) % fb.cfg.w()][(y + fb.cfg.maxHeightIndex()) % fb.cfg.h()].red) +
-         (oscillatingWorld[(x + 1) % fb.cfg.w()][(y + fb.cfg.maxHeightIndex()) % fb.cfg.h()].red);
+  return (oscillatingWorld.at((x + 1) % oscillatingWorld.w(), y).red) +
+         (oscillatingWorld.at(x, (y + 1) % oscillatingWorld.h()).red) +
+         (oscillatingWorld.at((x + fb.cfg.maxWidthIndex()) % oscillatingWorld.w(), y).red) +
+         (oscillatingWorld.at(x, (y + fb.cfg.maxHeightIndex()) % oscillatingWorld.h()).red) +
+         (oscillatingWorld.at((x + 1) % oscillatingWorld.w(), (y + 1) % oscillatingWorld.h()).red) +
+         (oscillatingWorld.at((x + fb.cfg.maxWidthIndex()) % oscillatingWorld.w(), (y + 1) % oscillatingWorld.h()).red) +
+         (oscillatingWorld.at((x + fb.cfg.maxWidthIndex()) % oscillatingWorld.w(), (y + fb.cfg.maxHeightIndex()) % oscillatingWorld.h()).red) +
+         (oscillatingWorld.at((x + 1) % oscillatingWorld.w(), (y + fb.cfg.maxHeightIndex()) % oscillatingWorld.h()).red);
     }
 
 int EffectOscilator::blueNeighbours(uint8_t x, uint8_t y) {
-  return (oscillatingWorld[(x + 1) % fb.cfg.w()][y].blue) +
-         (oscillatingWorld[x][(y + 1) % fb.cfg.h()].blue) +
-         (oscillatingWorld[(x + fb.cfg.maxWidthIndex()) % fb.cfg.w()][y].blue) +
-         (oscillatingWorld[x][(y + fb.cfg.maxHeightIndex()) % fb.cfg.h()].blue) +
-         (oscillatingWorld[(x + 1) % fb.cfg.w()][(y + 1) % fb.cfg.h()].blue) +
-         (oscillatingWorld[(x + fb.cfg.maxWidthIndex()) % fb.cfg.w()][(y + 1) % fb.cfg.h()].blue) +
-         (oscillatingWorld[(x + fb.cfg.maxWidthIndex()) % fb.cfg.w()][(y + fb.cfg.maxHeightIndex()) % fb.cfg.h()].blue) +
-         (oscillatingWorld[(x + 1) % fb.cfg.w()][(y + fb.cfg.maxHeightIndex()) % fb.cfg.h()].blue);
+  return (oscillatingWorld.at((x + 1) % oscillatingWorld.w(), y).blue) +
+         (oscillatingWorld.at(x, (y + 1) % oscillatingWorld.h()).blue) +
+         (oscillatingWorld.at((x + fb.cfg.maxWidthIndex()) % oscillatingWorld.w(), y).blue) +
+         (oscillatingWorld.at(x, (y + fb.cfg.maxHeightIndex()) % oscillatingWorld.h()).blue) +
+         (oscillatingWorld.at((x + 1) % oscillatingWorld.w(), (y + 1) % oscillatingWorld.h()).blue) +
+         (oscillatingWorld.at((x + fb.cfg.maxWidthIndex()) % oscillatingWorld.w(), (y + 1) % oscillatingWorld.h()).blue) +
+         (oscillatingWorld.at((x + fb.cfg.maxWidthIndex()) % oscillatingWorld.w(), (y + fb.cfg.maxHeightIndex()) % oscillatingWorld.h()).blue) +
+         (oscillatingWorld.at((x + 1) % oscillatingWorld.w(), (y + fb.cfg.maxHeightIndex()) % oscillatingWorld.h()).blue);
 }
   
 int EffectOscilator::greenNeighbours(uint8_t x, uint8_t y) {
-  return (oscillatingWorld[(x + 1) % fb.cfg.w()][y].green) +
-         (oscillatingWorld[x][(y + 1) % fb.cfg.h()].green) +
-         (oscillatingWorld[(x + fb.cfg.maxWidthIndex()) % fb.cfg.w()][y].green) +
-         (oscillatingWorld[x][(y + fb.cfg.maxHeightIndex()) % fb.cfg.h()].green) +
-         (oscillatingWorld[(x + 1) % fb.cfg.w()][(y + 1) % fb.cfg.h()].green) +
-         (oscillatingWorld[(x + fb.cfg.maxWidthIndex()) % fb.cfg.w()][(y + 1) % fb.cfg.h()].green) +
-         (oscillatingWorld[(x + fb.cfg.maxWidthIndex()) % fb.cfg.w()][(y + fb.cfg.maxHeightIndex()) % fb.cfg.h()].green) +
-         (oscillatingWorld[(x + 1) % fb.cfg.w()][(y + fb.cfg.maxHeightIndex()) % fb.cfg.h()].green);
+  return (oscillatingWorld.at((x + 1) % oscillatingWorld.w(), y).green) +
+         (oscillatingWorld.at(x, (y + 1) % oscillatingWorld.h()).green) +
+         (oscillatingWorld.at((x + fb.cfg.maxWidthIndex()) % oscillatingWorld.w(), y).green) +
+         (oscillatingWorld.at(x, (y + fb.cfg.maxHeightIndex()) % oscillatingWorld.h()).green) +
+         (oscillatingWorld.at((x + 1) % oscillatingWorld.w(), (y + 1) % oscillatingWorld.h()).green) +
+         (oscillatingWorld.at((x + fb.cfg.maxWidthIndex()) % oscillatingWorld.w(), (y + 1) % oscillatingWorld.h()).green) +
+         (oscillatingWorld.at((x + fb.cfg.maxWidthIndex()) % oscillatingWorld.w(), (y + fb.cfg.maxHeightIndex()) % oscillatingWorld.h()).green) +
+         (oscillatingWorld.at((x + 1) % oscillatingWorld.w(), (y + fb.cfg.maxHeightIndex()) % oscillatingWorld.h()).green);
 }
 
 void EffectOscilator::setCellColors(uint8_t x, uint8_t y) {
-  oscillatingWorld[x][y].red = (oscillatingWorld[x][y].color == 0U);
-  oscillatingWorld[x][y].green = (oscillatingWorld[x][y].color == 1U);
-  oscillatingWorld[x][y].blue = (oscillatingWorld[x][y].color == 2U);
+  oscillatingWorld.at(x,y).red = (oscillatingWorld.at(x,y).color == 0U);
+  oscillatingWorld.at(x,y).green = (oscillatingWorld.at(x,y).color == 1U);
+  oscillatingWorld.at(x,y).blue = (oscillatingWorld.at(x,y).color == 2U);
 }
 
 //------------ Эффект "Шторм" 

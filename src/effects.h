@@ -1417,15 +1417,12 @@ class EffectOscilator: public EffectCalc {
     uint8_t deltaValue;  
     unsigned long timer;
 
-    class oscillatingCell {
-        public:
-        byte red;
-        byte blue;
-        byte green;
+    struct OscillatingCell {
+        byte red, green, blue;
         byte color;
     };
 
-    oscillatingCell oscillatingWorld[WIDTH][HEIGHT];
+    Vector2D<OscillatingCell> oscillatingWorld{ Vector2D<OscillatingCell>(fb.cfg.w(), fb.cfg.h()) };
 
     void drawPixelXYFseamless(float x, float y, CRGB color);
     int redNeighbours(uint8_t x, uint8_t y);
@@ -1434,7 +1431,7 @@ class EffectOscilator: public EffectCalc {
     void setCellColors(uint8_t x, uint8_t y);
     //String setDynCtrl(UIControl*_val) override;
   public:
-    EffectOscilator(LedFB &framebuffer) : EffectCalc(framebuffer){}
+    EffectOscilator(LedFB &framebuffer) : EffectCalc(framebuffer) {}
     bool run() override;
     void load() override;
 };
