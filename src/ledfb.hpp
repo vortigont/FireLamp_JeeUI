@@ -40,9 +40,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "config.h"
 #include <FastLED.h>
 #include <vector>
-#include "log.h"
-
-constexpr uint16_t num_leds = WIDTH * HEIGHT;       // for backward compat
+//#include "log.h"
 
 /**
  * @brief matrix configuration for LedFB

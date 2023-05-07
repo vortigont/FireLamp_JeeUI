@@ -124,16 +124,7 @@ void LAMP::handle()
     LOG(printf_P, PSTR("Eff:%d, FPS: %u, FastLED FPS: %u\n"), effects.getEn(), avgfps, FastLED.getFPS());
 #ifdef ESP8266
 
-#ifdef PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED
-    uint32_t iram;
-    {
-        HeapSelectIram ephemeral;
-        iram = ESP.getFreeHeap();
-    }
-    LOG(printf_P, PSTR("MEM stat: %d/%d, HF: %d, Time: %s\n"), lampState.freeHeap, iram, lampState.HeapFragmentation, embui.timeProcessor.getFormattedShortTime().c_str());
-#else
     LOG(printf_P, PSTR("MEM stat: %d, HF: %d, Time: %s\n"), lampState.freeHeap, lampState.HeapFragmentation, embui.timeProcessor.getFormattedShortTime().c_str());
-#endif
 
 #else
     LOG(printf_P, PSTR("MEM stat: %d, Time: %s\n"), lampState.freeHeap, embui.timeProcessor.getFormattedShortTime().c_str());
@@ -185,30 +176,24 @@ void LAMP::effectsTick(){
 
   if (effects.worker && (flags.ONflag || LEDFader::getInstance()) && !isAlarm() && !isRGB()) {
     if(!lampState.isEffectsDisabledUntilText){
-      if (sledsbuff) {
-        //std::copy(sledsbuff, num_leds, getUnsafeLedsArray());
-        memcpy(getUnsafeLedsArray(), sledsbuff, num_leds);
+      if (sledsbuff) {    // stash exiting buffer
+        *sledsbuff = mx;
       }
       // посчитать текущий эффект (сохранить кадр в буфер, если ОК)
       if(effects.worker ? effects.worker->run() : 1) {
-#if defined(PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED)
-        HeapSelectIram ephemeral;
-#endif
         if(!sledsbuff)
-          sledsbuff = new CRGB[num_leds];
-        //std::copy(getUnsafeLedsArray(), getUnsafeLedsArray() + num_leds, sledsbuff);
-        memcpy(sledsbuff, getUnsafeLedsArray(), num_leds);
+          sledsbuff = new LedFB(mx);    // copy mx buffer
       }
     }
   }
 #if defined(USE_STREAMING) && defined(EXT_STREAM_BUFFER)
     if(!streambuff.empty()){
     uint8_t mi;
-    for(uint16_t i=0; i<streambuff.size() && i<num_leds; i++){
+    for(uint16_t i=0; i<streambuff.size() && i<mx.size(); i++){
       mi = streambuff[i].r > streambuff[i].g ? streambuff[i].r : streambuff[i].g;
       mi = mi > streambuff[i].b ? mi : streambuff[i].b;
       if(mi>=5) {
-        getUnsafeLedsArray()[i] = streambuff[i];
+        mx.at(i) = streambuff[i];
       } else if(mi && mi<5) {
         EffectMath::setLedsNscale8(i, map(mi,1,4,128,10)); // 5 градаций прозрачности, где 0 - полностью прозрачный
       }
@@ -217,20 +202,19 @@ void LAMP::effectsTick(){
 #endif
   if(drawbuff){
     uint8_t mi;
-    for(uint16_t i=0; i<num_leds; i++){
-      mi = drawbuff[i].r > drawbuff[i].g ? drawbuff[i].r : drawbuff[i].g;
-      mi = mi > drawbuff[i].b ? mi : drawbuff[i].b;
+    for(uint16_t i=0; i<mx.size(); i++){
+      mi = drawbuff->at(i).r > drawbuff->at(i).g ? drawbuff->at(i).r : drawbuff->at(i).g;
+      mi = mi > drawbuff->at(i).b ? mi : drawbuff->at(i).b;
       if(mi>=5) {
-        getUnsafeLedsArray()[i] = drawbuff[i];
+        mx.at(i) = drawbuff->at(i);
       } else if(mi) {
-        getUnsafeLedsArray()[i].nscale8(map(mi,1,4,128,10)); // 5 градаций прозрачности, где 0 - полностью прозрачный
+        mx.at(i).nscale8(map(mi,1,4,128,10)); // 5 градаций прозрачности, где 0 - полностью прозрачный
       }
     }
   }
 
   if(isRGB()) { // режим заливки цветом
-    fill_solid(getUnsafeLedsArray(), num_leds, rgbColor);
-    //FastLED.showColor(rgbColor); // залить все цветом
+    mx.fill(rgbColor);
   }
 
   if(isWarning()) {
@@ -322,7 +306,7 @@ void LAMP::changePower(bool flag) // флаг включения/выключе�
 #ifdef DS18B20
     // восстанавливаем значение тока после включения. Так как значение 0 не работает в ограничителе тока по перегреву, 
     // то если ограничение тока установлено в 0, устанвливаем вместо него рассчетный максимум в 15.36А на 256 диодов (бред конечно, но нужно же хоть какое-то значение больше 0).
-    setcurLimit(embui.param(FPSTR(TCONST_CLmt)).toInt() == 0 ? (num_leds * 60) : embui.param(FPSTR(TCONST_CLmt)).toInt());
+    setcurLimit(embui.param(FPSTR(TCONST_CLmt)).toInt() == 0 ? (mx.size() * 60) : embui.param(FPSTR(TCONST_CLmt)).toInt());
 #endif
     FastLED.setMaxPowerInVoltsAndMilliamps(5, curLimit); // установка максимального тока БП, более чем актуально))). Проверил, без этого куска - ограничение по току не работает :)
 }
@@ -845,9 +829,6 @@ void LAMP::micHandler()
     return;
   if(mw==nullptr && !lampState.isCalibrationRequest && lampState.micAnalyseDivider){ // обычный режим
     {
-#if defined(PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED)
-      HeapSelectIram ephemeral;
-#endif
       mw = new MicWorker(lampState.mic_scale,lampState.mic_noise,!counter);
     }
     if(!mw) {
@@ -883,9 +864,6 @@ void LAMP::micHandler()
   } else if(lampState.isCalibrationRequest) {
     if(mw==nullptr){ // калибровка начало
       {
-#if defined(PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED)
-        HeapSelectIram ephemeral;
-#endif
         mw = new MicWorker();
       }
       if(!mw){
@@ -1095,14 +1073,9 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
   // отрисовать текущий эффект (только если лампа включена, иначе бессмысленно)
   if(effects.worker && flags.ONflag && !lampState.isEffectsDisabledUntilText){
     effects.worker->run();
-#if defined(PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED)
-    HeapSelectIram ephemeral;
-#endif
-    if(!sledsbuff){
-      sledsbuff = new CRGB[num_leds];
+    if(!sledsbuff){ // WHY we need this clone here???
+      sledsbuff = new LedFB(mx);  // clone existing frambuffer
     }
-    //std::copy(getUnsafeLedsArray(), getUnsafeLedsArray() + num_leds, sledsbuff); // сохранить кадр в буфер
-    memcpy(sledsbuff, getUnsafeLedsArray(), num_leds);
   }
   setBrightness(getLampBrightness(), fade, natural);
   LOG(println, F("eof switcheffect"));
@@ -1284,24 +1257,19 @@ void LAMP::setDraw(bool flag){
     setDrawBuff(flag);
 }
 
-void LAMP::setDrawBuff(bool flag) {
-    // flags.isDraw=flag;
-    if(!flag){
-        if (drawbuff) {
-            delete [] drawbuff;
-            drawbuff = nullptr;
-        }
-    } else if(!drawbuff){
-#if defined(PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED)
-        HeapSelectIram ephemeral;
-#endif
-        drawbuff = new CRGB[num_leds];
-        //for(uint16_t i=0; i<num_leds; i++) {drawbuff[i] = CHSV(random(0,255),0,255);} // тест :)
-    }
+void LAMP::setDrawBuff(bool active) {
+  if (active){
+    if (!drawbuff)
+      drawbuff = new LedFB(mx.cfg);   // create a buff with same layout as main FB
+    return;
+  }
+
+  delete drawbuff;
+  drawbuff = nullptr;
 }
 
 void LAMP::fillDrawBuf(CRGB &color) {
-  if(drawbuff) { for(uint16_t i=0; i<num_leds; i++) drawbuff[i]=color; }
+  if(drawbuff) drawbuff->fill(color);
 }
 
 #ifdef EMBUI_USE_MQTT
@@ -1323,17 +1291,14 @@ void LAMP::setmqtt_int(int val) {
 #endif
 
 #ifdef EXT_STREAM_BUFFER
-void LAMP::setStreamBuff(bool flag) {
-    if(!flag){
+void LAMP::setStreamBuff(bool active) {
+    if(!active){
         if (!streambuff.empty()) {
             streambuff.resize(0);
             streambuff.shrink_to_fit();
         }
     } else if(streambuff.empty()){
-#if defined(PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED)
-        HeapSelectIram ephemeral;
-#endif
-        streambuff.resize(num_leds);
+        streambuff.resize(mx.size());
     }
 }
 #endif

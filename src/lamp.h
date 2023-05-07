@@ -184,8 +184,8 @@ class LAMP {
     friend class LEDFader;
 private:
     LedFB &mx;              // LED matrix framebuffer object
-    CRGB *sledsbuff=nullptr;    // вспомогательный буфер для слоя после эффектов
-    CRGB *drawbuff=nullptr;     // буфер для рисования
+    LedFB *sledsbuff = nullptr;    // вспомогательный буфер для слоя после эффектов
+    LedFB *drawbuff = nullptr;     // буфер для рисования
 
     LAMPFLAGS flags;
     LAMPSTATE lampState;        // текущее состояние лампы, которое передается эффектам
@@ -365,9 +365,15 @@ public:
     void setDebug(bool flag) {flags.isDebug=flag; lampState.isDebug=flag;}
     void setButton(bool flag) {flags.isBtn=flag;}
     void setDraw(bool flag);
-    void setDrawBuff(bool flag);
-    void writeDrawBuf(CRGB &color, uint16_t x, uint16_t y) { if(drawbuff) { drawbuff[getPixelNumber(x,y)]=color; } }
-    void writeDrawBuf(CRGB &color, uint16_t num) { if(drawbuff) { drawbuff[num]=color; } }
+
+    /**
+     * @brief creates/destroys buffer for "drawing"
+     * 
+     * @param active - if 'true' creates new buffer, otherwise destory/release buffer mem
+     */
+    void setDrawBuff(bool active);
+    void writeDrawBuf(CRGB &color, uint16_t x, uint16_t y) { if(drawbuff) { drawbuff->pixel(x,y) = color; } }
+    void writeDrawBuf(CRGB &color, uint16_t num) { if(drawbuff) { drawbuff->at(num)=color; } }
 
     /**
      * @brief fill DrawBuffer with solid color
@@ -390,7 +396,12 @@ public:
     void setDirect(bool flag) {flags.isDirect = flag;}
     void setMapping(bool flag) {flags.isMapping = flag;}
 #ifdef EXT_STREAM_BUFFER
-    void setStreamBuff(bool flag);
+    /**
+     * @brief creates/destroys buffer for "streaming"
+     * 
+     * @param active - if 'true' creates new buffer, otherwise destory/release buffer mem
+     */
+    void setStreamBuff(bool active);
     void writeStreamBuff(CRGB &color, uint16_t x, uint16_t y) { if(!streambuff.empty()) { streambuff[getPixelNumber(x,y)]=color; } }
     void writeStreamBuff(CRGB &color, uint16_t num) { if(!streambuff.empty()) { streambuff[num]=color; } }
     void fillStreamBuff(CRGB &color) { for(uint16_t i=0; i<streambuff.size(); i++) streambuff[i]=color; }
