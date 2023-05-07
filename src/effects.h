@@ -266,7 +266,7 @@ public:
 // совместное творчество юзеров форума https://community.alexgyver.ru/
 class EffectEverythingFall : public EffectCalc {
 private:
-    byte heat[WIDTH][HEIGHT];
+    Vector2D<uint8_t> heat{ Vector2D<uint8_t>(fb.cfg.w(),fb.cfg.h()) };
 
 public:
     EffectEverythingFall(LedFB &framebuffer) : EffectCalc(framebuffer){}

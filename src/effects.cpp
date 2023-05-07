@@ -217,25 +217,25 @@ bool EffectEverythingFall::run(){
   for (uint8_t x = 0; x < fb.cfg.w(); x++) {
     // Step 1.  Cool down every cell a little
     for (uint8_t i = 0; i < fb.cfg.h(); i++) {
-      heat[x][i] = qsub8(heat[x][i], random(0, coolingnew));
+      heat.at(x,i) = qsub8(heat.at(x,i), random(0, coolingnew));
     }
 
     // Step 2.  Heat from each cell drifts 'up' and diffuses a little
     for (unsigned int k = fb.cfg.maxHeightIndex(); k >= 2; k--) {
-      heat[x][k] = (heat[x][k - 1] + heat[x][k - 2] + heat[x][k - 2]) / 3;
+      heat.at(x,k) = (heat.at(x, k - 1) + heat.at(x, k - 2) + heat.at(x, k - 2)) / 3;
     }
 
     // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
     if (random8() < SPARKINGNEW) {
       int y = random(2);
-      heat[x][y] = qadd8(heat[x][y], random(160, 255));
+      heat.at(x,y) = qadd8(heat.at(x,y), random(160, 255));
     }
 
     // Step 4.  Map from heat cells to LED colors
     for (uint8_t j = 0; j < fb.cfg.h(); j++) {
       // Scale the heat value from 0-255 down to 0-240
       // for best results with color palettes.
-      byte colorindex = scale8(heat[x][(uint8_t)j], 240);
+      byte colorindex = scale8(heat.at(x,j), 240);
       nblend(fb.pixel(x, fb.cfg.maxHeightIndex() - j), ColorFromPalette(*curPalette, colorindex /*, heat[x][j]*/), 50);
     }
   }
