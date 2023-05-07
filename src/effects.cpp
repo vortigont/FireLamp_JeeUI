@@ -5047,19 +5047,22 @@ bool EffectAttract::run() {
 void EffectSnake::load() {
   palettesload();
 
-  for(uint8_t i=0;i<MAX_SNAKES;i++){
-    snakes[i].reset();
-    snakes[i].pixels[0].x = fb.cfg.w() / 2; // пусть расползаются из центра
-    snakes[i].pixels[0].y = fb.cfg.h() / 2; // так будет интереснее
-    snakes[i].direction = (dir_t)(random8(4));
-    snakes[i].internal_speedf = ((random(2) ? 0.5 : 0.33)+1.0/(random(i+1)+1))+0.5;
+  for (auto &i : snakes){
+    i.reset();
+    i.pixels[0].x = fb.cfg.w() / 2; // пусть расползаются из центра
+    i.pixels[0].y = fb.cfg.h() / 2; // так будет интереснее
+    i.direction = (dir_t)(random8(4));
+    i.internal_speedf = (random(2) ? 0.5 : 0.33)+1.0/random(snakes.size()) + 0.5;
   }
 }
 
 // !++
 String EffectSnake::setDynCtrl(UIControl*_val) {
   if(_val->getId()==1) speedFactor = ((float)EffectCalc::setDynCtrl(_val).toInt()/ 512.0 + 0.025) * EffectCalc::speedfactor;
-  else if(_val->getId()==4) snakeCount = EffectCalc::setDynCtrl(_val).toInt();
+  else if(_val->getId()==4) {
+    snakes.assign(EffectCalc::setDynCtrl(_val).toInt(), Snake(snake_len));
+    load();
+  }
   else if(_val->getId()==5) subPix = EffectCalc::setDynCtrl(_val).toInt();
   else if(_val->getId()==6) onecolor = EffectCalc::setDynCtrl(_val).toInt();
   else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
@@ -5069,20 +5072,19 @@ String EffectSnake::setDynCtrl(UIControl*_val) {
 bool EffectSnake::run() {
   fb.fade(speed<25 ? 5 : speed/2 ); // длина хвоста будет зависеть от скорости
 #ifdef MIC_EFFECTS
-  hue+=(speedFactor/snakeCount+(isMicOn() ? getMicMapFreq()/127.0 : 0));
+  hue+=(speedFactor/snakes.size()+(isMicOn() ? getMicMapFreq()/127.0 : 0));
 #else
-  hue+=speedFactor/snakeCount;
+  hue+=speedFactor/snakes.size();
 #endif
   hue = hue>255? hue-255 : hue;
 
-  for (int i = snakeCount - 1; i >= 0; i--)
-  {
-    EffectSnake::Snake &snake = snakes[i];
+  int i = 0;
+  for (auto &snake : snakes){
 
     if(onecolor){
-      fill_palette(colors, SNAKE_LENGTH, hue, 1, *curPalette, 255-(i*8), LINEARBLEND);
+      fill_palette(colors.data(), snake_len, hue, 1, *curPalette, 255-(i*8), LINEARBLEND);
     } else {
-      fill_palette(colors, SNAKE_LENGTH, (
+      fill_palette(colors.data(), snake_len, (
         (speed<25 || speed>230) ? (i%2 ? hue : 255-hue) : (i%2 ? hue*(i+1) : (255-hue)*(i+1))
       ), 1, *curPalette, 255-(i*8), LINEARBLEND); // вообще в цикле заполнять палитры может быть немножко тяжело... но зато разнообразнее по цветам
     }
@@ -5102,14 +5104,15 @@ bool EffectSnake::run() {
 
     snake.move(speedFactor, fb.cfg.w(), fb.cfg.h());
     snake.draw(colors, i, subPix, fb, false /*isDebug()*/);
+    ++i;
   }
   return true;
 }
 
-void EffectSnake::Snake::draw(CRGB colors[SNAKE_LENGTH], int snakenb, bool subpix, LedFB &fb, bool isDebug)
+void EffectSnake::Snake::draw(std::vector<CRGB> &colors, int snakenb, bool subpix, LedFB &fb, bool isDebug)
 {
-  int len= isDebug ? 1 : (int)SNAKE_LENGTH;
-  for (int i = 0; i < len; i++) // (int)SNAKE_LENGTH
+  int len= isDebug ? 1 : pixels.size();
+  for (int i = 0; i < len; i++) // (int)snake_len
   {/*
     if(isDebug){ // тест сабпикселя
       fb.clear(); 
@@ -5170,7 +5173,7 @@ void EffectSnake::Snake::shuffleDown(float speedy, bool subpix)
     internal_counter+=speedy*internal_speedf;
 
     if(internal_counter>1.0){
-        for (byte i = (byte)SNAKE_LENGTH - 1; i > 0; i--)
+        for (size_t i = pixels.size() - 1; i > 0; i--)
         {
             if(subpix)
                 pixels[i] = pixels[i - 1];
@@ -5187,10 +5190,8 @@ void EffectSnake::Snake::shuffleDown(float speedy, bool subpix)
 void EffectSnake::Snake::reset()
 {
     direction = dir_t::UP;
-    for (int i = 0; i < (int)SNAKE_LENGTH; i++)
-    {
-    pixels[i].x = 0;
-    pixels[i].y = 0;
+    for (auto &i : pixels){
+      i.x = i.y = 0;
     }
 }
 
@@ -5312,144 +5313,139 @@ void EffectNexus::resetDot(Nexus &nx) {
 // База https://community.alexgyver.ru/threads/wifi-lampa-budilnik-obsuzhdenie-proekta.1411/post-53132
 // адаптация и доработки kostyamat
 // !++
-String EffectTest::setDynCtrl(UIControl*_val){
+
+String EffectSnakeIsland::setDynCtrl(UIControl*_val){
   if(_val->getId()==1) speedFactor = EffectMath::fmap(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 0.06, 0.5) * EffectCalc::speedfactor;
-  else if(_val->getId()==3) SnakeNum = EffectCalc::setDynCtrl(_val).toInt();
+  else if(_val->getId()==3) {
+    snakes.assign(EffectCalc::setDynCtrl(_val).toInt(), Snake());
+  }
   else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
   regen();
   return String();
 }
 
-void EffectTest::regen() {
-
-  for (uint8_t i = 0; i < map(SnakeNum, 1, 10, 2, MAX_SNAKES); i++)
-  {
-    snakeLast[i] = 0;
-    snakePosX[i] = random8(fb.cfg.w() / 2 - fb.cfg.w() / 4, fb.cfg.w()/2 + fb.cfg.w() / 4);
-    snakePosY[i] = random8(fb.cfg.h() / 2 - fb.cfg.h() / 4, fb.cfg.h() / 2 + fb.cfg.h() / 4);
-    snakeSpeedX[i] = EffectMath::randomf(0.2, 1.5);//(255. + random8()) / 255.;
-    snakeSpeedY[i] = EffectMath::randomf(0.2, 1.5);
+void EffectSnakeIsland::regen() {
+  for (auto &i : snakes){
+    i.last = 0;
+    i.posX = random8(fb.cfg.w() / 2 - fb.cfg.w() / 4, fb.cfg.w()/2 + fb.cfg.w() / 4);
+    i.posY = random8(fb.cfg.h() / 2 - fb.cfg.h() / 4, fb.cfg.h() / 2 + fb.cfg.h() / 4);
+    i.speedX = EffectMath::randomf(0.2, 1.5);//(255. + random8()) / 255.;
+    i.speedY = EffectMath::randomf(0.2, 1.5);
     //snakeTurn[i] = 0;
-    snakeColor[i] = random8(map(SnakeNum, 1, 10, 2, MAX_SNAKES) * 255/map(SnakeNum, 1, 10, 2, MAX_SNAKES));
-    snakeDirect[i] = random8(4); //     B00           направление головы змейки
-                                 // B10     B11
-                                 //     B01
+    i.color = random8(map(snakes.size(), 1, 10, 2, MAX_SNAKES) * 255/map(snakes.size(), 1, 10, 2, MAX_SNAKES));
+    i.direct = random8(4); //     B00           направление головы змейки
   }
 }
 
-bool EffectTest::run() {
+bool EffectSnakeIsland::run() {
   fb.clear(); 
   int8_t dx = 0, dy = 0;
-  for (uint8_t i = 0; i < map(SnakeNum, 1, 10, 2, MAX_SNAKES); i++)
-  {
-    snakeSpeedY[i] += snakeSpeedX[i] * speedFactor;
-    if (snakeSpeedY[i] >= 1)
+  for (auto &i : snakes){
+    i.speedY += i.speedX * speedFactor;
+    if (i.speedY >= 1)
     {
-      snakeSpeedY[i] = snakeSpeedY[i] - (int)snakeSpeedY[i];
+      i.speedY = i.speedY - (int)i.speedY;
       if (random8(8) <= 1U)
         if (random8(2U))
         {                                           // <- поворот налево
-          snakeLast[i] = (snakeLast[i] << 2) | B01; // младший бит = поворот
-          switch (snakeDirect[i])
+          i.last = (i.last << 2) | B01; // младший бит = поворот
+          switch (i.direct)
           {
           case B10:
-            snakeDirect[i] = B01;
-            if (snakePosY[i] == 0U)
-              snakePosY[i] = fb.cfg.maxHeightIndex();
+            i.direct = B01;
+            if (i.posY == 0U)
+              i.posY = fb.cfg.maxHeightIndex();
             else
-              snakePosY[i]--;
+              i.posY--;
             break;
           case B11:
-            snakeDirect[i] = B00;
-            if (snakePosY[i] >= fb.cfg.maxHeightIndex())
-              snakePosY[i] = 0U;
+            i.direct = B00;
+            if (i.posY >= fb.cfg.maxHeightIndex())
+              i.posY = 0U;
             else
-              snakePosY[i]++;
+              i.posY++;
             break;
           case B00:
-            snakeDirect[i] = B10;
-            if (snakePosX[i] == 0U)
-              snakePosX[i] = fb.cfg.maxWidthIndex();
+            i.direct = B10;
+            if (i.posX == 0U)
+              i.posX = fb.cfg.maxWidthIndex();
             else
-              snakePosX[i]--;
+              i.posX--;
             break;
           case B01:
-            snakeDirect[i] = B11;
-            if (snakePosX[i] >= fb.cfg.maxWidthIndex())
-              snakePosX[i] = 0U;
+            i.direct = B11;
+            if (i.posX >= fb.cfg.maxWidthIndex())
+              i.posX = 0U;
             else
-              snakePosX[i]++;
+              i.posX++;
+            break;
+          }
+        } else {                                           // -> поворот направо
+          i.last = (i.last << 2) | B11; // младший бит = поворот, старший = направо
+          switch (i.direct)
+          {
+          case B11:
+            i.direct = B01;
+            if (i.posY == 0U)
+              i.posY = fb.cfg.maxHeightIndex();
+            else
+              i.posY--;
+            break;
+          case B10:
+            i.direct = B00;
+            if (i.posY >= fb.cfg.maxHeightIndex())
+              i.posY = 0U;
+            else
+              i.posY++;
+            break;
+          case B01:
+            i.direct = B10;
+            if (i.posX == 0U)
+              i.posX = fb.cfg.maxWidthIndex();
+            else
+              i.posX--;
+            break;
+          case B00:
+            i.direct = B11;
+            if (i.posX >= fb.cfg.maxWidthIndex())
+              i.posX = 0U;
+            else
+              i.posX++;
             break;
           }
         }
-        else
-        {                                           // -> поворот направо
-          snakeLast[i] = (snakeLast[i] << 2) | B11; // младший бит = поворот, старший = направо
-          switch (snakeDirect[i])
-          {
-          case B11:
-            snakeDirect[i] = B01;
-            if (snakePosY[i] == 0U)
-              snakePosY[i] = fb.cfg.maxHeightIndex();
-            else
-              snakePosY[i]--;
-            break;
-          case B10:
-            snakeDirect[i] = B00;
-            if (snakePosY[i] >= fb.cfg.maxHeightIndex())
-              snakePosY[i] = 0U;
-            else
-              snakePosY[i]++;
-            break;
-          case B01:
-            snakeDirect[i] = B10;
-            if (snakePosX[i] == 0U)
-              snakePosX[i] = fb.cfg.maxWidthIndex();
-            else
-              snakePosX[i]--;
-            break;
-          case B00:
-            snakeDirect[i] = B11;
-            if (snakePosX[i] >= fb.cfg.maxWidthIndex())
-              snakePosX[i] = 0U;
-            else
-              snakePosX[i]++;
-            break;
-          }
-        }
-      else
-      { // двигаем без поворота
-        snakeLast[i] = (snakeLast[i] << 2);
-        switch (snakeDirect[i])
+      else { // двигаем без поворота
+        i.last = (i.last << 2);
+        switch (i.direct)
         {
         case B01:
-          if (snakePosY[i] == 0U)
-            snakePosY[i] = fb.cfg.maxHeightIndex();
+          if (i.posY == 0U)
+            i.posY = fb.cfg.maxHeightIndex();
           else
-            snakePosY[i]--;
+            i.posY--;
           break;
         case B00:
-          if (snakePosY[i] >= fb.cfg.maxHeightIndex())
-            snakePosY[i] = 0U;
+          if (i.posY >= fb.cfg.maxHeightIndex())
+            i.posY = 0U;
           else
-            snakePosY[i]++;
+            i.posY++;
           break;
         case B10:
-          if (snakePosX[i] == 0U)
-            snakePosX[i] = fb.cfg.maxWidthIndex();
+          if (i.posX == 0U)
+            i.posX = fb.cfg.maxWidthIndex();
           else
-            snakePosX[i]--;
+            i.posX--;
           break;
         case B11:
-          if (snakePosX[i] >= fb.cfg.maxWidthIndex())
-            snakePosX[i] = 0U;
+          if (i.posX >= fb.cfg.maxWidthIndex())
+            i.posX = 0U;
           else
-            snakePosX[i]++;
+            i.posX++;
           break;
         }
       }
     }
-    switch (snakeDirect[i])
+    switch (i.direct)
     {
     case B01:
       dy = 1;
@@ -5469,15 +5465,15 @@ bool EffectTest::run() {
       break;
     }
 
-    long temp = snakeLast[i];
-    uint8_t x = snakePosX[i];
-    uint8_t y = snakePosY[i];
-    EffectMath::drawPixelXYF(x, y, ColorFromPalette(*curPalette, snakeColor[i], snakeSpeedY[i] * 255), fb);
-    for (uint8_t m = 0; m < SNAKE_LENGTH; m++)
+    long temp = i.last;
+    uint8_t x = i.posX;
+    uint8_t y = i.posY;
+    EffectMath::drawPixelXYF(x, y, ColorFromPalette(*curPalette, i.color, i.speedY * 255), fb);
+    for (uint8_t m = 0; m < snake_len; m++)
     { // 16 бит распаковываем, 14 ещё остаётся без дела в запасе, 2 на хвостик
       x = (fb.cfg.w() + x + dx) % fb.cfg.w();
       y = (fb.cfg.h() + y + dy) % fb.cfg.h();  
-      EffectMath::drawPixelXYF(x, y, ColorFromPalette(*curPalette, snakeColor[i] + m * 4U, 255U), fb);
+      EffectMath::drawPixelXYF(x, y, ColorFromPalette(*curPalette, i.color + m * 4U, 255U), fb);
 
       if (temp & B01)
       { // младший бит = поворот, старший = направо
@@ -5517,13 +5513,13 @@ bool EffectTest::run() {
     }
     x = (fb.cfg.w() + x + dx) % fb.cfg.w();
     y = (fb.cfg.h() + y + dy) % fb.cfg.h();
-    EffectMath::drawPixelXYF(x, y, ColorFromPalette(*curPalette, snakeColor[i] + SNAKE_LENGTH * 4U, (1 - snakeSpeedY[i]) * 255), fb); // хвостик
+    EffectMath::drawPixelXYF(x, y, ColorFromPalette(*curPalette, i.color + snake_len * 4U, (1 - i.speedY) * 255), fb); // хвостик
   }
 
   return true;
 }
 
-void EffectTest::load() {
+void EffectSnakeIsland::load() {
   palettesload();
   regen();
 }

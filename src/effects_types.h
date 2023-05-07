@@ -158,7 +158,7 @@ EFF_MAZE,                                     // Лабиринт
 EFF_FRIZZLES,                                 // Вьющийся цвет (с) Stepko
 EFF_POLARL,                                   // Северное Сияние
 EFF_FLOWER,                                   // Цветение
-EFF_TEST,                                     // Змеиный Остров
+EFF_SNAKEISLAND,                              // Змеиный Остров
 //70
 EFF_SMOKEBALLS,                               // Детские Сны (stepko)
 EFF_PICASSO4,                                 // Меташары
@@ -421,11 +421,6 @@ static const char* const T_EFFUICFG[] PROGMEM = {
 // (с) Сотнег, https://community.alexgyver.ru/threads/wifi-lampa-budilnik-obsuzhdenie-proekta.1411/post-49262
 #define BUTTERFLY_MAX_COUNT           (64U) // максимальное количество мотыльков
 #define BUTTERFLY_FIX_COUNT           (28U) // количество мотыльков для режима, конда бегунок Масштаб регулирует цвет
-
-//------------ Эффект "Змеиный Остров"
-#define SNAKE_LENGTH  (HEIGHT / 2U)
-#define SNAKE2_LENGTH (HEIGHT / 2U + WIDTH / 4U)
-#define MAX_SNAKES    (16U) 
 
 // ***************** НАСТРОЙКИ ГЕНЕРАЦИИ ЛАБИРИНТА *****************
 #define MAZE_GAMEMODE 0        // режим игры: 0 - видим весь лабиринт, 1 - видим вокруг себя часть

@@ -405,8 +405,8 @@ void EffectWorker::workerset(uint16_t effect){
   case EFF_ENUM::EFF_POLARL :
     worker = std::unique_ptr<EffectPolarL>(new EffectPolarL(fb));
     break;
-  case EFF_ENUM::EFF_TEST :
-    worker = std::unique_ptr<EffectTest>(new EffectTest(fb));
+  case EFF_ENUM::EFF_SNAKEISLAND :
+    worker = std::unique_ptr<EffectSnakeIsland>(new EffectSnakeIsland(fb));
     break;
    case EFF_ENUM::EFF_SMOKEBALLS :
     worker = std::unique_ptr<EffectSmokeballs>(new EffectSmokeballs(fb));

@@ -1198,11 +1198,12 @@ public:
 
 //------------ Эффект "Змейки"
 // вариант субпикселя и поведения от kDn
+#define MAX_SNAKES    (16U) 
 class EffectSnake : public EffectCalc {
 private:
+    const int snake_len{fb.cfg.h()/2};
     float hue;
     float speedFactor;
-    int snakeCount;
     bool subPix = false;
     bool onecolor = false;
     enum class dir_t:uint8_t {
@@ -1213,28 +1214,30 @@ private:
     };
 
     struct Pixel{
-        float x;
-        float y;
+        float x, y;
     };
 
-    CRGB colors[SNAKE_LENGTH];
+    std::vector<CRGB> colors{std::vector<CRGB>(snake_len)};
 
     struct Snake {
         float internal_counter = 0.0;
         float internal_speedf = 1.0;
-        Pixel pixels[SNAKE_LENGTH];
+        std::vector<Pixel> pixels;
 
         dir_t direction;
+
+        Snake(uint8_t len) : pixels(std::vector<Pixel>(len)) {}
 
         void newDirection();
         void shuffleDown(float speedy, bool subpix);
         void reset();
         void move(float speedy, uint16_t w,  uint16_t h);
-        void draw(CRGB colors[SNAKE_LENGTH], int snakenb, bool subpix, LedFB &fb, bool isDebug=false);
+        void draw(std::vector<CRGB> &colors, int snakenb, bool subpix, LedFB &fb, bool isDebug=false);
     };
 
-    Snake snakes[MAX_SNAKES];
+    std::vector<Snake> snakes{ std::vector<Snake>(2, Snake(snake_len)) };
     String setDynCtrl(UIControl*_val) override;
+
 public:
     EffectSnake(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
@@ -1276,23 +1279,25 @@ class EffectNexus: public EffectCalc {
 // ----------- Эфеект "Змеиный Остров"
 // (c) Сотнег
 // адаптация и доработки kostyamat
-class EffectTest : public EffectCalc {
-private:
-    uint8_t SnakeNum;                        // выбранное количество червяков
-    long  snakeLast[MAX_SNAKES] ;            // тут будет траектория тела червяка
-    float snakePosX[MAX_SNAKES];             // тут будет позиция головы
-    float snakePosY[MAX_SNAKES];             // тут будет позиция головы
-    float snakeSpeedX[MAX_SNAKES];           // тут будет скорость червяка
-    float snakeSpeedY[MAX_SNAKES];           // тут будет дробная часть позиции головы
-    uint8_t snakeColor[MAX_SNAKES];          // тут будет начальный цвет червяка
-    uint8_t snakeDirect[MAX_SNAKES];         //тут будет направление червяка
+#define MAX_SNAKES    (16U)
+class EffectSnakeIsland : public EffectCalc {
+    const uint8_t snake_len = fb.cfg.h()/2;
+    struct Snake {
+        long  last;            // тут будет траектория тела червяка
+        float posX, posY;      // тут будет позиция головы
+        float speedX, speedY;  // тут будет скорость червяка
+        uint8_t color;         // тут будет начальный цвет червяка
+        uint8_t direct;        //тут будет направление червяка
+    };
+
+    std::vector<Snake> snakes{std::vector<Snake>(1)};
 	float speedFactor;
 
     String setDynCtrl(UIControl*_val) override;
     void regen();
 
 public:
-    EffectTest(LedFB &framebuffer) : EffectCalc(framebuffer){}
+    EffectSnakeIsland(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
     bool run() override;
 };
@@ -1310,11 +1315,10 @@ private:
     float speedFactor;
     float center = (float)fb.cfg.w() / 2.;
 
-    typedef struct
-    {
+    struct Rocket {
         float x, y, xd, yd;
         byte hue;
-    } Rocket;
+    };
 
     std::vector<Rocket> rockets{std::vector<Rocket>(POPCORN_ROCKETS, Rocket())};
 
