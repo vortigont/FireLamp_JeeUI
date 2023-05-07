@@ -206,8 +206,8 @@ void addGlitter(LedFB &leds, uint8_t chanceOfGlitter){
 
 // Функция создает разноцветные конфетти в разных местах матрицы, параметр 0-255. Чем меньше, тем чаще.
 void confetti(LedFB &leds, byte density) {
-  for (byte i=0; i < num_leds/256; i++)
-    if ( random8() < density)
+  int i = map(density, 0,255, 1, leds.cfg.w() * leds.cfg.h() / 2);   // number of pixels, 0=>1 pix, 255=> 50% of all pixels
+  for (; i; --i)
       leds[random16(leds.size())] = random(32, 16777216);
 //      if (RGBweight(mx.fb->data(), idx) < 32) mx[idx] = random(32, 16777216);
 }

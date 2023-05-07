@@ -1971,14 +1971,14 @@ void EffectTwinkles::load(){
 void EffectTwinkles::setup()
 {
   //randomSeed(millis());
-  for (uint32_t idx = 0; idx < num_leds; idx++) {
+  for (auto i = ledsbuff.begin(); i != ledsbuff.end(); ++i ){
     if (random(0,255) < tnum) {                                // чем ниже tnum, тем чаще будут заполняться элементы лампы
-      ledsbuff[idx].r = random8();                           // оттенок пикселя
-      ledsbuff[idx].g = random8(1, TWINKLES_SPEEDS * 2 + 1); // скорость и направление (нарастает 1-4 или угасает 5-8)
-      ledsbuff[idx].b = random8();                           // яркость
+      i->r = random8();                           // оттенок пикселя
+      i->g = random8(1, TWINKLES_SPEEDS * 2 + 1); // скорость и направление (нарастает 1-4 или угасает 5-8)
+      i->b = random8();                           // яркость
     }
     else
-      ledsbuff[idx] = 0; // всё выкл
+      *i = 0; // всё выкл
   }
 }
 
@@ -1990,54 +1990,41 @@ String EffectTwinkles::setDynCtrl(UIControl*_val) {
   return String();
 }
 
-
-bool EffectTwinkles::run(){
-  return twinklesRoutine();
-}
-
-bool EffectTwinkles::twinklesRoutine()
-{
+bool EffectTwinkles::twinklesRoutine(){
   if (curPalette == nullptr) {
     return false;
   }
 
-  for (uint16_t idx = 0; idx < num_leds; idx++)
-  {
-    if (ledsbuff[idx].b == 0)
-    {
+  for (auto i = ledsbuff.begin(); i != ledsbuff.end(); ++i ){
+    if (i->b == 0){
       if (random(0,255) < tnum && thue > 0)
       {                                                         // если пиксель ещё не горит, зажигаем каждый ХЗй
-        ledsbuff[idx].r = random8();                            // оттенок пикселя
-        ledsbuff[idx].g = random8(1, TWINKLES_SPEEDS * 2 + 1);  // скорость и направление (нарастает 1-4, но не угасает 5-8)
-        ledsbuff[idx].b = ledsbuff[idx].g;                      // яркость
+        i->r = random8();                            // оттенок пикселя
+        i->g = random8(1, TWINKLES_SPEEDS * 2 + 1);  // скорость и направление (нарастает 1-4, но не угасает 5-8)
+        i->b = i->g;                      // яркость
         thue--;                                                 // уменьшаем количество погасших пикселей
       }
-    }
-    else if (ledsbuff[idx].g <= TWINKLES_SPEEDS)
-    { // если нарастание яркости
-      if (ledsbuff[idx].b > 255U - ledsbuff[idx].g - speedFactor)
+    } else if (i->g <= TWINKLES_SPEEDS) { // если нарастание яркости
+      if (i->b > 255U - i->g - speedFactor)
       { // если досигнут максимум
-        ledsbuff[idx].b = 255U;
-        ledsbuff[idx].g = ledsbuff[idx].g + TWINKLES_SPEEDS;
-      }
-      else
-        ledsbuff[idx].b = ledsbuff[idx].b + ledsbuff[idx].g + speedFactor;
-    }
-    else
-    { // если угасание яркости
-      if (ledsbuff[idx].b <= ledsbuff[idx].g - TWINKLES_SPEEDS + speedFactor)
+        i->b = 255U;
+        i->g += TWINKLES_SPEEDS;
+      } else
+        i->b += i->g + speedFactor;
+    } else { // если угасание яркости
+      if (i->b <= i->g - TWINKLES_SPEEDS + speedFactor)
       {                      // если досигнут минимум
-        ledsbuff[idx].b = 0; // всё выкл
+        i->b = 0; // всё выкл
         thue++;              // считаем количество погасших пикселей
       }
       else
-        ledsbuff[idx].b = ledsbuff[idx].b - ledsbuff[idx].g + TWINKLES_SPEEDS - speedFactor;
+        i->b -= i->g + TWINKLES_SPEEDS - speedFactor;
     }
-    if (ledsbuff[idx].b == 0)
-      fb[idx] = CRGB::Black;
-    else
-      fb[idx] = ColorFromPalette(*curPalette, ledsbuff[idx].r, ledsbuff[idx].b);
-    }
+  }
+
+  for (int i = 0; i != ledsbuff.size(); ++i )
+    fb.at(i) = ledsbuff.at(i).b ? ColorFromPalette(*curPalette, ledsbuff.at(i).r, ledsbuff.at(i).b) : CRGB::Black;
+
   EffectMath::blur2d(fb, 32); // так они не только разгороються, но и раздуваються. Красивше :)
   return true;
 }
@@ -3956,7 +3943,7 @@ void EffectPacific::pacifica_one_layer(const TProgmemRGBPalette16& p, uint16_t c
   uint16_t ci = cistart;
   uint16_t waveangle = ioff;
   uint16_t wavescale_half = (wavescale / 2) + 20;
-  for( uint16_t i = 0; i < num_leds; i++) {
+  for( uint16_t i = 0; i != fb.cfg.w()*fb.cfg.h(); i++) {
     waveangle += 250;
     uint16_t s16 = sin16( waveangle ) + 32768;
     uint16_t cs = scale16( s16 , wavescale_half ) + wavescale_half;
@@ -3974,7 +3961,7 @@ void EffectPacific::pacifica_add_whitecaps()
   uint8_t basethreshold = beatsin8( 9, 55, 65);
   uint8_t wave = beat8( 7 );
 
-  for( uint16_t i = 0; i < num_leds; i++) {
+  for( uint16_t i = 0; i != fb.cfg.w()*fb.cfg.h(); i++) {
     uint8_t threshold = scale8( sin8( wave), 20) + basethreshold;
     wave += 7;
     uint8_t l = fb[i].getAverageLight();
@@ -3989,7 +3976,7 @@ void EffectPacific::pacifica_add_whitecaps()
 // Deepen the blues and greens
 void EffectPacific::pacifica_deepen_colors()
 {
-  for( uint16_t i = 0; i < num_leds; i++) {
+  for( uint16_t i = 0; i != fb.cfg.w()*fb.cfg.h(); i++) {
     fb[i].blue = scale8( fb[i].blue,  145);
     fb[i].green= scale8( fb[i].green, 200);
     fb[i] |= CRGB( 2, 5, 7);
@@ -4428,7 +4415,7 @@ bool EffectButterfly::run()
     //теперь инверсия всей матрицы
     if (_scale == 1U)
       if (++deltaHue == 0U) hue++;
-    for (uint16_t i = 0U; i < num_leds; i++)
+    for (uint16_t i = 0U; i != fb.cfg.w()*fb.cfg.h(); i++)
       fb[i] = CHSV(hue, hue2, 255U - fb[i].r);
   }
   return true;
@@ -4459,15 +4446,15 @@ bool EffectShadows::run() {
   sHue16 += deltams * beatsin88( 400, 5,9);
   uint16_t brightnesstheta16 = sPseudotime;
 
-  for( uint16_t i = 0 ; i < num_leds; i++) {
+  for( uint16_t i = 0 ; i != fb.cfg.w()*fb.cfg.h(); i++) {
     hue16 += hueinc16;
     uint8_t hue8 = hue16 / 256;
 
     brightnesstheta16  += brightnessthetainc16;
     uint16_t b16 = sin16( brightnesstheta16  ) + 32768U;
 
-    uint32_t bri16 = (uint32_t)((uint32_t)b16 * (uint32_t)b16) / 65536U;
-    uint8_t bri8 = (uint32_t)(((uint32_t)bri16) * brightdepth) / 65536U;
+    uint32_t bri16 = b16 * b16 / 65536U;
+    uint8_t bri8 = bri16 * brightdepth / 65536U;
     bri8 += (255 - brightdepth);
 
     nblend(fb[fb.size()-1-i], CHSV( hue8, sat8, map8(bri8, map(effectBrightness, 1, 255, 32, 125), map(effectBrightness, 1, 255, 125, 250))), 64);
@@ -8311,7 +8298,6 @@ bool EffectPile::run() {
         temp = 3U;
       }
     }
-    //for (uint16_t i = 0U; i < num_leds; i++)
     for (uint8_t y = 0; y < pcnt; y++)
       for (uint8_t x = 0; x < fb.cfg.w(); x++)
         if (!random(temp))

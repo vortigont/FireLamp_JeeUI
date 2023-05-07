@@ -726,8 +726,10 @@ public:
         }
         //}
 
-        for (uint16_t i = 0U; i < num_leds; i++) {
-            getUnsafeLedsArray()[i] = ALARMTASK::getInstance()->dawnColorMinus[i%(sizeof(dawnColorMinus)/sizeof(CHSV))];
+        int cnt{0};
+        for (auto i = mx.begin(); i != mx.end(); ++i) {
+            *i = ALARMTASK::getInstance()->dawnColorMinus[cnt%(sizeof(dawnColorMinus)/sizeof(CHSV))];
+            ++cnt;
         }
 
     }

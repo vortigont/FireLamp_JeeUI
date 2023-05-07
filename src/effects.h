@@ -544,16 +544,16 @@ class EffectTwinkles : public EffectCalc {
 private:
   uint8_t thue = 0U;
   uint8_t tnum;
-  CRGB ledsbuff[num_leds];
+  LedFB ledsbuff;
   float speedFactor;
   bool twinklesRoutine();
   String setDynCtrl(UIControl*_val) override;
   //void setscl(const byte _scl) override;
 public:
-    EffectTwinkles(LedFB &framebuffer) : EffectCalc(framebuffer){}
+    EffectTwinkles(LedFB &framebuffer) : EffectCalc(framebuffer), ledsbuff(fb.cfg) {}
     void load() override;
     void setup();
-    bool run() override;
+    bool run() override { return twinklesRoutine(); };
 };
 
 class EffectWaves : public EffectCalc {
@@ -620,12 +620,12 @@ private:
   uint8_t downRingHue, upRingHue; // количество пикселей в нижнем (downRingHue) и верхнем (upRingHue) кольцах
 
   std::vector<uint8_t> ringColor{std::vector<uint8_t>(fb.cfg.h())};    // начальный оттенок каждого кольца (оттенка из палитры) 0-255
-  std::vector<uint8_t> huePos{std::vector<uint8_t>(fb.cfg.h())};       // местоположение начального оттенка кольца 0-WIDTH-1
+  std::vector<uint8_t> huePos{std::vector<uint8_t>(fb.cfg.h())};       // местоположение начального оттенка кольца 0-w-1
   std::vector<uint8_t> shiftHueDir{std::vector<uint8_t>(fb.cfg.h())};  // 4 бита на ringHueShift, 4 на ringHueShift2
   ////ringHueShift[ringsCount]; // шаг градиета оттенка внутри кольца -8 - +8 случайное число
   ////ringHueShift2[ringsCount]; // обычная скорость переливания оттенка всего кольца -8 - +8 случайное число
   uint8_t currentRing; // кольцо, которое в настоящий момент нужно провернуть
-  uint8_t stepCount; // оставшееся количество шагов, на которое нужно провернуть активное кольцо - случайное от WIDTH/5 до WIDTH-3
+  uint8_t stepCount; // оставшееся количество шагов, на которое нужно провернуть активное кольцо - случайное от w/5 до w-3
   void ringsSet();
   bool ringsRoutine();
   String setDynCtrl(UIControl*_val) override;
@@ -1730,8 +1730,8 @@ private:
     float angle;
     byte starPoints = random(3, 7);
 
-    const float _speed = (float)num_leds / 256; // Нормализация скорости для разных размеров матриц
-    const float _addRadius = (float)num_leds / 4000;   // Нормализация скорости увеличения радиуса круга для разных матриц
+    const float _speed = (float)fb.size() / 256; // Нормализация скорости для разных размеров матриц
+    const float _addRadius = (float)fb.size() / 4000;   // Нормализация скорости увеличения радиуса круга для разных матриц
 
 
     void aimChange();
@@ -1767,7 +1767,7 @@ private:
     const float gravity = 0.1;
     uint8_t step = fb.cfg.w();
     float speedFactor{0.1};
-    std::array<uint8_t, HEIGHT> shiftHue;
+    std::vector<uint8_t> shiftHue{std::vector<uint8_t>(fb.cfg.h())};
     std::vector<Magma> particles{std::vector<Magma>(fb.cfg.w(), Magma())};
 
     void palettesload();
@@ -2131,7 +2131,7 @@ private:
     uint8_t count = 3;
     uint8_t hue;
     const uint8_t dev = 5;
-    const float R = (float)num_leds/128;
+    const float R = (float)fb.size()/128;
 
     struct Ball{
         float x1{0}, y1{0};

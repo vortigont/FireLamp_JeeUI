@@ -356,10 +356,6 @@ static const char* const T_EFFUICFG[] PROGMEM = {
 #define MAX_RANGE 255   // заложим дейфан пока нет динамических ползунков
 
 
-#if  576U < (WIDTH * HEIGHT)
-  #define BIGMATRIX
-#endif
-
 // ==== Константы для эффектов ====
 
 // Эффекты на базе "3D Noise"
@@ -396,15 +392,6 @@ static const char* const T_EFFUICFG[] PROGMEM = {
 #define STAR_TAIL_STEP         (100U)                // длина хвоста кометы
 #define STAR_SATURATION        (150U)                // насыщенность кометы (от 0 до 255)
 
-// ============= DRIFT / ДРИФТ ===============
-// v1.0 - Updating for GuverLamp v1.7 by SottNick 12.04.2020
-// v1.1 - +dither, +phase shifting by PalPalych 12.04.2020
-// https://github.com/pixelmatix/aurora/blob/master/PatternIncrementalDrift.h
-#define CENTER_max  max(WIDTH / 2, HEIGHT / 2) // Наибольшее значение центра
-#define WIDTH_steps  256U / WIDTH   // диапазон значений приходящихся на 1 пиксель ширины матрицы
-#define HEIGHT_steps 256U / HEIGHT // диапазон значений приходящихся на 1 пиксель высоты матрицы
-
-
 
 // ------------------------------ ЭФФЕКТ КУБИК 2D ----------------------
 // (c) SottNick
@@ -426,33 +413,3 @@ static const char* const T_EFFUICFG[] PROGMEM = {
 #define MAZE_GAMEMODE 0        // режим игры: 0 - видим весь лабиринт, 1 - видим вокруг себя часть
 #define MAZE_FOV 3             // область видимости в режиме игры 1
 #define MAZE_SHIFT 0                   // (1 да / 0 нет) смещение лабиринта (чтобы не видеть нижнюю и левую стену)
-
-// размеры лабиринта ДОЛЖНЫ БЫТЬ НЕЧЁТНЫЕ независимо от размеров матрицы!
-// при SHIFT 1 размер лабиринта можно ставить на 1 длиннее матрицы (матрица 16х16 лабиринт 17х17)
-/*
-#if (WIDTH % 2 == 0)
-#define MAZE_WIDTH (WIDTH-1)      // ширина лабиринта
-#else
-#define MAZE_WIDTH WIDTH          // ширина лабиринта
-#endif
-
-#if (HEIGHT % 2 == 0)
-#define MAZE_HEIGHT (HEIGHT-1)    // высота лабиринта
-#else
-#define MAZE_HEIGHT HEIGHT        // высота лабиринта
-#endif
-*/
-
-// VU-meter
-#define SAMPLES           256U          // Must be a power of 8
-/*#if WIDTH > 20
-  # if WIDTH & 01        
-    #define NUM_BANDS WIDTH/2 + 1
-  #else
-    #define NUM_BANDS WIDTH/2
-  #endif
-#else
-  #define NUM_BANDS WIDTH
-#endif*/
-#define TOP            (HEIGHT - 1)                // Don't allow the bars to go offscreen
-//#define BAR_WIDTH      (WIDTH  / (NUM_BANDS - 1))  // If width >= 8 light 1 LED width per bar, >= 16 light 2 LEDs width bar etc
