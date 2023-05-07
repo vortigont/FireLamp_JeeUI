@@ -1248,7 +1248,6 @@ public:
 // База паттерн "Змейка" из проекта Аврора, 
 // перенос и переписан - kostyamat
 #define NEXUS_MIN   5
-#define NEXUS_MAX (WIDTH)
 class EffectNexus: public EffectCalc {
   struct Nexus{
     float posX{0};
@@ -1610,21 +1609,25 @@ public:
 // ----------- Эффект "Шары"
 // (c) stepko and kostyamat https://wokwi.com/arduino/projects/289839434049782281
 // 07.02.2021
+#define BALLS_MIN   3
 class EffectBalls : public EffectCalc {
 private:
-#if WIDTH >= HEIGHT
-    #define ballsAmount WIDTH
-#else
-    #define ballsAmount HEIGHT
-#endif
+    struct Ball {
+        float x, y;
+        float spdx, spdy;
+        float radius;
+        uint8_t color;
+        bool rrad;
+    };
+/*
     float ball[ballsAmount][4]; //0-PosY 1-PosX 2-SpeedY 3-SpeedX
     float radius[ballsAmount];
     bool rrad[ballsAmount];
     byte color[ballsAmount];
-    const float radiusMax = (float)ballsAmount /5;
-
+*/
+    const float radiusMax = (float)fb.cfg.maxDim() /5;
+    std::vector<Ball> balls{ std::vector<Ball>(BALLS_MIN) };
     float speedFactor;
-    //void setspd(const byte _spd) override;
     String setDynCtrl(UIControl*_val) override;
 
 

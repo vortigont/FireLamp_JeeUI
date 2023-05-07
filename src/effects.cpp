@@ -6828,13 +6828,13 @@ void EffectBalls::load() {
 
   speedFactor = EffectMath::fmap(speed, 1, 255, 0.15, 0.5) * EffectCalc::speedfactor;
 
-  for (byte i = 0; i < ballsAmount; i++) {
-    radius[i] = EffectMath::randomf(0.5, radiusMax);
-    ball[i][2] = EffectMath::randomf(0.5, 1.1) * speedFactor;
-    ball[i][3] = EffectMath::randomf(0.5, 1.1) * speedFactor;
-    ball[i][0] = random(0, fb.cfg.w());
-    ball[i][1] = random(0, fb.cfg.h());
-    color[i] = random(0, 255);
+  for (auto &i : balls){
+    i.radius = EffectMath::randomf(0.5, radiusMax);
+    i.spdy = EffectMath::randomf(0.5, 1.1) * speedFactor;
+    i.spdx = EffectMath::randomf(0.5, 1.1) * speedFactor;
+    i.y = random(0, fb.cfg.w());
+    i.x = random(0, fb.cfg.h());
+    i.color = random(0, 255);
   }
 }
 
@@ -6842,6 +6842,11 @@ void EffectBalls::load() {
 // !++
 String EffectBalls::setDynCtrl(UIControl*_val){
   if(_val->getId()==1) speedFactor = EffectMath::fmap(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 0.15, 0.5) * EffectCalc::speedfactor;
+  else if(_val->getId()==2) {   // Scale
+    balls.assign( map(scale, 1, 255, BALLS_MIN, fb.cfg.maxDim()), Ball() );
+    balls.shrink_to_fit();
+    load();
+  }
   else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
   return String();
 }
@@ -6849,60 +6854,60 @@ String EffectBalls::setDynCtrl(UIControl*_val){
 bool EffectBalls::run() {
   fb.fade(map(speed, 1, 255, 5, 20));
 
-  for (byte i = 0; i < map(scale, 1, 255, 2, ballsAmount); i++) {
-    if (rrad[i]) {  // тут у нас шарики надуваются\сдуваются по ходу движения
-      radius[i] += (fabs(ball[i][2]) > fabs(ball[i][3])? fabs(ball[i][2]) : fabs(ball[i][3])) * 0.1 * speedFactor;
-      if (radius[i] >= radiusMax) {
-        rrad[i] = false;
+  for (auto &i : balls){
+    if (i.rrad) {  // тут у нас шарики надуваются\сдуваются по ходу движения
+      i.radius += (fabs(i.spdy) > fabs(i.spdx)? fabs(i.spdy) : fabs(i.spdx)) * 0.1 * speedFactor;
+      if (i.radius >= radiusMax) {
+        i.rrad = false;
       }
     } else {
-      radius[i] -= (fabs(ball[i][2]) > fabs(ball[i][3])? fabs(ball[i][2]) : fabs(ball[i][3])) * 0.1 * speedFactor;
-      if (radius[i] < 1.) {
-        rrad[i] = true;
-        color[i] = random(0, 255);
+      i.radius -= (fabs(i.spdy) > fabs(i.spdx)? fabs(i.spdy) : fabs(i.spdx)) * 0.1 * speedFactor;
+      if (i.radius < 1.) {
+        i.rrad = true;
+        i.color = random(0, 255);
       }
     }
 
 
-    //EffectMath::drawCircleF(ball[i][1], ball[i][0], radius[i], ColorFromPalette(*curPalette, color[i]), 0.5);
-    if (radius[i] > 1) 
-      EffectMath::fill_circleF(ball[i][1], ball[i][0], radius[i], ColorFromPalette(*curPalette, color[i]), fb);
+    //EffectMath::drawCircleF(i.x, i.y, i.radius, ColorFromPalette(*curPalette, i.color), 0.5);
+    if (i.radius > 1) 
+      EffectMath::fill_circleF(i.x, i.y, i.radius, ColorFromPalette(*curPalette, i.color), fb);
     else 
-      EffectMath::drawPixelXYF(ball[i][1], ball[i][0], ColorFromPalette(*curPalette, color[i]), fb);
+      EffectMath::drawPixelXYF(i.x, i.y, ColorFromPalette(*curPalette, i.color), fb);
 
 
-    if (ball[i][0] + radius[i] >= fb.cfg.maxHeightIndex())
-      ball[i][0] += (ball[i][2] * ((fb.cfg.maxHeightIndex() - ball[i][0]) / radius[i] + 0.005));
-    else if (ball[i][0] - radius[i] <= 0)
-      ball[i][0] += (ball[i][2] * (ball[i][0] / radius[i] + 0.005));
+    if (i.y + i.radius >= fb.cfg.maxHeightIndex())
+      i.y += (i.spdy * ((fb.cfg.maxHeightIndex() - i.y) / i.radius + 0.005));
+    else if (i.y - i.radius <= 0)
+      i.y += (i.spdy * (i.y / i.radius + 0.005));
     else
-      ball[i][0] += ball[i][2];
+      i.y += i.spdy;
     //-----------------------
-    if (ball[i][1] + radius[i] >= fb.cfg.maxWidthIndex())
-      ball[i][1] += (ball[i][3] * ((fb.cfg.maxWidthIndex() - ball[i][1]) / radius[i] + 0.005));
-    else if (ball[i][1] - radius[i] <= 0)
-      ball[i][1] += (ball[i][3] * (ball[i][1] / radius[i] + 0.005));
+    if (i.x + i.radius >= fb.cfg.maxWidthIndex())
+      i.x += (i.spdx * ((fb.cfg.maxWidthIndex() - i.x) / i.radius + 0.005));
+    else if (i.x - i.radius <= 0)
+      i.x += (i.spdx * (i.x / i.radius + 0.005));
     else
-      ball[i][1] += ball[i][3];
+      i.x += i.spdx;
     //------------------------
-    if (ball[i][0] < 0.01) {
-      ball[i][2] = EffectMath::randomf(0.5, 1.1) * speedFactor;
-      ball[i][0] = 0.01;
+    if (i.y < 0.01) {
+      i.spdy = EffectMath::randomf(0.5, 1.1) * speedFactor;
+      i.y = 0.01;
     }
-    else if (ball[i][0] > (float)fb.cfg.maxHeightIndex()) {
-      ball[i][2] = EffectMath::randomf(0.5, 1.1) * speedFactor;
-      ball[i][2] = -ball[i][2];
-      ball[i][0] = (float)fb.cfg.maxHeightIndex();
+    else if (i.y > (float)fb.cfg.maxHeightIndex()) {
+      i.spdy = EffectMath::randomf(0.5, 1.1) * speedFactor;
+      i.spdy = -i.spdy;
+      i.y = (float)fb.cfg.maxHeightIndex();
     }
     //----------------------
-    if (ball[i][1] < 0.01) {
-      ball[i][3] = EffectMath::randomf(0.5, 1.1) * speedFactor;
-      ball[i][1] = 0.01;
+    if (i.x < 0.01) {
+      i.spdx = EffectMath::randomf(0.5, 1.1) * speedFactor;
+      i.x = 0.01;
     }
-    else if (ball[i][1] > fb.cfg.maxWidthIndex()) {
-      ball[i][3] = EffectMath::randomf(0.5, 1.1) * speedFactor;
-      ball[i][3] = -ball[i][3];
-      ball[i][1] = fb.cfg.maxWidthIndex();
+    else if (i.x > fb.cfg.maxWidthIndex()) {
+      i.spdx = EffectMath::randomf(0.5, 1.1) * speedFactor;
+      i.spdx = -i.spdx;
+      i.x = fb.cfg.maxWidthIndex();
     }
   }
   EffectMath::blur2d(fb, 48);
