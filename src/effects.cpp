@@ -8547,8 +8547,7 @@ String EffectWcolor::setDynCtrl(UIControl*_val){
     blur = 64.f * speedFactor;
     speedFactor *= EffectCalc::speedfactor;
   }  else if(_val->getId()==3) {
-    bCounts = map(EffectCalc::setDynCtrl(_val).toInt(), 1, 8, fb.cfg.h()/4, fb.cfg.h());
-    blots.resize(bCounts);
+    blots.assign(  map(EffectCalc::setDynCtrl(_val).toInt(), 1, 8, fb.cfg.h()/4, fb.cfg.h()), Blot(fb.cfg.w()/2));
     load();
   }
   else if(_val->getId()==4) mode = EffectCalc::setDynCtrl(_val).toInt();
@@ -8557,23 +8556,62 @@ String EffectWcolor::setDynCtrl(UIControl*_val){
 }
 
 void EffectWcolor::load() {
-  for (byte i = 0; i < bCounts; i++) {
-    blots[i].reset(i, bCounts);
+  for (auto &i : blots) {
+    i.reset(fb.cfg.w(), fb.cfg.h());
   }
 }
 
 bool EffectWcolor::run() {
   fb.fade(blur);
-  for (byte i = 0; i < bCounts; i++) {
-    blots[i].drawing(fb);
-    blots[i].appendXY( mode ? ((float)inoise8(t+= speedFactor, 0, i * 100) / 256) - 0.5f : 0, -speedFactor);
-    if(blots[i].getY() < -0.1) {
-      blots[i].reset(i, bCounts);
-      random16_set_seed(millis());
+  int cnt{0};
+  random16_set_seed(millis());
+  for (auto &i : blots){
+    i.drawing(fb);
+    i.appendXY( mode ? ((float)inoise8(t+= speedFactor, 0, cnt * 100) / 256) - 0.5f : 0, -speedFactor);
+    if(i.getY() < -0.1) {
+      i.reset(fb.cfg.w(), fb.cfg.h());
     }
+    ++cnt;
   }
   //EffectMath::blur2d(fb.data(), fb.cfg.w, fb.cfg.h, 32); 
   return true;
+}
+
+void EffectWcolor::Blot::reset(int w, int h) {
+    x0 = random(-5, w - 5);
+    float y0 = EffectMath::randomf(-1, h+1);
+    uint8_t dy;
+    int cnt{0};
+    for (int i{0}; i!=x.size(); ++i) {
+        bool f = random(0,2);
+        dy = random(0, 2); 
+        x[i] = x0 + cnt;
+        if (f)
+          y[i] = float((cnt ? y[cnt-1] : y0) + dy);
+        else 
+          y[i] = float((cnt ? y[cnt-1] : y0) - dy);
+        ++cnt;
+    }
+    hue = random(0, 256);
+    sat = random(160, 256);
+    bri = random(128, 256);
+    
+}
+
+void EffectWcolor::Blot::drawing(LedFB &fb) {
+    for (uint8_t i = 0; i < y.size(); i++) {
+        byte bright = constrain(bri / fb.cfg.h() * (y[i] + fb.cfg.h() - y0), 32, 255);
+        if (y[i] > -0.1)
+            EffectMath::drawPixelXYF(x[i], y[i], CHSV(hue, sat, bright), fb, 0);
+    }
+}
+
+double EffectWcolor::Blot::getY() {
+    double result = y[0];
+    for (uint8_t i = 1; i < y.size(); i++) {
+        if (y[i] > result) result = y[i];
+    }
+    return result;
 }
 
 // ----------- Эффект "Неопалимая купина"

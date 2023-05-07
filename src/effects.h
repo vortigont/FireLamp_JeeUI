@@ -1619,12 +1619,7 @@ private:
         uint8_t color;
         bool rrad;
     };
-/*
-    float ball[ballsAmount][4]; //0-PosY 1-PosX 2-SpeedY 3-SpeedX
-    float radius[ballsAmount];
-    bool rrad[ballsAmount];
-    byte color[ballsAmount];
-*/
+
     const float radiusMax = (float)fb.cfg.maxDim() /5;
     std::vector<Ball> balls{ std::vector<Ball>(BALLS_MIN) };
     float speedFactor;
@@ -1753,8 +1748,8 @@ public:
 // ----------------- Эффект "Магма"
 // (c) Сотнег (SottNick) 2021
 // адаптация и доводка до ума - kostyamat
-#define MAGMA_MIN_OBJ   (WIDTH/2)
-#define MAGMA_MAX_OBJ   (WIDTH*3)
+#define MAGMA_MIN_OBJ   (fb.cfg.w()/2)
+#define MAGMA_MAX_OBJ   (fb.cfg.w()*3)
 class EffectMagma: public EffectCalc {
 private:
 
@@ -2065,73 +2060,36 @@ public:
 // -------------------- Эффект "Акварель"
 // (c) kostyamat 26.12.2021
 // https://editor.soulmatelights.com/gallery/1587-oil
-#define BLOT_SIZE WIDTH/2
 #define BLOT_COUNT 1U
 class EffectWcolor : public EffectCalc {
 private:
     float speedFactor;
-    uint8_t bCounts = {BLOT_COUNT};
     uint8_t blur;
     bool mode = false;
     float t;
 
     class Blot {
     private:
-        byte hue, sat;
-        float bri;
+        byte hue, sat, bri;
         int x0, y0;
-        float x[BLOT_SIZE]; 
-        float y[BLOT_SIZE];
+        std::vector<float> x;
+        std::vector<float> y;
 
     public:
+        Blot(int size) : x(std::vector<float>(size)), y(std::vector<float>(size)) {}
 
         void appendXY(float nx, float ny) {
-            for (byte i = 0; i < BLOT_SIZE; i++) {
-                x[i] += nx;
-                y[i] += ny; 
-            }
+            for (auto &i : x) i += nx;
+            for (auto &i : y) i += ny;
         }
         
-
-        void reset(byte num, byte Counts) {     // wtf??? num and Counts are unused
-            x0 = random(-5, WIDTH - 5);
-            float y0 = EffectMath::randomf(-1, HEIGHT+1);
-            uint8_t dy;
-            for (uint8_t i = 0; i < BLOT_SIZE; i++) {
-                bool f = random(0,2);
-                dy = random(0, 2); 
-                x[i] = x0 + i;
-                if (f)
-                y[i] = float((i ? y[i-1] : y0) + dy);
-                else 
-                y[i] = float((i ? y[i-1] : y0) - dy);
-            }
-            hue = random(0, 256);
-            sat = random(160, 256);
-            bri = random(128, 256);
-            
-        }
-
-        double getY() {
-            double result = y[0];
-            for (uint8_t i = 1; i < BLOT_SIZE; i++) {
-                if (y[i] > result) result = y[i];
-            }
-            return result;
-        }
-
-        void drawing(LedFB &fb) {
-            for (uint8_t i = 0; i < BLOT_SIZE; i++) {
-                byte bright = constrain((float)bri / fb.cfg.h() * (y[i] + fb.cfg.h() - y0), 32, 255);
-                if (y[i] > -0.1)
-                    EffectMath::drawPixelXYF(x[i], y[i], CHSV(hue, sat, bright), fb, 0);
-            }
-        }
-
+        void reset(int w, int h);
+        double getY();
+        void drawing(LedFB &fb);
     };
 
 
-    std::vector<Blot> blots = std::vector<Blot>(BLOT_COUNT);
+    std::vector<Blot> blots = std::vector<Blot>(BLOT_COUNT, fb.cfg.w()/2);
 
     String setDynCtrl(UIControl*_val) override;
 
