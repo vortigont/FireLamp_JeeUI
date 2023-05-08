@@ -186,6 +186,9 @@ private:
     LedFB &mx;              // LED matrix framebuffer object
     LedFB *sledsbuff = nullptr;    // вспомогательный буфер для слоя после эффектов
     LedFB *drawbuff = nullptr;     // буфер для рисования
+#if defined(USE_STREAMING) && defined(EXT_STREAM_BUFFER)
+    std::vector<CRGB> streambuff; // буфер для трансляции
+#endif
 
     LAMPFLAGS flags;
     LAMPSTATE lampState;        // текущее состояние лампы, которое передается эффектам
@@ -248,10 +251,6 @@ private:
 
 #ifdef MP3PLAYER
     void playEffect(bool isPlayName = false, EFFSWITCH action = EFFSWITCH::SW_NEXT);
-#endif
-
-#if defined(USE_STREAMING) && defined(EXT_STREAM_BUFFER)
-    std::vector<CRGB> streambuff; // буфер для трансляции
 #endif
 
     LAMP(const LAMP&);  // noncopyable
@@ -542,6 +541,14 @@ public:
      * @param callback  -  callback-функция, которая будет выполнена после окончания затухания
      */
     void fadelight(const uint8_t _targetbrightness=0, const uint32_t _duration=FADE_TIME, std::function<void()> callback=nullptr);
+
+    /**
+     * @brief check if fade is in progress
+     * 
+     * @return true 
+     * @return false 
+     */
+    bool running() const { return runner; }
 };
 
 //-----------------------------------------------

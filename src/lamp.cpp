@@ -39,6 +39,9 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "effectmath.h"
 #include "fontHEX.h"
 
+GAUGE *GAUGE::gauge = nullptr; // объект индикатора
+ALARMTASK *ALARMTASK::alarmTask = nullptr; // объект будильника
+
 LAMP::LAMP(LedFB &m) : mx(m), tmStringStepTime(DEFAULT_TEXT_SPEED), tmNewYearMessage(0), effects(&lampState, m){
   lampState.isOptPass = false; // введен ли пароль для опций
   lampState.isInitCompleted = false; // завершилась ли инициализация лампы
@@ -55,7 +58,6 @@ LAMP::LAMP(LedFB &m) : mx(m), tmStringStepTime(DEFAULT_TEXT_SPEED), tmNewYearMes
   lampState.brightness = 127;
   //lamp_init(); // инициализация и настройка лампы (убрано, будет настройка снаружи)
 }
-
 
 void LAMP::lamp_init(const uint16_t curlimit)
 {
@@ -152,19 +154,15 @@ void LAMP::handle()
   }
 
   newYearMessageHandle();
-  //ConfigSaveCheck(); // для взведенного таймера автосохранения настроек
 
   // обработчик событий (пока не выкину в планировщик)
   if (flags.isEventsHandled) {
     events.events_handle();
   }
 
-  // EVERY_N_SECONDS(5){
-  //   LOG(printf_P, PSTR("Test: %d %d %d\n"),!lampState.isStringPrinting, !flags.ONflag, !LEDFader::getInstance());
-  // }
-  if(!lampState.isStringPrinting && !flags.ONflag && !LEDFader::getInstance()){ // освобождать буфер только если не выводится строка, иначе держать его
+  if(!lampState.isStringPrinting && !flags.ONflag && !LEDFader::getInstance()->running()){ // освобождать буфер только если не выводится строка, иначе держать его
     if(sledsbuff){
-      delete [] sledsbuff;
+      delete sledsbuff;
       sledsbuff = nullptr;
     }
   }
@@ -174,15 +172,21 @@ void LAMP::handle()
 void LAMP::effectsTick(){
   uint32_t _begin = millis();
 
-  if (effects.worker && (flags.ONflag || LEDFader::getInstance()) && !isAlarm() && !isRGB()) {
-    if(!lampState.isEffectsDisabledUntilText){
-      if (sledsbuff) {    // stash exiting buffer
-        *sledsbuff = mx;
+  // проверяем, нужно ли обсчитывать новый кадр, что само по себе тупо, если уж этот метод был вызван
+  if (effects.worker && (flags.ONflag || LEDFader::getInstance()->running()) && !isAlarm() && !isRGB()) {
+    if(!lampState.isEffectsDisabledUntilText){  // если не выводится текст
+      // if  there is a sledsbuff defined, than swap content with current mx buff, 'cause effects runner expect it to be intact from the last run
+      if (sledsbuff) {
+        mx.swap(std::move(*sledsbuff);)
       }
-      // посчитать текущий эффект (сохранить кадр в буфер, если ОК)
-      if(effects.worker ? effects.worker->run() : 1) {
+      // посчитать текущий эффект (сохранить кадр в sledsbuff буфер, если был обсчет и до этого не было создано sleds буфера
+      // ппц... копия будет создаваться ВСЕГДА, даже если оверлей не нужен Ж()
+      if(effects.worker->run()) {
         if(!sledsbuff)
-          sledsbuff = new LedFB(mx);    // copy mx buffer
+          sledsbuff = new LedFB(mx);    // create buffer clone
+        else
+          sledsbuff = mx;               // copy mx buffer
+
       }
     }
   }
@@ -200,6 +204,7 @@ void LAMP::effectsTick(){
     }
   }
 #endif
+
   if(drawbuff){
     uint8_t mi;
     for(uint16_t i=0; i<mx.size(); i++){
@@ -227,11 +232,12 @@ void LAMP::effectsTick(){
 
   GAUGE::GetGaugeInstance()->GaugeMix((GAUGETYPE)flags.GaugeType);
 
-  if (isRGB() || isWarning() || isAlarm() || lampState.isEffectsDisabledUntilText || LEDFader::getInstance() || (effects.worker ? effects.worker->status() : 1) || lampState.isStringPrinting) {
-    // выводим кадр только если есть текст или эффект
+  // это жесть...
+  if (isRGB() || isWarning() || isAlarm() || lampState.isEffectsDisabledUntilText || LEDFader::getInstance()->running() || (effects.worker ? effects.worker->status() : 1) || lampState.isStringPrinting) {
+    // выводим 1 кадр на матрицу только если есть текст или эффект
     effectsTimer(T_FRAME_ENABLE, _begin);
   } else if(isLampOn()) {
-    // иначе возвращаемся к началу обсчета следующего кадра
+    // иначе перезапускаем этот же метод бесконечно
     effectsTimer(T_ENABLE);
   }
 }
@@ -241,21 +247,18 @@ void LAMP::effectsTick(){
  * и перезапуск эффект-процессора
  */
 void LAMP::frameShow(const uint32_t ticktime){
-  if ( !LEDFader::getInstance() && !isLampOn() && !isAlarm() ) return;
+  if ( !LEDFader::getInstance()->runner() && !isLampOn() && !isAlarm() ) return;
 
   FastLED.show();
 
   // откладываем пересчет эффекта на время для желаемого FPS, либо
   // на минимальный интервал в следующем loop()
   int32_t delay = (ticktime + EFFECTS_RUN_TIMER) - millis();
-  if (delay < LED_SHOW_DELAY || !(effects.worker ? effects.worker->status() : 1)) delay = LED_SHOW_DELAY;
+  if (delay < LED_SHOW_DELAY) delay = LED_SHOW_DELAY;
 
   effectsTimer(T_ENABLE, delay);
   ++fps;
 }
-
-GAUGE *GAUGE::gauge = nullptr; // объект индикатора
-ALARMTASK *ALARMTASK::alarmTask = nullptr; // объект будильника
 
 void LAMP::changePower() {changePower(!flags.ONflag);}
 
@@ -1073,7 +1076,7 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
   // отрисовать текущий эффект (только если лампа включена, иначе бессмысленно)
   if(effects.worker && flags.ONflag && !lampState.isEffectsDisabledUntilText){
     effects.worker->run();
-    if(!sledsbuff){ // WHY we need this clone here???
+    if(!sledsbuff){ // todo: WHY we need this clone here???
       sledsbuff = new LedFB(mx);  // clone existing frambuffer
     }
   }
