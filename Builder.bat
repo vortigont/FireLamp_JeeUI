@@ -77,9 +77,9 @@ if "%choice%"=="2" (
 )
 if "%choice%"=="3" call update-DEV-from-Git.cmd 3
 if "%choice%"=="4" (
-	"%USERPROFILE%\.platformio\penv\Scripts\pio.exe" run --environment esp8266@160
+	"%USERPROFILE%\.platformio\penv\Scripts\pio.exe" run --environment esp8266_160
 	mkdir %workdir%\out_bin
-	copy /z %workdir%\.pio\build\esp8266@160\firmware.bin %workdir%\out_bin
+	copy /z %workdir%\.pio\build\esp8266_160\firmware.bin %workdir%\out_bin
 )
 if "%choice%"=="5" (
 	"%USERPROFILE%\.platformio\penv\Scripts\pio.exe" run --environment esp8266
@@ -96,10 +96,10 @@ if "%choice%"=="6D" (
 	mkdir %workdir%\out_bin
 	copy /z %workdir%\.pio\build\esp32debug\firmware.bin %workdir%\out_bin
 )
-if "%choice%"=="7" ("%USERPROFILE%\.platformio\penv\Scripts\pio.exe" run --target upload --environment esp8266@160)
+if "%choice%"=="7" ("%USERPROFILE%\.platformio\penv\Scripts\pio.exe" run --target upload --environment esp8266_160)
 if "%choice%"=="8" ("%USERPROFILE%\.platformio\penv\Scripts\pio.exe" run --target upload --environment esp8266)
 if "%choice%"=="9" ("%USERPROFILE%\.platformio\penv\Scripts\pio.exe" run --target upload --environment esp32)
-if "%choice%"=="7D" ("%USERPROFILE%\.platformio\penv\Scripts\pio.exe" run --target upload --environment esp8266@160dev)
+if "%choice%"=="7D" ("%USERPROFILE%\.platformio\penv\Scripts\pio.exe" run --target upload --environment esp8266_160dev)
 if "%choice%"=="8D" ("%USERPROFILE%\.platformio\penv\Scripts\pio.exe" run --target upload --environment esp8266dev)
 if "%choice%"=="9D" ("%USERPROFILE%\.platformio\penv\Scripts\pio.exe" run --target upload --environment esp32debug)
 if "%choice%"=="D" (start %workdir%\SerialMonitor.cmd)
@@ -109,12 +109,12 @@ if "%choice%"=="u" (
 	cd %workdir%
 )
 if "%choice%"=="b" (
-	"%USERPROFILE%\.platformio\penv\Scripts\pio.exe" run --target buildfs --environment esp8266@160
+	"%USERPROFILE%\.platformio\penv\Scripts\pio.exe" run --target buildfs --environment esp8266_160
 		mkdir %workdir%\out_bin
-	copy /z %workdir%\.pio\build\esp8266@160\littlefs.bin %workdir%\out_bin
+	copy /z %workdir%\.pio\build\esp8266_160\littlefs.bin %workdir%\out_bin
 )
-if "%choice%"=="f" ("%USERPROFILE%\.platformio\penv\Scripts\pio.exe" run --target uploadfs --environment esp8266@160)
-if "%choice%"=="e" ("%USERPROFILE%\.platformio\penv\Scripts\pio.exe" run --target erase --environment esp8266@160)
+if "%choice%"=="f" ("%USERPROFILE%\.platformio\penv\Scripts\pio.exe" run --target uploadfs --environment esp8266_160)
+if "%choice%"=="e" ("%USERPROFILE%\.platformio\penv\Scripts\pio.exe" run --target erase --environment esp8266_160)
 if "%choice%"=="b1" (
 	"%USERPROFILE%\.platformio\penv\Scripts\pio.exe" run --target buildfs --environment esp32
 	mkdir %workdir%\out_bin
