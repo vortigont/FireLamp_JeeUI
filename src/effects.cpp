@@ -7774,14 +7774,14 @@ bool EffectVU::run() {
 
     // Scale the bars for the display
     float barHeight = bandValues[band] * _scale > threshold ? (bandValues[band] * _scale) : 0.;
-    if (barHeight > TOP) barHeight = TOP;
+    if (barHeight > fb.cfg.maxHeightIndex()) barHeight = fb.cfg.maxHeightIndex();
 
     // Small amount of averaging between frames
     if (averaging) barHeight = (oldBarHeights[band] + barHeight) / 2;
 
     // Move peak up
     if (barHeight > peak[band]) {
-      peak[band] = min((float)TOP, barHeight);
+      peak[band] = min((float)fb.cfg.maxHeightIndex(), barHeight);
     }
 
   // EVERY_N_SECONDS(1){
@@ -7857,22 +7857,22 @@ void EffectVU::horizontalColoredBars(uint8_t band, float barHeight, uint8_t type
   colorShift--;
   uint8_t xStart = bar_width * band;
   for (uint8_t x = xStart; x < xStart + bar_width; x++) {
-    for (float y = TOP; y >= (float)TOP - barHeight; y-= 0.5) {
+    for (float y = fb.cfg.maxHeightIndex(); y >= (float)fb.cfg.maxHeightIndex() - barHeight; y-= 0.5) {
       switch (type) {
       case 0: // Только цвет по высоте
-        EffectMath::drawPixelXYF_Y(x, (float)TOP - y, CHSV(band * (232 / bands) + colorShift, 255, 255), fb);
+        EffectMath::drawPixelXYF_Y(x, (float)fb.cfg.maxHeightIndex() - y, CHSV(band * (232 / bands) + colorShift, 255, 255), fb);
         break;
       case 1: // Цвет и насыщенность
-        EffectMath::drawPixelXYF_Y(x, (float)TOP - y, CHSV(band * (232 / bands) + colorShift, colorDev * (uint8_t)y, 255), fb);
+        EffectMath::drawPixelXYF_Y(x, (float)fb.cfg.maxHeightIndex() - y, CHSV(band * (232 / bands) + colorShift, colorDev * (uint8_t)y, 255), fb);
         break;
       case 2: // Цвет и яркость
-        EffectMath::drawPixelXYF_Y(x, (float)TOP - y, CHSV(band * (232 / bands) + colorShift, 255, (uint8_t)255 - constrain(colorDev * (uint8_t)y, 0, 200)), fb);
+        EffectMath::drawPixelXYF_Y(x, (float)fb.cfg.maxHeightIndex() - y, CHSV(band * (232 / bands) + colorShift, 255, (uint8_t)255 - constrain(colorDev * (uint8_t)y, 0, 200)), fb);
         break;
       case 3: // Цвет, насыщенность и яркость
-        EffectMath::drawPixelXYF_Y(x, (float)TOP - y, CHSV(band * (232 / bands) + colorShift, colorDev * (uint8_t)y, (uint8_t)255 - constrain(colorDev * (uint8_t)y, 0, 200)), fb);
+        EffectMath::drawPixelXYF_Y(x, (float)fb.cfg.maxHeightIndex() - y, CHSV(band * (232 / bands) + colorShift, colorDev * (uint8_t)y, (uint8_t)255 - constrain(colorDev * (uint8_t)y, 0, 200)), fb);
         break;
       case 4: // Вертикальная радуга
-        EffectMath::drawPixelXYF_Y(x, (float)TOP - y, ColorFromPalette(RainbowColors_p, colorDev * (uint8_t)y + colorShift, 255), fb);
+        EffectMath::drawPixelXYF_Y(x, (float)fb.cfg.maxHeightIndex() - y, ColorFromPalette(RainbowColors_p, colorDev * (uint8_t)y + colorShift, 255), fb);
         break;
       }
     }
@@ -7883,8 +7883,8 @@ void EffectVU::paletteBars(uint8_t band, float barHeight, CRGBPalette16& palette
   colorShift--;
   uint8_t xStart = bar_width * band;
   for (uint8_t x = xStart; x < xStart + bar_width; x++) {
-    for (float y = TOP; y >= (float)TOP - barHeight; y-= 0.5) {
-      EffectMath::drawPixelXYF_Y(x, (float)TOP - y, ColorFromPalette(palette, (uint8_t)y * (255 / (barHeight + 1)) + colorShift), fb);
+    for (float y = fb.cfg.maxHeightIndex(); y >= (float)fb.cfg.maxHeightIndex() - barHeight; y-= 0.5) {
+      EffectMath::drawPixelXYF_Y(x, (float)fb.cfg.maxHeightIndex() - y, ColorFromPalette(palette, (uint8_t)y * (255 / (barHeight + 1)) + colorShift), fb);
     }
   }
 }
@@ -7893,22 +7893,22 @@ void EffectVU::verticalColoredBars(uint8_t band, float barHeight, uint8_t type, 
   colorShift--;
   uint8_t xStart = bar_width * band;
   for (uint8_t x = xStart; x < xStart + bar_width; x++) {
-    for (float y = TOP; y >= (float)TOP - barHeight; y-= 0.5) {
+    for (float y = fb.cfg.maxHeightIndex(); y >= (float)fb.cfg.maxHeightIndex() - barHeight; y-= 0.5) {
       switch (type) {
       case 0: // Только цвет по высоте
-        EffectMath::drawPixelXYF_Y(x, TOP - y, CHSV((uint8_t)y * colorDev + colorShift, 255, 255), fb);
+        EffectMath::drawPixelXYF_Y(x, fb.cfg.maxHeightIndex() - y, CHSV((uint8_t)y * colorDev + colorShift, 255, 255), fb);
         break;
       case 1: // Цвет и насыщенность
-        EffectMath::drawPixelXYF_Y(x, TOP - y, CHSV((uint8_t)y * colorDev + colorShift, colorDev * (uint8_t)y, 255), fb);
+        EffectMath::drawPixelXYF_Y(x, fb.cfg.maxHeightIndex() - y, CHSV((uint8_t)y * colorDev + colorShift, colorDev * (uint8_t)y, 255), fb);
         break;
       case 2: // Цвет и яркость
-        EffectMath::drawPixelXYF_Y(x, TOP - y, CHSV((uint8_t)y * colorDev + colorShift, 255, (uint8_t)255 - constrain(colorDev * (uint8_t)y, 0, 200)), fb);
+        EffectMath::drawPixelXYF_Y(x, fb.cfg.maxHeightIndex() - y, CHSV((uint8_t)y * colorDev + colorShift, 255, (uint8_t)255 - constrain(colorDev * (uint8_t)y, 0, 200)), fb);
         break;
       case 3: // Цвет, насыщенность и яркость
-        EffectMath::drawPixelXYF_Y(x, TOP - y, CHSV((uint8_t)y * colorDev + colorShift, colorDev * (uint8_t)y, (uint8_t)255 - constrain(colorDev * (uint8_t)y, 0, 200)), fb);
+        EffectMath::drawPixelXYF_Y(x, fb.cfg.maxHeightIndex() - y, CHSV((uint8_t)y * colorDev + colorShift, colorDev * (uint8_t)y, (uint8_t)255 - constrain(colorDev * (uint8_t)y, 0, 200)), fb);
         break;
       case 4: // Радуга с палитры
-        EffectMath::drawPixelXYF_Y(x, TOP - y, ColorFromPalette(RainbowColors_p, colorDev * x + colorShift, 255), fb);
+        EffectMath::drawPixelXYF_Y(x, fb.cfg.maxHeightIndex() - y, ColorFromPalette(RainbowColors_p, colorDev * x + colorShift, 255), fb);
         break;
       }
 
@@ -7931,18 +7931,18 @@ void EffectVU::centerBars(uint8_t band, float barHeight, CRGBPalette16& palette,
 
 void EffectVU::whitePeak(uint8_t band) {
   uint8_t xStart = bar_width * band;
-  float peakHeight = (float)TOP - peak[band] - 1;
+  float peakHeight = (float)fb.cfg.maxHeightIndex() - peak[band] - 1;
   for (uint8_t x = xStart; x < xStart + bar_width; x++) {
-    EffectMath::drawPixelXYF_Y(x, (float)TOP - peakHeight, CHSV(0,0,255), fb);
+    EffectMath::drawPixelXYF_Y(x, (float)fb.cfg.maxHeightIndex() - peakHeight, CHSV(0,0,255), fb);
   }
 }
 
 void EffectVU::outrunPeak(uint8_t band, CRGBPalette16& palette, uint8_t colorShift) {
   colorShift--;
   uint8_t xStart = bar_width * band;
-  float peakHeight = (float)TOP - peak[band] - 1;
+  float peakHeight = (float)fb.cfg.maxHeightIndex() - peak[band] - 1;
   for (uint8_t x = xStart; x < xStart + bar_width; x++) {
-    EffectMath::drawPixelXYF_Y(x, (float)TOP - peakHeight, type ? ColorFromPalette(palette, (uint8_t)(peakHeight * colorDev) + colorShift) : CHSV(colorShift, 255, 255), fb);
+    EffectMath::drawPixelXYF_Y(x, (float)fb.cfg.maxHeightIndex() - peakHeight, type ? ColorFromPalette(palette, (uint8_t)(peakHeight * colorDev) + colorShift) : CHSV(colorShift, 255, 255), fb);
   }
 }
 
@@ -8713,6 +8713,7 @@ float EffectSplashBals::dist(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2) {
 
 // Effect Mira
 void EffectMira::load(){
+    fb.clear();
     // 0,0
     fb.pixel(0,0) = fb.pixel(1,0) = fb.pixel(2,0) = fb.pixel(2,0) = fb.pixel(0,1) = CRGB::Red;
 
@@ -8726,3 +8727,32 @@ void EffectMira::load(){
     fb.pixel(mx.cfg.w()-2,mx.cfg.h()-2) = fb.pixel(mx.cfg.w()-2,mx.cfg.h()-1) = CRGB::Green;
 }
 
+/* Эффект "Цветение" */
+int16_t EffectFlower::ZVcalcDist(uint8_t x, uint8_t y, float center_x, float center_y) {
+  int16_t a = (center_y - y - .5);
+  int16_t b = (center_x - x - .5);
+  int16_t dista = ZVcalcRadius(a, b);
+  return dista;
+}
+
+bool EffectFlower::run(CRGB *leds, EffectWorker *param) {
+	effTimer = (1+sin(radians((float)millis()/6000)))*12.5;
+	ZVoffset += EffectMath::fmap((float)speed, 1, 255, 0.2, 6.0);;
+	
+  for (uint8_t x = 0; x < WIDTH; x++) {
+    for (uint8_t y = 0; y < HEIGHT; y++) {
+      int dista = ZVcalcDist(x, y, COLS_HALF, ROWS_HALF);
+      
+      // exclude outside of circle
+      int brightness = 1;
+      if (dista += max(COLS_HALF,ROWS_HALF)) {
+        brightness = map(dista, -effTimer,max(COLS_HALF,ROWS_HALF), 255, 110);
+        brightness += ZVoffset;
+        brightness = sin8(brightness);
+      }
+      int hue = map(dista, max(COLS_HALF,ROWS_HALF),-3,  125, 255);
+      EffectMath::drawPixelXY(x, y, CHSV(hue+ZVoffset/4, 255, brightness));
+    }
+  } 
+	return true;
+}

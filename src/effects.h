@@ -1871,7 +1871,7 @@ private:
     uint8_t bar_width{1};
     uint8_t calcArray = 1;          // уменьшение частоты пересчета массива
     uint8_t colorTimer = 0;
-    const uint8_t colorDev = 256/TOP;
+    const uint8_t colorDev = 256/fb.cfg.maxHeightIndex();
     // Sampling and FFT stuff
     std::vector<float> peak{std::vector<float>(fb.cfg.w())};              // The length of these arrays must be >= bands
     std::vector<float> oldBarHeights{std::vector<float>(fb.cfg.w())};
@@ -2154,12 +2154,23 @@ public:
     bool run() override;
 };
 
-/* Эффект "Цветение"
-т.к. эффект отсутсвует, ставим сюда настроечную таблицу для проверки ориентации матрицы
-*/
+/* Настроечная мира */
 class EffectMira : public EffectCalc {
 public:
     EffectMira(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
     bool run() override { return false; };
+};
+
+/* Эффект "Цветение" */
+class EffectFlower : public EffectCalc {
+	private:
+        uint8_t effTimer;
+        float ZVoffset = 0;
+        const float COLS_HALF = WIDTH * .5;
+        const float ROWS_HALF = HEIGHT * .5;
+        int16_t ZVcalcRadius(int16_t x, int16_t y);
+        int16_t ZVcalcDist(uint8_t x, uint8_t y, float center_x, float center_y);
+	public:
+        bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
 };
