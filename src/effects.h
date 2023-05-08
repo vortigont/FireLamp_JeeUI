@@ -46,10 +46,10 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 //-------------- Специально обученный пустой эффект :)
 class EffectNone : public EffectCalc {
 private:
-    void load() override { FastLED.clear(); };
+    void load() override { fb.clear(); };
 public:
     EffectNone(LedFB &framebuffer) : EffectCalc(framebuffer){}
-    bool run() override {return true;};
+    bool run() override { fb.clear(); return false; };
 };
 
 //-------------- Эффект "Часы"
@@ -125,14 +125,13 @@ class EffectBBalls : public EffectCalc {
         float shift{0};
     };
 
-    uint8_t bballsNUM_BALLS{1};                            // Number of bouncing balls you want (recommend < 7, but 20 is fun in its own way) ... количество мячиков теперь задаётся бегунком, а не константой
     float bballsHi = 0.0;                               // An array of heights
     uint32_t bballsTCycle = 0;                        // The time since the last time the ball struck the ground
     float hue{0};
     bool halo = false;                                  // ореол
     uint8_t _scale=1;
     uint16_t _speed;
-    std::vector<Ball> balls = std::vector<Ball>(bballsNUM_BALLS, Ball());
+    std::vector<Ball> balls = std::vector<Ball>(1, Ball());
 
     bool bBallsRoutine();
     void load() override;
@@ -1237,7 +1236,7 @@ private:
 
     std::vector<Snake> snakes{ std::vector<Snake>(2, Snake(snake_len)) };
     String setDynCtrl(UIControl*_val) override;
-
+    void reset();
 public:
     EffectSnake(LedFB &framebuffer) : EffectCalc(framebuffer){}
     void load() override;
@@ -1624,7 +1623,7 @@ private:
     std::vector<Ball> balls{ std::vector<Ball>(BALLS_MIN) };
     float speedFactor;
     String setDynCtrl(UIControl*_val) override;
-
+    void reset();
 
 public:
     EffectBalls(LedFB &framebuffer) : EffectCalc(framebuffer){}

@@ -1035,19 +1035,20 @@ bool EffectBBalls::run(){
 
 void EffectBBalls::load(){
   fb.clear();
+  int cnt;
   if (_scale <= 16) {
-    bballsNUM_BALLS =  map(_scale, 1, 16, 1, bballsMaxNUM_BALLS);
+    cnt =  map(_scale, 1, 16, 1, fb.cfg.maxWidthIndex());
   } else {
-    bballsNUM_BALLS =  map(_scale, 32, 17, 1, bballsMaxNUM_BALLS);
+    cnt =  map(_scale, 32, 17, 1, fb.cfg.maxWidthIndex());
   }
-  balls.assign(bballsNUM_BALLS, Ball());
+  balls.assign(cnt, Ball());
 
   randomSeed(millis());
   for (size_t i = 0; i != balls.size(); ++i){
     balls[i].color = random(0, 255);
-    balls[i].x = (i+1) * fb.cfg.w() / bballsNUM_BALLS;
+    balls[i].x = (i+1) * fb.cfg.w() / balls.size();
     balls[i].vimpact = bballsVImpact0 + EffectMath::randomf( - 2., 2.);                   // And "pop" up at vImpact0
-    balls[i].cor = 0.9 - float(i) / pow(bballsNUM_BALLS, 2);
+    balls[i].cor = 0.9 - float(i) / pow(balls.size(), 2);
     if (halo){
       balls[i].brightness = 200;
     } else if ( i && balls[i].x == balls[i-1].x){      // skip 1st interation
@@ -5033,7 +5034,10 @@ bool EffectAttract::run() {
 // вариант субпикселя и поведения от kDn
 void EffectSnake::load() {
   palettesload();
+  reset();
+}
 
+void EffectSnake::reset(){
   for (auto &i : snakes){
     i.reset();
     i.pixels[0].x = fb.cfg.w() / 2; // пусть расползаются из центра
@@ -5048,7 +5052,7 @@ String EffectSnake::setDynCtrl(UIControl*_val) {
   if(_val->getId()==1) speedFactor = ((float)EffectCalc::setDynCtrl(_val).toInt()/ 512.0 + 0.025) * EffectCalc::speedfactor;
   else if(_val->getId()==4) {
     snakes.assign(EffectCalc::setDynCtrl(_val).toInt(), Snake(snake_len));
-    load();
+    reset();
   }
   else if(_val->getId()==5) subPix = EffectCalc::setDynCtrl(_val).toInt();
   else if(_val->getId()==6) onecolor = EffectCalc::setDynCtrl(_val).toInt();
@@ -6810,11 +6814,13 @@ bool EffectBengalL::run() {
 // (c) stepko and kostyamat https://wokwi.com/arduino/projects/289839434049782281
 // 07.02.2021
 void EffectBalls::load() {
-  randomSeed(millis());
   palettesload();
-
   speedFactor = EffectMath::fmap(speed, 1, 255, 0.15, 0.5) * EffectCalc::speedfactor;
+  reset();
+}
 
+void EffectBalls::reset(){
+  randomSeed(millis());
   for (auto &i : balls){
     i.radius = EffectMath::randomf(0.5, radiusMax);
     i.spdy = EffectMath::randomf(0.5, 1.1) * speedFactor;
@@ -6825,14 +6831,13 @@ void EffectBalls::load() {
   }
 }
 
-
 // !++
 String EffectBalls::setDynCtrl(UIControl*_val){
   if(_val->getId()==1) speedFactor = EffectMath::fmap(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 0.15, 0.5) * EffectCalc::speedfactor;
   else if(_val->getId()==2) {   // Scale
     balls.assign( map(scale, 1, 255, BALLS_MIN, fb.cfg.maxDim()), Ball() );
     balls.shrink_to_fit();
-    load();
+    reset();
   }
   else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
   return String();

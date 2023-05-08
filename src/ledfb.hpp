@@ -221,6 +221,4 @@ public:
 /* a backward compatible wrappers for accessing LedMatrix obj instance,
 should be removed once other code refactoring is complete
 */
-#define getUnsafeLedsArray      mx.data
-#define getPixelNumber(X,Y)     mx.transpose(X,Y)
 extern LedFB mx;

@@ -377,7 +377,6 @@ static const char* const T_EFFUICFG[] PROGMEM = {
 #define TRACK_STEP             (70U)                // длина хвоста шарика (чем больше цифра, тем хвост короче)
 
 // --------------------------- эффект мячики ----------------------
-#define bballsMaxNUM_BALLS     (WIDTH-1)             // максимальное количество мячиков прикручено при адаптации для бегунка Масштаб
 #define bballsGRAVITY          (-9.7f)               // Downward (negative) acceleration of gravity in m/s^2
 #define bballsH0               (2)                   // Starting height, in meters, of the ball (strip length)
 #define bballsVImpact0         (EffectMath::sqrt(-2 * bballsGRAVITY * bballsH0))
