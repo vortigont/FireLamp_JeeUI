@@ -8731,16 +8731,15 @@ void EffectMira::load(){
 int16_t EffectFlower::ZVcalcDist(uint8_t x, uint8_t y, float center_x, float center_y) {
   int16_t a = (center_y - y - .5);
   int16_t b = (center_x - x - .5);
-  int16_t dista = ZVcalcRadius(a, b);
-  return dista;
+  return sin8(a*a + b*b);
 }
 
-bool EffectFlower::run(CRGB *leds, EffectWorker *param) {
+bool EffectFlower::run() {
 	effTimer = (1+sin(radians((float)millis()/6000)))*12.5;
 	ZVoffset += EffectMath::fmap((float)speed, 1, 255, 0.2, 6.0);;
 	
-  for (uint8_t x = 0; x < WIDTH; x++) {
-    for (uint8_t y = 0; y < HEIGHT; y++) {
+  for (uint8_t x = 0; x < fb.cfg.w(); x++) {
+    for (uint8_t y = 0; y < fb.cfg.h(); y++) {
       int dista = ZVcalcDist(x, y, COLS_HALF, ROWS_HALF);
       
       // exclude outside of circle
@@ -8751,7 +8750,7 @@ bool EffectFlower::run(CRGB *leds, EffectWorker *param) {
         brightness = sin8(brightness);
       }
       int hue = map(dista, max(COLS_HALF,ROWS_HALF),-3,  125, 255);
-      EffectMath::drawPixelXY(x, y, CHSV(hue+ZVoffset/4, 255, brightness));
+      fb.pixel(x, y) = CHSV(hue+ZVoffset/4, 255, brightness);
     }
   } 
 	return true;

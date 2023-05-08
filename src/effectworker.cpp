@@ -445,7 +445,7 @@ void EffectWorker::workerset(uint16_t effect){
     worker = std::unique_ptr<EffectSplashBals>(new EffectSplashBals(fb));
     break;
   case EFF_ENUM::EFF_FLOWER :
-    worker = std::unique_ptr<EffectMira>(new EffectMira(fb));
+    worker = std::unique_ptr<EffectFlower>(new EffectFlower(fb));
     break;
 #ifdef MIC_EFFECTS
   case EFF_ENUM::EFF_VU :

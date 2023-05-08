@@ -2167,10 +2167,10 @@ class EffectFlower : public EffectCalc {
 	private:
         uint8_t effTimer;
         float ZVoffset = 0;
-        const float COLS_HALF = WIDTH * .5;
-        const float ROWS_HALF = HEIGHT * .5;
-        int16_t ZVcalcRadius(int16_t x, int16_t y);
+        const float COLS_HALF = fb.cfg.w() * .5;
+        const float ROWS_HALF = fb.cfg.h() * .5;
         int16_t ZVcalcDist(uint8_t x, uint8_t y, float center_x, float center_y);
 	public:
-        bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    EffectFlower(LedFB &framebuffer) : EffectCalc(framebuffer){}
+        bool run() override;
 };
