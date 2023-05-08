@@ -1117,7 +1117,7 @@ void block_lamp_textsend(Interface *interf, JsonObject *data){
         interf->json_section_begin(FPSTR(TCONST_edit_text_config));
             interf->spacer(FPSTR(TINTF_001));
                 interf->range(FPSTR(TCONST_txtSpeed), String(110U-embui.param((FPSTR(TCONST_txtSpeed))).toInt()), String(10), String(100), String(5), String(FPSTR(TINTF_044)));
-                interf->range(FPSTR(TCONST_txtOf), String(-1), String((int)(HEIGHT>6?HEIGHT:6)-6), String(1), FPSTR(TINTF_045));
+                interf->range(FPSTR(TCONST_txtOf), String(-1), String((int)(mx.cfg.h()>6?mx.cfg.h():6)-6), String(1), FPSTR(TINTF_045));
                 interf->range(FPSTR(TCONST_txtBfade), String(0), String(255), String(1), FPSTR(TINTF_0CA));
                 
             interf->spacer(FPSTR(TINTF_04E));
@@ -1155,8 +1155,8 @@ void block_drawing(Interface *interf, JsonObject *data){
     DynamicJsonDocument doc(512);
     JsonObject param = doc.to<JsonObject>();
 
-    param[FPSTR(TCONST_width)] = WIDTH;
-    param[FPSTR(TCONST_height)] = HEIGHT;
+    param[FPSTR(TCONST_width)] = mx.cfg.w();
+    param[FPSTR(TCONST_height)] = mx.cfg.h();
     param[FPSTR(TCONST_blabel)] = FPSTR(TINTF_0CF);
     param[FPSTR(TCONST_drawClear)] = FPSTR(TINTF_0D9);
 
@@ -1577,8 +1577,8 @@ void block_settings_other(Interface *interf, JsonObject *data){
     
     interf->spacer(FPSTR(TINTF_030));
 #if !defined(MATRIXx4) and !defined(XY_EXTERN)
-    interf->checkbox(FPSTR(TCONST_MIRR_H), myLamp.getLampSettings().MIRR_H ? "1" : "0", FPSTR(TINTF_03B), false);
-    interf->checkbox(FPSTR(TCONST_MIRR_V), myLamp.getLampSettings().MIRR_V ? "1" : "0", FPSTR(TINTF_03C), false);
+    interf->checkbox(FPSTR(TCONST_MIRR_H), mx.cfg.hmirror() ? "1" : "0", FPSTR(TINTF_03B), false);
+    interf->checkbox(FPSTR(TCONST_MIRR_V), mx.cfg.vmirror() ? "1" : "0", FPSTR(TINTF_03C), false);
 #endif
     interf->checkbox(FPSTR(TCONST_isFaderON), myLamp.getLampSettings().isFaderON ? "1" : "0", FPSTR(TINTF_03D), false);
     interf->checkbox(FPSTR(TCONST_isClearing), myLamp.getLampSettings().isEffClearing ? "1" : "0", FPSTR(TINTF_083), false);
@@ -2354,7 +2354,7 @@ void block_streaming(Interface *interf, JsonObject *data){
         interf->range(FPSTR(TCONST_bright), (String)myLamp.getBrightness(), F("0"), F("255"), F("1"), (String)FPSTR(TINTF_00D), true);
         if (embui.param(FPSTR(TCONST_stream_type)).toInt() == E131){
             interf->range(FPSTR(TCONST_Universe), embui.param(FPSTR(TCONST_Universe)), F("1"), F("255"), F("1"), (String)FPSTR(TINTF_0E8), true);
-            interf->comment(String(F("Universes:")) + String(ceil((float)HEIGHT / (512U / (WIDTH * 3))), 0U) + String(F(";    X:")) + String(WIDTH) + String(F(";    Y:")) + String(512U / (WIDTH * 3)));
+            interf->comment(String(F("Universes:")) + String(ceil((float)mx.cfg.h() / (512U / (mx.cfg.w() * 3))), 0U) + String(F(";    X:")) + String(mx.cfg.w()) + String(F(";    Y:")) + String(512U / (mx.cfg.w() * 3)));
             interf->comment(String(F("Как настроить разметку матрицы в Jinx! можно посмотреть <a href=\"https://community.alexgyver.ru/threads/wifi-lampa-budilnik-proshivka-firelamp_jeeui-gpl.2739/page-454#post-103219\">на форуме</a>")));
         }
     interf->json_section_end();
@@ -3066,8 +3066,8 @@ void sync_parameters(){
 
     obj[FPSTR(TCONST_isFaderON)] = tmp.isFaderON ? "1" : "0";
     obj[FPSTR(TCONST_isClearing)] = tmp.isEffClearing ? "1" : "0";
-    obj[FPSTR(TCONST_MIRR_H)] = tmp.MIRR_H ? "1" : "0";
-    obj[FPSTR(TCONST_MIRR_V)] = tmp.MIRR_V ? "1" : "0";
+    obj[FPSTR(TCONST_MIRR_H)] = mx.cfg.hmirror() ? "1" : "0";
+    obj[FPSTR(TCONST_MIRR_V)] = mx.cfg.vmirror() ? "1" : "0";
     obj[FPSTR(TCONST_DRand)] = tmp.dRand ? "1" : "0";
     obj[FPSTR(TCONST_showName)] = tmp.showName ? "1" : "0";
     obj[FPSTR(TCONST_isShowSysMenu)] = tmp.isShowSysMenu ? "1" : "0";
@@ -3512,7 +3512,7 @@ void remote_action(RA action, ...){
             deserializeJson(doc,str);
             JsonArray arr = doc.as<JsonArray>();
             CRGB col=CRGB::White;
-            uint16_t x=WIDTH/2U, y=HEIGHT/2U;
+            uint16_t x=mx.cfg.w()/2U, y=mx.cfg.h()/2U;
 
             for (size_t i = 0; i < arr.size(); i++) {
                 switch(i){
@@ -3735,7 +3735,7 @@ String httpCallback(const String &param, const String &value, bool isset){
         else if (upperParam == FPSTR(CMD_MOVE_RND)) { action = RA_EFF_RAND;  remote_action(action, value.c_str(), NULL); }
         else if (upperParam == FPSTR(CMD_REBOOT)) { action = RA_REBOOT;  remote_action(action, value.c_str(), NULL); }
         else if (upperParam == FPSTR(CMD_ALARM)) { result = myLamp.isAlarm() ? "1" : "0"; }
-        else if (upperParam == FPSTR(CMD_MATRIX)) { char buf[32]; sprintf_P(buf, PSTR("[%d,%d]"), WIDTH, HEIGHT);  result = buf; }
+        else if (upperParam == FPSTR(CMD_MATRIX)) { char buf[32]; sprintf_P(buf, PSTR("[%d,%d]"), mx.cfg.w(), mx.cfg.h());  result = buf; }
 #ifdef EMBUI_USE_MQTT        
         embui.publish(String(FPSTR(TCONST_embui_pub_)) + upperParam, result, true);
 #endif

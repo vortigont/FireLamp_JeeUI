@@ -107,8 +107,8 @@ typedef enum _SCHEDULER {
 typedef union _LAMPFLAGS {
 struct {
     // ВНИМАНИЕ: порядок следования не менять, флаги не исключать, переводить в reserved!!! используется как битовый массив в конфиге!
-    bool MIRR_V:1; // отзрекаливание по V
-    bool MIRR_H:1; // отзрекаливание по H
+    bool reserved0:1;
+    bool reserved1:1;
     bool isDraw:1; // режим рисования
     bool ONflag:1; // флаг включения/выключения
     bool isFaderON:1; // признак того, что фейдер используется для эффектов
@@ -145,8 +145,8 @@ struct {
 };
 uint64_t lampflags; // набор битов для конфига
 _LAMPFLAGS(){
-    MIRR_V = false; // отзрекаливание по V
-    MIRR_H = false; // отзрекаливание по H
+    reserved0 = false;
+    reserved1 = false;
     ONflag = false; // флаг включения/выключения
     isDebug = false; // флаг отладки
     isFaderON = true; // признак того, что используется фейдер для смены эффектов
@@ -411,8 +411,8 @@ public:
     void setONMP3(bool flag) {flags.isOnMP3=flag;}
     bool isShowSysMenu() {return flags.isShowSysMenu;}
     void setIsShowSysMenu(bool flag) {flags.isShowSysMenu=flag;}
-    void setMIRR_V(bool flag) {if (flag!=flags.MIRR_V) { flags.MIRR_V = flag; mx.cfg.vmirror(flag); mx.clear();}}
-    void setMIRR_H(bool flag) {if (flag!=flags.MIRR_H) { flags.MIRR_H = flag; mx.cfg.hmirror(flag); mx.clear();}}
+    void setMIRR_V(bool flag) {if (flag!=mx.cfg.vmirror()) { mx.cfg.vmirror(flag); mx.clear();} }
+    void setMIRR_H(bool flag) {if (flag!=mx.cfg.hmirror()) { mx.cfg.hmirror(flag); mx.clear();} }
     void setTextMovingSpeed(uint8_t val) {tmStringStepTime.setInterval(val);}
     uint32_t getTextMovingSpeed() {return tmStringStepTime.getInterval();}
     void setTextOffset(uint8_t val) { txtOffset=val;}

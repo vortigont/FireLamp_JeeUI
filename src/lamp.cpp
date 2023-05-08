@@ -176,16 +176,16 @@ void LAMP::effectsTick(){
   if (effects.worker && (flags.ONflag || LEDFader::getInstance()->running()) && !isAlarm() && !isRGB()) {
     if(!lampState.isEffectsDisabledUntilText){  // если не выводится текст
       // if  there is a sledsbuff defined, than swap content with current mx buff, 'cause effects runner expect it to be intact from the last run
-      if (sledsbuff) {
-        mx.swap(std::move(*sledsbuff);)
-      }
+      if (sledsbuff)
+        mx.swap(std::move(*sledsbuff));
+
       // посчитать текущий эффект (сохранить кадр в sledsbuff буфер, если был обсчет и до этого не было создано sleds буфера
       // ппц... копия будет создаваться ВСЕГДА, даже если оверлей не нужен Ж()
       if(effects.worker->run()) {
         if(!sledsbuff)
           sledsbuff = new LedFB(mx);    // create buffer clone
         else
-          sledsbuff = mx;               // copy mx buffer
+          *sledsbuff = mx;               // copy mx buffer
 
       }
     }
@@ -247,7 +247,7 @@ void LAMP::effectsTick(){
  * и перезапуск эффект-процессора
  */
 void LAMP::frameShow(const uint32_t ticktime){
-  if ( !LEDFader::getInstance()->runner() && !isLampOn() && !isAlarm() ) return;
+  if ( !LEDFader::getInstance()->running() && !isLampOn() && !isAlarm() ) return;
 
   FastLED.show();
 
@@ -400,15 +400,15 @@ typedef enum {FIRSTSYMB=1,LASTSYMB=2} SYMBPOS;
 
 bool LAMP::fillStringManual(const char* text,  const CRGB &letterColor, bool stopText, bool isInverse, int32_t pos, int8_t letSpace, int8_t txtOffset, int8_t letWidth, int8_t letHeight)
 {
-  static int32_t offset = (flags.MIRR_V ? 0 : WIDTH);
+  static int32_t offset = mx.cfg.vmirror() ? 0 : mx.cfg.w();
   uint8_t bcount = 0;
 
   if(pos)
-    offset = (flags.MIRR_V ? 0 + pos : WIDTH - pos);
+    offset = (mx.cfg.vmirror() ? 0 + pos : mx.cfg.w() - pos);
 
   if (!text || !strlen(text))
   {
-    offset = (flags.MIRR_V ? 0 : WIDTH);
+    offset = (mx.cfg.vmirror() ? 0 : mx.cfg.w());
     return true;
   }
 
@@ -425,7 +425,7 @@ bool LAMP::fillStringManual(const char* text,  const CRGB &letterColor, bool sto
     }
     else
     {
-      if(!flags.MIRR_V)
+      if(!mx.cfg.vmirror())
         drawLetter(bcount, text[i], offset + (int16_t)j * (letWidth + letSpace), letterColor, letSpace, txtOffset, isInverse, letWidth, letHeight, flSymb);
       else
         drawLetter(bcount, text[i], offset - (int16_t)j * (letWidth + letSpace), letterColor, letSpace, txtOffset, isInverse, letWidth, letHeight, flSymb);
@@ -437,15 +437,15 @@ bool LAMP::fillStringManual(const char* text,  const CRGB &letterColor, bool sto
   }
 
   if(!stopText)
-    (flags.MIRR_V ? offset++ : offset--);
-  if ((!flags.MIRR_V && offset < (int32_t)(-j * (letWidth + letSpace))) || (flags.MIRR_V && offset > (int32_t)(j * (letWidth + letSpace))+(signed)WIDTH))       // строка убежала
+    (mx.cfg.vmirror() ? offset++ : offset--);
+  if ((!mx.cfg.vmirror() && offset < (int32_t)(-j * (letWidth + letSpace))) || (mx.cfg.vmirror() && offset > (int32_t)(j * (letWidth + letSpace))+(signed)mx.cfg.w()))       // строка убежала
   {
-    offset = (flags.MIRR_V ? 0 : WIDTH);
+    offset = (mx.cfg.vmirror() ? 0 : mx.cfg.w());
     return true;
   }
   if(pos) // если задана позиция, то считаем что уже отобразили
   {
-    offset = (flags.MIRR_V ? 0 : WIDTH);
+    offset = (mx.cfg.vmirror() ? 0 : mx.cfg.w());
     return true;
   }
 
@@ -456,7 +456,7 @@ void LAMP::drawLetter(uint8_t bcount, uint16_t letter, int16_t offset,  const CR
 {
   int16_t start_pos = 0, finish_pos = letWidth + letSpace;
 
-  if (offset < (int16_t)-letWidth || offset > (int16_t)WIDTH)
+  if (offset < (int16_t)-letWidth || offset > (int16_t)mx.cfg.w())
   {
     return;
   }
@@ -464,9 +464,9 @@ void LAMP::drawLetter(uint8_t bcount, uint16_t letter, int16_t offset,  const CR
   {
     start_pos = (uint16_t)-offset;
   }
-  if (offset > (int16_t)(WIDTH - letWidth))
+  if (offset > (int16_t)(mx.cfg.w() - letWidth))
   {
-    finish_pos = (uint16_t)(WIDTH - offset);
+    finish_pos = (uint16_t)(mx.cfg.w() - offset);
   }
 
   if(flSymb){
@@ -496,7 +496,7 @@ void LAMP::drawLetter(uint8_t bcount, uint16_t letter, int16_t offset,  const CR
       bool thisBit = thisByte & (1 << (letHeight - 1 - j));
 
       // рисуем столбец (i - горизонтальная позиция, j - вертикальная)
-      if (offset + i >= 0 && offset + i < (int)WIDTH && txtOffset + j >= 0 && txtOffset + j < (int)HEIGHT) {
+      if (offset + i >= 0 && offset + i < (int)mx.cfg.w() && txtOffset + j >= 0 && txtOffset + j < (int)mx.cfg.h()) {
         if (thisBit) {
           if(!isInverse)
             mx.pixel(offset + i, txtOffset + j) = letterColor;
@@ -1168,7 +1168,7 @@ void LAMP::warningHelper(){
     String msg = warningTask->getData();
 
     uint16_t cnt = warningTask->getWarn_duration()/(warningTask->getWarn_blinkHalfPeriod()*2);
-    uint8_t xPos = (WIDTH+LET_WIDTH*(cnt>99?3:cnt>9?2:1))/2;    
+    uint8_t xPos = (mx.cfg.w()+LET_WIDTH*(cnt>99?3:cnt>9?2:1))/2;    
     switch(lampState.warnType){
       case 0: mx.fill(warningTask->getWarn_color());
         break;
