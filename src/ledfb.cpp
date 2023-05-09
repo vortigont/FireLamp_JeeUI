@@ -140,7 +140,7 @@ LedFB::~LedFB(){
     }
 }
 
-size_t LedFB::transpose(uint16_t x, uint16_t y) const {
+size_t LedFB::transpose(unsigned x, unsigned y) const {
 #if defined(XY_EXTERN)
     return pgm_read_dword(&XYTable[y * cfg._w + x]);
 #elif defined(MATRIXx4)
@@ -159,6 +159,10 @@ size_t LedFB::transpose(uint16_t x, uint16_t y) const {
 }
 
 CRGB& LedFB::at(size_t i){ return i < fb.size() ? fb.at(i) : blackhole; };
+
+CRGB& LedFB::at(unsigned x, unsigned y){
+    return ( x >= cfg.w() || y >= cfg.h() ) ? blackhole : at(transpose(x,y));
+};
 
 void LedFB::fill(const CRGB &color){ fb.assign(fb.size(), color); };
 

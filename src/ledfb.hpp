@@ -147,15 +147,7 @@ public:
      * @param y 
      * @return size_t 
      */
-    size_t transpose(uint16_t x, uint16_t y) const;
-
-    /**
-     * @brief access pixel at coordinates x:y
-     * if oob coordinates supplied returns blackhole element
-     * @param x coordinate starting from top left corner
-     * @param y coordinate starting from top left corner
-     */
-    CRGB& pixel(uint16_t x, uint16_t y){ return at(transpose(x,y)); };
+    size_t transpose(unsigned x, unsigned y) const;
 
     /**
      * @brief access CRGB pixel at specified position
@@ -164,6 +156,17 @@ public:
      * @return CRGB& 
      */
     CRGB& at(size_t i);
+
+    /**
+     * @brief access pixel at coordinates x:y
+     * if oob coordinates supplied returns blackhole element
+     * @param x coordinate starting from top left corner
+     * @param y coordinate starting from top left corner
+     */
+    CRGB& at(unsigned x, unsigned y);
+
+    // access pixel at coordinates x:y
+    CRGB& pixel(unsigned x, unsigned y){ return at(x,y); };
 
     /**
      * @brief access CRGB pixel at specified position
