@@ -6914,7 +6914,7 @@ EffectMaze::EffectMaze(LedFB &framebuffer) : EffectCalc(framebuffer),
   _mheight(fb.cfg.h()%2 ? fb.cfg.h() : fb.cfg.h()-1),
   maxSolves(_mwidth*_mheight*5),
   maze(std::vector<uint8_t>(_mwidth*_mheight))
-  {};
+  { fb.clear(); };
 
 void EffectMaze::newGameMaze() {
   playerPos[0] = !MAZE_SHIFT;
