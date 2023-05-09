@@ -1592,12 +1592,11 @@ class EffectBengalL : public EffectCalc {
     byte period = 10;
     byte _x = fb.cfg.w()/2;
     byte _y = fb.cfg.h()/2;
-    float speedFactor;
     std::vector<Spark> sparks{ std::vector<Spark>(minSparks) };
 
     void regen(Spark &s);
     void physics(Spark &s);
-    String setDynCtrl(UIControl*_val) override;
+    //String setDynCtrl(UIControl*_val) override;
 
 
 public:

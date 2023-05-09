@@ -6747,7 +6747,7 @@ void EffectBengalL::load() {
 
 //!++
 String EffectBengalL::setDynCtrl(UIControl*_val){
-  if(_val->getId()==1) speedFactor = EffectMath::fmap(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 0.1, 1) * EffectCalc::speedfactor;
+  if(_val->getId()==1) speedfactor = EffectMath::fmap(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 0.1, 1);
   else if(_val->getId()==2) {   // Scale
     EffectCalc::setDynCtrl(_val);   // маразм
     sparks.assign( map(scale, 1, 255, minSparks, maxSparks), Spark() );
@@ -6760,16 +6760,16 @@ String EffectBengalL::setDynCtrl(UIControl*_val){
 }
 
 void EffectBengalL::physics(Spark &s) {
-  s.posx += s.speedx * speedFactor;
-  s.posy += s.speedy * speedFactor;
-  s.speedy -= .98 * speedFactor;
-  s.sat += (255. / (float)fb.cfg.w()) * speedFactor;            // остывание искор
-  s.fade -= (255. / (float)(fb.cfg.h()*1.5)) * speedFactor;     // угасание искор
+  s.posx += s.speedx * speedfactor;
+  s.posy += s.speedy * speedfactor;
+  s.speedy -= .98 * speedfactor;
+  s.sat += (255. / (float)fb.cfg.w()) * speedfactor;            // остывание искор
+  s.fade -= (255. / (float)(fb.cfg.h()*1.5)) * speedfactor;     // угасание искор
   if (s.speedx > 0)
-    s.speedx -= 0.1 * speedFactor;
+    s.speedx -= 0.1 * speedfactor;
   else
-    s.speedx += 0.1 * speedFactor;
-  if (s.posx <= 0 || s.posx >= fb.cfg.w() * 10 || s.posy < 0) {
+    s.speedx += 0.1 * speedfactor;
+  if (s.posx <= 0 || s.posx > fb.cfg.w() * 10 || s.posy < 0) {
     regen(s);
   }
 }
@@ -6797,7 +6797,7 @@ bool EffectBengalL::run() {
     physics(s);
     if (s.posy < (fb.cfg.maxHeightIndex() * 10) and s.posy >= 0)
       if (s.posx < (fb.cfg.maxWidthIndex() * 10) and s.posx >= 0)
-        EffectMath::drawPixelXYF(s.posx / 10,  s.posx / 10, CHSV(s.color, constrain(s.sat, 5, 255), constrain(s.fade, 32, 255)), fb);
+        EffectMath::drawPixelXYF(s.posx / 10,  s.posy / 10, CHSV(s.color, constrain(s.sat, 5, 255), constrain(s.fade, 32, 255)), fb);
   }
 
   EVERY_N_SECONDS(period) {
