@@ -107,7 +107,7 @@ bool EffectSparcles::sparklesRoutine()
   }
 
 #endif
-    if (fb.pixel(x, y)) {
+    if (!fb.pixel(x, y)) {
 #ifdef MIC_EFFECTS
       if (isMicOn()) {
         currentHSV = CHSV(mic_f, 255U - getMicMapMaxPeak()/3, constrain(mic * 1.25f, 48, 255));
