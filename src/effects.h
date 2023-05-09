@@ -2098,32 +2098,27 @@ public:
     bool run() override;
 };
 
-// ----------- Эффект "Неопалимая купина"
-//RadialFire
-// (c) Stepko and Sutaburosu https://editor.soulmatelights.com/gallery/1570-radialfire
-//23/12/21
 class EffectRadialFire : public EffectCalc {
 private:
     const int8_t maximum = fb.cfg.maxDim();
     const int8_t centre = fb.cfg.maxDim() / 2;
     const uint8_t X = fb.cfg.w() > fb.cfg.h() ? 0: (fb.cfg.w() - fb.cfg.h()) /2; 
     const uint8_t Y = fb.cfg.w() < fb.cfg.h() ? 0: (fb.cfg.h() - fb.cfg.w()) /2;
-    std::vector<std::vector<float>> XY_angle = std::vector<std::vector<float>>(fb.cfg.maxDim(), std::vector<float>(fb.cfg.maxDim(), 0));
-    std::vector<std::vector<float>> XY_radius = std::vector<std::vector<float>>(fb.cfg.maxDim(), std::vector<float>(fb.cfg.maxDim(), 0));
-    float t;
-    float speedFactor;
+    Vector2D<float> xy_angle{ Vector2D<float>(maximum, maximum) };
+    Vector2D<float> xy_radius{ Vector2D<float>(maximum, maximum) };
+    float t{0};
     uint8_t _scale;
     bool mode = false;
 
-
     String setDynCtrl(UIControl*_val) override;
-    void palettesload();
+    void palettesload() override;
 
 public:
-    EffectRadialFire(LedFB &framebuffer) : EffectCalc(framebuffer){}
+    EffectRadialFire(LedFB &framebuffer) : EffectCalc(framebuffer), {}
     void load() override;
     bool run() override;
 };
+
 
 class EffectSplashBals : public EffectCalc {
 private:

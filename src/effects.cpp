@@ -8621,14 +8621,14 @@ String EffectRadialFire::setDynCtrl(UIControl*_val){
 }
 
 void EffectRadialFire::load() {
-  for (int8_t x = -centre; x < centre + (int8_t)(fb.cfg.w() % 2); x++) {
-    for (int8_t y = -centre; y < centre + (int8_t)(fb.cfg.h() % 2); y++) {
-      XY_angle[x + centre][y + centre] = atan2(y, x) * (180. / 2. / PI) * maximum;
-      XY_radius[x + centre][y + centre] = hypotf(x, y); // thanks Sutaburosu
+  for (int x = -centre; x < centre + (fb.cfg.w() % 2); x++) {
+    for (int y = -centre; y < centre + (fb.cfg.h() % 2); y++) {
+      xy_angle.at(x + centre, y + centre) = atan2(y, x) * (180. / 2. / PI) * maximum;
+      xy_radius.at(x + centre, y + centre) = hypotf(x, y); // thanks Sutaburosu
     }
   }
   palettesload();
-
+  speedfactor = 10;   // it works pretty slow with lower values
 }
 
 void EffectRadialFire::palettesload(){
@@ -8652,16 +8652,15 @@ void EffectRadialFire::palettesload(){
 }
 
 bool EffectRadialFire::run() {
-  t += speedFactor;
+  t += speedfactor;
   for (uint8_t x = 0; x < maximum; x++) {
     for (uint8_t y = 0; y < maximum; y++) {
-      float angle = XY_angle[x][y];
-      uint16_t radius = mode ? maximum - 3 - XY_radius[x][y] : XY_radius[x][y];
-      int16_t Bri = inoise8(angle, radius * _scale - t, x * _scale) - radius * (256 /maximum);
-      byte Col = Bri;
-      if (Bri < 0) Bri = 0; 
-      if(Bri != 0) Bri = 256 - (Bri * 0.2);
-        nblend(fb.pixel(x+X, y+Y), ColorFromPalette(*curPalette, Col, Bri), speed);
+      uint16_t radius = mode ? maximum - 3 - xy_radius.at(x,y) : xy_radius.at(x,y);
+      int16_t bri = inoise8(xy_angle.at(x,y), radius * _scale - t, x * _scale) - radius * (256 /maximum);
+      byte col = bri;
+      if (bri < 0) bri = 0; 
+      if(bri) bri = 256 - (bri * 0.2);
+        nblend(fb.pixel(x+X, y+Y), ColorFromPalette(*curPalette, col, bri), speed);
     }
   }
   return true;
