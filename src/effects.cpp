@@ -1383,10 +1383,8 @@ bool EffectSpiro::run() {
 // базис (c) Stefan Petrick
 void EffectComet::drawFillRect2_fast(int8_t x1, int8_t y1, int8_t x2, int8_t y2, CRGB color)
 {
-  for (int8_t xP = x1; xP <= x2; xP++)
-  {
-    for (int8_t yP = y1; yP <= y2; yP++)
-    {
+  for (int8_t xP = x1; xP <= x2; xP++){
+    for (int8_t yP = y1; yP <= y2; yP++){
       fb.pixel(xP, yP) += color;
     }
   }
@@ -1399,7 +1397,7 @@ void EffectComet::moveFractionalNoise(bool direction, int8_t amplitude, float sh
 
   for (auto &i : noise3d.map)
     for (uint16_t a = 0; a < _side_a; a++) {
-      uint8_t _pixel = direction ? i.at(noise3d.lxy(0,a,0)) : i.at(noise3d.lxy(0,0,a));
+      uint8_t _pixel = direction ? i.at(a,0) : i.at(0,a);
       int16_t amount = ((int16_t)(_pixel - 128) * 2 * amplitude + shift * 256);
       int8_t delta = ((uint16_t)fabs(amount) >> 8) ;
       int8_t fraction = ((uint16_t)fabs(amount) & 255);

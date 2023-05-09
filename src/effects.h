@@ -494,7 +494,7 @@ class EffectComet : public EffectCalc {
     String setDynCtrl(UIControl*_val) override;
 
 public:
-    EffectComet(LedFB &framebuffer) :  EffectCalc(framebuffer), noise3d(COMET_NOISE_LAYERS, framebuffer.cfg.w(), framebuffer.cfg.w()) {}
+    EffectComet(LedFB &framebuffer) :  EffectCalc(framebuffer), noise3d(COMET_NOISE_LAYERS, framebuffer.cfg.w(), framebuffer.cfg.h()) {}
     void load() override;
     bool run() override;
 };
