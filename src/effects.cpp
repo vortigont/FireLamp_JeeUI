@@ -6668,7 +6668,6 @@ String EffectFairy::setDynCtrl(UIControl*_val){
 // ---------- Эффект "Бульбулятор"
 // "Circles" (C) Elliott Kember https://editor.soulmatelights.com/gallery/11
 // адаптация и переделка - kostyamat
-
 //!++
 String EffectCircles::setDynCtrl(UIControl*_val){
   if(_val->getId()==1) speedFactor = EffectMath::fmap(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 0.5, 5) * EffectCalc::speedfactor;
@@ -8613,7 +8612,7 @@ double EffectWcolor::Blot::getY() {
 String EffectRadialFire::setDynCtrl(UIControl*_val){
   if(_val->getId()==1) {
     speed = EffectCalc::setDynCtrl(_val).toInt();
-    speedFactor = EffectMath::fmap(speed, 1, 255, 2., 20.);
+    speedfactor = EffectMath::fmap(speed, 1, 255, 2., 20.);
   } else if(_val->getId()==3) {_scale = EffectCalc::setDynCtrl(_val).toInt();
   } else if(_val->getId()==5) mode = EffectCalc::setDynCtrl(_val).toInt();
   else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)

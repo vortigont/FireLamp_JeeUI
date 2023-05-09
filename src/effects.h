@@ -1538,15 +1538,15 @@ private:
     struct Circle {
         int16_t centerX, centerY;
         byte hue;
-        float bpm = random(0, 255);
+        float bpm;
 
         float radius() {
-            return EffectMath::fmap(triwave8(bpm), 0, 254, 0, 5); //beatsin16(bpm, 0, 500, 0, offset) / 100.0;
+            return EffectMath::fmap(triwave8(bpm), 0, 254, 0, 6); //beatsin16(bpm, 0, 500, 0, offset) / 100.0;
         }
     };
 
     byte color;
-    float speedFactor;
+    float speedFactor{1};
     byte _video = 255;
     byte gain;
     std::vector<Circle> circles{ std::vector<Circle>(CIRCLES_MIN) };
@@ -1554,6 +1554,7 @@ private:
     void move(Circle &c) {
         c.centerX = random(0, fb.cfg.maxWidthIndex());
         c.centerY = random(0, fb.cfg.maxHeightIndex());
+        c.bpm = random(0, 255);
     }
     
     void reset(Circle &c) {
@@ -1569,7 +1570,7 @@ public:
     void load() override;
     bool run() override;
 
-}; 
+};
 
 // ----------- Эффект "Бенгальские Огни"
 // (c) stepko https://wokwi.com/arduino/projects/289797125785520649
@@ -2114,7 +2115,7 @@ private:
     void palettesload() override;
 
 public:
-    EffectRadialFire(LedFB &framebuffer) : EffectCalc(framebuffer), {}
+    EffectRadialFire(LedFB &framebuffer) : EffectCalc(framebuffer) {}
     void load() override;
     bool run() override;
 };
