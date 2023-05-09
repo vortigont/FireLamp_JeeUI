@@ -841,22 +841,25 @@ public:
 #define STARS_NUM (5)
 class EffectStar : public EffectCalc {
 private:
-    float driftx;
-    float drifty;
-    float cangle;
-    float sangle;
+
+    struct Star{
+        uint8_t color;                        // цвет звезды
+        uint8_t points;                     // количество углов в звезде
+        unsigned cntdelay;                  // задержка пуска звезды относительно счётчика
+    };
+
+    float driftx, drifty;
+    float cangle, sangle;
     float radius2;
-    uint8_t stars_count;
-    float color[STARS_NUM] ;                        // цвет звезды
-    uint8_t points[STARS_NUM] ;                       // количество углов в звезде
-    unsigned int cntdelay[STARS_NUM] ;                   // задержка пуска звезды относительно счётчика
-    float counter = 0;                                // счетчик для реализации смещений, наростания и т.д.
+    float counter = 0;                                // счетчик для реализации смещений, нарастания и т.д.
 	float _speedFactor{1};
 	float _speed;
     bool setup = true;
     uint8_t micPick = 0;
     const uint8_t spirocenterX = fb.cfg.w() / 2;
     const uint8_t spirocenterY = fb.cfg.h() / 2;
+    std::vector<Star> stars{std::vector<Star>(STARS_NUM)};
+
     void drawStar(float xlocl, float ylocl, float biggy, float little, int16_t points, float dangle, uint8_t koler);
 	String setDynCtrl(UIControl*_val) override;
 
@@ -1596,7 +1599,7 @@ class EffectBengalL : public EffectCalc {
 
     void regen(Spark &s);
     void physics(Spark &s);
-    //String setDynCtrl(UIControl*_val) override;
+    String setDynCtrl(UIControl*_val) override;
 
 
 public:
