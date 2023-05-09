@@ -5000,30 +5000,37 @@ String EffectAttract::setDynCtrl(UIControl*_val) {
 void EffectAttract::setup(){
   int cnt = 0;
   for (auto &i : boids){
-    int direction = 1-2*random(0, 2); // -1 или 1
-    Boid boid(15, 16 - cnt);
-    boid.mass = (float)random(1, map(_mass, 1, 255, 128, 1024)) / 100.0f * speedFactor; //(1.0/speed);
-    boid.velocity.x = (float)random(5, map(_energy, 1, 255, 16, 768)) / 500.0f; // * speedFactor; //(1.0/speed);
-    boid.velocity.x *= direction;
-    boid.velocity.y = 0;
-    boid.colorIndex = cnt * 32;
-    i = boid;
+    i = Boid(15, 16 - cnt);
+    i.mass = (float)random(1, map(_mass, 1, 255, 128, 1024)) / 100.0f * speedFactor; //(1.0/speed);
+    i.velocity.x = (float)random(5, map(_energy, 1, 255, 16, 768)) / 500.0f; // * speedFactor; //(1.0/speed);
+    i.velocity.x *= 1-2*random(0, 2); // -1 или 1
+    i.velocity.y = 0;
+    i.colorIndex = cnt++ * 32;
   }
 }
 
 bool EffectAttract::run() {
-  uint8_t dim = beatsin8(3, 170, 250);
-  fb.fade(255U - dim);
+  fb.fade(255U - beatsin8(3, 170, 250));
 
   for (auto &boid : boids){
     //boid.acceleration *= speedFactor/10;
-    PVector force = attract(boid);
+    PVector force(attract(boid));
     boid.applyForce(force);
 
     boid.update();
     EffectMath::drawPixelXYF(boid.location.x, boid.location.y, ColorFromPalette(*curPalette, boid.colorIndex), fb);
   }
   return true;
+}
+
+PVector EffectAttract::attract(Boid &m) {
+    PVector force = location - m.location;   // Calculate direction of force
+    float d = force.mag();                              // Distance between objects
+    d = constrain(d, 5.0f, 32.0f);                        // Limiting the distance to eliminate "extreme" results for very close or very far objects
+    force.normalize();                                  // Normalize vector (distance doesn't matter here, we just want this vector for direction)
+    float strength = (G * mass * m.mass) / (d * d);      // Calculate gravitional force magnitude
+    force *= strength;                                  // Get force vector --> magnitude * direction
+    return force;
 }
 
 //------------ Эффект "Змейки"

@@ -1175,19 +1175,10 @@ private:
     byte csum = 0;
     std::vector<Boid> boids;
     PVector location;   // Location
-    String setDynCtrl(UIControl*_val) override;
+
+    PVector attract(Boid &m);
     void setup();
-
-
-    PVector attract(Boid m) {
-        PVector force = location - m.location;   // Calculate direction of force
-        float d = force.mag();                              // Distance between objects
-        d = constrain(d, 5.0f, 32.0f);                        // Limiting the distance to eliminate "extreme" results for very close or very far objects
-        force.normalize();                                  // Normalize vector (distance doesn't matter here, we just want this vector for direction)
-        float strength = (G * mass * m.mass) / (d * d);      // Calculate gravitional force magnitude
-        force *= strength;                                  // Get force vector --> magnitude * direction
-        return force;
-    }
+    String setDynCtrl(UIControl*_val) override;
 
 public:
     EffectAttract(LedFB &framebuffer) : EffectCalc(framebuffer) {
