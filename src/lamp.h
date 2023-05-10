@@ -107,8 +107,8 @@ typedef enum _SCHEDULER {
 typedef union _LAMPFLAGS {
 struct {
     // ВНИМАНИЕ: порядок следования не менять, флаги не исключать, переводить в reserved!!! используется как битовый массив в конфиге!
-    bool MIRR_V:1; // отзрекаливание по V
-    bool MIRR_H:1; // отзрекаливание по H
+    bool reserved0:1;
+    bool reserved1:1;
     bool isDraw:1; // режим рисования
     bool ONflag:1; // флаг включения/выключения
     bool isFaderON:1; // признак того, что фейдер используется для эффектов
@@ -145,8 +145,8 @@ struct {
 };
 uint64_t lampflags; // набор битов для конфига
 _LAMPFLAGS(){
-    MIRR_V = false; // отзрекаливание по V
-    MIRR_H = false; // отзрекаливание по H
+    reserved0 = false;
+    reserved1 = false;
     ONflag = false; // флаг включения/выключения
     isDebug = false; // флаг отладки
     isFaderON = true; // признак того, что используется фейдер для смены эффектов
@@ -184,8 +184,11 @@ class LAMP {
     friend class LEDFader;
 private:
     LedFB &mx;              // LED matrix framebuffer object
-    CRGB *sledsbuff=nullptr;    // вспомогательный буфер для слоя после эффектов
-    CRGB *drawbuff=nullptr;     // буфер для рисования
+    LedFB *sledsbuff = nullptr;    // вспомогательный буфер для слоя после эффектов
+    LedFB *drawbuff = nullptr;     // буфер для рисования
+#if defined(USE_STREAMING) && defined(EXT_STREAM_BUFFER)
+    std::vector<CRGB> streambuff; // буфер для трансляции
+#endif
 
     LAMPFLAGS flags;
     LAMPSTATE lampState;        // текущее состояние лампы, которое передается эффектам
@@ -248,10 +251,6 @@ private:
 
 #ifdef MP3PLAYER
     void playEffect(bool isPlayName = false, EFFSWITCH action = EFFSWITCH::SW_NEXT);
-#endif
-
-#if defined(USE_STREAMING) && defined(EXT_STREAM_BUFFER)
-    std::vector<CRGB> streambuff; // буфер для трансляции
 #endif
 
     LAMP(const LAMP&);  // noncopyable
@@ -365,9 +364,15 @@ public:
     void setDebug(bool flag) {flags.isDebug=flag; lampState.isDebug=flag;}
     void setButton(bool flag) {flags.isBtn=flag;}
     void setDraw(bool flag);
-    void setDrawBuff(bool flag);
-    void writeDrawBuf(CRGB &color, uint16_t x, uint16_t y) { if(drawbuff) { drawbuff[getPixelNumber(x,y)]=color; } }
-    void writeDrawBuf(CRGB &color, uint16_t num) { if(drawbuff) { drawbuff[num]=color; } }
+
+    /**
+     * @brief creates/destroys buffer for "drawing"
+     * 
+     * @param active - if 'true' creates new buffer, otherwise destory/release buffer mem
+     */
+    void setDrawBuff(bool active);
+    void writeDrawBuf(CRGB &color, uint16_t x, uint16_t y) { if(drawbuff) { drawbuff->pixel(x,y) = color; } }
+    void writeDrawBuf(CRGB &color, uint16_t num) { if(drawbuff) { drawbuff->at(num)=color; } }
 
     /**
      * @brief fill DrawBuffer with solid color
@@ -390,7 +395,12 @@ public:
     void setDirect(bool flag) {flags.isDirect = flag;}
     void setMapping(bool flag) {flags.isMapping = flag;}
 #ifdef EXT_STREAM_BUFFER
-    void setStreamBuff(bool flag);
+    /**
+     * @brief creates/destroys buffer for "streaming"
+     * 
+     * @param active - if 'true' creates new buffer, otherwise destory/release buffer mem
+     */
+    void setStreamBuff(bool active);
     void writeStreamBuff(CRGB &color, uint16_t x, uint16_t y) { if(!streambuff.empty()) { streambuff[getPixelNumber(x,y)]=color; } }
     void writeStreamBuff(CRGB &color, uint16_t num) { if(!streambuff.empty()) { streambuff[num]=color; } }
     void fillStreamBuff(CRGB &color) { for(uint16_t i=0; i<streambuff.size(); i++) streambuff[i]=color; }
@@ -401,8 +411,8 @@ public:
     void setONMP3(bool flag) {flags.isOnMP3=flag;}
     bool isShowSysMenu() {return flags.isShowSysMenu;}
     void setIsShowSysMenu(bool flag) {flags.isShowSysMenu=flag;}
-    void setMIRR_V(bool flag) {if (flag!=flags.MIRR_V) { flags.MIRR_V = flag; mx.cfg.vmirror(flag); mx.clear();}}
-    void setMIRR_H(bool flag) {if (flag!=flags.MIRR_H) { flags.MIRR_H = flag; mx.cfg.hmirror(flag); mx.clear();}}
+    void setMIRR_V(bool flag) {if (flag!=mx.cfg.vmirror()) { mx.cfg.vmirror(flag); mx.clear();} }
+    void setMIRR_H(bool flag) {if (flag!=mx.cfg.hmirror()) { mx.cfg.hmirror(flag); mx.clear();} }
     void setTextMovingSpeed(uint8_t val) {tmStringStepTime.setInterval(val);}
     uint32_t getTextMovingSpeed() {return tmStringStepTime.getInterval();}
     void setTextOffset(uint8_t val) { txtOffset=val;}
@@ -531,6 +541,14 @@ public:
      * @param callback  -  callback-функция, которая будет выполнена после окончания затухания
      */
     void fadelight(const uint8_t _targetbrightness=0, const uint32_t _duration=FADE_TIME, std::function<void()> callback=nullptr);
+
+    /**
+     * @brief check if fade is in progress
+     * 
+     * @return true 
+     * @return false 
+     */
+    bool running() const { return runner; }
 };
 
 //-----------------------------------------------
@@ -726,8 +744,10 @@ public:
         }
         //}
 
-        for (uint16_t i = 0U; i < num_leds; i++) {
-            getUnsafeLedsArray()[i] = ALARMTASK::getInstance()->dawnColorMinus[i%(sizeof(dawnColorMinus)/sizeof(CHSV))];
+        int cnt{0};
+        for (auto i = mx.begin(); i != mx.end(); ++i) {
+            *i = ALARMTASK::getInstance()->dawnColorMinus[cnt%(sizeof(dawnColorMinus)/sizeof(CHSV))];
+            ++cnt;
         }
 
     }

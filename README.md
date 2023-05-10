@@ -1,14 +1,19 @@
-__[![PlatformIO CI](https://github.com/vortigont/FireLamp_JeeUI/actions/workflows/pio_build.yml/badge.svg)](https://github.com/vortigont/FireLamp_JeeUI/actions/workflows/pio_build.yml)
+__[CHANGELOG](/CHANGELOG.md)__ | [![PlatformIO CI](https://github.com/vortigont/FireLamp_JeeUI/actions/workflows/pio_build.yml/badge.svg)](https://github.com/vortigont/FireLamp_JeeUI/actions/workflows/pio_build.yml)
 
-## Что это
+## Огненная лампа FireLamp_EmbUI
 Это деполитизированный форк проекта "огненной" лампы [FireLamp_EmbUI](https://github.com/DmytroKorniienko/FireLamp_EmbUI).
+
+<details>
+  <summary>Project Manifest</summary>
+Проект был пересобран из старых форков и архивов репозитория пользователей и участников разработки на момент примерно 2021 года. В [исходном](https://github.com/DmytroKorniienko/FireLamp_EmbUI) проекте был полностью вырезан русский язык, задним числом переписана история разработки в Git и удалена соотвествующая тема [форума](https://community.alexgyver.ru/threads/wifi-lampa-budilnik-obsuzhdenie-proekta.1411/). Данный форк это не срез исходного репозитория, хотя сохранил часть общей истории до определенного момента.
+</details>
 
 Обсуждение и поддержка данной прошивки идет [на форуме](https://community.alexgyver.ru/threads/wifi-lampa-budilnik-obsuzhdenie-proshivki-firelamp_embui.7257/)
 
 ![GitHub Logo](/Схема51.jpg)
 
-## ESP8266 vs ESP32
-Основная разработка ведется под контроллеры семейства esp32. ESP8266 морально устарел и поддерживается по остаточному принципу, _не рекоммендую_ использовать 8266 для изготовления новых ламп!
+### ESP8266 vs ESP32
+Основная разработка ведется под контроллеры семейства esp32. ESP8266 морально устарел и поддерживается по остаточному принципу, _категорически не рекоммендую_ использовать платы на 8266 для изготовления новых ламп!
 
 ## Как собрать проект
 
@@ -24,6 +29,9 @@ __[![PlatformIO CI](https://github.com/vortigont/FireLamp_JeeUI/actions/workflow
 ### Легкий способ:
 для пользователей Windows OS можно использовать builder скрипт. Билдер был изначально написан @kostyamat (за что ему спасибо), адаптирован под форк текущей комадой (@andy040670).
 Запускаете билдер и последовательно проходите шаги установки питона, гит, платформио, клонирование репозитория и сборку требуемого варианта прошивки.
+
+### Готовые сборки
+Свежие сборки от тов. @andy040670 вместе с инструкцией по заливке с помощью esp flashdownload tool можно найти в [этом](https://community.alexgyver.ru/threads/wifi-lampa-budilnik-obsuzhdenie-proshivki-firelamp_embui.7257/post-140904) сообщении.
 
 ## Как скачать/обновлять проект
 

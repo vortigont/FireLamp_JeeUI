@@ -3,10 +3,6 @@
 AsyncWebSocket wsStream("/stream");  // TODO: переделать
 Led_Stream *ledStream = nullptr;
 
-uint16_t Led_Stream::getPixelNumE131(uint16_t x, uint16_t y) {
-  return (HEIGHT-1-y) * WIDTH + x;
-}
-
 void Led_Stream::handleE131Packet(e131_packet_t* p, const IPAddress &clientIP, bool isArtnet) {
     //E1.31 protocol support
     // if (ledStream->getBuff() == nullptr || !myLamp.isLampOn())
@@ -33,21 +29,12 @@ void Led_Stream::handleE131Packet(e131_packet_t* p, const IPAddress &clientIP, b
     }
 
     uint16_t lastUni = uni - ledStream->getUni();
-    uint16_t ledsPerUni  = WIDTH * ledStream->getLineQt();
+    uint16_t ledsPerUni  = mx.cfg.w() * ledStream->getLineQt();
 
-    // if (ledStream->getLastSeqNum())
-    //     if (seq < ledStream->getLastSeqNum()[uni - ledStream->getUni()]
-    //             && seq > 20
-    //             && ledStream->getLastSeqNum()[uni - ledStream->getUni()] < 250){
-    //         LOG(printf_P, PSTR("skipping E1.31 frame (last seq=%d, current seq=%d, universe=%d)\n"), 
-    //             ledStream->getLastSeqNum()[uni-ledStream->getUni()], seq, uni);
-    //         return;
-    //     }
-            // for (int x = WIDTH; x > 0; x--){
     ledStream->getLastSeqNum()[uni-ledStream->getUni()] = seq;
     if (lastUni == 0) {
         // first universe of this fixture
-        uint16_t count = min(ledsPerUni, NUM_LEDS);
+        uint16_t count = min(ledsPerUni, _w*_h);
         ledStream->fillLeds((CRGB*)&e131_data[ledStream->getDMXAddress()], count);
     } 
     else if (lastUni > 0 && uni < (ledStream->getUni() + ledStream->getUniCt())) {
@@ -56,7 +43,7 @@ void Led_Stream::handleE131Packet(e131_packet_t* p, const IPAddress &clientIP, b
         if (lastUni > 1) {
             lastUniLedQt += ledsPerUni * (lastUni - 1);  // extended universe(s) before current
         }
-        uint16_t remainingLeds = NUM_LEDS - lastUniLedQt;
+        uint16_t remainingLeds = _w*_h - lastUniLedQt;
         uint16_t count = min(ledsPerUni, remainingLeds);
         ledStream->fillLeds((CRGB*)&e131_data[ledStream->getDMXAddress()], count,  lastUniLedQt);
         if (uni == ledStream->getUniCt() && myLamp.isDirect())
@@ -67,8 +54,8 @@ void Led_Stream::handleE131Packet(e131_packet_t* p, const IPAddress &clientIP, b
 void Led_Stream::fillLeds(CRGB *ledsPtr, uint16_t ledsQt, uint16_t lastLed){
         uint16_t ledCount = 0;
         if (myLamp.isMapping()){
-            for (uint8_t y = HEIGHT-1 - lastLed / WIDTH; y >= HEIGHT - (ledsQt+lastLed) / WIDTH; y--){
-                for (uint8_t x = 0; x < WIDTH; x++){
+            for (uint8_t y = _h-1 - lastLed / mx.cfg.w(); y >= _h - (ledsQt+lastLed) / mx.cfg.w(); y--){
+                for (uint8_t x = 0; x < mx.cfg.w(); x++){
                     if (ledCount >= ledsQt){
                         LOG(printf_P, PSTR("Stream: E1.31 out of leds count \n"));
                         return;
@@ -105,9 +92,7 @@ void Led_Stream::handleWSPacket(AsyncWebSocket *server, AsyncWebSocketClient *cl
     if(!ledStream || ledStream->getStreamType() != SOUL_MATE) return;
 
     if(type == WS_EVT_CONNECT){
-        // #if defined(PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED) && defined(EMBUI_USE_SECHEAP)
-        //     HeapSelectIram ephemeral;
-        // #endif
+
         if ((*(AsyncWebServerRequest*)arg).hasArg(F("config")));
             ledStream->id = client->id();
         LOG(printf_P, PSTR("Stream: ws[%s][%u] connect MEM: %u\n"), server->url(), client->id(), ESP.getFreeHeap());
@@ -123,16 +108,14 @@ void Led_Stream::handleWSPacket(AsyncWebSocket *server, AsyncWebSocketClient *cl
         LOG(printf_P, PSTR("Stream: ws[%s][%u] pong[%u]: %s\n"), server->url(), client->id(), len, (len)?(char*)data:"");
     } else
     if(type == WS_EVT_DATA){
-    // #if defined(PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED) && defined(EMBUI_USE_SECHEAP)
-    //     HeapSelectIram ephemeral;
-    // #endif
+
     AwsFrameInfo *info = (AwsFrameInfo*)arg;
     bool pgkReady = false;
     if (info->len == len)
         pgkReady = true;
         static uint32_t lastLen = 0;
-        if (info->len > NUM_LEDS*3) {
-            LOG(printf_P, PSTR("Stream: ws package out of max leds size %d byte \n"), NUM_LEDS*3);
+        if (info->len > _w*_h*3) {
+            LOG(printf_P, PSTR("Stream: ws package out of max leds size %d byte \n"), _w*_h*3);
             return;
         }
         if (info->len != len){
@@ -162,7 +145,7 @@ void Led_Stream::handleWSPacket(AsyncWebSocket *server, AsyncWebSocketClient *cl
 }
 
 
-Led_Stream::Led_Stream(const STREAM_TYPE type){
+Led_Stream::Led_Stream(const STREAM_TYPE type, uint16_t width, uint16_t height)  : _w(width), _h(height) {
     LOG(printf_P, PSTR("Stream ON, type %d \n"), (uint8_t)type);
     streamType = type;
     if (type == E131) {
@@ -244,21 +227,21 @@ void Led_Stream::fillBuff() {
         if (!isConnected)
             myLamp.effectsTimer(T_DISABLE);
         if (myLamp.isMapping()){
-            for(uint8_t x = 0; x < WIDTH; x++) {
-                for (uint8_t y = 0; y < HEIGHT; y++) {
+            for(uint8_t x = 0; x < mx.cfg.w(); x++) {
+                for (uint8_t y = 0; y < _h; y++) {
                     EffectMath::getPixel(x, y) = bufLeds[getPixelNumE131(x, y)];
                 }
             }
         }
         else {
-            memcpy(getUnsafeLedsArray(), bufLeds, NUM_LEDS);
+            memcpy(getUnsafeLedsArray(), bufLeds, _w*_h);
         }
         FastLED.show();
     }
     else {
         if (myLamp.isMapping()){
-            for(uint8_t x = 0; x < WIDTH; x++) {
-                for (uint8_t y = 0; y < HEIGHT; y++) {
+            for(uint8_t x = 0; x < _w; x++) {
+                for (uint8_t y = 0; y < _h; y++) {
 #ifdef EXT_STREAM_BUFFER
                     myLamp.writeStreamBuff(bufLeds[getPixelNumE131(x, y)], x, y);
 #else
@@ -268,7 +251,7 @@ void Led_Stream::fillBuff() {
             }
         }
         else { 
-            for (uint16_t i = 0; i < NUM_LEDS; i++)
+            for (uint16_t i = 0; i < _w*_h; i++)
 #ifdef EXT_STREAM_BUFFER
                 myLamp.writeStreamBuff(bufLeds[i], i);
 #else
@@ -285,15 +268,17 @@ void Led_Stream::fillBuff(const uint8_t *col){
         if (!isConnected)
             myLamp.effectsTimer(T_DISABLE);
         if (myLamp.isMapping()) {
-            for(uint8_t x = 0; x < WIDTH; x++) {
-                for (uint8_t y = 0; y < HEIGHT; y++) {
-                    uint16_t i = EffectMath::getPixelNumberBuff((WIDTH-1) - x, y, WIDTH, HEIGHT) * 3;
-                    EffectMath::getPixel(x, y) = (CRGB&)col[i];
+            for(uint8_t x = 0; x < _w; x++) {
+                for (uint8_t y = 0; y < _h; y++) {
+                    uint16_t i = mx.transpose(_w-1-x, y) * 3;
+                    mx.pixel(x, y) = (CRGB&)col[i];
+                    //uint16_t i = EffectMath::getPixelNumberBuff((_w-1) - x, y, _w, _h) * 3;
+                    //EffectMath::getPixel(x, y) = (CRGB&)col[i];
                 }
             }
         }
         else {
-            for (size_t i = 0; i < (buffSize < NUM_LEDS*3 ? buffSize : NUM_LEDS*3); i+=3) {
+            for (size_t i = 0; i < (buffSize < _w*_h*3 ? buffSize : _w*_h*3); i+=3) {
                 leds[i/3] = (CRGB&)col[i];
             }
         }
@@ -301,9 +286,9 @@ void Led_Stream::fillBuff(const uint8_t *col){
     }
     else {
         if (myLamp.isMapping()) {
-            for(uint8_t x = 0; x < WIDTH; x++) {
-                for (uint8_t y = 0; y < HEIGHT; y++) {
-                    uint16_t i = EffectMath::getPixelNumberBuff((WIDTH-1) - x, y, WIDTH, HEIGHT) * 3;
+            for(uint8_t x = 0; x < _w; x++) {
+                for (uint8_t y = 0; y < _h; y++) {
+                    uint16_t i = EffectMath::getPixelNumberBuff((_w-1) - x, y, _w, _h) * 3;
 #ifdef EXT_STREAM_BUFFER
                     myLamp.writeStreamBuff((CRGB&)col[i], x, y);
 #else
@@ -313,7 +298,7 @@ void Led_Stream::fillBuff(const uint8_t *col){
             }
         }
         else {
-            for (size_t i = 0; i < (buffSize < NUM_LEDS*3 ? buffSize : NUM_LEDS*3); i+=3) {
+            for (size_t i = 0; i < (buffSize < _w*_h*3 ? buffSize : _w*_h*3); i+=3) {
 #ifdef EXT_STREAM_BUFFER
                 myLamp.writeStreamBuff((CRGB&)col[i], i/3);
 #else
@@ -331,8 +316,8 @@ void Led_Stream::sendConfig(uint32_t id){       // TODO: доработать
     obj[F("name")] = String(F("FireLamp-")) + String(embui.mc);
     // obj[F("version")] = FPSTR(PGversion);
     obj[F("version")] = F("2.5.0");
-    obj[F("cols")] = String(HEIGHT);
-    obj[F("rows")] = String(WIDTH);
+    obj[F("cols")] = String(_h);
+    obj[F("rows")] = String(_w);
     obj[F("ledType")] = F("ws2812b");
     obj[F("serpentine")] = String(MATRIX_TYPE);
     String message;

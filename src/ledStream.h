@@ -11,13 +11,13 @@ enum STREAM_TYPE {
 
 class Led_Stream{
 public:
-    Led_Stream(const STREAM_TYPE type);
+    Led_Stream(const STREAM_TYPE type, uint16_t width, uint16_t height);
     ~Led_Stream();
     void handle();
     static void clearStreamObj();
     static void clearBuff();
     static void newStreamObj(STREAM_TYPE type);
-    static uint16_t getPixelNumE131(uint16_t x, uint16_t y);
+    static uint16_t getPixelNumE131(uint16_t x, uint16_t y){ return fb.transpose(x, y); };
     const uint16_t getUni(){return firstUni;}
     void setUni(uint8_t uni){firstUni = uni;}
     const uint8_t getUniCt(){return uniQt;}
@@ -37,6 +37,7 @@ public:
     // CRGB *getBuff(){return bufLeds;}
     STREAM_TYPE streamType = E131;
 private:
+    const uint16_t _w, _h;
     ESPAsyncE131 *e131 = nullptr;
     // AsyncWebSocket wsStream;
     uint8_t* lastSeqNum = nullptr;       // to detect packet loss (9)
@@ -51,8 +52,8 @@ private:
     bool multicast = true;                    // multicast or unicast
     // bool e131SkipOutOfSequence = true;            // freeze instead of flickering
     //uint8_t lastSeq;
-    const uint8_t lineQt = (512U / (WIDTH * 3));
-    const uint8_t uniQt = ceil((float)HEIGHT / lineQt);
+    const uint8_t lineQt = (512U / (_w * 3));
+    const uint8_t uniQt = _h / lineQt + !!_h%lineQt;
     uint32_t lastFrameTimer = 0;
     bool isConnected = false; 
 };

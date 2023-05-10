@@ -39,6 +39,9 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "effectmath.h"
 #include "fontHEX.h"
 
+GAUGE *GAUGE::gauge = nullptr; // объект индикатора
+ALARMTASK *ALARMTASK::alarmTask = nullptr; // объект будильника
+
 LAMP::LAMP(LedFB &m) : mx(m), tmStringStepTime(DEFAULT_TEXT_SPEED), tmNewYearMessage(0), effects(&lampState, m){
   lampState.isOptPass = false; // введен ли пароль для опций
   lampState.isInitCompleted = false; // завершилась ли инициализация лампы
@@ -55,7 +58,6 @@ LAMP::LAMP(LedFB &m) : mx(m), tmStringStepTime(DEFAULT_TEXT_SPEED), tmNewYearMes
   lampState.brightness = 127;
   //lamp_init(); // инициализация и настройка лампы (убрано, будет настройка снаружи)
 }
-
 
 void LAMP::lamp_init(const uint16_t curlimit)
 {
@@ -124,16 +126,7 @@ void LAMP::handle()
     LOG(printf_P, PSTR("Eff:%d, FPS: %u, FastLED FPS: %u\n"), effects.getEn(), avgfps, FastLED.getFPS());
 #ifdef ESP8266
 
-#ifdef PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED
-    uint32_t iram;
-    {
-        HeapSelectIram ephemeral;
-        iram = ESP.getFreeHeap();
-    }
-    LOG(printf_P, PSTR("MEM stat: %d/%d, HF: %d, Time: %s\n"), lampState.freeHeap, iram, lampState.HeapFragmentation, embui.timeProcessor.getFormattedShortTime().c_str());
-#else
     LOG(printf_P, PSTR("MEM stat: %d, HF: %d, Time: %s\n"), lampState.freeHeap, lampState.HeapFragmentation, embui.timeProcessor.getFormattedShortTime().c_str());
-#endif
 
 #else
     LOG(printf_P, PSTR("MEM stat: %d, Time: %s\n"), lampState.freeHeap, embui.timeProcessor.getFormattedShortTime().c_str());
@@ -161,19 +154,15 @@ void LAMP::handle()
   }
 
   newYearMessageHandle();
-  //ConfigSaveCheck(); // для взведенного таймера автосохранения настроек
 
   // обработчик событий (пока не выкину в планировщик)
   if (flags.isEventsHandled) {
     events.events_handle();
   }
 
-  // EVERY_N_SECONDS(5){
-  //   LOG(printf_P, PSTR("Test: %d %d %d\n"),!lampState.isStringPrinting, !flags.ONflag, !LEDFader::getInstance());
-  // }
-  if(!lampState.isStringPrinting && !flags.ONflag && !LEDFader::getInstance()){ // освобождать буфер только если не выводится строка, иначе держать его
+  if(!lampState.isStringPrinting && !flags.ONflag && !LEDFader::getInstance()->running()){ // освобождать буфер только если не выводится строка, иначе держать его
     if(sledsbuff){
-      delete [] sledsbuff;
+      delete sledsbuff;
       sledsbuff = nullptr;
     }
   }
@@ -183,54 +172,54 @@ void LAMP::handle()
 void LAMP::effectsTick(){
   uint32_t _begin = millis();
 
-  if (effects.worker && (flags.ONflag || LEDFader::getInstance()) && !isAlarm() && !isRGB()) {
-    if(!lampState.isEffectsDisabledUntilText){
-      if (sledsbuff) {
-        //std::copy(sledsbuff, num_leds, getUnsafeLedsArray());
-        memcpy(getUnsafeLedsArray(), sledsbuff, num_leds);
-      }
-      // посчитать текущий эффект (сохранить кадр в буфер, если ОК)
-      if(effects.worker ? effects.worker->run() : 1) {
-#if defined(PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED)
-        HeapSelectIram ephemeral;
-#endif
+  // проверяем, нужно ли обсчитывать новый кадр, что само по себе тупо, если уж этот метод был вызван
+  if (effects.worker && (flags.ONflag || LEDFader::getInstance()->running()) && !isAlarm() && !isRGB()) {
+    if(!lampState.isEffectsDisabledUntilText){  // если не выводится текст
+      // if  there is a sledsbuff defined, than swap content with current mx buff, 'cause effects runner expect it to be intact from the last run
+      if (sledsbuff)
+        mx.swap(std::move(*sledsbuff));
+
+      // посчитать текущий эффект (сохранить кадр в sledsbuff буфер, если был обсчет и до этого не было создано sleds буфера
+      // ппц... копия будет создаваться ВСЕГДА, даже если оверлей не нужен Ж()
+      if(effects.worker->run()) {
         if(!sledsbuff)
-          sledsbuff = new CRGB[num_leds];
-        //std::copy(getUnsafeLedsArray(), getUnsafeLedsArray() + num_leds, sledsbuff);
-        memcpy(sledsbuff, getUnsafeLedsArray(), num_leds);
+          sledsbuff = new LedFB(mx);    // create buffer clone
+        else
+          *sledsbuff = mx;               // copy mx buffer
+
       }
     }
   }
 #if defined(USE_STREAMING) && defined(EXT_STREAM_BUFFER)
     if(!streambuff.empty()){
     uint8_t mi;
-    for(uint16_t i=0; i<streambuff.size() && i<num_leds; i++){
+    for(uint16_t i=0; i<streambuff.size() && i<mx.size(); i++){
       mi = streambuff[i].r > streambuff[i].g ? streambuff[i].r : streambuff[i].g;
       mi = mi > streambuff[i].b ? mi : streambuff[i].b;
       if(mi>=5) {
-        getUnsafeLedsArray()[i] = streambuff[i];
+        mx.at(i) = streambuff[i];
       } else if(mi && mi<5) {
         EffectMath::setLedsNscale8(i, map(mi,1,4,128,10)); // 5 градаций прозрачности, где 0 - полностью прозрачный
       }
     }
   }
 #endif
+
   if(drawbuff){
     uint8_t mi;
-    for(uint16_t i=0; i<num_leds; i++){
-      mi = drawbuff[i].r > drawbuff[i].g ? drawbuff[i].r : drawbuff[i].g;
-      mi = mi > drawbuff[i].b ? mi : drawbuff[i].b;
+    for(uint16_t i=0; i<mx.size(); i++){
+      mi = drawbuff->at(i).r > drawbuff->at(i).g ? drawbuff->at(i).r : drawbuff->at(i).g;
+      mi = mi > drawbuff->at(i).b ? mi : drawbuff->at(i).b;
       if(mi>=5) {
-        getUnsafeLedsArray()[i] = drawbuff[i];
+        mx.at(i) = drawbuff->at(i);
       } else if(mi) {
-        getUnsafeLedsArray()[i].nscale8(map(mi,1,4,128,10)); // 5 градаций прозрачности, где 0 - полностью прозрачный
+        mx.at(i).nscale8(map(mi,1,4,128,10)); // 5 градаций прозрачности, где 0 - полностью прозрачный
       }
     }
   }
 
   if(isRGB()) { // режим заливки цветом
-    fill_solid(getUnsafeLedsArray(), num_leds, rgbColor);
-    //FastLED.showColor(rgbColor); // залить все цветом
+    mx.fill(rgbColor);
   }
 
   if(isWarning()) {
@@ -243,11 +232,12 @@ void LAMP::effectsTick(){
 
   GAUGE::GetGaugeInstance()->GaugeMix((GAUGETYPE)flags.GaugeType);
 
-  if (isRGB() || isWarning() || isAlarm() || lampState.isEffectsDisabledUntilText || LEDFader::getInstance() || (effects.worker ? effects.worker->status() : 1) || lampState.isStringPrinting) {
-    // выводим кадр только если есть текст или эффект
+  // это жесть...
+  if (isRGB() || isWarning() || isAlarm() || lampState.isEffectsDisabledUntilText || LEDFader::getInstance()->running() || (effects.worker ? effects.worker->status() : 1) || lampState.isStringPrinting) {
+    // выводим 1 кадр на матрицу только если есть текст или эффект
     effectsTimer(T_FRAME_ENABLE, _begin);
   } else if(isLampOn()) {
-    // иначе возвращаемся к началу обсчета следующего кадра
+    // иначе перезапускаем этот же метод бесконечно
     effectsTimer(T_ENABLE);
   }
 }
@@ -257,21 +247,18 @@ void LAMP::effectsTick(){
  * и перезапуск эффект-процессора
  */
 void LAMP::frameShow(const uint32_t ticktime){
-  if ( !LEDFader::getInstance() && !isLampOn() && !isAlarm() ) return;
+  if ( !LEDFader::getInstance()->running() && !isLampOn() && !isAlarm() ) return;
 
   FastLED.show();
 
   // откладываем пересчет эффекта на время для желаемого FPS, либо
   // на минимальный интервал в следующем loop()
   int32_t delay = (ticktime + EFFECTS_RUN_TIMER) - millis();
-  if (delay < LED_SHOW_DELAY || !(effects.worker ? effects.worker->status() : 1)) delay = LED_SHOW_DELAY;
+  if (delay < LED_SHOW_DELAY) delay = LED_SHOW_DELAY;
 
   effectsTimer(T_ENABLE, delay);
   ++fps;
 }
-
-GAUGE *GAUGE::gauge = nullptr; // объект индикатора
-ALARMTASK *ALARMTASK::alarmTask = nullptr; // объект будильника
 
 void LAMP::changePower() {changePower(!flags.ONflag);}
 
@@ -322,7 +309,7 @@ void LAMP::changePower(bool flag) // флаг включения/выключе�
 #ifdef DS18B20
     // восстанавливаем значение тока после включения. Так как значение 0 не работает в ограничителе тока по перегреву, 
     // то если ограничение тока установлено в 0, устанвливаем вместо него рассчетный максимум в 15.36А на 256 диодов (бред конечно, но нужно же хоть какое-то значение больше 0).
-    setcurLimit(embui.param(FPSTR(TCONST_CLmt)).toInt() == 0 ? (num_leds * 60) : embui.param(FPSTR(TCONST_CLmt)).toInt());
+    setcurLimit(embui.param(FPSTR(TCONST_CLmt)).toInt() == 0 ? (mx.size() * 60) : embui.param(FPSTR(TCONST_CLmt)).toInt());
 #endif
     FastLED.setMaxPowerInVoltsAndMilliamps(5, curLimit); // установка максимального тока БП, более чем актуально))). Проверил, без этого куска - ограничение по току не работает :)
 }
@@ -413,15 +400,15 @@ typedef enum {FIRSTSYMB=1,LASTSYMB=2} SYMBPOS;
 
 bool LAMP::fillStringManual(const char* text,  const CRGB &letterColor, bool stopText, bool isInverse, int32_t pos, int8_t letSpace, int8_t txtOffset, int8_t letWidth, int8_t letHeight)
 {
-  static int32_t offset = (flags.MIRR_V ? 0 : WIDTH);
+  static int32_t offset = mx.cfg.vmirror() ? 0 : mx.cfg.w();
   uint8_t bcount = 0;
 
   if(pos)
-    offset = (flags.MIRR_V ? 0 + pos : WIDTH - pos);
+    offset = (mx.cfg.vmirror() ? 0 + pos : mx.cfg.w() - pos);
 
   if (!text || !strlen(text))
   {
-    offset = (flags.MIRR_V ? 0 : WIDTH);
+    offset = (mx.cfg.vmirror() ? 0 : mx.cfg.w());
     return true;
   }
 
@@ -438,7 +425,7 @@ bool LAMP::fillStringManual(const char* text,  const CRGB &letterColor, bool sto
     }
     else
     {
-      if(!flags.MIRR_V)
+      if(!mx.cfg.vmirror())
         drawLetter(bcount, text[i], offset + (int16_t)j * (letWidth + letSpace), letterColor, letSpace, txtOffset, isInverse, letWidth, letHeight, flSymb);
       else
         drawLetter(bcount, text[i], offset - (int16_t)j * (letWidth + letSpace), letterColor, letSpace, txtOffset, isInverse, letWidth, letHeight, flSymb);
@@ -450,15 +437,15 @@ bool LAMP::fillStringManual(const char* text,  const CRGB &letterColor, bool sto
   }
 
   if(!stopText)
-    (flags.MIRR_V ? offset++ : offset--);
-  if ((!flags.MIRR_V && offset < (int32_t)(-j * (letWidth + letSpace))) || (flags.MIRR_V && offset > (int32_t)(j * (letWidth + letSpace))+(signed)WIDTH))       // строка убежала
+    (mx.cfg.vmirror() ? offset++ : offset--);
+  if ((!mx.cfg.vmirror() && offset < (int32_t)(-j * (letWidth + letSpace))) || (mx.cfg.vmirror() && offset > (int32_t)(j * (letWidth + letSpace))+(signed)mx.cfg.w()))       // строка убежала
   {
-    offset = (flags.MIRR_V ? 0 : WIDTH);
+    offset = (mx.cfg.vmirror() ? 0 : mx.cfg.w());
     return true;
   }
   if(pos) // если задана позиция, то считаем что уже отобразили
   {
-    offset = (flags.MIRR_V ? 0 : WIDTH);
+    offset = (mx.cfg.vmirror() ? 0 : mx.cfg.w());
     return true;
   }
 
@@ -469,7 +456,7 @@ void LAMP::drawLetter(uint8_t bcount, uint16_t letter, int16_t offset,  const CR
 {
   int16_t start_pos = 0, finish_pos = letWidth + letSpace;
 
-  if (offset < (int16_t)-letWidth || offset > (int16_t)WIDTH)
+  if (offset < (int16_t)-letWidth || offset > (int16_t)mx.cfg.w())
   {
     return;
   }
@@ -477,9 +464,9 @@ void LAMP::drawLetter(uint8_t bcount, uint16_t letter, int16_t offset,  const CR
   {
     start_pos = (uint16_t)-offset;
   }
-  if (offset > (int16_t)(WIDTH - letWidth))
+  if (offset > (int16_t)(mx.cfg.w() - letWidth))
   {
-    finish_pos = (uint16_t)(WIDTH - offset);
+    finish_pos = (uint16_t)(mx.cfg.w() - offset);
   }
 
   if(flSymb){
@@ -509,19 +496,19 @@ void LAMP::drawLetter(uint8_t bcount, uint16_t letter, int16_t offset,  const CR
       bool thisBit = thisByte & (1 << (letHeight - 1 - j));
 
       // рисуем столбец (i - горизонтальная позиция, j - вертикальная)
-      if (offset + i >= 0 && offset + i < (int)WIDTH && txtOffset + j >= 0 && txtOffset + j < (int)HEIGHT) {
+      if (offset + i >= 0 && offset + i < (int)mx.cfg.w() && txtOffset + j >= 0 && txtOffset + j < (int)mx.cfg.h()) {
         if (thisBit) {
           if(!isInverse)
-            EffectMath::drawPixelXY(offset + i, txtOffset + j, letterColor);
+            mx.pixel(offset + i, txtOffset + j) = letterColor;
           else
             //EffectMath::setLedsfadeToBlackBy(getPixelNumber(offset + i, txtOffset + j), (isWarning() && lampState.warnType==2) ? 0 : (isWarning() && lampState.warnType==1) ? 255 : getBFade());
-            EffectMath::getPixel(offset + i, txtOffset + j).fadeToBlackBy((isWarning() && lampState.warnType==2) ? 0 : (isWarning() && lampState.warnType==1) ? 255 : getBFade());
+            mx.pixel(offset + i, txtOffset + j).fadeToBlackBy((isWarning() && lampState.warnType==2) ? 0 : (isWarning() && lampState.warnType==1) ? 255 : getBFade());
         } else {
           if(isInverse)
-            EffectMath::drawPixelXY(offset + i, txtOffset + j, letterColor);
+            mx.pixel(offset + i, txtOffset + j) = letterColor;
           else
             //EffectMath::setLedsfadeToBlackBy(getPixelNumber(offset + i, txtOffset + j), (isWarning() && lampState.warnType==2) ? 0 : (isWarning() && lampState.warnType==1) ? 255 : getBFade());
-            EffectMath::getPixel(offset + i, txtOffset + j).fadeToBlackBy((isWarning() && lampState.warnType==2) ? 0 : (isWarning() && lampState.warnType==1) ? 255 : getBFade());
+            mx.pixel(offset + i, txtOffset + j).fadeToBlackBy((isWarning() && lampState.warnType==2) ? 0 : (isWarning() && lampState.warnType==1) ? 255 : getBFade());
         }
       }
     }
@@ -843,9 +830,6 @@ void LAMP::micHandler()
     return;
   if(mw==nullptr && !lampState.isCalibrationRequest && lampState.micAnalyseDivider){ // обычный режим
     {
-#if defined(PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED)
-      HeapSelectIram ephemeral;
-#endif
       mw = new MicWorker(lampState.mic_scale,lampState.mic_noise,!counter);
     }
     if(!mw) {
@@ -881,9 +865,6 @@ void LAMP::micHandler()
   } else if(lampState.isCalibrationRequest) {
     if(mw==nullptr){ // калибровка начало
       {
-#if defined(PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED)
-        HeapSelectIram ephemeral;
-#endif
         mw = new MicWorker();
       }
       if(!mw){
@@ -1093,14 +1074,9 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
   // отрисовать текущий эффект (только если лампа включена, иначе бессмысленно)
   if(effects.worker && flags.ONflag && !lampState.isEffectsDisabledUntilText){
     effects.worker->run();
-#if defined(PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED)
-    HeapSelectIram ephemeral;
-#endif
-    if(!sledsbuff){
-      sledsbuff = new CRGB[num_leds];
+    if(!sledsbuff){ // todo: WHY we need this clone here???
+      sledsbuff = new LedFB(mx);  // clone existing frambuffer
     }
-    //std::copy(getUnsafeLedsArray(), getUnsafeLedsArray() + num_leds, sledsbuff); // сохранить кадр в буфер
-    memcpy(sledsbuff, getUnsafeLedsArray(), num_leds);
   }
   setBrightness(getLampBrightness(), fade, natural);
   LOG(println, F("eof switcheffect"));
@@ -1190,7 +1166,7 @@ void LAMP::warningHelper(){
     String msg = warningTask->getData();
 
     uint16_t cnt = warningTask->getWarn_duration()/(warningTask->getWarn_blinkHalfPeriod()*2);
-    uint8_t xPos = (WIDTH+LET_WIDTH*(cnt>99?3:cnt>9?2:1))/2;    
+    uint8_t xPos = (mx.cfg.w()+LET_WIDTH*(cnt>99?3:cnt>9?2:1))/2;    
     switch(lampState.warnType){
       case 0: mx.fill(warningTask->getWarn_color());
         break;
@@ -1282,24 +1258,19 @@ void LAMP::setDraw(bool flag){
     setDrawBuff(flag);
 }
 
-void LAMP::setDrawBuff(bool flag) {
-    // flags.isDraw=flag;
-    if(!flag){
-        if (drawbuff) {
-            delete [] drawbuff;
-            drawbuff = nullptr;
-        }
-    } else if(!drawbuff){
-#if defined(PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED)
-        HeapSelectIram ephemeral;
-#endif
-        drawbuff = new CRGB[num_leds];
-        //for(uint16_t i=0; i<num_leds; i++) {drawbuff[i] = CHSV(random(0,255),0,255);} // тест :)
-    }
+void LAMP::setDrawBuff(bool active) {
+  if (active){
+    if (!drawbuff)
+      drawbuff = new LedFB(mx.cfg);   // create a buff with same layout as main FB
+    return;
+  }
+
+  delete drawbuff;
+  drawbuff = nullptr;
 }
 
 void LAMP::fillDrawBuf(CRGB &color) {
-  if(drawbuff) { for(uint16_t i=0; i<num_leds; i++) drawbuff[i]=color; }
+  if(drawbuff) drawbuff->fill(color);
 }
 
 #ifdef EMBUI_USE_MQTT
@@ -1321,17 +1292,14 @@ void LAMP::setmqtt_int(int val) {
 #endif
 
 #ifdef EXT_STREAM_BUFFER
-void LAMP::setStreamBuff(bool flag) {
-    if(!flag){
+void LAMP::setStreamBuff(bool active) {
+    if(!active){
         if (!streambuff.empty()) {
             streambuff.resize(0);
             streambuff.shrink_to_fit();
         }
     } else if(streambuff.empty()){
-#if defined(PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED)
-        HeapSelectIram ephemeral;
-#endif
-        streambuff.resize(num_leds);
+        streambuff.resize(mx.size());
     }
 }
 #endif

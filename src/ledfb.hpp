@@ -40,9 +40,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "config.h"
 #include <FastLED.h>
 #include <vector>
-#include "log.h"
-
-constexpr uint16_t num_leds = WIDTH * HEIGHT;       // for backward compat
+//#include "log.h"
 
 /**
  * @brief matrix configuration for LedFB
@@ -149,15 +147,7 @@ public:
      * @param y 
      * @return size_t 
      */
-    size_t transpose(uint16_t x, uint16_t y) const;
-
-    /**
-     * @brief access pixel at coordinates x:y
-     * if oob coordinates supplied returns blackhole element
-     * @param x coordinate starting from top left corner
-     * @param y coordinate starting from top left corner
-     */
-    CRGB& pixel(uint16_t x, uint16_t y){ return at(transpose(x,y)); };
+    size_t transpose(unsigned x, unsigned y) const;
 
     /**
      * @brief access CRGB pixel at specified position
@@ -166,6 +156,17 @@ public:
      * @return CRGB& 
      */
     CRGB& at(size_t i);
+
+    /**
+     * @brief access pixel at coordinates x:y
+     * if oob coordinates supplied returns blackhole element
+     * @param x coordinate starting from top left corner
+     * @param y coordinate starting from top left corner
+     */
+    CRGB& at(unsigned x, unsigned y);
+
+    // access pixel at coordinates x:y
+    CRGB& pixel(unsigned x, unsigned y){ return at(x,y); };
 
     /**
      * @brief access CRGB pixel at specified position
@@ -223,6 +224,4 @@ public:
 /* a backward compatible wrappers for accessing LedMatrix obj instance,
 should be removed once other code refactoring is complete
 */
-#define getUnsafeLedsArray      mx.data
-#define getPixelNumber(X,Y)     mx.transpose(X,Y)
 extern LedFB mx;

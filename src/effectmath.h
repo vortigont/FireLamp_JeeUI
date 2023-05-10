@@ -47,23 +47,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #define MOVE_X 1
 #define MOVE_Y 0
 
-#define NUM_LAYERS             (1U)                 // The coordinates for 3 16-bit noise spaces.
-#define NUM_LAYERS2            (2U)                 // The coordinates for 3 16-bit noise spaces.
-
 namespace EffectMath {
-    constexpr uint16_t maxDim = ((WIDTH>HEIGHT)?WIDTH:HEIGHT);
-    constexpr uint16_t minDim = ((WIDTH<HEIGHT)?WIDTH:HEIGHT);
-    constexpr uint16_t maxHeightIndex = HEIGHT-1;
-    constexpr uint16_t maxWidthIndex = WIDTH-1;
-    constexpr uint16_t getmaxDim() {return maxDim;}
-    constexpr uint16_t getminDim() {return minDim;}
-    constexpr int16_t getmaxWidthIndex() {return maxWidthIndex;}
-    constexpr int16_t getmaxHeightIndex() {return maxHeightIndex;}
-
-    /** полезные обертки **/
-    constexpr uint8_t wrapX(int8_t x){ return (x + WIDTH) % WIDTH; }
-    constexpr uint8_t wrapY(int8_t y){ return (y + HEIGHT) % HEIGHT; }
-
     /*    Наложение эффектов на буфер, рисование, работа с цветами     */
 
     // затенение
@@ -132,6 +116,11 @@ namespace EffectMath {
     void drawPixelXYF_Y(int16_t x, float y, const CRGB &color, LedFB &fb, uint8_t darklevel=50);
     void drawPixelXYF_X(float x, int16_t y, const CRGB &color, LedFB &fb, uint8_t darklevel=50);
 
+    // Вариант субпикселя от @stepko, в некоторых случаях работает лучше, но в некоторых хуже
+    void sDrawPixelXYF(float x, float y, const CRGB &color, LedFB &fb); 
+    void sDrawPixelXYF_Y(int16_t x, float y, const CRGB &color, LedFB &fb);
+    void sDrawPixelXYF_X(float x, int16_t y, const CRGB &color, LedFB &fb);
+
     /**
      * @brief draw a line in a framebuffer defined by non integer coordinates
      * 
@@ -193,21 +182,6 @@ namespace EffectMath {
     float atan_fast(float x);
 
 
-
-
-    // TODO: below methods needs revision
-
-    // для работы с буфером
-    uint32_t getPixelNumberBuff(uint16_t x, uint16_t y, uint8_t W , uint8_t H); // получить номер пикселя в буфере по координатам
-    
-    /*  some other funcs depends on this */
-    CRGB &getPixel(uint16_t x, uint16_t y);
-
-    // в extra_tasks.h есть странные объекты, которые прибиты гвоздями к этой функции
-    void drawPixelXY(int16_t x, int16_t y, const CRGB &color); // функция отрисовки точки по координатам X Y
-
-
-  
     /*      UNUSED or obsolete      */
     // функция возвращает true, если float ~= целое (первая цифра после запятой == 0)
     //bool isInteger(float val);
@@ -216,18 +190,6 @@ namespace EffectMath {
     /* Функция возврашает "вес" яркости пикселя от 0 (черный) до 765 (белый). Может использоваться для проверки не "пустое ли место"
     для этого есть FastLED CRGB::getLuma
     uint16_t RGBweight (CRGB *leds, uint16_t idx);  */
-/*
-    CRGB getPixColorXYF_X(float x, int16_t y);
-    CRGB getPixColorXYF_Y(int16_t x, float y);
-    CRGB getPixColorXYF(float x, float y);
-*/
-
-    // TODO
-
-    // Вариант субпикселя от @stepko, в некоторых случаях работает лучше, но в некоторых хуже
-    void sDrawPixelXYF(float x, float y, const CRGB &color); 
-    void sDrawPixelXYF_Y(int16_t x, float y, const CRGB &color);
-    void sDrawPixelXYF_X(float x, int16_t y, const CRGB &color);
 
     // аналог fmap, но не линейная. (linear == fmap)
     float mapcurve(const float x, const float in_min, const float in_max, const float out_min, const float out_max, float (*curve)(float,float,float,float));
@@ -409,7 +371,6 @@ typedef Vector2<float> PVector;
 // Methods for Separation, Cohesion, Alignment added
 class Boid {
   public:
-
     PVector location;
     PVector velocity;
     PVector acceleration;
@@ -425,13 +386,7 @@ class Boid {
 
     Boid() {}
 
-    Boid(float x, float y) {
-      acceleration = PVector(0, 0);
-      velocity = PVector(randomf(), randomf());
-      location = PVector(x, y);
-      maxspeed = 1.5;
-      maxforce = 0.05;
-    }
+    Boid(float x, float y);
 
     static float randomf() {
       return mapfloat(random(0, 255), 0, 255, -.5, .5);
@@ -441,8 +396,8 @@ class Boid {
       return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
     }
 
-    void run(Boid boids [], uint8_t boidCount) {
-      flock(boids, boidCount);
+    void run(std::vector<Boid> boids) {
+      flock(boids);
       update();
       // wrapAroundBorders();
       // render();
@@ -459,19 +414,19 @@ class Boid {
     void repelForce(PVector obstacle, float radius);
 
     // We accumulate a new acceleration each time based on three rules
-    void flock(Boid boids [], uint8_t boidCount);
+    void flock(std::vector<Boid> &boids);
 
     // Separation
     // Method checks for nearby boids and steers away
-    PVector separate(Boid boids [], uint8_t boidCount);
+    PVector separate(std::vector<Boid> &boids);
 
     // Alignment
     // For every nearby boid in the system, calculate the average velocity
-    PVector align(Boid boids [], uint8_t boidCount);
+    PVector align(std::vector<Boid> &boids);
 
     // Cohesion
     // For the average location (i.e. center) of all nearby boids, calculate steering vector towards that location
-    PVector cohesion(Boid boids [], uint8_t boidCount);
+    PVector cohesion(std::vector<Boid> &boids);
 
     // A method that calculates and applies a steering force towards a target
     // STEER = DESIRED MINUS VELOCITY
@@ -481,11 +436,11 @@ class Boid {
     // STEER = DESIRED MINUS VELOCITY
     void arrive(PVector target);
 
-    void wrapAroundBorders();
+    void wrapAroundBorders(uint16_t w, uint16_t h);
 
-    void avoidBorders();
+    void avoidBorders(uint16_t w, uint16_t h);
 
-    bool bounceOffBorders(float bounce);
+    bool bounceOffBorders(float bounce, uint16_t w, uint16_t h);
 
     void render() {
       // // Draw a triangle rotated in the direction of velocity
@@ -503,6 +458,43 @@ class Boid {
       // popMatrix();
       // backgroundLayer.drawPixel(location.x, location.y, CRGB::Blue);
     }
+
+    /**
+     * @brief spawn Boids at random location
+     * 
+     * @param boids 
+     */
+    static void spawn(std::vector<Boid> &boids, uint16_t w, uint16_t h);
+};
+
+/**
+ * @brief a 1D vector mapped to 2D array
+ * 
+ * @tparam T template type
+ */
+template <class T>
+class Vector2D {
+    size_t _w, _h;
+    std::vector<T> v;
+
+public:
+    Vector2D(size_t w, size_t h) : _w(w), _h(h), v(std::vector<T>(w*h)) {}
+
+    size_t idx(size_t x, size_t y) const { return _w*y + x; }
+    size_t w() const { return _w; };
+    size_t h() const { return _h; };
+    size_t size() const { return v.size(); };
+
+    T& at(size_t idx){ return v.at( idx ); };
+    T& at(size_t x, size_t y){ return v.at( idx(x,y) ); };
+    T* getData(){ return v.data(); }
+
+    void reset(size_t width, size_t height, T &val = T()){
+        _w = w, _h = h;
+        v.assign(_w*_h, val);
+        v.shrink_to_fit();
+    };
+
 };
 
 // 3D Noise map structure
@@ -517,16 +509,16 @@ struct Noise3dMap {
     const uint8_t e_centerX = w / 2 + (w % 2);
     const uint8_t e_centerY = h / 2 + (h % 2);
     std::vector<Deviation> opt;
-    std::vector<std::vector<uint8_t>> map;
+    std::vector< Vector2D<uint8_t> > map;
 
     Noise3dMap(uint8_t layers, uint8_t w, uint8_t h) : w(w), h(h),
                 opt(std::vector<Deviation>(layers)),
-                map(std::vector<std::vector<uint8_t>>(layers, std::vector<uint8_t>(w*h))) {}
+                map(std::vector< Vector2D<uint8_t> >(layers, Vector2D<uint8_t>(w,h))) {}
     // turn x,y into array index
-    inline size_t xy(uint8_t x, uint8_t y) const { return w*y + x; }
+    inline size_t idx(uint8_t x, uint8_t y) const { return w*y + x; }
 
     // return a reference to map element via layer,x,y coordinates
-    uint8_t &map_lxy(uint8_t layer, uint8_t x, uint8_t y){ return map[layer].at(w*y + x); }
+    uint8_t &lxy(uint8_t layer, uint8_t x, uint8_t y){ return map.at(layer).at(idx(y, x)); }
 
     /**
      * @brief fill noise map

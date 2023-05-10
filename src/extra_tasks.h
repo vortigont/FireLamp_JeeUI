@@ -73,26 +73,26 @@ public:
         gauge_max = max;
         gauge_hue = hue;
 
-        xStep = WIDTH / 4;
+        xStep = mx.cfg.w() / 4;
         xCol = 4;
         if(xStep<2) {
-          xStep = WIDTH / 3;
+          xStep = mx.cfg.w() / 3;
           xCol = 3;
         } else if(xStep<2) {
-          xStep = WIDTH / 2;
+          xStep = mx.cfg.w() / 2;
           xCol = 2;
         } else if(xStep<2) {
           xStep = 1;
           xCol = 1;
         }
 
-        yStep = HEIGHT / 4;
+        yStep = mx.cfg.h() / 4;
         yCol = 4;
         if(yStep<2) {
-          yStep = HEIGHT / 3;
+          yStep = mx.cfg.h() / 3;
           yCol = 3;
         } else if(yStep<2) {
-          yStep = HEIGHT / 2;
+          yStep = mx.cfg.h() / 2;
           yCol = 2;
         } else if(yStep<2) {
           yStep = 1;
@@ -109,9 +109,9 @@ public:
 
         if(type==GAUGETYPE::GT_VERT){
             /*
-            uint8_t ind = (uint8_t)((gauge_val + 1) * HEIGHT / (float)gauge_max + 1);
+            uint8_t ind = (uint8_t)((gauge_val + 1) * mx.cfg.h() / (float)gauge_max + 1);
             for (uint8_t x = 0; x <= xCol * (xStep - 1); x += xStep) {
-                for (uint8_t y = 0; y < HEIGHT ; y++) {
+                for (uint8_t y = 0; y < mx.cfg.h() ; y++) {
                 if (ind > y)
                     EffectMath::drawPixelXY(x, y, CHSV(gauge_hue, 255, 255));
                 else
@@ -120,17 +120,17 @@ public:
             }
             */
             for (uint8_t x = 0; x <= xCol * (xStep - 1); x += xStep) {
-                EffectMath::drawLine(x, 0, x, HEIGHT, 0, mx);   // todo:  get rid of this hack with external obj
-                EffectMath::drawLineF(x, 0, x, EffectMath::fmap(gauge_val, 0, gauge_max, 0, HEIGHT), gauge_hue ? CHSV(gauge_hue, 255, 255) : CRGB(gauge_color), mx);
+                EffectMath::drawLine(x, 0, x, mx.cfg.h(), 0, mx);   // todo:  get rid of this hack with external obj
+                EffectMath::drawLineF(x, 0, x, EffectMath::fmap(gauge_val, 0, gauge_max, 0, mx.cfg.h()), gauge_hue ? CHSV(gauge_hue, 255, 255) : CRGB(gauge_color), mx);
             }
         } else {
-            uint8_t ind = (uint8_t)((gauge_val + 1) * WIDTH / (float)gauge_max + 1);
+            uint8_t ind = (uint8_t)((gauge_val + 1) * mx.cfg.w() / (float)gauge_max + 1);
             for (uint8_t y = 0; y <= yCol * (yStep - 1) ; y += yStep) {
-                for (uint8_t x = 0; x < WIDTH ; x++) {
+                for (uint8_t x = 0; x < mx.cfg.w() ; x++) {
                 if (ind > x)
-                    EffectMath::drawPixelXY((x + y) % WIDTH, y, CHSV(gauge_hue, 255, 255));
+                    mx.pixel((x + y) % mx.cfg.w(), y) = CHSV(gauge_hue, 255, 255);
                 else
-                    EffectMath::drawPixelXY((x + y) % WIDTH, y,  0);
+                    mx.pixel((x + y) % mx.cfg.w(), y) = 0;
                 }
             }
         }
