@@ -606,7 +606,7 @@ public:
     EffectFire2018(LedFB &framebuffer) : 
         EffectCalc(framebuffer),
         fire18heat(std::vector<std::vector<uint8_t>>(framebuffer.cfg.h(), std::vector<uint8_t>(framebuffer.cfg.w()))),
-        noise(FIRE_NUM_LAYERS, framebuffer.cfg.w(), framebuffer.cfg.h()) {}
+        noise(FIRE_NUM_LAYERS, framebuffer.cfg.w(), framebuffer.cfg.h()) { fb.clear(); }
     bool run() override;
 };
 
