@@ -609,7 +609,7 @@ void show_effects_param(Interface *interf, JsonObject *data){
 void set_effects_list(Interface *interf, JsonObject *data){
     LOG(println, "set_effects_list()");
     if (!data) return;
-    uint16_t num = (*data)[FPSTR(TCONST_effListMain)].as<uint16_t>();
+    uint16_t num = (*data)[FPSTR(TCONST_effListMain)];
     uint16_t nextEff = myLamp.effects.getSelected();        // get next eff with preloaded controls
     EffectListElem *eff = myLamp.effects.getEffect(num);
     if (!eff) return;
@@ -829,7 +829,7 @@ void block_effects_main(Interface *interf, JsonObject *data, bool fast=true){
         interf->json_frame_custom(FPSTR(TCONST_XLOAD));
         interf->json_section_content();
         // side load drop-down list from /eff_list.json file
-        interf->select(FPSTR(TCONST_effListMain), String(myLamp.effects.getEffnum()), String(FPSTR(TINTF_00A)), true, false, FPSTR(TCONST_eff_list_json));
+        interf->select(FPSTR(TCONST_effListMain), myLamp.effects.getEffnum(), String(FPSTR(TINTF_00A)), true, false, FPSTR(TCONST_eff_list_json));
         interf->json_section_end();
         block_effects_param(interf, data);
         interf->button(FPSTR(TCONST_effects_config), FPSTR(TINTF_009));
@@ -2641,7 +2641,6 @@ bool ws_action_handle(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsE
                 myLamp.effects.directMoveBy(EFF_NONE);
                 myLamp.effects.removeConfig(effNum);
                 myLamp.effects.directMoveBy(effNum);
-                //remote_action(RA_EFFECT, String(effNum).c_str(), NULL);
                 String tmpStr=F("- ");
                 tmpStr+=effNum;
                 myLamp.sendString(tmpStr.c_str(), CRGB::Red);
@@ -2697,7 +2696,7 @@ void create_parameters(){
     LOG(println, F("Создание дефолтных параметров"));
     // создаем дефолтные параметры для нашего проекта
     embui.var_create(FPSTR(TCONST_syslampFlags), ulltos(myLamp.getLampFlags())); // Дефолтный набор флагов
-    embui.var_create(FPSTR(TCONST_effListMain), 1);   // какая-то затычка от бесконечных ребутов для глючных эффектов. Эффект не чиним, втыкаем затычку Ж() todo: выдрать с корнями
+    embui.var_create(FPSTR(TCONST_effListMain), 1);
     embui.var_create(FPSTR(P_m_tupd), DEFAULT_MQTTPUB_INTERVAL); // "m_tupd" интервал отправки данных по MQTT в секундах (параметр в энергонезависимой памяти)
 
     //WiFi
@@ -2916,6 +2915,7 @@ void sync_parameters(){
     JsonObject obj = doc.to<JsonObject>();
 
 /*
+    // какая-то затычка от бесконечных ребутов для глючных эффектов. Эффект не чиним, втыкаем затычку Ж() todo: выдрать с корнями
     if(check_recovery_state(true)){
         LOG(printf_P,PSTR("Critical Error: Lamp recovered from corrupted effect number: %s\n"),String(embui.param(FPSTR(TCONST_effListMain))).c_str());
         embui.var(FPSTR(TCONST_effListMain),String(0)); // что-то пошло не так, был циклический ребут, сбрасываем эффект
@@ -3276,6 +3276,7 @@ void remote_action(RA action, ...){
         obj[key] = val;
     }
     va_end(prm);
+
     if (key && !val) {
         value = key;
         LOG(printf_P, PSTR("%s"), value);
@@ -3284,7 +3285,7 @@ void remote_action(RA action, ...){
 
     switch (action) {
         case RA::RA_ON:
-            CALL_INTF(FPSTR(TCONST_ONflag), "1", set_onflag);
+            CALL_INTF(FPSTR(TCONST_ONflag), true, set_onflag);
             if(value){
                 StringTask *t = new StringTask(value, 3 * TASK_SECOND, TASK_ONCE, nullptr, &ts, false, nullptr,  [](){
                     StringTask *cur = (StringTask *)ts.getCurrentTask();
@@ -3318,12 +3319,12 @@ void remote_action(RA action, ...){
             }
             break;
         case RA::RA_DEMO:
-            CALL_INTF(FPSTR(TCONST_ONflag), "1", set_onflag); // включим, если было отключено
+            CALL_INTF(FPSTR(TCONST_ONflag), true, set_onflag); // включим, если было отключено
             if(value && String(value)=="0"){
-                CALL_INTF(FPSTR(TCONST_Demo), "0", set_demoflag);
+                CALL_INTF(FPSTR(TCONST_Demo), false, set_demoflag);
                 myLamp.startNormalMode();
             } else {
-                CALL_INTF(FPSTR(TCONST_Demo), "1", set_demoflag);
+                CALL_INTF(FPSTR(TCONST_Demo), true, set_demoflag);
                 resetAutoTimers();
                 myLamp.startDemoMode();
             }
@@ -3483,7 +3484,6 @@ not sure what this WiFi settings is doing here, WiFi is managed via EmbUI
             }
             break;
         case RA::RA_SEND_TEXT: {
-            String tmpStr = embui.param(FPSTR(TCONST_txtColor));
             if (value && *value) {
                 String tmpStr = embui.param(FPSTR(TCONST_txtColor));
                 tmpStr.replace(F("#"),F("0x"));
