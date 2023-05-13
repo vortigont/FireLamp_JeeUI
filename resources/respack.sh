@@ -95,7 +95,7 @@ freshtag(){
     echo "run $url"
     etag=$(curl -sL -I $url | grep etag | awk '{print $2}')
     if [[ "$etag" = "" ]] ; then
-	return 0
+	    return 0
     fi
     echo "$url $etag" >> newetags.txt
     if [ $(grep -cs $etag $tags) -eq 0 ] ; then
