@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 # embui branch/tag name to fetch
-embuirepo='https://github.com/vortigont/EmbUI_int'
-embuitag="main"
+embuirepo='https://github.com/vortigont/EmbUI'
+embuitag="v2.6"
 
 #####
 # no changes below this point!
@@ -18,7 +18,7 @@ refresh_data=0
 refresh_js=0
 refresh_force=0
 with_workers=0
-embuijs_files='lib.js maker.js dyncss.js i18next.js'
+embuijs_files='lib.js maker.js dyncss.js'
 
 usage(){
   echo "Usage: `basename $0` [-h] [-t embuitag] [-f] [-c br|gz] [-w]"
@@ -92,7 +92,11 @@ echo "Using compressor: $compress_cmd"
 # check github file for a new hash
 freshtag(){
     local url="$1"
+    echo "run $url"
     etag=$(curl -sL -I $url | grep etag | awk '{print $2}')
+    if [[ "$etag" = "" ]] ; then
+	return 0
+    fi
     echo "$url $etag" >> newetags.txt
     if [ $(grep -cs $etag $tags) -eq 0 ] ; then
         #echo "new tag found for $url"
@@ -135,6 +139,7 @@ fi
 # check for newer js files
 for f in ${embuijs_files}
 do
+    #echo "check $f"
     if freshtag ${embuirepo}/raw/$embuitag/resources/html/js/${f} ; then
         refresh_js=1
         #break
