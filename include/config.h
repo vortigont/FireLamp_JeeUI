@@ -111,11 +111,13 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #endif
 
 #ifndef MIC_PIN
-#ifdef ESP8266
-#define MIC_PIN               (A0)                          // ESP8266 Analog Pin ADC0 = A0
-#else
-#define MIC_PIN               (GPIO_NUM_34)                 // ESP32 Analog Pin
-#endif
+ #ifdef ESP8266
+  #define MIC_PIN               (A0)                          // ESP8266 Analog Pin ADC0 = A0
+ #elif defined CONFIG_IDF_TARGET_ESP32
+  #define MIC_PIN               (GPIO_NUM_34)                 // ESP32 Analog Pin
+ #elif defined CONFIG_IDF_TARGET_ESP32C3
+  #define MIC_PIN               (GPIO_NUM_2)                  // ESP32c3 Analog Pin
+ #endif
 #define FAST_ADC_READ                                       // использовать полный диапазон звуковых частот, если закомментировано, то будет до 5кГц, но сэкономит память и проще обсчитать...
 #endif
 

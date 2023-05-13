@@ -208,6 +208,7 @@ static const char TCONST_txtOf[] PROGMEM = "txtOf";
 static const char TCONST_txtSpeed[] PROGMEM = "txtSpeed";
 static const char TCONST_Universe[] PROGMEM = "Universe";
 static const char TCONST_Uptime[] PROGMEM = "Uptime";
+static const char TCONST_value[] PROGMEM = "value";
 static const char TCONST_Version[] PROGMEM = "Version";
 static const char TCONST_wcpass[] PROGMEM = "wcpass";
 static const char TCONST_White[] PROGMEM = "White";

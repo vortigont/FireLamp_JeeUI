@@ -67,6 +67,10 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
  * Список имен системных переменных можно найти в файле "constants.h"
  */
 #include "basicui.h"
+#include "actions.hpp"
+
+// задержка вывода ip адреса при включении лампы после перезагрузки
+#define SHOWIP_DELAY    5
 
 namespace INTERFACE {
 // ------------- глобальные переменные построения интерфейса
@@ -871,7 +875,7 @@ void set_onflag(Interface *interf, JsonObject *data){
 #if !defined(ESP_USE_BUTTON) && !defined(ENCODER)
             if(millis()<20000){        // 10 секунд мало, как показала практика, ставим 20
                 Task *_t = new Task(
-                    INDEX_BUILD_DELAY * TASK_SECOND,
+                    SHOWIP_DELAY * TASK_SECOND,
                     TASK_ONCE, [](){ myLamp.sendString(WiFi.localIP().toString().c_str(), CRGB::White); },
                     &ts, false, nullptr, nullptr, true);
                 _t->enableDelayed();
@@ -916,7 +920,7 @@ void set_demoflag(Interface *interf, JsonObject *data){
         case LAMPMODE::MODE_NORMAL:
         case LAMPMODE::MODE_RGBLAMP:
             if(newdemo)
-                myLamp.startDemoMode(embui.param(FPSTR(TCONST_DTimer)).toInt());
+                myLamp.startDemoMode(embui.paramVariant(FPSTR(TCONST_DTimer)));
             break;
         case LAMPMODE::MODE_DEMO:
         case LAMPMODE::MODE_WHITELAMP:
@@ -1116,15 +1120,15 @@ void block_lamp_textsend(Interface *interf, JsonObject *data){
     interf->json_section_hidden(FPSTR(TCONST_text_config), FPSTR(TINTF_002));
         interf->json_section_begin(FPSTR(TCONST_edit_text_config));
             interf->spacer(FPSTR(TINTF_001));
-                interf->range(FPSTR(TCONST_txtSpeed), String(110U-embui.param((FPSTR(TCONST_txtSpeed))).toInt()), String(10), String(100), String(5), String(FPSTR(TINTF_044)));
-                interf->range(FPSTR(TCONST_txtOf), String(-1), String((int)(mx.cfg.h()>6?mx.cfg.h():6)-6), String(1), FPSTR(TINTF_045));
-                interf->range(FPSTR(TCONST_txtBfade), String(0), String(255), String(1), FPSTR(TINTF_0CA));
+                interf->range(FPSTR(TCONST_txtSpeed), 110-embui.paramVariant(FPSTR(TCONST_txtSpeed)).as<int>(), 10, 100, 5, FPSTR(TINTF_044), false);
+                interf->range(FPSTR(TCONST_txtOf), -1, (int)(mx.cfg.h()>6?mx.cfg.h():6)-6, 1, FPSTR(TINTF_045));
+                interf->range(FPSTR(TCONST_txtBfade), 0, 255, 1, FPSTR(TINTF_0CA));
                 
             interf->spacer(FPSTR(TINTF_04E));
                 interf->number(FPSTR(TCONST_ny_period), FPSTR(TINTF_04F));
                 //interf->number(FPSTR(TCONST_ny_unix), FPSTR(TINTF_050));
                 String datetime;
-                TimeProcessor::getDateTimeString(datetime, embui.param(FPSTR(TCONST_ny_unix)).toInt());
+                TimeProcessor::getDateTimeString(datetime, embui.paramVariant(FPSTR(TCONST_ny_unix)));
                 interf->text(FPSTR(TCONST_ny_unix), datetime, FPSTR(TINTF_050), false);
                 interf->button_submit(FPSTR(TCONST_edit_text_config), FPSTR(TINTF_008), FPSTR(P_GRAY));
             interf->spacer();
@@ -1285,7 +1289,7 @@ void block_settings_mp3(Interface *interf, JsonObject *data){
     interf->option(String(DFPLAYER_EQ_BASS), FPSTR(TINTF_0AE));
     interf->json_section_end();
     
-    interf->number(String(FPSTR(TCONST_mp3count)), String(mp3->getMP3count()), String(FPSTR(TINTF_0B0)));
+    interf->number(FPSTR(TCONST_mp3count), mp3->getMP3count(), FPSTR(TINTF_0B0));
     //SETPARAM(FPSTR(TCONST_mp3count), mp3->setMP3count((*data)[FPSTR(TCONST_mp3count)].as<int>())); // кол-во файлов в папке мп3
 
     interf->button_submit(FPSTR(TCONST_set_mp3), FPSTR(TINTF_008), FPSTR(P_GRAY));
@@ -1585,7 +1589,7 @@ void block_settings_other(Interface *interf, JsonObject *data){
     interf->checkbox(FPSTR(TCONST_DRand), myLamp.getLampSettings().dRand , FPSTR(TINTF_03E), false);
     interf->checkbox(FPSTR(TCONST_showName), myLamp.getLampSettings().showName , FPSTR(TINTF_09A), false);
     interf->range(FPSTR(TCONST_DTimer), String(30), String(250), String(5), FPSTR(TINTF_03F));
-    float sf = embui.param(FPSTR(TCONST_spdcf)).toFloat();
+    float sf = embui.paramVariant(FPSTR(TCONST_spdcf));
     interf->range(String(FPSTR(TCONST_spdcf)), String(sf), String(0.25), String(4.0), String(0.25), String(FPSTR(TINTF_0D3)), false);
 
     // отображение системного меню
@@ -1639,7 +1643,7 @@ void set_settings_other(Interface *interf, JsonObject *data){
         myLamp.setDRand((*data)[FPSTR(TCONST_DRand)] == "1");
         myLamp.setShowName((*data)[FPSTR(TCONST_showName)] == "1");
 
-        SETPARAM(FPSTR(TCONST_DTimer), ({if (myLamp.getMode() == LAMPMODE::MODE_DEMO){ myLamp.demoTimer(T_DISABLE); myLamp.demoTimer(T_ENABLE, embui.param(FPSTR(TCONST_DTimer)).toInt()); }}));
+        SETPARAM(FPSTR(TCONST_DTimer), ({if (myLamp.getMode() == LAMPMODE::MODE_DEMO){ myLamp.demoTimer(T_DISABLE); myLamp.demoTimer(T_ENABLE, embui.paramVariant(FPSTR(TCONST_DTimer))); }}));
 
         float sf = (*data)[FPSTR(TCONST_spdcf)];
         SETPARAM(FPSTR(TCONST_spdcf), myLamp.setSpeedFactor(sf));
@@ -1984,7 +1988,7 @@ void show_event_conf(Interface *interf, JsonObject *data){
                     interf->range(FPSTR(TCONST_alarmT), String(alarmT), String(1), String(15), String(1), FPSTR(TINTF_0BC), false);
                 interf->json_section_end();
 #ifdef MP3PLAYER
-                bool limitAlarmVolume = !err && doc.containsKey(FPSTR(TCONST_lV)) ? doc[FPSTR(TCONST_lV)] : myLamp.getLampSettings().limitAlarmVolume);
+                bool limitAlarmVolume = !err && doc.containsKey(FPSTR(TCONST_lV)) ? doc[FPSTR(TCONST_lV)] : myLamp.getLampSettings().limitAlarmVolume;
                 bool alarmFromStart = !err && doc.containsKey(FPSTR(TCONST_afS)) ? doc[FPSTR(TCONST_afS)] : true;
                 String st = !err && doc.containsKey(FPSTR(TCONST_sT)) ? doc[FPSTR(TCONST_sT)] : String(myLamp.getLampSettings().alarmSound);
                 interf->json_section_line();
@@ -2568,8 +2572,8 @@ void section_sys_settings_frame(Interface *interf, JsonObject *data){
             interf->number(FPSTR(TCONST_PINB),FPSTR(TINTF_094),String(1),String(0),String(16));
 #endif
 #ifdef MP3PLAYER
-            interf->number(FPSTR(TCONST_PINMP3RX),FPSTR(TINTF_097),String(1),String(0),String(16));
-            interf->number(FPSTR(TCONST_PINMP3TX),FPSTR(TINTF_098),String(1),String(0),String(16));
+            interf->number(FPSTR(TCONST_PINMP3RX),FPSTR(TINTF_097), 1, 0, 16);
+            interf->number(FPSTR(TCONST_PINMP3TX),FPSTR(TINTF_098), 1, 0, 16);
 #endif
         interf->json_section_end(); // конец контейнера
         interf->spacer();
@@ -2668,7 +2672,7 @@ bool notfound_handle(AsyncWebServerRequest *request, const String& req)
             bright = 0;
         }
         else
-            remote_action(RA::RA_ON, NULL);
+            run_action(ra::on);
     }
 
     if ((req.indexOf(F("&A=")) > 1)){
@@ -2951,7 +2955,7 @@ void sync_parameters(){
     doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
     embui.timeProcessor.attach_callback(std::bind(&LAMP::setIsEventsHandled, &myLamp, myLamp.IsEventsHandled())); // только после синка будет понятно включены ли события
 
-    myLamp.setGlobalBrightness(embui.param(FPSTR(TCONST_GlobBRI)).toInt()); // починить бросок яркости в 255 при первом включении
+    myLamp.setGlobalBrightness(embui.paramVariant(FPSTR(TCONST_GlobBRI))); // починить бросок яркости в 255 при первом включении
     obj[FPSTR(TCONST_GBR)] = tmp.isGlobalBrightness;
     set_gbrflag(nullptr, &obj);
     doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
@@ -3020,7 +3024,7 @@ void sync_parameters(){
 #ifdef MIC_EFFECTS
     myLamp.setEffHasMic(tmp.effHasMic);
 #endif
-    SORT_TYPE type = (SORT_TYPE)embui.param(FPSTR(TCONST_effSort)).toInt();
+    SORT_TYPE type = (SORT_TYPE)embui.paramVariant(FPSTR(TCONST_effSort));
     obj[FPSTR(TCONST_effSort)] = type;
     set_effects_config_param(nullptr, &obj);
     doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
@@ -3041,13 +3045,13 @@ void sync_parameters(){
     doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
 #endif
 
-    obj[FPSTR(TCONST_txtSpeed)] = String(110U - embui.param(FPSTR(TCONST_txtSpeed)).toInt());
+    obj[FPSTR(TCONST_txtSpeed)] = 110 - embui.paramVariant(FPSTR(TCONST_txtSpeed)).as<int>();
     obj[FPSTR(TCONST_txtOf)] = embui.param(FPSTR(TCONST_txtOf));
     obj[FPSTR(TCONST_ny_period)] = embui.param(FPSTR(TCONST_ny_period));
     obj[FPSTR(TCONST_txtBfade)] = embui.param(FPSTR(TCONST_txtBfade));
 
     String datetime;
-    TimeProcessor::getDateTimeString(datetime, embui.param(FPSTR(TCONST_ny_unix)).toInt());
+    TimeProcessor::getDateTimeString(datetime, embui.paramVariant(FPSTR(TCONST_ny_unix)));
     obj[FPSTR(TCONST_ny_unix)] = datetime;
     
     set_text_config(nullptr, &obj);
@@ -3095,7 +3099,7 @@ void sync_parameters(){
     #endif
 #endif
 
-    uint8_t alarmPT = embui.param(FPSTR(TCONST_alarmPT)).toInt();
+    uint8_t alarmPT = embui.paramVariant(FPSTR(TCONST_alarmPT));
     obj[FPSTR(TCONST_alarmP)] = alarmPT>>4;
     obj[FPSTR(TCONST_alarmT)] = alarmPT&0x0F;
 
@@ -3151,7 +3155,18 @@ void event_worker(DEV_EVENT *event){
     LOG(printf_P, PSTR("%s - %s\n"), ((DEV_EVENT *)event)->getName().c_str(), embui.timeProcessor.getFormattedShortTime().c_str());
 
     switch (event->getEvent()) {
-    case EVENT_TYPE::ON: action = RA_ON; break;
+    case EVENT_TYPE::ON : {
+        run_action(ra::on);
+        if (!event->getMessage().isEmpty()){
+            // вывести текст на лампу через 3 секунды
+            StringTask *t = new StringTask(event->getMessage().c_str(), 3 * TASK_SECOND, TASK_ONCE, nullptr, &ts, false, nullptr,  [](){
+                StringTask *cur = (StringTask *)ts.getCurrentTask();
+                remote_action(RA::RA_SEND_TEXT, cur->getData(), NULL);
+            }, true);
+            t->enableDelayed();
+        }
+        return;
+    }
     case EVENT_TYPE::OFF: action = RA_OFF; break;
     case EVENT_TYPE::DEMO: action = RA_DEMO; break;
     case EVENT_TYPE::ALARM: action = RA_ALARM; break;
@@ -3284,6 +3299,7 @@ void remote_action(RA action, ...){
     LOG(println);
 
     switch (action) {
+        // still used by the 'button'
         case RA::RA_ON:
             CALL_INTF(FPSTR(TCONST_ONflag), true, set_onflag);
             if(value){
@@ -3757,8 +3773,7 @@ String httpCallback(const String &param, const String &value, bool isset){
         return result;
     } else {
         LOG(println, F("SET"));
-        if (upperParam == FPSTR(CMD_ON)) { action = (value!="0" ? RA_ON : RA_OFF); remote_action(action, NULL, NULL); return result; }
-        else if (upperParam == FPSTR(CMD_OFF)) { action = (value!="0" ? RA_OFF : RA_ON); remote_action(action, NULL, NULL); return result; }
+        if ( upperParam == FPSTR(CMD_ON) || upperParam == FPSTR(CMD_OFF ) ){ run_action(value =="0" ? ra::off : ra::on ); return result; }
         else if (upperParam == FPSTR(CMD_DEMO)) action = RA_DEMO;
         else if (upperParam == FPSTR(CMD_MSG)) action = RA_SEND_TEXT;
         else if (upperParam == FPSTR(CMD_EFFECT)) action = RA_EFFECT;

@@ -1,8 +1,6 @@
-//#pragma once
-#ifndef __INTERFACE_H
-#define __INTERFACE_H
-
+#pragma once
 #include "EmbUI.h"
+
 typedef enum _remote_action {
     RA_UNKNOWN,
     RA_ON,
@@ -55,6 +53,7 @@ typedef enum _remote_action {
 } RA;
 
 void remote_action(RA action, ...);
+
 String httpCallback(const String &param, const String &value, bool isset);
 #ifdef ESP_USE_BUTTON
 void default_buttons();
@@ -81,11 +80,3 @@ void show_effects_config_param(Interface *interf, JsonObject *data);
  * здесь выводится ПОЛНЫЙ сипсок эффектов
  */
 void block_effects_config(Interface *interf, JsonObject *data);
-
-#ifdef DELAYED_EFFECTS
- #define INDEX_BUILD_DELAY 5
-#else
- #define INDEX_BUILD_DELAY 1
-#endif
-
-#endif

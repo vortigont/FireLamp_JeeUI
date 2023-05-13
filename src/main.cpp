@@ -118,7 +118,7 @@ void setup() {
     //embui.mqtt(mqttCallback, true);
     embui.mqtt(mqttCallback, mqttConnect, true);
 #endif
-    myLamp.effects.setEffSortType((SORT_TYPE)embui.param(FPSTR(TCONST_effSort)).toInt()); // сортировка должна быть определена до заполнения
+    myLamp.effects.setEffSortType((SORT_TYPE)embui.paramVariant(FPSTR(TCONST_effSort)).as<int>()); // сортировка должна быть определена до заполнения
     myLamp.effects.initDefault(); // если вызывать из конструктора, то не забыть о том, что нужно инициализировать Serial.begin(115200); иначе ничего не увидеть!
     myLamp.events.loadConfig(); // << -- SDK3.0 будет падение, разобраться позже
 #ifdef RTC
@@ -130,7 +130,7 @@ void setup() {
 #endif
 
     // restore matrix current limit from config
-    myLamp.lamp_init(embui.param(FPSTR(TCONST_CLmt)).toInt());
+    myLamp.lamp_init(embui.paramVariant(FPSTR(TCONST_CLmt)));
 
 #ifdef ESP_USE_BUTTON
     myLamp.setbPin(embui.param(FPSTR(TCONST_PINB)).toInt());
@@ -144,8 +144,8 @@ void setup() {
     myLamp.events.setEventCallback(event_worker);
 
 #ifdef MP3PLAYER
-    int rxpin = embui.param(FPSTR(TCONST_PINMP3RX)).toInt() | MP3_RX_PIN;
-    int txpin = embui.param(FPSTR(TCONST_PINMP3TX)).toInt() | MP3_TX_PIN;
+    int rxpin = embui.paramVariant(FPSTR(TCONST_PINMP3RX)) | MP3_RX_PIN;
+    int txpin = embui.paramVariant(FPSTR(TCONST_PINMP3TX)) | MP3_TX_PIN;
     mp3 = new MP3PLAYERDEVICE(rxpin, txpin); //rxpin, txpin
 #endif
 

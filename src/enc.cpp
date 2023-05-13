@@ -44,6 +44,9 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "DS18B20.h"
 #endif
 
+#include "lamp.h"
+#include "actions.hpp"
+
 uint8_t currDynCtrl;        // текущий контрол, с которым работаем
 uint8_t currAction;         // идент текущей операции: 0 - ничего, 1 - крутим яркость, 2 - меняем эффекты, 3 - меняем динамические контролы
 uint16_t currEffNum;        // текущий номер эффекта
@@ -353,7 +356,7 @@ void myClicks() {
       tm1637.display(String(F("Off")), true, false, 1);  // Выводим 
 #endif
     } else {
-      remote_action(RA::RA_ON, NULL);
+      run_action(ra::on);
 #ifdef TM1637_CLOCK
       tm1637.getSetDelay() = 1;
       tm1637.display(String(F("On")), true, false, 2);  // Выводим 
