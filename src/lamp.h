@@ -553,7 +553,7 @@ public:
 
 //-----------------------------------------------
 #ifdef MP3PLAYER
-extern MP3PLAYERDEVICE *mp3;
+extern MP3PlayerDevice *mp3;
 #endif
 class ALARMTASK : public Task {
 private:

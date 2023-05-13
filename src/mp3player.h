@@ -41,11 +41,13 @@ typedef enum : uint8_t {AT_NONE=0, AT_FIRST, AT_SECOND, AT_THIRD, AT_FOURTH, AT_
 #ifdef MP3PLAYER
 #ifndef __MP3_PLAYER_H
 #define __MP3_PLAYER_H
+#ifdef ESP8266
 #include <SoftwareSerial.h>
+#endif
 #include "DFRobotDFPlayerMini.h"
 #include "ts.h"
 
-class MP3PLAYERDEVICE : protected DFRobotDFPlayerMini {
+class MP3PlayerDevice : protected DFRobotDFPlayerMini {
   private:
     union {
       struct {
@@ -69,15 +71,28 @@ class MP3PLAYERDEVICE : protected DFRobotDFPlayerMini {
     uint16_t nextAdv=0; // следующее воспроизводимое сообщение (произношение минут после часов)
     uint16_t cur_effnb=0; // текущий эффект
     uint16_t prev_effnb=0; // предыдущий эффект
-    SoftwareSerial mp3player;
+
+    bool internalsoftserial = false;        // if we are using internal softserial, than it need to be destructed on eol
+    Stream *mp3player;                      // serial port mapped stream object (hw or softserial)
+
     String soundfile; // хранилище пути/имени
     unsigned long restartTimeout = millis(); // таймаут воспроизведения имени эффекта
     void printSatusDetail();
     void playAdvertise(int filenb);
     void playFolder0(int filenb);
     void restartSound();
+
+    /**
+     * @brief initialize player
+     * 
+     */
+    void init();
+
   public:
-    MP3PLAYERDEVICE(const uint8_t rxPin, const uint8_t txPin); // конструктор
+    MP3PlayerDevice(const uint8_t rxPin, const uint8_t txPin); // конструктор для внутреннего SoftSerial
+    MP3PlayerDevice(Stream *port); // конструктор для Stream
+    ~MP3PlayerDevice();
+
     uint16_t getCurPlayingNb() {return prev_effnb;} // вернуть предыдущий для смещения
     void setupplayer(uint16_t effnb, const String &_soundfile) {soundfile = _soundfile; cur_effnb=effnb;};
     bool isReady() {return ready;}

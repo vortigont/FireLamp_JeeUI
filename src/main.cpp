@@ -55,7 +55,7 @@ Buttons *myButtons;
 #endif
 
 #ifdef MP3PLAYER
-MP3PLAYERDEVICE *mp3 = nullptr;
+MP3PlayerDevice *mp3 = nullptr;
 #endif
 
 #ifdef TM1637_CLOCK
@@ -144,9 +144,11 @@ void setup() {
     myLamp.events.setEventCallback(event_worker);
 
 #ifdef MP3PLAYER
-    int rxpin = embui.paramVariant(FPSTR(TCONST_PINMP3RX)) | MP3_RX_PIN;
-    int txpin = embui.paramVariant(FPSTR(TCONST_PINMP3TX)) | MP3_TX_PIN;
-    mp3 = new MP3PLAYERDEVICE(rxpin, txpin); //rxpin, txpin
+    // в вебюи нет формы для изменения этих параметров, используем статику
+    //int rxpin = embui.paramVariant(FPSTR(TCONST_PINMP3RX)) | MP3_RX_PIN;
+    //int txpin = embui.paramVariant(FPSTR(TCONST_PINMP3TX)) | MP3_TX_PIN;
+    LOG(printf_P, PSTR("DFPlayer: rx:%d tx:%d\n"), MP3_RX_PIN, MP3_TX_PIN);
+    mp3 = new MP3PlayerDevice(MP3_RX_PIN, MP3_TX_PIN); //rxpin, txpin
 #endif
 
 #ifdef ESP8266

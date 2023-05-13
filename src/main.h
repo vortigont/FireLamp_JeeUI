@@ -82,7 +82,7 @@ extern Buttons *myButtons;
 #endif
 #ifdef MP3PLAYER
 #include "mp3player.h"
-extern MP3PLAYERDEVICE *mp3;
+extern MP3PlayerDevice *mp3;
 #endif
 
 #ifdef EMBUI_USE_MQTT
