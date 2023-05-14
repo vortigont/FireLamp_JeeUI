@@ -1330,7 +1330,6 @@ void set_settings_mp3(Interface *interf, JsonObject *data){
 
     SETPARAM(FPSTR(TCONST_mp3count), mp3->setMP3count((*data)[FPSTR(TCONST_mp3count)].as<int>())); // кол-во файлов в папке мп3
     embui.var(FPSTR(TCONST_mp3volume), (*data)[FPSTR(TCONST_mp3volume)], true);
-    //SETPARAM(FPSTR(TCONST_mp3volume)); // тоже пишет в плеер, разносим во времени
 
     save_lamp_flags();
     basicui::section_settings_frame(interf, data);
@@ -2300,7 +2299,6 @@ void set_mp3volume(Interface *interf, JsonObject *data){
     int volume = (*data)[FPSTR(TCONST_mp3volume)];
     embui.var(FPSTR(TCONST_mp3volume), volume, true);
     mp3->setVolume(volume);
-    //SETPARAM(FPSTR(TCONST_mp3volume), mp3->setVolume(volume));
 }
 
 void set_mp3_player(Interface *interf, JsonObject *data){
@@ -2980,7 +2978,8 @@ void sync_parameters(){
         CALL_SETTER(String(FPSTR(TCONST_dynCtrl)) + "0", myLamp.getLampBrightness(), set_effects_dynCtrl);
 
 #ifdef MP3PLAYER
-    Task *t = new Task(DFPLAYER_START_DELAY+500, TASK_ONCE, nullptr, &ts, false, nullptr, [tmp](){
+    // т.к. sync_parameters запускается при перезапуске лампы, установку мп3 нужно отложить до момента инициализации плеера
+    Task *t = new Task(DFPLAYER_START_DELAY+250, TASK_ONCE, nullptr, &ts, false, nullptr, [tmp](){
     if(!mp3->isReady()){
         LOG(println, F("DFPlayer not ready yet..."));
         if(millis()<10000){
@@ -2999,7 +2998,8 @@ void sync_parameters(){
     obj[FPSTR(TCONST_eqSetings)] = tmp.MP3eq; // пишет в плеер!
     obj[FPSTR(TCONST_playMP3)] = tmp.playMP3 ;
     obj[FPSTR(TCONST_mp3count)] = embui.paramVariant(FPSTR(TCONST_mp3count));
-    obj[FPSTR(TCONST_limitAlarmVolume)] = tmp.limitAlarmVolume ;
+    obj[FPSTR(TCONST_mp3volume)] = embui.paramVariant(FPSTR(TCONST_mp3volume));
+    obj[FPSTR(TCONST_limitAlarmVolume)] = tmp.limitAlarmVolume;
 
     set_settings_mp3(nullptr, &obj);
     doc.clear();
@@ -3007,8 +3007,6 @@ void sync_parameters(){
     mp3->setupplayer(myLamp.effects.getEn(), myLamp.effects.getSoundfile()); // установить начальные значения звука
     obj[FPSTR(TCONST_isOnMP3)] = tmp.isOnMP3 ;
     set_mp3flag(nullptr, &obj);
-
-    CALL_SETTER(FPSTR(TCONST_mp3volume), embui.paramVariant(FPSTR(TCONST_mp3volume)), set_mp3volume);
     }, true);
     t->enableDelayed();
 #endif
@@ -3085,8 +3083,8 @@ void sync_parameters(){
     obj[FPSTR(TCONST_isClearing)] = tmp.isEffClearing ;
     obj[FPSTR(TCONST_DRand)] = tmp.dRand ;
     obj[FPSTR(TCONST_showName)] = tmp.showName ;
-    obj[FPSTR(TCONST_DTimer)] = embui.paramVariant(FPSTR(TCONST_DTimer)) ;
-    obj[FPSTR(TCONST_spdcf)] = embui.param(FPSTR(TCONST_spdcf));
+    obj[FPSTR(TCONST_DTimer)] = embui.paramVariant(FPSTR(TCONST_DTimer));
+    obj[FPSTR(TCONST_spdcf)] = embui.paramVariant(FPSTR(TCONST_spdcf));
 
 #ifdef TM1637_CLOCK
     uint8_t tmBright = embui.param(FPSTR(TCONST_tmBright)).toInt();

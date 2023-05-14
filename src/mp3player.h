@@ -89,8 +89,25 @@ class MP3PlayerDevice : protected DFRobotDFPlayerMini {
     void init();
 
   public:
-    MP3PlayerDevice(const uint8_t rxPin, const uint8_t txPin); // конструктор для внутреннего SoftSerial
+    /**
+     * @brief Construct a new MP3PlayerDevice object
+     * для 8266 будет создан softwareserial port
+     * для esp32 будет подключен аппартный Serial2
+     * 
+     * @param rxPin 
+     * @param txPin 
+     */
+    MP3PlayerDevice(const uint8_t rxPin, const uint8_t txPin);
+
+    /**
+     * @brief Construct a new MP3PlayerDevice object
+     * плюключить плеер на произвольный порт
+     * порт должен быть УЖЕ инициализирован на требуемую скорость/параметры
+     * @param port stream object
+     */
     MP3PlayerDevice(Stream *port); // конструктор для Stream
+
+    // d-tor
     ~MP3PlayerDevice();
 
     uint16_t getCurPlayingNb() {return prev_effnb;} // вернуть предыдущий для смещения

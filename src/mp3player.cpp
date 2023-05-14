@@ -69,29 +69,30 @@ void MP3PlayerDevice::init(){
   flags = 0;
 
   setTimeOut(MP3_SERIAL_TIMEOUT); //Set serial communictaion time out ~300ms
-  LOG(println);
-  LOG(println, F("DFplayer: DFRobot DFPlayer Mini"));
-  LOG(println, F("DFplayer: Initializing DFPlayer ... (May take 3~5 seconds)"));
-  // cur_volume при инициализации используется как счетчик попыток :), так делать не хорошо, но экономим память
-  Task *_t = new Task(DFPLAYER_START_DELAY, TASK_ONCE, nullptr, &ts, false, nullptr, [this](){
-    if(!begin(*mp3player) && cur_volume++<=5){
-        LOG(printf_P, PSTR("DFPlayer: Unable to begin: %d...\n"), cur_volume);
-        ts.getCurrentTask()->restartDelayed(MP3_SERIAL_TIMEOUT);
+
+  LOG(println, F("DFplayer: Initializing DFPlayer ... (May take up to 5 seconds)"));
+
+  // try to connect (5 times, each second)
+  Task *_t = new Task(TASK_SECOND, 5, [this](){
+    if(!begin(*mp3player)){
+        LOG(printf_P, PSTR("DFPlayer: Unable to begin: %d...\n"), ts.getCurrentTask()->getIterations() );
         return;
     }
 
-    if (cur_volume>5 && !begin(*mp3player)) {
-      LOG(println, F("DFplayer: 1.Please recheck the connection!"));
-      LOG(println, F("DFplayer: 2.Please insert the SD card!"));
-      ready = false;
-      return;
-    }
     ready = true;
-    LOG(println, F("DFplayer: DFPlayer Mini online."));
     outputDevice(DFPLAYER_DEVICE_SD);
-    setTempVolume(5);
-  }, true);
-  _t->enableDelayed();
+    LOG(println, F("DFplayer: DFPlayer Mini online."));
+
+    ts.getCurrentTask()->disable();
+  }, 
+  &ts, false, nullptr,
+  [this](){
+    if (!ready) {
+      LOG(println, F("DFplayer: 1.Please recheck the connection/insert the SD card!"));
+    }
+  },
+  true);
+  _t->enableDelayed(DFPLAYER_START_DELAY);
 }
 
 void MP3PlayerDevice::restartSound()
@@ -373,15 +374,7 @@ void MP3PlayerDevice::ReStartAlarmSound(ALARM_SOUND_TYPE val){
 
 void MP3PlayerDevice::setVolume(uint8_t vol) {
   cur_volume=vol;
-  if(ready){
-    int tcnt = 5;
-    do {
-      tcnt--;
-      if(readVolume()!=vol)
-        volume(vol);
-    } while(!readType() && tcnt);
-  }
-  LOG(printf_P, PSTR("DFplayer: Set volume: %d\n"), cur_volume);
+  setTempVolume(vol);
 }
 
 void MP3PlayerDevice::setTempVolume(uint8_t vol) {
@@ -393,7 +386,7 @@ void MP3PlayerDevice::setTempVolume(uint8_t vol) {
         volume(vol);
     } while(!readType() && tcnt);
   }
-  LOG(printf_P, PSTR("DFplayer: Set temp volume: %d\n"), vol);
+  LOG(printf_P, PSTR("DFplayer: Set volume: %d\n"), vol);
 }
 
 void MP3PlayerDevice::setIsOn(bool val, bool forcePlay) {
