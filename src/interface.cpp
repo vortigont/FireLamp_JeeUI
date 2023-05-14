@@ -565,7 +565,7 @@ void block_effects_param(Interface *interf, JsonObject *data){
                         ctrlName=String(FPSTR(TINTF_0C9))+ctrlName;
 
                     if(interf) interf->checkbox(String(FPSTR(TCONST_dynCtrl)) + String(ctrl->getId())
-                    , ctrl->getVal()
+                    , ctrl->getVal() == "1" ? true : false
                     , ctrlName
                     , true
                     );
@@ -1600,9 +1600,6 @@ void block_settings_other(Interface *interf, JsonObject *data){
     float sf = embui.paramVariant(FPSTR(TCONST_spdcf));
     interf->range(FPSTR(TCONST_spdcf), sf, 0.25, 4.0, 0.25, FPSTR(TINTF_0D3), false);
 
-    // отображение системного меню
-    interf->checkbox(FPSTR(TCONST_isShowSysMenu), myLamp.getLampSettings().isShowSysMenu , FPSTR(TINTF_093), false);
-
 #ifdef TM1637_CLOCK
     interf->spacer(FPSTR(TINTF_0D4));
     interf->checkbox(FPSTR(TCONST_tm24), myLamp.getLampSettings().tm24, FPSTR(TINTF_0D7), false);
@@ -1655,8 +1652,6 @@ void set_settings_other(Interface *interf, JsonObject *data){
 
         float sf = (*data)[FPSTR(TCONST_spdcf)];
         SETPARAM(FPSTR(TCONST_spdcf), myLamp.setSpeedFactor(sf));
-
-        myLamp.setIsShowSysMenu((*data)[FPSTR(TCONST_isShowSysMenu)]);
 
     #ifdef TM1637_CLOCK
         uint8_t tmBri = ((*data)[FPSTR(TCONST_tmBrightOn)]).as<uint8_t>()<<4; // старшие 4 бита
@@ -2526,8 +2521,7 @@ if (!interf) return;
 #endif
     interf->button(FPSTR(TCONST_show_other), FPSTR(TINTF_082));
 
-    if(myLamp.isShowSysMenu())
-        interf->button(FPSTR(TCONST_ESPsysSettings), FPSTR(TINTF_08F));
+    interf->button(FPSTR(TCONST_ESPsysSettings), FPSTR(TINTF_08F));
 
 #ifndef MOOT
     block_lamp_config(interf, data);
@@ -3093,7 +3087,6 @@ void sync_parameters(){
     obj[FPSTR(TCONST_showName)] = tmp.showName ;
     obj[FPSTR(TCONST_DTimer)] = embui.paramVariant(FPSTR(TCONST_DTimer)) ;
     obj[FPSTR(TCONST_spdcf)] = embui.param(FPSTR(TCONST_spdcf));
-    obj[FPSTR(TCONST_isShowSysMenu)] = tmp.isShowSysMenu ;
 
 #ifdef TM1637_CLOCK
     uint8_t tmBright = embui.param(FPSTR(TCONST_tmBright)).toInt();
