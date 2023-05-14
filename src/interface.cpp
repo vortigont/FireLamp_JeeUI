@@ -851,7 +851,7 @@ void set_eff_next(Interface *interf, JsonObject *data){
  */
 void set_onflag(Interface *interf, JsonObject *data){
     if (!data) return;
-    bool newpower = TOGLE_STATE((*data)[FPSTR(TCONST_ONflag)], myLamp.isLampOn());
+    bool newpower = (*data)[FPSTR(TCONST_ONflag)];  // TOGLE_STATE((*data)[FPSTR(TCONST_ONflag)], myLamp.isLampOn());
     if (newpower != myLamp.isLampOn()) {
         if (newpower) {
             // включаем через switcheffect, т.к. простого isOn недостаточно чтобы запустить фейдер и поменять яркость (при необходимости)
@@ -905,14 +905,18 @@ void set_demoflag(Interface *interf, JsonObject *data){
     if (!data) return;
     resetAutoTimers();
     // Специально не сохраняем, считаю что демо при старте не должно запускаться
-    bool newdemo = TOGLE_STATE((*data)[FPSTR(TCONST_Demo)], (myLamp.getMode() == LAMPMODE::MODE_DEMO));
+    bool newdemo = (*data)[FPSTR(TCONST_Demo)]; // TOGLE_STATE((*data)[FPSTR(TCONST_Demo)], (myLamp.getMode() == LAMPMODE::MODE_DEMO));
+    // сохраняем если был выставлен дефайн
+#ifdef RESTORE_STATE
+    embui.var(FPSTR(TCONST_Demo), (*data)[FPSTR(TCONST_Demo)]);
+#endif
     switch (myLamp.getMode()) {
         case LAMPMODE::MODE_OTA:
         case LAMPMODE::MODE_ALARMCLOCK:
         case LAMPMODE::MODE_NORMAL:
         case LAMPMODE::MODE_RGBLAMP:
             if(newdemo)
-                myLamp.startDemoMode(embui.paramVariant(FPSTR(TCONST_DTimer)));
+                myLamp.startDemoMode(embui.paramVariant(FPSTR(TCONST_DTimer)) | DEFAULT_DEMO_TIMER);
             break;
         case LAMPMODE::MODE_DEMO:
         case LAMPMODE::MODE_WHITELAMP:
@@ -921,9 +925,6 @@ void set_demoflag(Interface *interf, JsonObject *data){
             break;
         default:;
     }
-#ifdef RESTORE_STATE
-    embui.var(FPSTR(TCONST_Demo), (*data)[FPSTR(TCONST_Demo)]);
-#endif
     myLamp.setDRand(myLamp.getLampSettings().dRand);
 #ifdef EMBUI_USE_MQTT
     embui.publish(String(FPSTR(TCONST_embui_pub_)) + FPSTR(TCONST_mode), String(myLamp.getMode()), true);
@@ -1595,7 +1596,7 @@ void block_settings_other(Interface *interf, JsonObject *data){
     interf->checkbox(FPSTR(TCONST_isClearing), myLamp.getLampSettings().isEffClearing , FPSTR(TINTF_083), false);
     interf->checkbox(FPSTR(TCONST_DRand), myLamp.getLampSettings().dRand , FPSTR(TINTF_03E), false);
     interf->checkbox(FPSTR(TCONST_showName), myLamp.getLampSettings().showName , FPSTR(TINTF_09A), false);
-    interf->range(FPSTR(TCONST_DTimer), 30, 250, 5, FPSTR(TINTF_03F));
+    interf->range(FPSTR(TCONST_DTimer), 30, 600, 15, FPSTR(TINTF_03F));
     float sf = embui.paramVariant(FPSTR(TCONST_spdcf));
     interf->range(FPSTR(TCONST_spdcf), sf, 0.25, 4.0, 0.25, FPSTR(TINTF_0D3), false);
 
@@ -1634,14 +1635,14 @@ void show_settings_other(Interface *interf, JsonObject *data){
 void set_settings_other(Interface *interf, JsonObject *data){
     if (!data) return;
     resetAutoTimers();
-
+/*
     DynamicJsonDocument *_str = new DynamicJsonDocument(1024);
     (*_str)=(*data);
 
     Task *_t = new Task(300, TASK_ONCE, [_str](){
         JsonObject dataStore = (*_str).as<JsonObject>();
         JsonObject *data = &dataStore;
-
+*/
         // LOG(printf_P,PSTR("Settings: %s\n"),tmpData.c_str());
         myLamp.setMIRR_H((*data)[FPSTR(TCONST_MIRR_H)]);
         myLamp.setMIRR_V((*data)[FPSTR(TCONST_MIRR_V)]);
@@ -1650,7 +1651,7 @@ void set_settings_other(Interface *interf, JsonObject *data){
         myLamp.setDRand((*data)[FPSTR(TCONST_DRand)]);
         myLamp.setShowName((*data)[FPSTR(TCONST_showName)]);
 
-        SETPARAM(FPSTR(TCONST_DTimer), ({if (myLamp.getMode() == LAMPMODE::MODE_DEMO){ myLamp.demoTimer(T_DISABLE); myLamp.demoTimer(T_ENABLE, embui.paramVariant(FPSTR(TCONST_DTimer))); }}));
+        SETPARAM(FPSTR(TCONST_DTimer), ({if (myLamp.getMode() == LAMPMODE::MODE_DEMO){ myLamp.demoTimer(T_ENABLE, embui.paramVariant(FPSTR(TCONST_DTimer))); } }) );
 
         float sf = (*data)[FPSTR(TCONST_spdcf)];
         SETPARAM(FPSTR(TCONST_spdcf), myLamp.setSpeedFactor(sf));
@@ -1675,12 +1676,12 @@ void set_settings_other(Interface *interf, JsonObject *data){
         //LOG(printf_P, PSTR("alatmPT=%d, alatmP=%d, alatmT=%d\n"), alatmPT, myLamp.getAlarmP(), myLamp.getAlarmT());
 
         save_lamp_flags();
-        delete _str; },
+/*        delete _str; },
         &ts, false, nullptr, nullptr, true
     );
     _t->enableDelayed();
+*/
 
-    //basicui::section_settings_frame(interf, data);
     if(interf)
         basicui::section_settings_frame(interf, data);
 }
@@ -2357,12 +2358,12 @@ void block_streaming(Interface *interf, JsonObject *data){
             interf->checkbox(FPSTR(TCONST_direct), myLamp.isDirect(), FPSTR(TINTF_0E6), true);
             interf->checkbox(FPSTR(TCONST_mapping), myLamp.isMapping(), FPSTR(TINTF_0E7), true);
         interf->json_section_end();
-        interf->select(FPSTR(TCONST_stream_type), embui.param(FPSTR(TCONST_stream_type)), (String)FPSTR(TINTF_0E3), true);
+        interf->select(FPSTR(TCONST_stream_type), embui.paramVariant(FPSTR(TCONST_stream_type)), FPSTR(TINTF_0E3), true);
             interf->option(String(E131), FPSTR(TINTF_0E4));
             interf->option(String(SOUL_MATE), FPSTR(TINTF_0E5));
         interf->json_section_end();
         interf->range(FPSTR(TCONST_bright), (String)myLamp.getBrightness(), 0, 255, 1, (String)FPSTR(TINTF_00D), true);
-        if (embui.param(FPSTR(TCONST_stream_type)).toInt() == E131){
+        if (embui.paramVariant(FPSTR(TCONST_stream_type)).toInt() == E131){
             interf->range(FPSTR(TCONST_Universe), embui.paramVariant(FPSTR(TCONST_Universe)), 1, 255, 1, FPSTR(TINTF_0E8), true);
             int uni = mx.cfg.h() / (512U / (mx.cfg.w() * 3)) + !!mx.cfg.h()%(512U / (mx.cfg.w() * 3));
             interf->comment( String(F("Universes:")) + uni + F(";    X:") + mx.cfg.w() + F(";    Y:") + (512U / (mx.cfg.w() * 3)) );
@@ -2384,7 +2385,7 @@ void set_streaming(Interface *interf, JsonObject *data){
     myLamp.setStream(flag);
     LOG(printf_P, PSTR("Stream set %d \n"), flag);
     if (flag) {
-        STREAM_TYPE type = (STREAM_TYPE)embui.param(FPSTR(TCONST_stream_type)).toInt();
+        STREAM_TYPE type = (STREAM_TYPE)embui.paramVariant(FPSTR(TCONST_stream_type)).as<int>();
         if (ledStream) {
             if (ledStream->getStreamType() != type){
                 Led_Stream::clearStreamObj();
@@ -2754,7 +2755,7 @@ void create_parameters(){
     embui.var_create(FPSTR(TCONST_Demo), false);
 #endif
 
-    embui.var_create(FPSTR(TCONST_DTimer), 60); // Дефолтное значение, настраивается из UI
+    embui.var_create(FPSTR(TCONST_DTimer), DEFAULT_DEMO_TIMER); // Дефолтное значение, настраивается из UI
     embui.var_create(FPSTR(TCONST_alarmPT), 85); // 5<<4+5, старшие и младшие 4 байта содержат 5
 
     embui.var_create(FPSTR(TCONST_spdcf), 1.0);
@@ -2921,8 +2922,6 @@ void create_parameters(){
 
 void sync_parameters(){
     DynamicJsonDocument doc(1024);
-    //https://arduinojson.org/v6/api/jsondocument/
-    //JsonDocument::to<T>() clears the document and converts it to the specified type. Don’t confuse this function with JsonDocument::as<T>() that returns a reference only if the requested type matches the one in the document.
     JsonObject obj = doc.to<JsonObject>();
 
 /*
@@ -2934,7 +2933,7 @@ void sync_parameters(){
 */
 
 #ifdef EMBUI_USE_MQTT
-    myLamp.setmqtt_int(embui.param(FPSTR(P_m_tupd)).toInt());
+    myLamp.setmqtt_int(embui.paramVariant(FPSTR(P_m_tupd)));
 #endif
 
     String syslampFlags(embui.param(FPSTR(TCONST_syslampFlags)));
@@ -2947,25 +2946,25 @@ void sync_parameters(){
 
     obj[FPSTR(TCONST_drawbuff)] = tmp.isDraw;
     set_drawflag(nullptr, &obj);
-    doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>(); // https://arduinojson.org/v6/how-to/reuse-a-json-document/
+    doc.clear();
 
 #ifdef LAMP_DEBUG
     obj[FPSTR(TCONST_debug)] = tmp.isDebug ;
     set_debugflag(nullptr, &obj);
-    doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
+    doc.clear();
 #endif
 
     //LOG(printf_P,PSTR("tmp.isEventsHandled=%d\n"), tmp.isEventsHandled);
     obj[FPSTR(TCONST_Events)] = tmp.isEventsHandled;
     CALL_INTF_OBJ(set_eventflag);
     //set_eventflag(nullptr, &obj);
-    doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
+    doc.clear();
     embui.timeProcessor.attach_callback(std::bind(&LAMP::setIsEventsHandled, &myLamp, myLamp.IsEventsHandled())); // только после синка будет понятно включены ли события
 
     myLamp.setGlobalBrightness(embui.paramVariant(FPSTR(TCONST_GlobBRI))); // починить бросок яркости в 255 при первом включении
     obj[FPSTR(TCONST_GBR)] = tmp.isGlobalBrightness;
     set_gbrflag(nullptr, &obj);
-    doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
+    doc.clear();
 
 #ifdef RESTORE_STATE
     obj[FPSTR(TCONST_ONflag)] = tmp.ONflag;
@@ -2976,9 +2975,9 @@ void sync_parameters(){
     if(!tmp.ONflag){ // иначе - после
         CALL_SETTER(FPSTR(TCONST_effListMain), embui.paramVariant(FPSTR(TCONST_effListMain)), set_effects_list);
     }
-    doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
+    doc.clear();
     if(myLamp.isLampOn())
-        CALL_SETTER(FPSTR(TCONST_Demo), embui.param(FPSTR(TCONST_Demo)), set_demoflag); // Демо через режимы, для него нужнен отдельный флаг :(
+        CALL_SETTER(FPSTR(TCONST_Demo), embui.paramVariant(FPSTR(TCONST_Demo)), set_demoflag); // Демо через режимы, для него нужнен отдельный флаг :(
 #else
     CALL_SETTER(FPSTR(TCONST_effListMain), embui.paramVariant(FPSTR(TCONST_effListMain)), set_effects_list);
 #endif
@@ -2997,8 +2996,6 @@ void sync_parameters(){
     }
     
     DynamicJsonDocument doc(1024);
-    //https://arduinojson.org/v6/api/jsondocument/
-    //JsonDocument::to<T>() clears the document and converts it to the specified type. Don’t confuse this function with JsonDocument::as<T>() that returns a reference only if the requested type matches the one in the document.
     JsonObject obj = doc.to<JsonObject>();
 
     obj[FPSTR(TCONST_playTime)] = tmp.playTime;
@@ -3023,7 +3020,7 @@ void sync_parameters(){
 #endif
 
 #ifdef AUX_PIN
-    CALL_SETTER(FPSTR(TCONST_AUX), embui.param(FPSTR(TCONST_AUX)), set_auxflag);
+    CALL_SETTER(FPSTR(TCONST_AUX), embui.paramVariant(FPSTR(TCONST_AUX)), set_auxflag);
 #endif
 
     myLamp.setClearingFlag(tmp.isEffClearing);
@@ -3034,14 +3031,14 @@ void sync_parameters(){
     SORT_TYPE type = (SORT_TYPE)embui.paramVariant(FPSTR(TCONST_effSort));
     obj[FPSTR(TCONST_effSort)] = type;
     set_effects_config_param(nullptr, &obj);
-    doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
+    doc.clear();
 
 #ifdef ESP_USE_BUTTON
     obj[FPSTR(TCONST_Btn)] = tmp.isBtn ;
     CALL_INTF_OBJ(set_btnflag);
     obj[FPSTR(TCONST_EncVG)] = tmp.GaugeType;
     CALL_INTF_OBJ(set_gaugetype);
-    doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
+    doc.clear();
 #endif
 #ifdef ENCODER
     obj[FPSTR(TCONST_encTxtCol)] = embui.param(FPSTR(TCONST_encTxtCol));
@@ -3049,7 +3046,7 @@ void sync_parameters(){
     obj[FPSTR(TCONST_EncVG)] = tmp.GaugeType ;;
     obj[FPSTR(TCONST_EncVGCol)] = embui.param(FPSTR(TCONST_EncVGCol));
     set_settings_enc(nullptr, &obj);
-    doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
+    doc.clear();
 #endif
 
     obj[FPSTR(TCONST_txtSpeed)] = 110 - embui.paramVariant(FPSTR(TCONST_txtSpeed)).as<int>();
@@ -3062,37 +3059,40 @@ void sync_parameters(){
     obj[FPSTR(TCONST_ny_unix)] = datetime;
     
     set_text_config(nullptr, &obj);
-    doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
+    doc.clear();
 
 #ifdef USE_STREAMING
     obj[FPSTR(TCONST_isStreamOn)] = tmp.isStream ;
     set_streaming(nullptr, &obj);
-    doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
+    doc.clear();
 
     obj[FPSTR(TCONST_direct)] = tmp.isDirect ;
     set_streaming_drirect(nullptr, &obj);
-    doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
+    doc.clear();
 
     obj[FPSTR(TCONST_mapping)] = tmp.isMapping ;
     set_streaming_mapping(nullptr, &obj);
-    doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
+    doc.clear();
 
     obj[FPSTR(TCONST_stream_type)] = embui.param(FPSTR(TCONST_stream_type));
     set_streaming_type(nullptr, &obj);
-    doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
+    doc.clear();
 
     obj[FPSTR(TCONST_Universe)] = embui.param(FPSTR(TCONST_Universe));
     set_streaming_universe(nullptr, &obj);
-    doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
+    doc.clear();
 #endif
 
-
-    obj[FPSTR(TCONST_isFaderON)] = tmp.isFaderON ;
-    obj[FPSTR(TCONST_isClearing)] = tmp.isEffClearing ;
+    // собираем конфигурацию для объекта лампы из сохраненного конфига и текущего же состояния лампы (масло масляное)
+    // имеет смысл при первом запуске. todo: часть можно выкинуть ибо переписывание в самих себя
     obj[FPSTR(TCONST_MIRR_H)] = mx.cfg.hmirror() ;
     obj[FPSTR(TCONST_MIRR_V)] = mx.cfg.vmirror() ;
+    obj[FPSTR(TCONST_isFaderON)] = tmp.isFaderON ;
+    obj[FPSTR(TCONST_isClearing)] = tmp.isEffClearing ;
     obj[FPSTR(TCONST_DRand)] = tmp.dRand ;
     obj[FPSTR(TCONST_showName)] = tmp.showName ;
+    obj[FPSTR(TCONST_DTimer)] = embui.paramVariant(FPSTR(TCONST_DTimer)) ;
+    obj[FPSTR(TCONST_spdcf)] = embui.param(FPSTR(TCONST_spdcf));
     obj[FPSTR(TCONST_isShowSysMenu)] = tmp.isShowSysMenu ;
 
 #ifdef TM1637_CLOCK
@@ -3110,16 +3110,15 @@ void sync_parameters(){
     obj[FPSTR(TCONST_alarmP)] = alarmPT>>4;
     obj[FPSTR(TCONST_alarmT)] = alarmPT&0x0F;
 
-    obj[FPSTR(TCONST_spdcf)] = embui.param(FPSTR(TCONST_spdcf));
-
+    // выполняется метод, который обрабатывает форму вебморды "настройки" - "другие"
     set_settings_other(nullptr, &obj);
-    doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
+    doc.clear();
 
 #ifdef MIC_EFFECTS
     obj[FPSTR(TCONST_Mic)] = tmp.isMicOn ;
     myLamp.getLampState().setMicAnalyseDivider(0);
     set_micflag(nullptr, &obj);
-    doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
+    doc.clear();
 
     // float scale = atof(embui.param(FPSTR(TCONST_micScale)).c_str());
     // float noise = atof(embui.param(FPSTR(TCONST_micNoise)).c_str());
@@ -3129,7 +3128,7 @@ void sync_parameters(){
     obj[FPSTR(TCONST_micNoise)] = embui.param(FPSTR(TCONST_micNoise)); //noise;
     obj[FPSTR(TCONST_micnRdcLvl)] = embui.param(FPSTR(TCONST_micnRdcLvl)); //lvl;
     set_settings_mic(nullptr, &obj);
-    doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
+    doc.clear();
 #endif
 
     //save_lamp_flags(); // обновить состояние флагов (закомментированно, окончательно состояние установится через 0.3 секунды, после set_settings_other)

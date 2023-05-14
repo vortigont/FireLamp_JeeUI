@@ -157,9 +157,9 @@ void setup() {
   embui.server.addHandler(new SPIFFSEditor(LittleFS, F("esp32"), F("esp32")));
 #endif
 
-  sync_parameters();        // падение есп32 не воспоизводится, kDn
+  sync_parameters();
 
-  //embui.setPubInterval(5);   // change periodic WebUI publish interval from EMBUI_PUB_PERIOD to 5
+  embui.setPubInterval(10);   // change periodic WebUI publish interval from EMBUI_PUB_PERIOD to 10 secs
 
 #ifdef TM1637_CLOCK
   tm1637.tm_setup();
