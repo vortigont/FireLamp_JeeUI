@@ -818,7 +818,7 @@ void block_effects_main(Interface *interf, JsonObject *data, bool fast=true){
     interf->json_section_end();
 
     // 'next', 'prev' buttons << >>
-    interf->json_section_line(FPSTR(TCONST_mode));
+    interf->json_section_line();
     interf->button(FPSTR(TCONST_eff_prev), FPSTR(TINTF_015), FPSTR(TCONST__708090));
     interf->button(FPSTR(TCONST_eff_next), FPSTR(TINTF_016), FPSTR(TCONST__5f9ea0));
     interf->json_section_end();
@@ -3073,7 +3073,7 @@ void sync_parameters(){
     obj[FPSTR(TCONST_isShowSysMenu)] = tmp.isShowSysMenu ? "1" : "0";
 
 #ifdef TM1637_CLOCK
-    uint8_t tmBright = embui.param(FPSTR(TCONST_tmBright)).toInt();
+    uint8_t tmBright = embui.paramVariant(FPSTR(TCONST_tmBright));
     obj[FPSTR(TCONST_tmBrightOn)] = tmBright>>4;
     obj[FPSTR(TCONST_tmBrightOff)] = tmBright&0x0F;
     obj[FPSTR(TCONST_tm24)] = tmp.tm24 ? "1" : "0";
