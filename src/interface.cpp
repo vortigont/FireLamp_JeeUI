@@ -3073,7 +3073,7 @@ void sync_parameters(){
     obj[FPSTR(TCONST_isShowSysMenu)] = tmp.isShowSysMenu ? "1" : "0";
 
 #ifdef TM1637_CLOCK
-    uint8_t tmBright = embui.paramVariant(FPSTR(TCONST_tmBright));
+    uint8_t tmBright = embui.param(FPSTR(TCONST_tmBright)).toInt();
     obj[FPSTR(TCONST_tmBrightOn)] = tmBright>>4;
     obj[FPSTR(TCONST_tmBrightOff)] = tmBright&0x0F;
     obj[FPSTR(TCONST_tm24)] = tmp.tm24 ? "1" : "0";

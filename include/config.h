@@ -159,7 +159,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
  #ifdef ESP8266
   #define MP3_RX_PIN          (12)                         // RX mp3 player TX (D6)
  #else
-  #define MP3_TX_PIN          16                           // UART2 rx
+  #define MP3_RX_PIN          16                           // UART2 rx
  #endif
 
 #endif
