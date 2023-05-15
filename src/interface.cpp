@@ -60,17 +60,15 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "DS18B20.h"
 #endif
 
-/**
- * можно нарисовать свой собственный интефейс/обработчики с нуля, либо
- * подключить статический класс с готовыми формами для базовых системных натсроек и дополнить интерфейс.
- * необходимо помнить что существуют системные переменные конфигурации с зарезервированными именами.
- * Список имен системных переменных можно найти в файле "constants.h"
- */
 #include "basicui.h"
 #include "actions.hpp"
 
 // задержка вывода ip адреса при включении лампы после перезагрузки
 #define SHOWIP_DELAY    5
+
+#ifdef ESP8266
+#define NUM_OUPUT_PINS  16
+#endif
 
 namespace INTERFACE {
 // ------------- глобальные переменные построения интерфейса
@@ -1249,25 +1247,38 @@ void block_settings_mp3(Interface *interf, JsonObject *data){
     if (!interf) return;
     interf->json_section_main(FPSTR(TCONST_settings_mp3), FPSTR(TINTF_099));
 
-    // show message if DFPlayer is not available
-    if (!mp3->isReady()){
-        interf->constant(F("cmt"), F("MP3 player is not connected, not ready or not responding :("));
-    }
-
-    interf->checkbox(FPSTR(TCONST_isOnMP3), myLamp.isONMP3(), FPSTR(TINTF_099), true);
+    // volume
     interf->range(FPSTR(TCONST_mp3volume), 1, 30, 1, FPSTR(TINTF_09B), true);
-    
+
+    // выключатель и статус плеера
+    interf->json_section_line(); // расположить в одной линии
+        interf->checkbox(FPSTR(TCONST_isOnMP3), myLamp.isONMP3(), FPSTR(TINTF_099), true);
+        // show message if DFPlayer is not available
+        if (!mp3->isReady())
+            interf->constant(F("cmt"), F("DFPlayer is not connected, not ready or not responding :("));
+        else
+            interf->constant(F("cmt"), F("DFPlayer player: Connected"));
+    interf->json_section_end();
+
+    // номера gpio для подключения плеера
+    interf->json_section_hidden(FPSTR(TCONST_s_mp3pins), "GPIO setup");
+        interf->comment(F("MCU will reboot on change"));
+        interf->json_section_line(); // расположить в одной линии
+            interf->number(FPSTR(TCONST_mp3rx),FPSTR(TINTF_097), 1, 0, NUM_OUPUT_PINS);
+            interf->number(FPSTR(TCONST_mp3tx),FPSTR(TINTF_098), 1, 0, NUM_OUPUT_PINS);
+        interf->json_section_end();
+        interf->button_submit(FPSTR(TCONST_s_mp3pins), FPSTR(TINTF_008), FPSTR(P_GRAY));
+    interf->json_section_end();
+
     interf->json_section_begin(FPSTR(TCONST_set_mp3));
     interf->spacer(FPSTR(TINTF_0B1));
     interf->json_section_line(); // расположить в одной линии
         interf->checkbox(FPSTR(TCONST_playName), myLamp.getLampSettings().playName , FPSTR(TINTF_09D), false);
-    interf->json_section_end();
-    interf->json_section_line(); // расположить в одной линии
         interf->checkbox(FPSTR(TCONST_playEffect), myLamp.getLampSettings().playEffect , FPSTR(TINTF_09E), false);
         interf->checkbox(FPSTR(TCONST_playMP3), myLamp.getLampSettings().playMP3 , FPSTR(TINTF_0AF), false);
     interf->json_section_end();
 
-    //interf->checkbox(FPSTR(TCONST_playTime), myLamp.getLampSettings().playTime , FPSTR(TINTF_09C), false);
+    interf->json_section_line(); // время/будильник
     interf->select(FPSTR(TCONST_playTime), myLamp.getLampSettings().playTime, FPSTR(TINTF_09C), false);
     interf->option(TIME_SOUND_TYPE::TS_NONE, FPSTR(TINTF_0B6));
     interf->option(TIME_SOUND_TYPE::TS_VER1, FPSTR(TINTF_0B7));
@@ -1284,18 +1295,22 @@ void block_settings_mp3(Interface *interf, JsonObject *data){
     interf->option(ALARM_SOUND_TYPE::AT_RANDOM, FPSTR(TINTF_0A1));
     interf->option(ALARM_SOUND_TYPE::AT_RANDOMMP3, FPSTR(TINTF_0A2));
     interf->json_section_end();
+    interf->json_section_end(); // время/будильник
+
     interf->checkbox(FPSTR(TCONST_limitAlarmVolume), myLamp.getLampSettings().limitAlarmVolume , FPSTR(TINTF_0B3), false);
 
-    interf->select(FPSTR(TCONST_eqSetings), myLamp.getLampSettings().MP3eq, FPSTR(TINTF_0A8), false);
-    interf->option(DFPLAYER_EQ_NORMAL, FPSTR(TINTF_0A9));
-    interf->option(DFPLAYER_EQ_POP, FPSTR(TINTF_0AA));
-    interf->option(DFPLAYER_EQ_ROCK, FPSTR(TINTF_0AB));
-    interf->option(DFPLAYER_EQ_JAZZ, FPSTR(TINTF_0AC));
-    interf->option(DFPLAYER_EQ_CLASSIC, FPSTR(TINTF_0AD));
-    interf->option(DFPLAYER_EQ_BASS, FPSTR(TINTF_0AE));
+    interf->json_section_line();
+        interf->select(FPSTR(TCONST_eqSetings), myLamp.getLampSettings().MP3eq, FPSTR(TINTF_0A8), false);
+        interf->option(DFPLAYER_EQ_NORMAL, FPSTR(TINTF_0A9));
+        interf->option(DFPLAYER_EQ_POP, FPSTR(TINTF_0AA));
+        interf->option(DFPLAYER_EQ_ROCK, FPSTR(TINTF_0AB));
+        interf->option(DFPLAYER_EQ_JAZZ, FPSTR(TINTF_0AC));
+        interf->option(DFPLAYER_EQ_CLASSIC, FPSTR(TINTF_0AD));
+        interf->option(DFPLAYER_EQ_BASS, FPSTR(TINTF_0AE));
+        interf->json_section_end();
+        
+        interf->number(FPSTR(TCONST_mp3count), mp3->getMP3count(), FPSTR(TINTF_0B0));
     interf->json_section_end();
-    
-    interf->number(FPSTR(TCONST_mp3count), mp3->getMP3count(), FPSTR(TINTF_0B0));
 
     interf->button_submit(FPSTR(TCONST_set_mp3), FPSTR(TINTF_008), FPSTR(P_GRAY));
     interf->json_section_end();
@@ -2317,6 +2332,18 @@ void set_mp3_player(Interface *interf, JsonObject *data){
     }
 }
 
+/*
+    сохраняет номера пинов mp3 плеера и перегружает контроллер
+ */
+void set_mp3pins(Interface *interf, JsonObject *data){
+    if (!data) return;
+
+    embui.var(FPSTR(TCONST_mp3rx), (*data)[FPSTR(TCONST_mp3rx)]);
+    embui.var(FPSTR(TCONST_mp3tx), (*data)[FPSTR(TCONST_mp3tx)]);
+    embui.autosave(true);
+    remote_action(RA::RA_REBOOT, NULL, NULL);
+    basicui::section_settings_frame(interf, nullptr);
+}
 #endif
 
 
@@ -2569,26 +2596,25 @@ void section_sys_settings_frame(Interface *interf, JsonObject *data){
         interf->spacer(FPSTR(TINTF_092)); // заголовок
         interf->json_section_line(FPSTR(TINTF_092)); // расположить в одной линии
 #ifdef ESP_USE_BUTTON
-            interf->number(FPSTR(TCONST_PINB),FPSTR(TINTF_094), 1, 0, 16);
+            interf->number(FPSTR(TCONST_PINB),FPSTR(TINTF_094), 1, 0, NUM_OUPUT_PINS);
 #endif
 #ifdef MP3PLAYER
-            interf->number(FPSTR(TCONST_PINMP3RX),FPSTR(TINTF_097), 1, 0, 16);
-            interf->number(FPSTR(TCONST_PINMP3TX),FPSTR(TINTF_098), 1, 0, 16);
+            interf->number(FPSTR(TCONST_mp3rx),FPSTR(TINTF_097), 1, 0, NUM_OUPUT_PINS);
+            interf->number(FPSTR(TCONST_mp3tx),FPSTR(TINTF_098), 1, 0, NUM_OUPUT_PINS);
 #endif
         interf->json_section_end(); // конец контейнера
         interf->spacer();
         interf->number(FPSTR(TCONST_CLmt), FPSTR(TINTF_095), /* step */ 100, /* min */ 1000, /* max*/ 16000);    // current limit
 
+        // Editor frame
         //interf->json_section_main(FPSTR(TCONST_edit), "");
-        interf->iframe(FPSTR(TCONST_edit), FPSTR(TCONST_edit));
+        //interf->iframe(FPSTR(TCONST_edit), FPSTR(TCONST_edit));
         //interf->json_section_end();
 
         interf->button_submit(FPSTR(TCONST_sysSettings), FPSTR(TINTF_008), FPSTR(P_GRAY));
 
         interf->spacer();
         interf->button(FPSTR(TCONST_settings), FPSTR(TINTF_00B));
-    interf->json_section_end();
-    
     interf->json_frame_flush();
 }
 
@@ -2598,18 +2624,14 @@ void set_sys_settings(Interface *interf, JsonObject *data){
 #ifdef ESP_USE_BUTTON
     {String tmpChk = (*data)[FPSTR(TCONST_PINB)]; if(tmpChk.toInt()>16) return;}
 #endif
-#ifdef MP3PLAYER
-    {String tmpChk = (*data)[FPSTR(TCONST_PINMP3RX)]; if(tmpChk.toInt()>16) return;}
-    {String tmpChk = (*data)[FPSTR(TCONST_PINMP3TX)]; if(tmpChk.toInt()>16) return;}
-#endif
     {String tmpChk = (*data)[FPSTR(TCONST_CLmt)]; if(tmpChk.toInt()>16000) return;}
 
 #ifdef ESP_USE_BUTTON
     SETPARAM(FPSTR(TCONST_PINB));
 #endif
 #ifdef MP3PLAYER
-    SETPARAM(FPSTR(TCONST_PINMP3RX));
-    SETPARAM(FPSTR(TCONST_PINMP3TX));
+    SETPARAM(FPSTR(TCONST_mp3rx));
+    SETPARAM(FPSTR(TCONST_mp3tx));
 #endif
     SETPARAM(FPSTR(TCONST_CLmt));
 /*
@@ -2765,8 +2787,8 @@ void create_parameters(){
 #endif
 
 #ifdef MP3PLAYER
-    embui.var_create(FPSTR(TCONST_PINMP3RX), MP3_RX_PIN); // Пин RX плеера
-    embui.var_create(FPSTR(TCONST_PINMP3TX), MP3_TX_PIN); // Пин TX плеера
+    embui.var_create(FPSTR(TCONST_mp3rx), MP3_RX_PIN); // Пин RX плеера
+    embui.var_create(FPSTR(TCONST_mp3tx), MP3_TX_PIN); // Пин TX плеера
     embui.var_create(FPSTR(TCONST_mp3volume), 25); // громкость
     embui.var_create(FPSTR(TCONST_mp3count), 255); // кол-во файлов в папке mp3
 #endif
@@ -2905,6 +2927,7 @@ void create_parameters(){
     embui.section_handle_add(FPSTR(CMD_MP3_NEXT), set_mp3_player);
     embui.section_handle_add(FPSTR(TCONST_mp3_p5), set_mp3_player);
     embui.section_handle_add(FPSTR(TCONST_mp3_n5), set_mp3_player);
+    embui.section_handle_add(FPSTR(TCONST_s_mp3pins), set_mp3pins);
 #endif
 #ifdef ENCODER
     embui.section_handle_add(FPSTR(TCONST_encoder), show_settings_enc);

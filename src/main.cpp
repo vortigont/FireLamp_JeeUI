@@ -144,11 +144,10 @@ void setup() {
     myLamp.events.setEventCallback(event_worker);
 
 #ifdef MP3PLAYER
-    // в вебюи нет формы для изменения этих параметров, используем статику
-    //int rxpin = embui.paramVariant(FPSTR(TCONST_PINMP3RX)) | MP3_RX_PIN;
-    //int txpin = embui.paramVariant(FPSTR(TCONST_PINMP3TX)) | MP3_TX_PIN;
-    LOG(printf_P, PSTR("DFPlayer: rx:%d tx:%d\n"), MP3_RX_PIN, MP3_TX_PIN);
-    mp3 = new MP3PlayerDevice(MP3_RX_PIN, MP3_TX_PIN); //rxpin, txpin
+    int rxpin = embui.paramVariant(FPSTR(TCONST_mp3rx)) | MP3_RX_PIN;
+    int txpin = embui.paramVariant(FPSTR(TCONST_mp3tx)) | MP3_TX_PIN;
+    LOG(printf_P, PSTR("DFPlayer: rx:%d tx:%d\n"), rxpin, txpin);
+    mp3 = new MP3PlayerDevice(rxpin, txpin); //rxpin, txpin
 #endif
 
 #ifdef ESP8266
