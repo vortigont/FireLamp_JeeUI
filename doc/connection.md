@@ -7,6 +7,7 @@
 
 ниже указаны номера gpio, НЕ нумерация выводов на плате! Соответствие нумерации пинов платы и gpio чипа ищите в описании конкретной платы произодителя. (на wemos нумерация не совпадает с gpio)
 
+
 <details>
  <summary>ESP32</summary>
 
@@ -50,4 +51,6 @@
 
 [Подробнее](https://randomnerdtutorials.com/esp8266-pinout-reference-gpios/) о выводах 8266
 </details>
+
+Дополнительно: [справочники](https://community.alexgyver.ru/threads/wifi-lampa-budilnik-obsuzhdenie-proshivki-firelamp_embui.7257/post-145868) по выводам esp8266/esp32
 
