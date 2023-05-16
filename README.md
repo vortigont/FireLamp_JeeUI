@@ -15,6 +15,7 @@ __[CHANGELOG](/CHANGELOG.md)__ | [![PlatformIO CI](https://github.com/vortigont/
 ### ESP8266 vs ESP32
 Основная разработка ведется под контроллеры семейства esp32. ESP8266 морально устарел и поддерживается по остаточному принципу, _категорически не рекоммендую_ использовать платы на 8266 для изготовления новых ламп!
 
+### [Схема подключения компонентов](/doc/connection.md)
 
 ## Как собрать проект
 
@@ -32,7 +33,7 @@ __[CHANGELOG](/CHANGELOG.md)__ | [![PlatformIO CI](https://github.com/vortigont/
 Запускаете билдер и последовательно проходите шаги установки питона, гит, платформио, клонирование репозитория и сборку требуемого варианта прошивки.
 
 ### Готовые сборки
-Свежие сборки от тов. @andy040670 вместе с инструкцией по заливке с помощью esp flashdownload tool можно найти в [этом](https://community.alexgyver.ru/threads/wifi-lampa-budilnik-obsuzhdenie-proshivki-firelamp_embui.7257/post-140904) сообщении.
+Свежие сборки от тов. [andy040670](https://community.alexgyver.ru/members/andy040670.9491/) вместе с инструкцией по заливке с помощью esp flashdownload tool можно найти в [этом](https://community.alexgyver.ru/threads/wifi-lampa-budilnik-obsuzhdenie-proshivki-firelamp_embui.7257/post-140904) сообщении.
 
 ## Как скачать/обновлять проект
 
