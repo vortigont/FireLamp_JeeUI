@@ -5,7 +5,9 @@ __[CHANGELOG](/CHANGELOG.md)__ | [![PlatformIO CI](https://github.com/vortigont/
 
 <details>
   <summary>Project Manifest</summary>
+
 Проект был пересобран из старых форков и архивов репозитория пользователей и участников разработки на момент примерно 2021 года. В [исходном](https://github.com/DmytroKorniienko/FireLamp_EmbUI) проекте был полностью вырезан русский язык, задним числом переписана история разработки в Git и удалена соотвествующая тема [форума](https://community.alexgyver.ru/threads/wifi-lampa-budilnik-obsuzhdenie-proekta.1411/). Данный форк это не срез исходного репозитория, хотя сохранил часть общей истории до определенного момента.
+
 </details>
 
 Обсуждение и поддержка данной прошивки идет [на форуме](https://community.alexgyver.ru/threads/wifi-lampa-budilnik-obsuzhdenie-proshivki-firelamp_embui.7257/)
@@ -20,30 +22,41 @@ __[CHANGELOG](/CHANGELOG.md)__ | [![PlatformIO CI](https://github.com/vortigont/
 
 ниже указаны номера gpio, НЕ нумерация выводов на плате! Соответствие нумерации пинов платы и gpio чипа ищите в описании конкретной платы произодителя. (на wemos нумерация не совпадает с gpio)
 
-ESP32
-0     - подключение матрицы
-34    - вход микрофона
-4     - TM1637 CLK
-5     - TM1637 DIO
-17    - tx (DFPlayer rx)
-16    - rx (DFPlayer tx)
-2     - TM1637 Clk
-13    - TM1637 Data
-15    - N канальный МОП (N-MOSFET)
-14    - ttp223 или обычная кнопка
-===
-ESP8266
+<details>
+ <summary>ESP32</summary>
 
-0     - подключение матрицы
-acd0  - вход микрофона
-4     - TM1637 CLK  (i2c SDA)
-5     - TM1637 DIO  (i2c SCL)
-12    - tx (DFPlayer rx)
-14    - rx (DFPlayer tx)
-2     - TM1637 Clk
-13    - TM1637 Data
-15    - N канальный МОП (N-MOSFET)  /P-канальный транзистор подключать нельзя! вывод имеет внутреннюю подтяжку к земле/
-16    - ttp223 или обычная кнопка
+|gpio | назначение |
+|-|-|
+|0     | подключение матрицы|
+|34    | вход микрофона|
+|4     | TM1637 CLK|
+|5     | TM1637 DIO|
+|17    | tx (DFPlayer rx)|
+|16    | rx (DFPlayer tx)|
+|2     | TM1637 Clk|
+|13    | TM1637 Data|
+|15    | N канальный МОП (N-MOSFET)|
+|14    | ttp223 или обычная кнопка|
+
+</details>
+
+<details>
+ <summary>ESP8266</summary> 
+
+|gpio | назначение |
+|-|-|
+|0     | подключение матрицы|
+|acd0  | вход микрофона|
+|4     | TM1637 CLK  (i2c SDA)|
+|5     | TM1637 DIO  (i2c SCL)|
+|12    | tx (DFPlayer rx)|
+|14    | rx (DFPlayer tx)|
+|2     | TM1637 Clk|
+|13    | TM1637 Data|
+|15    | N канальный МОП (N-MOSFET)  /P-канальный транзистор подключать нельзя! вывод имеет внутреннюю подтяжку к земле|
+|16    | ttp223 или обычная кнопка|
+
+</details>
 
 
 ## Как собрать проект
