@@ -72,6 +72,19 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
   #include "ledStream.h"
 #endif
 
+#define LAMPFW_VERSION_MAJOR     3
+#define LAMPFW_VERSION_MINOR     1
+#define LAMPFW_VERSION_REVISION  0
+
+#define LAMPFW_VERSION_VALUE     (MAJ, MIN, REV) ((MAJ) << 16 | (MIN) << 8 | (REV))
+
+/* make version as integer for comparison */
+#define LAMPFW_VERSION           LAMPFW_VERSION_VALUE(LAMPFW_VERSION_MAJOR, LAMPFW_VERSION_MINOR, LAMPFW_VERSION_REVISION)
+
+/* make version as string, i.e. "2.6.1" */
+#define LAMPFW_VERSION_STRING    TOSTRING(LAMPFW_VERSION_MAJOR) "." TOSTRING(LAMPFW_VERSION_MINOR) "." TOSTRING(LAMPFW_VERSION_REVISION)
+
+
 // TaskScheduler
 extern Scheduler ts;
 

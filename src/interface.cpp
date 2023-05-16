@@ -2564,12 +2564,17 @@ void section_main_frame(Interface *interf, JsonObject *data){
 
     interf->json_frame_flush();
 
+    // publish firmware version
+    interf->json_frame_value();
+    interf->value(F("lamp_ver"), F(LAMPFW_VERSION_STRING), true);
+    interf->json_frame_flush();
+
 #ifdef ESP8266
     if(!(WiFi.getMode() & WIFI_STA))
 #else
     if(!(WiFi.getMode() & WIFI_MODE_STA))
 #endif
-{
+    {
         // форсируем выбор вкладки настройки WiFi если контроллер не подключен к внешней AP
         interf->json_frame_interface();
             basicui::block_settings_netw(interf, data);
@@ -3057,7 +3062,7 @@ void sync_parameters(){
 #endif
 #ifdef ENCODER
     obj[FPSTR(TCONST_encTxtCol)] = embui.param(FPSTR(TCONST_encTxtCol));
-    obj[FPSTR(TCONST_encTxtDel)] = (110U - embui.param(FPSTR(TCONST_encTxtDel)).toInt());
+    obj[FPSTR(TCONST_encTxtDel)] = 110 - embui.paramVariant(FPSTR(TCONST_encTxtDel)).as<int>();
     obj[FPSTR(TCONST_EncVG)] = tmp.GaugeType ;;
     obj[FPSTR(TCONST_EncVGCol)] = embui.param(FPSTR(TCONST_EncVGCol));
     set_settings_enc(nullptr, &obj);
