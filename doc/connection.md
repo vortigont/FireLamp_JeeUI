@@ -1,6 +1,6 @@
 | __[README](/README.md)__ | __[CHANGELOG](/CHANGELOG.md)__ |
 
-![GitHub Logo](/Схема51.jpg)
+![GitHub Logo](schematic.jpg)
 
 ### Распиновка
 Референсная таблица назначения выводов по-умолчанию
