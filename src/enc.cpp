@@ -37,12 +37,15 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 #include "enc.h"
 #ifdef ENCODER
+
 #ifdef TM1637_CLOCK
 #include "tm.h"
 #endif
 #ifdef DS18B20
 #include "DS18B20.h"
 #endif
+
+#include "lamp.h"
 
 uint8_t currDynCtrl;        // текущий контрол, с которым работаем
 uint8_t currAction;         // идент текущей операции: 0 - ничего, 1 - крутим яркость, 2 - меняем эффекты, 3 - меняем динамические контролы
@@ -56,16 +59,53 @@ uint8_t speed, fade;
 uint8_t txtDelay = 40U;
 CRGB txtColor = CRGB::Orange;
 
-//Task encTask(100 * TASK_MILLISECOND, TASK_FOREVER, &callEncTick, &ts, true);
+struct triggers_t {
+  volatile bool turn;
+  volatile bool click;
+  volatile bool clicks;
+  volatile bool hold;
+};
 
-void callEncTick () {
-  enc.tick();
+// сюда собираем события
+triggers_t trig;
+
+/**
+ * @brief a callback for encoder's object that is triggered back from ISR
+ * let's make it as short as possible
+ */
+void IRAM_ATTR cb_turn(){
+  trig.turn = true;
+}
+void IRAM_ATTR cb_click(){
+  trig.click = true;
+}
+void IRAM_ATTR cb_clicks(){
+  trig.clicks = true;
+}
+void IRAM_ATTR cb_hold(){
+  trig.hold = true;
+}
+
+/**
+ * @brief запускаем этот вызов из петли для отработки накопленых событий 
+ * есть вероятность что-то пропустить если прерывание прилетит во время колбека,
+ * но с учетом того что альтернатива тупо падать считаем риск приемлимым пока здесь
+ * не появится нормальный обработчик энкодера
+ */
+void callback_runner(){
+  if (trig.turn){ isTurn(); trig.turn = false; }
+  if (trig.click){ isClick(); trig.click = false; }
+  if (trig.clicks){ myClicks(); trig.clicks = false; }
+  if (trig.hold){ isHolded(); trig.hold = false; }
 }
 
 void encLoop() {
   static uint16_t valRepiteChk = anyValue;
-  noInterrupt();
-  enc.tick();
+  //noInterrupt();
+  EVERY_N_MILLIS(100){
+    enc.tick();   // lazy calls
+  }
+  callback_runner();
 
   if (inSettings) { // Время от времени выводим название контрола (в режиме "Настройки эффекта")
     resetTimers();
@@ -137,25 +177,24 @@ void encLoop() {
       currAction = 0;
     }
   }
-  interrupt();
+  //interrupt();
 }
-
 
 // Обработчик прерываний
 void IRAM_ATTR isrEnc() { 
-  noInterrupt();
+  //noInterrupt();
   enc.tick();  // отработка в прерывании
-  interrupt();
+  //interrupt();
 }
 
-// Функция запрещает прерывания от энкодера, на время других операций, чтобы не спамить контроллер
+// Функция восстанавливает прерывания энкодера
 void interrupt() {
   attachInterrupt(digitalPinToInterrupt(ENC_DT), isrEnc, CHANGE);   // прерывание на DT пине
   attachInterrupt(digitalPinToInterrupt(ENC_CLK), isrEnc, CHANGE);  // прерывание на CLK пине
   attachInterrupt(digitalPinToInterrupt(ENC_SW), isrEnc, FALLING);   // прерывание на SW пине
 }
 
-// Функция восстанавливает прерывания энкодера
+// Функция запрещает прерывания от энкодера, на время других операций, чтобы не спамить контроллер
 void noInterrupt() {
   detachInterrupt(ENC_DT);
   detachInterrupt(ENC_CLK);
@@ -165,7 +204,7 @@ void noInterrupt() {
 // Функция обрабатывает повороты энкодера
 void isTurn() {
   if (!myLamp.isLampOn()) return;
-  noInterrupt();
+  //noInterrupt();
   resetTimers();
   uint8_t turnType = 0;
 
@@ -220,12 +259,12 @@ void isTurn() {
     break;
   }
   LOG(printf_P, PSTR("Enc: Turn type: %d\n"), turnType);
-  interrupt();
+  //interrupt();
 }
 
 // Функция обрабатывает клики по кнопке
 void isClick() {
-  noInterrupt();
+  //noInterrupt();
   resetTimers();
   if (!inSettings) encDisplay(enc.clicks, String(F("CL.")));
   else {
@@ -245,7 +284,7 @@ void isClick() {
     encDisplay(myLamp.getEffControls()[currDynCtrl]->getVal().toInt(), String(myLamp.getEffControls()[currDynCtrl]->getId()) + String(FPSTR(".")));
     encSendString(myLamp.getEffControls()[currDynCtrl]->getName(), txtColor, true, txtDelay);  
   }
-  interrupt();
+  //interrupt();
 }
 
 // Функция проверяет может ли контрол быть использоваан (проверка на скрытость, на скрытость по микрофону и т.п.)
@@ -287,7 +326,7 @@ bool validControl(const CONTROL_TYPE ctrlCaseType) {
 
 // Функция обрабатывает состояние "кнопка нажата и удержана"
 void isHolded() {
-  noInterrupt();
+  //noInterrupt();
   LOG(printf_P, PSTR("Enc: Pressed and holded\n"));
   if (!myLamp.isLampOn()) {
     remote_action(RA::RA_WHITE_LO, "0", NULL); // для энкодера я хочу сделать запуск белой лампы с яркостью из конфига, а не фиксированной
@@ -309,13 +348,13 @@ void isHolded() {
   } else {
       exitSettings();
   }
-  interrupt();
+  //interrupt();
 }
 
 // Функция выхода из режима "Настройки эффекта", восстанавливает состояния до, форсирует запись конфига эффекта
 void exitSettings() {
   if (!inSettings) return;
-  noInterrupt();
+  //noInterrupt();
   currDynCtrl = 1;
   done = true;
   loops = 0;
@@ -329,12 +368,12 @@ void exitSettings() {
   canDisplayTemp() = true;
 #endif
   LOG(printf_P, PSTR("Enc: exit Settings\n"));
-  interrupt();
+  //interrupt();
 }
 
 // Функция обрабатывает клики по кнопке
 void myClicks() {
-  noInterrupt();
+  //noInterrupt();
   resetTimers();
 	if (myLamp.isAlarm()) {
 		// нажатие во время будильника
@@ -394,7 +433,7 @@ void myClicks() {
     LOG(printf_P, PSTR("Enc: Click: %d\n"), enc.clicks);
     break;
   }
-  interrupt();
+  //interrupt();
 }
 
 // Поместить в общий setup()
@@ -406,15 +445,14 @@ void enc_setup() {
   loops = 0;
   inSettings = false;
   currDynCtrl = 1;
-  interrupt(); // включаем прерывания энкодера и кнопки
   //enc.counter = 100;      // изменение счётчика
-  enc.attach(TURN_HANDLER, isTurn);
-  enc.attach(CLICK_HANDLER, isClick);
-  enc.attach(HOLDED_HANDLER, isHolded);
+  enc.attach(TURN_HANDLER, cb_turn);
+  enc.attach(CLICK_HANDLER, cb_click);
+  enc.attach(HOLDED_HANDLER, cb_hold);
  // enc.attach(STEP_HANDLER, myStep);
-  enc.attach(CLICKS_HANDLER, myClicks);
+  enc.attach(CLICKS_HANDLER, cb_clicks);
   //enc.attachClicks(6, isClick6);
-
+  interrupt(); // включаем прерывания энкодера и кнопки
 }
 
 // Функция регулировки яркости в обычном режиме
