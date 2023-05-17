@@ -38,11 +38,11 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #ifndef _ENC_H
 #define _ENC_H
 
-#include <Arduino.h>
+//#include <Arduino.h>
 #include "config.h"
 
 #ifdef ENCODER
-#include "lamp.h"
+#include "effectworker.h"
 
 // Опциональные настройки (показаны по умолчанию)
 //#define EB_FAST 30     // таймаут быстрого поворота, мс

@@ -56,7 +56,7 @@ void TMCLOCK::tm_setup() {
 
 void TMCLOCK::tm_loop() {
 // this is so ugly!!!
-#ifdef TM1637
+#ifdef TM1637_CLOCK
   setBrightness((myLamp.isLampOn()) ? myLamp.getBrightOn() : myLamp.getBrightOff());         // Чекаем статус лампы и меняем яркость
 
   #if TM_SHOW_BANNER
@@ -75,7 +75,8 @@ void TMCLOCK::tm_loop() {
     return;
   }
 
-  if(embui.timeProcessor.isDirtyTime()) {      // Светим --:--, если не подтянулось время с инета или не было настроено вручную
+//  if(embui.timeProcessor.isDirtyTime()) {      // Светим --:--, если не подтянулось время с инета или не было настроено вручную
+  if(false){ // todo fix this missing method
     auto d =  (showPoints) ? DisplayDigit().setG().setDot() : DisplayDigit().setG();
     const uint8_t rawBuffer[4] = {d, d, d, d};
     displayRawBytes(rawBuffer, 4);

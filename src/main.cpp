@@ -55,7 +55,7 @@ Buttons *myButtons;
 #endif
 
 #ifdef MP3PLAYER
-MP3PLAYERDEVICE *mp3 = nullptr;
+MP3PlayerDevice *mp3 = nullptr;
 #endif
 
 #ifdef TM1637_CLOCK
@@ -118,7 +118,7 @@ void setup() {
     //embui.mqtt(mqttCallback, true);
     embui.mqtt(mqttCallback, mqttConnect, true);
 #endif
-    myLamp.effects.setEffSortType((SORT_TYPE)embui.param(FPSTR(TCONST_effSort)).toInt()); // сортировка должна быть определена до заполнения
+    myLamp.effects.setEffSortType((SORT_TYPE)embui.paramVariant(FPSTR(TCONST_effSort)).as<int>()); // сортировка должна быть определена до заполнения
     myLamp.effects.initDefault(); // если вызывать из конструктора, то не забыть о том, что нужно инициализировать Serial.begin(115200); иначе ничего не увидеть!
     myLamp.events.loadConfig(); // << -- SDK3.0 будет падение, разобраться позже
 #ifdef RTC
@@ -130,7 +130,7 @@ void setup() {
 #endif
 
     // restore matrix current limit from config
-    myLamp.lamp_init(embui.param(FPSTR(TCONST_CLmt)).toInt());
+    myLamp.lamp_init(embui.paramVariant(FPSTR(TCONST_CLmt)));
 
 #ifdef ESP_USE_BUTTON
     myLamp.setbPin(embui.param(FPSTR(TCONST_PINB)).toInt());
@@ -144,9 +144,10 @@ void setup() {
     myLamp.events.setEventCallback(event_worker);
 
 #ifdef MP3PLAYER
-    int rxpin = embui.param(FPSTR(TCONST_PINMP3RX)).toInt() | MP3_RX_PIN;
-    int txpin = embui.param(FPSTR(TCONST_PINMP3TX)).toInt() | MP3_TX_PIN;
-    mp3 = new MP3PLAYERDEVICE(rxpin, txpin); //rxpin, txpin
+    int rxpin = embui.paramVariant(FPSTR(TCONST_mp3rx)) | MP3_RX_PIN;
+    int txpin = embui.paramVariant(FPSTR(TCONST_mp3tx)) | MP3_TX_PIN;
+    LOG(printf_P, PSTR("DFPlayer: rx:%d tx:%d\n"), rxpin, txpin);
+    mp3 = new MP3PlayerDevice(rxpin, txpin); //rxpin, txpin
 #endif
 
 #ifdef ESP8266
@@ -155,9 +156,9 @@ void setup() {
   embui.server.addHandler(new SPIFFSEditor(LittleFS, F("esp32"), F("esp32")));
 #endif
 
-  sync_parameters();        // падение есп32 не воспоизводится, kDn
+  sync_parameters();
 
-  //embui.setPubInterval(5);   // change periodic WebUI publish interval from EMBUI_PUB_PERIOD to 5
+  embui.setPubInterval(10);   // change periodic WebUI publish interval from EMBUI_PUB_PERIOD to 10 secs
 
 #ifdef TM1637_CLOCK
   tm1637.tm_setup();

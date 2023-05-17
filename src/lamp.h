@@ -127,7 +127,7 @@ struct {
     // ВНИМАНИЕ: порядок следования не менять, флаги не исключать, переводить в reserved!!! используется как битовый массив в конфиге!
     bool isMicOn:1; // глобальное включение/выключение микрофона
     uint8_t MP3eq:3; // вид эквалайзера
-    bool isShowSysMenu:1; // показывать ли системное меню
+    bool reserved18:1;      // бывшее системное меню
     bool isOnMP3:1; // включен ли плеер?
     bool isBtn:1; // включена ли кнопка?
     bool playName:1; // воспроизводить имя?
@@ -157,7 +157,7 @@ _LAMPFLAGS(){
     numInList = false;
     effHasMic = false;
     dRand = false;
-    isShowSysMenu = false;
+    reserved18 = false;
     isOnMP3 = false;
     isBtn = true;
     showName = false;
@@ -409,8 +409,6 @@ public:
 #endif
     bool isONMP3() {return flags.isOnMP3;}
     void setONMP3(bool flag) {flags.isOnMP3=flag;}
-    bool isShowSysMenu() {return flags.isShowSysMenu;}
-    void setIsShowSysMenu(bool flag) {flags.isShowSysMenu=flag;}
     void setMIRR_V(bool flag) {if (flag!=mx.cfg.vmirror()) { mx.cfg.vmirror(flag); mx.clear();} }
     void setMIRR_H(bool flag) {if (flag!=mx.cfg.hmirror()) { mx.cfg.hmirror(flag); mx.clear();} }
     void setTextMovingSpeed(uint8_t val) {tmStringStepTime.setInterval(val);}
@@ -553,7 +551,7 @@ public:
 
 //-----------------------------------------------
 #ifdef MP3PLAYER
-extern MP3PLAYERDEVICE *mp3;
+extern MP3PlayerDevice *mp3;
 #endif
 class ALARMTASK : public Task {
 private:

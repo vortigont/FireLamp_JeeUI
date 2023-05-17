@@ -17,7 +17,7 @@ void Rtc::init() {
     else {
         LOG(printf_P, PSTR("RTC not setted \n"));
         Task *t = new Task(10*TASK_SECOND, TASK_FOREVER, []{
-            if (embui.timeProcessor.isDirtyTime()) return;
+            //if (embui.timeProcessor.isDirtyTime()) return;
             if (rtc.gettimeUnix() > 1600000000UL) ts.getCurrentTask()->disable();
             const tm* t = localtime(embui.timeProcessor.now());  // Определяем для вывода времени
             rtc.settime(t->tm_sec, t->tm_min, t->tm_hour, t->tm_mday, t->tm_mon + 1, t->tm_year - 100);
@@ -42,8 +42,7 @@ void Rtc::updateRtcTime() {
     rtcUpdTimer = millis();
 #endif
     {
-        if (embui.timeProcessor.isDirtyTime())
-            return;
+        //if (embui.timeProcessor.isDirtyTime()) return;
         const tm* t = localtime(embui.timeProcessor.now());  // Определяем для вывода времени 
         settime(t->tm_sec, t->tm_min, t->tm_hour, t->tm_mday, t->tm_mon + 1, t->tm_year - 100);
         LOG(printf_P, PSTR("Sec %d min %d hour %d day %d mon %d year %d \n"), t->tm_sec, t->tm_min, t->tm_hour, t->tm_mday, t->tm_mon + 1, t->tm_year - 100);
