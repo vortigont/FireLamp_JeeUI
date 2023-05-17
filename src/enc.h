@@ -38,11 +38,11 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #ifndef _ENC_H
 #define _ENC_H
 
-//#include <Arduino.h>
 #include "config.h"
 
 #ifdef ENCODER
-#include "effectworker.h"
+#include "effects_types.h"
+//#include <FastLED.h>
 
 // Опциональные настройки (показаны по умолчанию)
 //#define EB_FAST 30     // таймаут быстрого поворота, мс
@@ -71,7 +71,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #define ENC_CLK                 (4)                         // D2 Пин CLK энкодера
 #endif
 
-void callEncTick ();
 void IRAM_ATTR isrEnc();
 void interrupt();
 void noInterrupt();
@@ -79,6 +78,7 @@ void noInterrupt();
 void isTurn();
 void isClick();
 void isHolded();
+void myClicks();
 //void myStep();
 void encSetBri(int val);
 void encSetEffect(int val);

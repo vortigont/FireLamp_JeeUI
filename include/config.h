@@ -150,14 +150,20 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #endif
 
 #ifdef MP3PLAYER
-// #ifdef ESP32
-//  #error ESP32 with DfPlayer is not (yet) supported due to softwareserial dependency (to be fixed)
-// #endif
 #ifndef MP3_TX_PIN
-#define MP3_TX_PIN            (14)                         // TX mp3 player RX (D5)
+ #ifdef ESP8266
+  #define MP3_TX_PIN          (14)                         // TX mp3 player RX (D5)
+ #else
+  #define MP3_TX_PIN          17                           // UART2 tx
+ #endif
 #endif
 #ifndef MP3_RX_PIN
-#define MP3_RX_PIN            (12)                         // RX mp3 player TX (D6)
+ #ifdef ESP8266
+  #define MP3_RX_PIN          (12)                         // RX mp3 player TX (D6)
+ #else
+  #define MP3_RX_PIN          16                           // UART2 rx
+ #endif
+
 #endif
 #ifndef MP3_SERIAL_TIMEOUT
 #define MP3_SERIAL_TIMEOUT    (300U)                       // 300мс по умолчанию, диапазон 200...1000, подбирается экспериментально, не желательно сильно повышать
@@ -172,9 +178,9 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #endif
 
 #ifndef BTN_PIN
-#define BTN_PIN               (5U)                          // пин кнопки               (D1)
+#define BTN_PIN               (5U)                         // пин кнопки               (D1)
 #if BTN_PIN == 0
-#define PULL_MODE             (HIGH_PULL)                   // пин кнопки "FLASH" NodeMCU, подтяжка должна быть PULL_MODE=HIGH_PULL
+#define PULL_MODE             (HIGH_PULL)                  // пин кнопки "FLASH" NodeMCU, подтяжка должна быть PULL_MODE=HIGH_PULL
 #endif
 #endif
 
@@ -197,13 +203,13 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #define CURRENT_LIMIT_STEP    (0U)
 #endif
 #ifndef TEMP_DEST
-#define TEMP_DEST         (50U)
+#define TEMP_DEST             (50U)
 #endif
 
-/*
+
 #ifndef MOSFET_PIN
-#define MOSFET_PIN            (D2)                          // пин MOSFET транзистора   (D2) - может быть использован для управления питанием матрицы/ленты
-#endif*/
+#define MOSFET_PIN            15                           // (D2) пин MOSFET транзистора   (D2) - может быть использован для управления питанием матрицы/ленты
+#endif
 /*#ifndef ALARM_PIN                                        
 #define ALARM_PIN             (D8)                         // пин состояния будильника (D0) - может быть использован для управления каким-либо внешним устройством на время работы будильника
 #endif*/
@@ -325,10 +331,10 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 #ifdef TM1637_CLOCK
 #ifndef TM_CLK_PIN
-  #define TM_CLK_PIN 16   // D0
+  #define TM_CLK_PIN 4      // D2
 #endif
 #ifndef TM_DIO_PIN
-  #define TM_DIO_PIN 13   // D7
+  #define TM_DIO_PIN 5      // D1
 #endif
 #ifndef TM_BRIGHTNESS
   #define TM_BRIGHTNESS 7U //яркость дисплея, 0..7
