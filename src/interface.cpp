@@ -93,6 +93,10 @@ enum class lstfile_t {
     all
 };
 
+// forward declarations
+void block_effect_params(Interface *interf, JsonObject *data);
+
+
 /**
  * @brief rebuild cached json file with effects names list
  * i.e. used for sideloading in WebUI
@@ -108,9 +112,11 @@ void rebuild_effect_list_files(lstfile_t lst){
             switch (lst){
                 case lstfile_t::full :
                     build_eff_names_list_file(myLamp.effects, true);
-                    if (embui.ws.count()){  // refresh UI page with a regerated list
+                    if (embui.ws.count()){  // refresh UI page with a regenerated list
                         Interface interf(&embui, &embui.ws, 1024);
-                        show_effects_config_param(&interf, nullptr);
+                        interf.json_frame_interface();
+                        block_effect_params(&interf, nullptr);
+                        interf.json_frame_flush();
                     }
                     break;
                 case lstfile_t::all :
@@ -258,24 +264,23 @@ void block_menu(Interface *interf, JsonObject *data){
     // создаем меню
     interf->json_section_menu();
 
-    interf->option(FPSTR(TCONST_effects), FPSTR(TINTF_000));   //  Эффекты
-    interf->option(FPSTR(TCONST_lamptext), FPSTR(TINTF_001));   //  Вывод текста
-    interf->option(FPSTR(TCONST_drawing), FPSTR(TINTF_0CE));   //  Рисование
+    interf->option(FPSTR(TCONST_effects), FPSTR(TINTF_000));        //  Эффекты
+    interf->option(FPSTR(TCONST_lamptext), FPSTR(TINTF_001));       //  Вывод текста
+    interf->option(FPSTR(TCONST_drawing), FPSTR(TINTF_0CE));        //  Рисование
 #ifdef USE_STREAMING
     interf->option(FPSTR(TCONST_streaming), FPSTR(TINTF_0E2));   //  Трансляция
 #endif
-    interf->option(FPSTR(TCONST_show_event), FPSTR(TINTF_011));   //  События
-    interf->option(FPSTR(TCONST_settings), FPSTR(TINTF_002));   //  настройки
+    interf->option(FPSTR(TCONST_show_event), FPSTR(TINTF_011));     //  События
+    interf->option(FPSTR(TCONST_settings), FPSTR(TINTF_002));       //  настройки
 
     interf->json_section_end();
 }
 
 /**
- * Страница с контролами параметров эфеекта
- * выводится при в разделе "Управление списком эффектов"
+ * блок с настройками параметров эффекта
+ * выводится на странице "Управление списком эффектов"
  */
-void block_effects_config_param(Interface *interf, JsonObject *data){
-    //if (!interf || !confEff) return;
+void block_effect_params(Interface *interf, JsonObject *data){
     if (!interf) return;
 
     String tmpName, tmpSoundfile;
@@ -286,11 +291,12 @@ void block_effects_config_param(Interface *interf, JsonObject *data){
 #ifdef MP3PLAYER
     interf->text(FPSTR(TCONST_soundfile), tmpSoundfile, FPSTR(TINTF_0B2), false);
 #endif
-    interf->checkbox(FPSTR(TCONST_eff_sel), confEff->canBeSelected(), FPSTR(TINTF_003), false);
-    interf->checkbox(FPSTR(TCONST_eff_fav), confEff->isFavorite(), FPSTR(TINTF_004), false);
+    interf->checkbox(FPSTR(TCONST_eff_sel), confEff->canBeSelected(), FPSTR(TINTF_in_sel_lst), false);      // доступен для выбора в выпадающем списке
+    interf->checkbox(FPSTR(TCONST_eff_fav), confEff->isFavorite(), FPSTR(TINTF_in_demo), false);            // доступен в демо-режиме
 
     interf->spacer();
 
+    // sorting option
     interf->select(FPSTR(TCONST_effSort), FPSTR(TINTF_040));
     interf->option(SORT_TYPE::ST_BASE, FPSTR(TINTF_041));
     interf->option(SORT_TYPE::ST_END, FPSTR(TINTF_042));
@@ -320,17 +326,6 @@ void block_effects_config_param(Interface *interf, JsonObject *data){
     interf->button_submit_value(FPSTR(TCONST_set_effect), FPSTR(TCONST_makeidx), FPSTR(TINTF_007), FPSTR(TCONST_black));
 
     interf->json_section_end();
-}
-
-/**
- * Сформировать и вывести страницу с контролами для настроек параметров эффектов
- * здесь выводится ПОЛНЫЙ сипсок эффектов
- */
-void show_effects_config_param(Interface *interf, JsonObject *data){
-    if (!interf) return;
-    interf->json_frame_interface();
-    block_effects_config_param(interf, data);
-    interf->json_frame_flush();
 }
 
 /**
@@ -421,14 +416,14 @@ void set_effects_config_param(Interface *interf, JsonObject *data){
     section_main_frame(interf, nullptr);
 }
 
-
 /**
- * блок формирования страницы с контролами для настроек параметров эффектов
- * здесь выводится ПОЛНЫЙ сипсок эффектов
+ * страница "Управление списком эффектов"
+ * здесь выводится ПОЛНЫЙ список эффектов в выпадающем списке
  */
-void block_effects_config(Interface *interf, JsonObject *data){
+void show_effects_config(Interface *interf, JsonObject *data){
     if (!interf) return;
 
+    interf->json_frame_interface();
     interf->json_section_main(FPSTR(TCONST_effects_config), FPSTR(TINTF_009));
     confEff = myLamp.effects.getSelectedListElement();
 
@@ -443,21 +438,15 @@ void block_effects_config(Interface *interf, JsonObject *data){
                 );
         interf->json_section_end();
         // generate block with effect settings controls
-        block_effects_config_param(interf, nullptr);
+        block_effect_params(interf, nullptr);
         interf->spacer();
         interf->button(FPSTR(TCONST_effects), FPSTR(TINTF_00B));
-        interf->json_section_end();
+        interf->json_frame_flush();
         return;
     }
 
     interf->constant(F("cmt"), F("Rebuilding effects list, pls retry in a second..."));
     rebuild_effect_list_files(lstfile_t::full);
-}
-
-void show_effects_config(Interface *interf, JsonObject *data){
-    if (!interf) return;
-    interf->json_frame_interface();
-    block_effects_config(interf, data);
     interf->json_frame_flush();
 }
 
@@ -470,8 +459,14 @@ void set_effects_config_list(Interface *interf, JsonObject *data){
     }
 
     confEff = myLamp.effects.getEffect(num);
-    show_effects_config_param(interf, data);
+
     resetAutoTimers();
+
+    // выводим блок с параметрами эфекта
+    if (!interf) return;
+    interf->json_frame_interface();
+    block_effect_params(interf, data);
+    interf->json_frame_flush();
 }
 
 #ifdef EMBUI_USE_MQTT
@@ -481,12 +476,16 @@ void mqtt_publish_selected_effect_config_json(){
 }
 #endif
 
-void block_effects_param(Interface *interf, JsonObject *data){
+/**
+ * @brief UI block with current effect's controls
+ * 
+ */
+void block_effect_controls(Interface *interf, JsonObject *data){
     // if no mqtt or ws clients, just quit
     if (!embui.isMQTTconected() && !embui.ws.count()) return;
 
     // there could be no ws clients connected
-    if(interf) interf->json_section_begin(FPSTR(TCONST_effects_param));
+    if(interf) interf->json_section_begin(FPSTR(TCONST_eff_ctrls));
 
     LList<std::shared_ptr<UIControl>> &controls = myLamp.effects.getControls();
     uint8_t ctrlCaseType; // тип контрола, старшие 4 бита соответствуют CONTROL_CASE, младшие 4 - CONTROL_TYPE
@@ -497,7 +496,7 @@ void block_effects_param(Interface *interf, JsonObject *data){
         if(controls[i]->getId()==7 && controls[i]->getName().startsWith(FPSTR(TINTF_020)))
             isMicOn = isMicOn && controls[i]->getVal().toInt();
 #endif
-    LOG(printf_P, PSTR("block_effects_param() got %u ctrls\n"), controls.size());
+    LOG(printf_P, PSTR("block_effect_controls() got %u ctrls\n"), controls.size());
     for (const auto &ctrl : controls){
         ctrlCaseType = ctrl->getType();
         switch(ctrlCaseType>>4){
@@ -589,13 +588,13 @@ void block_effects_param(Interface *interf, JsonObject *data){
         embui.publish(String(FPSTR(TCONST_embui_pub_)) + FPSTR(CMD_EFFECT), String(myLamp.effects.getEffnum()), true);
     }
 #endif
-    LOG(println, F("eof block_effects_param()"));
+    LOG(println, F("eof block_effect_controls()"));
 }
 
-void show_effects_param(Interface *interf, JsonObject *data){
-    LOG(println, F("show_effects_param()"));
+void show_effect_controls(Interface *interf, JsonObject *data){
+    LOG(println, F("show_effect_controls()"));
     if(interf) interf->json_frame_interface();
-    block_effects_param(interf, data);
+    block_effect_controls(interf, data);
     if(interf) interf->json_frame_flush();
 }
 
@@ -633,7 +632,7 @@ void set_effects_list(Interface *interf, JsonObject *data){
     }
 
     // publish effect's controls to WebUI and MQTT
-    show_effects_param(interf, data);
+    show_effect_controls(interf, data);
 }
 
 // этот метод меняет контролы БЕЗ синхронизации со внешними системами
@@ -722,7 +721,7 @@ void set_effects_dynCtrl(Interface *interf, JsonObject *data){
                 }
                 if(isLocalMic){
                     Interface *interf = embui.ws.count()? new Interface(&embui, &embui.ws, 1024) : nullptr;
-                    show_effects_param(interf, data);
+                    show_effect_controls(interf, data);
                     delete interf;
                 }
             }
@@ -825,7 +824,10 @@ void block_effects_main(Interface *interf, JsonObject *data, bool fast=true){
         // side load drop-down list from /eff_list.json file
         interf->select(FPSTR(TCONST_effListMain), myLamp.effects.getEffnum(), FPSTR(TINTF_00A), true, false, FPSTR(TCONST_eff_list_json));
         interf->json_section_end();
-        block_effects_param(interf, data);
+
+        // build a block of controls for current effect
+        block_effect_controls(interf, data);
+
         interf->button(FPSTR(TCONST_effects_config), FPSTR(TINTF_009));
         interf->json_section_end();
     } else {
@@ -949,7 +951,7 @@ void set_gbrflag(Interface *interf, JsonObject *data){
     if (myLamp.isLampOn()) {
         myLamp.setBrightness(myLamp.getLampBrightness());
     }
-    show_effects_param(interf, data);
+    show_effect_controls(interf, data);
 }
 
 void block_lamp_config(Interface *interf, JsonObject *data){
@@ -1410,7 +1412,7 @@ void set_micflag(Interface *interf, JsonObject *data){
     if (!data) return;
     myLamp.setMicOnOff((*data)[FPSTR(TCONST_Mic)]);
     save_lamp_flags();
-    show_effects_param(interf,data);
+    show_effect_controls(interf,data);
 }
 
 void set_settings_mic_calib(Interface *interf, JsonObject *data){
@@ -1597,8 +1599,9 @@ void set_ftp(Interface *interf, JsonObject *data){
 }
 #endif
 
-void block_settings_other(Interface *interf, JsonObject *data){
+void show_settings_other(Interface *interf, JsonObject *data){
     if (!interf) return;
+    interf->json_frame_interface();
     interf->json_section_main(FPSTR(TCONST_set_other), FPSTR(TINTF_002));
     
     interf->spacer(FPSTR(TINTF_030));
@@ -1633,13 +1636,6 @@ void block_settings_other(Interface *interf, JsonObject *data){
     interf->spacer();
     interf->button(FPSTR(TCONST_settings), FPSTR(TINTF_00B));
 
-    interf->json_section_end();
-}
-
-void show_settings_other(Interface *interf, JsonObject *data){
-    if (!interf) return;
-    interf->json_frame_interface();
-    block_settings_other(interf, data);
     interf->json_frame_flush();
 }
 
@@ -2368,6 +2364,7 @@ void section_drawing_frame(Interface *interf, JsonObject *data){
     block_drawing(interf, data);
     interf->json_frame_flush();
 }
+
 #ifdef USE_STREAMING
 void block_streaming(Interface *interf, JsonObject *data){
     //Страница "Трансляция"
@@ -2482,6 +2479,7 @@ void set_streaming_universe(Interface *interf, JsonObject *data){
     }
 }
 #endif
+
 // Точка входа в настройки
 void user_settings_frame(Interface *interf, JsonObject *data);
 /*
@@ -2515,6 +2513,7 @@ void section_settings_frame(Interface *interf, JsonObject *data){
     interf->json_frame_flush();
 }
 */
+
 #ifdef OPTIONS_PASSWORD
 void set_opt_pass(Interface *interf, JsonObject *data){
     if(!data) return;
@@ -2529,8 +2528,9 @@ void set_opt_pass(Interface *interf, JsonObject *data){
 }
 #endif  // OPTIONS_PASSWORD
 
+// Additional buttons on "Settings" page
 void user_settings_frame(Interface *interf, JsonObject *data){
-if (!interf) return;
+    if (!interf) return;
 #ifdef MIC_EFFECTS
     interf->button(FPSTR(TCONST_show_mic), FPSTR(TINTF_020));
 #endif
@@ -2554,6 +2554,10 @@ if (!interf) return;
 
 }
 
+/**
+ * @brief индексная страница WebUI
+ * 
+ */
 void section_main_frame(Interface *interf, JsonObject *data){
     if (!interf) return;
 
@@ -2822,18 +2826,18 @@ void create_parameters(){
 
     embui.section_handle_add(FPSTR(TCONST_syslampFlags), set_lamp_flags);
 
-    embui.section_handle_add(FPSTR(TCONST_main), section_main_frame);
-    embui.section_handle_add(FPSTR(TCONST_show_flags), show_main_flags);
+    embui.section_handle_add(FPSTR(TCONST_main), section_main_frame);                   // заглавная страница веб-интерфейса
+    embui.section_handle_add(FPSTR(TCONST_show_flags), show_main_flags);                // нажатие кнопки "еще..." на странице "Эффекты"
 
-    embui.section_handle_add(FPSTR(TCONST_effects), section_effects_frame);
-    embui.section_handle_add(FPSTR(TCONST_effects_param), show_effects_param);
+    embui.section_handle_add(FPSTR(TCONST_effects), section_effects_frame);             // меню: переход на страницу "Эффекты"
+    embui.section_handle_add(FPSTR(TCONST_eff_ctrls), show_effect_controls);            // блок контролов текущего эффекта
     embui.section_handle_add(FPSTR(TCONST_effListMain), set_effects_list);
     embui.section_handle_add(FPSTR(TCONST_dynCtrl_), set_effects_dynCtrl);
 
     embui.section_handle_add(FPSTR(TCONST_eff_prev), set_eff_prev);
     embui.section_handle_add(FPSTR(TCONST_eff_next), set_eff_next);
 
-    embui.section_handle_add(FPSTR(TCONST_effects_config), show_effects_config);
+    embui.section_handle_add(FPSTR(TCONST_effects_config), show_effects_config);        // страница "управление списком эффектов"
     embui.section_handle_add(FPSTR(TCONST_effListConf), set_effects_config_list);
     embui.section_handle_add(FPSTR(TCONST_set_effect), set_effects_config_param);
 
@@ -3377,7 +3381,7 @@ void remote_action(RA action, ...){
                 myLamp.switcheffect(SW_NEXT_DEMO, myLamp.getFaderFlag());
             }
             // update UI with changed effect number and publish controls
-            CALL_INTF(FPSTR(TCONST_effListMain), myLamp.effects.getEffnum(), show_effects_param);
+            CALL_INTF(FPSTR(TCONST_effListMain), myLamp.effects.getEffnum(), show_effect_controls);
             // postponed action to publish eff changes
             //new Task(TASK_SECOND, TASK_ONCE, nullptr, &ts, true, nullptr, [](){ remote_action(RA::RA_EFFECT, String(myLamp.effects.getEffnum()).c_str(), NULL); }, true);
             break;
