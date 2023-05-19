@@ -457,6 +457,8 @@ static const char TINTF_0EE[] PROGMEM = "Відключено";
 static const char TINTF_0EF[] PROGMEM = "Вертикальна";
 static const char TINTF_0F0[] PROGMEM = "Горизонтальна";
 
+static const char TINTF_gpiocfg[] PROGMEM = "GPIO Configuration";
+
 static const char NY_MDG_STRING1[] PROGMEM = "До нового року залишилось %d %s";
 static const char NY_MDG_STRING2[] PROGMEM = "З новим %d роком!";
 //-------------------------

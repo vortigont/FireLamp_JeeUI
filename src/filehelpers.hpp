@@ -21,9 +21,7 @@
 #pragma once
 
 #include "misc.h"
-//#include "LList.h"
 #include <ArduinoJson.h>
-//#include "effects_types.h"
 #include <LittleFS.h>
 
 
@@ -32,14 +30,6 @@
  * 
  */
 namespace fshlpr{
-
-    /**
-     *  метод загружает и пробует десериализовать джейсон из файла в предоставленный документ,
-     *  возвращает true если загрузка и десериализация прошла успешно
-     *  @param doc - DynamicJsonDocument куда будет загружен джейсон
-     *  @param jsonfile - файл, для загрузки
-     */
-    bool deserializeFile(DynamicJsonDocument& doc, const char* filepath);
 
     /**
      * @brief получение пути и имени файла конфига эффекта по его номеру
@@ -65,7 +55,5 @@ namespace fshlpr{
      * возвращает хендл
      */
     File& openIndexFile(File& fhandle, const char *folder);
-
-
 
 }

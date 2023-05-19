@@ -62,13 +62,37 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 #include "basicui.h"
 #include "actions.hpp"
-
+#include <type_traits>
 // задержка вывода ip адреса при включении лампы после перезагрузки
 #define SHOWIP_DELAY    5
 
 #ifdef ESP8266
 #define NUM_OUPUT_PINS  16
+#define GPIO_NUM_NC -1
 #endif
+
+// numeric indexes for pages
+enum class page : uint8_t {
+    main = 0,
+    eff_config,
+    mike,
+    setup_dfplayer,
+    setup_bttn,
+    setup_encdr,
+    setup_other,
+    setup_esp,
+    setup_gpio,
+    _count,             // not a page but a len marker
+    begin = 0,
+    end = _count
+};
+
+// cast enum to int
+template <class E>
+constexpr std::common_type_t<int, std::underlying_type_t<E>>
+e2int(E e) {
+    return static_cast<std::common_type_t<int, std::underlying_type_t<E>>>(e);
+}
 
 namespace INTERFACE {
 // ------------- глобальные переменные построения интерфейса
@@ -95,7 +119,10 @@ enum class lstfile_t {
 
 // forward declarations
 void block_effect_params(Interface *interf, JsonObject *data);
-
+void show_effects_config(Interface *interf, JsonObject *data);
+void show_settings_mic(Interface *interf, JsonObject *data);
+void show_settings_mp3(Interface *interf, JsonObject *data);
+void page_gpiocfg(Interface *interf, JsonObject *data);
 
 /**
  * @brief rebuild cached json file with effects names list
@@ -133,7 +160,6 @@ void rebuild_effect_list_files(lstfile_t lst){
         &ts, true, nullptr, [](){ delayedOptionTask=nullptr; }, true
     );
 }
-
 
 // Функция преобразования для конфига
 uint64_t stoull(const String &str){
@@ -210,6 +236,50 @@ void AUX_toggle(bool key)
     }
 }
 #endif
+
+/**
+ * @brief when action is called to display a specific page
+ * this selector picks and calls correspoding method
+ * using common seletor simplifes and reduces a number of registered actions required 
+ * 
+ */
+void show_page_selector(Interface *interf, JsonObject *data){
+    if (!interf || !data || (*data)[FPSTR(TCONST_sh_page)].isNull()) return;  // quit if no section specified
+
+    // get a page index
+    page idx = static_cast<page>((*data)[FPSTR(TCONST_sh_page)].as<int>());
+
+    switch (idx){
+        case page::eff_config :   // страница "Управление списком эффектов"
+            show_effects_config(interf, nullptr);
+            return;
+        case page::mike :         // страница настроек микрофона
+            show_settings_mic(interf, nullptr);
+            return;
+    #ifdef MP3PLAYER
+        case page::setup_dfplayer :    // страница настроек dfplayer
+            show_settings_mp3(interf, nullptr);
+            return;
+    #endif  // #ifdef MP3PLAYER
+    #ifdef ESP_USE_BUTTON
+        case page::setup_bttn :    // страница настроек кнопки
+            show_settings_butt(interf, nullptr);
+            return;
+    #endif
+    #ifdef ENCODER
+        case page::setup_encdr :    // страница настроек кнопки
+            show_settings_enc(interf, nullptr);
+            return;
+    #endif
+        case page::setup_gpio :    // страница настроек GPIO
+            page_gpiocfg(interf, nullptr);
+            return;
+
+        default:                // by default simply show main page
+            section_main_frame(interf, nullptr);
+    }
+
+}
 
 /**
  * @brief - callback function that is triggered every EMBUI_PUB_PERIOD seconds via EmbUI scheduler
@@ -319,11 +389,11 @@ void block_effect_params(Interface *interf, JsonObject *data){
     //}
 
     interf->json_section_line();
-    interf->button_submit_value(FPSTR(TCONST_set_effect), FPSTR(TCONST_delfromlist), FPSTR(TINTF_0B5), FPSTR(TCONST_orange));
+    interf->button_submit_value(FPSTR(TCONST_set_effect), FPSTR(TCONST_delfromlist), FPSTR(TINTF_0B5), FPSTR(P_ORANGE));
     interf->button_submit_value(FPSTR(TCONST_set_effect), FPSTR(TCONST_delall), FPSTR(TINTF_0B4), FPSTR(P_RED));
     interf->json_section_end();
 
-    interf->button_submit_value(FPSTR(TCONST_set_effect), FPSTR(TCONST_makeidx), FPSTR(TINTF_007), FPSTR(TCONST_black));
+    interf->button_submit_value(FPSTR(TCONST_set_effect), FPSTR(TCONST_makeidx), FPSTR(TINTF_007), FPSTR(P_BLACK));
 
     interf->json_section_end();
 }
@@ -747,10 +817,9 @@ void block_main_flags(Interface *interf, JsonObject *data){
     interf->checkbox(FPSTR(TCONST_ONflag), myLamp.isLampOn(), FPSTR(TINTF_00E), true);
     interf->checkbox(FPSTR(TCONST_Demo), myLamp.getMode() == LAMPMODE::MODE_DEMO, FPSTR(TINTF_00F), true);
     interf->checkbox(FPSTR(TCONST_GBR), myLamp.IsGlobalBrightness(), FPSTR(TINTF_010), true);
-#ifndef MOOT
     interf->checkbox(FPSTR(TCONST_Events), myLamp.IsEventsHandled(), FPSTR(TINTF_011), true);
     interf->checkbox(FPSTR(TCONST_drawbuff), myLamp.isDrawOn(), FPSTR(TINTF_0CE), true);
-#endif
+
 #ifdef MIC_EFFECTS
     interf->checkbox(FPSTR(TCONST_Mic), myLamp.isMicOnOff(), FPSTR(TINTF_012), true);
 #endif
@@ -828,7 +897,7 @@ void block_effects_main(Interface *interf, JsonObject *data, bool fast=true){
         // build a block of controls for current effect
         block_effect_controls(interf, data);
 
-        interf->button(FPSTR(TCONST_effects_config), FPSTR(TINTF_009));
+        interf->button_value(FPSTR(TCONST_sh_page), e2int(page::eff_config), FPSTR(TINTF_009));
         interf->json_section_end();
     } else {
         interf->constant(F("cmt"), F("Rebuilding effects list, pls retry in a sec..."));
@@ -1242,117 +1311,6 @@ void set_text_config(Interface *interf, JsonObject *data){
     } else
         section_text_frame(interf, data);
 }
-
-#ifdef MP3PLAYER
-// show page with MP3 Player setup
-void block_settings_mp3(Interface *interf, JsonObject *data){
-    if (!interf) return;
-    interf->json_section_main(FPSTR(TCONST_settings_mp3), FPSTR(TINTF_099));
-
-    // volume
-    interf->range(FPSTR(TCONST_mp3volume), 1, 30, 1, FPSTR(TINTF_09B), true);
-
-    // выключатель и статус плеера
-    interf->json_section_line(); // расположить в одной линии
-        interf->checkbox(FPSTR(TCONST_isOnMP3), myLamp.isONMP3(), FPSTR(TINTF_099), true);
-        // show message if DFPlayer is not available
-        if (!mp3->isReady())
-            interf->constant(F("cmt"), F("DFPlayer is not connected, not ready or not responding :("));
-        else
-            interf->constant(F("cmt"), F("DFPlayer player: Connected"));
-    interf->json_section_end();
-
-    // номера gpio для подключения плеера
-    interf->json_section_hidden(FPSTR(TCONST_s_mp3pins), "GPIO setup");
-        interf->comment(F("MCU will reboot on change"));
-        interf->json_section_line(); // расположить в одной линии
-            interf->number(FPSTR(TCONST_mp3rx),FPSTR(TINTF_097), 1, 0, NUM_OUPUT_PINS);
-            interf->number(FPSTR(TCONST_mp3tx),FPSTR(TINTF_098), 1, 0, NUM_OUPUT_PINS);
-        interf->json_section_end();
-        interf->button_submit(FPSTR(TCONST_s_mp3pins), FPSTR(TINTF_008), FPSTR(P_GRAY));
-    interf->json_section_end();
-
-    interf->json_section_begin(FPSTR(TCONST_set_mp3));
-    interf->spacer(FPSTR(TINTF_0B1));
-    interf->json_section_line(); // расположить в одной линии
-        interf->checkbox(FPSTR(TCONST_playName), myLamp.getLampSettings().playName , FPSTR(TINTF_09D), false);
-        interf->checkbox(FPSTR(TCONST_playEffect), myLamp.getLampSettings().playEffect , FPSTR(TINTF_09E), false);
-        interf->checkbox(FPSTR(TCONST_playMP3), myLamp.getLampSettings().playMP3 , FPSTR(TINTF_0AF), false);
-    interf->json_section_end();
-
-    interf->json_section_line(); // время/будильник
-    interf->select(FPSTR(TCONST_playTime), myLamp.getLampSettings().playTime, FPSTR(TINTF_09C), false);
-    interf->option(TIME_SOUND_TYPE::TS_NONE, FPSTR(TINTF_0B6));
-    interf->option(TIME_SOUND_TYPE::TS_VER1, FPSTR(TINTF_0B7));
-    interf->option(TIME_SOUND_TYPE::TS_VER2, FPSTR(TINTF_0B8));
-    interf->json_section_end();
-
-    interf->select(FPSTR(TCONST_alarmSound), myLamp.getLampSettings().alarmSound, FPSTR(TINTF_0A3), false);
-    interf->option(ALARM_SOUND_TYPE::AT_NONE, FPSTR(TINTF_09F));
-    interf->option(ALARM_SOUND_TYPE::AT_FIRST, FPSTR(TINTF_0A0));
-    interf->option(ALARM_SOUND_TYPE::AT_SECOND, FPSTR(TINTF_0A4));
-    interf->option(ALARM_SOUND_TYPE::AT_THIRD, FPSTR(TINTF_0A5));
-    interf->option(ALARM_SOUND_TYPE::AT_FOURTH, FPSTR(TINTF_0A6));
-    interf->option(ALARM_SOUND_TYPE::AT_FIFTH, FPSTR(TINTF_0A7));
-    interf->option(ALARM_SOUND_TYPE::AT_RANDOM, FPSTR(TINTF_0A1));
-    interf->option(ALARM_SOUND_TYPE::AT_RANDOMMP3, FPSTR(TINTF_0A2));
-    interf->json_section_end();
-    interf->json_section_end(); // время/будильник
-
-    interf->checkbox(FPSTR(TCONST_limitAlarmVolume), myLamp.getLampSettings().limitAlarmVolume , FPSTR(TINTF_0B3), false);
-
-    interf->json_section_line();
-        interf->select(FPSTR(TCONST_eqSetings), myLamp.getLampSettings().MP3eq, FPSTR(TINTF_0A8), false);
-        interf->option(DFPLAYER_EQ_NORMAL, FPSTR(TINTF_0A9));
-        interf->option(DFPLAYER_EQ_POP, FPSTR(TINTF_0AA));
-        interf->option(DFPLAYER_EQ_ROCK, FPSTR(TINTF_0AB));
-        interf->option(DFPLAYER_EQ_JAZZ, FPSTR(TINTF_0AC));
-        interf->option(DFPLAYER_EQ_CLASSIC, FPSTR(TINTF_0AD));
-        interf->option(DFPLAYER_EQ_BASS, FPSTR(TINTF_0AE));
-        interf->json_section_end();
-        
-        interf->number(FPSTR(TCONST_mp3count), mp3->getMP3count(), FPSTR(TINTF_0B0));
-    interf->json_section_end();
-
-    interf->button_submit(FPSTR(TCONST_set_mp3), FPSTR(TINTF_008), FPSTR(P_GRAY));
-    interf->json_section_end();
-
-    interf->spacer();
-    interf->button(FPSTR(TCONST_settings), FPSTR(TINTF_00B));
-
-    interf->json_section_end();
-}
-
-void show_settings_mp3(Interface *interf, JsonObject *data){
-    if (!interf) return;
-    interf->json_frame_interface();
-    block_settings_mp3(interf, data);
-    interf->json_frame_flush();
-}
-
-void set_settings_mp3(Interface *interf, JsonObject *data){
-    if (!data) return;
-
-    resetAutoTimers(); // сдвинем таймеры автосейва, т.к. длительная операция
-    uint8_t val = (*data)[FPSTR(TCONST_eqSetings)].as<uint8_t>();
-    myLamp.setEqType(val);
-    mp3->setEqType(val); // пишет в плеер!
-
-    myLamp.setPlayTime((*data)[FPSTR(TCONST_playTime)].as<int>());
-    myLamp.setPlayName((*data)[FPSTR(TCONST_playName)]);
-    myLamp.setPlayEffect((*data)[FPSTR(TCONST_playEffect)]); mp3->setPlayEffect(myLamp.getLampSettings().playEffect);
-    myLamp.setAlatmSound((ALARM_SOUND_TYPE)(*data)[FPSTR(TCONST_alarmSound)].as<int>());
-    myLamp.setPlayMP3((*data)[FPSTR(TCONST_playMP3)]); mp3->setPlayMP3(myLamp.getLampSettings().playMP3);
-    myLamp.setLimitAlarmVolume((*data)[FPSTR(TCONST_limitAlarmVolume)]);
-
-    SETPARAM(FPSTR(TCONST_mp3count), mp3->setMP3count((*data)[FPSTR(TCONST_mp3count)].as<int>())); // кол-во файлов в папке мп3
-    embui.var(FPSTR(TCONST_mp3volume), (*data)[FPSTR(TCONST_mp3volume)], true);
-
-    save_lamp_flags();
-    basicui::section_settings_frame(interf, data);
-    //section_settings_frame(interf, data);
-}
-#endif
 
 #ifdef MIC_EFFECTS
 void block_settings_mic(Interface *interf, JsonObject *data){
@@ -1961,7 +1919,6 @@ void show_event_conf(Interface *interf, JsonObject *data){
             interf->option(EVENT_TYPE::SET_WHITE_LO, FPSTR(TINTF_0EA));
             interf->option(EVENT_TYPE::SET_WHITE_HI, FPSTR(TINTF_0EB));
 
-#ifndef MOOT
 #ifdef AUX_PIN
             interf->option(EVENT_TYPE::AUX_ON, FPSTR(TINTF_06A));
             interf->option(EVENT_TYPE::AUX_OFF, FPSTR(TINTF_06B));
@@ -1974,7 +1931,7 @@ void show_event_conf(Interface *interf, JsonObject *data){
 #endif
             interf->option(EVENT_TYPE::EVENTS_CONFIG_LOAD, FPSTR(TINTF_066));
             interf->option(EVENT_TYPE::PIN_STATE, FPSTR(TINTF_069));
-#endif
+
         interf->json_section_end();
         interf->datetime(FPSTR(TCONST_tmEvent), cur_edit_event->getDateTime(), FPSTR(TINTF_06D));
     interf->json_section_end();
@@ -2216,7 +2173,7 @@ void show_butt_conf(Interface *interf, JsonObject *data){
     }
 
     interf->spacer();
-    interf->button(FPSTR(TCONST_show_butt), FPSTR(TINTF_00B));
+    interf->button_value(FPSTR(TCONST_sh_page), e2int(page::setup_bttn), FPSTR(TINTF_00B));
 
     interf->json_section_end();
     interf->json_frame_flush();
@@ -2291,6 +2248,100 @@ void set_drawflag(Interface *interf, JsonObject *data){
 }
 
 #ifdef MP3PLAYER
+// show page with MP3 Player setup
+void show_settings_mp3(Interface *interf, JsonObject *data){
+    if (!interf) return;
+
+    interf->json_frame_interface();
+    interf->json_section_main(FPSTR(TCONST_settings_mp3), FPSTR(TINTF_099));
+
+    // volume
+    interf->range(FPSTR(TCONST_mp3volume), 1, 30, 1, FPSTR(TINTF_09B), true);
+
+    // выключатель и статус плеера
+    interf->json_section_line(); // расположить в одной линии
+        interf->checkbox(FPSTR(TCONST_isOnMP3), myLamp.isONMP3(), FPSTR(TINTF_099), true);
+        // show message if DFPlayer is not available
+        if (!mp3->isReady())
+            interf->constant(F("cmt"), F("DFPlayer is not connected, not ready or not responding :("));
+        else
+            interf->constant(F("cmt"), F("DFPlayer player: Connected"));
+    interf->json_section_end();
+
+    interf->json_section_begin(FPSTR(TCONST_set_mp3));
+    interf->spacer(FPSTR(TINTF_0B1));
+    interf->json_section_line(); // расположить в одной линии
+        interf->checkbox(FPSTR(TCONST_playName), myLamp.getLampSettings().playName , FPSTR(TINTF_09D), false);
+        interf->checkbox(FPSTR(TCONST_playEffect), myLamp.getLampSettings().playEffect , FPSTR(TINTF_09E), false);
+        interf->checkbox(FPSTR(TCONST_playMP3), myLamp.getLampSettings().playMP3 , FPSTR(TINTF_0AF), false);
+    interf->json_section_end();
+
+    interf->json_section_line(); // время/будильник
+    interf->select(FPSTR(TCONST_playTime), myLamp.getLampSettings().playTime, FPSTR(TINTF_09C), false);
+    interf->option(TIME_SOUND_TYPE::TS_NONE, FPSTR(TINTF_0B6));
+    interf->option(TIME_SOUND_TYPE::TS_VER1, FPSTR(TINTF_0B7));
+    interf->option(TIME_SOUND_TYPE::TS_VER2, FPSTR(TINTF_0B8));
+    interf->json_section_end();
+
+    interf->select(FPSTR(TCONST_alarmSound), myLamp.getLampSettings().alarmSound, FPSTR(TINTF_0A3), false);
+    interf->option(ALARM_SOUND_TYPE::AT_NONE, FPSTR(TINTF_09F));
+    interf->option(ALARM_SOUND_TYPE::AT_FIRST, FPSTR(TINTF_0A0));
+    interf->option(ALARM_SOUND_TYPE::AT_SECOND, FPSTR(TINTF_0A4));
+    interf->option(ALARM_SOUND_TYPE::AT_THIRD, FPSTR(TINTF_0A5));
+    interf->option(ALARM_SOUND_TYPE::AT_FOURTH, FPSTR(TINTF_0A6));
+    interf->option(ALARM_SOUND_TYPE::AT_FIFTH, FPSTR(TINTF_0A7));
+    interf->option(ALARM_SOUND_TYPE::AT_RANDOM, FPSTR(TINTF_0A1));
+    interf->option(ALARM_SOUND_TYPE::AT_RANDOMMP3, FPSTR(TINTF_0A2));
+    interf->json_section_end();
+    interf->json_section_end(); // время/будильник
+
+    interf->checkbox(FPSTR(TCONST_limitAlarmVolume), myLamp.getLampSettings().limitAlarmVolume , FPSTR(TINTF_0B3), false);
+
+    interf->json_section_line();
+        interf->select(FPSTR(TCONST_eqSetings), myLamp.getLampSettings().MP3eq, FPSTR(TINTF_0A8), false);
+        interf->option(DFPLAYER_EQ_NORMAL, FPSTR(TINTF_0A9));
+        interf->option(DFPLAYER_EQ_POP, FPSTR(TINTF_0AA));
+        interf->option(DFPLAYER_EQ_ROCK, FPSTR(TINTF_0AB));
+        interf->option(DFPLAYER_EQ_JAZZ, FPSTR(TINTF_0AC));
+        interf->option(DFPLAYER_EQ_CLASSIC, FPSTR(TINTF_0AD));
+        interf->option(DFPLAYER_EQ_BASS, FPSTR(TINTF_0AE));
+        interf->json_section_end();
+        
+        interf->number(FPSTR(TCONST_mp3count), mp3->getMP3count(), FPSTR(TINTF_0B0));
+    interf->json_section_end();
+
+    interf->button_submit(FPSTR(TCONST_set_mp3), FPSTR(TINTF_008), FPSTR(P_GRAY));
+    interf->json_section_end();
+
+    interf->spacer();
+    interf->button(FPSTR(TCONST_settings), FPSTR(TINTF_00B));
+
+    interf->json_frame_flush();
+}
+
+void set_settings_mp3(Interface *interf, JsonObject *data){
+    if (!data) return;
+
+    resetAutoTimers(); // сдвинем таймеры автосейва, т.к. длительная операция
+    uint8_t val = (*data)[FPSTR(TCONST_eqSetings)].as<uint8_t>();
+    myLamp.setEqType(val);
+    mp3->setEqType(val); // пишет в плеер!
+
+    myLamp.setPlayTime((*data)[FPSTR(TCONST_playTime)].as<int>());
+    myLamp.setPlayName((*data)[FPSTR(TCONST_playName)]);
+    myLamp.setPlayEffect((*data)[FPSTR(TCONST_playEffect)]); mp3->setPlayEffect(myLamp.getLampSettings().playEffect);
+    myLamp.setAlatmSound((ALARM_SOUND_TYPE)(*data)[FPSTR(TCONST_alarmSound)].as<int>());
+    myLamp.setPlayMP3((*data)[FPSTR(TCONST_playMP3)]); mp3->setPlayMP3(myLamp.getLampSettings().playMP3);
+    myLamp.setLimitAlarmVolume((*data)[FPSTR(TCONST_limitAlarmVolume)]);
+
+    SETPARAM(FPSTR(TCONST_mp3count), mp3->setMP3count((*data)[FPSTR(TCONST_mp3count)].as<int>())); // кол-во файлов в папке мп3
+    embui.var(FPSTR(TCONST_mp3volume), (*data)[FPSTR(TCONST_mp3volume)], true);
+
+    save_lamp_flags();
+    basicui::section_settings_frame(interf, data);
+    //section_settings_frame(interf, data);
+}
+
 void set_mp3flag(Interface *interf, JsonObject *data){
     if (!data) return;
     myLamp.setONMP3((*data)[FPSTR(TCONST_isOnMP3)]);
@@ -2334,9 +2385,19 @@ void set_mp3_player(Interface *interf, JsonObject *data){
 void set_mp3pins(Interface *interf, JsonObject *data){
     if (!data) return;
 
-    embui.var(FPSTR(TCONST_mp3rx), (*data)[FPSTR(TCONST_mp3rx)]);
-    embui.var(FPSTR(TCONST_mp3tx), (*data)[FPSTR(TCONST_mp3tx)]);
-    embui.autosave(true);
+    DynamicJsonDocument doc(512);
+    if (!embuifs::deserializeFile(doc, FPSTR(TCONST_fcfg_gpio))) doc.clear();     // reset if cfg is broken or missing
+
+    // save pin numbers into config file if present/valid
+    if ( (*data)[FPSTR(TCONST_mp3rx)].isNull() || (*data)[FPSTR(TCONST_mp3rx)] == static_cast<int>(GPIO_NUM_NC) ) doc.remove(FPSTR(TCONST_mp3rx));
+    doc[FPSTR(TCONST_mp3rx)] = (*data)[FPSTR(TCONST_mp3rx)];
+
+    if ( (*data)[FPSTR(TCONST_mp3tx)].isNull() || (*data)[FPSTR(TCONST_mp3tx)] == static_cast<int>(GPIO_NUM_NC) ) doc.remove(FPSTR(TCONST_mp3tx));
+    doc[FPSTR(TCONST_mp3tx)] = (*data)[FPSTR(TCONST_mp3tx)];
+
+    // save resulting config
+    embuifs::serialize2file(doc, FPSTR(TCONST_fcfg_gpio));
+
     remote_action(RA::RA_REBOOT, NULL, NULL);
     basicui::section_settings_frame(interf, nullptr);
 }
@@ -2481,7 +2542,6 @@ void set_streaming_universe(Interface *interf, JsonObject *data){
 #endif
 
 // Точка входа в настройки
-void user_settings_frame(Interface *interf, JsonObject *data);
 /*
 void section_settings_frame(Interface *interf, JsonObject *data){
     // Страница "Настройки"
@@ -2532,26 +2592,25 @@ void set_opt_pass(Interface *interf, JsonObject *data){
 void user_settings_frame(Interface *interf, JsonObject *data){
     if (!interf) return;
 #ifdef MIC_EFFECTS
-    interf->button(FPSTR(TCONST_show_mic), FPSTR(TINTF_020));
+    interf->button_value(FPSTR(TCONST_sh_page), e2int(page::mike), FPSTR(TINTF_020));
 #endif
 #ifdef MP3PLAYER
-    interf->button(FPSTR(TCONST_show_mp3), FPSTR(TINTF_099));
+    interf->button_value(FPSTR(TCONST_sh_page), e2int(page::setup_dfplayer), FPSTR(TINTF_099));
 #endif
-
 #ifdef ESP_USE_BUTTON
-    interf->button(FPSTR(TCONST_show_butt), FPSTR(TINTF_013));
+    interf->button_value(FPSTR(TCONST_sh_page), e2int(page::setup_bttn), FPSTR(TINTF_013));
 #endif
 #ifdef ENCODER
-    interf->button(FPSTR(TCONST_encoder), FPSTR(TINTF_0DC));
+    interf->button_value(FPSTR(TCONST_sh_page), e2int(page::setup_encdr), FPSTR(TINTF_0DC));
 #endif
-    interf->button(FPSTR(TCONST_show_other), FPSTR(TINTF_082));
+    interf->button_value(FPSTR(TCONST_sh_page), e2int(page::setup_other), FPSTR(TINTF_082));
 
-    interf->button(FPSTR(TCONST_ESPsysSettings), FPSTR(TINTF_08F));
+    interf->button_value(FPSTR(TCONST_sh_page), e2int(page::setup_esp), FPSTR(TINTF_08F));
 
-#ifndef MOOT
+    // show gpio setup page button
+    interf->button_value(FPSTR(TCONST_sh_page), e2int(page::setup_gpio), FPSTR(TINTF_gpiocfg));
+
     block_lamp_config(interf, data);
-#endif
-
 }
 
 /**
@@ -2663,6 +2722,36 @@ void save_lamp_flags(){
     obj[FPSTR(TCONST_syslampFlags)] = ulltos(myLamp.getLampFlags());
     set_lamp_flags(nullptr, &obj);
 }
+
+/**
+ * @brief page with GPIO mapping setup
+ * 
+ */
+void page_gpiocfg(Interface *interf, JsonObject *data){
+    if (!interf) return;
+
+    interf->json_frame_interface();
+    interf->json_section_main(FPSTR(TCONST_pin), "GPIO Configuration");
+
+    interf->comment(F("MCU will reboot on change"));
+
+    DynamicJsonDocument doc(512);
+    embuifs::deserializeFile(doc, FPSTR(TCONST_fcfg_gpio));
+
+    // номера gpio для подключения плеера
+    interf->json_section_hidden(FPSTR(TCONST_s_mp3pins), "DFPlayer");
+        interf->json_section_line(); // расположить в одной линии
+            interf->number(FPSTR(TCONST_mp3rx), doc[FPSTR(TCONST_mp3rx)] | static_cast<int>(GPIO_NUM_NC), FPSTR(TINTF_097), /*step*/ 1, /*min*/ -1, /*max*/ NUM_OUPUT_PINS);
+            interf->number(FPSTR(TCONST_mp3tx), doc[FPSTR(TCONST_mp3tx)] | static_cast<int>(GPIO_NUM_NC), FPSTR(TINTF_098), 1, -1, NUM_OUPUT_PINS);
+        interf->json_section_end();
+        interf->button_submit(FPSTR(TCONST_s_mp3pins), FPSTR(TINTF_008));
+    interf->json_section_end();
+
+
+    interf->json_frame_flush();
+}
+
+
 
 // кастомный обработчик, для реализации особой обработки событий сокетов
 bool ws_action_handle(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len)
@@ -2822,6 +2911,7 @@ void create_parameters(){
     */
     basicui::add_sections();
 
+    embui.section_handle_add(FPSTR(TCONST_sh_page), show_page_selector);
     embui.section_handle_add(FPSTR(TCONST_sysSettings), set_sys_settings);
 
     embui.section_handle_add(FPSTR(TCONST_syslampFlags), set_lamp_flags);
@@ -2837,7 +2927,7 @@ void create_parameters(){
     embui.section_handle_add(FPSTR(TCONST_eff_prev), set_eff_prev);
     embui.section_handle_add(FPSTR(TCONST_eff_next), set_eff_next);
 
-    embui.section_handle_add(FPSTR(TCONST_effects_config), show_effects_config);        // страница "управление списком эффектов"
+    //embui.section_handle_add(FPSTR(TCONST_effects_config), show_effects_config);        // страница "управление списком эффектов"
     embui.section_handle_add(FPSTR(TCONST_effListConf), set_effects_config_list);
     embui.section_handle_add(FPSTR(TCONST_set_effect), set_effects_config_param);
 
@@ -2857,7 +2947,7 @@ void create_parameters(){
     embui.section_handle_add(FPSTR(TCONST_Universe), set_streaming_universe);
     embui.section_handle_add(FPSTR(TCONST_bright), set_streaming_bright);
 #endif
-    embui.section_handle_add(FPSTR(TCONST_ESPsysSettings), section_sys_settings_frame);
+    //embui.section_handle_add(FPSTR(TCONST_ESPsysSettings), section_sys_settings_frame);
     embui.section_handle_add(FPSTR(TCONST_lamptext), section_text_frame);
     embui.section_handle_add(FPSTR(TCONST_textsend), set_lamp_textsend);
     embui.section_handle_add(FPSTR(TCONST_add_lamp_config), edit_lamp_config);
@@ -2897,14 +2987,14 @@ void create_parameters(){
     embui.section_handle_add(FPSTR(T_SET_SCAN), set_scan_wifi);         // обработка сканирования WiFi
 */
 
-    embui.section_handle_add(FPSTR(TCONST_show_other), show_settings_other);
+    //embui.section_handle_add(FPSTR(TCONST_show_other), show_settings_other);
     embui.section_handle_add(FPSTR(TCONST_set_other), set_settings_other);
     #ifdef OPTIONS_PASSWORD
     embui.section_handle_add(FPSTR(TCONST_set_opt_pass), set_opt_pass);
     #endif // OPTIONS_PASSWORD
 
 #ifdef MIC_EFFECTS
-    embui.section_handle_add(FPSTR(TCONST_show_mic), show_settings_mic);
+    //embui.section_handle_add(FPSTR(TCONST_show_mic), show_settings_mic);
     embui.section_handle_add(FPSTR(TCONST_set_mic), set_settings_mic);
     embui.section_handle_add(FPSTR(TCONST_Mic), set_micflag);
     embui.section_handle_add(FPSTR(TCONST_mic_cal), set_settings_mic_calib);
@@ -2915,7 +3005,7 @@ void create_parameters(){
     embui.section_handle_add(FPSTR(TCONST_Events), set_eventflag);
     embui.section_handle_add(FPSTR(TCONST_evList), set_eventlist);
 #ifdef ESP_USE_BUTTON
-    embui.section_handle_add(FPSTR(TCONST_show_butt), show_settings_butt);
+    //embui.section_handle_add(FPSTR(TCONST_show_butt), show_settings_butt);
     embui.section_handle_add(FPSTR(TCONST_butt_conf), show_butt_conf);
     embui.section_handle_add(FPSTR(TCONST_set_butt), set_butt_conf);
     embui.section_handle_add(FPSTR(TCONST_Btn), set_btnflag);
@@ -2939,7 +3029,7 @@ void create_parameters(){
     embui.section_handle_add(FPSTR(TCONST_s_mp3pins), set_mp3pins);
 #endif
 #ifdef ENCODER
-    embui.section_handle_add(FPSTR(TCONST_encoder), show_settings_enc);
+    //embui.section_handle_add(FPSTR(TCONST_encoder), show_settings_enc);
     embui.section_handle_add(FPSTR(TCONST_set_enc), set_settings_enc);
 #endif
 }

@@ -144,10 +144,15 @@ void setup() {
     myLamp.events.setEventCallback(event_worker);
 
 #ifdef MP3PLAYER
-    int rxpin = embui.paramVariant(FPSTR(TCONST_mp3rx)) | MP3_RX_PIN;
-    int txpin = embui.paramVariant(FPSTR(TCONST_mp3tx)) | MP3_TX_PIN;
+{
+    // spawn an instance of mp3player
+    DynamicJsonDocument doc(512);
+    embuifs::deserializeFile(doc, FPSTR(TCONST_fcfg_gpio));
+    int rxpin = doc[FPSTR(TCONST_mp3rx)] | -1;
+    int txpin = doc[FPSTR(TCONST_mp3tx)] | -1;
     LOG(printf_P, PSTR("DFPlayer: rx:%d tx:%d\n"), rxpin, txpin);
     mp3 = new MP3PlayerDevice(rxpin, txpin); //rxpin, txpin
+}
 #endif
 
 #ifdef ESP8266

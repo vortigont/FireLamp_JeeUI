@@ -19,38 +19,11 @@
 */
 
 #include "filehelpers.hpp"
+#include "StreamUtils.h"
 #include "char_const.h"
 
 namespace fshlpr{
 
-    /**
-     *  метод загружает и пробует десериализовать джейсон из файла в предоставленный документ,
-     *  возвращает true если загрузка и десериализация прошла успешно
-     *  @param doc - DynamicJsonDocument куда будет загружен джейсон
-     *  @param jsonfile - файл, для загрузки
-     */
-    bool deserializeFile(DynamicJsonDocument& doc, const char* filepath){
-        if (!filepath || !*filepath)
-            return false;
-
-        //LOG(printf_P, PSTR("Load file: %s\n"), filepath);
-        File jfile = LittleFS.open(filepath, "r");
-        DeserializationError error;
-        if (jfile){
-            error = deserializeJson(doc, jfile);
-            jfile.close();
-        } else {
-            LOG(printf_P, PSTR("Can't open File: %s\n"), filepath);
-            return false;
-        }
-
-        if (error) {
-            LOG(printf_P, PSTR("File: failed to load json file: %s, deserialize error: "), filepath);
-            LOG(println, error.code());
-            return false;
-        }
-        return true;
-    }
 
     const String getEffectCfgPath(const uint16_t nb, const char *folder) {
         uint16_t swapnb = nb>>8|nb<<8; // меняю местами 2 байта, так чтобы копии/верисии эффекта оказалась в имени файла позади
@@ -87,6 +60,5 @@ namespace fshlpr{
         fhandle = LittleFS.open(filename, "w");
         return fhandle;
     }
-
 
 }
