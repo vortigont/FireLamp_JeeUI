@@ -37,10 +37,10 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 /*
   !!! ВНОСИТЬ ИЗМЕНЕНИЯ В ЭТОЙ ФАЙЛ НЕЛЬЗЯ !!!
-  переименуйте "user_config.h.default" в "user_config.h" и вносите свои правки там
+  скопируйте "user_config.h.default" в "user_config.h" и вносите изменения в файл-копию
 
   !!! NEVER EVER CHANGE THIS FILE !!!
-  rename "user_config.h.default" into "user_config.h" and adjust to your needs
+  copy "user_config.h.default" to "user_config.h" and adjust to your needs
 */
 
 
@@ -150,16 +150,16 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #ifdef MP3PLAYER
 #ifndef MP3_TX_PIN
  #ifdef ESP8266
-  #define MP3_TX_PIN          (14)                         // TX mp3 player RX (D5)
+  #define MP3_TX_PIN          (12)                         // TX mp3 player RX (D5)
  #else
-  #define MP3_TX_PIN          17                           // UART2 tx
+  #define MP3_TX_PIN          17                           // Serial2 tx
  #endif
 #endif
 #ifndef MP3_RX_PIN
  #ifdef ESP8266
-  #define MP3_RX_PIN          (12)                         // RX mp3 player TX (D6)
+  #define MP3_RX_PIN          (14)                         // RX mp3 player TX (D6)
  #else
-  #define MP3_RX_PIN          16                           // UART2 rx
+  #define MP3_RX_PIN          16                           // Serial2 rx
  #endif
 
 #endif
