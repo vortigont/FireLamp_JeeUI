@@ -137,7 +137,7 @@ void Effcfg::_savecfg(char *folder){
   LOG(printf_P,PSTR("Writing eff #%d cfg: %s\n"), num, filename.c_str());
   configFile = LittleFS.open(filename, "w"); // PSTR("w") использовать нельзя, будет исключение!
   //configFile.w
-  configFile.print(getSerializedEffConfig(num));
+  configFile.print(getSerializedEffConfig());
   configFile.close();
 }
 
