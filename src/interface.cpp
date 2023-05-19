@@ -1072,7 +1072,7 @@ void edit_lamp_config(Interface *interf, JsonObject *data){
         myLamp.events.loadConfig(filename.c_str());
 #ifdef ESP_USE_BUTTON
         filename = FPSTR(TCONST__backup_btn_);
-        filename =+ name;
+        filename += name;
         myButtons->clear();
         if (!myButtons->loadConfig()) {
             default_buttons();
@@ -2100,7 +2100,7 @@ void block_settings_butt(Interface *interf, JsonObject *data){
     interf->spacer();
 
     interf->json_section_begin(FPSTR(TCONST_butt_conf));
-    interf->select(FPSTR(TCONST_buttList), 0, FPSTR(TINTF_07A), false);
+    interf->select<int>(FPSTR(TCONST_buttList), 0, FPSTR(TINTF_07A));
     for (int i = 0; i < myButtons->size(); i++) {
         interf->option(String(i), (*myButtons)[i]->getName());
     }
@@ -2786,7 +2786,7 @@ void create_parameters(){
     // пины и системные настройки
 #ifdef ESP_USE_BUTTON
     embui.var_create(FPSTR(TCONST_PINB), BTN_PIN); // Пин кнопки
-    embui.var_create(FPSTR(TCONST_EncVG), GAUGETYPE::GT_VERT);         // Тип шкалы
+    embui.var_create(FPSTR(TCONST_EncVG), static_cast<int>(GAUGETYPE::GT_VERT) );         // Тип шкалы
 #endif
 #ifdef ENCODER
     embui.var_create(FPSTR(TCONST_encTxtCol), F("#FFA500"));  // Дефолтный цвет текста (Orange)
