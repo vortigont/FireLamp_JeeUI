@@ -2253,9 +2253,7 @@ bool EffectFire2018::run()
   uint16_t _speed = isMicOn() ? (mic_p > map(speed, 1, 255, 225, 20) ? mic_p : 20) : (isLinSpeed ? map(speed, 1, 255, 20, 100) : beatsin88(map(speed, 1, 255, 80, 200), 5, map(speed, 1, 255, 10, 255)));     // speed пересекается с переменной в родительском классе
 #endif
 
-  // EVERY_N_SECONDS(3){
-  //   LOG(printf_P, PSTR("%d %d\n"), _speed, ctrl);
-  // }
+  // shift error values
   for (auto &i : noise.opt){
     i.e_x = 3 * ctrl * _speed;
     i.e_y = 5 * millis() * _speed;
@@ -2276,31 +2274,20 @@ bool EffectFire2018::run()
   std::memcpy(fire18heat[0].data(), noise.map[0].getData() + noise.idx(0, noise.e_centerY), noise.w);
 
   //dim
-  for (uint8_t y = 0; y != noise.h-1; y++)
-    for (uint8_t x = 0; x != noise.w-1; x++)
+  for (uint8_t y = 0; y != noise.h; y++)
+    for (uint8_t x = 0; x != noise.w; x++)
     {
       uint8_t dim = 255 - noise.lxy(0, x, y) / 1.7 * constrain(0.05*brightness+0.01,0.01,1.0);  // todo: wtf??? this constrain has a range of ~0-20 ints, why floats for this???
       fire18heat[y][x] = scale8(fire18heat[y][x], dim);
-      //uint8_t dim = noise3dx[0][x][y];
-      // high value = high flames
-      //dim = dim / 1.7 * constrain(0.05*myLamp.effects.getBrightness()+0.01,0.01,1.0); //точно нужен прямой доступ?
-      //dim = 255 - dim;
-    }
 
-  for (uint8_t y = 0; y != noise.h-1; y++)
-  {
-    for (uint8_t x = 0; x != noise.w-1; x++)
-    {
       // map the colors based on heatmap
       CRGB color(fire18heat[y][x], (float)fire18heat[y][x] * (scale/5.0) * 0.01, 0);  // todo: wtf??? more nifty floats
       color*=2.5;
 
       // dim the result based on 2nd noise layer
-      //color = fb.pixel(x, fb.cfg.maxHeightIndex() - y);
       color.nscale8(noise.lxy(1,x,y));
       fb.pixel(x, y) = color;
     }
-  }
   return true;
 }
 

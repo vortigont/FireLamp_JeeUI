@@ -506,8 +506,8 @@ struct Noise3dMap {
     };
     
     const uint8_t w, h;
-    const uint8_t e_centerX = w / 2 + (w % 2);
-    const uint8_t e_centerY = h / 2 + (h % 2);
+    const uint8_t e_centerX = w / 2 + !!(w % 2);
+    const uint8_t e_centerY = h / 2 + !!(h % 2);
     std::vector<Deviation> opt;
     std::vector< Vector2D<uint8_t> > map;
 
