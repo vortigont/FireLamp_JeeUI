@@ -24,7 +24,6 @@
 
 namespace fshlpr{
 
-
     const String getEffectCfgPath(const uint16_t nb, const char *folder) {
         uint16_t swapnb = nb>>8|nb<<8; // меняю местами 2 байта, так чтобы копии/верисии эффекта оказалась в имени файла позади
         // todo: check if supplied alternative path starts with '/'

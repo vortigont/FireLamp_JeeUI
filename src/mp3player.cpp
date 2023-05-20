@@ -38,12 +38,15 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #ifdef MP3PLAYER
 #include "mp3player.h"
 
-MP3PlayerDevice::MP3PlayerDevice(Stream *port) : mp3player(port){
+// which serial to use for esp32
+#define MP3SERIAL Serial1
+
+MP3PlayerDevice::MP3PlayerDevice(Stream *port, uint8_t vol) : mp3player(port), cur_volume(vol) {
   init();
 }
 
 
-MP3PlayerDevice::MP3PlayerDevice(const uint8_t rxPin, const uint8_t txPin){
+MP3PlayerDevice::MP3PlayerDevice(uint8_t rxPin, uint8_t txPin, uint8_t vol) : cur_volume(vol) {
 #ifdef ESP8266
   SoftwareSerial *s = new (std::nothrow) SoftwareSerial(rxPin, txPin);
   if (!s) return;
@@ -51,8 +54,8 @@ MP3PlayerDevice::MP3PlayerDevice(const uint8_t rxPin, const uint8_t txPin){
   s->begin(9600);
   mp3player = s;
 #else // ESP32xx
-  Serial2.begin(9600, SERIAL_8N1, rxPin, txPin);    // use hwserial #2
-  mp3player = &Serial2;
+  MP3SERIAL.begin(9600, SERIAL_8N1, rxPin, txPin);    // use hwserial #2
+  mp3player = &MP3SERIAL;
 #endif
   init();
 }
@@ -81,6 +84,7 @@ void MP3PlayerDevice::init(){
 
     ready = true;
     outputDevice(DFPLAYER_DEVICE_SD);
+    setVolume(cur_volume);
     LOG(println, F("DFplayer: DFPlayer Mini online."));
 
     ts.getCurrentTask()->disable();
@@ -88,7 +92,7 @@ void MP3PlayerDevice::init(){
   &ts, false, nullptr,
   [this](){
     if (!ready) {
-      LOG(println, F("DFplayer: 1.Please recheck the connection/insert the SD card!"));
+      LOG(println, F("DFplayer: Pls, recheck the connection/insert the SD card!"));
     }
   },
   true);

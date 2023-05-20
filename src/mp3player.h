@@ -47,6 +47,8 @@ typedef enum : uint8_t {AT_NONE=0, AT_FIRST, AT_SECOND, AT_THIRD, AT_FOURTH, AT_
 #include "DFRobotDFPlayerMini.h"
 #include "ts.h"
 
+#define DFPLAYER_DEFAULT_VOL  15
+
 class MP3PlayerDevice : protected DFRobotDFPlayerMini {
   private:
     union {
@@ -66,7 +68,7 @@ class MP3PlayerDevice : protected DFRobotDFPlayerMini {
       uint32_t flags;
     };
     Task *tPeriodic = nullptr; // периодический опрос плеера
-    uint8_t cur_volume = 1;
+    uint8_t cur_volume;
     uint16_t mp3filescount = 255; // кол-во файлов в каталоге MP3
     uint16_t nextAdv=0; // следующее воспроизводимое сообщение (произношение минут после часов)
     uint16_t cur_effnb=0; // текущий эффект
@@ -97,7 +99,7 @@ class MP3PlayerDevice : protected DFRobotDFPlayerMini {
      * @param rxPin 
      * @param txPin 
      */
-    MP3PlayerDevice(const uint8_t rxPin, const uint8_t txPin);
+    MP3PlayerDevice(uint8_t rxPin, uint8_t txPin, uint8_t vol = DFPLAYER_DEFAULT_VOL);
 
     /**
      * @brief Construct a new MP3PlayerDevice object
@@ -105,7 +107,7 @@ class MP3PlayerDevice : protected DFRobotDFPlayerMini {
      * порт должен быть УЖЕ инициализирован на требуемую скорость/параметры
      * @param port stream object
      */
-    MP3PlayerDevice(Stream *port); // конструктор для Stream
+    MP3PlayerDevice(Stream *port, uint8_t vol = DFPLAYER_DEFAULT_VOL); // конструктор для Stream
 
     // d-tor
     ~MP3PlayerDevice();

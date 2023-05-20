@@ -151,8 +151,7 @@ void setup() {
     int rxpin = doc[FPSTR(TCONST_mp3rx)] | -1;
     int txpin = doc[FPSTR(TCONST_mp3tx)] | -1;
     LOG(printf_P, PSTR("DFPlayer: rx:%d tx:%d\n"), rxpin, txpin);
-    mp3 = new MP3PlayerDevice(rxpin, txpin); //rxpin, txpin
-}
+    mp3 = new MP3PlayerDevice(rxpin, txpin, embui.paramVariant(FPSTR(TCONST_mp3volume)) | DFPLAYER_DEFAULT_VOL );
 #endif
 
 #ifdef ESP8266

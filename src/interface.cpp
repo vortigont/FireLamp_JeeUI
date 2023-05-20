@@ -1141,7 +1141,7 @@ void edit_lamp_config(Interface *interf, JsonObject *data){
         myLamp.events.loadConfig(filename.c_str());
 #ifdef ESP_USE_BUTTON
         filename = FPSTR(TCONST__backup_btn_);
-        filename =+ name;
+        filename += name;
         myButtons->clear();
         if (!myButtons->loadConfig()) {
             default_buttons();
@@ -2057,9 +2057,9 @@ void block_settings_butt(Interface *interf, JsonObject *data){
     interf->spacer();
 
     interf->json_section_begin(FPSTR(TCONST_butt_conf));
-    interf->select(FPSTR(TCONST_buttList), 0, FPSTR(TINTF_07A), false);
+    interf->select<int>(FPSTR(TCONST_buttList), 0, FPSTR(TINTF_07A));
     for (int i = 0; i < myButtons->size(); i++) {
-        interf->option(String(i), (*myButtons)[i]->getName());
+        interf->option(i, (*myButtons)[i]->getName());
     }
     interf->json_section_end();
 
@@ -2154,7 +2154,7 @@ void show_butt_conf(Interface *interf, JsonObject *data){
 
     interf->select(FPSTR(TCONST_bactList), btn? btn->action : 0, FPSTR(TINTF_07A), false);
     for (int i = 1; i < BA::BA_END; i++) {
-        interf->option(String(i), FPSTR(btn_get_desc((BA)i)));
+        interf->option(i, FPSTR(btn_get_desc((BA)i)));
     }
     interf->json_section_end();
 
@@ -2437,8 +2437,8 @@ void block_streaming(Interface *interf, JsonObject *data){
             interf->checkbox(FPSTR(TCONST_mapping), myLamp.isMapping(), FPSTR(TINTF_0E7), true);
         interf->json_section_end();
         interf->select(FPSTR(TCONST_stream_type), embui.paramVariant(FPSTR(TCONST_stream_type)), FPSTR(TINTF_0E3), true);
-            interf->option(String(E131), FPSTR(TINTF_0E4));
-            interf->option(String(SOUL_MATE), FPSTR(TINTF_0E5));
+            interf->option(E131, FPSTR(TINTF_0E4));
+            interf->option(SOUL_MATE, FPSTR(TINTF_0E5));
         interf->json_section_end();
         interf->range(FPSTR(TCONST_bright), (String)myLamp.getBrightness(), 0, 255, 1, (String)FPSTR(TINTF_00D), true);
         if (embui.paramVariant(FPSTR(TCONST_stream_type)).toInt() == E131){
@@ -2875,7 +2875,7 @@ void create_parameters(){
     // пины и системные настройки
 #ifdef ESP_USE_BUTTON
     embui.var_create(FPSTR(TCONST_PINB), BTN_PIN); // Пин кнопки
-    embui.var_create(FPSTR(TCONST_EncVG), GAUGETYPE::GT_VERT);         // Тип шкалы
+    embui.var_create(FPSTR(TCONST_EncVG), static_cast<int>(GAUGETYPE::GT_VERT) );         // Тип шкалы
 #endif
 #ifdef ENCODER
     embui.var_create(FPSTR(TCONST_encTxtCol), F("#FFA500"));  // Дефолтный цвет текста (Orange)
@@ -2895,7 +2895,7 @@ void create_parameters(){
 #endif
     embui.var_create(FPSTR(TCONST_CLmt), CURRENT_LIMIT); // Лимит по току
 #ifdef USE_STREAMING
-    embui.var_create(FPSTR(TCONST_stream_type), String(SOUL_MATE)); // Тип трансляции
+    embui.var_create(FPSTR(TCONST_stream_type), SOUL_MATE); // Тип трансляции
     embui.var_create(FPSTR(TCONST_Universe), 1); // Universe для E1.31
 #endif
     // далее идут обработчики параметров
@@ -3585,7 +3585,7 @@ not sure what this WiFi settings is doing here, WiFi is managed via EmbUI
 */
         case RA::RA_LAMP_CONFIG:
             if (value && *value) {
-                String filename = String(FPSTR(TCONST__backup_glb_));
+                String filename(FPSTR(TCONST__backup_glb_));
                 filename.concat(value);
                 embui.load(filename.c_str());
                 sync_parameters();
@@ -3593,7 +3593,7 @@ not sure what this WiFi settings is doing here, WiFi is managed via EmbUI
             break;
         case RA::RA_EFF_CONFIG:
             if (value && *value) {
-                String filename = String(FPSTR(TCONST__backup_idx_));
+                String filename(FPSTR(TCONST__backup_idx_));
                 filename.concat(value);
                 myLamp.effects.initDefault(filename.c_str());
             }
@@ -3601,7 +3601,7 @@ not sure what this WiFi settings is doing here, WiFi is managed via EmbUI
 #ifdef ESP_USE_BUTTON
         case RA::RA_BUTTONS_CONFIG:
             if (value && *value) {
-                String filename = String(FPSTR(TCONST__backup_btn_));
+                String filename(FPSTR(TCONST__backup_btn_));
                 filename.concat(value);
                 myButtons->clear();
                 if (!myButtons->loadConfig()) {
@@ -3612,7 +3612,7 @@ not sure what this WiFi settings is doing here, WiFi is managed via EmbUI
 #endif
         case RA::RA_EVENTS_CONFIG:
             if (value && *value) {
-                String filename = String(FPSTR(TCONST__backup_evn_));
+                String filename(FPSTR(TCONST__backup_evn_));
                 filename.concat(value);
                 myLamp.events.loadConfig(filename.c_str());
             }
@@ -3834,7 +3834,8 @@ String httpCallback(const String &param, const String &value, bool isset){
             EffectListElem *eff = nullptr;
             String effname((char *)0);
             while ((eff = myLamp.effects.getNextEffect(eff)) != nullptr) {
-                result += String(first ? F("") : F(",")) + eff->eff_nb;
+                result += first ? F("") : F(",");
+                result += eff->eff_nb;
                 first=false;
             }
             result += F("]");
