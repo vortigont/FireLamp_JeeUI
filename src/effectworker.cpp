@@ -38,6 +38,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "effects.h"
 #include "char_const.h"
 #include "filehelpers.hpp"
+#include "embuifs.hpp"
 
 #define DYNJSON_SIZE_EFF_CFG   2048
 
@@ -84,7 +85,7 @@ bool Effcfg::_eff_cfg_deserialize(DynamicJsonDocument &doc, const char *folder){
 
   bool retry = true;
   READALLAGAIN:
-  if (fshlpr::deserializeFile(doc, filename.c_str() )){
+  if (embuifs::deserializeFile(doc, filename.c_str() )){
     if ( num>255 || geteffcodeversion((uint8_t)num) == doc[F("ver")] ){ // только для базовых эффектов эта проверка
       return true;   // we are OK
     }
@@ -547,7 +548,7 @@ void EffectWorker::loadeffname(String& _effectName, const uint16_t nb, const cha
 {
   String filename = fshlpr::getEffectCfgPath(nb,folder);
   DynamicJsonDocument doc(DYNJSON_SIZE_EFF_CFG);
-  bool ok = fshlpr::deserializeFile(doc, filename.c_str());
+  bool ok = embuifs::deserializeFile(doc, filename.c_str());
   if (ok && doc[F("name")]){
     _effectName = doc[F("name")].as<String>(); // перенакрываем именем из конфига, если есть
   } else if(!ok) {
@@ -566,7 +567,7 @@ void EffectWorker::loadsoundfile(String& _soundfile, const uint16_t nb, const ch
 {
   String filename = fshlpr::getEffectCfgPath(nb,folder);
   DynamicJsonDocument doc(2048);
-  bool ok = fshlpr::deserializeFile(doc, filename.c_str());
+  bool ok = embuifs::deserializeFile(doc, filename.c_str());
   LOG(printf_P,PSTR("snd: %s\n"),doc[F("snd")].as<String>().c_str());
   if (ok && doc[F("snd")]){
     _soundfile = doc[F("snd")].as<String>(); // перенакрываем именем из конфига, если есть
@@ -960,7 +961,7 @@ void EffectWorker::_load_eff_list_from_idx_file(const char *folder){
 
   DynamicJsonDocument doc(4096);  // document for loading effects index from file
 
-  if (!fshlpr::deserializeFile(doc, filename.c_str())){
+  if (!embuifs::deserializeFile(doc, filename.c_str())){
     LittleFS.remove(filename);    // remove corrupted index file
     return _rebuild_eff_list();
   }
@@ -1037,7 +1038,7 @@ void EffectWorker::_rebuild_eff_list(const char *folder){
       fn = sourcedir + "/" + _f.name();
 #endif
 
-    if (!fshlpr::deserializeFile(doc, fn.c_str())) {
+    if (!embuifs::deserializeFile(doc, fn.c_str())) {
       //#ifdef ESP32
       //_f.close();
       //#endif
