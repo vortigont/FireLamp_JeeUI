@@ -79,20 +79,25 @@ void LAMP::lamp_init(const uint16_t curlimit)
   // initialize fader instance
   LEDFader::getInstance()->setLamp(this);
 
-  // ПИНЫ
-#ifdef MOSFET_PIN                                         // инициализация пина, управляющего MOSFET транзистором в состояние "выключен"
-  pinMode(MOSFET_PIN, OUTPUT);
-#ifdef MOSFET_LEVEL
-  digitalWrite(MOSFET_PIN, !MOSFET_LEVEL);
-#endif
-#endif
+  // GPIO's
+  DynamicJsonDocument doc(512);
+  if (!embuifs::deserializeFile(doc, FPSTR(TCONST_fcfg_gpio))) return;     // GPIO cfg is broken or missing
+  // restore fet gpio
+  fet_gpio = doc[FPSTR(TCONST_mosfet_gpio)] | static_cast<int>(GPIO_NUM_NC);
+  fet_ll = doc[FPSTR(TCONST_mosfet_ll)];
 
-#ifdef ALARM_PIN                                          // инициализация пина, управляющего будильником в состояние "выключен"
-  pinMode(ALARM_PIN, OUTPUT);
-#ifdef ALARM_LEVEL
-  digitalWrite(ALARM_PIN, !ALARM_LEVEL);
-#endif
-#endif
+  aux_gpio = doc[FPSTR(TCONST_aux_gpio)] | static_cast<int>(GPIO_NUM_NC);
+  aux_ll = doc[FPSTR(TCONST_aux_ll)];
+  // gpio that controls FET (for disabling matrix)
+  if (fet_gpio > static_cast<int>(GPIO_NUM_NC)){
+    pinMode(fet_gpio, OUTPUT);
+    digitalWrite(fet_gpio, !fet_ll);
+  }
+  // gpio that controls AUX/Alarm pin
+  if (aux_gpio > static_cast<int>(GPIO_NUM_NC)){
+    pinMode(aux_gpio, OUTPUT);
+    digitalWrite(aux_gpio, !aux_ll);
+  }
 }
 
 void LAMP::handle()
@@ -296,15 +301,14 @@ void LAMP::changePower(bool flag) // флаг включения/выключе�
     lampState.isStringPrinting = false;
     demoTimer(T_DISABLE);     // гасим Демо-таймер
   }
-#if defined(MOSFET_PIN) && defined(MOSFET_LEVEL)          // установка сигнала в пин, управляющий MOSFET транзистором, соответственно состоянию вкл/выкл матрицы
-  Task *_t = new Task(flags.isFaderON && !flags.ONflag ? 5*TASK_SECOND : 50, TASK_ONCE, // для выключения - отложенное переключение мосфета 5 секунд
-    [this](){ digitalWrite(MOSFET_PIN, (flags.ONflag ? MOSFET_LEVEL : !MOSFET_LEVEL)); },
-    &ts, false, nullptr, nullptr, true);
-  _t->enableDelayed();
-#endif
-// #if defined(MOSFET_PIN) && defined(MOSFET_LEVEL)          // установка сигнала в пин, управляющий MOSFET транзистором, соответственно состоянию вкл/выкл матрицы
-//   digitalWrite(MOSFET_PIN, (flags.ONflag ? MOSFET_LEVEL : !MOSFET_LEVEL));
-// #endif
+
+  // установка сигнала в пин, управляющий MOSFET транзистором, соответственно состоянию вкл/выкл матрицы
+  if (fet_gpio > static_cast<int>(GPIO_NUM_NC)){
+    Task *_t = new Task(flags.isFaderON && !flags.ONflag ? 5*TASK_SECOND : 50, TASK_ONCE, // для выключения - отложенное переключение мосфета 5 секунд
+      [this](){ digitalWrite(fet_gpio, (flags.ONflag ? fet_ll : !fet_ll)); },
+      &ts, false, nullptr, nullptr, true);
+    _t->enableDelayed();
+  }
 
 #ifdef DS18B20
     // восстанавливаем значение тока после включения. Так как значение 0 не работает в ограничителе тока по перегреву, 

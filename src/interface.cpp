@@ -2380,20 +2380,45 @@ void set_mp3_player(Interface *interf, JsonObject *data){
 }
 
 /*
-    сохраняет номера пинов mp3 плеера и перегружает контроллер
+    сохраняет настройки GPIO и перегружает контроллер
  */
-void set_mp3pins(Interface *interf, JsonObject *data){
+void set_gpios(Interface *interf, JsonObject *data){
     if (!data) return;
 
     DynamicJsonDocument doc(512);
     if (!embuifs::deserializeFile(doc, FPSTR(TCONST_fcfg_gpio))) doc.clear();     // reset if cfg is broken or missing
 
-    // save pin numbers into config file if present/valid
-    if ( (*data)[FPSTR(TCONST_mp3rx)].isNull() || (*data)[FPSTR(TCONST_mp3rx)] == static_cast<int>(GPIO_NUM_NC) ) doc.remove(FPSTR(TCONST_mp3rx));
-    doc[FPSTR(TCONST_mp3rx)] = (*data)[FPSTR(TCONST_mp3rx)];
+    //LOG(printf, "Set GPIO configuration %d\n", (*data)[FPSTR(TCONST_set_gpio)].as<int>());
+    switch((*data)[FPSTR(TCONST_set_gpio)].as<int>()){
+        // DFPlayer gpios
+        case 1 : {
+            // save pin numbers into config file if present/valid
+            if ( (*data)[FPSTR(TCONST_mp3rx)] == static_cast<int>(GPIO_NUM_NC) ) doc.remove(FPSTR(TCONST_mp3rx));
+            else doc[FPSTR(TCONST_mp3rx)] = (*data)[FPSTR(TCONST_mp3rx)];
 
-    if ( (*data)[FPSTR(TCONST_mp3tx)].isNull() || (*data)[FPSTR(TCONST_mp3tx)] == static_cast<int>(GPIO_NUM_NC) ) doc.remove(FPSTR(TCONST_mp3tx));
-    doc[FPSTR(TCONST_mp3tx)] = (*data)[FPSTR(TCONST_mp3tx)];
+            if ( (*data)[FPSTR(TCONST_mp3tx)] == static_cast<int>(GPIO_NUM_NC) ) doc.remove(FPSTR(TCONST_mp3tx));
+            else doc[FPSTR(TCONST_mp3tx)] = (*data)[FPSTR(TCONST_mp3tx)];
+            break;
+        }
+        // MOSFET gpios
+        case 2 : {
+            if ( (*data)[FPSTR(TCONST_mosfet_gpio)] == static_cast<int>(GPIO_NUM_NC) ) doc.remove(FPSTR(TCONST_mosfet_gpio));
+            else doc[FPSTR(TCONST_mosfet_gpio)] = (*data)[FPSTR(TCONST_mosfet_gpio)];
+
+            doc[FPSTR(TCONST_mosfet_ll)] = (*data)[FPSTR(TCONST_mosfet_ll)];
+            break;
+        }
+        // AUX gpios
+        case 3 : {
+            if ( (*data)[FPSTR(TCONST_aux_gpio)] == static_cast<int>(GPIO_NUM_NC) ) doc.remove(FPSTR(TCONST_aux_gpio));
+            else doc[FPSTR(TCONST_mosfet_gpio)] = (*data)[FPSTR(TCONST_mosfet_gpio)];
+
+            doc[FPSTR(TCONST_aux_ll)] = (*data)[FPSTR(TCONST_aux_ll)];
+            break;
+        }
+        default :
+            return;     // for any uknown action - just quit
+    }
 
     // save resulting config
     embuifs::serialize2file(doc, FPSTR(TCONST_fcfg_gpio));
@@ -2733,20 +2758,41 @@ void page_gpiocfg(Interface *interf, JsonObject *data){
     interf->json_frame_interface();
     interf->json_section_main(FPSTR(TCONST_pin), "GPIO Configuration");
 
-    interf->comment(F("MCU will reboot on change"));
+    interf->comment(F("<ul><li>Check <a href=\"https://github.com/vortigont/FireLamp_JeeUI/wiki/\" target=\"_blank\">WiKi page</a> for GPIO reference</li><li>Set '-1' to disable GPIO</li><li>MCU will <b>reboot</b> on any gpio change!</li>"));
 
     DynamicJsonDocument doc(512);
     embuifs::deserializeFile(doc, FPSTR(TCONST_fcfg_gpio));
 
-    // номера gpio для подключения плеера
-    interf->json_section_hidden(FPSTR(TCONST_s_mp3pins), "DFPlayer");
+    interf->json_section_begin(FPSTR(TCONST_set_gpio), "");
+#ifdef MP3PLAYER
+    // gpio для подключения DP-плеера
+    interf->json_section_hidden(FPSTR(TCONST_playMP3), "DFPlayer");
         interf->json_section_line(); // расположить в одной линии
             interf->number(FPSTR(TCONST_mp3rx), doc[FPSTR(TCONST_mp3rx)] | static_cast<int>(GPIO_NUM_NC), FPSTR(TINTF_097), /*step*/ 1, /*min*/ -1, /*max*/ NUM_OUPUT_PINS);
             interf->number(FPSTR(TCONST_mp3tx), doc[FPSTR(TCONST_mp3tx)] | static_cast<int>(GPIO_NUM_NC), FPSTR(TINTF_098), 1, -1, NUM_OUPUT_PINS);
         interf->json_section_end();
-        interf->button_submit(FPSTR(TCONST_s_mp3pins), FPSTR(TINTF_008));
+        interf->button_submit_value(FPSTR(TCONST_set_gpio), 1, FPSTR(TINTF_008));      // value 1 for DFPlayer gpio's
+    interf->json_section_end();
+#endif
+    // gpio для подключения КМОП транзистора
+    interf->json_section_hidden(FPSTR(TCONST_mosfet_gpio), "MOSFET");
+        interf->json_section_line(); // расположить в одной линии
+            interf->number(FPSTR(TCONST_mosfet_gpio), doc[FPSTR(TCONST_mosfet_gpio)] | static_cast<int>(GPIO_NUM_NC), F("MOSFET gpio"), /*step*/ 1, /*min*/ -1, /*max*/ NUM_OUPUT_PINS);
+            interf->number(FPSTR(TCONST_mosfet_ll),   doc[FPSTR(TCONST_mosfet_ll)]   | 1, F("MOSFET logic level"), 1, 0, 1);
+        interf->json_section_end();
+        interf->button_submit_value(FPSTR(TCONST_set_gpio), 2, FPSTR(TINTF_008));      // value 2 for MOSFET gpio's
     interf->json_section_end();
 
+    // gpio AUX
+    interf->json_section_hidden(FPSTR(TCONST_aux_gpio), FPSTR(TCONST_AUX));
+        interf->json_section_line(); // расположить в одной линии
+            interf->number(FPSTR(TCONST_aux_gpio), doc[FPSTR(TCONST_aux_gpio)] | static_cast<int>(GPIO_NUM_NC), F("AUX gpio"), /*step*/ 1, /*min*/ -1, /*max*/ NUM_OUPUT_PINS);
+            interf->number(FPSTR(TCONST_aux_ll),   doc[FPSTR(TCONST_aux_ll)]   | 1, F("AUX logic level"), 1, 0, 1);
+        interf->json_section_end();
+        interf->button_submit_value(FPSTR(TCONST_set_gpio), 3, FPSTR(TINTF_008));      // value 3 for AUX gpio's
+    interf->json_section_end();
+
+    interf->json_section_end(); // json_section_begin ""
 
     interf->json_frame_flush();
 }
@@ -2927,7 +2973,6 @@ void create_parameters(){
     embui.section_handle_add(FPSTR(TCONST_eff_prev), set_eff_prev);
     embui.section_handle_add(FPSTR(TCONST_eff_next), set_eff_next);
 
-    //embui.section_handle_add(FPSTR(TCONST_effects_config), show_effects_config);        // страница "управление списком эффектов"
     embui.section_handle_add(FPSTR(TCONST_effListConf), set_effects_config_list);
     embui.section_handle_add(FPSTR(TCONST_set_effect), set_effects_config_param);
 
@@ -2947,7 +2992,6 @@ void create_parameters(){
     embui.section_handle_add(FPSTR(TCONST_Universe), set_streaming_universe);
     embui.section_handle_add(FPSTR(TCONST_bright), set_streaming_bright);
 #endif
-    //embui.section_handle_add(FPSTR(TCONST_ESPsysSettings), section_sys_settings_frame);
     embui.section_handle_add(FPSTR(TCONST_lamptext), section_text_frame);
     embui.section_handle_add(FPSTR(TCONST_textsend), set_lamp_textsend);
     embui.section_handle_add(FPSTR(TCONST_add_lamp_config), edit_lamp_config);
@@ -2987,14 +3031,14 @@ void create_parameters(){
     embui.section_handle_add(FPSTR(T_SET_SCAN), set_scan_wifi);         // обработка сканирования WiFi
 */
 
-    //embui.section_handle_add(FPSTR(TCONST_show_other), show_settings_other);
     embui.section_handle_add(FPSTR(TCONST_set_other), set_settings_other);
+    embui.section_handle_add(FPSTR(TCONST_set_gpio), set_gpios);        // Set gpios
+
     #ifdef OPTIONS_PASSWORD
     embui.section_handle_add(FPSTR(TCONST_set_opt_pass), set_opt_pass);
     #endif // OPTIONS_PASSWORD
 
 #ifdef MIC_EFFECTS
-    //embui.section_handle_add(FPSTR(TCONST_show_mic), show_settings_mic);
     embui.section_handle_add(FPSTR(TCONST_set_mic), set_settings_mic);
     embui.section_handle_add(FPSTR(TCONST_Mic), set_micflag);
     embui.section_handle_add(FPSTR(TCONST_mic_cal), set_settings_mic_calib);
@@ -3005,7 +3049,6 @@ void create_parameters(){
     embui.section_handle_add(FPSTR(TCONST_Events), set_eventflag);
     embui.section_handle_add(FPSTR(TCONST_evList), set_eventlist);
 #ifdef ESP_USE_BUTTON
-    //embui.section_handle_add(FPSTR(TCONST_show_butt), show_settings_butt);
     embui.section_handle_add(FPSTR(TCONST_butt_conf), show_butt_conf);
     embui.section_handle_add(FPSTR(TCONST_set_butt), set_butt_conf);
     embui.section_handle_add(FPSTR(TCONST_Btn), set_btnflag);
@@ -3026,10 +3069,8 @@ void create_parameters(){
     embui.section_handle_add(FPSTR(CMD_MP3_NEXT), set_mp3_player);
     embui.section_handle_add(FPSTR(TCONST_mp3_p5), set_mp3_player);
     embui.section_handle_add(FPSTR(TCONST_mp3_n5), set_mp3_player);
-    embui.section_handle_add(FPSTR(TCONST_s_mp3pins), set_mp3pins);
 #endif
 #ifdef ENCODER
-    //embui.section_handle_add(FPSTR(TCONST_encoder), show_settings_enc);
     embui.section_handle_add(FPSTR(TCONST_set_enc), set_settings_enc);
 #endif
 }

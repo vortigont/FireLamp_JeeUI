@@ -207,19 +207,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #endif
 
 
-#ifndef MOSFET_PIN
-#define MOSFET_PIN            15                           // (D2) пин MOSFET транзистора   (D2) - может быть использован для управления питанием матрицы/ленты
-#endif
-/*#ifndef ALARM_PIN                                        
-#define ALARM_PIN             (D8)                         // пин состояния будильника (D0) - может быть использован для управления каким-либо внешним устройством на время работы будильника
-#endif*/
-#ifndef MOSFET_LEVEL
-#define MOSFET_LEVEL          (HIGH)                        // логический уровень, в который будет установлен пин MOSFET_PIN, когда матрица включена - HIGH или LOW
-#endif
-#ifndef ALARM_LEVEL
-#define ALARM_LEVEL           (HIGH)                        // логический уровень, в который будет установлен пин ALARM_PIN, когда "рассвет"/будильник включен
-#endif
-
 // LED Matrix organization/orientation
 #ifndef WIDTH
 #define WIDTH                 (16U)                         // ширина матрицы
