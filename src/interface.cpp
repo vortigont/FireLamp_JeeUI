@@ -120,9 +120,11 @@ enum class lstfile_t {
 // forward declarations
 void block_effect_params(Interface *interf, JsonObject *data);
 void show_effects_config(Interface *interf, JsonObject *data);
-void show_settings_mic(Interface *interf, JsonObject *data);
 void show_settings_mp3(Interface *interf, JsonObject *data);
 void page_gpiocfg(Interface *interf, JsonObject *data);
+#ifdef MIC_EFFECTS
+void show_settings_mic(Interface *interf, JsonObject *data);
+#endif
 
 /**
  * @brief rebuild cached json file with effects names list
@@ -253,9 +255,11 @@ void show_page_selector(Interface *interf, JsonObject *data){
         case page::eff_config :   // страница "Управление списком эффектов"
             show_effects_config(interf, nullptr);
             return;
+    #ifdef MIC_EFFECTS
         case page::mike :         // страница настроек микрофона
             show_settings_mic(interf, nullptr);
             return;
+    #endif
     #ifdef MP3PLAYER
         case page::setup_dfplayer :    // страница настроек dfplayer
             show_settings_mp3(interf, nullptr);
