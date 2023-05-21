@@ -957,22 +957,20 @@ public:
 // (c) kostyamat
 class EffectOsc : public EffectCalc {
 private:
-    byte oscHV;
-    byte oscilLimit;
+    int oscHV, oscilLimit;
 #ifdef ESP32
-    float pointer{2048};
+    int pointer{2048};
 #else
-    float pointer{512};
+    int pointer{512};
 #endif
     CRGB color;
-    float div{1};
-    byte gain;
-    float y[2] = {0., 0.};
+    int div{1}, gain{1};
+    int y[2] = {0, 0};
     String setDynCtrl(UIControl*_val) override;
     
 
 public:
-    EffectOsc(LedFB &framebuffer) : EffectCalc(framebuffer){}
+    EffectOsc(LedFB &framebuffer) : EffectCalc(framebuffer), oscHV(fb.cfg.w()), oscilLimit(fb.cfg.h()) {}
     bool run() override;
 };
 #endif
@@ -1869,6 +1867,7 @@ private:
     std::vector<float> peak{std::vector<float>(fb.cfg.w())};              // The length of these arrays must be >= bands
     std::vector<float> oldBarHeights{std::vector<float>(fb.cfg.w())};
     std::vector<float> bandValues{std::vector<float>(fb.cfg.w())};
+    MicWorker *mw = nullptr;
 
     float samp_freq;
     double last_freq = 0;
@@ -1896,6 +1895,7 @@ private:
 
 public:
     EffectVU(LedFB &framebuffer) : EffectCalc(framebuffer){}
+    ~EffectVU(){ delete mw; }
     bool run() override;
     void load() override;
 };

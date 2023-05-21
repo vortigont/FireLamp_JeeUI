@@ -4035,11 +4035,11 @@ String EffectOsc::setDynCtrl(UIControl*_val) {
   if(_val->getId()==1) {
     speed = EffectCalc::setDynCtrl(_val).toInt();
     if (speed <= 127) {
-      div = EffectMath::fmap(speed, 1, 127, 0.5, 4);
+      div = map(speed, 1, 127, 1, 4);
       oscHV = fb.cfg.h();
       oscilLimit = fb.cfg.w();
     } else{
-      div = EffectMath::fmap(speed, 128, 255, 0.5, 4);
+      div = map(speed, 128, 255, 1, 4);
       oscHV = fb.cfg.w();
       oscilLimit = fb.cfg.h();
     }
@@ -4061,22 +4061,22 @@ bool EffectOsc::run() {
 
   if (scale == 1) {
     byte micPick = (isMicOn()? getMicMaxPeak() : random8(200));
-    color = CHSV((isMicOn()? getMicFreq() : random(240)), 255, scale == 1 ? 100 : constrain(micPick * EffectMath::fmap(gain, 1., 255., 1., 5.), 51, 255));
+    color = CHSV((isMicOn()? getMicFreq() : random(240)), 255, scale == 1 ? 100 : constrain(micPick * map(gain, 1, 255, 1, 5), 51, 255));
   }
   else if (scale == 255)
     color = CHSV(0, 0, 255);
   else 
     color = CHSV(scale, 255, 255);
 
-  for (float x = 0.; x < oscHV; x += div) {
+  for (int x = 0; x < oscHV; x += div) {
     if (speed < 128)
-      EffectMath::drawLineF(y[0], x, y[1], (x + div), color, fb);
+      EffectMath::drawLine(y[0], x, y[1], (x + div), color, fb);
     else
-      EffectMath::drawLineF(x, y[0], (x + div), y[1], color, fb);
+      EffectMath::drawLine(x, y[0], (x + div), y[1], color, fb);
 
     y[0] = y[1];
-    y[1] = EffectMath::fmap(
-                          (isMicOn() ? analogRead(MIC_PIN) :  EffectMath::randomf(pointer - gain, pointer + gain)),
+    y[1] = map(
+                          (isMicOn() ? analogRead(MIC_PIN) : random(pointer - gain, pointer + gain)),
                           gain,
                           pointer * 2. - gain,
                           0., 
@@ -7706,6 +7706,7 @@ String EffectVU::setDynCtrl(UIControl*_val){
 void EffectVU::load() {
 #ifdef MIC_EFFECTS
   setMicAnalyseDivider(0); // отключить авто-работу микрофона, т.к. тут все анализируется отдельно, т.е. не нужно выполнять одну и ту же работу дважды
+  mw = new MicWorker(getMicScale(),getMicNoise(), true);
 #endif
     bands = effId & 01 ? (fb.cfg.w()/2 + (fb.cfg.w() & 01 ? 1:0)) : fb.cfg.w();
     bar_width =  (fb.cfg.w()  / (bands - 1));
@@ -7718,9 +7719,10 @@ void EffectVU::load() {
 }
 
 bool EffectVU::run() {
-#ifdef MIC_EFFECTS
-  setMicAnalyseDivider(0); // отключить авто-работу микрофона, т.к. тут все анализируется отдельно, т.е. не нужно выполнять одну и ту же работу дважды
-#endif
+//#ifdef MIC_EFFECTS
+    // уже отключили в load()
+//  setMicAnalyseDivider(0); // отключить авто-работу микрофона, т.к. тут все анализируется отдельно, т.е. не нужно выполнять одну и ту же работу дважды
+//#endif
   // Оставлю себе напоминалку как все это работает https://community.alexgyver.ru/threads/wifi-lampa-budilnik-proshivka-firelamp_jeeui-gpl.2739/post-85649
   //bool ready = false;
   tickCounter++;
@@ -7729,7 +7731,6 @@ bool EffectVU::run() {
     //EVERY_N_MILLIS(100){ // обсчет тяжелый, так что желательно не дергать его чаще 10 раз в секунду, лучеш реже
     if (!(tickCounter%3)) {
       bool withAnalyse = !(++calcArray%3);
-      MicWorker *mw = new MicWorker(getMicScale(),getMicNoise(), withAnalyse);
 
       if(mw!=nullptr){
         samp_freq = mw->process(getMicNoiseRdcLevel()); // частота семплирования
@@ -7744,7 +7745,7 @@ bool EffectVU::run() {
           calcArray=1;
         }
         samp_freq = samp_freq; last_min_peak=last_min_peak; last_freq=last_freq; // давим варнинги
-        delete mw;
+        //delete mw;
       }
     }
     if (!(tickCounter%3)) return false; // не будем заставлять бедный контроллер еще и выводить инфу в том же цикле, что и рассчеты. Это режет ФПС. Но без новых рассчетов - ФПС просто спам.

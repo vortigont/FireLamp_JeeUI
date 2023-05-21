@@ -108,6 +108,9 @@ void LAMP::handle()
     if(effects.worker->isMicOn() || isMicCalibration())
       micHandler();
     mic_check = millis();
+  } else {
+    // если микрофон не нужен, удаляем объект
+    if (mw){ delete mw; mw = nullptr; }
   }
 #endif
 
@@ -832,19 +835,13 @@ void LAMP::micHandler()
   static uint8_t counter=0;
   if(effects.getEn()==EFF_ENUM::EFF_NONE)
     return;
-  if(mw==nullptr && !lampState.isCalibrationRequest && lampState.micAnalyseDivider){ // обычный режим
-    {
-      mw = new MicWorker(lampState.mic_scale,lampState.mic_noise,!counter);
-    }
-    if(!mw) {
-      mw = new MicWorker(lampState.mic_scale,lampState.mic_noise,!counter);
-    }
+  if(!mw && !lampState.isCalibrationRequest && lampState.micAnalyseDivider){ // обычный режим
+    //mw = new(std::nothrow) MicWorker(lampState.mic_scale,lampState.mic_noise,!counter);
+    mw = new(std::nothrow) MicWorker(lampState.mic_scale,lampState.mic_noise,true);   // создаем полноценный объект и держим в памяти
 
     if(!mw) {
-      mw=nullptr;
       return; // не удалось выделить память, на выход
     }
-    //delete mw; mw = nullptr; return;
     
     lampState.samp_freq = mw->process(lampState.noise_reduce); // возвращаемое значение - частота семплирования
     lampState.last_min_peak = mw->getMinPeak();
@@ -864,20 +861,15 @@ void LAMP::micHandler()
 
     //LOG(println, last_freq);
     //mw->debug();
-    delete mw;
-    mw = nullptr;
+
+    //delete mw;    // не удаляем, пока пользуемся
+    //mw = nullptr;
   } else if(lampState.isCalibrationRequest) {
-    if(mw==nullptr){ // калибровка начало
-      {
-        mw = new MicWorker();
-      }
-      if(!mw){
-        mw = new MicWorker();   
-      }
-      mw->calibrate();
-    } else { // калибровка продолжение
-      mw->calibrate();
+    if(!mw){ // калибровка начало
+      mw = new(std::nothrow) MicWorker();
+      if(!mw) return;   // was not able to alloc mem
     }
+    mw->calibrate();
     if(!mw->isCaliblation()){ // калибровка конец
       lampState.mic_noise = mw->getNoise();
       lampState.mic_scale = mw->getScale();
