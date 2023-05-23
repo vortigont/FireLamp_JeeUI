@@ -668,7 +668,10 @@ void direct_set_effects_dynCtrl(JsonObject *data){
                         resetAutoTimers(true);
                 }
             } else {
-                controls[i]->setVal((*data)[ctrlName]); // для всех остальных
+                if ((*data)[ctrlName].is<bool>() ){
+                    controls[i]->setVal((*data)[ctrlName] ? "1" : "0");     // больше стрингов во славу Богу стрингов!
+                } else
+                    controls[i]->setVal((*data)[ctrlName]); // для всех остальных
                 resetAutoTimers(true);
             }
             if(myLamp.effects.worker) // && myLamp.effects.getEn()
@@ -701,7 +704,7 @@ void set_effects_dynCtrl(Interface *interf, JsonObject *data){
             JsonObject *data = &storage; // task->getData();
             if(!data) return;
 
-            LOG(println, "publishing & sending dynctrl...");
+            LOG(print, "publishing & sending dynctrl: ");
             #ifdef LAMP_DEBUG
             String tmp; serializeJson(*data,tmp);LOG(println, tmp);
             #endif
