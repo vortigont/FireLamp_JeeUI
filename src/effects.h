@@ -1630,7 +1630,7 @@ class EffectMaze : public EffectCalc {
 private:
     const uint8_t _mwidth, _mheight;
     const uint16_t maxSolves;
-    std::vector<uint8_t> maze;
+    Vector2D<uint8_t> maze;
     int8_t playerPos[2];
     uint32_t labTimer;
     bool mazeMode = false;
@@ -1653,9 +1653,9 @@ private:
     void movePlayer(int8_t nowX, int8_t nowY, int8_t prevX, int8_t prevY);
     void demoMaze();
     bool checkPath(int8_t x, int8_t y);
-    void CarveMaze(std::vector<uint8_t> &maze, int width, int height, int x, int y);
-    void GenerateMaze(std::vector<uint8_t> &maze, int width, int height);
-    void SolveMaze(std::vector<uint8_t> &maze, int width, int height);
+    void CarveMaze(int x, int y);
+    void GenerateMaze();
+    void SolveMaze();
 
     bool checkButtons(){ return (buttons != 4); }
 
@@ -1956,11 +1956,10 @@ private:
     float speedFactor = 0.1;
     std::vector< std::vector<uint8_t> > puzzle;
     byte color;
-    byte z_dot[2];
+    Vector2<int8_t> z_dot;
     byte step;
-    int8_t move[2] = {0, 0};
-    float shift[2] = { 0, 0 };
-    bool XorY;
+    Vector2<int8_t> move{0, 0};
+    Vector2<float> shift{ 0, 0 };
 
     void draw_square(byte x1, byte y1, byte x2, byte y2, byte col);
     void draw_squareF(float x1, float y1, float x2, float y2, byte col);

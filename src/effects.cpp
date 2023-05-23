@@ -1035,24 +1035,21 @@ bool EffectBBalls::run(){
 
 void EffectBBalls::load(){
   fb.clear();
-  int cnt;
-  if (_scale <= 16) {
-    cnt =  map(_scale, 1, 16, 1, fb.cfg.maxWidthIndex());
-  } else {
-    cnt =  map(_scale, 32, 17, 1, fb.cfg.maxWidthIndex());
-  }
-  balls.assign(cnt, Ball());
+  balls.assign(_scale, Ball());
 
   randomSeed(millis());
-  for (size_t i = 0; i != balls.size(); ++i){
-    balls[i].color = random(0, 255);
-    balls[i].x = (i+1) * fb.cfg.w() / balls.size();
-    balls[i].vimpact = bballsVImpact0 + EffectMath::randomf( - 2., 2.);                   // And "pop" up at vImpact0
-    balls[i].cor = 0.9 - float(i) / pow(balls.size(), 2);
+  int i = 0;
+  for (auto &bball : balls){
+    bball.color = random(0, 255);
+    int xx = fb.cfg.w()/(balls.size()+1) * (++i);
+    bball.x = xx;
+    //LOG(printf_P, PSTR("Ball n:%d x:%d\n"), i, xx);
+    bball.vimpact = bballsVImpact0 + EffectMath::randomf( - 2., 2.);                   // And "pop" up at vImpact0
+    bball.cor = 0.9 - float(i) / pow(balls.size(), 2);
     if (halo){
-      balls[i].brightness = 200;
-    } else if ( i && balls[i].x == balls[i-1].x){      // skip 1st interation
-      balls[i].brightness = balls[i-1].brightness + 32;
+      bball.brightness = 200;
+    } else if ( i && bball.x == balls[i-1].x){      // skip 1st interation
+      bball.brightness = balls[i-1].brightness + 32;
     }
   }
 }
@@ -1061,7 +1058,7 @@ void EffectBBalls::load(){
 String EffectBBalls::setDynCtrl(UIControl*_val){
   if(_val->getId()==1) _speed = (1550 - EffectCalc::setDynCtrl(_val).toInt() * 3);
   else if(_val->getId()==3) { _scale = EffectCalc::setDynCtrl(_val).toInt(); load(); }
-  else if(_val->getId()==4) halo = EffectCalc::setDynCtrl(_val).toInt();
+  else if(_val->getId()==4) { halo = EffectCalc::setDynCtrl(_val).toInt(); load(); /* LOG(printf_P, PSTR("Halo s:%s i:%d h:%u\n"), _val->getVal(), _val->getVal().toInt(), halo) */; }
   else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
   return String();
 }
@@ -1111,6 +1108,7 @@ bool EffectBBalls::bBallsRoutine()
     } else {
       if (!i){
         balls[i].brightness = 156;
+        EffectMath::drawPixelXYF_Y(balls[i].x, balls[i].pos, CHSV(balls[i].color + (byte)hue, 255, balls[i].brightness), fb, 5);
         continue;    // skip first iteration
       } 
       // попытка создать объем с помощью яркости. Идея в том, что шарик на переднем фоне должен быть ярче, чем другой,
@@ -6898,7 +6896,7 @@ EffectMaze::EffectMaze(LedFB &framebuffer) : EffectCalc(framebuffer),
   _mwidth(fb.cfg.w()%2 ? fb.cfg.w() : fb.cfg.w()-1),
   _mheight(fb.cfg.h()%2 ? fb.cfg.h() : fb.cfg.h()-1),
   maxSolves(_mwidth*_mheight*5),
-  maze(std::vector<uint8_t>(_mwidth*_mheight))
+  maze(Vector2D<uint8_t>(_mwidth, _mheight))
   { fb.clear(); };
 
 void EffectMaze::newGameMaze() {
@@ -6908,36 +6906,18 @@ void EffectMaze::newGameMaze() {
   gameOverFlag = false;
   buttons = 4;
 
-  GenerateMaze(maze, _mwidth, _mheight);    // генерировать лабиринт обычным способом
-  SolveMaze(maze, _mwidth, _mheight);       // найти путь
+  GenerateMaze();    // генерировать лабиринт обычным способом
+  SolveMaze();       // найти путь
 
-  if (!(MAZE_GAMEMODE || mazeMode)) {
-    for (byte y = 0; y < _mheight; y++) {
-      for (byte x = 0; x < _mwidth; x++) {
-        switch (maze[(y + MAZE_SHIFT) * _mwidth + (x + MAZE_SHIFT)]) {
-          case 1:  fb.pixel(x, y)= color; break;
-          case 2:
-            fb.pixel(x, y) = 0x000000;
-            break;
-          default: fb.pixel(x, y) = 0x000000; break;
-        }
-      }
-      // Отображаем сгенерированный лабиринт строка за строкой
-      //FastLED.show();  // стоит убрать, и все начинает мерцать
-      //delay(50);
-    }
-
-  } else {
-    for (byte y = 0; y < MAZE_FOV; y++) {
-      for (byte x = 0; x < MAZE_FOV; x++) {
-        switch (maze[(y + MAZE_SHIFT) * _mwidth + (x + MAZE_SHIFT)]) {
-          case 1:  fb.pixel(x, y) = color;  break;
-          default:
-            fb.pixel(x, y) = 0x000000;
-        }
-      }
-    }
+  unsigned h{MAZE_FOV}, w{MAZE_FOV};
+  if (!(MAZE_GAMEMODE || mazeMode)){
+    h = _mheight;
+    w = _mwidth;
   }
+
+  for (unsigned y = 0; y < h; y++)
+    for (unsigned x = 0; x < w; x++)
+      fb.pixel(x, y) = maze.at(x + MAZE_SHIFT, y + MAZE_SHIFT) == 1 ? color : CRGB::Black;
 
   // Отрисовка - с видимыми границами по периметру (настройки MAZE_SHIFT выше)
   // Слева от начальной позиции делаем дыру - это вход
@@ -7028,15 +7008,11 @@ void EffectMaze::movePlayer(int8_t nowX, int8_t nowY, int8_t prevX, int8_t prevY
   }
 
   if (MAZE_GAMEMODE || mazeMode) {
-    for (int8_t y = nowY - MAZE_FOV; y < nowY + MAZE_FOV; y++) {
+    for (int8_t y = nowY - MAZE_FOV; y < nowY + MAZE_FOV; y++)
       for (int8_t x = nowX - MAZE_FOV; x < nowX + MAZE_FOV; x++) {
-        if (x < 0 || x > fb.cfg.maxWidthIndex() || y < 0 || y > fb.cfg.maxHeightIndex()) continue;
-        if (maze[(y + MAZE_SHIFT) * _mwidth + (x + MAZE_SHIFT)] == 1) {
-          fb.pixel(x, y) = CRGB::Aqua;
-        }
+        if (x < 0 || x > fb.cfg.maxWidthIndex() || y < 0 || y > fb.cfg.maxHeightIndex())  continue;
+        if (maze.at(x + MAZE_SHIFT, y + MAZE_SHIFT) == 1)   fb.pixel(x, y) = CRGB::Aqua;
       }
-      //FastLED.show();
-    }
   }
 }
 
@@ -7049,17 +7025,18 @@ void EffectMaze::demoMaze() {
 
 bool EffectMaze::checkPath(int8_t x, int8_t y) {
   // если проверяемая клетка является путью к выходу
-  if ( (maze[(playerPos[1] + y + MAZE_SHIFT) * _mwidth + (playerPos[0] + x + MAZE_SHIFT)]) == 2) {
-    maze[(playerPos[1] + MAZE_SHIFT) * _mwidth + (playerPos[0] + MAZE_SHIFT)] = 4;   // убираем текущую клетку из пути (2 - метка пути, ставим любое число, например 4)
+  if ( maze.at(playerPos[0] + x + MAZE_SHIFT, playerPos[1] + y + MAZE_SHIFT) == 2) {
+    maze.at(playerPos[0] + MAZE_SHIFT, playerPos[1] + MAZE_SHIFT) = 4;  // убираем текущую клетку из пути (2 - метка пути, ставим любое число, например 4)
     return true;
   }
+
   return false;
 }
 
 // копаем лабиринт
-void EffectMaze::CarveMaze(std::vector<uint8_t> &maze, int width, int height, int x, int y) {
-  int x1, y1;
-  int x2, y2;
+void EffectMaze::CarveMaze(int x, int y) {
+  unsigned x1, y1;
+  unsigned x2, y2;
   int dx, dy;
   int dir, count;
 
@@ -7077,10 +7054,10 @@ void EffectMaze::CarveMaze(std::vector<uint8_t> &maze, int width, int height, in
     y1 = y + dy;
     x2 = x1 + dx;
     y2 = y1 + dy;
-    if (   x2 > 0 && x2 < width && y2 > 0 && y2 < height
-           && maze[y1 * width + x1] == 1 && maze[y2 * width + x2] == 1) {
-      maze[y1 * width + x1] = 0;
-      maze[y2 * width + x2] = 0;
+    if (   x2 > 0 && x2 < maze.w() && y2 > 0 && y2 < maze.h()
+           && maze.at(x1, y1) == 1 && maze.at(x2,y2) == 1) {
+      maze.at(x1, y1) = 0;
+      maze.at(x2, y2) = 0;
       x = x2; y = y2;
       dir = random(10) % 4;
       count = 0;
@@ -7092,44 +7069,39 @@ void EffectMaze::CarveMaze(std::vector<uint8_t> &maze, int width, int height, in
 }
 
 // генератор лабиринта
-void EffectMaze::GenerateMaze(std::vector<uint8_t> &maze, int width, int height) {
-  int x, y;
-  maze.assign(maze.size(), 1);
+void EffectMaze::GenerateMaze() {
+  unsigned x, y;
+  uint8_t init = 1;
+  maze.reset((size_t)maze.w(), (size_t)maze.h(), init);
 
-  maze[1 * width + 1] = 0;
-  for (y = 1; y < height; y += 2) {
-    for (x = 1; x < width; x += 2) {
-      CarveMaze(maze, width, height, x, y);
-    }
-  }
+  maze.at(0,1) = 0;
+  for (y = 1; y < maze.h(); y += 2)
+    for (x = 1; x < maze.w(); x += 2)
+      CarveMaze(x, y);
+
+
   // вход и выход
-  maze[0 * width + 1] = 0;
-  maze[(height - 1) * width + (width - 2)] = 0;
+  maze.at(1,0) = 0;
+  maze.at(maze.w()-2, maze.w()-1) = 0;
 
   track = random8(0,2);
   color = CHSV(hue += 8, random8(192, 255), 192);
   
- /* CHSV tmp = rgb2hsv_approximate(color);
-  tmp.s = 255;
-  tmp.hue += 100;
-  tmp.val = 255; */
-
-  playerColor = CHSV(hue + random(63, 127), random8(127, 200), 255);;
-  
+  playerColor = CHSV(hue + random(63, 127), random8(127, 200), 255);
 }
 
 // решатель (ищет путь)
-void EffectMaze::SolveMaze(std::vector<uint8_t> &maze, int width, int height) {
+void EffectMaze::SolveMaze() {
   int dir{0}, count{0};
-  int x{1}, y{1};
+  unsigned x{1}, y{1};
   int dx, dy;
   int forward = 1;
   // Remove the entry and exit. 
-  maze[0 * width + 1] = 1;
-  maze[(height - 1) * width + (width - 2)] = 1;
+  maze.at(1,0) = 1;
+  maze.at(maze.w()-2, maze.h()-1) = 1;
 
   unsigned int attempts = 0;
-  while (x != width - 2 || y != height - 2) {
+  while (x != maze.w() - 2 || y != maze.h() - 2) {
     if (attempts++ > maxSolves) {   // если решатель не может найти решение (maxSolves в 5 раз больше числа клеток лабиринта)
       gameOverFlag = true;          // перегенерировать лабиринт
       break;                        // прервать решение
@@ -7141,27 +7113,24 @@ void EffectMaze::SolveMaze(std::vector<uint8_t> &maze, int width, int height) {
       case 2:  dx = -1; break;
       default: dy = -1; break;
     }
-    if (   (forward  && maze[(y + dy) * width + (x + dx)] == 0)
-           || (!forward && maze[(y + dy) * width + (x + dx)] == 2)) {
-      maze[y * width + x] = forward ? 2 : 3;
+    if (   (forward  && maze.at(x+dx, y+dy) == 0)
+           || (!forward && maze.at(x+dx, y+dy) == 2 )) {
+      maze.at(x,y) = forward ? 2 : 3; 
       x += dx;
       y += dy;
       forward = 1;
-      count = 0;
-      dir = 0;
+      count = dir = 0;
     } else {
       dir = (dir + 1) % 4;
       count += 1;
-      if (count > 3) {
-        forward = 0;
-        count = 0;
-      }
+      if (count > 3)
+        forward = count = 0;
     }
   }
   
   // Replace the entry and exit.
-  maze[(height - 2) * width + (width - 2)] = 2;
-  maze[(height - 1) * width + (width - 2)] = 2;
+  maze.at(maze.w()-2, maze.h()-2 ) = 2;
+  maze.at(maze.w()-2, maze.h()-1) =2;
 }
 
 // !++
@@ -8182,8 +8151,8 @@ void EffectPuzzles::regen() {
       r = (255/ (pcols*prows)) * ++n; 
     }
   }
-  z_dot[0] = random(0, pcols);
-  z_dot[1] = random(0, prows);
+  z_dot.x = random8(0, pcols);
+  z_dot.y = random8(0, prows);
 }
 
 void EffectPuzzles::draw_square(byte x1, byte y1, byte x2, byte y2, byte col) {
@@ -8213,43 +8182,43 @@ bool EffectPuzzles::run() {
       draw_square(x * psizeX, y * psizeY, (x + 1) * psizeX, (y + 1) * psizeY, puzzle[x][y]);
     }
   }
-
+  //LOG(printf_P, PSTR("Step %d\n"), step);
   switch (step) {
     case 0:
-      XorY = !XorY;
-      if (XorY) {
-        if (z_dot[0] == pcols - 1)
-          move[0] = -1;
-        else if (z_dot[0] == 0) move[0] = 1;
-        else move[0] = (move[0] == 0) ? (random8() % 2) * 2 - 1 : move[0];
+      if (random8()&1) {
+        if (z_dot.x == pcols - 1)
+          move.x = -1;
+        else if (z_dot.x == 0) move.x = 1;
+        else move.x = (move.x == 0) ? (random8() % 2) * 2 - 1 : move.x;
+        move.y = 0;
       } else {
-        if (z_dot[1] == prows - 1)
-          move[1] = -1;
-        else if (z_dot[1] == 0) move[1] = 1;
-        else move[1] = (move[1] == 0) ? (random8() % 2) * 2 - 1 : move[1];
+        if (z_dot.y == prows - 1)             // move down
+          move.y = -1;
+        else if (z_dot.y == 0) move.y = 1;    // move up
+        else move.y = (move.y == 0) ? (random8() % 2) * 2 - 1 : move.y;   // move up or down
+        move.x = 0;
       }
-      move[(XorY) ? 1 : 0] = 0;
       step = 1;
       break;
     case 1:
-     color = puzzle[z_dot[0] + move[0]][z_dot[1] + move[1]];
-      puzzle[z_dot[0] + move[0]][z_dot[1] + move[1]] = 0;
+      color = puzzle[z_dot.x + move.x][z_dot.y + move.y];
+      puzzle[z_dot.x + move.x][z_dot.y + move.y] = 0;
       step = 2;
       break;
     case 2:
-      draw_square(((z_dot[0] + move[0]) * psizeX) + shift[0], ((z_dot[1] + move[1]) * psizeY) + shift[1], ((z_dot[0] + move[0] + 1) * psizeX) + shift[0], (z_dot[1] + move[1] + 1) * psizeY + shift[1], color);
-      shift[0] -= (move[0] * speedFactor);
-      shift[1] -= (move[1] * speedFactor);
-      if ((fabs(shift[0]) >= fb.cfg.w() / pcols) || (fabs(shift[1]) >= fb.cfg.h() / prows)) {
-        shift[0] = 0;
-        shift[1] = 0;
-        puzzle[z_dot[0]][z_dot[1]] = color;
+      draw_square(((z_dot.x + move.x) * psizeX) + shift.x, ((z_dot.y + move.y) * psizeY) + shift.y, ((z_dot.x + move.x + 1) * psizeX) + shift.x, (z_dot.y + move.y + 1) * psizeY + shift.y, color);
+      shift.x -= (move.x * speedFactor);
+      shift.y -= (move.y * speedFactor);
+      if ((fabs(shift.x) >= fb.cfg.w() / pcols) || (fabs(shift.y) >= fb.cfg.h() / prows)) {
+        shift.x = 0;
+        shift.y = 0;
+        puzzle[z_dot.x][z_dot.y] = color;
         step = 3;
       }
       break;
     case 3:
-      z_dot[0] += move[0];
-      z_dot[1] += move[1];
+      z_dot.x += move.x;
+      z_dot.y += move.y;
       step = 0;
       break;
     default :

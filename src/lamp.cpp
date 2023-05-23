@@ -1029,9 +1029,8 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
     LOG(printf_P, PSTR("switcheffect() postfade act=%d, fade=%d, effnb=%d\n"), action, fade, effnb ? effnb : effects.getSelected());
   }
 
-  //LOG(printf_P,PSTR(">>>>>>>>>>>isEffClearing==%d\n"),isEffClearing);
   if(flags.isEffClearing || !effects.getEn()){ // для EFF_NONE или для случая когда включена опция - чистим матрицу
-    FastLED.clear();
+    mx.clear();
     FastLED.show();
   }
 
@@ -1075,7 +1074,6 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
 
   // отрисовать текущий эффект (только если лампа включена, иначе бессмысленно)
   if(effects.worker && flags.ONflag && !lampState.isEffectsDisabledUntilText){
-    effects.worker->run();
     if(!sledsbuff){ // todo: WHY we need this clone here???
       sledsbuff = new LedFB(mx);  // clone existing frambuffer
     }
