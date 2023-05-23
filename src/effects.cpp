@@ -1035,24 +1035,21 @@ bool EffectBBalls::run(){
 
 void EffectBBalls::load(){
   fb.clear();
-  int cnt;
-  if (_scale <= 16) {
-    cnt =  map(_scale, 1, 16, 1, fb.cfg.maxWidthIndex());
-  } else {
-    cnt =  map(_scale, 32, 17, 1, fb.cfg.maxWidthIndex());
-  }
-  balls.assign(cnt, Ball());
+  balls.assign(_scale, Ball());
 
   randomSeed(millis());
-  for (size_t i = 0; i != balls.size(); ++i){
-    balls[i].color = random(0, 255);
-    balls[i].x = (i+1) * fb.cfg.w() / balls.size();
-    balls[i].vimpact = bballsVImpact0 + EffectMath::randomf( - 2., 2.);                   // And "pop" up at vImpact0
-    balls[i].cor = 0.9 - float(i) / pow(balls.size(), 2);
+  int i = 0;
+  for (auto &bball : balls){
+    bball.color = random(0, 255);
+    int xx = fb.cfg.w()/(balls.size()+1) * (++i);
+    bball.x = xx;
+    //LOG(printf_P, PSTR("Ball n:%d x:%d\n"), i, xx);
+    bball.vimpact = bballsVImpact0 + EffectMath::randomf( - 2., 2.);                   // And "pop" up at vImpact0
+    bball.cor = 0.9 - float(i) / pow(balls.size(), 2);
     if (halo){
-      balls[i].brightness = 200;
-    } else if ( i && balls[i].x == balls[i-1].x){      // skip 1st interation
-      balls[i].brightness = balls[i-1].brightness + 32;
+      bball.brightness = 200;
+    } else if ( i && bball.x == balls[i-1].x){      // skip 1st interation
+      bball.brightness = balls[i-1].brightness + 32;
     }
   }
 }
@@ -1061,7 +1058,7 @@ void EffectBBalls::load(){
 String EffectBBalls::setDynCtrl(UIControl*_val){
   if(_val->getId()==1) _speed = (1550 - EffectCalc::setDynCtrl(_val).toInt() * 3);
   else if(_val->getId()==3) { _scale = EffectCalc::setDynCtrl(_val).toInt(); load(); }
-  else if(_val->getId()==4) halo = EffectCalc::setDynCtrl(_val).toInt();
+  else if(_val->getId()==4) { halo = EffectCalc::setDynCtrl(_val).toInt(); load(); /* LOG(printf_P, PSTR("Halo s:%s i:%d h:%u\n"), _val->getVal(), _val->getVal().toInt(), halo) */; }
   else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
   return String();
 }
@@ -1111,6 +1108,7 @@ bool EffectBBalls::bBallsRoutine()
     } else {
       if (!i){
         balls[i].brightness = 156;
+        EffectMath::drawPixelXYF_Y(balls[i].x, balls[i].pos, CHSV(balls[i].color + (byte)hue, 255, balls[i].brightness), fb, 5);
         continue;    // skip first iteration
       } 
       // попытка создать объем с помощью яркости. Идея в том, что шарик на переднем фоне должен быть ярче, чем другой,
@@ -8167,8 +8165,8 @@ void EffectPuzzles::regen() {
       r = (255/ (pcols*prows)) * ++n; 
     }
   }
-  z_dot[0] = random(0, pcols);
-  z_dot[1] = random(0, prows);
+  z_dot.x = random8(0, pcols);
+  z_dot.y = random8(0, prows);
 }
 
 void EffectPuzzles::draw_square(byte x1, byte y1, byte x2, byte y2, byte col) {
@@ -8198,43 +8196,43 @@ bool EffectPuzzles::run() {
       draw_square(x * psizeX, y * psizeY, (x + 1) * psizeX, (y + 1) * psizeY, puzzle[x][y]);
     }
   }
-
+  //LOG(printf_P, PSTR("Step %d\n"), step);
   switch (step) {
     case 0:
-      XorY = !XorY;
-      if (XorY) {
-        if (z_dot[0] == pcols - 1)
-          move[0] = -1;
-        else if (z_dot[0] == 0) move[0] = 1;
-        else move[0] = (move[0] == 0) ? (random8() % 2) * 2 - 1 : move[0];
+      if (random8()&1) {
+        if (z_dot.x == pcols - 1)
+          move.x = -1;
+        else if (z_dot.x == 0) move.x = 1;
+        else move.x = (move.x == 0) ? (random8() % 2) * 2 - 1 : move.x;
+        move.y = 0;
       } else {
-        if (z_dot[1] == prows - 1)
-          move[1] = -1;
-        else if (z_dot[1] == 0) move[1] = 1;
-        else move[1] = (move[1] == 0) ? (random8() % 2) * 2 - 1 : move[1];
+        if (z_dot.y == prows - 1)             // move down
+          move.y = -1;
+        else if (z_dot.y == 0) move.y = 1;    // move up
+        else move.y = (move.y == 0) ? (random8() % 2) * 2 - 1 : move.y;   // move up or down
+        move.x = 0;
       }
-      move[(XorY) ? 1 : 0] = 0;
       step = 1;
       break;
     case 1:
-     color = puzzle[z_dot[0] + move[0]][z_dot[1] + move[1]];
-      puzzle[z_dot[0] + move[0]][z_dot[1] + move[1]] = 0;
+      color = puzzle[z_dot.x + move.x][z_dot.y + move.y];
+      puzzle[z_dot.x + move.x][z_dot.y + move.y] = 0;
       step = 2;
       break;
     case 2:
-      draw_square(((z_dot[0] + move[0]) * psizeX) + shift[0], ((z_dot[1] + move[1]) * psizeY) + shift[1], ((z_dot[0] + move[0] + 1) * psizeX) + shift[0], (z_dot[1] + move[1] + 1) * psizeY + shift[1], color);
-      shift[0] -= (move[0] * speedFactor);
-      shift[1] -= (move[1] * speedFactor);
-      if ((fabs(shift[0]) >= fb.cfg.w() / pcols) || (fabs(shift[1]) >= fb.cfg.h() / prows)) {
-        shift[0] = 0;
-        shift[1] = 0;
-        puzzle[z_dot[0]][z_dot[1]] = color;
+      draw_square(((z_dot.x + move.x) * psizeX) + shift.x, ((z_dot.y + move.y) * psizeY) + shift.y, ((z_dot.x + move.x + 1) * psizeX) + shift.x, (z_dot.y + move.y + 1) * psizeY + shift.y, color);
+      shift.x -= (move.x * speedFactor);
+      shift.y -= (move.y * speedFactor);
+      if ((fabs(shift.x) >= fb.cfg.w() / pcols) || (fabs(shift.y) >= fb.cfg.h() / prows)) {
+        shift.x = 0;
+        shift.y = 0;
+        puzzle[z_dot.x][z_dot.y] = color;
         step = 3;
       }
       break;
     case 3:
-      z_dot[0] += move[0];
-      z_dot[1] += move[1];
+      z_dot.x += move.x;
+      z_dot.y += move.y;
       step = 0;
       break;
     default :
