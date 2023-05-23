@@ -1035,24 +1035,21 @@ bool EffectBBalls::run(){
 
 void EffectBBalls::load(){
   fb.clear();
-  int cnt;
-  if (_scale <= 16) {
-    cnt =  map(_scale, 1, 16, 1, fb.cfg.maxWidthIndex());
-  } else {
-    cnt =  map(_scale, 32, 17, 1, fb.cfg.maxWidthIndex());
-  }
-  balls.assign(cnt, Ball());
+  balls.assign(_scale, Ball());
 
   randomSeed(millis());
-  for (size_t i = 0; i != balls.size(); ++i){
-    balls[i].color = random(0, 255);
-    balls[i].x = (i+1) * fb.cfg.w() / balls.size();
-    balls[i].vimpact = bballsVImpact0 + EffectMath::randomf( - 2., 2.);                   // And "pop" up at vImpact0
-    balls[i].cor = 0.9 - float(i) / pow(balls.size(), 2);
+  int i = 0;
+  for (auto &bball : balls){
+    bball.color = random(0, 255);
+    int xx = fb.cfg.w()/(balls.size()+1) * (++i);
+    bball.x = xx;
+    //LOG(printf_P, PSTR("Ball n:%d x:%d\n"), i, xx);
+    bball.vimpact = bballsVImpact0 + EffectMath::randomf( - 2., 2.);                   // And "pop" up at vImpact0
+    bball.cor = 0.9 - float(i) / pow(balls.size(), 2);
     if (halo){
-      balls[i].brightness = 200;
-    } else if ( i && balls[i].x == balls[i-1].x){      // skip 1st interation
-      balls[i].brightness = balls[i-1].brightness + 32;
+      bball.brightness = 200;
+    } else if ( i && bball.x == balls[i-1].x){      // skip 1st interation
+      bball.brightness = balls[i-1].brightness + 32;
     }
   }
 }
@@ -1061,7 +1058,7 @@ void EffectBBalls::load(){
 String EffectBBalls::setDynCtrl(UIControl*_val){
   if(_val->getId()==1) _speed = (1550 - EffectCalc::setDynCtrl(_val).toInt() * 3);
   else if(_val->getId()==3) { _scale = EffectCalc::setDynCtrl(_val).toInt(); load(); }
-  else if(_val->getId()==4) halo = EffectCalc::setDynCtrl(_val).toInt();
+  else if(_val->getId()==4) { halo = EffectCalc::setDynCtrl(_val).toInt(); load(); /* LOG(printf_P, PSTR("Halo s:%s i:%d h:%u\n"), _val->getVal(), _val->getVal().toInt(), halo) */; }
   else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
   return String();
 }
@@ -1111,6 +1108,7 @@ bool EffectBBalls::bBallsRoutine()
     } else {
       if (!i){
         balls[i].brightness = 156;
+        EffectMath::drawPixelXYF_Y(balls[i].x, balls[i].pos, CHSV(balls[i].color + (byte)hue, 255, balls[i].brightness), fb, 5);
         continue;    // skip first iteration
       } 
       // попытка создать объем с помощью яркости. Идея в том, что шарик на переднем фоне должен быть ярче, чем другой,
