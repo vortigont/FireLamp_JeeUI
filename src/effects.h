@@ -1956,11 +1956,10 @@ private:
     float speedFactor = 0.1;
     std::vector< std::vector<uint8_t> > puzzle;
     byte color;
-    byte z_dot[2];
+    Vector2<int8_t> z_dot;
     byte step;
-    int8_t move[2] = {0, 0};
-    float shift[2] = { 0, 0 };
-    bool XorY;
+    Vector2<int8_t> move{0, 0};
+    Vector2<float> shift{ 0, 0 };
 
     void draw_square(byte x1, byte y1, byte x2, byte y2, byte col);
     void draw_squareF(float x1, float y1, float x2, float y2, byte col);

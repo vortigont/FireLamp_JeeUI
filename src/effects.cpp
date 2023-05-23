@@ -8167,8 +8167,8 @@ void EffectPuzzles::regen() {
       r = (255/ (pcols*prows)) * ++n; 
     }
   }
-  z_dot[0] = random(0, pcols);
-  z_dot[1] = random(0, prows);
+  z_dot.x = random8(0, pcols);
+  z_dot.y = random8(0, prows);
 }
 
 void EffectPuzzles::draw_square(byte x1, byte y1, byte x2, byte y2, byte col) {
@@ -8198,43 +8198,43 @@ bool EffectPuzzles::run() {
       draw_square(x * psizeX, y * psizeY, (x + 1) * psizeX, (y + 1) * psizeY, puzzle[x][y]);
     }
   }
-
+  //LOG(printf_P, PSTR("Step %d\n"), step);
   switch (step) {
     case 0:
-      XorY = !XorY;
-      if (XorY) {
-        if (z_dot[0] == pcols - 1)
-          move[0] = -1;
-        else if (z_dot[0] == 0) move[0] = 1;
-        else move[0] = (move[0] == 0) ? (random8() % 2) * 2 - 1 : move[0];
+      if (random8()&1) {
+        if (z_dot.x == pcols - 1)
+          move.x = -1;
+        else if (z_dot.x == 0) move.x = 1;
+        else move.x = (move.x == 0) ? (random8() % 2) * 2 - 1 : move.x;
+        move.y = 0;
       } else {
-        if (z_dot[1] == prows - 1)
-          move[1] = -1;
-        else if (z_dot[1] == 0) move[1] = 1;
-        else move[1] = (move[1] == 0) ? (random8() % 2) * 2 - 1 : move[1];
+        if (z_dot.y == prows - 1)             // move down
+          move.y = -1;
+        else if (z_dot.y == 0) move.y = 1;    // move up
+        else move.y = (move.y == 0) ? (random8() % 2) * 2 - 1 : move.y;   // move up or down
+        move.x = 0;
       }
-      move[(XorY) ? 1 : 0] = 0;
       step = 1;
       break;
     case 1:
-     color = puzzle[z_dot[0] + move[0]][z_dot[1] + move[1]];
-      puzzle[z_dot[0] + move[0]][z_dot[1] + move[1]] = 0;
+      color = puzzle[z_dot.x + move.x][z_dot.y + move.y];
+      puzzle[z_dot.x + move.x][z_dot.y + move.y] = 0;
       step = 2;
       break;
     case 2:
-      draw_square(((z_dot[0] + move[0]) * psizeX) + shift[0], ((z_dot[1] + move[1]) * psizeY) + shift[1], ((z_dot[0] + move[0] + 1) * psizeX) + shift[0], (z_dot[1] + move[1] + 1) * psizeY + shift[1], color);
-      shift[0] -= (move[0] * speedFactor);
-      shift[1] -= (move[1] * speedFactor);
-      if ((fabs(shift[0]) >= fb.cfg.w() / pcols) || (fabs(shift[1]) >= fb.cfg.h() / prows)) {
-        shift[0] = 0;
-        shift[1] = 0;
-        puzzle[z_dot[0]][z_dot[1]] = color;
+      draw_square(((z_dot.x + move.x) * psizeX) + shift.x, ((z_dot.y + move.y) * psizeY) + shift.y, ((z_dot.x + move.x + 1) * psizeX) + shift.x, (z_dot.y + move.y + 1) * psizeY + shift.y, color);
+      shift.x -= (move.x * speedFactor);
+      shift.y -= (move.y * speedFactor);
+      if ((fabs(shift.x) >= fb.cfg.w() / pcols) || (fabs(shift.y) >= fb.cfg.h() / prows)) {
+        shift.x = 0;
+        shift.y = 0;
+        puzzle[z_dot.x][z_dot.y] = color;
         step = 3;
       }
       break;
     case 3:
-      z_dot[0] += move[0];
-      z_dot[1] += move[1];
+      z_dot.x += move.x;
+      z_dot.y += move.y;
       step = 0;
       break;
     default :
