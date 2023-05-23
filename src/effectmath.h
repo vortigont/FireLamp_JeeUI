@@ -490,7 +490,7 @@ public:
     T* getData(){ return v.data(); }
 
     void reset(size_t width, size_t height, T &val = T()){
-        _w = w, _h = h;
+        _w = width, _h = height;
         v.assign(_w*_h, val);
         v.shrink_to_fit();
     };
