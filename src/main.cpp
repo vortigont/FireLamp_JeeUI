@@ -67,18 +67,7 @@ TMCLOCK tm1637(TM_CLK_PIN, TM_DIO_PIN);
 void setup() {
     Serial.begin(115200);
 
-#ifdef PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED
-    {
-        HeapSelectIram ephemeral;
-        LOG(printf_P, PSTR("\n\nIRAM ESP.getFreeHeap:  %u\n"), ESP.getFreeHeap());
-    }
-    {
-        HeapSelectDram ephemeral;
-        LOG(printf_P, PSTR("DRAM ESP.getFreeHeap:  %u\n"), ESP.getFreeHeap());
-    }
-#else
     LOG(printf_P, PSTR("\n\nsetup: free heap  : %d\n"), ESP.getFreeHeap());
-#endif
 
 #ifdef ESP32
     LOG(printf_P, PSTR("setup: free PSRAM  : %d\n"), ESP.getFreePsram()); // 4194252
@@ -95,20 +84,6 @@ void setup() {
 
 #ifdef EMBUI_USE_UDP
     embui.udp(); // Ответ на UDP запрс. в качестве аргумента - переменная, содержащая macid (по умолчанию)
-#endif
-
-#if defined(ESP8266) && defined(LED_BUILTIN_AUX)
-    embui.led(LED_BUILTIN_AUX, false); // назначаем пин на светодиод, который нам будет говорит о состоянии устройства. (быстро мигает - пытается подключиться к точке доступа, просто горит (или не горит) - подключен к точке доступа, мигает нормально - запущена своя точка доступа)
-#elif defined(LED_BUILTIN)
-    embui.led(LED_BUILTIN, false); // Если матрица находится на этом же пине, то будет ее моргание!
-#endif
-
-#if defined(LED_BUILTIN) && defined (DISABLE_LED_BUILTIN)
-#ifdef ESP8266
-    digitalWrite(LED_BUILTIN, HIGH); // "душим" светодиод nodeMCU
-#elif defined(LED_BUILTIN)
-    digitalWrite(LED_BUILTIN, LOW); // "душим" светодиод nodeMCU32
-#endif
 #endif
 
     // EmbUI

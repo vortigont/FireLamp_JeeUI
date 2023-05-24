@@ -68,11 +68,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #define LANG_FILE                  "text_res-RUS.h"           // Языковой файл по дефолту
 #endif
 
-// Disable built-in LED operations if there is no LED :)
-#ifndef LED_BUILTIN
-#define DISABLE_LED_BUILTIN
-#endif
-
 #ifdef RTC
   #ifndef RTC_MODULE
   #define RTC_MODULE          (2U)                          // Поддерживаются модули DS1302 = (1U),  DS1307 = (2U), DS3231 = (3U)
