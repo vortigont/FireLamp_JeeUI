@@ -9,14 +9,14 @@
   "theme_color": "#1a5ca9",
   "icons": [
         {
-            "src": "/css/android-chrome-192x192.png",
+            "src": "/css/android-chrome-192x192.webp",
             "sizes": "192x192",
-            "type": "image/png"
+            "type": "image/webp"
         },
         {
-            "src": "/css/android-chrome-512x512.png",
+            "src": "/css/android-chrome-512x512.webp",
             "sizes": "512x512",
-            "type": "image/png"
+            "type": "image/webp"
         }
   ],
   "prefer_related_applications": true,
