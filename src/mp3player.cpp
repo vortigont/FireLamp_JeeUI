@@ -41,7 +41,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 // which serial to use for esp32
 #define MP3SERIAL Serial1
 
-MP3PlayerDevice::MP3PlayerDevice(Stream *port, uint8_t vol) : mp3player(port), cur_volume(vol) {
+MP3PlayerDevice::MP3PlayerDevice(Stream *port, uint8_t vol) : cur_volume(vol), mp3player(port) {
   init();
 }
 
