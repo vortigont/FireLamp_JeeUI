@@ -551,7 +551,7 @@ void EffectWorker::loadeffname(String& _effectName, const uint16_t nb, const cha
   bool ok = embuifs::deserializeFile(doc, filename.c_str());
   if (ok && doc[F("name")]){
     _effectName = doc[F("name")].as<String>(); // перенакрываем именем из конфига, если есть
-  } else if(!ok) {
+  } else {
     _effectName = FPSTR(T_EFFNAMEID[(uint8_t)nb]);   // выбираем имя по-умолчанию из флеша если конфиг поврежден
   }
 }
@@ -585,6 +585,7 @@ void EffectWorker::removeLists(){
 
 void EffectWorker::makeIndexFileFromList(const char *folder, bool forceRemove)
 {
+  unsigned long s = millis();
   if(forceRemove)
     removeLists();
 
@@ -616,7 +617,7 @@ void EffectWorker::makeIndexFileFromList(const char *folder, bool forceRemove)
   hndlr.close();
   delete buff;
 
-  LOG(println,F("Индекс эффектов обновлен!"));
+  LOG(printf_P, PSTR("Индекс эффектов обновлен, %ums\n"), millis()-s );
   effectsReSort(); // восстанавливаем сортировку
 }
 
@@ -840,8 +841,15 @@ void EffectWorker::fsinforenew(){
 }
 
 void EffectWorker::setEffectName(const String &name, EffectListElem*to){
+  if (name == FPSTR(T_EFFNAMEID[(uint8_t)to->eff_nb])){
+    to->flags.renamed = false;
+    return;   // имя совпадает с исходным значением во флеше, нечего переименовывать
+  } 
+
+  to->flags.renamed = true;   // эффект переименовали
+
   if(to->eff_nb==curEff.num){
-    curEff.effectName=name;
+    curEff.effectName =name;
     curEff.autosave();
     return;
   }
@@ -1276,7 +1284,7 @@ UIControl& UIControl::operator =(const UIControl &rhs){
 
 // Построение выпадающего списка эффектов для вебморды
 void build_eff_names_list_file(EffectWorker &w, bool full){
-  LOG(printf_P, PSTR("GENERATE effects name json file for GUI: %s"), full ? "brief" : "full");
+  unsigned long s = millis();
 
   // delete existing file if any
   if(LittleFS.exists(full ? FPSTR(TCONST_eff_fulllist_json) : FPSTR(TCONST_eff_list_json))){
@@ -1298,7 +1306,12 @@ void build_eff_names_list_file(EffectWorker &w, bool full){
       continue;
 
     String effname((char *)0);
-    w.loadeffname(effname, itr->eff_nb);
+    // if effect was renamed, than read it's name from json, otherwise from flash
+    if (itr->flags.renamed)
+      w.loadeffname(effname, itr->eff_nb);
+    else
+      effname = FPSTR(T_EFFNAMEID[(uint8_t)itr->eff_nb]);
+    
 
     // {"label":"50. Прыгуны","value":"50"}, => 30 bytes + NameLen (assume 35 to be safe)
     #define LIST_JSON_OVERHEAD  35
@@ -1306,7 +1319,6 @@ void build_eff_names_list_file(EffectWorker &w, bool full){
 
     if (ARR_LIST_SIZE - offset < effname.length() + LIST_JSON_OVERHEAD){
       // write to file and purge buffer
-      //LOG(println,F("Dumping buff..."));
       hndlr.write(reinterpret_cast<uint8_t*>(buff->data()), offset);
       offset = 0;
     }
@@ -1326,5 +1338,5 @@ void build_eff_names_list_file(EffectWorker &w, bool full){
   hndlr.close();
 
   LittleFS.rename(FPSTR(TCONST_eff_list_json_tmp), full ? FPSTR(TCONST_eff_fulllist_json) : FPSTR(TCONST_eff_list_json));
-
+  LOG(printf_P, PSTR("\nGENERATE effects name json file for GUI(%s): %ums\n"), full ? "brief" : "full", millis()-s);
 }

@@ -143,9 +143,7 @@ void rebuild_effect_list_files(lstfile_t lst){
                     build_eff_names_list_file(myLamp.effects, true);
                     if (embui.ws.count()){  // refresh UI page with a regenerated list
                         Interface interf(&embui, &embui.ws, 1024);
-                        interf.json_frame_interface();
-                        block_effect_params(&interf, nullptr);
-                        interf.json_frame_flush();
+                        show_effects_config(&interf, nullptr);
                     }
                     break;
                 case lstfile_t::all :
@@ -357,28 +355,32 @@ void block_menu(Interface *interf, JsonObject *data){
 void block_effect_params(Interface *interf, JsonObject *data){
     if (!interf) return;
 
-    String tmpName, tmpSoundfile;
-    myLamp.effects.loadeffname(tmpName,confEff->eff_nb);
+    String tmpSoundfile;    // tmpName,
+    //myLamp.effects.loadeffname(tmpName,confEff->eff_nb);
     myLamp.effects.loadsoundfile(tmpSoundfile,confEff->eff_nb);
+
     interf->json_section_begin(FPSTR(TCONST_set_effect));
-    interf->text(FPSTR(TCONST_effname), tmpName, FPSTR(TINTF_089), false);
+
+    interf->text(FPSTR(TCONST_effname), "", FPSTR(TINTF_effrename), false);       // поле под новое имя оставляем пустым
 #ifdef MP3PLAYER
     interf->text(FPSTR(TCONST_soundfile), tmpSoundfile, FPSTR(TINTF_0B2), false);
 #endif
-    interf->checkbox(FPSTR(TCONST_eff_sel), confEff->canBeSelected(), FPSTR(TINTF_in_sel_lst), false);      // доступен для выбора в выпадающем списке
-    interf->checkbox(FPSTR(TCONST_eff_fav), confEff->isFavorite(), FPSTR(TINTF_in_demo), false);            // доступен в демо-режиме
+    interf->json_section_line();
+        interf->checkbox(FPSTR(TCONST_eff_sel), confEff->canBeSelected(), FPSTR(TINTF_in_sel_lst), false);      // доступен для выбора в выпадающем списке на главной странице
+        interf->checkbox(FPSTR(TCONST_eff_fav), confEff->isFavorite(), FPSTR(TINTF_in_demo), false);            // доступен в демо-режиме
+    interf->json_section_end();
 
     interf->spacer();
 
     // sorting option
     interf->select(FPSTR(TCONST_effSort), FPSTR(TINTF_040));
-    interf->option(SORT_TYPE::ST_BASE, FPSTR(TINTF_041));
-    interf->option(SORT_TYPE::ST_END, FPSTR(TINTF_042));
-    interf->option(SORT_TYPE::ST_IDX, FPSTR(TINTF_043));
-    interf->option(SORT_TYPE::ST_AB, FPSTR(TINTF_085));
-    interf->option(SORT_TYPE::ST_AB2, FPSTR(TINTF_08A));
+        interf->option(SORT_TYPE::ST_BASE, FPSTR(TINTF_041));
+        interf->option(SORT_TYPE::ST_END, FPSTR(TINTF_042));
+        interf->option(SORT_TYPE::ST_IDX, FPSTR(TINTF_043));
+        interf->option(SORT_TYPE::ST_AB, FPSTR(TINTF_085));
+        interf->option(SORT_TYPE::ST_AB2, FPSTR(TINTF_08A));
 #ifdef MIC_EFFECTS
-    interf->option(SORT_TYPE::ST_MIC, FPSTR(TINTF_08D));  // эффекты с микрофоном
+        interf->option(SORT_TYPE::ST_MIC, FPSTR(TINTF_08D));  // эффекты с микрофоном
 #endif
     interf->json_section_end();
     //interf->checkbox(FPSTR(TCONST_numInList), myLamp.getLampSettings().numInList , FPSTR(TINTF_090), false); // нумерация в списке эффектов
@@ -393,13 +395,13 @@ void block_effect_params(Interface *interf, JsonObject *data){
     //}
 
     interf->json_section_line();
-    interf->button_submit_value(FPSTR(TCONST_set_effect), FPSTR(TCONST_delfromlist), FPSTR(TINTF_0B5), FPSTR(P_ORANGE));
-    interf->button_submit_value(FPSTR(TCONST_set_effect), FPSTR(TCONST_delall), FPSTR(TINTF_0B4), FPSTR(P_RED));
+        interf->button_submit_value(FPSTR(TCONST_set_effect), FPSTR(TCONST_delfromlist), FPSTR(TINTF_0B5), FPSTR(P_ORANGE));
+        interf->button_submit_value(FPSTR(TCONST_set_effect), FPSTR(TCONST_delall), FPSTR(TINTF_0B4), FPSTR(P_RED));
     interf->json_section_end();
 
     interf->button_submit_value(FPSTR(TCONST_set_effect), FPSTR(TCONST_makeidx), FPSTR(TINTF_007), FPSTR(P_BLACK));
 
-    interf->json_section_end();
+    interf->json_section_end(); // json_section_begin(FPSTR(TCONST_set_effect));
 }
 
 /**
@@ -411,13 +413,12 @@ void set_effects_config_param(Interface *interf, JsonObject *data){
     
     //bool isNumInList =  (*data)[FPSTR(TCONST_numInList)] == "1";
 #ifdef MIC_EFFECTS
-    bool isEffHasMic =  (*data)[FPSTR(TCONST_effHasMic)];
+    bool isEffHasMic = (*data)[FPSTR(TCONST_effHasMic)];
     myLamp.setEffHasMic(isEffHasMic);
 #endif
     SORT_TYPE st = (*data)[FPSTR(TCONST_effSort)].as<SORT_TYPE>();
 
     if(myLamp.getLampState().isInitCompleted){
-        LOG(printf_P, PSTR("Settings: call removeLists()\n"));
         bool isRecreate = false;
         //isRecreate = myLamp.getLampSettings().numInList!=isNumInList;
 #ifdef MIC_EFFECTS
@@ -429,6 +430,7 @@ void set_effects_config_param(Interface *interf, JsonObject *data){
             myLamp.effects.setEffSortType(st);
             //myLamp.setNumInList(isNumInList);
             //myLamp.effects.removeLists();
+            LOG(println, PSTR("Sort type changed, rebuilding eff list"));
             rebuild_effect_list_files(lstfile_t::all);
         }
     }
@@ -441,6 +443,7 @@ void set_effects_config_param(Interface *interf, JsonObject *data){
     // action is to "copy" effect
     if (act == FPSTR(TCONST_copy)) {
         myLamp.effects.copyEffect(effect); // копируем текущий, это вызовет перестроение индекса
+        LOG(println, PSTR("Effect copy, rebuild list"));
         rebuild_effect_list_files(lstfile_t::all);
         return;
     }
@@ -476,18 +479,35 @@ void set_effects_config_param(Interface *interf, JsonObject *data){
     if (act == FPSTR(TCONST_makeidx)) {
         myLamp.effects.removeLists();
         myLamp.effects.initDefault();
+        LOG(println, PSTR("Force rebuild index"));
         rebuild_effect_list_files(lstfile_t::all);
         return;
     }
     
-    effect->canBeSelected((*data)[FPSTR(TCONST_eff_sel)]);
+    // if selectivity changed, than need to rebuild json eff list for main page
+    if ( (*data)[FPSTR(TCONST_eff_sel)] != effect->canBeSelected() ){
+        effect->canBeSelected((*data)[FPSTR(TCONST_eff_sel)]);
+        LittleFS.remove(FPSTR(TCONST_eff_list_json));
+    }
+
+    // could be used in demo
     effect->isFavorite((*data)[FPSTR(TCONST_eff_fav)]);
-    myLamp.effects.setSoundfile((*data)[FPSTR(TCONST_soundfile)], effect);
-    myLamp.effects.setEffectName((*data)[FPSTR(TCONST_effname)], effect);
+
+    // set sound file, if any defined
+    if ( !(*data)[FPSTR(TCONST_soundfile)].isNull() ) myLamp.effects.setSoundfile((*data)[FPSTR(TCONST_soundfile)], effect);
+
+    // check if effect has been renamed
+    if (!(*data)[FPSTR(TCONST_effname)].isNull()){
+        LOG(println, PSTR("Effect rename, rebuild list"));
+        myLamp.effects.setEffectName((*data)[FPSTR(TCONST_effname)], effect);
+        // effect has been renamed, need to update BOTH dropdown list jsons
+        myLamp.effects.makeIndexFileFromList(NULL, true);
+        return show_effects_config(interf, nullptr);       // force reload setup page
+    }
 
     resetAutoTimers();
     myLamp.effects.makeIndexFileFromList(); // обновить индексный файл после возможных изменений
-    section_main_frame(interf, nullptr);
+    //section_main_frame(interf, nullptr);
 }
 
 /**
@@ -520,26 +540,39 @@ void show_effects_config(Interface *interf, JsonObject *data){
     }
 
     interf->constant(F("cmt"), F("Rebuilding effects list, pls retry in a second..."));
-    rebuild_effect_list_files(lstfile_t::full);
     interf->json_frame_flush();
+    rebuild_effect_list_files(lstfile_t::full);
 }
 
+/**
+ * @brief переключение эффекта в выпадающем списке на странице "управление списком эффектов"
+ * т.к. страница остается таже, нужно только обновить значения нескольких полей значениями для нового эффекта
+ */
 void set_effects_config_list(Interface *interf, JsonObject *data){
-    if (!data) return;
+    if (!interf || !data) return;
+
+    // получаем номер выбраного эффекта 
     uint16_t num = (*data)[FPSTR(TCONST_effListConf)].as<uint16_t>();
 
     if(confEff){ // если переключаемся, то сохраняем предыдущие признаки в эффект до переключения
-        LOG(printf_P, PSTR("eff_sel: %d eff_fav : %d\n"), (*data)[FPSTR(TCONST_eff_sel)].as<bool>(),(*data)[FPSTR(TCONST_eff_fav)].as<bool>());
+        LOG(printf_P, PSTR("eff_sel: %d eff_fav : %d, new eff:%d\n"), (*data)[FPSTR(TCONST_eff_sel)].as<bool>(),(*data)[FPSTR(TCONST_eff_fav)].as<bool>(), num);
     }
 
     confEff = myLamp.effects.getEffect(num);
 
-    resetAutoTimers();
+    //resetAutoTimers();
 
-    // выводим блок с параметрами эфекта
-    if (!interf) return;
-    interf->json_frame_interface();
-    block_effect_params(interf, data);
+    // обновляем поля
+    interf->json_frame_value();
+
+#ifdef MP3PLAYER
+    String tmpSoundfile;
+    myLamp.effects.loadsoundfile(tmpSoundfile,confEff->eff_nb);
+    interf->value(FPSTR(TCONST_soundfile), tmpSoundfile, false);
+#endif
+    interf->value(FPSTR(TCONST_eff_sel), confEff->canBeSelected(), false);      // доступен для выбора в выпадающем списке на главной странице
+    interf->value(FPSTR(TCONST_eff_fav), confEff->isFavorite(), false);            // доступен в демо-режиме
+
     interf->json_frame_flush();
 }
 
