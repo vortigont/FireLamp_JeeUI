@@ -52,7 +52,8 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 /*
 
-Референсная таблица назначения выводов по-умолчанию
+Рекоммендуемая таблица назначения выводов по-умолчанию
+https://github.com/vortigont/FireLamp_JeeUI/wiki/%D0%9D%D0%B0%D0%B7%D0%BD%D0%B0%D1%87%D0%B5%D0%BD%D0%B8%D0%B5-%D0%B2%D1%8B%D0%B2%D0%BE%D0%B4%D0%BE%D0%B2
 
 ниже указаны номера gpio, НЕ нумерация платы. Соответствие нумерации пинов платы и gpio чипа ищите в описании конкретной платы произодителя
 
@@ -60,27 +61,12 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 0     - подключение матрицы
 acd0  - вход микрофона
-4     - TM1637 CLK  (i2c SDA)
-5     - TM1637 DIO  (i2c SCL)
-12    - tx (DFPlayer rx)
-14    - rx (DFPlayer tx)
-2     - TM1637 Clk
-13    - TM1637 Data
-15    - N канальный МОП (N-MOSFET)  /P-канальный транзистор подключать нельзя! вывод имеет внутреннюю подтяжку к земле/
 16    - ttp223 или обычная кнопка
 
 ESP32
 0     - подключение матрицы
 34    - вход микрофона
-4     - TM1637 CLK
-5     - TM1637 DIO
-17    - tx (DFPlayer rx)
-16    - rx (DFPlayer tx)
-2     - TM1637 Clk
-13    - TM1637 Data
-15    - N канальный МОП (N-MOSFET)
 14    - ttp223 или обычная кнопка
-
 
 */
 
@@ -160,8 +146,6 @@ ESP32
 #endif
 
 #ifdef TM1637_CLOCK
-  #define TM_CLK_PIN          (2)                           // Работает не на всех пинах. Лучше использовать рекомендованый
-  #define TM_DIO_PIN          (13)                          // Работает не на всех пинах. Лучше использовать рекомендованый
   #define TM_SHOW_BANNER 0                                  // 1 - показывать IP при загрузке, 0 - нет 
 #endif
 
@@ -169,13 +153,13 @@ ESP32
   #define RTC_MODULE          (2U)                          // Поддерживаются модули DS1302 = (1U),  DS1307 = (2U), DS3231 = (3U)
   #define RTC_SYNC_PERIOD     (24U)                         // Период синхронизации RTC c ntp (часы)
   #if RTC_MODULE > (1U)                                     // Если выбран модуль с I2C (DS1307 или DS3231)
-    #ifdef TM1637_CLOCK                                     // Если есть дисплей TM1637, то можем использовать его пины для RTC (но RTC модуль работает не на всех пинах)
-      #define pin_SW_SDA        (TM_CLK_PIN)                // Пин SDA RTC модуля подключаем к CLK пину дисплея
-      #define pin_SW_SCL        (TM_DIO_PIN)                // Пин SCL RTC модуля подключаем к DIO пину дисплея
-    #else                                                   // Пины подбирать экспериментальным путем, точно работает на D2 и D4
+    //#ifdef TM1637_CLOCK                                     // Если есть дисплей TM1637, то можем использовать его пины для RTC (но RTC модуль работает не на всех пинах)
+    //  #define pin_SW_SDA        (TM_CLK_PIN)                // Пин SDA RTC модуля подключаем к CLK пину дисплея
+    //  #define pin_SW_SCL        (TM_DIO_PIN)                // Пин SCL RTC модуля подключаем к DIO пину дисплея
+    //#else                                                   // Пины подбирать экспериментальным путем, точно работает на D2 и D4
       #define pin_SW_SDA        (D2)                        // Назначаем вывод для работы в качестве линии SDA программной шины I2C.
       #define pin_SW_SCL        (D4)                        // Назначаем вывод для работы в качестве линии SCL программной шины I2C.
-    #endif
+    //#endif
   #endif
   #if RTC_MODULE == (1U)                                    // Если выбран модуль DS1302.
     #define pin_RST             (D8)                        // Назначаем вывод RST.

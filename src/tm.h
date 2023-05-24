@@ -75,5 +75,5 @@ private:
   String formatIp(String inArr[], String dlm);    // Функция форматирования
 };
 
-extern TMCLOCK tm1637;
+extern TMCLOCK *tm1637;
 #endif

@@ -59,8 +59,18 @@ MP3PlayerDevice *mp3 = nullptr;
 #endif
 
 #ifdef TM1637_CLOCK
-TMCLOCK tm1637(TM_CLK_PIN, TM_DIO_PIN);
+// TM1637 display
+// https://github.com/AKJ7/TM1637/
+TMCLOCK *tm1637 = nullptr;
 #endif
+
+// forward declarations
+
+/**
+ * @brief restore gpio configurtion and initialise attached devices
+ * 
+ */
+void gpio_setup();
 
 
 
@@ -88,10 +98,6 @@ void setup() {
     cled = &FastLED.addLeds<WS2812B, LAMP_PIN, COLOR_ORDER>(mx.data(), mx.size());
     // hook framebuffer to contoller
     mx.bind(cled);
-
-#ifdef AUX_PIN
-	pinMode(AUX_PIN, OUTPUT);
-#endif
 
 #ifdef EMBUI_USE_UDP
     embui.udp(); // Ответ на UDP запрс. в качестве аргумента - переменная, содержащая macid (по умолчанию)
@@ -143,17 +149,8 @@ void setup() {
 
     myLamp.events.setEventCallback(event_worker);
 
-#ifdef MP3PLAYER
-{
-    // spawn an instance of mp3player
-    DynamicJsonDocument doc(512);
-    embuifs::deserializeFile(doc, FPSTR(TCONST_fcfg_gpio));
-    int rxpin = doc[FPSTR(TCONST_mp3rx)] | -1;
-    int txpin = doc[FPSTR(TCONST_mp3tx)] | -1;
-    LOG(printf_P, PSTR("DFPlayer: rx:%d tx:%d\n"), rxpin, txpin);
-    mp3 = new MP3PlayerDevice(rxpin, txpin, embui.paramVariant(FPSTR(TCONST_mp3volume)) | DFPLAYER_DEFAULT_VOL );
-}
-#endif
+    // configure and init attached devices
+    gpio_setup();
 
 #ifdef ESP8266
   embui.server.addHandler(new SPIFFSEditor(F("esp8266"),F("esp8266"), LittleFS));
@@ -164,10 +161,6 @@ void setup() {
   sync_parameters();
 
   embui.setPubInterval(10);   // change periodic WebUI publish interval from EMBUI_PUB_PERIOD to 10 secs
-
-#ifdef TM1637_CLOCK
-  tm1637.tm_setup();
-#endif 
 
 #ifdef ENCODER
   enc_setup();
@@ -191,7 +184,7 @@ void loop() {
 
 #ifdef TM1637_CLOCK
     EVERY_N_SECONDS(1) {
-        tm1637.tm_loop();
+        if (tm1637) tm1637->tm_loop();
     }
 #endif
 #ifdef DS18B20
@@ -339,3 +332,32 @@ void sendData(){
 }
 #endif
 
+void gpio_setup(){
+    DynamicJsonDocument doc(512);
+    embuifs::deserializeFile(doc, FPSTR(TCONST_fcfg_gpio));
+    int rxpin, txpin;
+#ifdef MP3PLAYER
+    // spawn an instance of mp3player
+    rxpin = doc[FPSTR(TCONST_mp3rx)] | -1;
+    txpin = doc[FPSTR(TCONST_mp3tx)] | -1;
+    LOG(printf_P, PSTR("DFPlayer: rx:%d tx:%d\n"), rxpin, txpin);
+    mp3 = new MP3PlayerDevice(rxpin, txpin, embui.paramVariant(FPSTR(TCONST_mp3volume)) | DFPLAYER_DEFAULT_VOL );
+#endif
+
+#ifdef TM1637_CLOCK
+    rxpin = doc[FPSTR(TCONST_tm_clk)] | -1;
+    txpin = doc[FPSTR(TCONST_tm_dio)] | -1;
+    if (rxpin != -1 && txpin != -1){
+        tm1637 = new TMCLOCK(rxpin, txpin);
+        tm1637->tm_setup();
+    }
+#endif 
+
+
+
+#ifdef AUX_PIN
+	pinMode(AUX_PIN, OUTPUT);
+#endif
+
+
+}

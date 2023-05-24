@@ -2418,6 +2418,7 @@ void set_mp3_player(Interface *interf, JsonObject *data){
         mp3->playEffect(cur_palyingnb+5,"");
     }
 }
+#endif
 
 /*
     сохраняет настройки GPIO и перегружает контроллер
@@ -2430,6 +2431,7 @@ void set_gpios(Interface *interf, JsonObject *data){
 
     //LOG(printf, "Set GPIO configuration %d\n", (*data)[FPSTR(TCONST_set_gpio)].as<int>());
     switch((*data)[FPSTR(TCONST_set_gpio)].as<int>()){
+#ifdef MP3PLAYER
         // DFPlayer gpios
         case 1 : {
             // save pin numbers into config file if present/valid
@@ -2440,6 +2442,7 @@ void set_gpios(Interface *interf, JsonObject *data){
             else doc[FPSTR(TCONST_mp3tx)] = (*data)[FPSTR(TCONST_mp3tx)];
             break;
         }
+#endif
         // MOSFET gpios
         case 2 : {
             if ( (*data)[FPSTR(TCONST_mosfet_gpio)] == static_cast<int>(GPIO_NUM_NC) ) doc.remove(FPSTR(TCONST_mosfet_gpio));
@@ -2456,6 +2459,18 @@ void set_gpios(Interface *interf, JsonObject *data){
             doc[FPSTR(TCONST_aux_ll)] = (*data)[FPSTR(TCONST_aux_ll)];
             break;
         }
+#ifdef TM1637_CLOCK
+        // TM1637 gpios
+        case 4 : {
+            // save pin numbers into config file if present/valid
+            if ( (*data)[FPSTR(TCONST_tm_clk)] == static_cast<int>(GPIO_NUM_NC) ) doc.remove(FPSTR(TCONST_tm_clk));
+            else doc[FPSTR(TCONST_tm_clk)] = (*data)[FPSTR(TCONST_tm_clk)];
+
+            if ( (*data)[FPSTR(TCONST_tm_dio)] == static_cast<int>(GPIO_NUM_NC) ) doc.remove(FPSTR(TCONST_tm_dio));
+            else doc[FPSTR(TCONST_tm_dio)] = (*data)[FPSTR(TCONST_tm_dio)];
+            break;
+        }
+#endif
         default :
             return;     // for any uknown action - just quit
     }
@@ -2463,10 +2478,9 @@ void set_gpios(Interface *interf, JsonObject *data){
     // save resulting config
     embuifs::serialize2file(doc, FPSTR(TCONST_fcfg_gpio));
 
-    remote_action(RA::RA_REBOOT, NULL, NULL);
+    remote_action(RA::RA_REBOOT, NULL, NULL);   // reboot in 5 sec
     basicui::section_settings_frame(interf, nullptr);
 }
-#endif
 
 
 void section_effects_frame(Interface *interf, JsonObject *data){
@@ -2814,6 +2828,18 @@ void page_gpiocfg(Interface *interf, JsonObject *data){
         interf->button_submit_value(FPSTR(TCONST_set_gpio), 1, FPSTR(TINTF_008));      // value 1 for DFPlayer gpio's
     interf->json_section_end();
 #endif
+
+#ifdef TM1637_CLOCK
+    // gpio для подключения 7 сегментного индикатора
+    interf->json_section_hidden(FPSTR(TCONST_tm24), "TM1637 Display");
+        interf->json_section_line(); // расположить в одной линии
+            interf->number(FPSTR(TCONST_tm_clk), doc[FPSTR(TCONST_tm_clk)] | static_cast<int>(GPIO_NUM_NC), F("TM Clk gpio"), /*step*/ 1, /*min*/ -1, /*max*/ NUM_OUPUT_PINS);
+            interf->number(FPSTR(TCONST_tm_dio), doc[FPSTR(TCONST_tm_dio)] | static_cast<int>(GPIO_NUM_NC), F("TM DIO gpio"), 1, -1, NUM_OUPUT_PINS);
+        interf->json_section_end();
+        interf->button_submit_value(FPSTR(TCONST_set_gpio), 4, FPSTR(TINTF_008));      // value 4 for TM1637 gpio's
+    interf->json_section_end();
+#endif
+
     // gpio для подключения КМОП транзистора
     interf->json_section_hidden(FPSTR(TCONST_mosfet_gpio), "MOSFET");
         interf->json_section_line(); // расположить в одной линии
@@ -3827,7 +3853,7 @@ not sure what this WiFi settings is doing here, WiFi is managed via EmbUI
         case RA::RA_SEND_IP:
             myLamp.sendString(WiFi.localIP().toString().c_str(), CRGB::White);
 #ifdef TM1637_CLOCK
-            tm1637.setIpShow();
+            if(tm1637) tm1637->setIpShow();
 #endif
             break;
         case RA::RA_SEND_TIME:
