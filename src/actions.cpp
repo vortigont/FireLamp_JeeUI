@@ -47,6 +47,13 @@ void run_action(ra action){
 
 void run_action(ra action, JsonObject *data){
   switch (action){
+    // demo mode On/Off
+    case ra::demo : {
+      (*data)[FPSTR(TCONST_Demo)] = (*data)[FPSTR(TCONST_value)];   // change key name
+      embui.post(*data, true);                                      // inject "demo" packet
+      return;
+    }
+
     // turn lamp ON
     case ra::on : {
       (*data)[FPSTR(TCONST_ONflag)] = true;
@@ -60,7 +67,6 @@ void run_action(ra action, JsonObject *data){
       String tmpStr( embui.param(FPSTR(TCONST_txtColor)) );
       tmpStr.replace(F("#"),F("0x"));
       CRGB::HTMLColorCode color = (CRGB::HTMLColorCode)strtol(tmpStr.c_str(), NULL, 0);
-
       myLamp.sendString((*data)[TCONST_value], color);
       return;
     }

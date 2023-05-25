@@ -964,7 +964,7 @@ void set_demoflag(Interface *interf, JsonObject *data){
     myLamp.setDRand(myLamp.getLampSettings().dRand);
 #ifdef EMBUI_USE_MQTT
     embui.publish(String(FPSTR(TCONST_embui_pub_)) + FPSTR(TCONST_mode), String(myLamp.getMode()), true);
-    embui.publish(String(FPSTR(TCONST_embui_pub_)) + FPSTR(TCONST__demo), String(myLamp.getMode()==LAMPMODE::MODE_DEMO?"1":"0"), true);
+    embui.publish(String(FPSTR(TCONST_embui_pub_)) + FPSTR(TCONST__demo), String(myLamp.getMode()==LAMPMODE::MODE_DEMO? 1:0), true);
 #endif
 }
 
@@ -3233,7 +3233,7 @@ void event_worker(DEV_EVENT *event){
         return;
     }
     case EVENT_TYPE::OFF: action = RA_OFF; break;
-    case EVENT_TYPE::DEMO: action = RA_DEMO; break;
+    case EVENT_TYPE::DEMO: run_action(ra::demo, event->getMessage()=="1"); break;       // not sure what is the content of this String
     case EVENT_TYPE::ALARM: action = RA_ALARM; break;
     case EVENT_TYPE::LAMP_CONFIG_LOAD: action = RA_LAMP_CONFIG; break;
 #ifdef ESP_USE_BUTTON
@@ -3363,17 +3363,7 @@ void remote_action(RA action, ...){
     LOG(println);
 
     switch (action) {
-        // still used by the 'button'
-        case RA::RA_ON:
-            CALL_INTF(FPSTR(TCONST_ONflag), true, set_onflag);
-            if(value){
-                StringTask *t = new StringTask(value, 3 * TASK_SECOND, TASK_ONCE, nullptr, &ts, false, nullptr,  [](){
-                    StringTask *cur = (StringTask *)ts.getCurrentTask();
-                    remote_action(RA::RA_SEND_TEXT, cur->getData(), NULL);
-                }, true);
-                t->enableDelayed();
-            }
-            break;
+        // какая-то солянка с сообщением при выключении
         case RA::RA_OFF: {
                 // нажатие кнопки точно отключает ДЕМО и белую лампу возвращая в нормальный режим
                 myLamp.stopRGB(); // выключение RGB-режима
@@ -3396,17 +3386,6 @@ void remote_action(RA action, ...){
                         task->disable();
                     }
                 }, &ts, true, nullptr, nullptr, true);
-            }
-            break;
-        case RA::RA_DEMO:
-            CALL_INTF(FPSTR(TCONST_ONflag), true, set_onflag); // включим, если было отключено
-            if(value && String(value)=="0"){
-                CALL_INTF(FPSTR(TCONST_Demo), false, set_demoflag);
-                myLamp.startNormalMode();
-            } else {
-                CALL_INTF(FPSTR(TCONST_Demo), true, set_demoflag);
-                resetAutoTimers();
-                myLamp.startDemoMode();
             }
             break;
         // trigger effect change in Demo mode
@@ -3838,8 +3817,8 @@ String httpCallback(const String &param, const String &value, bool isset){
         return result;
     } else {
         LOG(println, F("SET"));
-        if ( upperParam == FPSTR(CMD_ON) || upperParam == FPSTR(CMD_OFF ) ){ run_action(value =="0" ? ra::off : ra::on ); return result; }
-        else if (upperParam == FPSTR(CMD_DEMO)) action = RA_DEMO;
+        if ( upperParam == FPSTR(CMD_ON) || upperParam == FPSTR(CMD_OFF ) ){ run_action(value.toInt() ? ra::on : ra::off ); return result; }
+        else if (upperParam == FPSTR(CMD_DEMO)) { run_action(ra::demo, value.toInt() ? true : false ); return result; }
         else if (upperParam == FPSTR(CMD_MSG)) action = RA_SEND_TEXT;
         else if (upperParam == FPSTR(CMD_EFFECT)) action = RA_EFFECT;
         else if (upperParam == FPSTR(CMD_MOVE_NEXT)) action = RA_EFF_NEXT;

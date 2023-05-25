@@ -598,11 +598,11 @@ void encSendStringNumEff(String str, CRGB color) {
 
 void toggleDemo() {
   if (myLamp.getMode() == LAMPMODE::MODE_DEMO) {
-    remote_action(RA::RA_DEMO, "0", NULL); 
+    run_action(ra::demo, false);
     encSendString(String(F("Demo OFF")), txtColor, true, txtDelay);
   }
   else 
-    remote_action(RA::RA_DEMO, "1", NULL);
+    run_action(ra::demo, true);
 }
 
 void toggleGBright() {

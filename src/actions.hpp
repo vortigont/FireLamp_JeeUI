@@ -56,6 +56,7 @@ those could be called either internaly or as a callbacks from WebUI/MQTT/HTTP
 enum class ra:uint8_t {
   off = 0,            // switch lamp Off
   on,                 // switch lamp On
+  demo,               // demo mode on/off
   sendtext,           // send text to lamp
 
   end                 // not an action actually

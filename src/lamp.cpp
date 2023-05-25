@@ -38,6 +38,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "main.h"
 #include "effectmath.h"
 #include "fontHEX.h"
+#include "actions.hpp"
 
 GAUGE *GAUGE::gauge = nullptr; // объект индикатора
 ALARMTASK *ALARMTASK::alarmTask = nullptr; // объект будильника
@@ -355,15 +356,13 @@ void LAMP::stopRGB(){
 void LAMP::startDemoMode(uint8_t tmout)
 {
   LOG(println,F("Demo mode"));
-  if(mode == LAMPMODE::MODE_DEMO) return;
+  if(!isLampOn()) run_action(ra::on);       // "включаем" лампу
+  if(mode == LAMPMODE::MODE_DEMO) return;   // уже и так в "демо" режиме, выходим
   
   storedEffect = ((static_cast<EFF_ENUM>(effects.getEn()%256) == EFF_ENUM::EFF_WHITE_COLOR) ? storedEffect : effects.getEn()); // сохраняем предыдущий эффект, если только это не белая лампа
   mode = LAMPMODE::MODE_DEMO;
-  if(isLampOn()){
-    remote_action(RA::RA_DEMO_NEXT, NULL);
-    demoTimer(T_ENABLE, tmout);
-  }
-  sendString(String(PSTR("- Demo ON -")).c_str(), CRGB::Green, false);
+  demoTimer(T_ENABLE, tmout);
+  sendString(String(F("- Demo ON -")).c_str(), CRGB::Green, false);
 }
 
 void LAMP::storeEffect()
