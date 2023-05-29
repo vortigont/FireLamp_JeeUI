@@ -50,8 +50,17 @@ void run_action(ra action, JsonObject *data){
     // demo mode On/Off
     case ra::demo : {
       (*data)[FPSTR(TCONST_Demo)] = (*data)[FPSTR(TCONST_value)];   // change key name
-      embui.post(*data, true);                                      // inject "demo" packet
-      return;
+      break;
+    }
+
+    // demo next effect
+    case ra::demo_next : {
+      if (myLamp.getLampSettings().dRand)
+          myLamp.switcheffect(SW_RND, myLamp.getFaderFlag());
+      else myLamp.switcheffect(SW_NEXT_DEMO, myLamp.getFaderFlag());
+
+      (*data)[FPSTR(TCONST_effListMain)] = myLamp.effects.getEffnum();   // call switch effect as in GUI/main page
+      break;
     }
 
     // turn lamp ON
@@ -74,4 +83,6 @@ void run_action(ra action, JsonObject *data){
     default:
       return;
   }
+
+  embui.post(*data, true);                    // inject packet back into EmbUI action selector
 }

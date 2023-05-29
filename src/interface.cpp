@@ -3388,19 +3388,6 @@ void remote_action(RA action, ...){
                 }, &ts, true, nullptr, nullptr, true);
             }
             break;
-        // trigger effect change in Demo mode
-        case RA::RA_DEMO_NEXT: {
-            if (myLamp.getLampSettings().dRand) {
-                myLamp.switcheffect(SW_RND, myLamp.getFaderFlag());
-            } else {
-                myLamp.switcheffect(SW_NEXT_DEMO, myLamp.getFaderFlag());
-            }
-            // update UI with changed effect number and publish controls
-            CALL_INTF(FPSTR(TCONST_effListMain), myLamp.effects.getEffnum(), show_effect_controls);
-            // postponed action to publish eff changes
-            //new Task(TASK_SECOND, TASK_ONCE, nullptr, &ts, true, nullptr, [](){ remote_action(RA::RA_EFFECT, String(myLamp.effects.getEffnum()).c_str(), NULL); }, true);
-            break;
-        }
         // called on effect change events (warning! this can trigger effect switch in set_effects_list()) WTF???
         case RA::RA_EFFECT: {
             LAMPMODE mode=myLamp.getMode();

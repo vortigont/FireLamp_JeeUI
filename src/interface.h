@@ -6,7 +6,7 @@ typedef enum _remote_action {
 //    RA_ON,
     RA_OFF,
 //    RA_DEMO,
-    RA_DEMO_NEXT,       // trigger effect change in Demo mode
+//    RA_DEMO_NEXT,       // trigger effect change in Demo mode
     RA_ALARM,
     RA_ALARM_OFF,
     RA_LAMP_CONFIG,

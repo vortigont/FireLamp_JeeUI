@@ -1092,7 +1092,7 @@ void LAMP::demoTimer(SCHEDULER action, uint8_t tmout){
       demoTask->setInterval(tmout);
       return;
     }
-    demoTask = new Task(tmout * TASK_SECOND, TASK_FOREVER, std::bind(&remote_action, RA::RA_DEMO_NEXT, NULL), &ts, false);
+    demoTask = new Task(tmout * TASK_SECOND, TASK_FOREVER, [](){run_action(ra::demo_next);}, &ts, false);    
     demoTask->enableDelayed();
     break;
   case SCHEDULER::T_RESET :

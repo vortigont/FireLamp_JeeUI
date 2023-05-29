@@ -57,6 +57,7 @@ enum class ra:uint8_t {
   off = 0,            // switch lamp Off
   on,                 // switch lamp On
   demo,               // demo mode on/off
+  demo_next,          // switch effect in demo mode
   sendtext,           // send text to lamp
 
   end                 // not an action actually
