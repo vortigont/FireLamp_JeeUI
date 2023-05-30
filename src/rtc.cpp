@@ -24,7 +24,7 @@ void Rtc::init() {
             LOG(printf_P, PSTR("Sec %d min %d hour %d day %d mon %d year %d \n"), t->tm_sec, t->tm_min, t->tm_hour, t->tm_mday, t->tm_mon + 1, t->tm_year - 100);
             LOG(printf_P, PSTR("RTC setted %s \n"), rtc.gettime("Y-m-dTH:i:s"));
 #ifdef TM1637_CLOCK
-            if (tm1637) tm1637.tm_setup();
+            if (tm1637) tm1637->tm_setup();
 #endif
             },
             &ts, false, nullptr, nullptr, true);
@@ -48,7 +48,7 @@ void Rtc::updateRtcTime() {
         LOG(printf_P, PSTR("Sec %d min %d hour %d day %d mon %d year %d \n"), t->tm_sec, t->tm_min, t->tm_hour, t->tm_mday, t->tm_mon + 1, t->tm_year - 100);
         LOG(printf_P, PSTR("RTC setted %s \n"), rtc.gettime("Y-m-dTH:i:s"));
 #ifdef TM1637_CLOCK
-        if (tm1637) tm1637.tm_setup();
+        if (tm1637) tm1637->tm_setup();
 #endif
     }
 }

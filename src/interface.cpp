@@ -121,6 +121,7 @@ enum class lstfile_t {
 void block_effect_params(Interface *interf, JsonObject *data);
 void show_effects_config(Interface *interf, JsonObject *data);
 void show_settings_mp3(Interface *interf, JsonObject *data);
+void show_settings_enc(Interface *interf, JsonObject *data);
 void page_gpiocfg(Interface *interf, JsonObject *data);
 #ifdef MIC_EFFECTS
 void show_settings_mic(Interface *interf, JsonObject *data);

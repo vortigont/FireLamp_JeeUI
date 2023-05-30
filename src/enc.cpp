@@ -111,7 +111,7 @@ void encLoop() {
   if (inSettings) { // Время от времени выводим название контрола (в режиме "Настройки эффекта")
     resetTimers();
 #ifdef TM1637_CLOCK
-    if (tm1637) tm1637.getSetDelay() = TM_TIME_DELAY;
+    if (tm1637) tm1637->getSetDelay() = TM_TIME_DELAY;
 #endif
     EVERY_N_SECONDS(10) {
       loops++;
@@ -398,8 +398,8 @@ void myClicks() {
       run_action(ra::on);
 #ifdef TM1637_CLOCK
       if (tm1637) {
-        tm1637.getSetDelay() = 1;
-        tm1637.display(String(F("On")), true, false, 2);  // Выводим 
+        tm1637->getSetDelay() = 1;
+        tm1637->display(String(F("On")), true, false, 2);  // Выводим 
       }
 #endif
     }
@@ -557,9 +557,9 @@ void encDisplay(uint16_t value, String type) {
 /*
 void encDisplay(float value) {
 #ifdef TM1637_CLOCK
-  tm1637.getSetDelay() = TM_TIME_DELAY;
-  tm1637.clearScreen();
-  tm1637.display(value, false, true); //, true, false, value >= 100 ? 1 : (value >= 10 ? 2 : 3) );  
+  tm1637->getSetDelay() = TM_TIME_DELAY;
+  tm1637->clearScreen();
+  tm1637->display(value, false, true); //, true, false, value >= 100 ? 1 : (value >= 10 ? 2 : 3) );  
 #endif
 }
 */
