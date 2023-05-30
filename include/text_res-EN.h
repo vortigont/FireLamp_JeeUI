@@ -336,15 +336,6 @@ static const char TINTF_07D[] PROGMEM = "Hold";
 static const char TINTF_07E[] PROGMEM = "Press";
 static const char TINTF_07F[] PROGMEM = "Singly";
 static const char TINTF_080[] PROGMEM = "Fire Lamp";
-#if defined(EMBUI_USE_FTP) && defined(EMBUI_USE_MQTT)
-static const char TINTF_081[] PROGMEM = "WiFi, MQTT & FTP";
-#elif defined(EMBUI_USE_MQTT)
-static const char TINTF_081[] PROGMEM = "WiFi & MQTT";
-#elif defined(EMBUI_USE_FTP)
-static const char TINTF_081[] PROGMEM = "WiFi & FTP";
-#else
-static const char TINTF_081[] PROGMEM = "WiFi";
-#endif
 static const char TINTF_082[] PROGMEM = "Other";
 static const char TINTF_083[] PROGMEM = "Clean the lamp when switching effects";
 static const char TINTF_084[] PROGMEM = DFTINTF_084;
@@ -457,8 +448,10 @@ static const char TINTF_0EE[] PROGMEM = "Disabled";
 static const char TINTF_0EF[] PROGMEM = "Vertical";
 static const char TINTF_0F0[] PROGMEM = "Horizontal";
 
-static const char NY_MDG_STRING1[] PROGMEM = "Until the new year is left %d %s";
-static const char NY_MDG_STRING2[] PROGMEM = "Happy new %d year!";
+static const char TINTF_gpiocfg[] PROGMEM = "GPIO Configuration";
+
+static const char NY_MDG_STRING1[] PROGMEM = "New Year in %d %s";
+static const char NY_MDG_STRING2[] PROGMEM = "Happy New %d Year!";
 //-------------------------
 
 #endif

@@ -111,7 +111,7 @@ void encLoop() {
   if (inSettings) { // Время от времени выводим название контрола (в режиме "Настройки эффекта")
     resetTimers();
 #ifdef TM1637_CLOCK
-    tm1637.getSetDelay() = TM_TIME_DELAY;
+    if (tm1637) tm1637.getSetDelay() = TM_TIME_DELAY;
 #endif
     EVERY_N_SECONDS(10) {
       loops++;
@@ -389,14 +389,18 @@ void myClicks() {
     if (myLamp.isLampOn()) {
       remote_action(RA::RA_OFF, NULL);
 #ifdef TM1637_CLOCK
-      tm1637.getSetDelay() = 1;
-      tm1637.display(String(F("Off")), true, false, 1);  // Выводим 
+      if (tm1637) {
+        tm1637->getSetDelay() = 1;
+        tm1637->display(String(F("Off")), true, false, 1);  // Выводим 
+      }
 #endif
     } else {
       run_action(ra::on);
 #ifdef TM1637_CLOCK
-      tm1637.getSetDelay() = 1;
-      tm1637.display(String(F("On")), true, false, 2);  // Выводим 
+      if (tm1637) {
+        tm1637.getSetDelay() = 1;
+        tm1637.display(String(F("On")), true, false, 2);  // Выводим 
+      }
 #endif
     }
     break;
@@ -543,9 +547,11 @@ void encSetDynCtrl(int val) {
 
 void encDisplay(uint16_t value, String type) {
 #ifdef TM1637_CLOCK
-  tm1637.getSetDelay() = TM_TIME_DELAY;
-  tm1637.display(value, true, false, value >= 100 ? 1 : (value >= 10 ? 2 : 3) );  
-  tm1637.display(type);
+  if (tm1637) {
+    tm1637->getSetDelay() = TM_TIME_DELAY;
+    tm1637->display(value, true, false, value >= 100 ? 1 : (value >= 10 ? 2 : 3) );  
+    tm1637->display(type);
+  }
 #endif
 }
 /*
@@ -559,9 +565,11 @@ void encDisplay(float value) {
 */
 void encDisplay(String str) {
 #ifdef TM1637_CLOCK
-  tm1637.getSetDelay() = TM_TIME_DELAY;
-  tm1637.clearScreen();
-  tm1637.display(str);
+  if (tm1637) {
+    tm1637->getSetDelay() = TM_TIME_DELAY;
+    tm1637->clearScreen();
+    tm1637->display(str);
+  }
 #endif
 }
 
@@ -631,7 +639,7 @@ void sendTime() {
 void sendIP() {
   remote_action(RA::RA_SEND_IP, NULL);
   #ifdef TM1637_CLOCK
-  tm1637.setIpShow();
+  if (tm1637) tm1637->setIpShow();
   #endif
 }
 

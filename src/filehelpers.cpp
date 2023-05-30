@@ -19,6 +19,7 @@
 */
 
 #include "filehelpers.hpp"
+#include "StreamUtils.h"
 #include "char_const.h"
 
 namespace fshlpr{
@@ -58,6 +59,5 @@ namespace fshlpr{
         fhandle = LittleFS.open(filename, "w");
         return fhandle;
     }
-
 
 }

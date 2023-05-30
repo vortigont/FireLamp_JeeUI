@@ -21,9 +21,7 @@
 #pragma once
 
 #include "misc.h"
-//#include "LList.h"
 #include <ArduinoJson.h>
-//#include "effects_types.h"
 #include <LittleFS.h>
 
 
@@ -57,7 +55,5 @@ namespace fshlpr{
      * возвращает хендл
      */
     File& openIndexFile(File& fhandle, const char *folder);
-
-
 
 }

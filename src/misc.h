@@ -50,5 +50,9 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 	#define LOG(func, ...) ;
 #endif
 
+// a stub for 8266
+#ifndef GPIO_NUM_NC
+#define GPIO_NUM_NC   -1
+#endif
 
 #endif

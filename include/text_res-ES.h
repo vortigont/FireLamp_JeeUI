@@ -458,6 +458,8 @@ static const char TINTF_0EE[] PROGMEM = "Discapacitada";
 static const char TINTF_0EF[] PROGMEM = "Vertical";
 static const char TINTF_0F0[] PROGMEM = "Horizontal";
 
+static const char TINTF_gpiocfg[] PROGMEM = "GPIO Configuration";
+
 static const char NY_MDG_STRING1[] PROGMEM = "Hasta que se quede el año nuevo %d %s";
 static const char NY_MDG_STRING2[] PROGMEM = "Feliz año nuevo %d!";
 //-------------------------
