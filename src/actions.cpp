@@ -63,6 +63,24 @@ void run_action(ra action, JsonObject *data){
       break;
     }
 
+#ifdef MP3PLAYER
+    //MP3: play specific track
+    case ra::mp3_eff : {
+            if(!myLamp.isONMP3()) return;
+            mp3->playEffect((*data)[FPSTR(TCONST_value)], "");
+            return; // no need to execute any UI action
+    }
+    //MP3: play previous/next track?
+    case ra::mp3_next :
+    case ra::mp3_prev : {
+            if(!myLamp.isONMP3()) return;
+            int offset = (*data)[FPSTR(TCONST_value)];
+            if ( action == ra::mp3_prev) offset *= -1;
+            mp3->playEffect(mp3->getCurPlayingNb() + offset, "");
+            return; // no need to execute any UI action
+    }
+#endif  //#ifdef MP3PLAYER
+
     // turn lamp ON
     case ra::on : {
       (*data)[FPSTR(TCONST_ONflag)] = true;

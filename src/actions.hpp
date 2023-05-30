@@ -58,6 +58,9 @@ enum class ra:uint8_t {
   on,                 // switch lamp On
   demo,               // demo mode on/off
   demo_next,          // switch effect in demo mode
+  mp3_eff,            // MP3: play sound for specific effect
+  mp3_next,           // MP3: play next track?
+  mp3_prev,           // MP3: play previous track?
   sendtext,           // send text to lamp
 
   end                 // not an action actually

@@ -3429,18 +3429,6 @@ void remote_action(RA action, ...){
             set_effects_dynCtrl(nullptr, &obj);
             break;
 #ifdef MP3PLAYER
-        case RA::RA_MP3_PREV:
-            if(!myLamp.isONMP3()) return;
-            mp3->playEffect(mp3->getCurPlayingNb()-(int)value,"");
-            break;
-        case RA::RA_MP3_NEXT:
-            if(!myLamp.isONMP3()) return;
-            mp3->playEffect(mp3->getCurPlayingNb()+(int)value,"");
-            break;
-        case RA::RA_MP3_SOUND:
-            if(!myLamp.isONMP3()) return;
-            mp3->playEffect((int)value,"");
-            break;
         case RA::RA_PLAYERONOFF:
             obj[FPSTR(TCONST_force)] = false; // не озвучивать время
             CALL_INTF(FPSTR(TCONST_isOnMP3), value, set_mp3flag);
@@ -3710,8 +3698,8 @@ String httpCallback(const String &param, const String &value, bool isset){
             { result = myLamp.isONMP3() ; }
         else if (upperParam == FPSTR(CMD_MP3_SOUND)) 
             { result = mp3->getCurPlayingNb(); }
-        else if (upperParam == FPSTR(CMD_MP3_PREV)) { action = RA_MP3_PREV; remote_action(action, "1", NULL); }
-        else if (upperParam == FPSTR(CMD_MP3_NEXT)) { action = RA_MP3_NEXT; remote_action(action, "1", NULL); }
+        //else if (upperParam == FPSTR(CMD_MP3_PREV)) { run_action(ra::mp3_prev, 1); return result; }
+        //else if (upperParam == FPSTR(CMD_MP3_NEXT)) { run_action(ra::mp3_next, 1); return result; }
 #endif
 #ifdef MIC_EFFECTS
         else if (upperParam == FPSTR(CMD_MIC)) 
@@ -3820,10 +3808,10 @@ String httpCallback(const String &param, const String &value, bool isset){
         else if (upperParam == FPSTR(CMD_FILL_MATRIX)) action = RA_FILLMATRIX;
         else if (upperParam == FPSTR(CMD_RGB)) action = RA_RGB;
 #ifdef MP3PLAYER
-        else if (upperParam == FPSTR(CMD_MP3_PREV)) action = RA_MP3_PREV;
-        else if (upperParam == FPSTR(CMD_MP3_NEXT)) action = RA_MP3_NEXT;
-        else if (upperParam == FPSTR(CMD_MP3_SOUND)) action = RA_MP3_SOUND;
-        else if (upperParam == FPSTR(CMD_PLAYER)) action = RA_PLAYERONOFF;
+        if (upperParam == FPSTR(CMD_MP3_PREV)) { run_action(ra::mp3_prev, 1); return result; }
+        if (upperParam == FPSTR(CMD_MP3_NEXT)) { run_action(ra::mp3_next, 1); return result; }
+        if (upperParam == FPSTR(CMD_MP3_SOUND)){ run_action(ra::mp3_eff); return result; }
+        if (upperParam == FPSTR(CMD_PLAYER)) action = RA_PLAYERONOFF;
         else if (upperParam == FPSTR(CMD_MP3_VOLUME)) { action = RA_MP3_VOL; remote_action(action, value.c_str(), NULL); return result; }
 #endif
 #ifdef MIC_EFFECTS
