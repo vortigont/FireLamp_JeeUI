@@ -123,6 +123,8 @@ void show_effects_config(Interface *interf, JsonObject *data);
 void show_settings_mp3(Interface *interf, JsonObject *data);
 void show_settings_enc(Interface *interf, JsonObject *data);
 void page_gpiocfg(Interface *interf, JsonObject *data);
+void show_settings_other(Interface *interf, JsonObject *data);
+void section_sys_settings_frame(Interface *interf, JsonObject *data);
 #ifdef MIC_EFFECTS
 void show_settings_mic(Interface *interf, JsonObject *data);
 #endif
@@ -274,11 +276,14 @@ void show_page_selector(Interface *interf, JsonObject *data){
             show_settings_enc(interf, nullptr);
             return;
     #endif
-        case page::setup_gpio :    // страница настроек GPIO
-            page_gpiocfg(interf, nullptr);
-            return;
+        case page::setup_gpio :     // страница настроек GPIO
+            return page_gpiocfg(interf, nullptr);
+        case page::setup_esp :      // страница настроек ESP
+            return section_sys_settings_frame(interf, nullptr);
+        case page::setup_other :    // страница "настройки"-"другие"
+            return show_settings_other(interf, nullptr);
 
-        default:                // by default simply show main page
+        default:                    // by default simply show main page
             section_main_frame(interf, nullptr);
     }
 
@@ -2734,21 +2739,16 @@ void section_main_frame(Interface *interf, JsonObject *data){
     }
 }
 
+// Страница "Настройки ESP"
 void section_sys_settings_frame(Interface *interf, JsonObject *data){
-    // Страница "Настройки ESP"
     if (!interf) return;
     interf->json_frame_interface(FPSTR(TINTF_08F));
 
-    block_menu(interf, data);
     interf->json_section_main(FPSTR(TCONST_sysSettings), FPSTR(TINTF_08F));
         interf->spacer(FPSTR(TINTF_092)); // заголовок
         interf->json_section_line(FPSTR(TINTF_092)); // расположить в одной линии
 #ifdef ESP_USE_BUTTON
             interf->number(FPSTR(TCONST_PINB),FPSTR(TINTF_094), 1, 0, NUM_OUPUT_PINS);
-#endif
-#ifdef MP3PLAYER
-            interf->number(FPSTR(TCONST_mp3rx),FPSTR(TINTF_097), 1, 0, NUM_OUPUT_PINS);
-            interf->number(FPSTR(TCONST_mp3tx),FPSTR(TINTF_098), 1, 0, NUM_OUPUT_PINS);
 #endif
         interf->json_section_end(); // конец контейнера
         interf->spacer();
@@ -2813,7 +2813,7 @@ void page_gpiocfg(Interface *interf, JsonObject *data){
     interf->json_frame_interface();
     interf->json_section_main(FPSTR(TCONST_pin), "GPIO Configuration");
 
-    interf->comment(F("<ul><li>Check <a href=\"https://github.com/vortigont/FireLamp_JeeUI/wiki/\" target=\"_blank\">WiKi page</a> for GPIO reference</li><li>Set '-1' to disable GPIO</li><li>MCU will <b>reboot</b> on any gpio change!</li>"));
+    interf->comment(F("<ul><li>Check <a href=\"https://github.com/vortigont/FireLamp_JeeUI/wiki/\" target=\"_blank\">WiKi page</a> for GPIO reference</li><li>Set '-1' to disable GPIO</li><li>MCU will <b>reboot</b> on any gpio change! Wait 5-10 sec after each save</li>"));
 
     DynamicJsonDocument doc(512);
     embuifs::deserializeFile(doc, FPSTR(TCONST_fcfg_gpio));
