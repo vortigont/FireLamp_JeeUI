@@ -1093,7 +1093,7 @@ void LAMP::demoTimer(SCHEDULER action, uint8_t tmout){
       return;
     }
     if(demoTask){
-      demoTask->setInterval(tmout);
+      demoTask->setInterval(tmout * TASK_SECOND);
       return;
     }
     demoTask = new Task(tmout * TASK_SECOND, TASK_FOREVER, [](){run_action(ra::demo_next);}, &ts, false);    
