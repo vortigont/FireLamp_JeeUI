@@ -66,18 +66,30 @@ void run_action(ra action, JsonObject *data){
 #ifdef MP3PLAYER
     //MP3: play specific track
     case ra::mp3_eff : {
-            if(!myLamp.isONMP3()) return;
-            mp3->playEffect((*data)[FPSTR(TCONST_value)], "");
-            return; // no need to execute any UI action
+      if(!myLamp.isONMP3()) return;
+      mp3->playEffect((*data)[FPSTR(TCONST_value)], "");
+      return; // no need to execute any UI action
+    }
+    //MP3: enable/disable
+    case ra::mp3_enable : {
+      if(!myLamp.isONMP3()) return;
+      (*data)[FPSTR(TCONST_isOnMP3)] = (*data)[FPSTR(TCONST_value)];   // change key name
+      break;
     }
     //MP3: play previous/next track?
     case ra::mp3_next :
     case ra::mp3_prev : {
-            if(!myLamp.isONMP3()) return;
-            int offset = (*data)[FPSTR(TCONST_value)];
-            if ( action == ra::mp3_prev) offset *= -1;
-            mp3->playEffect(mp3->getCurPlayingNb() + offset, "");
-            return; // no need to execute any UI action
+      if(!myLamp.isONMP3()) return;
+      int offset = (*data)[FPSTR(TCONST_value)];
+      if ( action == ra::mp3_prev) offset *= -1;
+      mp3->playEffect(mp3->getCurPlayingNb() + offset, "");
+      return; // no need to execute any UI action
+    }
+    //MP3: set volume
+    case ra::mp3_vol : {
+      if(!myLamp.isONMP3()) return;
+      (*data)[FPSTR(TCONST_mp3volume)] = (*data)[FPSTR(TCONST_value)];   // change key name
+      break;
     }
 #endif  //#ifdef MP3PLAYER
 

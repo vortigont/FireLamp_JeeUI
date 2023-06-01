@@ -3590,17 +3590,6 @@ void remote_action(RA action, ...){
             obj[FPSTR(TCONST_force)] = true;
             set_effects_dynCtrl(nullptr, &obj);
             break;
-#ifdef MP3PLAYER
-        case RA::RA_PLAYERONOFF:
-            obj[FPSTR(TCONST_force)] = false; // не озвучивать время
-            CALL_INTF(FPSTR(TCONST_isOnMP3), value, set_mp3flag);
-            break;
-        case RA::RA_MP3_VOL:
-            if(!myLamp.isONMP3()) return;
-            obj[FPSTR(TCONST_mp3volume)] = atoi(value);
-            set_mp3volume(nullptr, &obj);
-            break;
-#endif
 #ifdef MIC_EFFECTS
         case RA::RA_MIC:
             CALL_INTF_OBJ(show_settings_mic);
@@ -3973,8 +3962,8 @@ String httpCallback(const String &param, const String &value, bool isset){
         if (upperParam == FPSTR(CMD_MP3_PREV)) { run_action(ra::mp3_prev, 1); return result; }
         if (upperParam == FPSTR(CMD_MP3_NEXT)) { run_action(ra::mp3_next, 1); return result; }
         if (upperParam == FPSTR(CMD_MP3_SOUND)){ run_action(ra::mp3_eff); return result; }
-        if (upperParam == FPSTR(CMD_PLAYER)) action = RA_PLAYERONOFF;
-        else if (upperParam == FPSTR(CMD_MP3_VOLUME)) { action = RA_MP3_VOL; remote_action(action, value.c_str(), NULL); return result; }
+        if (upperParam == FPSTR(CMD_PLAYER)){    run_action(ra::mp3_enable, value.toInt()); return result; }
+        if (upperParam == FPSTR(CMD_MP3_VOLUME)){ run_action(ra::mp3_vol, value.toInt()); return result; }
 #endif
 #ifdef MIC_EFFECTS
         else if (upperParam == FPSTR(CMD_MIC)) action = RA_MICONOFF;
