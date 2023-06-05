@@ -3797,7 +3797,7 @@ not sure what this WiFi settings is doing here, WiFi is managed via EmbUI
         case RA::RA_SEND_IP:
             myLamp.sendString(WiFi.localIP().toString().c_str(), CRGB::White);
 #ifdef TM1637_CLOCK
-            if(tm1637) tm1637->setIpShow();
+            if(tm1637) tm1637->showip();
 #endif
             break;
         case RA::RA_SEND_TIME:
