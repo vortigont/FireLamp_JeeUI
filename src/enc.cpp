@@ -639,7 +639,7 @@ void sendTime() {
 void sendIP() {
   remote_action(RA::RA_SEND_IP, NULL);
   #ifdef TM1637_CLOCK
-  if (tm1637) tm1637->setIpShow();
+  if (tm1637) tm1637->showip();
   #endif
 }
 
