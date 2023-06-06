@@ -2460,7 +2460,7 @@ void set_gpios(Interface *interf, JsonObject *data){
         // AUX gpios
         case 3 : {
             if ( (*data)[FPSTR(TCONST_aux_gpio)] == static_cast<int>(GPIO_NUM_NC) ) doc.remove(FPSTR(TCONST_aux_gpio));
-            else doc[FPSTR(TCONST_mosfet_gpio)] = (*data)[FPSTR(TCONST_mosfet_gpio)];
+            else doc[FPSTR(TCONST_aux_gpio)] = (*data)[FPSTR(TCONST_mosfet_gpio)];
 
             doc[FPSTR(TCONST_aux_ll)] = (*data)[FPSTR(TCONST_aux_ll)];
             break;

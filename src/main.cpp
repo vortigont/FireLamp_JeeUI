@@ -327,12 +327,4 @@ void gpio_setup(){
         tm1637->tm_setup();
     }
 #endif 
-
-
-
-#ifdef AUX_PIN
-	pinMode(AUX_PIN, OUTPUT);
-#endif
-
-
 }
