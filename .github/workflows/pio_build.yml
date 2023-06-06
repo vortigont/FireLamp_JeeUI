@@ -41,6 +41,7 @@ jobs:
           - esp8266
           - esp8266dev
           - esp8266full
+          - esp8266btn
 
     steps:
       - uses: actions/checkout@v3
@@ -95,6 +96,7 @@ jobs:
           - esp32
           - esp32debug
           - esp32full
+          - esp32btn
 
     steps:
       - uses: actions/checkout@v3
