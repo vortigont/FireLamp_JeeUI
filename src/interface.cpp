@@ -712,26 +712,22 @@ void show_effect_controls(Interface *interf, JsonObject *data){
     if(interf) interf->json_frame_flush();
 }
 
-void set_effects_list(Interface *interf, JsonObject *data){
-    LOG(println, "set_effects_list()");
+void set_switch_effect(Interface *interf, JsonObject *data){
+    LOG(println, "set_switch_effect()");
     if (!data) return;
-    uint16_t num = (*data)[FPSTR(TCONST_effListMain)];
+    uint16_t num = (*data)[FPSTR(TCONST_eff_run)];
     uint16_t nextEff = myLamp.effects.getSelected();        // get next eff with preloaded controls
     EffectListElem *eff = myLamp.effects.getEffect(num);
     if (!eff) return;
 
-    // пля, этот же код уже есть для RA::RA_EFFECT, откуда вызывается эта функция! какого???
     if(myLamp.getMode()==LAMPMODE::MODE_WHITELAMP && num!=1){
         myLamp.startNormalMode(true);
-        DynamicJsonDocument doc(512);
-        JsonObject obj = doc.to<JsonObject>();
-        CALL_INTF(FPSTR(TCONST_ONflag), myLamp.isLampOn() , set_onflag);
-        return;
+        return run_action(ra::on, data);                    // run "switch-on" action and quit
     }
 
     // сбросить флаг рандомного демо
     myLamp.setDRand(myLamp.getLampSettings().dRand);
-    // TODO: Why this code controls effect switching here???
+
     // if this request is for some other effect than preloaded seletedEffect, than need to switch effect
     if (eff->eff_nb != nextEff) {
         LOG(printf_P, PSTR("UI EFF switch to:%d, selected:%d, isOn:%d, mode:%d\n"), eff->eff_nb, nextEff, myLamp.isLampOn(), myLamp.getMode());
@@ -740,8 +736,9 @@ void set_effects_list(Interface *interf, JsonObject *data){
         } else {
             myLamp.effects.directMoveBy(eff->eff_nb); // переходим прямо на выбранный эффект 
         }
+
         if(myLamp.getMode()==LAMPMODE::MODE_NORMAL)
-            embui.var(FPSTR(TCONST_effListMain), (*data)[FPSTR(TCONST_effListMain)]);
+            embui.var(FPSTR(TCONST_eff_run), (*data)[FPSTR(TCONST_eff_run)]);
         resetAutoTimers();
     }
 
@@ -938,7 +935,7 @@ void block_effects_main(Interface *interf, JsonObject *data, bool fast=true){
         interf->json_frame_custom(FPSTR(TCONST_XLOAD));
         interf->json_section_content();
         // side load drop-down list from /eff_list.json file
-        interf->select(FPSTR(TCONST_effListMain), myLamp.effects.getEffnum(), FPSTR(TINTF_00A), true, false, FPSTR(TCONST_eff_list_json));
+        interf->select(FPSTR(TCONST_eff_run), myLamp.effects.getEffnum(), FPSTR(TINTF_00A), true, false, FPSTR(TCONST_eff_list_json));
         interf->json_section_end();
 
         // build a block of controls for current effect
@@ -2933,7 +2930,7 @@ void create_parameters(){
     LOG(println, F("Создание дефолтных параметров"));
     // создаем дефолтные параметры для нашего проекта
     embui.var_create(FPSTR(TCONST_syslampFlags), ulltos(myLamp.getLampFlags())); // Дефолтный набор флагов
-    embui.var_create(FPSTR(TCONST_effListMain), 1);
+    embui.var_create(FPSTR(TCONST_eff_run), 1);
     embui.var_create(FPSTR(P_m_tupd), DEFAULT_MQTTPUB_INTERVAL); // "m_tupd" интервал отправки данных по MQTT в секундах (параметр в энергонезависимой памяти)
 
 /*  (managed by EmbUI)
@@ -3034,7 +3031,7 @@ void create_parameters(){
 
     embui.section_handle_add(FPSTR(TCONST_effects), section_effects_frame);             // меню: переход на страницу "Эффекты"
     embui.section_handle_add(FPSTR(TCONST_eff_ctrls), show_effect_controls);            // блок контролов текущего эффекта
-    embui.section_handle_add(FPSTR(TCONST_effListMain), set_effects_list);
+    embui.section_handle_add(FPSTR(TCONST_eff_run), set_switch_effect);
     embui.section_handle_add(FPSTR(TCONST_dynCtrl_), set_effects_dynCtrl);
 
     embui.section_handle_add(FPSTR(TCONST_eff_prev), set_eff_prev);
@@ -3149,8 +3146,8 @@ void sync_parameters(){
 /*
     // какая-то затычка от бесконечных ребутов для глючных эффектов. Эффект не чиним, втыкаем затычку Ж() todo: выдрать с корнями
     if(check_recovery_state(true)){
-        LOG(printf_P,PSTR("Critical Error: Lamp recovered from corrupted effect number: %s\n"),String(embui.param(FPSTR(TCONST_effListMain))).c_str());
-        embui.var(FPSTR(TCONST_effListMain),String(0)); // что-то пошло не так, был циклический ребут, сбрасываем эффект
+        LOG(printf_P,PSTR("Critical Error: Lamp recovered from corrupted effect number: %s\n"),String(embui.param(FPSTR(TCONST_eff_run))).c_str());
+        embui.var(FPSTR(TCONST_eff_run),String(0)); // что-то пошло не так, был циклический ребут, сбрасываем эффект
     }
 */
 
@@ -3191,17 +3188,17 @@ void sync_parameters(){
 #ifdef RESTORE_STATE
     obj[FPSTR(TCONST_ONflag)] = tmp.ONflag;
     if(tmp.ONflag){ // если лампа включена, то устанавливаем эффект ДО включения
-        CALL_SETTER(FPSTR(TCONST_effListMain), embui.paramVariant(FPSTR(TCONST_effListMain)), set_effects_list);
+        CALL_SETTER(FPSTR(TCONST_eff_run), embui.paramVariant(FPSTR(TCONST_eff_run)), set_switch_effect);
     }
     set_onflag(nullptr, &obj);
     if(!tmp.ONflag){ // иначе - после
-        CALL_SETTER(FPSTR(TCONST_effListMain), embui.paramVariant(FPSTR(TCONST_effListMain)), set_effects_list);
+        CALL_SETTER(FPSTR(TCONST_eff_run), embui.paramVariant(FPSTR(TCONST_eff_run)), set_switch_effect);
     }
     doc.clear();
     if(myLamp.isLampOn())
         CALL_SETTER(FPSTR(TCONST_Demo), embui.paramVariant(FPSTR(TCONST_Demo)), set_demoflag); // Демо через режимы, для него нужнен отдельный флаг :(
 #else
-    CALL_SETTER(FPSTR(TCONST_effListMain), embui.paramVariant(FPSTR(TCONST_effListMain)), set_effects_list);
+    CALL_SETTER(FPSTR(TCONST_eff_run), embui.paramVariant(FPSTR(TCONST_eff_run)), set_switch_effect);
 #endif
 
     if(tmp.isGlobalBrightness)
@@ -3550,7 +3547,7 @@ void remote_action(RA action, ...){
                 }, &ts, true, nullptr, nullptr, true);
             }
             break;
-        // called on effect change events (warning! this can trigger effect switch in set_effects_list()) WTF???
+        // called on effect change events (warning! this can trigger effect switch in set_switch_effect()) WTF???
         case RA::RA_EFFECT: {
             LAMPMODE mode=myLamp.getMode();
             if(mode==LAMPMODE::MODE_WHITELAMP && myLamp.effects.getSelected()!=1){
@@ -3560,9 +3557,9 @@ void remote_action(RA action, ...){
                 CALL_INTF(FPSTR(TCONST_ONflag), !myLamp.isLampOn(), set_onflag);
                 break;
             } else if(mode==LAMPMODE::MODE_NORMAL){
-                embui.var(FPSTR(TCONST_effListMain), value); // сохранить в конфиг изменившийся эффект
+                embui.var(FPSTR(TCONST_eff_run), value); // сохранить в конфиг изменившийся эффект
             }
-            CALL_INTF(FPSTR(TCONST_effListMain), value, set_effects_list); // публикация будет здесь
+            CALL_INTF(FPSTR(TCONST_eff_run), value, set_switch_effect); // публикация будет здесь
             break;
         }
         case RA::RA_GLOBAL_BRIGHT:

@@ -59,10 +59,15 @@ void run_action(ra action, JsonObject *data){
           myLamp.switcheffect(SW_RND, myLamp.getFaderFlag());
       else myLamp.switcheffect(SW_NEXT_DEMO, myLamp.getFaderFlag());
 
-      (*data)[FPSTR(TCONST_effListMain)] = myLamp.effects.getEffnum();   // call switch effect as in GUI/main page
+      (*data)[FPSTR(TCONST_eff_run)] = myLamp.effects.getEffnum();   // call switch effect as in GUI/main page
       break;
     }
 
+    // switch effect to specific number
+    case ra::eff_switch : {
+      (*data)[FPSTR(TCONST_eff_run)] = (*data)[FPSTR(TCONST_value)];        // change key name and inject data to EmbUI action selector
+      break;
+    }
 #ifdef MP3PLAYER
     //MP3: play specific track
     case ra::mp3_eff : {
