@@ -128,6 +128,7 @@ void section_sys_settings_frame(Interface *interf, JsonObject *data);
 #ifdef MIC_EFFECTS
 void show_settings_mic(Interface *interf, JsonObject *data);
 #endif
+void show_settings_butt(Interface *interf, JsonObject *data);
 
 /**
  * @brief rebuild cached json file with effects names list
@@ -2081,15 +2082,14 @@ void set_eventlist(Interface *interf, JsonObject *data){
         set_event_conf(interf, data); //через какую-то хитрую жопу отработает :)
     }
 }
+
 #ifdef ESP_USE_BUTTON
-    void set_gaugetype(Interface *interf, JsonObject *data){
+void set_gaugetype(Interface *interf, JsonObject *data){
         if (!data) return;
         myLamp.setGaugeType((*data)[FPSTR(TCONST_EncVG)].as<GAUGETYPE>());
         save_lamp_flags();
     }
-#endif
 
-#ifdef ESP_USE_BUTTON
 void block_settings_butt(Interface *interf, JsonObject *data){
     if (!interf) return;
     interf->json_section_main(FPSTR(TCONST_show_button), FPSTR(TINTF_013));
