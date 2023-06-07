@@ -718,7 +718,7 @@ EffectListElem *EffectWorker::getNextEffect(EffectListElem *current){
 void EffectWorker::directMoveBy(uint16_t select)
 {
   LOG(printf_P,PSTR("Direct Switch EffWorker to %d\n"), select);
-  curEff.num = pendingEff.num = getBy(select);
+  curEff.num = pendingEff.num = select;
   workerset(curEff.num);
   pendingEff.controls.clear();        // no longer needed
 }

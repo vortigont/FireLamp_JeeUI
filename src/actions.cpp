@@ -39,6 +39,7 @@
 #include "actions.hpp"
 #include "lamp.h"
 
+
 void run_action(ra action){
   StaticJsonDocument<ACTION_PARAM_SIZE> jdoc;
   JsonObject obj = jdoc.to<JsonObject>();
@@ -46,6 +47,7 @@ void run_action(ra action){
 }
 
 void run_action(ra action, JsonObject *data){
+  LOG(printf_P, PSTR("run_action: %d: "), static_cast<int>(action));
   switch (action){
     // demo mode On/Off
     case ra::demo : {
@@ -60,6 +62,27 @@ void run_action(ra action, JsonObject *data){
       else myLamp.switcheffect(SW_NEXT_DEMO, myLamp.getFaderFlag());
 
       (*data)[FPSTR(TCONST_eff_run)] = myLamp.effects.getEffnum();   // call switch effect as in GUI/main page
+      break;
+    }
+
+    // switch to next effect
+    case ra::eff_next : {
+      // pick next available effect (considering it is enabled)
+      (*data)[FPSTR(TCONST_eff_run)] = myLamp.effects.getNext();
+      break;
+    }
+
+    // switch to previous effect
+    case ra::eff_prev : {
+      // pick previous available effect (considering it is enabled)
+      (*data)[FPSTR(TCONST_eff_run)] = myLamp.effects.getPrev();
+      break;
+    }
+
+    // switch to previous effect
+    case ra::eff_rnd : {
+      // pick previous available effect (considering it is enabled)
+      (*data)[FPSTR(TCONST_eff_run)] = myLamp.effects.getByCnt(random(0, myLamp.effects.getEffectsListSize()));
       break;
     }
 
@@ -121,3 +144,4 @@ void run_action(ra action, JsonObject *data){
 
   embui.post(*data, true);                    // inject packet back into EmbUI action selector
 }
+

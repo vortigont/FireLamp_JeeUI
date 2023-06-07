@@ -387,7 +387,7 @@ void LAMP::restoreStored()
     Task *_t = new Task(3 * TASK_SECOND, TASK_ONCE, [this](){remote_action(RA::RA_EFFECT, String(storedEffect).c_str(), NULL); }, &ts, false, nullptr, nullptr, true);
     _t->enableDelayed();
   } else if(static_cast<EFF_ENUM>(effects.getEn()%256) == EFF_NONE) { // если по каким-то причинам текущий пустой, то выбираем рандомный
-    Task *_t = new Task(3 * TASK_SECOND, TASK_ONCE, [this](){remote_action(RA::RA_EFF_RAND, NULL); }, &ts, false, nullptr, nullptr, true);
+    Task *_t = new Task(3 * TASK_SECOND, TASK_ONCE, [this](){ run_action(ra::eff_rnd); }, &ts, false, nullptr, nullptr, true);
     _t->enableDelayed();
   }
 }
@@ -989,19 +989,19 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
         next_eff_num = effects.getPrev();
         break;
     case EFFSWITCH::SW_SPECIFIC :
-        next_eff_num = effects.getBy(effnb);
+        next_eff_num = effnb;
         break;
     case EFFSWITCH::SW_RND :
-        next_eff_num = effects.getByCnt(random(0, effects.getModeAmount()));
+        next_eff_num = effects.getByCnt(random(0, effects.getEffectsListSize()));
         break;
     case EFFSWITCH::SW_WHITE_HI:
         storeEffect();
-        next_eff_num = effects.getBy(EFF_WHITE_COLOR);
+        next_eff_num = EFF_WHITE_COLOR;
         setMode(LAMPMODE::MODE_WHITELAMP);
         break;
     case EFFSWITCH::SW_WHITE_LO:
         storeEffect();
-        next_eff_num = effects.getBy(EFF_WHITE_COLOR);
+        next_eff_num = EFF_WHITE_COLOR;
         setMode(LAMPMODE::MODE_WHITELAMP);
         break;
     default:

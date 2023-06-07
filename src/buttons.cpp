@@ -88,12 +88,12 @@ bool Button::activate(btnflags& flg, bool reverse){
 		switch (action) {
 			case BA_ON: run_action(ra::on); break;
 			case BA_OFF: ract = RA_OFF; break;
-			case BA_DEMO: run_action(ra::demo, !param.isEmpty()); break;
+			case BA_DEMO: run_action(ra::demo, !param.isEmpty()); return ret;
 #ifdef AUX_PIN
 			case BA_AUX_TOGLE: ract = RA_AUX_TOGLE; break;
 #endif
-			case BA_EFF_NEXT: ract = RA_EFF_NEXT; break;
-			case BA_EFF_PREV: ract = RA_EFF_PREV; break;
+			case BA_EFF_NEXT: run_action(ra::eff_next); return ret;
+			case BA_EFF_PREV: run_action(ra::eff_prev); return ret;
 			case BA_SEND_TIME: ract = RA_SEND_TIME; break;
 			case BA_SEND_IP: ract = RA_SEND_IP; break;
 			case BA_WHITE_HI: flags.direction=true; ract = RA_WHITE_HI; break;

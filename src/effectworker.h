@@ -546,7 +546,10 @@ public:
      */
     void makeIndexFileFromList(const char *folder = NULL, bool forceRemove = false);
 
-    byte getModeAmount() {return effects.size();}
+    /**
+     * @brief Get total number of effects in a list 
+     */
+    unsigned getEffectsListSize() const {return effects.size();}
 
     const String &getEffectName() const {return curEff.effectName;}
 
@@ -583,10 +586,8 @@ public:
     uint16_t getNext();
     // предыдущий эффект, кроме canBeSelected==false
     uint16_t getPrev();
-    // получить указанный
-    uint16_t getBy(uint16_t select){ return select;}
-    // перейти по предворительно выбранному
 
+    // перейти по предворительно выбранному
     void moveSelected();
 
     // перейти на количество шагов, к ближйшему большему (для DEMO)

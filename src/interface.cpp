@@ -463,7 +463,7 @@ void set_effects_config_param(Interface *interf, JsonObject *data){
 
         if(tmpEffnb==myLamp.effects.getCurrent()){
             myLamp.effects.directMoveBy(EFF_ENUM::EFF_NONE);
-            remote_action(RA_EFF_NEXT, NULL);
+            run_action(ra::eff_next);
         }
         String tmpStr=F("- ");
         tmpStr+=tmpEffnb;
@@ -712,37 +712,50 @@ void show_effect_controls(Interface *interf, JsonObject *data){
     if(interf) interf->json_frame_flush();
 }
 
+/**
+ * @brief Switch to specific effect
+ * could be triggered via WebUI's selector list or via ra::eff_switch
+ * if switched successfully, than this function calls contorls publishing via MQTT
+ */
 void set_switch_effect(Interface *interf, JsonObject *data){
-    LOG(println, "set_switch_effect()");
     if (!data) return;
-    uint16_t num = (*data)[FPSTR(TCONST_eff_run)];
-    uint16_t nextEff = myLamp.effects.getSelected();        // get next eff with preloaded controls
-    EffectListElem *eff = myLamp.effects.getEffect(num);
-    if (!eff) return;
+    LOG(println, "set_switch_effect()");
 
+    /*
+     if fader is in progress now, than we just skip switching,
+     on one hand it prevents cyclic fast effect switching
+     but not sure if this a good idea or bad, let's see
+    */
+    if (LEDFader::getInstance()->running()) return;
+
+    uint16_t num = (*data)[FPSTR(TCONST_eff_run)];
+    EffectListElem *eff = myLamp.effects.getEffect(num);
+    if (!eff) return;                                       // some unknown effect requested, quit
+    uint16_t nextEff = myLamp.effects.getSelected();        // get next eff if there is fading in progress
+
+    // if lamp is in "white mode", that restor "normal" mode with stashed effect
+    // which is pretty strange since this call should've made with a specific effect
     if(myLamp.getMode()==LAMPMODE::MODE_WHITELAMP && num!=1){
         myLamp.startNormalMode(true);
         return run_action(ra::on, data);                    // run "switch-on" action and quit
     }
 
     // сбросить флаг рандомного демо
-    myLamp.setDRand(myLamp.getLampSettings().dRand);
+    //myLamp.setDRand(myLamp.getLampSettings().dRand);
 
-    // if this request is for some other effect than preloaded seletedEffect, than need to switch effect
-    if (eff->eff_nb != nextEff) {
-        LOG(printf_P, PSTR("UI EFF switch to:%d, selected:%d, isOn:%d, mode:%d\n"), eff->eff_nb, nextEff, myLamp.isLampOn(), myLamp.getMode());
-        if (myLamp.isLampOn()) {
-            myLamp.switcheffect(SW_SPECIFIC, myLamp.getFaderFlag(), eff->eff_nb);
-        } else {
-            myLamp.effects.directMoveBy(eff->eff_nb); // переходим прямо на выбранный эффект 
-        }
-
-        if(myLamp.getMode()==LAMPMODE::MODE_NORMAL)
-            embui.var(FPSTR(TCONST_eff_run), (*data)[FPSTR(TCONST_eff_run)]);
-        resetAutoTimers();
+    LOG(printf_P, PSTR("UI EFF switch to:%d, selected:%d, isOn:%d, mode:%d\n"), eff->eff_nb, nextEff, myLamp.isLampOn(), myLamp.getMode());
+    if (myLamp.isLampOn()) {
+        myLamp.switcheffect(SW_SPECIFIC, myLamp.getFaderFlag(), eff->eff_nb);
+    } else {
+        myLamp.effects.directMoveBy(eff->eff_nb); // переходим прямо на выбранный эффект если лампа "выключена"
     }
 
-    // publish effect's controls to WebUI and MQTT
+    // save curent active effect number in cfg if lamp in "normal" mode
+    if(myLamp.getMode()==LAMPMODE::MODE_NORMAL)
+        embui.var(FPSTR(TCONST_eff_run), (*data)[FPSTR(TCONST_eff_run)]);
+    resetAutoTimers();
+
+    // publish new effect's controls to WebUI and MQTT
     show_effect_controls(interf, data);
 }
 
@@ -952,11 +965,11 @@ void block_effects_main(Interface *interf, JsonObject *data, bool fast=true){
 }
 
 void set_eff_prev(Interface *interf, JsonObject *data){
-    remote_action(RA::RA_EFF_PREV, NULL);
+    run_action(ra::eff_prev);
 }
 
 void set_eff_next(Interface *interf, JsonObject *data){
-    remote_action(RA::RA_EFF_NEXT, NULL);
+    run_action(ra::eff_next);
 }
 
 /**
@@ -3056,6 +3069,7 @@ void create_parameters(){
     embui.section_handle_add(FPSTR(TCONST_Universe), set_streaming_universe);
     embui.section_handle_add(FPSTR(TCONST_bright), set_streaming_bright);
 #endif
+
     embui.section_handle_add(FPSTR(TCONST_lamptext), section_text_frame);
     embui.section_handle_add(FPSTR(TCONST_textsend), set_lamp_textsend);
     embui.section_handle_add(FPSTR(TCONST_add_lamp_config), edit_lamp_config);
@@ -3547,21 +3561,6 @@ void remote_action(RA action, ...){
                 }, &ts, true, nullptr, nullptr, true);
             }
             break;
-        // called on effect change events (warning! this can trigger effect switch in set_switch_effect()) WTF???
-        case RA::RA_EFFECT: {
-            LAMPMODE mode=myLamp.getMode();
-            if(mode==LAMPMODE::MODE_WHITELAMP && myLamp.effects.getSelected()!=1){
-                myLamp.startNormalMode(true);
-                StaticJsonDocument<200>doc;
-                JsonObject obj = doc.to<JsonObject>();
-                CALL_INTF(FPSTR(TCONST_ONflag), !myLamp.isLampOn(), set_onflag);
-                break;
-            } else if(mode==LAMPMODE::MODE_NORMAL){
-                embui.var(FPSTR(TCONST_eff_run), value); // сохранить в конфиг изменившийся эффект
-            }
-            CALL_INTF(FPSTR(TCONST_eff_run), value, set_switch_effect); // публикация будет здесь
-            break;
-        }
         case RA::RA_GLOBAL_BRIGHT:
             if (atoi(value) > 0){
                 CALL_INTF(FPSTR(TCONST_GBR), true, set_gbrflag);
@@ -3595,17 +3594,6 @@ void remote_action(RA action, ...){
             CALL_INTF(FPSTR(TCONST_Mic), value, set_micflag);
             break;
 #endif
-        case RA::RA_EFF_NEXT:
-            resetAutoTimers(); // сборс таймера демо, если есть перемещение
-            myLamp.switcheffect(SW_NEXT, myLamp.getFaderFlag());
-            return remote_action(RA::RA_EFFECT, String(myLamp.effects.getSelected()).c_str(), NULL);
-        case RA::RA_EFF_PREV:
-            resetAutoTimers(); // сборс таймера демо, если есть перемещение
-            myLamp.switcheffect(SW_PREV, myLamp.getFaderFlag());
-            return remote_action(RA::RA_EFFECT, String(myLamp.effects.getSelected()).c_str(), NULL);
-        case RA::RA_EFF_RAND:
-            myLamp.switcheffect(SW_RND, myLamp.getFaderFlag());
-            return remote_action(RA::RA_EFFECT, String(myLamp.effects.getSelected()).c_str(), NULL);
         case RA::RA_WHITE_HI:
             myLamp.switcheffect(SW_WHITE_HI);
             return remote_action(RA::RA_EFFECT, String(myLamp.effects.getSelected()).c_str(), NULL);
@@ -3928,10 +3916,10 @@ String httpCallback(const String &param, const String &value, bool isset){
             effname = FPSTR(T_EFFNAMEID[(uint8_t)effnum]);
             result = String(F("["))+effnum+String(",\"")+effname+String("\"]");
         }
-        else if (upperParam == FPSTR(CMD_MOVE_NEXT)) { action = RA_EFF_NEXT;  remote_action(action, value.c_str(), NULL); }
-        else if (upperParam == FPSTR(CMD_MOVE_PREV)) { action = RA_EFF_PREV;  remote_action(action, value.c_str(), NULL); }
-        else if (upperParam == FPSTR(CMD_MOVE_RND)) { action = RA_EFF_RAND;  remote_action(action, value.c_str(), NULL); }
-        else if (upperParam == FPSTR(CMD_REBOOT)) { action = RA_REBOOT;  remote_action(action, value.c_str(), NULL); }
+        if (upperParam == FPSTR(CMD_MOVE_NEXT)) { run_action(ra::eff_next); return result; }
+        if (upperParam == FPSTR(CMD_MOVE_PREV)) { run_action(ra::eff_prev); return result; }
+        if (upperParam == FPSTR(CMD_MOVE_RND))  { run_action(ra::eff_rnd);  return result; }
+        if (upperParam == FPSTR(CMD_REBOOT)) { action = RA_REBOOT;  remote_action(action, value.c_str(), NULL); }
         else if (upperParam == FPSTR(CMD_ALARM)) { result = myLamp.isAlarm() ; }
         else if (upperParam == FPSTR(CMD_MATRIX)) { char buf[32]; sprintf_P(buf, PSTR("[%d,%d]"), mx.cfg.w(), mx.cfg.h());  result = buf; }
 #ifdef EMBUI_USE_MQTT        
@@ -3944,10 +3932,10 @@ String httpCallback(const String &param, const String &value, bool isset){
         else if (upperParam == FPSTR(CMD_DEMO)) { run_action(ra::demo, value.toInt() ? true : false ); return result; }
         else if (upperParam == FPSTR(CMD_MSG)) action = RA_SEND_TEXT;
         else if (upperParam == FPSTR(CMD_EFFECT)) action = RA_EFFECT;
-        else if (upperParam == FPSTR(CMD_MOVE_NEXT)) action = RA_EFF_NEXT;
-        else if (upperParam == FPSTR(CMD_MOVE_PREV)) action = RA_EFF_PREV;
-        else if (upperParam == FPSTR(CMD_MOVE_RND)) action = RA_EFF_RAND;
-        else if (upperParam == FPSTR(CMD_REBOOT)) action = RA_REBOOT;
+        if (upperParam == FPSTR(CMD_MOVE_NEXT)) { run_action(ra::eff_next); return result; }
+        if (upperParam == FPSTR(CMD_MOVE_PREV)) { run_action(ra::eff_prev); return result; }
+        if (upperParam == FPSTR(CMD_MOVE_RND))  { run_action(ra::eff_rnd);  return result; }
+        if (upperParam == FPSTR(CMD_REBOOT)) action = RA_REBOOT;
         else if (upperParam == FPSTR(CMD_ALARM)) action = RA_ALARM;
         else if (upperParam == FPSTR(CMD_G_BRIGHT)) action = RA_GLOBAL_BRIGHT;
         else if (upperParam == FPSTR(CMD_G_BRTPCT)) { action = RA_BRIGHT_PCT; remote_action(action, value.c_str(), NULL); return result; }

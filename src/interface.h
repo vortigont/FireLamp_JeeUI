@@ -21,9 +21,9 @@ typedef enum _remote_action {
     RA_AUX_TOGLE,
 #endif
     RA_REBOOT,
-    RA_EFF_NEXT,
-    RA_EFF_PREV,
-    RA_EFF_RAND,
+//    RA_EFF_NEXT,
+//    RA_EFF_PREV,
+//    RA_EFF_RAND,
     RA_BRIGHT_NF,
     RA_CONTROL,
     RA_MIC,
@@ -37,7 +37,7 @@ typedef enum _remote_action {
 #ifdef MIC_EFFECTS
     RA_MICONOFF,
 #endif
-    RA_EFFECT,          // called on effect change events
+//    RA_EFFECT,          // called on effect change events
     RA_SEND_TEXT,
     RA_SEND_TIME,
     RA_SEND_IP,
