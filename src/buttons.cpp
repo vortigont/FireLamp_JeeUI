@@ -86,8 +86,8 @@ bool Button::activate(btnflags& flg, bool reverse){
 
 		// проверяем дальше
 		switch (action) {
-			case BA_ON: run_action(ra::on); break;
-			case BA_OFF: ract = RA_OFF; break;
+			case BA_ON: run_action(ra::on); return ret;
+			case BA_OFF: run_action(ra::off); return ret;
 			case BA_DEMO: run_action(ra::demo, !param.isEmpty()); return ret;
 #ifdef AUX_PIN
 			case BA_AUX_TOGLE: ract = RA_AUX_TOGLE; break;

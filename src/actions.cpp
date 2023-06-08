@@ -128,6 +128,14 @@ void run_action(ra action, JsonObject *data){
       return;
     }
 
+    // turn lamp OFF
+    case ra::off : {
+      myLamp.stopRGB(); // выключение RGB-режима
+      (*data)[FPSTR(TCONST_ONflag)] = false;
+      embui.post(*data, true);
+      return;
+    }
+
     // send text to lamp
     case ra::sendtext : {
       if (!data || !(*data)[TCONST_value]) return;

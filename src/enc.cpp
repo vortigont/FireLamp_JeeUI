@@ -387,7 +387,7 @@ void myClicks() {
   {
   case 1: // Включение\выключение лампы
     if (myLamp.isLampOn()) {
-      remote_action(RA::RA_OFF, NULL);
+      run_action(ra::off);
 #ifdef TM1637_CLOCK
       if (tm1637) {
         tm1637->getSetDelay() = 1;

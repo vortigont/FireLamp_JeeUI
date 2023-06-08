@@ -159,7 +159,7 @@ void LAMP::handle()
   // отложенное включение/выключение
   if(lampState.isOffAfterText && !lampState.isStringPrinting) {
     changePower(false);
-    remote_action(RA::RA_OFF, NULL);
+    run_action(ra::off);
   }
 
   newYearMessageHandle();

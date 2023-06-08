@@ -2903,7 +2903,7 @@ bool notfound_handle(AsyncWebServerRequest *request, const String& req)
     uint8_t bright = myLamp.getLampBrightness();
     if ((req.indexOf(F("&T=2")) > 1)){
         if(myLamp.isLampOn()){
-            remote_action(RA::RA_OFF, NULL);
+            run_action(ra::off);
             bright = 0;
         }
         else
@@ -3397,8 +3397,8 @@ void event_worker(DEV_EVENT *event){
         }
         return;
     }
-    case EVENT_TYPE::OFF: action = RA_OFF; break;
-    case EVENT_TYPE::DEMO: run_action(ra::demo, event->getMessage()=="1"); break;       // not sure what is the content of this String
+    case EVENT_TYPE::OFF: return run_action(ra::off);
+    case EVENT_TYPE::DEMO: return run_action(ra::demo, event->getMessage()=="1");       // not sure what is the content of this String
     case EVENT_TYPE::ALARM: action = RA_ALARM; break;
     case EVENT_TYPE::LAMP_CONFIG_LOAD: action = RA_LAMP_CONFIG; break;
 #ifdef ESP_USE_BUTTON
@@ -3528,31 +3528,6 @@ void remote_action(RA action, ...){
     LOG(println);
 
     switch (action) {
-        // какая-то солянка с сообщением при выключении
-        case RA::RA_OFF: {
-                // нажатие кнопки точно отключает ДЕМО и белую лампу возвращая в нормальный режим
-                myLamp.stopRGB(); // выключение RGB-режима
-                if(value){
-                   remote_action(RA::RA_SEND_TEXT, value, NULL);
-                }
-                new Task(500, TASK_FOREVER, [value](){
-                    if((!myLamp.isPrintingNow() && value) || !value){ // отложенное выключение только для случая когда сообщение выводится в этом же экшене, а не чужое
-                        Task *task = ts.getCurrentTask();
-                        DynamicJsonDocument doc(512);
-                        JsonObject obj = doc.to<JsonObject>();
-                        LAMPMODE mode = myLamp.getMode();
-                        if(mode!=LAMPMODE::MODE_NORMAL){
-                            CALL_INTF(FPSTR(TCONST_Demo), false, set_demoflag); // отключить демо, если было включено
-                            if (myLamp.IsGlobalBrightness()) {
-                                embui.var(FPSTR(TCONST_GlobBRI), myLamp.getLampBrightness()); // сохранить восстановленную яркость в конфиг, если она глобальная
-                            }
-                        }
-                        CALL_INTF(FPSTR(TCONST_ONflag), false, set_onflag);
-                        task->disable();
-                    }
-                }, &ts, true, nullptr, nullptr, true);
-            }
-            break;
         case RA::RA_GLOBAL_BRIGHT:
             if (atoi(value) > 0){
                 CALL_INTF(FPSTR(TCONST_GBR), true, set_gbrflag);
