@@ -3404,7 +3404,7 @@ void event_worker(DEV_EVENT *event){
 #ifdef ESP_USE_BUTTON
     case EVENT_TYPE::BUTTONS_CONFIG_LOAD:  action = RA_BUTTONS_CONFIG; break;
 #endif
-    case EVENT_TYPE::EFF_CONFIG_LOAD:  action = RA_EFF_CONFIG; break;
+    //case EVENT_TYPE::EFF_CONFIG_LOAD:  action = RA_EFF_CONFIG; break;                 // была какая-то мутная загрузка индекса эффектов из папки /backup/idx
     case EVENT_TYPE::EVENTS_CONFIG_LOAD: action = RA_EVENTS_CONFIG; break;
     case EVENT_TYPE::SEND_TEXT:  action = RA_SEND_TEXT; break;
     case EVENT_TYPE::SEND_TIME:  action = RA_SEND_TIME; break;
@@ -3586,13 +3586,6 @@ not sure what this WiFi settings is doing here, WiFi is managed via EmbUI
                 filename.concat(value);
                 embui.load(filename.c_str());
                 sync_parameters();
-            }
-            break;
-        case RA::RA_EFF_CONFIG:
-            if (value && *value) {
-                String filename(FPSTR(TCONST__backup_idx_));
-                filename.concat(value);
-                myLamp.effects.initDefault(filename.c_str());
             }
             break;
 #ifdef ESP_USE_BUTTON

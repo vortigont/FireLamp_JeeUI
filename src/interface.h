@@ -10,7 +10,7 @@ typedef enum _remote_action {
     RA_ALARM,
     RA_ALARM_OFF,
     RA_LAMP_CONFIG,
-    RA_EFF_CONFIG,
+//    RA_EFF_CONFIG,
 #ifdef ESP_USE_BUTTON
     RA_BUTTONS_CONFIG,
 #endif
