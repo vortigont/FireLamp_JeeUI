@@ -68,7 +68,6 @@ enum class ra:uint8_t {
   mp3_prev,           // MP3: play previous track?
   mp3_vol,            // MP3: set volume
   sendtext,           // send text to lamp
-
   end                 // not an action actually
 };
 

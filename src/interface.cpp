@@ -733,13 +733,6 @@ void set_switch_effect(Interface *interf, JsonObject *data){
     if (!eff) return;                                       // some unknown effect requested, quit
     uint16_t nextEff = myLamp.effects.getSelected();        // get next eff if there is fading in progress
 
-    // if lamp is in "white mode", that restor "normal" mode with stashed effect
-    // which is pretty strange since this call should've made with a specific effect
-    if(myLamp.getMode()==LAMPMODE::MODE_WHITELAMP && num!=1){
-        myLamp.startNormalMode(true);
-        return run_action(ra::on, data);                    // run "switch-on" action and quit
-    }
-
     // сбросить флаг рандомного демо
     //myLamp.setDRand(myLamp.getLampSettings().dRand);
 
@@ -1045,7 +1038,6 @@ void set_demoflag(Interface *interf, JsonObject *data){
                 myLamp.startDemoMode(embui.paramVariant(FPSTR(TCONST_DTimer)) | DEFAULT_DEMO_TIMER);
             break;
         case LAMPMODE::MODE_DEMO:
-        case LAMPMODE::MODE_WHITELAMP:
             if(!newdemo)
                 myLamp.startNormalMode();
             break;
@@ -3450,7 +3442,7 @@ void event_worker(DEV_EVENT *event){
         }
         break;
     }
-    case EVENT_TYPE::SET_EFFECT: action = RA_EFFECT; break;
+    case EVENT_TYPE::SET_EFFECT: { run_action(ra::eff_switch, event->getMessage().toInt()); return; }       // switch effect
     case EVENT_TYPE::SET_WARNING: action = RA_WARNING; break;
     case EVENT_TYPE::SET_GLOBAL_BRIGHT: action = RA_GLOBAL_BRIGHT; break;
     case EVENT_TYPE::SET_WHITE_HI: action = RA_WHITE_HI; break;
@@ -3594,12 +3586,6 @@ void remote_action(RA action, ...){
             CALL_INTF(FPSTR(TCONST_Mic), value, set_micflag);
             break;
 #endif
-        case RA::RA_WHITE_HI:
-            myLamp.switcheffect(SW_WHITE_HI);
-            return remote_action(RA::RA_EFFECT, String(myLamp.effects.getSelected()).c_str(), NULL);
-        case RA::RA_WHITE_LO:
-            myLamp.switcheffect(SW_WHITE_LO);
-            return remote_action(RA::RA_EFFECT, String(myLamp.effects.getSelected()).c_str(), NULL);
         case RA::RA_ALARM:
             ALARMTASK::startAlarm(&myLamp, value);
             break;
@@ -3931,7 +3917,7 @@ String httpCallback(const String &param, const String &value, bool isset){
         if ( upperParam == FPSTR(CMD_ON) || upperParam == FPSTR(CMD_OFF ) ){ run_action(value.toInt() ? ra::on : ra::off ); return result; }
         else if (upperParam == FPSTR(CMD_DEMO)) { run_action(ra::demo, value.toInt() ? true : false ); return result; }
         else if (upperParam == FPSTR(CMD_MSG)) action = RA_SEND_TEXT;
-        else if (upperParam == FPSTR(CMD_EFFECT)) action = RA_EFFECT;
+        else if (upperParam == FPSTR(CMD_EFFECT)) { run_action(ra::eff_next, value.toInt()); return result; }
         if (upperParam == FPSTR(CMD_MOVE_NEXT)) { run_action(ra::eff_next); return result; }
         if (upperParam == FPSTR(CMD_MOVE_PREV)) { run_action(ra::eff_prev); return result; }
         if (upperParam == FPSTR(CMD_MOVE_RND))  { run_action(ra::eff_rnd);  return result; }

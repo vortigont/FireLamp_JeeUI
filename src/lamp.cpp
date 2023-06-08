@@ -384,7 +384,7 @@ void LAMP::restoreStored()
     setLampBrightness(storedBright);
   lampState.isMicOn = flags.isMicOn;
   if (static_cast<EFF_ENUM>(storedEffect) != EFF_NONE) {    // ничего не должно происходить, включаемся на текущем :), текущий всегда определен...
-    Task *_t = new Task(3 * TASK_SECOND, TASK_ONCE, [this](){remote_action(RA::RA_EFFECT, String(storedEffect).c_str(), NULL); }, &ts, false, nullptr, nullptr, true);
+    Task *_t = new Task(3 * TASK_SECOND, TASK_ONCE, [this](){ run_action( ra::eff_switch, storedEffect); }, &ts, false, nullptr, nullptr, true);
     _t->enableDelayed();
   } else if(static_cast<EFF_ENUM>(effects.getEn()%256) == EFF_NONE) { // если по каким-то причинам текущий пустой, то выбираем рандомный
     Task *_t = new Task(3 * TASK_SECOND, TASK_ONCE, [this](){ run_action(ra::eff_rnd); }, &ts, false, nullptr, nullptr, true);
@@ -994,16 +994,6 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
     case EFFSWITCH::SW_RND :
         next_eff_num = effects.getByCnt(random(0, effects.getEffectsListSize()));
         break;
-    case EFFSWITCH::SW_WHITE_HI:
-        storeEffect();
-        next_eff_num = EFF_WHITE_COLOR;
-        setMode(LAMPMODE::MODE_WHITELAMP);
-        break;
-    case EFFSWITCH::SW_WHITE_LO:
-        storeEffect();
-        next_eff_num = EFF_WHITE_COLOR;
-        setMode(LAMPMODE::MODE_WHITELAMP);
-        break;
     default:
         return;
     }
@@ -1051,21 +1041,7 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
 #endif
 
   bool natural = true;
-  switch (action) {
-  case EFFSWITCH::SW_WHITE_HI:
-      setLampBrightness(255); // здесь яркость ползунка в UI, т.е. ставим 255 в самое крайнее положение, а дальше уже будет браться приведенная к BRIGHTNESS яркость
-      fade = natural = false;
-      changePower(true);  // принудительно включаем лампу
-      break;
-  case EFFSWITCH::SW_WHITE_LO:
-      setLampBrightness(1); // здесь яркость ползунка в UI, т.е. ставим 1 в самое крайнее положение, а дальше уже будет браться приведенная к BRIGHTNESS яркость
-      fade = natural = false;
-      changePower(true);  // принудительно включаем лампу
-      break;
-  default:;
-  }
 
-  // отрисовать текущий эффект (только если лампа включена, иначе бессмысленно)
   if(effects.worker && flags.ONflag && !lampState.isEffectsDisabledUntilText){
     if(!sledsbuff){ // todo: WHY we need this clone here???
       sledsbuff = new LedFB(mx);  // clone existing frambuffer

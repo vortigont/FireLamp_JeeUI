@@ -62,7 +62,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 typedef enum _LAMPMODE {
   MODE_NORMAL = 0,
   MODE_DEMO,
-  MODE_WHITELAMP,
   MODE_RGBLAMP,
   MODE_ALARMCLOCK,
   MODE_OTA
@@ -77,8 +76,6 @@ typedef enum _EFFSWITCH {
     SW_DELAY,       // сохраненный (для фейдера)
     SW_SPECIFIC,    // переход на конкретный эффект по индексу/имени
     SW_NEXT_DEMO,    // следующий для ДЕМО, исключая отключенные
-    SW_WHITE_HI,
-    SW_WHITE_LO,
 } EFFSWITCH;
 
 // управление Тикером
