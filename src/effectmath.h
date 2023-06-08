@@ -478,7 +478,7 @@ class Vector2D {
     std::vector<T> v;
 
 public:
-    Vector2D(size_t w, size_t h) : _w(w), _h(h), v(std::vector<T>(w*h)) {}
+    Vector2D(size_t w, size_t h, T const &val=T()) : _w(w), _h(h), v(std::vector<T>(w*h, val)) {}
 
     size_t idx(size_t x, size_t y) const { return _w*y + x; }
     size_t w() const { return _w; };
@@ -489,12 +489,11 @@ public:
     T& at(size_t x, size_t y){ return v.at( idx(x,y) ); };
     T* getData(){ return v.data(); }
 
-    void reset(size_t width, size_t height, T &val = T()){
+    void reset(size_t width, size_t height, T const &val = T()){
         _w = width, _h = height;
         v.assign(_w*_h, val);
         v.shrink_to_fit();
     };
-
 };
 
 // 3D Noise map structure
@@ -526,7 +525,4 @@ struct Noise3dMap {
      * @param smooth if > 0 apply smooth 
      */
     void fillNoise(uint8_t smooth = 0);
-
-    // print noise map (debug)
-    //void printmap();
 };
