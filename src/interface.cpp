@@ -3400,7 +3400,7 @@ void event_worker(DEV_EVENT *event){
     case EVENT_TYPE::OFF: return run_action(ra::off);
     case EVENT_TYPE::DEMO: return run_action(ra::demo, event->getMessage()=="1");       // not sure what is the content of this String
     case EVENT_TYPE::ALARM: action = RA_ALARM; break;
-    case EVENT_TYPE::LAMP_CONFIG_LOAD: action = RA_LAMP_CONFIG; break;
+    //case EVENT_TYPE::LAMP_CONFIG_LOAD: action = RA_LAMP_CONFIG; break;                // была какая-то загрузка стороннего конфига embui
 #ifdef ESP_USE_BUTTON
     case EVENT_TYPE::BUTTONS_CONFIG_LOAD:  action = RA_BUTTONS_CONFIG; break;
 #endif
@@ -3580,14 +3580,6 @@ not sure what this WiFi settings is doing here, WiFi is managed via EmbUI
             CALL_INTF(FPSTR(TINTF_028), FPSTR(TCONST_STA), set_settings_wifi);
             break;
 */
-        case RA::RA_LAMP_CONFIG:
-            if (value && *value) {
-                String filename(FPSTR(TCONST__backup_glb_));
-                filename.concat(value);
-                embui.load(filename.c_str());
-                sync_parameters();
-            }
-            break;
 #ifdef ESP_USE_BUTTON
         case RA::RA_BUTTONS_CONFIG:
             if (value && *value) {
