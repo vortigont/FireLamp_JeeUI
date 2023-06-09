@@ -35,14 +35,10 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
    <https://www.gnu.org/licenses/>.)
 */
 
-#ifndef _ENC_H
-#define _ENC_H
-
+#pragma once
 #include "config.h"
 
-#ifdef ENCODER
 #include "effects_types.h"
-//#include <FastLED.h>
 
 // Опциональные настройки (показаны по умолчанию)
 //#define EB_FAST 30     // таймаут быстрого поворота, мс
@@ -107,5 +103,3 @@ void sendTime();
 void sendIP();
 
 extern EncButton<EB_CALLBACK, ENC_DT, ENC_CLK, ENC_SW> enc;
-#endif
-#endif
