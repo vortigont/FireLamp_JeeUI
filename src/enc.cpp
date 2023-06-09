@@ -172,7 +172,7 @@ void encLoop() {
       resetTimers();
       LOG(printf_P, PSTR("Enc: New effect number: %d\n"), currEffNum);
       myLamp.switcheffect(SW_SPECIFIC, myLamp.getFaderFlag(), currEffNum);
-      remote_action(RA::RA_EFFECT, String(myLamp.effects.getSelected()).c_str(), NULL);
+      run_action(ra::eff_switch, myLamp.effects.getSelected());
       encSendString(String(FPSTR(TINTF_00A)) + ": " + (currEffNum <= 255 ? String(currEffNum) : (String((byte)(currEffNum & 0xFF)) + "." + String((byte)(currEffNum >> 8) - 1U))), txtColor, true, txtDelay);
       done = true;
       currAction = 0;
@@ -505,13 +505,13 @@ void encSetEffect(int val) {
 
     if (val > 0) { // если курутили вперед по списку - скипим в том же направлении, если назад - в обратном
       anyValue++; 
-      if(anyValue >= myLamp.effects.getModeAmount()) // если ничего не нашли, - снова начинаем сначала
+      if(anyValue >= myLamp.effects.getEffectsListSize()) // если ничего не нашли, - снова начинаем сначала
         anyValue = 0;
     }
     else {
       anyValue--;
       if (anyValue == 0) // если ничего не нашли, - снова начинаем с конца
-        anyValue = myLamp.effects.getModeAmount()-1;
+        anyValue = myLamp.effects.getEffectsListSize()-1;
     }
   }
   currEffNum = myLamp.effects.realEffNumdByList(anyValue);
