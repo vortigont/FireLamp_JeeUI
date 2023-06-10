@@ -38,6 +38,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "main.h"
 #include "effectmath.h"
 #include "fontHEX.h"
+#include "actions.hpp"
 
 GAUGE *GAUGE::gauge = nullptr; // объект индикатора
 ALARMTASK *ALARMTASK::alarmTask = nullptr; // объект будильника
@@ -79,20 +80,25 @@ void LAMP::lamp_init(const uint16_t curlimit)
   // initialize fader instance
   LEDFader::getInstance()->setLamp(this);
 
-  // ПИНЫ
-#ifdef MOSFET_PIN                                         // инициализация пина, управляющего MOSFET транзистором в состояние "выключен"
-  pinMode(MOSFET_PIN, OUTPUT);
-#ifdef MOSFET_LEVEL
-  digitalWrite(MOSFET_PIN, !MOSFET_LEVEL);
-#endif
-#endif
+  // GPIO's
+  DynamicJsonDocument doc(512);
+  if (!embuifs::deserializeFile(doc, FPSTR(TCONST_fcfg_gpio))) return;     // GPIO cfg is broken or missing
+  // restore fet gpio
+  fet_gpio = doc[FPSTR(TCONST_mosfet_gpio)] | static_cast<int>(GPIO_NUM_NC);
+  fet_ll = doc[FPSTR(TCONST_mosfet_ll)];
 
-#ifdef ALARM_PIN                                          // инициализация пина, управляющего будильником в состояние "выключен"
-  pinMode(ALARM_PIN, OUTPUT);
-#ifdef ALARM_LEVEL
-  digitalWrite(ALARM_PIN, !ALARM_LEVEL);
-#endif
-#endif
+  aux_gpio = doc[FPSTR(TCONST_aux_gpio)] | static_cast<int>(GPIO_NUM_NC);
+  aux_ll = doc[FPSTR(TCONST_aux_ll)];
+  // gpio that controls FET (for disabling matrix)
+  if (fet_gpio > static_cast<int>(GPIO_NUM_NC)){
+    pinMode(fet_gpio, OUTPUT);
+    digitalWrite(fet_gpio, !fet_ll);
+  }
+  // gpio that controls AUX/Alarm pin
+  if (aux_gpio > static_cast<int>(GPIO_NUM_NC)){
+    pinMode(aux_gpio, OUTPUT);
+    digitalWrite(aux_gpio, !aux_ll);
+  }
 }
 
 void LAMP::handle()
@@ -103,6 +109,9 @@ void LAMP::handle()
     if(effects.worker->isMicOn() || isMicCalibration())
       micHandler();
     mic_check = millis();
+  } else {
+    // если микрофон не нужен, удаляем объект
+    if (mw){ delete mw; mw = nullptr; }
   }
 #endif
 
@@ -150,7 +159,7 @@ void LAMP::handle()
   // отложенное включение/выключение
   if(lampState.isOffAfterText && !lampState.isStringPrinting) {
     changePower(false);
-    remote_action(RA::RA_OFF, NULL);
+    run_action(ra::off);
   }
 
   newYearMessageHandle();
@@ -296,15 +305,14 @@ void LAMP::changePower(bool flag) // флаг включения/выключе�
     lampState.isStringPrinting = false;
     demoTimer(T_DISABLE);     // гасим Демо-таймер
   }
-#if defined(MOSFET_PIN) && defined(MOSFET_LEVEL)          // установка сигнала в пин, управляющий MOSFET транзистором, соответственно состоянию вкл/выкл матрицы
-  Task *_t = new Task(flags.isFaderON && !flags.ONflag ? 5*TASK_SECOND : 50, TASK_ONCE, // для выключения - отложенное переключение мосфета 5 секунд
-    [this](){ digitalWrite(MOSFET_PIN, (flags.ONflag ? MOSFET_LEVEL : !MOSFET_LEVEL)); },
-    &ts, false, nullptr, nullptr, true);
-  _t->enableDelayed();
-#endif
-// #if defined(MOSFET_PIN) && defined(MOSFET_LEVEL)          // установка сигнала в пин, управляющий MOSFET транзистором, соответственно состоянию вкл/выкл матрицы
-//   digitalWrite(MOSFET_PIN, (flags.ONflag ? MOSFET_LEVEL : !MOSFET_LEVEL));
-// #endif
+
+  // установка сигнала в пин, управляющий MOSFET транзистором, соответственно состоянию вкл/выкл матрицы
+  if (fet_gpio > static_cast<int>(GPIO_NUM_NC)){
+    Task *_t = new Task(flags.isFaderON && !flags.ONflag ? 5*TASK_SECOND : 50, TASK_ONCE, // для выключения - отложенное переключение мосфета 5 секунд
+      [this](){ digitalWrite(fet_gpio, (flags.ONflag ? fet_ll : !fet_ll)); },
+      &ts, false, nullptr, nullptr, true);
+    _t->enableDelayed();
+  }
 
 #ifdef DS18B20
     // восстанавливаем значение тока после включения. Так как значение 0 не работает в ограничителе тока по перегреву, 
@@ -352,15 +360,13 @@ void LAMP::stopRGB(){
 void LAMP::startDemoMode(uint8_t tmout)
 {
   LOG(println,F("Demo mode"));
-  if(mode == LAMPMODE::MODE_DEMO) return;
+  if(!isLampOn()) run_action(ra::on);       // "включаем" лампу
+  if(mode == LAMPMODE::MODE_DEMO) return;   // уже и так в "демо" режиме, выходим
   
   storedEffect = ((static_cast<EFF_ENUM>(effects.getEn()%256) == EFF_ENUM::EFF_WHITE_COLOR) ? storedEffect : effects.getEn()); // сохраняем предыдущий эффект, если только это не белая лампа
   mode = LAMPMODE::MODE_DEMO;
-  if(isLampOn()){
-    remote_action(RA::RA_DEMO_NEXT, NULL);
-    demoTimer(T_ENABLE, tmout);
-  }
-  sendString(String(PSTR("- Demo ON -")).c_str(), CRGB::Green, false);
+  demoTimer(T_ENABLE, tmout);
+  sendString(String(F("- Demo ON -")).c_str(), CRGB::Green, false);
 }
 
 void LAMP::storeEffect()
@@ -378,10 +384,10 @@ void LAMP::restoreStored()
     setLampBrightness(storedBright);
   lampState.isMicOn = flags.isMicOn;
   if (static_cast<EFF_ENUM>(storedEffect) != EFF_NONE) {    // ничего не должно происходить, включаемся на текущем :), текущий всегда определен...
-    Task *_t = new Task(3 * TASK_SECOND, TASK_ONCE, [this](){remote_action(RA::RA_EFFECT, String(storedEffect).c_str(), NULL); }, &ts, false, nullptr, nullptr, true);
+    Task *_t = new Task(3 * TASK_SECOND, TASK_ONCE, [this](){ run_action( ra::eff_switch, storedEffect); }, &ts, false, nullptr, nullptr, true);
     _t->enableDelayed();
   } else if(static_cast<EFF_ENUM>(effects.getEn()%256) == EFF_NONE) { // если по каким-то причинам текущий пустой, то выбираем рандомный
-    Task *_t = new Task(3 * TASK_SECOND, TASK_ONCE, [this](){remote_action(RA::RA_EFF_RAND, NULL); }, &ts, false, nullptr, nullptr, true);
+    Task *_t = new Task(3 * TASK_SECOND, TASK_ONCE, [this](){ run_action(ra::eff_rnd); }, &ts, false, nullptr, nullptr, true);
     _t->enableDelayed();
   }
 }
@@ -579,7 +585,7 @@ String &LAMP::prepareText(String &source){
   source.replace(F("%EN"), effects.getEffectName());
   const tm *tm = localtime(embui.timeProcessor.now());
   char buffer[11]; //"xx.xx.xxxx"
-  sprintf_P(buffer,PSTR("%02d.%02d.%04d"),tm->tm_mday,tm->tm_mon+1,tm->tm_year+EMBUI_TM_BASE_YEAR);
+  sprintf_P(buffer,PSTR("%02d.%02d.%04d"),tm->tm_mday,tm->tm_mon+1,tm->tm_year+ TM_BASE_YEAR);
   source.replace(F("%DT"), buffer);
 #ifdef LAMP_DEBUG  
   if(!source.isEmpty() && effects.getCurrent()!=EFF_ENUM::EFF_TIME && !isWarning()) // спам эффекта часы и предупреждений убираем костыльным способом :)
@@ -731,15 +737,14 @@ void LAMP::doPrintStringToLamp(const char* text,  const CRGB &letterColor, const
 
 void LAMP::newYearMessageHandle()
 {
-  if(!tmNewYearMessage.isReady() || embui.timeProcessor.isDirtyTime())
+  if(!tmNewYearMessage.isReady())
     return;
 
-  {
     char strMessage[256]; // буфер
     time_t calc = NEWYEAR_UNIXDATETIME - embui.timeProcessor.getUnixTime();
 
     if(calc<0) {
-      sprintf_P(strMessage, NY_MDG_STRING2, localtime(embui.timeProcessor.now())->tm_year+EMBUI_TM_BASE_YEAR);
+      sprintf_P(strMessage, NY_MDG_STRING2, localtime(embui.timeProcessor.now())->tm_year+ TM_BASE_YEAR);
     } else if(calc<300){
       sprintf_P(strMessage, NY_MDG_STRING1, (int)calc, String(FPSTR(TINTF_0C1)).c_str());
     } else if(calc/60<60){
@@ -783,7 +788,6 @@ void LAMP::newYearMessageHandle()
 
     LOG(printf_P, PSTR("Prepared message: %s\n"), strMessage);
     sendStringToLamp(strMessage, LETTER_COLOR);
-  }
 }
 
 // при вызове - вывозит на лампу текущее время
@@ -830,19 +834,13 @@ void LAMP::micHandler()
   static uint8_t counter=0;
   if(effects.getEn()==EFF_ENUM::EFF_NONE)
     return;
-  if(mw==nullptr && !lampState.isCalibrationRequest && lampState.micAnalyseDivider){ // обычный режим
-    {
-      mw = new MicWorker(lampState.mic_scale,lampState.mic_noise,!counter);
-    }
-    if(!mw) {
-      mw = new MicWorker(lampState.mic_scale,lampState.mic_noise,!counter);
-    }
+  if(!mw && !lampState.isCalibrationRequest && lampState.micAnalyseDivider){ // обычный режим
+    //mw = new(std::nothrow) MicWorker(lampState.mic_scale,lampState.mic_noise,!counter);
+    mw = new(std::nothrow) MicWorker(lampState.mic_scale,lampState.mic_noise,true);   // создаем полноценный объект и держим в памяти
 
     if(!mw) {
-      mw=nullptr;
       return; // не удалось выделить память, на выход
     }
-    //delete mw; mw = nullptr; return;
     
     lampState.samp_freq = mw->process(lampState.noise_reduce); // возвращаемое значение - частота семплирования
     lampState.last_min_peak = mw->getMinPeak();
@@ -862,20 +860,15 @@ void LAMP::micHandler()
 
     //LOG(println, last_freq);
     //mw->debug();
-    delete mw;
-    mw = nullptr;
+
+    //delete mw;    // не удаляем, пока пользуемся
+    //mw = nullptr;
   } else if(lampState.isCalibrationRequest) {
-    if(mw==nullptr){ // калибровка начало
-      {
-        mw = new MicWorker();
-      }
-      if(!mw){
-        mw = new MicWorker();   
-      }
-      mw->calibrate();
-    } else { // калибровка продолжение
-      mw->calibrate();
+    if(!mw){ // калибровка начало
+      mw = new(std::nothrow) MicWorker();
+      if(!mw) return;   // was not able to alloc mem
     }
+    mw->calibrate();
     if(!mw->isCaliblation()){ // калибровка конец
       lampState.mic_noise = mw->getNoise();
       lampState.mic_scale = mw->getScale();
@@ -996,20 +989,10 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
         next_eff_num = effects.getPrev();
         break;
     case EFFSWITCH::SW_SPECIFIC :
-        next_eff_num = effects.getBy(effnb);
+        next_eff_num = effnb;
         break;
     case EFFSWITCH::SW_RND :
-        next_eff_num = effects.getByCnt(random(0, effects.getModeAmount()));
-        break;
-    case EFFSWITCH::SW_WHITE_HI:
-        storeEffect();
-        next_eff_num = effects.getBy(EFF_WHITE_COLOR);
-        setMode(LAMPMODE::MODE_WHITELAMP);
-        break;
-    case EFFSWITCH::SW_WHITE_LO:
-        storeEffect();
-        next_eff_num = effects.getBy(EFF_WHITE_COLOR);
-        setMode(LAMPMODE::MODE_WHITELAMP);
+        next_eff_num = effects.getByCnt(random(0, effects.getEffectsListSize()));
         break;
     default:
         return;
@@ -1058,21 +1041,7 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
 #endif
 
   bool natural = true;
-  switch (action) {
-  case EFFSWITCH::SW_WHITE_HI:
-      setLampBrightness(255); // здесь яркость ползунка в UI, т.е. ставим 255 в самое крайнее положение, а дальше уже будет браться приведенная к BRIGHTNESS яркость
-      fade = natural = false;
-      changePower(true);  // принудительно включаем лампу
-      break;
-  case EFFSWITCH::SW_WHITE_LO:
-      setLampBrightness(1); // здесь яркость ползунка в UI, т.е. ставим 1 в самое крайнее положение, а дальше уже будет браться приведенная к BRIGHTNESS яркость
-      fade = natural = false;
-      changePower(true);  // принудительно включаем лампу
-      break;
-  default:;
-  }
 
-  // отрисовать текущий эффект (только если лампа включена, иначе бессмысленно)
   if(effects.worker && flags.ONflag && !lampState.isEffectsDisabledUntilText){
     if(!sledsbuff){ // todo: WHY we need this clone here???
       sledsbuff = new LedFB(mx);  // clone existing frambuffer
@@ -1100,10 +1069,10 @@ void LAMP::demoTimer(SCHEDULER action, uint8_t tmout){
       return;
     }
     if(demoTask){
-      demoTask->setInterval(tmout);
+      demoTask->setInterval(tmout * TASK_SECOND);
       return;
     }
-    demoTask = new Task(tmout * TASK_SECOND, TASK_FOREVER, std::bind(&remote_action, RA::RA_DEMO_NEXT, NULL), &ts, false);
+    demoTask = new Task(tmout * TASK_SECOND, TASK_FOREVER, [](){run_action(ra::demo_next);}, &ts, false);    
     demoTask->enableDelayed();
     break;
   case SCHEDULER::T_RESET :

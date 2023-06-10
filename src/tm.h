@@ -52,28 +52,31 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
   #define TM_SHOW_BANNER 0
 #endif
 
+#define TM_REPEAT_SHOW_IP   3     // times to repeat IP scrolling
+
+
 class TMCLOCK : public TM1637 {
 public:
   TMCLOCK(uint8_t clkPin, uint8_t dataPin) : TM1637 (clkPin, dataPin) {};
   uint8_t& getSetDelay();  // Задержка, для отображения с других плагинов
   void tm_setup();
   void tm_loop();
-  void showIp();
   uint8_t getIpShow() {return ipShow;}
-  void setIpShow()  {ipShow = 17;}
+  void showip()  {ipShow = TM_REPEAT_SHOW_IP;}
 private:
   String splittedIp[5] = {};
-  bool showPoints;
-  uint8_t tmDelayTime;
-  uint8_t ipShow;
+  bool showPoints{false};
+  uint8_t tmDelayTime{TM_TIME_DELAY};
+  uint8_t ipShow{TM_REPEAT_SHOW_IP};
   #if TM_SHOW_BANNER
-  bool bannerShowed;
+  bool bannerShowed{false};
   void showBanner();
   #endif
-  void switchShowPoints(){showPoints=!showPoints;};
   void splitIp(String str, String dlm, String dest[]);  // Функция разделителя по указателю
   String formatIp(String inArr[], String dlm);    // Функция форматирования
+  // scroll IP address
+  void scrollip();
 };
 
-extern TMCLOCK tm1637;
+extern TMCLOCK *tm1637;
 #endif

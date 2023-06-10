@@ -210,8 +210,8 @@ static const char TEFF_255[] PROGMEM = "Oscilloscope";
 static const char TINTF_000[] PROGMEM = "Effects";
 static const char TINTF_001[] PROGMEM = "Text";
 static const char TINTF_002[] PROGMEM = "Settings";
-static const char TINTF_003[] PROGMEM = "In selection list";
-static const char TINTF_004[] PROGMEM = "In Demo list";
+static const char TINTF_in_sel_lst[] PROGMEM = "Included selection list";
+static const char TINTF_in_demo[] PROGMEM = "Included in Demo";
 static const char TINTF_005[] PROGMEM = "Copy effect";
 static const char TINTF_006[] PROGMEM = "Remove";
 static const char TINTF_007[] PROGMEM = "Refresh effects-list";
@@ -336,15 +336,6 @@ static const char TINTF_07D[] PROGMEM = "Hold";
 static const char TINTF_07E[] PROGMEM = "Press";
 static const char TINTF_07F[] PROGMEM = "Singly";
 static const char TINTF_080[] PROGMEM = "Fire Lamp";
-#if defined(EMBUI_USE_FTP) && defined(EMBUI_USE_MQTT)
-static const char TINTF_081[] PROGMEM = "WiFi, MQTT & FTP";
-#elif defined(EMBUI_USE_MQTT)
-static const char TINTF_081[] PROGMEM = "WiFi & MQTT";
-#elif defined(EMBUI_USE_FTP)
-static const char TINTF_081[] PROGMEM = "WiFi & FTP";
-#else
-static const char TINTF_081[] PROGMEM = "WiFi";
-#endif
 static const char TINTF_082[] PROGMEM = "Other";
 static const char TINTF_083[] PROGMEM = "Clean the lamp when switching effects";
 static const char TINTF_084[] PROGMEM = DFTINTF_084;
@@ -352,7 +343,7 @@ static const char TINTF_085[] PROGMEM = "Sort by Alphabet (internal)";
 static const char TINTF_086[] PROGMEM = "Events activated";
 static const char TINTF_087[] PROGMEM = "Speed";
 static const char TINTF_088[] PROGMEM = DFTINTF_088;
-static const char TINTF_089[] PROGMEM = "Effect`s name";
+static const char TINTF_effrename[] PROGMEM = "Rename effect";
 static const char TINTF_08A[] PROGMEM = "Sort by Alphabet (config)";
 static const char TINTF_08B[] PROGMEM = "Reset effect settings";
 static const char TINTF_08C[] PROGMEM = "Topic prefix";
@@ -457,8 +448,10 @@ static const char TINTF_0EE[] PROGMEM = "Disabled";
 static const char TINTF_0EF[] PROGMEM = "Vertical";
 static const char TINTF_0F0[] PROGMEM = "Horizontal";
 
-static const char NY_MDG_STRING1[] PROGMEM = "Until the new year is left %d %s";
-static const char NY_MDG_STRING2[] PROGMEM = "Happy new %d year!";
+static const char TINTF_gpiocfg[] PROGMEM = "GPIO Configuration";
+
+static const char NY_MDG_STRING1[] PROGMEM = "New Year in %d %s";
+static const char NY_MDG_STRING2[] PROGMEM = "Happy New %d Year!";
 //-------------------------
 
 #endif

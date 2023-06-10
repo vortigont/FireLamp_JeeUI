@@ -10,3 +10,5 @@ include/user_config.h
 include/user_cfg*
 resources/embui.zip
 /data/*.json
+resources/etags.txt
+test/

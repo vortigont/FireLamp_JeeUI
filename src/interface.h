@@ -1,18 +1,16 @@
-//#pragma once
-#ifndef __INTERFACE_H
-#define __INTERFACE_H
-
+#pragma once
 #include "EmbUI.h"
+
 typedef enum _remote_action {
     RA_UNKNOWN,
-    RA_ON,
-    RA_OFF,
-    RA_DEMO,
-    RA_DEMO_NEXT,       // trigger effect change in Demo mode
+//    RA_ON,
+//    RA_OFF,
+//    RA_DEMO,
+//    RA_DEMO_NEXT,       // trigger effect change in Demo mode
     RA_ALARM,
     RA_ALARM_OFF,
-    RA_LAMP_CONFIG,
-    RA_EFF_CONFIG,
+//    RA_LAMP_CONFIG,     // load another config for embui
+//    RA_EFF_CONFIG,
 #ifdef ESP_USE_BUTTON
     RA_BUTTONS_CONFIG,
 #endif
@@ -23,23 +21,23 @@ typedef enum _remote_action {
     RA_AUX_TOGLE,
 #endif
     RA_REBOOT,
-    RA_EFF_NEXT,
-    RA_EFF_PREV,
-    RA_EFF_RAND,
+//    RA_EFF_NEXT,
+//    RA_EFF_PREV,
+//    RA_EFF_RAND,
     RA_BRIGHT_NF,
     RA_CONTROL,
     RA_MIC,
-#ifdef MP3PLAYER
-    RA_MP3_PREV,
-    RA_MP3_NEXT,
-    RA_MP3_SOUND,
-    RA_PLAYERONOFF,
-    RA_MP3_VOL,
-#endif
+//#ifdef MP3PLAYER
+//    RA_MP3_PREV,
+//    RA_MP3_NEXT,
+//    RA_MP3_SOUND,
+//    RA_PLAYERONOFF,
+//    RA_MP3_VOL,
+//#endif
 #ifdef MIC_EFFECTS
     RA_MICONOFF,
 #endif
-    RA_EFFECT,          // called on effect change events
+//    RA_EFFECT,          // called on effect change events
     RA_SEND_TEXT,
     RA_SEND_TIME,
     RA_SEND_IP,
@@ -55,6 +53,7 @@ typedef enum _remote_action {
 } RA;
 
 void remote_action(RA action, ...);
+
 String httpCallback(const String &param, const String &value, bool isset);
 #ifdef ESP_USE_BUTTON
 void default_buttons();
@@ -81,11 +80,3 @@ void show_effects_config_param(Interface *interf, JsonObject *data);
  * здесь выводится ПОЛНЫЙ сипсок эффектов
  */
 void block_effects_config(Interface *interf, JsonObject *data);
-
-#ifdef DELAYED_EFFECTS
- #define INDEX_BUILD_DELAY 5
-#else
- #define INDEX_BUILD_DELAY 1
-#endif
-
-#endif

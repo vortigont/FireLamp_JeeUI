@@ -55,30 +55,31 @@ Buttons *myButtons;
 #endif
 
 #ifdef MP3PLAYER
-MP3PLAYERDEVICE *mp3 = nullptr;
+MP3PlayerDevice *mp3 = nullptr;
 #endif
 
 #ifdef TM1637_CLOCK
-TMCLOCK tm1637(TM_CLK_PIN, TM_DIO_PIN);
+// TM1637 display
+// https://github.com/AKJ7/TM1637/
+TMCLOCK *tm1637 = nullptr;
 #endif
 
+// forward declarations
+
+/**
+ * @brief restore gpio configurtion and initialise attached devices
+ * 
+ */
+void gpio_setup();
+
+// mDNS announce for WLED app
+void wled_announce();
 
 
 void setup() {
     Serial.begin(115200);
 
-#ifdef PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED
-    {
-        HeapSelectIram ephemeral;
-        LOG(printf_P, PSTR("\n\nIRAM ESP.getFreeHeap:  %u\n"), ESP.getFreeHeap());
-    }
-    {
-        HeapSelectDram ephemeral;
-        LOG(printf_P, PSTR("DRAM ESP.getFreeHeap:  %u\n"), ESP.getFreeHeap());
-    }
-#else
     LOG(printf_P, PSTR("\n\nsetup: free heap  : %d\n"), ESP.getFreeHeap());
-#endif
 
 #ifdef ESP32
     LOG(printf_P, PSTR("setup: free PSRAM  : %d\n"), ESP.getFreePsram()); // 4194252
@@ -89,27 +90,12 @@ void setup() {
     // hook framebuffer to contoller
     mx.bind(cled);
 
-#ifdef AUX_PIN
-	pinMode(AUX_PIN, OUTPUT);
-#endif
-
 #ifdef EMBUI_USE_UDP
     embui.udp(); // Ответ на UDP запрс. в качестве аргумента - переменная, содержащая macid (по умолчанию)
 #endif
 
-#if defined(ESP8266) && defined(LED_BUILTIN_AUX)
-    embui.led(LED_BUILTIN_AUX, false); // назначаем пин на светодиод, который нам будет говорит о состоянии устройства. (быстро мигает - пытается подключиться к точке доступа, просто горит (или не горит) - подключен к точке доступа, мигает нормально - запущена своя точка доступа)
-#elif defined(LED_BUILTIN)
-    embui.led(LED_BUILTIN, false); // Если матрица находится на этом же пине, то будет ее моргание!
-#endif
-
-#if defined(LED_BUILTIN) && defined (DISABLE_LED_BUILTIN)
-#ifdef ESP8266
-    digitalWrite(LED_BUILTIN, HIGH); // "душим" светодиод nodeMCU
-#elif defined(LED_BUILTIN)
-    digitalWrite(LED_BUILTIN, LOW); // "душим" светодиод nodeMCU32
-#endif
-#endif
+    // Add mDNS handler for WLED app
+    embui.set_callback(CallBack::attach, CallBack::STAGotIP, wled_announce);
 
     // EmbUI
     embui.begin(); // Инициализируем EmbUI фреймворк - загружаем конфиг, запускаем WiFi и все зависимые от него службы
@@ -118,9 +104,11 @@ void setup() {
     //embui.mqtt(mqttCallback, true);
     embui.mqtt(mqttCallback, mqttConnect, true);
 #endif
-    myLamp.effects.setEffSortType((SORT_TYPE)embui.param(FPSTR(TCONST_effSort)).toInt()); // сортировка должна быть определена до заполнения
+
+    myLamp.effects.setEffSortType((SORT_TYPE)embui.paramVariant(FPSTR(TCONST_effSort)).as<int>()); // сортировка должна быть определена до заполнения
     myLamp.effects.initDefault(); // если вызывать из конструктора, то не забыть о том, что нужно инициализировать Serial.begin(115200); иначе ничего не увидеть!
-    myLamp.events.loadConfig(); // << -- SDK3.0 будет падение, разобраться позже
+    myLamp.events.loadConfig();
+
 #ifdef RTC
     rtc.init();
 #endif
@@ -130,7 +118,7 @@ void setup() {
 #endif
 
     // restore matrix current limit from config
-    myLamp.lamp_init(embui.param(FPSTR(TCONST_CLmt)).toInt());
+    myLamp.lamp_init(embui.paramVariant(FPSTR(TCONST_CLmt)));
 
 #ifdef ESP_USE_BUTTON
     myLamp.setbPin(embui.param(FPSTR(TCONST_PINB)).toInt());
@@ -143,11 +131,8 @@ void setup() {
 
     myLamp.events.setEventCallback(event_worker);
 
-#ifdef MP3PLAYER
-    int rxpin = embui.param(FPSTR(TCONST_PINMP3RX)).toInt() | MP3_RX_PIN;
-    int txpin = embui.param(FPSTR(TCONST_PINMP3TX)).toInt() | MP3_TX_PIN;
-    mp3 = new MP3PLAYERDEVICE(rxpin, txpin); //rxpin, txpin
-#endif
+    // configure and init attached devices
+    gpio_setup();
 
 #ifdef ESP8266
   embui.server.addHandler(new SPIFFSEditor(F("esp8266"),F("esp8266"), LittleFS));
@@ -155,17 +140,14 @@ void setup() {
   embui.server.addHandler(new SPIFFSEditor(LittleFS, F("esp32"), F("esp32")));
 #endif
 
-  sync_parameters();        // падение есп32 не воспоизводится, kDn
+  sync_parameters();
 
-  //embui.setPubInterval(5);   // change periodic WebUI publish interval from EMBUI_PUB_PERIOD to 5
-
-#ifdef TM1637_CLOCK
-  tm1637.tm_setup();
-#endif 
+  embui.setPubInterval(10);   // change periodic WebUI publish interval from EMBUI_PUB_PERIOD to 10 secs
 
 #ifdef ENCODER
   enc_setup();
 #endif
+
     LOG(println, F("setup() done"));
 }   // End setup()
 
@@ -185,7 +167,7 @@ void loop() {
 
 #ifdef TM1637_CLOCK
     EVERY_N_SECONDS(1) {
-        tm1637.tm_loop();
+        if (tm1637) tm1637->tm_loop();
     }
 #endif
 #ifdef DS18B20
@@ -333,3 +315,29 @@ void sendData(){
 }
 #endif
 
+void gpio_setup(){
+    DynamicJsonDocument doc(512);
+    embuifs::deserializeFile(doc, FPSTR(TCONST_fcfg_gpio));
+    int rxpin, txpin;
+#ifdef MP3PLAYER
+    // spawn an instance of mp3player
+    rxpin = doc[FPSTR(TCONST_mp3rx)] | -1;
+    txpin = doc[FPSTR(TCONST_mp3tx)] | -1;
+    LOG(printf_P, PSTR("DFPlayer: rx:%d tx:%d\n"), rxpin, txpin);
+    mp3 = new MP3PlayerDevice(rxpin, txpin, embui.paramVariant(FPSTR(TCONST_mp3volume)) | DFPLAYER_DEFAULT_VOL );
+#endif
+
+#ifdef TM1637_CLOCK
+    rxpin = doc[FPSTR(TCONST_tm_clk)] | -1;
+    txpin = doc[FPSTR(TCONST_tm_dio)] | -1;
+    if (rxpin != -1 && txpin != -1){
+        tm1637 = new TMCLOCK(rxpin, txpin);
+        tm1637->tm_setup();
+    }
+#endif 
+}
+
+void wled_announce(){
+    MDNS.addService("wled", "tcp", 80);
+    MDNS.addServiceTxt("wled", "tcp", "mac", (const char*)embui.mc);
+}

@@ -38,38 +38,68 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #ifdef MP3PLAYER
 #include "mp3player.h"
 
-MP3PLAYERDEVICE::MP3PLAYERDEVICE(const uint8_t rxPin, const uint8_t txPin) : mp3player(rxPin, txPin) // RX, TX
-{
+// which serial to use for esp32
+#define MP3SERIAL Serial1
+
+MP3PlayerDevice::MP3PlayerDevice(Stream *port, uint8_t vol) : cur_volume(vol), mp3player(port) {
+  init();
+}
+
+
+MP3PlayerDevice::MP3PlayerDevice(uint8_t rxPin, uint8_t txPin, uint8_t vol) : cur_volume(vol) {
+#ifdef ESP8266
+  SoftwareSerial *s = new (std::nothrow) SoftwareSerial(rxPin, txPin);
+  if (!s) return;
+  internalsoftserial = true;
+  s->begin(9600);
+  mp3player = s;
+#else // ESP32xx
+  MP3SERIAL.begin(9600, SERIAL_8N1, rxPin, txPin);    // use hwserial #2
+  mp3player = &MP3SERIAL;
+#endif
+  init();
+}
+
+MP3PlayerDevice::~MP3PlayerDevice(){
+  // destroy softserial if it was used here
+  if (internalsoftserial){
+    delete mp3player;
+    mp3player = nullptr;
+  }
+}
+
+void MP3PlayerDevice::init(){
   flags = 0;
 
-  mp3player.begin(9600);
   setTimeOut(MP3_SERIAL_TIMEOUT); //Set serial communictaion time out ~300ms
-  LOG(println);
-  LOG(println, F("DFplayer: DFRobot DFPlayer Mini"));
-  LOG(println, F("DFplayer: Initializing DFPlayer ... (May take 3~5 seconds)"));
-  // cur_volume при инициализации используется как счетчик попыток :), так делать не хорошо, но экономим память
-  Task *_t = new Task(DFPLAYER_START_DELAY, TASK_ONCE, nullptr, &ts, false, nullptr, [this](){
-    if(!begin(mp3player) && cur_volume++<=5){
-        LOG(printf_P, PSTR("DFPlayer: Unable to begin: %d...\n"), cur_volume);
-        ts.getCurrentTask()->restartDelayed(MP3_SERIAL_TIMEOUT);
+
+  LOG(println, F("DFplayer: Initializing DFPlayer ... (May take up to 5 seconds)"));
+
+  // try to connect (5 times, each second)
+  Task *_t = new Task(TASK_SECOND, 5, [this](){
+    if(!begin(*mp3player)){
+        LOG(printf_P, PSTR("DFPlayer: Unable to begin: %d...\n"), ts.getCurrentTask()->getIterations() );
         return;
     }
 
-    if (cur_volume>=5 && !begin(mp3player)) {
-      LOG(println, F("DFplayer: 1.Please recheck the connection!"));
-      LOG(println, F("DFplayer: 2.Please insert the SD card!"));
-      ready = false;
-      return;
-    }
     ready = true;
-    LOG(println, F("DFplayer: DFPlayer Mini online."));
     outputDevice(DFPLAYER_DEVICE_SD);
-    setTempVolume(5);
-  }, true);
-  _t->enableDelayed();
+    setVolume(cur_volume);
+    LOG(println, F("DFplayer: DFPlayer Mini online."));
+
+    ts.getCurrentTask()->disable();
+  }, 
+  &ts, false, nullptr,
+  [this](){
+    if (!ready) {
+      LOG(println, F("DFplayer: Pls, recheck the connection/insert the SD card!"));
+    }
+  },
+  true);
+  _t->enableDelayed(DFPLAYER_START_DELAY);
 }
 
-void MP3PLAYERDEVICE::restartSound()
+void MP3PlayerDevice::restartSound()
 {
   isplayname = false;
   int currentState = readState();
@@ -97,7 +127,7 @@ void MP3PLAYERDEVICE::restartSound()
   }
 }
 
-void MP3PLAYERDEVICE::printSatusDetail(){
+void MP3PlayerDevice::printSatusDetail(){
   uint8_t type = readType();
   int value = read();
 
@@ -191,14 +221,14 @@ void MP3PLAYERDEVICE::printSatusDetail(){
   }
 }
 
-void MP3PLAYERDEVICE::handle()
+void MP3PlayerDevice::handle()
 {
   if (available()) { // эта часть не только пишет ошибки, но также отлавливает изменение состояний!!!
     printSatusDetail(); //Print the detail message from DFPlayer to handle different errors and states.
   }
 }
 
-void MP3PLAYERDEVICE::playTime(int hours, int minutes, TIME_SOUND_TYPE tst)
+void MP3PlayerDevice::playTime(int hours, int minutes, TIME_SOUND_TYPE tst)
 {
   if(!isReady()) return;
 
@@ -236,12 +266,12 @@ void MP3PLAYERDEVICE::playTime(int hours, int minutes, TIME_SOUND_TYPE tst)
   }
 }
 
-void MP3PLAYERDEVICE::playFolder0(int filenb) {
+void MP3PlayerDevice::playFolder0(int filenb) {
   LOG(printf_P, PSTR("DFplayer: playLargeFolder filenb: %d\n"), filenb);
   playLargeFolder(0x00, filenb);
 }
 
-void MP3PLAYERDEVICE::playAdvertise(int filenb) {
+void MP3PlayerDevice::playAdvertise(int filenb) {
   LOG(printf_P, PSTR("DFplayer: Advertise filenb: %d\n"), filenb);
   advertise(filenb);
   isadvert = true;
@@ -256,7 +286,7 @@ void MP3PLAYERDEVICE::playAdvertise(int filenb) {
 }
 
 
-void MP3PLAYERDEVICE::playEffect(uint16_t effnb, const String &_soundfile, bool delayed)
+void MP3PlayerDevice::playEffect(uint16_t effnb, const String &_soundfile, bool delayed)
 {
   isplayname = false;
   soundfile = _soundfile;
@@ -291,14 +321,14 @@ void MP3PLAYERDEVICE::playEffect(uint16_t effnb, const String &_soundfile, bool 
   }
 }
 
-void MP3PLAYERDEVICE::playName(uint16_t effnb)
+void MP3PlayerDevice::playName(uint16_t effnb)
 {
   isplayname = true;
   LOG(printf_P, PSTR("DFplayer: playName, effnb:%d\n"), effnb%256);
   playFolder(2, effnb%256);
 }
 
-void MP3PLAYERDEVICE::StartAlarmSoundAtVol(ALARM_SOUND_TYPE val, uint8_t vol){
+void MP3PlayerDevice::StartAlarmSoundAtVol(ALARM_SOUND_TYPE val, uint8_t vol){
   LOG(printf_P, PSTR("DFplayer: StartAlarmSoundAtVol at %d\n"), vol);
   setTempVolume(vol);
   tAlarm = val;
@@ -308,7 +338,7 @@ void MP3PLAYERDEVICE::StartAlarmSoundAtVol(ALARM_SOUND_TYPE val, uint8_t vol){
   _t->enableDelayed();
 }
 
-void MP3PLAYERDEVICE::ReStartAlarmSound(ALARM_SOUND_TYPE val){
+void MP3PlayerDevice::ReStartAlarmSound(ALARM_SOUND_TYPE val){
   isplaying = true;
   LOG(printf_P, PSTR("DFplayer: ReStartAlarmSound %d\n"), val);
   switch(val){
@@ -346,8 +376,12 @@ void MP3PLAYERDEVICE::ReStartAlarmSound(ALARM_SOUND_TYPE val){
   }
 }
 
-void MP3PLAYERDEVICE::setVolume(uint8_t vol) {
+void MP3PlayerDevice::setVolume(uint8_t vol) {
   cur_volume=vol;
+  setTempVolume(vol);
+}
+
+void MP3PlayerDevice::setTempVolume(uint8_t vol) {
   if(ready){
     int tcnt = 5;
     do {
@@ -356,22 +390,10 @@ void MP3PLAYERDEVICE::setVolume(uint8_t vol) {
         volume(vol);
     } while(!readType() && tcnt);
   }
-  LOG(printf_P, PSTR("DFplayer: Set volume: %d\n"), cur_volume);
+  LOG(printf_P, PSTR("DFplayer: Set volume: %d\n"), vol);
 }
 
-void MP3PLAYERDEVICE::setTempVolume(uint8_t vol) {
-  if(ready){
-    int tcnt = 5;
-    do {
-      tcnt--;
-      if(readVolume()!=vol)
-        volume(vol);
-    } while(!readType() && tcnt);
-  }
-  LOG(printf_P, PSTR("DFplayer: Set temp volume: %d\n"), vol);
-}
-
-void MP3PLAYERDEVICE::setIsOn(bool val, bool forcePlay) {
+void MP3PlayerDevice::setIsOn(bool val, bool forcePlay) {
   on = val;
 
   if(!forcePlay){
@@ -396,7 +418,7 @@ void MP3PLAYERDEVICE::setIsOn(bool val, bool forcePlay) {
     return;
   }
   
-    tPeriodic = new Task(1.21 * TASK_SECOND, TASK_FOREVER, std::bind(&MP3PLAYERDEVICE::handle,this), &ts, false, nullptr, nullptr, true); // "ленивый" опрос - раз в 1.21 сек (стараюсь избежать пересеченией с произнесением времени)
+    tPeriodic = new Task(1.21 * TASK_SECOND, TASK_FOREVER, std::bind(&MP3PlayerDevice::handle,this), &ts, false, nullptr, nullptr, true); // "ленивый" опрос - раз в 1.21 сек (стараюсь избежать пересеченией с произнесением времени)
     tPeriodic->enableDelayed();
 }
 

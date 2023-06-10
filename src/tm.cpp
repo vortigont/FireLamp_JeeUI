@@ -48,8 +48,8 @@ uint8_t& TMCLOCK::getSetDelay() { // для доступа к переменно
 };
 
 void TMCLOCK::tm_setup() {
-    init();
     begin();
+    clearScreen();
     LOG(printf_P, PSTR("tm1637 was initialized \n"));
 }
 
@@ -60,35 +60,46 @@ void TMCLOCK::tm_loop() {
   setBrightness((myLamp.isLampOn()) ? myLamp.getBrightOn() : myLamp.getBrightOff());         // Чекаем статус лампы и меняем яркость
 
   #if TM_SHOW_BANNER
-  if (!bannerShowed) showBanner();          // Выводим стартовый баннер
-  if (!bannerShowed) return;
+  if (!bannerShowed) {
+    showBanner();          // Выводим стартовый баннер
+    return;
+  }
   #endif
 
 
-  if (getSetDelay()) { // пропускаем цикл вывода часов, давая возможность успеть увидеть инфу с другиг плагинов
-    getSetDelay()--;
+  if (tmDelayTime) { // пропускаем цикл вывода часов, давая возможность успеть увидеть инфу с другиг плагинов
+    --tmDelayTime;
     return;
   }
 
   if(ipShow) {      // Пропускаем все, если выводится IP
-    showIp();
+    scrollip();
     return;
   }
 
-//  if(embui.timeProcessor.isDirtyTime()) {      // Светим --:--, если не подтянулось время с инета или не было настроено вручную
-  if(false){ // todo fix this missing method
+/*
+// todo fix this missing method
+  if(embui.timeProcessor.isDirtyTime()) {      // Светим --:--, если не подтянулось время с инета или не было настроено вручную
     auto d =  (showPoints) ? DisplayDigit().setG().setDot() : DisplayDigit().setG();
     const uint8_t rawBuffer[4] = {d, d, d, d};
     displayRawBytes(rawBuffer, 4);
-  }
-
-  else {
+  } else {
+*/
     const tm* t = localtime(embui.timeProcessor.now());  // Определяем для вывода времени 
-    char dispTime[5];            // Массив для сбора времени
-    sprintf (dispTime, myLamp.isTmZero() ? (showPoints ? "%02d.%02d" : "%02d%02d") : (showPoints ? "%01d.%02d" : "%01d%02d") , myLamp.isTm24() ? t->tm_hour : ((t->tm_hour > 12) ? t->tm_hour - 12 : t->tm_hour), t->tm_min);
+    char dispTime[6];            // Массив для сбора времени
+
+    sprintf (dispTime,
+              myLamp.isTmZero() ? (showPoints ? "%02d.%02d" : "%02d%02d") : (showPoints ? "%d.%02d" : "%d%02d"),
+              myLamp.isTm24() ? t->tm_hour : t->tm_hour % 12,
+              t->tm_min);
+
+    if (!showPoints){
+      colonOff();
+      clearScreen();
+    }
     myLamp.isTmZero() ? display(String(dispTime)) : ((t->tm_hour < 10 || (!myLamp.isTm24() && t->tm_hour > 12 && t->tm_hour < 22)) ? display(String(dispTime), true, false, 1) : display(String(dispTime)));
-  }
-  switchShowPoints();
+
+  showPoints=!showPoints;
 #endif
 }
 
@@ -110,9 +121,10 @@ void TMCLOCK::showBanner(){
 #endif
 
 
-void TMCLOCK::showIp(){
+void TMCLOCK::scrollip(){
   if (embui.sysData.wifi_sta) {
-    String ip = (String)F("IP.") + (String) WiFi.localIP().toString();
+    String ip(F("IP."));
+    ip += WiFi.localIP().toString();
     splitIp(ip, F("."), splittedIp);
     display(formatIp(splittedIp, ""))->scrollLeft(500, 4); // Запуск баннера (хоть и задержка указана 500, по факту она 1 сек), индекс 4 (выводит 4 цифры за раз)
   }

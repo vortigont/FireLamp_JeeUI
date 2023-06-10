@@ -41,11 +41,15 @@ typedef enum : uint8_t {AT_NONE=0, AT_FIRST, AT_SECOND, AT_THIRD, AT_FOURTH, AT_
 #ifdef MP3PLAYER
 #ifndef __MP3_PLAYER_H
 #define __MP3_PLAYER_H
+#ifdef ESP8266
 #include <SoftwareSerial.h>
+#endif
 #include "DFRobotDFPlayerMini.h"
 #include "ts.h"
 
-class MP3PLAYERDEVICE : protected DFRobotDFPlayerMini {
+#define DFPLAYER_DEFAULT_VOL  15
+
+class MP3PlayerDevice : protected DFRobotDFPlayerMini {
   private:
     union {
       struct {
@@ -64,20 +68,50 @@ class MP3PLAYERDEVICE : protected DFRobotDFPlayerMini {
       uint32_t flags;
     };
     Task *tPeriodic = nullptr; // периодический опрос плеера
-    uint8_t cur_volume = 1;
+    uint8_t cur_volume;
     uint16_t mp3filescount = 255; // кол-во файлов в каталоге MP3
     uint16_t nextAdv=0; // следующее воспроизводимое сообщение (произношение минут после часов)
     uint16_t cur_effnb=0; // текущий эффект
     uint16_t prev_effnb=0; // предыдущий эффект
-    SoftwareSerial mp3player;
+
+    bool internalsoftserial = false;        // if we are using internal softserial, than it need to be destructed on eol
+    Stream *mp3player;                      // serial port mapped stream object (hw or softserial)
+
     String soundfile; // хранилище пути/имени
     unsigned long restartTimeout = millis(); // таймаут воспроизведения имени эффекта
     void printSatusDetail();
     void playAdvertise(int filenb);
     void playFolder0(int filenb);
     void restartSound();
+
+    /**
+     * @brief initialize player
+     * 
+     */
+    void init();
+
   public:
-    MP3PLAYERDEVICE(const uint8_t rxPin, const uint8_t txPin); // конструктор
+    /**
+     * @brief Construct a new MP3PlayerDevice object
+     * для 8266 будет создан softwareserial port
+     * для esp32 будет подключен аппартный Serial2
+     * 
+     * @param rxPin 
+     * @param txPin 
+     */
+    MP3PlayerDevice(uint8_t rxPin, uint8_t txPin, uint8_t vol = DFPLAYER_DEFAULT_VOL);
+
+    /**
+     * @brief Construct a new MP3PlayerDevice object
+     * плюключить плеер на произвольный порт
+     * порт должен быть УЖЕ инициализирован на требуемую скорость/параметры
+     * @param port stream object
+     */
+    MP3PlayerDevice(Stream *port, uint8_t vol = DFPLAYER_DEFAULT_VOL); // конструктор для Stream
+
+    // d-tor
+    ~MP3PlayerDevice();
+
     uint16_t getCurPlayingNb() {return prev_effnb;} // вернуть предыдущий для смещения
     void setupplayer(uint16_t effnb, const String &_soundfile) {soundfile = _soundfile; cur_effnb=effnb;};
     bool isReady() {return ready;}

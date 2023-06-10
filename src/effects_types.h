@@ -76,6 +76,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 typedef const TProgmemRGBPalette16 PGMPalette;
 
 // все установленные биты для EFFFLAGS
+// 3rd bit must be '0'!
 #define SET_ALL_EFFFLAGS 3
 
 /**

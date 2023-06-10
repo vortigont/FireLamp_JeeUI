@@ -46,6 +46,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #endif
 
 #include "lamp.h"
+#include "actions.hpp"
 
 uint8_t currDynCtrl;        // текущий контрол, с которым работаем
 uint8_t currAction;         // идент текущей операции: 0 - ничего, 1 - крутим яркость, 2 - меняем эффекты, 3 - меняем динамические контролы
@@ -110,7 +111,7 @@ void encLoop() {
   if (inSettings) { // Время от времени выводим название контрола (в режиме "Настройки эффекта")
     resetTimers();
 #ifdef TM1637_CLOCK
-    tm1637.getSetDelay() = TM_TIME_DELAY;
+    if (tm1637) tm1637->getSetDelay() = TM_TIME_DELAY;
 #endif
     EVERY_N_SECONDS(10) {
       loops++;
@@ -171,7 +172,7 @@ void encLoop() {
       resetTimers();
       LOG(printf_P, PSTR("Enc: New effect number: %d\n"), currEffNum);
       myLamp.switcheffect(SW_SPECIFIC, myLamp.getFaderFlag(), currEffNum);
-      remote_action(RA::RA_EFFECT, String(myLamp.effects.getSelected()).c_str(), NULL);
+      run_action(ra::eff_switch, myLamp.effects.getSelected());
       encSendString(String(FPSTR(TINTF_00A)) + ": " + (currEffNum <= 255 ? String(currEffNum) : (String((byte)(currEffNum & 0xFF)) + "." + String((byte)(currEffNum >> 8) - 1U))), txtColor, true, txtDelay);
       done = true;
       currAction = 0;
@@ -386,16 +387,20 @@ void myClicks() {
   {
   case 1: // Включение\выключение лампы
     if (myLamp.isLampOn()) {
-      remote_action(RA::RA_OFF, NULL);
+      run_action(ra::off);
 #ifdef TM1637_CLOCK
-      tm1637.getSetDelay() = 1;
-      tm1637.display(String(F("Off")), true, false, 1);  // Выводим 
+      if (tm1637) {
+        tm1637->getSetDelay() = 1;
+        tm1637->display(String(F("Off")), true, false, 1);  // Выводим 
+      }
 #endif
     } else {
-      remote_action(RA::RA_ON, NULL);
+      run_action(ra::on);
 #ifdef TM1637_CLOCK
-      tm1637.getSetDelay() = 1;
-      tm1637.display(String(F("On")), true, false, 2);  // Выводим 
+      if (tm1637) {
+        tm1637->getSetDelay() = 1;
+        tm1637->display(String(F("On")), true, false, 2);  // Выводим 
+      }
 #endif
     }
     break;
@@ -500,13 +505,13 @@ void encSetEffect(int val) {
 
     if (val > 0) { // если курутили вперед по списку - скипим в том же направлении, если назад - в обратном
       anyValue++; 
-      if(anyValue >= myLamp.effects.getModeAmount()) // если ничего не нашли, - снова начинаем сначала
+      if(anyValue >= myLamp.effects.getEffectsListSize()) // если ничего не нашли, - снова начинаем сначала
         anyValue = 0;
     }
     else {
       anyValue--;
       if (anyValue == 0) // если ничего не нашли, - снова начинаем с конца
-        anyValue = myLamp.effects.getModeAmount()-1;
+        anyValue = myLamp.effects.getEffectsListSize()-1;
     }
   }
   currEffNum = myLamp.effects.realEffNumdByList(anyValue);
@@ -542,25 +547,29 @@ void encSetDynCtrl(int val) {
 
 void encDisplay(uint16_t value, String type) {
 #ifdef TM1637_CLOCK
-  tm1637.getSetDelay() = TM_TIME_DELAY;
-  tm1637.display(value, true, false, value >= 100 ? 1 : (value >= 10 ? 2 : 3) );  
-  tm1637.display(type);
+  if (tm1637) {
+    tm1637->getSetDelay() = TM_TIME_DELAY;
+    tm1637->display(value, true, false, value >= 100 ? 1 : (value >= 10 ? 2 : 3) );  
+    tm1637->display(type);
+  }
 #endif
 }
 /*
 void encDisplay(float value) {
 #ifdef TM1637_CLOCK
-  tm1637.getSetDelay() = TM_TIME_DELAY;
-  tm1637.clearScreen();
-  tm1637.display(value, false, true); //, true, false, value >= 100 ? 1 : (value >= 10 ? 2 : 3) );  
+  tm1637->getSetDelay() = TM_TIME_DELAY;
+  tm1637->clearScreen();
+  tm1637->display(value, false, true); //, true, false, value >= 100 ? 1 : (value >= 10 ? 2 : 3) );  
 #endif
 }
 */
 void encDisplay(String str) {
 #ifdef TM1637_CLOCK
-  tm1637.getSetDelay() = TM_TIME_DELAY;
-  tm1637.clearScreen();
-  tm1637.display(str);
+  if (tm1637) {
+    tm1637->getSetDelay() = TM_TIME_DELAY;
+    tm1637->clearScreen();
+    tm1637->display(str);
+  }
 #endif
 }
 
@@ -597,11 +606,11 @@ void encSendStringNumEff(String str, CRGB color) {
 
 void toggleDemo() {
   if (myLamp.getMode() == LAMPMODE::MODE_DEMO) {
-    remote_action(RA::RA_DEMO, "0", NULL); 
+    run_action(ra::demo, false);
     encSendString(String(F("Demo OFF")), txtColor, true, txtDelay);
   }
   else 
-    remote_action(RA::RA_DEMO, "1", NULL);
+    run_action(ra::demo, true);
 }
 
 void toggleGBright() {
@@ -630,7 +639,7 @@ void sendTime() {
 void sendIP() {
   remote_action(RA::RA_SEND_IP, NULL);
   #ifdef TM1637_CLOCK
-  tm1637.setIpShow();
+  if (tm1637) tm1637->showip();
   #endif
 }
 

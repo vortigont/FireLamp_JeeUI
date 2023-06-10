@@ -131,6 +131,7 @@ typedef union {
     struct {
         bool canBeSelected:1;
         bool isFavorite:1;
+        bool renamed:1;
     };
 } EFFFLAGS;
 
@@ -299,11 +300,13 @@ public:
         flags =base->flags; 
     }
 
-    bool canBeSelected(){ return flags.canBeSelected; }
+    bool canBeSelected() const { return flags.canBeSelected; }
     void canBeSelected(bool val){ flags.canBeSelected = val; }
-    bool isFavorite(){ return flags.isFavorite; }
+    bool isFavorite() const { return flags.isFavorite; }
     void isFavorite(bool val){ flags.isFavorite = val; }
-    uint8_t getMS(){ return ms; }
+    bool renamed() const { return flags.renamed; }
+    void renamed(bool v){ flags.renamed = v; }
+    uint8_t getMS() const { return ms; }
 };
 
 
@@ -535,13 +538,18 @@ public:
     // удалить конфиг переданного эффекта
     void removeConfig(const uint16_t nb, const char *folder=NULL);
 
-    // пересоздает индекс с текущего списка эффектов
-    void makeIndexFileFromList(const char *folder = NULL, bool forceRemove = true);
+    /**
+     * @brief пересоздает индекс из текущего списка эффектов
+     * 
+     * @param folder 
+     * @param forceRemove - удалить ВСЕ списки, в.т.ч. списки для выпадающих меню
+     */
+    void makeIndexFileFromList(const char *folder = NULL, bool forceRemove = false);
 
-    // пересоздает индекс с конфигов в ФС
-    //void makeIndexFileFromFS(const char *fromfolder = NULL, const char *tofolder = NULL);
-
-    byte getModeAmount() {return effects.size();}
+    /**
+     * @brief Get total number of effects in a list 
+     */
+    unsigned getEffectsListSize() const {return effects.size();}
 
     const String &getEffectName() const {return curEff.effectName;}
 
@@ -578,10 +586,8 @@ public:
     uint16_t getNext();
     // предыдущий эффект, кроме canBeSelected==false
     uint16_t getPrev();
-    // получить указанный
-    uint16_t getBy(uint16_t select){ return select;}
-    // перейти по предворительно выбранному
 
+    // перейти по предворительно выбранному
     void moveSelected();
 
     // перейти на количество шагов, к ближйшему большему (для DEMO)

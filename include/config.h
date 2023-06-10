@@ -62,15 +62,9 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 //#define DEBUG_TELNET_OUTPUT  (true)                         // true - отладочные сообщения будут выводиться в telnet вместо Serial порта (для удалённой отладки без подключения usb кабелем) // Deprecated
 //#define MIC_EFFECTS                                         // Включить использование микрофона для эффектов
 //#define MP3PLAYER                                           // Включить использование MP3 плеера (DF Player)
-//#define DISABLE_LED_BUILTIN                                 // Отключить встроенный в плату светодиод, если нужно чтобы светил - закомментировать строку
 //-----------------------------------
 #ifndef LANG_FILE
 #define LANG_FILE                  "text_res-RUS.h"           // Языковой файл по дефолту
-#endif
-
-// Disable built-in LED operations if there is no LED :)
-#ifndef LED_BUILTIN
-#define DISABLE_LED_BUILTIN
 #endif
 
 #ifdef RTC
@@ -81,21 +75,21 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
   #define RTC_SYNC_PERIOD     (24U)                         // Период синхронизации RTC c ntp (часы)
   #endif
   #if RTC_MODULE > (1U)                                     // Если выбран модуль с I2C (DS1307 или DS3231)
-    #ifdef TM1637_CLOCK                                     // Если есть дисплей TM1637, то можем использовать его пины для RTC (но RTC модуль работает не на всех пинах)
-      #ifndef pin_SW_SDA
-      #define pin_SW_SDA        (TM_CLK_PIN)                // Пин SDA RTC модуля подключаем к CLK пину дисплея
-      #endif
-      #ifndef pin_SW_SCL
-      #define pin_SW_SCL        (TM_DIO_PIN)                // Пин SCL RTC модуля подключаем к DIO пину дисплея
-      #endif
-    #else                                                   // Пины подбирать экспериментальным путем, точно работает на D2 и D4
+    //#ifdef TM1637_CLOCK                                     // Если есть дисплей TM1637, то можем использовать его пины для RTC (но RTC модуль работает не на всех пинах)
+    //  #ifndef pin_SW_SDA
+    //  #define pin_SW_SDA        (TM_CLK_PIN)                // Пин SDA RTC модуля подключаем к CLK пину дисплея
+    //  #endif
+    //  #ifndef pin_SW_SCL
+    //  #define pin_SW_SCL        (TM_DIO_PIN)                // Пин SCL RTC модуля подключаем к DIO пину дисплея
+    //  #endif
+    //#else                                                   // Пины подбирать экспериментальным путем, точно работает на D2 и D4
       #ifndef pin_SW_SDA
       #define pin_SW_SDA        (4)                         // Назначаем вывод для работы в качестве линии SDA программной шины I2C, D2 on wemos
       #endif
       #ifndef pin_SW_SCL
       #define pin_SW_SCL        (2)                         // Назначаем вывод для работы в качестве линии SCL программной шины I2C, D4 on wemos
       #endif
-    #endif
+    //#endif
     #if RTC_MODULE == (1U)                                  // Если выбран модуль DS1302.
       #ifndef pin_RST
       #define pin_RST             (15)                      // Назначаем вывод RST, D8 on wemos
@@ -111,11 +105,13 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #endif
 
 #ifndef MIC_PIN
-#ifdef ESP8266
-#define MIC_PIN               (A0)                          // ESP8266 Analog Pin ADC0 = A0
-#else
-#define MIC_PIN               (GPIO_NUM_34)                 // ESP32 Analog Pin
-#endif
+ #ifdef ESP8266
+  #define MIC_PIN               (A0)                          // ESP8266 Analog Pin ADC0 = A0
+ #elif defined CONFIG_IDF_TARGET_ESP32
+  #define MIC_PIN               (GPIO_NUM_34)                 // ESP32 Analog Pin
+ #elif defined CONFIG_IDF_TARGET_ESP32C3
+  #define MIC_PIN               (GPIO_NUM_2)                  // ESP32c3 Analog Pin
+ #endif
 #define FAST_ADC_READ                                       // использовать полный диапазон звуковых частот, если закомментировано, то будет до 5кГц, но сэкономит память и проще обсчитать...
 #endif
 
@@ -204,19 +200,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #define TEMP_DEST             (50U)
 #endif
 
-
-#ifndef MOSFET_PIN
-#define MOSFET_PIN            15                           // (D2) пин MOSFET транзистора   (D2) - может быть использован для управления питанием матрицы/ленты
-#endif
-/*#ifndef ALARM_PIN                                        
-#define ALARM_PIN             (D8)                         // пин состояния будильника (D0) - может быть использован для управления каким-либо внешним устройством на время работы будильника
-#endif*/
-#ifndef MOSFET_LEVEL
-#define MOSFET_LEVEL          (HIGH)                        // логический уровень, в который будет установлен пин MOSFET_PIN, когда матрица включена - HIGH или LOW
-#endif
-#ifndef ALARM_LEVEL
-#define ALARM_LEVEL           (HIGH)                        // логический уровень, в который будет установлен пин ALARM_PIN, когда "рассвет"/будильник включен
-#endif
 
 // LED Matrix organization/orientation
 #ifndef WIDTH
@@ -327,17 +310,9 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 //#define PRINT_ALARM_TIME                                    // нужен ли вывод времени для будильника, если пустая строка в событии будильника
 
 
-#ifdef TM1637_CLOCK
-#ifndef TM_CLK_PIN
-  #define TM_CLK_PIN 4      // D2
-#endif
-#ifndef TM_DIO_PIN
-  #define TM_DIO_PIN 5      // D1
-#endif
 #ifndef TM_BRIGHTNESS
   #define TM_BRIGHTNESS 7U //яркость дисплея, 0..7
 #endif
 #ifndef TM_SHOW_BANNER
   #define TM_SHOW_BANNER 0
-#endif
 #endif

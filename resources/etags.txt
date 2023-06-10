@@ -1,6 +1,0 @@
-https://github.com/vortigont/EmbUI_int/raw/main/resources/data.zip "60e016d78a88c47481a4493952b210f91e5d75a221b678c08c48484ba50e5858"
-https://github.com/vortigont/EmbUI_int/raw/main/resources/html/js/lib.js "3a7e5c48678b55feeaa4f4e0c92b17e421581ffde91f68a228eead9275348ad1"
-https://github.com/vortigont/EmbUI_int/raw/main/resources/html/js/maker.js "ad9e0451c039a186559aaa57999843717025e4392efb5ddebb3a4a8a3dce806e"
-https://github.com/vortigont/EmbUI_int/raw/main/resources/html/js/dyncss.js "52fe6ff15fdeca3467993c471144d1ee1d93e3c85539d087d6abb1f3f67b3b73"
-https://github.com/vortigont/EmbUI_int/raw/main/resources/html/js/i18next.js "351d712c58f48feb104c6c32342609bc7f54b15733fbc47f56e7d6131f7900f2"
-https://github.com/ajaxorg/ace/raw/master/doc/site/images/favicon.ico "ee57cd1b12185fcecf39a05c38d7fdd618591327dde1f9f6ee96246d0c78be6a"

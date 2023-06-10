@@ -62,7 +62,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 typedef enum _LAMPMODE {
   MODE_NORMAL = 0,
   MODE_DEMO,
-  MODE_WHITELAMP,
   MODE_RGBLAMP,
   MODE_ALARMCLOCK,
   MODE_OTA
@@ -77,8 +76,6 @@ typedef enum _EFFSWITCH {
     SW_DELAY,       // сохраненный (для фейдера)
     SW_SPECIFIC,    // переход на конкретный эффект по индексу/имени
     SW_NEXT_DEMO,    // следующий для ДЕМО, исключая отключенные
-    SW_WHITE_HI,
-    SW_WHITE_LO,
 } EFFSWITCH;
 
 // управление Тикером
@@ -127,7 +124,7 @@ struct {
     // ВНИМАНИЕ: порядок следования не менять, флаги не исключать, переводить в reserved!!! используется как битовый массив в конфиге!
     bool isMicOn:1; // глобальное включение/выключение микрофона
     uint8_t MP3eq:3; // вид эквалайзера
-    bool isShowSysMenu:1; // показывать ли системное меню
+    bool reserved18:1;      // бывшее системное меню
     bool isOnMP3:1; // включен ли плеер?
     bool isBtn:1; // включена ли кнопка?
     bool playName:1; // воспроизводить имя?
@@ -157,7 +154,7 @@ _LAMPFLAGS(){
     numInList = false;
     effHasMic = false;
     dRand = false;
-    isShowSysMenu = false;
+    reserved18 = false;
     isOnMP3 = false;
     isBtn = true;
     showName = false;
@@ -182,6 +179,7 @@ _LAMPFLAGS(){
 
 class LAMP {
     friend class LEDFader;
+    friend class ALARMTASK;         // будильник ходит сюда за MOSFET и AUX пином, todo: переписать будильник целиком
 private:
     LedFB &mx;              // LED matrix framebuffer object
     LedFB *sledsbuff = nullptr;    // вспомогательный буфер для слоя после эффектов
@@ -195,13 +193,17 @@ private:
 
     uint8_t txtOffset = 0; // смещение текста относительно края матрицы
     uint8_t globalBrightness = 127;     // глобальная яркость
+    uint16_t curLimit = CURRENT_LIMIT; // ограничение тока
     uint8_t fps = 0;        // fps counter
 #ifdef LAMP_DEBUG
     uint16_t avgfps = 0;    // avarage fps counter
 #endif
-    //int mqtt_int = DEFAULT_MQTTPUB_INTERVAL;
+
+    // GPIO's
     uint8_t bPin = BTN_PIN;        // пин кнопки
-    uint16_t curLimit = CURRENT_LIMIT; // ограничение тока
+    // это должен быть gpio_num_t в есп32, но пока нужна совместимость с 8266 держим инт
+    int8_t fet_gpio = GPIO_NUM_NC, aux_gpio = GPIO_NUM_NC;
+    int8_t fet_ll, aux_ll;
 
     LAMPMODE mode = LAMPMODE::MODE_NORMAL; // текущий режим
     LAMPMODE storedMode = LAMPMODE::MODE_NORMAL; // предыдущий режим
@@ -409,8 +411,6 @@ public:
 #endif
     bool isONMP3() {return flags.isOnMP3;}
     void setONMP3(bool flag) {flags.isOnMP3=flag;}
-    bool isShowSysMenu() {return flags.isShowSysMenu;}
-    void setIsShowSysMenu(bool flag) {flags.isShowSysMenu=flag;}
     void setMIRR_V(bool flag) {if (flag!=mx.cfg.vmirror()) { mx.cfg.vmirror(flag); mx.clear();} }
     void setMIRR_H(bool flag) {if (flag!=mx.cfg.hmirror()) { mx.cfg.hmirror(flag); mx.clear();} }
     void setTextMovingSpeed(uint8_t val) {tmStringStepTime.setInterval(val);}
@@ -552,9 +552,6 @@ public:
 };
 
 //-----------------------------------------------
-#ifdef MP3PLAYER
-extern MP3PLAYERDEVICE *mp3;
-#endif
 class ALARMTASK : public Task {
 private:
     CHSV dawnColorMinus[6];                                            // цвет "рассвета"
@@ -573,45 +570,11 @@ private:
     } ALARM_DATA;
     
     ALARM_DATA curAlarm;
-    LAMP *lamp;
+    LAMP *lamp;             // куда же без лампы, блин 8-0
     static ALARMTASK *alarmTask;
     ALARMTASK() = delete;
 
-    void initAlarm(char *value = nullptr){
-        DynamicJsonDocument doc(1024);
-        String buf = value;
-        buf.replace("'","\"");
-        deserializeJson(doc,buf);
-        curAlarm.alarmP = doc.containsKey(FPSTR(TCONST_alarmP)) ? doc[FPSTR(TCONST_alarmP)] : lamp->getAlarmP();
-        curAlarm.alarmT = doc.containsKey(FPSTR(TCONST_alarmT)) ? doc[FPSTR(TCONST_alarmT)] : lamp->getAlarmT();
-        curAlarm.msg = doc.containsKey(FPSTR(TCONST_msg)) ? doc[FPSTR(TCONST_msg)] : String("");
-        curAlarm.isLimitVol = doc.containsKey(FPSTR(TCONST_lV)) ? doc[FPSTR(TCONST_lV)].as<String>()=="1" : lamp->getLampSettings().limitAlarmVolume;
-        curAlarm.isStartSnd = doc.containsKey(FPSTR(TCONST_afS)) ? doc[FPSTR(TCONST_afS)].as<String>()=="1" : true;
-        curAlarm.type = (ALARM_SOUND_TYPE)(doc.containsKey(FPSTR(TCONST_sT)) ? doc[FPSTR(TCONST_sT)].as<uint8_t>() : lamp->getLampSettings().alarmSound);
-
-        lamp->setMode(LAMPMODE::MODE_ALARMCLOCK);
-        lamp->demoTimer(T_DISABLE);     // гасим Демо-таймер
-        #ifdef USE_STREAMING
-        if(!lamp->getLampSettings().isDirect || !lamp->getLampSettings().isStream)
-        #endif
-        lamp->effectsTimer(T_ENABLE);
-        #ifdef MP3PLAYER
-        if(curAlarm.isStartSnd){
-            mp3->setAlarm(true);
-            mp3->StartAlarmSoundAtVol(curAlarm.type, 1); // запуск звука будильника c минимальной громкости
-        } else {
-            mp3->setAlarm(false); // здесь будет стоп музыки
-        }
-        #endif
-
-        #if defined(ALARM_PIN) && defined(ALARM_LEVEL)                    // установка сигнала в пин, управляющий будильником
-        digitalWrite(ALARM_PIN, ALARM_LEVEL);
-        #endif
-
-        #if defined(MOSFET_PIN) && defined(MOSFET_LEVEL)                  // установка сигнала в пин, управляющий MOSFET транзистором, соответственно состоянию вкл/выкл матрицы
-        digitalWrite(MOSFET_PIN, MOSFET_LEVEL);
-        #endif
-    }
+    void initAlarm(char *value = nullptr);
 
 public:
     ALARMTASK(Scheduler* aS, LAMP *_l, char *value = nullptr)
@@ -624,133 +587,15 @@ public:
     }
 
     static inline ALARMTASK *getInstance() {return alarmTask;}
-    static void startAlarm(LAMP *_lamp, char *value = nullptr){
-        if(ALARMTASK::getInstance()){
-            ALARMTASK::getInstance()->stopAlarm(); // отмена предыдущего фейдера
-        }
-        new ALARMTASK(&ts, _lamp, value);
-    }
+    static void startAlarm(LAMP *_lamp, char *value = nullptr);
 
-    static void stopAlarm(){
-        if(!ALARMTASK::getInstance()) return;
-        LAMP *lamp = ALARMTASK::getInstance()->lamp;
-
-        lamp->getLampState().dawnFlag = false;
-        if (lamp->getMode() != LAMPMODE::MODE_ALARMCLOCK) return;
-
-        lamp->setMode(lamp->getStoredMode() != LAMPMODE::MODE_ALARMCLOCK ? lamp->getStoredMode() : LAMPMODE::MODE_NORMAL); // возвращаем предыдущий режим
-        #ifdef MP3PLAYER
-        mp3->setAlarm(false);
-        Task *_t = new Task(300, TASK_ONCE, nullptr, &ts, false, nullptr, [lamp](){
-            mp3->RestoreVolume(); // восстановить уровень громкости
-            if(lamp->isLampOn())
-                mp3->playEffect(mp3->getCurPlayingNb(),"");
-        }, true);
-        _t->enableDelayed();
-        ALARMTASK::getInstance()->curAlarm.clear(); // очистить сообщение выводимое на лампу в будильнике
-        #endif
-
-        #if defined(ALARM_PIN) && defined(ALARM_LEVEL)                    // установка сигнала в пин, управляющий будильником
-        digitalWrite(ALARM_PIN, !ALARM_LEVEL);
-        #endif
-
-        #if defined(MOSFET_PIN) && defined(MOSFET_LEVEL)                  // установка сигнала в пин, управляющий MOSFET транзистором, соответственно состоянию вкл/выкл матрицы
-        digitalWrite(MOSFET_PIN, lamp->isLampOn() ? MOSFET_LEVEL : !MOSFET_LEVEL);
-        #endif
-
-        LOG(printf_P, PSTR("Отключение будильника рассвет, ONflag=%d\n"), lamp->isLampOn());
-        //lamp->brightness(lamp->getNormalizedLampBrightness());
-        lamp->setBrightness(lamp->getLampBrightness(), false, false);
-        if (!lamp->isLampOn()) {
-            lamp->effectsTimer(T_DISABLE);
-            FastLED.clear();
-            FastLED.show();
-        } else if(lamp->getMode()==LAMPMODE::MODE_DEMO)
-            lamp->demoTimer(T_ENABLE);     // вернуть демо-таймер
-    }
+    static void stopAlarm();
 
     // обработчик будильника "рассвет"
-    static void alarmWorker(){
-        if(!ALARMTASK::getInstance()) return;
-        LAMP *lamp = ALARMTASK::getInstance()->lamp;
-
-        if (lamp->getMode() != LAMPMODE::MODE_ALARMCLOCK){
-            lamp->getLampState().dawnFlag = false;
-            return;
-        }
-
-        // проверка рассвета, первый вход в функцию
-        if (!lamp->getLampState().dawnFlag){
-            ALARMTASK::getInstance()->startmillis = millis();
-            memset(ALARMTASK::getInstance()->dawnColorMinus,0,sizeof(dawnColorMinus));
-            ALARMTASK::getInstance()->dawnCounter = 0;
-            FastLED.clear();
-            lamp->setBrightness(MAX_BRIGHTNESS, false, false);
-            // величина рассвета 0-255
-            int16_t dawnPosition = map((millis()-ALARMTASK::getInstance()->startmillis)/1000,0,ALARMTASK::getInstance()->curAlarm.alarmP*60,0,255); // 0...curAlarm.alarmP*60 секунд приведенные к 0...255
-            dawnPosition = constrain(dawnPosition, 0, 255);
-            ALARMTASK::getInstance()->dawnColorMinus[0] = CHSV(map(dawnPosition, 0, 255, 10, 35),
-                map(dawnPosition, 0, 255, 255, 170),
-                map(dawnPosition, 0, 255, 10, DAWN_BRIGHT)
-            );
-            lamp->getLampState().dawnFlag = true;
-        }
-
-        if (((millis() - ALARMTASK::getInstance()->startmillis) / 1000 > (((uint32_t)(ALARMTASK::getInstance()->curAlarm.alarmP) + ALARMTASK::getInstance()->curAlarm.alarmT) * 60UL+30U))) {
-            // рассвет закончился
-            stopAlarm();
-            return;
-        }
-
-        //EVERY_N_SECONDS(1){
-        if (embui.timeProcessor.seconds00()) {
-            CRGB letterColor;
-            hsv2rgb_rainbow(ALARMTASK::getInstance()->dawnColorMinus[0], letterColor); // конвертация цвета времени, с учетом текущей точки рассвета
-            if(!ALARMTASK::getInstance()->curAlarm.msg.isEmpty() && ALARMTASK::getInstance()->curAlarm.msg != "-") {
-                lamp->sendStringToLamp(ALARMTASK::getInstance()->curAlarm.msg.c_str(), letterColor, true);
-            } else {
-    #ifdef PRINT_ALARM_TIME
-    #ifdef MP3PLAYER
-            if(mp3->isAlarm()) // если отложенный звук будильника, то время тоже не выводим, т.к. может быть включено озвучивание
-    #endif
-                if(ALARMTASK::getInstance()->curAlarm.msg != "-") // отключение вывода по спец. символу "минус"
-                    lamp->sendStringToLamp(String(F("%TM")).c_str(), letterColor, true);
-    #endif
-            }
-        } else if(!(localtime(TimeProcessor::now())->tm_sec%6)){ // проверка рассвета каждые 6 секунд, кроме 0 секунды
-            // величина рассвета 0-255
-            int16_t dawnPosition = map((millis()-ALARMTASK::getInstance()->startmillis)/1000,0,ALARMTASK::getInstance()->curAlarm.alarmP*60,0,255); // 0...300 секунд приведенные к 0...255
-            dawnPosition = constrain(dawnPosition, 0, 255);
-
-    #ifdef MP3PLAYER
-            //LOG(println, dawnPosition);
-            if(ALARMTASK::getInstance()->curAlarm.isStartSnd)
-                mp3->setTempVolume(map(dawnPosition,0,255,1,(ALARMTASK::getInstance()->curAlarm.isLimitVol ? mp3->getVolume() : 30))); // наростание громкости
-            else if(dawnPosition==255 && !ALARMTASK::getInstance()->curAlarm.isStartSnd && !mp3->isAlarm()){
-                mp3->setAlarm(true);
-                mp3->StartAlarmSoundAtVol(ALARMTASK::getInstance()->curAlarm.type, mp3->getVolume()); // запуск звука будильника
-            }
-    #endif
-            
-            ALARMTASK::getInstance()->dawnColorMinus[0] = CHSV(map(dawnPosition, 0, 255, 10, 35),
-            map(dawnPosition, 0, 255, 255, 170),
-            map(dawnPosition, 0, 255, 10, DAWN_BRIGHT)
-            );
-            ALARMTASK::getInstance()->dawnCounter++; //=dawnCounter%(sizeof(dawnColorMinus)/sizeof(CHSV))+1;
-
-            for (uint8_t i = sizeof(dawnColorMinus) / sizeof(CHSV) - 1; i > 0U; i--){
-                ALARMTASK::getInstance()->dawnColorMinus[i]=((ALARMTASK::getInstance()->dawnCounter > i)?ALARMTASK::getInstance()->dawnColorMinus[i-1]:ALARMTASK::getInstance()->dawnColorMinus[i]);
-            }
-        }
-        //}
-
-        int cnt{0};
-        for (auto i = mx.begin(); i != mx.end(); ++i) {
-            *i = ALARMTASK::getInstance()->dawnColorMinus[cnt%(sizeof(dawnColorMinus)/sizeof(CHSV))];
-            ++cnt;
-        }
-
-    }
+    static void alarmWorker();
 };
 
 extern LAMP myLamp; // Объект лампы
+#ifdef MP3PLAYER
+extern MP3PlayerDevice *mp3;
+#endif

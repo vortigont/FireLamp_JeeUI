@@ -1,5 +1,6 @@
 #include "main.h"
 #include "buttons.h"
+#include "actions.hpp"
 
 const char *btn_get_desc(BA action){
 	switch (action) {
@@ -28,6 +29,7 @@ Task *tReverseTimeout = nullptr; // задержка переключения н
 bool Button::activate(btnflags& flg, bool reverse){
 		uint8_t newval;
 		RA ract = RA_UNKNOWN;
+		ra act = ra::end;		// for transition period, let's make it a new var
 		bool ret = false;
 		if (reverse) flags.direction = !flags.direction;
 		switch (action) {
@@ -77,29 +79,35 @@ bool Button::activate(btnflags& flg, bool reverse){
 				remote_action(RA::RA_CONTROL, (String(FPSTR(TCONST_dynCtrl))+"2").c_str(), String(newval).c_str(), NULL);
 				return true;
 			}
-			case BA_ON: ract = RA_ON; break;
-			case BA_OFF: ract = RA_OFF; break;
-			case BA_DEMO: ract = RA_DEMO; break;
+			default:;
+		}
+
+		if((flg.onetime&2)) return ret; // если не установлен бит сработавшего однократного события - выходим
+
+		// проверяем дальше
+		switch (action) {
+			case BA_ON: run_action(ra::on); return ret;
+			case BA_OFF: run_action(ra::off); return ret;
+			case BA_DEMO: run_action(ra::demo, !param.isEmpty()); return ret;
 #ifdef AUX_PIN
 			case BA_AUX_TOGLE: ract = RA_AUX_TOGLE; break;
 #endif
-			case BA_EFF_NEXT: ract = RA_EFF_NEXT; break;
-			case BA_EFF_PREV: ract = RA_EFF_PREV; break;
+			case BA_EFF_NEXT: run_action(ra::eff_next); return ret;
+			case BA_EFF_PREV: run_action(ra::eff_prev); return ret;
 			case BA_SEND_TIME: ract = RA_SEND_TIME; break;
 			case BA_SEND_IP: ract = RA_SEND_IP; break;
-			case BA_WHITE_HI: flags.direction=true; ract = RA_WHITE_HI; break;
-			case BA_WHITE_LO: flags.direction=false; ract = RA_WHITE_LO; break;
 			case BA_WIFI_REC: ract = RA_WIFI_REC; break;
-			case BA_EFFECT: ract = RA_EFFECT; break;
+			case BA_EFFECT: { run_action(ra::eff_switch, param.toInt()); return ret; }
 			default:;
 		}
-		if(!(flg.onetime&2)){ // только если не установлен бит сработавшего однократного события
-			LOG(printf_P,PSTR("Button send action: %d\n"), ract);
-			if(param.isEmpty())
-				remote_action(ract, NULL);
-			else
-				remote_action(ract, param.c_str(), NULL);
-		}
+
+		LOG(printf_P,PSTR("Button send action: %d\n"), act != ra::end ? static_cast<int>(act) : static_cast<int>(ract));
+		if (act != ra::end)	return ret;	// уже отработали, выходим
+
+		if(param.isEmpty())
+			remote_action(ract, NULL);
+		else
+			remote_action(ract, param.c_str(), NULL);
 		return ret;
 }
 
@@ -118,7 +126,7 @@ String Button::getName(){
 			buffer.concat(F(" Click - "));
 		}
 
-		buffer.concat(String(btn_get_desc(action)));
+		buffer.concat(FPSTR(btn_get_desc(action)));
 
 		return buffer;
 };
