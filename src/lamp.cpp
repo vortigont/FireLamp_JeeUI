@@ -1168,7 +1168,7 @@ void LAMP::showWarning(
   uint16_t blinkHalfPeriod,                                 /* продолжительность одной вспышки в миллисекундах (полупериод) */
   uint8_t warnType,                                         /* тип предупреждения 0...3                                     */
   bool forcerestart,                                        /* перезапускать, если пришло повторное событие предупреждения  */
-  const char *msg)                                          /* сообщение для вывода на матрицу                              */
+  const String &msg)                                        /* сообщение для вывода на матрицу                              */
 {
   CRGB warn_color = CRGB::Black;
   uint32_t warn_duration = 1000;
@@ -1199,16 +1199,14 @@ void LAMP::showWarning(
       warningTask->cancel();
     }
 
-    warningTask = new WarningTask(warn_color, warn_duration, warn_blinkHalfPeriod, msg, blinkHalfPeriod, TASK_ONCE
-    //, std::bind(&LAMP::showWarning, this, warn_color, warn_duration, warn_blinkHalfPeriod, (uint8_t)lampState.warnType, !lampState.isWarning, msg)
-    ,[this](){
-      WarningTask *cur = (WarningTask *)ts.getCurrentTask();
-      showWarning(cur->getWarn_color(),cur->getWarn_duration(),cur->getWarn_blinkHalfPeriod(),(uint8_t)lampState.warnType, !lampState.isWarning, cur->getData());
-    }
-    , &ts, false, nullptr, nullptr, true);
+    warningTask = new WarningTask(warn_color, warn_duration, warn_blinkHalfPeriod, msg.c_str(), blinkHalfPeriod, TASK_ONCE,
+      [this](){
+        WarningTask *cur = (WarningTask *)ts.getCurrentTask();
+        showWarning(cur->getWarn_color(),cur->getWarn_duration(),cur->getWarn_blinkHalfPeriod(),(uint8_t)lampState.warnType, !lampState.isWarning, cur->getData());
+      },
+      &ts, false, nullptr, nullptr, true);
     warningTask->enableDelayed();
-  }
-  else {
+  } else {
     lampState.isWarning = false;
     if(warningTask)
       warningTask->cancel();

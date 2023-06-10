@@ -40,15 +40,15 @@
 #include "lamp.h"
 
 
-void run_action(ra action){
+void run_action(ra act){
   StaticJsonDocument<ACTION_PARAM_SIZE> jdoc;
   JsonObject obj = jdoc.to<JsonObject>();
-  run_action(action, &obj);
+  run_action(act, &obj);
 }
 
-void run_action(ra action, JsonObject *data){
-  LOG(printf_P, PSTR("run_action: %d: "), static_cast<int>(action));
-  switch (action){
+void run_action(ra act, JsonObject *data){
+  LOG(printf_P, PSTR("run_action: %d\n"), static_cast<int>(act));
+  switch (act){
     // demo mode On/Off
     case ra::demo : {
       (*data)[FPSTR(TCONST_Demo)] = (*data)[FPSTR(TCONST_value)];   // change key name
@@ -109,7 +109,7 @@ void run_action(ra action, JsonObject *data){
     case ra::mp3_prev : {
       if(!myLamp.isONMP3()) return;
       int offset = (*data)[FPSTR(TCONST_value)];
-      if ( action == ra::mp3_prev) offset *= -1;
+      if ( act == ra::mp3_prev) offset *= -1;
       mp3->playEffect(mp3->getCurPlayingNb() + offset, "");
       return; // no need to execute any UI action
     }
@@ -124,21 +124,19 @@ void run_action(ra action, JsonObject *data){
     // turn lamp ON
     case ra::on : {
       (*data)[FPSTR(TCONST_ONflag)] = true;
-      embui.post(*data, true);
-      return;
+      break;
     }
 
     // turn lamp OFF
     case ra::off : {
       myLamp.stopRGB(); // выключение RGB-режима
       (*data)[FPSTR(TCONST_ONflag)] = false;
-      embui.post(*data, true);
-      return;
+      break;
     }
 
     // send text to lamp
     case ra::sendtext : {
-      if (!data || !(*data)[TCONST_value]) return;
+      if (!(*data)[TCONST_value]) return;
       String tmpStr( embui.param(FPSTR(TCONST_txtColor)) );
       tmpStr.replace(F("#"),F("0x"));
       CRGB::HTMLColorCode color = (CRGB::HTMLColorCode)strtol(tmpStr.c_str(), NULL, 0);
@@ -146,6 +144,26 @@ void run_action(ra action, JsonObject *data){
       return;
     }
 
+    // show warning on a lamp
+    case ra::warn : {
+      if ( !(*data).containsKey(TCONST_event) ) return;   // invalid object
+
+      // here we receive JsonArray with alert params
+      JsonArray arr = (*data)[TCONST_event];
+      if (arr.size() < 3 ) return;    // some malformed warning config
+
+      // color
+      String tmpStr(arr[0].as<const char*>());
+      tmpStr.replace(F("#"), F("0x"));
+      uint32_t col = strtol(tmpStr.c_str(), NULL, 0);
+      myLamp.showWarning(col, // color
+             arr[1],          // duration
+             arr[2],          // period
+             arr[3],          // type
+             arr[4],          // overwrite
+             arr[5]);         // text message
+      break; 
+    }
     default:
       return;
   }

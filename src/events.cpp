@@ -1,6 +1,9 @@
 
 #include "events.h"
 #include <LittleFS.h>
+#include "interface.h"
+#include "actions.hpp"
+#include "extra_tasks.h"
 
 void EVENT_MANAGER::check_event(DEV_EVENT *event)
 {
@@ -181,4 +184,93 @@ void EVENT_MANAGER::saveConfig(const char *cfg)
         configFile.close();
         LOG(println, F("\nSave events config"));
     }
+}
+
+// обработка эвентов лампы
+void event_worker(DEV_EVENT *event){
+    RA action = RA_UNKNOWN;
+    LOG(printf_P, PSTR("%s - %s\n"), ((DEV_EVENT *)event)->getName().c_str(), embui.timeProcessor.getFormattedShortTime().c_str());
+
+    switch (event->getEvent()) {
+    case EVENT_TYPE::ON : {
+        run_action(ra::on);
+        if (!event->getMessage().isEmpty()){
+            // вывести текст на лампу через 3 секунды
+            StringTask *t = new StringTask(event->getMessage().c_str(), 3 * TASK_SECOND, TASK_ONCE, nullptr, &ts, false, nullptr,  [](){
+                StringTask *cur = (StringTask *)ts.getCurrentTask();
+                remote_action(RA::RA_SEND_TEXT, cur->getData(), NULL);
+            }, true);
+            t->enableDelayed();
+        }
+        return;
+    }
+    case EVENT_TYPE::OFF: return run_action(ra::off);
+    case EVENT_TYPE::DEMO: return run_action(ra::demo, event->getMessage()=="1");       // not sure what is the content of this String
+    case EVENT_TYPE::ALARM: action = RA_ALARM; break;
+    //case EVENT_TYPE::LAMP_CONFIG_LOAD: action = RA_LAMP_CONFIG; break;                // была какая-то загрузка стороннего конфига embui
+#ifdef ESP_USE_BUTTON
+    case EVENT_TYPE::BUTTONS_CONFIG_LOAD:  action = RA_BUTTONS_CONFIG; break;
+#endif
+    //case EVENT_TYPE::EFF_CONFIG_LOAD:  action = RA_EFF_CONFIG; break;                 // была какая-то мутная загрузка индекса эффектов из папки /backup/idx
+    case EVENT_TYPE::EVENTS_CONFIG_LOAD: action = RA_EVENTS_CONFIG; break;
+    case EVENT_TYPE::SEND_TEXT:  action = RA_SEND_TEXT; break;
+    case EVENT_TYPE::SEND_TIME:  action = RA_SEND_TIME; break;
+#ifdef AUX_PIN
+    case EVENT_TYPE::AUX_ON: action = RA_AUX_ON; break;
+    case EVENT_TYPE::AUX_OFF: action = RA_AUX_OFF; break;
+    case EVENT_TYPE::AUX_TOGGLE: action = RA_AUX_TOGLE; break;
+#endif
+    case EVENT_TYPE::PIN_STATE: {
+        if ((event->getMessage()).isEmpty()) break;
+
+        String tmpS = event->getMessage();
+        tmpS.replace(F("'"),F("\"")); // так делать не красиво, но шопаделаешь...
+        StaticJsonDocument<256> doc;
+        deserializeJson(doc, tmpS);
+        JsonArray arr = doc.as<JsonArray>();
+        for (size_t i = 0; i < arr.size(); i++) {
+            JsonObject item = arr[i];
+            uint8_t pin = item[FPSTR(TCONST_pin)].as<int>();
+            String action = item[FPSTR(TCONST_act)].as<String>();
+            pinMode(pin, OUTPUT);
+            switch(action.c_str()[0]){
+                case 'H':
+                    digitalWrite(pin, HIGH); // LOW
+                    break;
+                case 'L':
+                    digitalWrite(pin, LOW); // LOW
+                    break;
+                case 'T':
+                    digitalWrite(pin, !digitalRead(pin)); // inverse
+                    break;
+                default:
+                    break;
+            }
+        }
+        break;
+    }
+    case EVENT_TYPE::SET_EFFECT: { run_action(ra::eff_switch, event->getMessage().toInt()); return; }       // switch effect
+    case EVENT_TYPE::SET_WARNING: {
+        /*
+        WARN: this does not work reliably due to inability to properly deserialize nested json configuration
+        from event file. msg that comes from the WebUI has unescaped quotes.
+        TODO: rework ugly save routine
+        */
+        StaticJsonDocument<256> msg;
+        Serial.println(event->getMessage());
+        DeserializationError error = deserializeJson(msg, event->getMessage());
+        if (!error) return;
+        StaticJsonDocument<64> ev;
+        ev[TCONST_event].shallowCopy(msg);
+        JsonObject j = ev.as<JsonObject>();
+        run_action(ra::warn, &j);
+        return;
+    }
+    case EVENT_TYPE::SET_GLOBAL_BRIGHT: action = RA_GLOBAL_BRIGHT; break;
+    case EVENT_TYPE::SET_WHITE_HI: action = RA_WHITE_HI; break;
+    case EVENT_TYPE::SET_WHITE_LO: action = RA_WHITE_LO; break;
+    default:;
+    }
+
+    remote_action(action, event->getMessage().c_str(), NULL);
 }

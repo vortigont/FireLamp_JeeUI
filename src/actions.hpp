@@ -68,26 +68,27 @@ enum class ra:uint8_t {
   mp3_prev,           // MP3: play previous track?
   mp3_vol,            // MP3: set volume
   sendtext,           // send text to lamp
+  warn,               // show warning 
   end                 // not an action actually
 };
 
 /**
- * @brief execute action with optional parameters
+ * @brief execute action with optional JsonObject data
  * it could be either no parameters,
  * a generic data["value"] param
- * or a set of key:val pairs in *data that could be injected into EmbUI 'post' action loolup method
+ * or a set of key:val pairs in *data that could be injected into EmbUI 'post' action lookup method
  * 
  * @param action enum of various actions
  * @param data a ref to json obj
  */
-void run_action(ra action, JsonObject *data);
+void run_action(ra act, JsonObject *data);
 
 /**
  * @brief a stub for really simple actions with no params
  * NOTE: will pass empty JsonObject to run_action()
  * @param action 
  */
-void run_action(ra action);
+void run_action(ra act);
 
 /**
  * @brief execute action with a single parameter
@@ -97,11 +98,11 @@ void run_action(ra action);
  * @param param parameter is added into JsonDocument and passed to run_action handler
  */
 template<typename T>
-void run_action(ra action, T param) {
+void run_action(ra act, const T& param) {
   StaticJsonDocument<ACTION_PARAM_SIZE> jdoc;
   JsonObject obj = jdoc.to<JsonObject>();
   obj[TCONST_value] = param;
-  run_action(action, &obj);
+  run_action(act, &obj);
 }
 
 /**
@@ -114,11 +115,11 @@ void run_action(ra action, T param) {
  * @return false 
  */
 template<typename T>
-void run_action(ra action, const String &key, T val) {
+void run_action(ra act, const String &key, const T& val) {
   StaticJsonDocument<ACTION_PARAM_SIZE> jdoc;
   JsonObject obj = jdoc.to<JsonObject>();
   obj[key] = val;
-  run_action(action, &obj);
+  run_action(act, &obj);
 }
 
 

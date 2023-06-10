@@ -261,7 +261,19 @@ public:
     // c-tor
     LAMP(LedFB &m);
 
-    void showWarning(const CRGB &color, uint32_t duration, uint16_t blinkHalfPeriod, uint8_t warnType=0, bool forcerestart=true, const char *msg = nullptr); // Неблокирующая мигалка
+    /**
+     * @brief show a warning message on a matrix
+     * display blinks with specific color
+     * and scrolls a text message
+     * 
+     * @param color - цвет вспышки
+     * @param duration - продолжительность отображения предупреждения (общее время)
+     * @param blinkHalfPeriod - продолжительность одной вспышки в миллисекундах (полупериод)
+     * @param warnType - тип предупреждения 0...3; 0 - цвет, 1 - цвет + счетчик,  1 - цвет + счетчик обратным цветом,  3 - счетчик цветом
+     * @param forcerestart - перезапускать, если пришло повторное событие предупреждения
+     * @param msg - сообщение для вывода на матрицу
+     */
+    void showWarning(const CRGB &color, uint32_t duration, uint16_t blinkHalfPeriod, uint8_t warnType=0, bool forcerestart=true, const String &msg = String()); // Неблокирующая мигалка
     void warningHelper();
 
     void lamp_init(const uint16_t curlimit);       // первичная инициализация Лампы

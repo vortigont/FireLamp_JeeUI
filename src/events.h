@@ -262,4 +262,7 @@ public:
     void saveConfig(const char *cfg = nullptr);
 };
 
+// обработка эвентов лампы
+void event_worker(DEV_EVENT *);
+
 #endif

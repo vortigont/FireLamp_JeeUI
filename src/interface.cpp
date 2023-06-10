@@ -3379,80 +3379,6 @@ void sync_parameters(){
     LOG(println, F("sync_parameters() done"));
 }
 
-// обработка эвентов лампы
-void event_worker(DEV_EVENT *event){
-    RA action = RA_UNKNOWN;
-    LOG(printf_P, PSTR("%s - %s\n"), ((DEV_EVENT *)event)->getName().c_str(), embui.timeProcessor.getFormattedShortTime().c_str());
-
-    switch (event->getEvent()) {
-    case EVENT_TYPE::ON : {
-        run_action(ra::on);
-        if (!event->getMessage().isEmpty()){
-            // вывести текст на лампу через 3 секунды
-            StringTask *t = new StringTask(event->getMessage().c_str(), 3 * TASK_SECOND, TASK_ONCE, nullptr, &ts, false, nullptr,  [](){
-                StringTask *cur = (StringTask *)ts.getCurrentTask();
-                remote_action(RA::RA_SEND_TEXT, cur->getData(), NULL);
-            }, true);
-            t->enableDelayed();
-        }
-        return;
-    }
-    case EVENT_TYPE::OFF: return run_action(ra::off);
-    case EVENT_TYPE::DEMO: return run_action(ra::demo, event->getMessage()=="1");       // not sure what is the content of this String
-    case EVENT_TYPE::ALARM: action = RA_ALARM; break;
-    //case EVENT_TYPE::LAMP_CONFIG_LOAD: action = RA_LAMP_CONFIG; break;                // была какая-то загрузка стороннего конфига embui
-#ifdef ESP_USE_BUTTON
-    case EVENT_TYPE::BUTTONS_CONFIG_LOAD:  action = RA_BUTTONS_CONFIG; break;
-#endif
-    //case EVENT_TYPE::EFF_CONFIG_LOAD:  action = RA_EFF_CONFIG; break;                 // была какая-то мутная загрузка индекса эффектов из папки /backup/idx
-    case EVENT_TYPE::EVENTS_CONFIG_LOAD: action = RA_EVENTS_CONFIG; break;
-    case EVENT_TYPE::SEND_TEXT:  action = RA_SEND_TEXT; break;
-    case EVENT_TYPE::SEND_TIME:  action = RA_SEND_TIME; break;
-#ifdef AUX_PIN
-    case EVENT_TYPE::AUX_ON: action = RA_AUX_ON; break;
-    case EVENT_TYPE::AUX_OFF: action = RA_AUX_OFF; break;
-    case EVENT_TYPE::AUX_TOGGLE: action = RA_AUX_TOGLE; break;
-#endif
-    case EVENT_TYPE::PIN_STATE: {
-        if ((event->getMessage()).isEmpty()) break;
-
-        String tmpS = event->getMessage();
-        tmpS.replace(F("'"),F("\"")); // так делать не красиво, но шопаделаешь...
-        StaticJsonDocument<256> doc;
-        deserializeJson(doc, tmpS);
-        JsonArray arr = doc.as<JsonArray>();
-        for (size_t i = 0; i < arr.size(); i++) {
-            JsonObject item = arr[i];
-            uint8_t pin = item[FPSTR(TCONST_pin)].as<int>();
-            String action = item[FPSTR(TCONST_act)].as<String>();
-            pinMode(pin, OUTPUT);
-            switch(action.c_str()[0]){
-                case 'H':
-                    digitalWrite(pin, HIGH); // LOW
-                    break;
-                case 'L':
-                    digitalWrite(pin, LOW); // LOW
-                    break;
-                case 'T':
-                    digitalWrite(pin, !digitalRead(pin)); // inverse
-                    break;
-                default:
-                    break;
-            }
-        }
-        break;
-    }
-    case EVENT_TYPE::SET_EFFECT: { run_action(ra::eff_switch, event->getMessage().toInt()); return; }       // switch effect
-    case EVENT_TYPE::SET_WARNING: action = RA_WARNING; break;
-    case EVENT_TYPE::SET_GLOBAL_BRIGHT: action = RA_GLOBAL_BRIGHT; break;
-    case EVENT_TYPE::SET_WHITE_HI: action = RA_WHITE_HI; break;
-    case EVENT_TYPE::SET_WHITE_LO: action = RA_WHITE_LO; break;
-    default:;
-    }
-
-    remote_action(action, event->getMessage().c_str(), NULL);
-}
-
 void show_progress(Interface *interf, JsonObject *data){
     if (!interf) return;
     interf->json_frame_interface();
@@ -3568,8 +3494,11 @@ void remote_action(RA action, ...){
             ALARMTASK::stopAlarm();
             break;
         case RA::RA_REBOOT: {
-                remote_action(RA::RA_WARNING, F("[16711680,3000,500]"), NULL);
-                Task *t = new Task(3 * TASK_SECOND, TASK_ONCE, nullptr, &ts, false, nullptr, [](){ ESP.restart(); });
+                StaticJsonDocument<256> warn;
+                deserializeJson(doc, F("{\"event\":[\"#ec21ee\",3000,500,true,\"Reboot...\"]}"));
+                JsonObject j = doc.as<JsonObject>();
+                run_action(ra::warn, &j);
+                Task *t = new Task(5 * TASK_SECOND, TASK_ONCE, nullptr, &ts, false, nullptr, [](){ ESP.restart(); });
                 t->enableDelayed();
             }
             break;
@@ -3609,34 +3538,6 @@ not sure what this WiFi settings is doing here, WiFi is managed via EmbUI
             }
             break;
         }
-        case RA::RA_WARNING: {
-            String str=value;
-            String msg;
-            DynamicJsonDocument doc(256);
-            deserializeJson(doc,str);
-            JsonArray arr = doc.as<JsonArray>();
-            uint32_t col=CRGB::Red, dur=1000, per=250, type=0;
-
-            for (size_t i = 0; i < arr.size(); i++) {
-                switch(i){
-                    case 0: {
-                        String tmpStr = arr[i];
-                        tmpStr.replace(F("#"), F("0x"));
-                        long val = strtol(tmpStr.c_str(), NULL, 0);
-                        col = val;
-                        break;
-                    }
-                    case 1: dur = arr[i]; break;
-                    case 2: per = arr[i]; break;
-                    case 3: type = arr[i]; break;
-                    case 4: msg = arr[i].as<String>(); break;
-                    default : break;
-                }
-			}
-            myLamp.showWarning(col,dur,per,type,true,msg.isEmpty()?(const char *)nullptr:msg.c_str());
-            break; 
-        }
-
         case RA::RA_DRAW: {
             String str=value;
             DynamicJsonDocument doc(256);
@@ -3885,7 +3786,12 @@ String httpCallback(const String &param, const String &value, bool isset){
         else if (upperParam == FPSTR(CMD_ALARM)) action = RA_ALARM;
         else if (upperParam == FPSTR(CMD_G_BRIGHT)) action = RA_GLOBAL_BRIGHT;
         else if (upperParam == FPSTR(CMD_G_BRTPCT)) { action = RA_BRIGHT_PCT; remote_action(action, value.c_str(), NULL); return result; }
-        else if (upperParam == FPSTR(CMD_WARNING)) action = RA_WARNING;
+        else if (upperParam == FPSTR(CMD_WARNING)) {
+            StaticJsonDocument<256> obj;
+            deserializeJson(obj, value);
+            run_action(ra::warn, obj);
+            return result;
+        }
         else if (upperParam == FPSTR(CMD_DRAW)) action = RA_DRAW;
         else if (upperParam == FPSTR(CMD_FILL_MATRIX)) action = RA_FILLMATRIX;
         else if (upperParam == FPSTR(CMD_RGB)) action = RA_RGB;
