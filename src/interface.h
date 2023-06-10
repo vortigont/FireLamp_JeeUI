@@ -26,7 +26,6 @@ typedef enum _remote_action {
 //    RA_EFF_RAND,
     RA_BRIGHT_NF,
     RA_CONTROL,
-    RA_MIC,
 //#ifdef MP3PLAYER
 //    RA_MP3_PREV,
 //    RA_MP3_NEXT,
@@ -35,7 +34,8 @@ typedef enum _remote_action {
 //    RA_MP3_VOL,
 //#endif
 #ifdef MIC_EFFECTS
-    RA_MICONOFF,
+//    RA_MIC,
+//    RA_MICONOFF,
 #endif
 //    RA_EFFECT,          // called on effect change events
     RA_SEND_TEXT,
@@ -80,3 +80,7 @@ void show_effects_config_param(Interface *interf, JsonObject *data);
  * здесь выводится ПОЛНЫЙ сипсок эффектов
  */
 void block_effects_config(Interface *interf, JsonObject *data);
+
+#ifdef MIC_EFFECTS
+void show_settings_mic(Interface *interf, JsonObject *data);
+#endif

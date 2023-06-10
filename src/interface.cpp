@@ -125,9 +125,6 @@ void show_settings_enc(Interface *interf, JsonObject *data);
 void page_gpiocfg(Interface *interf, JsonObject *data);
 void show_settings_other(Interface *interf, JsonObject *data);
 void section_sys_settings_frame(Interface *interf, JsonObject *data);
-#ifdef MIC_EFFECTS
-void show_settings_mic(Interface *interf, JsonObject *data);
-#endif
 void show_settings_butt(Interface *interf, JsonObject *data);
 
 /**
@@ -3479,14 +3476,13 @@ void remote_action(RA action, ...){
             obj[FPSTR(TCONST_force)] = true;
             set_effects_dynCtrl(nullptr, &obj);
             break;
+/*
 #ifdef MIC_EFFECTS
-        case RA::RA_MIC:
-            CALL_INTF_OBJ(show_settings_mic);
-            break;
         case RA::RA_MICONOFF:
             CALL_INTF(FPSTR(TCONST_Mic), value, set_micflag);
             break;
 #endif
+*/
         case RA::RA_ALARM:
             ALARMTASK::startAlarm(&myLamp, value);
             break;
@@ -3803,7 +3799,7 @@ String httpCallback(const String &param, const String &value, bool isset){
         if (upperParam == FPSTR(CMD_MP3_VOLUME)){ run_action(ra::mp3_vol, value.toInt()); return result; }
 #endif
 #ifdef MIC_EFFECTS
-        else if (upperParam == FPSTR(CMD_MIC)) action = RA_MICONOFF;
+        else if (upperParam == FPSTR(CMD_MIC)) { run_action(ra::miconoff, FPSTR(TCONST_Mic), value.toInt() ? true : false ); return result; }
 #endif
         //else if (upperParam.startsWith(FPSTR(TCONST_dynCtrl))) { action = RA_CONTROL; remote_action(action, upperParam.c_str(), value.c_str(), NULL); return result; }
         else if (upperParam == FPSTR(CMD_EFF_CONFIG)) {

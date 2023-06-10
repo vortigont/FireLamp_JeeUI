@@ -62,6 +62,7 @@ enum class ra:uint8_t {
   eff_prev,           // switch to previous effect
   eff_rnd,            // switch to random effect
   eff_switch,         // switch effect to specific number
+  miconoff,           // Mike: On/Off
   mp3_eff,            // MP3: play sound for specific effect
   mp3_enable,         // MP3: enable/disable mp3 sounds
   mp3_next,           // MP3: play next track?

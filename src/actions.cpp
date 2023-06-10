@@ -91,6 +91,13 @@ void run_action(ra act, JsonObject *data){
       (*data)[FPSTR(TCONST_eff_run)] = (*data)[FPSTR(TCONST_value)];        // change key name and inject data to EmbUI action selector
       break;
     }
+#ifdef MIC_EFFECTS
+    // simple actions with provided key:value
+    case ra::miconoff : {
+      (*data)[FPSTR(TCONST_Mic)] = (*data)[FPSTR(TCONST_value)];   // change key name
+      break;
+    }
+#endif  //#ifdef MIC_EFFECTS
 #ifdef MP3PLAYER
     //MP3: play specific track
     case ra::mp3_eff : {

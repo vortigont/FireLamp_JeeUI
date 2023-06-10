@@ -876,7 +876,11 @@ void LAMP::micHandler()
       delete mw;
       mw = nullptr;
 
-      remote_action(RA::RA_MIC, NULL);
+      DynamicJsonDocument doc(512);
+      JsonObject obj = doc.to<JsonObject>();
+
+      //remote_action(RA::RA_MIC, NULL);
+      CALL_INTF_OBJ(show_settings_mic);
     }
   }
 }

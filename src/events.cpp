@@ -4,6 +4,7 @@
 #include "interface.h"
 #include "actions.hpp"
 #include "extra_tasks.h"
+#include "embuifs.hpp"
 
 void EVENT_MANAGER::check_event(DEV_EVENT *event)
 {
@@ -98,41 +99,13 @@ void EVENT_MANAGER::clear_events()
     events->clear();
 }
 
-/**
- *  метод загружает и пробует десериализовать джейсон из файла в предоставленный документ,
- *  возвращает true если загрузка и десериализация прошла успешно
- *  @param doc - DynamicJsonDocument куда будет загружен джейсон
- *  @param jsonfile - файл, для загрузки
- */
-bool EVENT_MANAGER::deserializeFile(DynamicJsonDocument& doc, const char* filepath){
-  if (!filepath || !*filepath)
-    return false;
-
-  File jfile = LittleFS.open(filepath, "r");
-  DeserializationError error;
-  if (jfile){
-    error = deserializeJson(doc, jfile);
-    jfile.close();
-  } else {
-    return false;
-  }
-
-  if (error) {
-    LOG(printf_P, PSTR("File: failed to load json file: %s, deserializeJson error: "), filepath);
-    LOG(println, error.code());
-    return false;
-  }
-  //LOG(printf_P,PSTR("File: %s deserialization took %d ms\n"), filepath, millis() - timest);
-  return true;
-}
-
 void EVENT_MANAGER::loadConfig(const char *cfg)
 {
     if(LittleFS.begin()){
         clear_events();
         DynamicJsonDocument doc(4096);
         String filename = cfg ? String(cfg) : String(F("/events_config.json"));
-        if (!deserializeFile(doc, filename.c_str())){
+        if (!embuifs::deserializeFile(doc, filename.c_str())){
             LOG(print, F("deserializeJson error: "));
             LOG(println, filename);
             return;
