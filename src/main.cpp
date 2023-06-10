@@ -62,6 +62,9 @@ MP3PLAYERDEVICE *mp3 = nullptr;
 TMCLOCK tm1637(TM_CLK_PIN, TM_DIO_PIN);
 #endif
 
+// forward declarations
+// mDNS announce for WLED app
+void wled_announce();
 
 
 void setup() {
@@ -110,6 +113,8 @@ void setup() {
     digitalWrite(LED_BUILTIN, LOW); // "душим" светодиод nodeMCU32
 #endif
 #endif
+    // Add mDNS handler for WLED app
+    embui.set_callback(CallBack::attach, CallBack::STAGotIP, wled_announce);
 
     // EmbUI
     embui.begin(); // Инициализируем EmbUI фреймворк - загружаем конфиг, запускаем WiFi и все зависимые от него службы
@@ -120,7 +125,8 @@ void setup() {
 #endif
     myLamp.effects.setEffSortType((SORT_TYPE)embui.param(FPSTR(TCONST_effSort)).toInt()); // сортировка должна быть определена до заполнения
     myLamp.effects.initDefault(); // если вызывать из конструктора, то не забыть о том, что нужно инициализировать Serial.begin(115200); иначе ничего не увидеть!
-    myLamp.events.loadConfig(); // << -- SDK3.0 будет падение, разобраться позже
+    myLamp.events.loadConfig();
+
 #ifdef RTC
     rtc.init();
 #endif
@@ -166,6 +172,7 @@ void setup() {
 #ifdef ENCODER
   enc_setup();
 #endif
+
     LOG(println, F("setup() done"));
 }   // End setup()
 
@@ -333,3 +340,7 @@ void sendData(){
 }
 #endif
 
+void wled_announce(){
+    MDNS.addService("wled", "tcp", 80);
+    MDNS.addServiceTxt("wled", "tcp", "mac", (const char*)embui.mc);
+}
