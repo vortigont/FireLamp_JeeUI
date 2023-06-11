@@ -41,6 +41,20 @@
 
 
 void run_action(ra act){
+  // here we catch some really simple action that do not need reflecting any data to other components
+  switch (act){
+    case ra::reboot : {
+      // make warning signaling
+      StaticJsonDocument<128> warn;
+      deserializeJson(warn, F("{\"event\":[\"#ec21ee\",3000,500,true,\"Reboot...\"]}"));
+      JsonObject j = warn.as<JsonObject>();
+      run_action(ra::warn, &j);
+      Task *t = new Task(5 * TASK_SECOND, TASK_ONCE, nullptr, &ts, false, nullptr, [](){ ESP.restart(); });
+      t->enableDelayed();
+      return;
+    }
+    default:;
+  }
   StaticJsonDocument<ACTION_PARAM_SIZE> jdoc;
   JsonObject obj = jdoc.to<JsonObject>();
   run_action(act, &obj);

@@ -7,8 +7,8 @@ typedef enum _remote_action {
 //    RA_OFF,
 //    RA_DEMO,
 //    RA_DEMO_NEXT,       // trigger effect change in Demo mode
-    RA_ALARM,
-    RA_ALARM_OFF,
+//    RA_ALARM,
+//    RA_ALARM_OFF,
 //    RA_LAMP_CONFIG,     // load another config for embui
 //    RA_EFF_CONFIG,
 #ifdef ESP_USE_BUTTON
@@ -20,7 +20,7 @@ typedef enum _remote_action {
     RA_AUX_OFF,
     RA_AUX_TOGLE,
 #endif
-    RA_REBOOT,
+//    RA_REBOOT,
 //    RA_EFF_NEXT,
 //    RA_EFF_PREV,
 //    RA_EFF_RAND,

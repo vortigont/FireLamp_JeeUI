@@ -564,49 +564,6 @@ public:
 };
 
 //-----------------------------------------------
-class ALARMTASK : public Task {
-private:
-    CHSV dawnColorMinus[6];                                            // цвет "рассвета"
-    uint8_t dawnCounter = 0;                                           // счётчик первых шагов будильника
-    time_t startmillis;
-
-    typedef struct {
-        uint8_t alarmP;
-        uint8_t alarmT;
-        String msg;
-        bool isStartSnd;
-        bool isLimitVol;
-        ALARM_SOUND_TYPE type;
-
-        void clear() { alarmP = 5; alarmT = 5; msg=""; isStartSnd = true; isLimitVol = true; type = ALARM_SOUND_TYPE::AT_RANDOM; }
-    } ALARM_DATA;
-    
-    ALARM_DATA curAlarm;
-    LAMP *lamp;             // куда же без лампы, блин 8-0
-    static ALARMTASK *alarmTask;
-    ALARMTASK() = delete;
-
-    void initAlarm(char *value = nullptr);
-
-public:
-    ALARMTASK(Scheduler* aS, LAMP *_l, char *value = nullptr)
-        : Task(TASK_SECOND, TASK_FOREVER, [](){ ALARMTASK::alarmWorker(); }, aS, false, nullptr,[](){ alarmTask = nullptr;}, true)
-    {
-        lamp = _l;
-        alarmTask = this;
-        initAlarm(value);
-        enableDelayed();
-    }
-
-    static inline ALARMTASK *getInstance() {return alarmTask;}
-    static void startAlarm(LAMP *_lamp, char *value = nullptr);
-
-    static void stopAlarm();
-
-    // обработчик будильника "рассвет"
-    static void alarmWorker();
-};
-
 extern LAMP myLamp; // Объект лампы
 #ifdef MP3PLAYER
 extern MP3PlayerDevice *mp3;

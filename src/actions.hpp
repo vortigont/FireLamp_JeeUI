@@ -68,6 +68,7 @@ enum class ra:uint8_t {
   mp3_next,           // MP3: play next track?
   mp3_prev,           // MP3: play previous track?
   mp3_vol,            // MP3: set volume
+  reboot,             // reboot MCU
   sendtext,           // send text to lamp
   warn,               // show warning 
   end                 // not an action actually

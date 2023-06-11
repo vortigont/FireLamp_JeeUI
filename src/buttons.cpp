@@ -1,6 +1,7 @@
 #include "main.h"
 #include "buttons.h"
 #include "actions.hpp"
+#include "alarm.h"
 
 const char *btn_get_desc(BA action){
 	switch (action) {

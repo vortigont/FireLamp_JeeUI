@@ -41,6 +41,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "ui.h"
 #include "extra_tasks.h"
 #include "events.h"
+#include "alarm.h"
 
 #ifdef TM1637_CLOCK
     #include "tm.h"				// Подключаем функции
@@ -2483,7 +2484,7 @@ void set_gpios(Interface *interf, JsonObject *data){
     // save resulting config
     embuifs::serialize2file(doc, FPSTR(TCONST_fcfg_gpio));
 
-    remote_action(RA::RA_REBOOT, NULL, NULL);   // reboot in 5 sec
+    run_action(ra::reboot);         // reboot in 5 sec
     basicui::section_settings_frame(interf, nullptr);
 }
 
@@ -3476,35 +3477,6 @@ void remote_action(RA action, ...){
             obj[FPSTR(TCONST_force)] = true;
             set_effects_dynCtrl(nullptr, &obj);
             break;
-/*
-#ifdef MIC_EFFECTS
-        case RA::RA_MICONOFF:
-            CALL_INTF(FPSTR(TCONST_Mic), value, set_micflag);
-            break;
-#endif
-*/
-        case RA::RA_ALARM:
-            ALARMTASK::startAlarm(&myLamp, value);
-            break;
-        case RA::RA_ALARM_OFF:
-            ALARMTASK::stopAlarm();
-            break;
-        case RA::RA_REBOOT: {
-                StaticJsonDocument<256> warn;
-                deserializeJson(doc, F("{\"event\":[\"#ec21ee\",3000,500,true,\"Reboot...\"]}"));
-                JsonObject j = doc.as<JsonObject>();
-                run_action(ra::warn, &j);
-                Task *t = new Task(5 * TASK_SECOND, TASK_ONCE, nullptr, &ts, false, nullptr, [](){ ESP.restart(); });
-                t->enableDelayed();
-            }
-            break;
-/*
-not sure what this WiFi settings is doing here, WiFi is managed via EmbUI
-        case RA::RA_WIFI_REC:
-            //CALL_INTF(FPSTR(TINTF_028), FPSTR(TCONST_STA), basicui::set_settings_wifi);
-            CALL_INTF(FPSTR(TINTF_028), FPSTR(TCONST_STA), set_settings_wifi);
-            break;
-*/
 #ifdef ESP_USE_BUTTON
         case RA::RA_BUTTONS_CONFIG:
             if (value && *value) {
@@ -3762,7 +3734,7 @@ String httpCallback(const String &param, const String &value, bool isset){
         if (upperParam == FPSTR(CMD_MOVE_NEXT)) { run_action(ra::eff_next); return result; }
         if (upperParam == FPSTR(CMD_MOVE_PREV)) { run_action(ra::eff_prev); return result; }
         if (upperParam == FPSTR(CMD_MOVE_RND))  { run_action(ra::eff_rnd);  return result; }
-        if (upperParam == FPSTR(CMD_REBOOT)) { action = RA_REBOOT;  remote_action(action, value.c_str(), NULL); }
+        if (upperParam == FPSTR(CMD_REBOOT)) { run_action(ra::reboot); return result; }
         else if (upperParam == FPSTR(CMD_ALARM)) { result = myLamp.isAlarm() ; }
         else if (upperParam == FPSTR(CMD_MATRIX)) { char buf[32]; sprintf_P(buf, PSTR("[%d,%d]"), mx.cfg.w(), mx.cfg.h());  result = buf; }
 #ifdef EMBUI_USE_MQTT        
@@ -3778,8 +3750,8 @@ String httpCallback(const String &param, const String &value, bool isset){
         if (upperParam == FPSTR(CMD_MOVE_NEXT)) { run_action(ra::eff_next); return result; }
         if (upperParam == FPSTR(CMD_MOVE_PREV)) { run_action(ra::eff_prev); return result; }
         if (upperParam == FPSTR(CMD_MOVE_RND))  { run_action(ra::eff_rnd);  return result; }
-        if (upperParam == FPSTR(CMD_REBOOT)) action = RA_REBOOT;
-        else if (upperParam == FPSTR(CMD_ALARM)) action = RA_ALARM;
+        if (upperParam == FPSTR(CMD_REBOOT)) { run_action(ra::reboot); return result; }
+        else if (upperParam == FPSTR(CMD_ALARM)) { ALARMTASK::startAlarm(&myLamp, value.c_str()); }
         else if (upperParam == FPSTR(CMD_G_BRIGHT)) action = RA_GLOBAL_BRIGHT;
         else if (upperParam == FPSTR(CMD_G_BRTPCT)) { action = RA_BRIGHT_PCT; remote_action(action, value.c_str(), NULL); return result; }
         else if (upperParam == FPSTR(CMD_WARNING)) {

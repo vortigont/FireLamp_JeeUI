@@ -35,12 +35,12 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
    <https://www.gnu.org/licenses/>.)
 */
 
-#include "lamp.h"
+#include "alarm.h"
 
-void ALARMTASK::initAlarm(char *value){
-    DynamicJsonDocument doc(1024);
-    String buf = value;
+void ALARMTASK::initAlarm(const char *value){
+    String buf(value);
     buf.replace("'","\"");
+    DynamicJsonDocument doc(1024);
     deserializeJson(doc,buf);
     curAlarm.alarmP = doc.containsKey(FPSTR(TCONST_alarmP)) ? doc[FPSTR(TCONST_alarmP)] : lamp->getAlarmP();
     curAlarm.alarmT = doc.containsKey(FPSTR(TCONST_alarmT)) ? doc[FPSTR(TCONST_alarmT)] : lamp->getAlarmT();
@@ -74,9 +74,9 @@ void ALARMTASK::initAlarm(char *value){
     }
 }
 
-void ALARMTASK::startAlarm(LAMP *_lamp, char *value){
+void ALARMTASK::startAlarm(LAMP *_lamp, const char *value){
     if(ALARMTASK::getInstance()){
-        ALARMTASK::getInstance()->stopAlarm(); // отмена предыдущего фейдера
+        ALARMTASK::getInstance()->stopAlarm();      // отменяем предыдущий будильник
     }
     new ALARMTASK(&ts, _lamp, value);
 }
