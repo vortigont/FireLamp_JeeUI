@@ -36,12 +36,11 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 */
 
 #include "micFFT.h"
+#include "log.h"
 #ifdef ESP8266
 #include "user_interface.h"
 ADC_MODE(ADC_TOUT);
 #endif
-#include "misc.h"
-
 
 void MicWorker::read_data()
 {

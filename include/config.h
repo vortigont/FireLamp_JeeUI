@@ -45,7 +45,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 
 #pragma once
-
 #if defined CUSTOM_CFG
 # include CUSTOM_CFG
 #else
@@ -55,6 +54,8 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #  endif
 # endif
 #endif
+// required for esp32 IDF macro
+#include "Arduino.h"
 
 //-----------------------------------
 //#define ESP_USE_BUTTON                                      // если строка не закомментирована, должна быть подключена кнопка (иначе ESP может регистрировать "фантомные" нажатия и некорректно устанавливать яркость)

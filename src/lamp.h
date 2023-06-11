@@ -37,7 +37,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 #pragma once
 
-#include "misc.h"
 #include "config.h" // подключаем эффекты, там же их настройки
 #include "effectworker.h"
 #include "events.h"
@@ -47,6 +46,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "timerminim.hpp"
 #include "char_const.h"
 #include "mp3player.h"
+#include "log.h"
 
 #ifdef MIC_EFFECTS
 #include "micFFT.h"
@@ -58,6 +58,10 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 #define MAX_BRIGHTNESS            (255U)                    // стандартная максимальная яркость (255)
 
+// a stub for 8266
+#ifndef GPIO_NUM_NC
+#define GPIO_NUM_NC   -1
+#endif
 
 typedef enum _LAMPMODE {
   MODE_NORMAL = 0,

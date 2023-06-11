@@ -39,6 +39,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "char_const.h"
 #include "filehelpers.hpp"
 #include "embuifs.hpp"
+#include "log.h"
 
 #define DYNJSON_SIZE_EFF_CFG   2048
 

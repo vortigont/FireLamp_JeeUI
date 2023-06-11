@@ -47,6 +47,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 #include "lamp.h"
 #include "actions.hpp"
+#include "alarm.h"
 
 uint8_t currDynCtrl;        // текущий контрол, с которым работаем
 uint8_t currAction;         // идент текущей операции: 0 - ничего, 1 - крутим яркость, 2 - меняем эффекты, 3 - меняем динамические контролы
@@ -620,7 +621,7 @@ void toggleGBright() {
 
 void toggleMic() {
 #ifdef MIC_EFFECTS
-  remote_action(RA::RA_MICONOFF, myLamp.isMicOnOff() ? "0" : "1", NULL);
+  run_action(ra::miconoff, myLamp.isMicOnOff());
   encSendString(String(FPSTR(TINTF_021)) + String(myLamp.isMicOnOff() ? F(": ON") : F(": OFF")), txtColor, true, txtDelay);
 #endif
 }

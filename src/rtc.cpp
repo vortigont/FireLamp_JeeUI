@@ -1,6 +1,7 @@
 #include "rtc.h"
 #ifdef RTC
 #include "EmbUI.h"
+#include "log.h"
 #ifdef TM1637_CLOCK
 #include "tm.h"
 #endif

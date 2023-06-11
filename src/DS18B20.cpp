@@ -35,7 +35,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
    <https://www.gnu.org/licenses/>.)
 */
 
-#include "misc.h"
 #include "config.h"
 #ifdef DS18B20
 #include "microDS18B20.h"

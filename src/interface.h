@@ -1,5 +1,6 @@
 #pragma once
 #include "EmbUI.h"
+#include "log.h"
 
 typedef enum _remote_action {
     RA_UNKNOWN,

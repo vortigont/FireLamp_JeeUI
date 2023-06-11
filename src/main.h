@@ -43,15 +43,11 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #define register // keyword 'register' is banned with c++17
 #endif
 
-#include "EmbUI.h"
-
-#ifdef PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED
-#include <umm_malloc/umm_malloc.h>
-#include <umm_malloc/umm_heap_select.h>
-#endif
-
 #include "config.h"
+#include "EmbUI.h"
+#include "log.h"
 #include "lamp.h"
+
 #ifdef ESP_USE_BUTTON
 #include "buttons.h"
 #endif
