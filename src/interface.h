@@ -50,7 +50,7 @@ typedef enum _remote_action {
     RA_GLOBAL_BRIGHT,
     RA_BRIGHT_PCT,      // get/set brightness in percents
 //    RA_WARNING,
-    RA_DRAW,
+//    RA_DRAW,
     RA_FILLMATRIX,
     RA_RGB
 } RA;

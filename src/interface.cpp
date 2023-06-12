@@ -1279,21 +1279,47 @@ void block_drawing(Interface *interf, JsonObject *data){
     interf->json_section_end();
 }
 
+/**
+ * @brief UI Draw on screen function
+ * 
+ */
 void set_drawing(Interface *interf, JsonObject *data){
     if (!data) return;
 
-    String value = (*data)[FPSTR(TCONST_drawing_ctrl)];
-    if((*data).containsKey(FPSTR(TCONST_drawing_ctrl)) && value!=F("null"))
-        remote_action(RA_DRAW, value.c_str(), NULL);
-    else {
+    if(!(*data)[FPSTR(TCONST_drawing_ctrl)].isNull()){
+        StaticJsonDocument<128>doc;
+        deserializeJson(doc, (*data)[FPSTR(TCONST_drawing_ctrl)].as<const char*>());
+        JsonArray arr = doc.as<JsonArray>();
+        if (!arr.size()) return;
+        CRGB col=CRGB::White;
+        uint16_t x=mx.cfg.w()/2U, y=mx.cfg.h()/2U;
+
+        for (size_t i = 0; i < arr.size(); i++) {
+            switch(i){
+                case 0: {
+                    String tmpStr = arr[i];
+                    if (tmpStr.isEmpty()) break;
+                    tmpStr.replace(F("#"), F("0x"));
+                    unsigned long val = strtol(tmpStr.c_str(), NULL, 0);
+                    col = val;
+                    break;
+                }
+                case 1: x = arr[i]; break;
+                case 2: y = arr[i]; break;
+                default : break;
+            }
+        }
+        //LOG(printf_P, PSTR("Draw: x:%d, y:%d col:%s\n"), x, y, value);
+        myLamp.writeDrawBuf(col,x,y);
+    } else {       // screen fill
         String key(FPSTR(TCONST_drawing_ctrl));
         key += F("_fill");
-        if((*data).containsKey(key)){
-            value = (*data)[key].as<String>();
-            remote_action(RA_FILLMATRIX, value.c_str(), NULL);
+        if((*data)[key]){
+            remote_action(RA_FILLMATRIX, (*data)[key].as<const char*>(), NULL);
         }
     }
 }
+
 void set_clear(Interface *interf, JsonObject *data){
     if (!data) return;
     remote_action(RA_FILLMATRIX, "#000000", NULL);
@@ -3045,7 +3071,7 @@ void create_parameters(){
     embui.section_handle_add(FPSTR(TCONST_edit_lamp_config), edit_lamp_config);
 
     embui.section_handle_add(FPSTR(TCONST_edit_text_config), set_text_config);
-    embui.section_handle_add(FPSTR(TCONST_drawing_ctrl_), set_drawing);
+    embui.section_handle_add(FPSTR(TCONST_drawing_), set_drawing);
     embui.section_handle_add(FPSTR(TCONST_drawClear), set_clear);
     embui.section_handle_add(FPSTR(TCONST_drawbuff), set_drawflag);
 
@@ -3484,32 +3510,6 @@ void remote_action(RA action, ...){
             }
             break;
         }
-        case RA::RA_DRAW: {
-            String str=value;
-            DynamicJsonDocument doc(256);
-            deserializeJson(doc,str);
-            JsonArray arr = doc.as<JsonArray>();
-            CRGB col=CRGB::White;
-            uint16_t x=mx.cfg.w()/2U, y=mx.cfg.h()/2U;
-
-            for (size_t i = 0; i < arr.size(); i++) {
-                switch(i){
-                    case 0: {
-                        String tmpStr = arr[i];
-                        tmpStr.replace(F("#"), F("0x"));
-                        unsigned long val = strtol(tmpStr.c_str(), NULL, 0);
-                        LOG(printf_P, PSTR("%s:%ld\n"), tmpStr.c_str(), val);
-                        col = val;
-                        break;
-                    }
-                    case 1: x = arr[i]; break;
-                    case 2: y = arr[i]; break;
-                    default : break;
-                }
-			}
-            myLamp.writeDrawBuf(col,x,y);
-            break; 
-        }
         case RA::RA_RGB: {
             String tmpStr = value;
             if(tmpStr.indexOf(",")!=-1){
@@ -3540,6 +3540,7 @@ void remote_action(RA action, ...){
             myLamp.startRGB(color);
             break; 
         }
+//
         case RA::RA_FILLMATRIX: {
             String tmpStr = value;
             if(tmpStr.indexOf(",")!=-1){
@@ -3571,7 +3572,7 @@ void remote_action(RA action, ...){
             myLamp.fillDrawBuf(color);
             break; 
         }
-
+//
         case RA::RA_SEND_IP:
             myLamp.sendString(WiFi.localIP().toString().c_str(), CRGB::White);
 #ifdef TM1637_CLOCK
@@ -3721,7 +3722,7 @@ String httpCallback(const String &param, const String &value, bool isset){
             run_action(ra::warn, obj);
             return result;
         }
-        else if (upperParam == FPSTR(CMD_DRAW)) action = RA_DRAW;
+//        else if (upperParam == FPSTR(CMD_DRAW)) action = RA_DRAW;             // у меня не идей зачем нужно попиксельное рисование через единичные http запросы
         else if (upperParam == FPSTR(CMD_FILL_MATRIX)) action = RA_FILLMATRIX;
         else if (upperParam == FPSTR(CMD_RGB)) action = RA_RGB;
 #ifdef MP3PLAYER
