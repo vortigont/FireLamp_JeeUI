@@ -224,21 +224,6 @@ void resetAutoTimers(bool isEffects=false) // сброс таймера демо
         myLamp.effects.autoSaveConfig();
 }
 
-#ifdef AUX_PIN
-void AUX_toggle(bool key)
-{
-    if (key){
-        digitalWrite(AUX_PIN, AUX_LEVEL);
-        embui.var(FPSTR(TCONST_AUX), 1);
-    }
-    else
-    {
-        digitalWrite(AUX_PIN, !AUX_LEVEL);
-        embui.var(FPSTR(TCONST_AUX), false);
-    }
-}
-#endif
-
 /**
  * @brief when action is called to display a specific page
  * this selector picks and calls correspoding method
@@ -871,9 +856,7 @@ void block_main_flags(Interface *interf, JsonObject *data){
 #ifdef MIC_EFFECTS
     interf->checkbox(FPSTR(TCONST_Mic), myLamp.isMicOnOff(), FPSTR(TINTF_012), true);
 #endif
-#ifdef AUX_PIN
     interf->checkbox(FPSTR(TCONST_AUX), FPSTR(TCONST_AUX), true);
-#endif
 #ifdef ESP_USE_BUTTON
     interf->checkbox(FPSTR(TCONST_Btn), myButtons->isButtonOn(), FPSTR(TINTF_013), true);
 #endif
@@ -1048,14 +1031,17 @@ void set_demoflag(Interface *interf, JsonObject *data){
 #endif
 }
 
-#ifdef AUX_PIN
 void set_auxflag(Interface *interf, JsonObject *data){
     if (!data) return;
-    if (((*data)[FPSTR(TCONST_AUX)]) != (digitalRead(AUX_PIN) == AUX_LEVEL ? true : false)) {
-        AUX_toggle(!(digitalRead(AUX_PIN) == AUX_LEVEL ? true : false));
+    int pin = embui.paramVariant(FPSTR(TCONST_aux_gpio));
+    if ( pin == -1) return;
+    bool state = ( digitalRead(pin) == embui.paramVariant(FPSTR(TCONST_aux_ll)) );
+
+    if (((*data)[FPSTR(TCONST_AUX)]) != state) {
+        digitalWrite(pin, !state);
     }
 }
-#endif
+
 
 void set_gbrflag(Interface *interf, JsonObject *data){
     if (!data) return;
@@ -1965,12 +1951,9 @@ void show_event_conf(Interface *interf, JsonObject *data){
             interf->option(EVENT_TYPE::SET_GLOBAL_BRIGHT, FPSTR(TINTF_00C));
             interf->option(EVENT_TYPE::SET_WHITE_LO, FPSTR(TINTF_0EA));
             interf->option(EVENT_TYPE::SET_WHITE_HI, FPSTR(TINTF_0EB));
-
-#ifdef AUX_PIN
             interf->option(EVENT_TYPE::AUX_ON, FPSTR(TINTF_06A));
             interf->option(EVENT_TYPE::AUX_OFF, FPSTR(TINTF_06B));
             interf->option(EVENT_TYPE::AUX_TOGGLE, FPSTR(TINTF_06C));
-#endif
             interf->option(EVENT_TYPE::LAMP_CONFIG_LOAD, FPSTR(TINTF_064));
             interf->option(EVENT_TYPE::EFF_CONFIG_LOAD, FPSTR(TINTF_065));
 #ifdef ESP_USE_BUTTON
@@ -2951,9 +2934,7 @@ void create_parameters(){
 */
     embui.var_create(FPSTR(TCONST_fileName), F("cfg1.json")); // "fileName"
 
-#ifdef AUX_PIN
     embui.var_create(FPSTR(TCONST_AUX), false);
-#endif
     embui.var_create(FPSTR(TCONST_msg), F(""));
     embui.var_create(FPSTR(TCONST_txtColor), FPSTR(TCONST__ffffff));
     embui.var_create(FPSTR(TCONST_txtBfade), FADETOBLACKVALUE);
@@ -3046,9 +3027,7 @@ void create_parameters(){
     embui.section_handle_add(FPSTR(TCONST_ONflag), set_onflag);
     embui.section_handle_add(FPSTR(TCONST_Demo), set_demoflag);
     embui.section_handle_add(FPSTR(TCONST_GBR), set_gbrflag);
-#ifdef AUX_PIN
     embui.section_handle_add(FPSTR(TCONST_AUX), set_auxflag);
-#endif
     embui.section_handle_add(FPSTR(TCONST_drawing), section_drawing_frame);
 #ifdef USE_STREAMING    
     embui.section_handle_add(FPSTR(TCONST_streaming), section_streaming_frame);
@@ -3242,9 +3221,8 @@ void sync_parameters(){
     t->enableDelayed();
 #endif
 
-#ifdef AUX_PIN
-    CALL_SETTER(FPSTR(TCONST_AUX), embui.paramVariant(FPSTR(TCONST_AUX)), set_auxflag);
-#endif
+    // not sure if reapply for AUX is required here
+    //CALL_SETTER(FPSTR(TCONST_AUX), embui.paramVariant(FPSTR(TCONST_AUX)), set_auxflag);
 
     myLamp.setClearingFlag(tmp.isEffClearing);
 
@@ -3604,24 +3582,7 @@ void remote_action(RA action, ...){
             myLamp.periodicTimeHandle(value, true);
             //myLamp.sendString(String(F("%TM")).c_str(), CRGB::Green);
             break;
-#ifdef AUX_PIN
-        case RA::RA_AUX_ON:
-            obj[FPSTR(TCONST_AUX)] = true;
-            set_auxflag(nullptr, &obj);
-            CALL_INTF(FPSTR(TCONST_AUX), true, set_auxflag);
-            break;
-        case RA::RA_AUX_OFF:
-            obj[FPSTR(TCONST_AUX)] = false;
-            set_auxflag(nullptr, &obj);
-            CALL_INTF(FPSTR(TCONST_AUX), false, set_auxflag);
-            break;
-        case RA::RA_AUX_TOGLE:
-            AUX_toggle(!digitalRead(AUX_PIN));
-            CALL_INTF(FPSTR(TCONST_AUX), digitalRead(AUX_PIN) == AUX_LEVEL , set_auxflag);
-            break;
-#endif
-        default:
-            break;
+        default:;
     }
 }
 
@@ -3832,11 +3793,11 @@ String httpCallback(const String &param, const String &value, bool isset){
 #endif
             return result;
         }
-#ifdef AUX_PIN
-        else if (upperParam == FPSTR(CMD_AUX_ON)) action = RA_AUX_ON;
-        else if (upperParam == FPSTR(CMD_AUX_OFF))  action = RA_AUX_OFF;
-        else if (upperParam == FPSTR(CMD_AUX_TOGGLE))  action = RA_AUX_TOGLE;
-#endif
+        else if (upperParam == FPSTR(CMD_AUX_ON)) { run_action(ra::aux, true); return result; }
+        else if (upperParam == FPSTR(CMD_AUX_OFF)) { run_action(ra::aux, false); return result; }
+        else if (upperParam == FPSTR(CMD_AUX_TOGGLE)) { run_action(ra::aux_flip); return result; }
+
+        // execute action
         remote_action(action, value.c_str(), NULL);
     }
     return result;

@@ -16,11 +16,13 @@ typedef enum _remote_action {
     RA_BUTTONS_CONFIG,
 #endif
     RA_EVENTS_CONFIG,
+/*
 #ifdef AUX_PIN
     RA_AUX_ON,
     RA_AUX_OFF,
     RA_AUX_TOGLE,
 #endif
+*/
 //    RA_REBOOT,
 //    RA_EFF_NEXT,
 //    RA_EFF_PREV,

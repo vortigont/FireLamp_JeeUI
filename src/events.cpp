@@ -226,11 +226,9 @@ void event_worker(DEV_EVENT *event){
     case EVENT_TYPE::EVENTS_CONFIG_LOAD: action = RA_EVENTS_CONFIG; break;
     case EVENT_TYPE::SEND_TEXT:  action = RA_SEND_TEXT; break;
     case EVENT_TYPE::SEND_TIME:  action = RA_SEND_TIME; break;
-#ifdef AUX_PIN
-    case EVENT_TYPE::AUX_ON: action = RA_AUX_ON; break;
-    case EVENT_TYPE::AUX_OFF: action = RA_AUX_OFF; break;
-    case EVENT_TYPE::AUX_TOGGLE: action = RA_AUX_TOGLE; break;
-#endif
+    case EVENT_TYPE::AUX_ON:  return run_action(ra::aux, event->getMessage().toInt());
+    case EVENT_TYPE::AUX_OFF: return run_action(ra::aux, event->getMessage().toInt());
+    case EVENT_TYPE::AUX_TOGGLE:  return run_action(ra::aux_flip);
     case EVENT_TYPE::PIN_STATE: {
         if ((event->getMessage()).isEmpty()) break;
 
@@ -284,4 +282,105 @@ void event_worker(DEV_EVENT *event){
     }
 
     remote_action(action, event->getMessage().c_str(), NULL);
+}
+
+String DEV_EVENT::getName() {
+    String buffer;
+    String day_buf = FPSTR(T_EVENT_DAYS);
+
+    buffer.concat(isEnabled?F(" "):F("!"));
+    
+    TimeProcessor::getDateTimeString(buffer, unixtime);
+
+    buffer.concat(F(","));
+    switch (event)
+    {
+    case EVENT_TYPE::ON:
+        buffer.concat(F("ON"));
+        break;
+    case EVENT_TYPE::OFF:
+        buffer.concat(F("OFF"));
+        break;
+    case EVENT_TYPE::ALARM:
+        buffer.concat(F("ALARM"));
+        break;
+    case EVENT_TYPE::DEMO:
+        buffer.concat(F("DEMO"));
+        break;
+    case EVENT_TYPE::LAMP_CONFIG_LOAD:
+        buffer.concat(F("LMP_GFG"));
+        break;
+    case EVENT_TYPE::EFF_CONFIG_LOAD:
+        buffer.concat(F("EFF_GFG"));
+        break;
+#ifdef ESP_USE_BUTTON
+    case EVENT_TYPE::BUTTONS_CONFIG_LOAD:
+        buffer.concat(F("BUT_GFG"));
+        break;
+#endif
+    case EVENT_TYPE::EVENTS_CONFIG_LOAD:
+        buffer.concat(F("EVT_GFG"));
+        break;
+    case EVENT_TYPE::SEND_TEXT:
+        buffer.concat(F("TEXT"));
+        break;
+    case EVENT_TYPE::SEND_TIME:
+        buffer.concat(F("TIME"));
+        break;
+    case EVENT_TYPE::PIN_STATE:
+        buffer.concat(F("PIN"));
+        break; 
+    case EVENT_TYPE::AUX_ON:
+        buffer.concat(F("AUX ON"));
+        break; 
+    case EVENT_TYPE::AUX_OFF:
+        buffer.concat(F("AUX OFF"));
+        break; 
+    case EVENT_TYPE::AUX_TOGGLE:
+        buffer.concat(F("AUX TOGGLE"));
+        break; 
+    case EVENT_TYPE::SET_EFFECT:
+        buffer.concat(F("EFFECT"));
+        break;
+    case EVENT_TYPE::SET_WARNING:
+        buffer.concat(F("WARNING"));
+        break;
+    case EVENT_TYPE::SET_GLOBAL_BRIGHT:
+        buffer.concat(F("GLOBAL BR"));
+        break;
+    case EVENT_TYPE::SET_WHITE_HI:
+        buffer.concat(F("WHITE HI"));
+        break;
+    case EVENT_TYPE::SET_WHITE_LO:
+        buffer.concat(F("WHITE LO"));
+        break;
+    default:
+        break;
+    }
+
+    if(repeat) {buffer.concat(F(",")); buffer.concat(repeat);}
+    if(repeat && stopat) { buffer.concat(F(",")); buffer.concat(stopat);}
+
+    uint8_t t_raw_data = raw_data>>1;
+    if(t_raw_data)
+        buffer.concat(F(","));
+    for(uint8_t i=1;i<8; i++){
+        if(t_raw_data&1){
+            //Serial.println, day_buf.substring((i-1)*2*2,i*2*2)); // по 2 байта на символ UTF16
+            buffer.concat(day_buf.substring((i-1)*2*2,i*2*2)); // по 2 байта на символ UTF16
+            if(t_raw_data >> 1)
+                buffer.concat(F(",")); // кроме последнего
+        }
+        t_raw_data >>= 1;
+    }
+
+    if(message){
+        buffer.concat(F(","));
+        if(message.length()>5){
+            buffer.concat(message.substring(0,4)+"...");
+        } else {
+            buffer.concat(message);
+        }
+    }
+    return buffer;
 }

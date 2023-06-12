@@ -430,7 +430,7 @@ void myClicks() {
     sendTime();
     break;
 #endif
-#if defined(AUX_PIN) && defined(ENC_AUX_CLICK)
+#if defined(ENC_AUX_CLICK)
   case ENC_AUX_CLICK:
     toggleAUX();
     break;
@@ -627,10 +627,9 @@ void toggleMic() {
 }
 
 void toggleAUX() {
-#ifdef AUX_PIN
-  remote_action(RA::RA_AUX_TOGLE, NULL);
-  encSendString(String(FPSTR(TCONST_AUX)) + String(digitalRead(AUX_PIN) == AUX_LEVEL ? F(": ON") : F(": OFF")), txtColor, true, txtDelay);
-#endif
+  if ( embui.paramVariant(FPSTR(TCONST_aux_gpio)) == -1) return;
+  run_action(ra::aux_flip);
+  encSendString(String(FPSTR(TCONST_AUX)) + digitalRead(embui.paramVariant(FPSTR(TCONST_aux_gpio))) == embui.paramVariant(FPSTR(TCONST_aux_ll)) ? F(": ON") : F(": OFF"), txtColor, true, txtDelay);
 }
 
 void sendTime() {

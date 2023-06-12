@@ -90,9 +90,7 @@ bool Button::activate(btnflags& flg, bool reverse){
 			case BA_ON: run_action(ra::on); return ret;
 			case BA_OFF: run_action(ra::off); return ret;
 			case BA_DEMO: run_action(ra::demo, !param.isEmpty()); return ret;
-#ifdef AUX_PIN
-			case BA_AUX_TOGLE: ract = RA_AUX_TOGLE; break;
-#endif
+			case BA_AUX_TOGLE: run_action(ra::aux_flip); return ret;			// set AUX pin
 			case BA_EFF_NEXT: run_action(ra::eff_next); return ret;
 			case BA_EFF_PREV: run_action(ra::eff_prev); return ret;
 			case BA_SEND_TIME: ract = RA_SEND_TIME; break;

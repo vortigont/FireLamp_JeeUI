@@ -39,7 +39,6 @@
 #include "actions.hpp"
 #include "lamp.h"
 
-
 void run_action(ra act){
   // here we catch some really simple action that do not need reflecting any data to other components
   switch (act){
@@ -63,6 +62,20 @@ void run_action(ra act){
 void run_action(ra act, JsonObject *data){
   LOG(printf_P, PSTR("run_action: %d\n"), static_cast<int>(act));
   switch (act){
+    // AUX PIN On/Off
+    case ra::aux : {
+      (*data)[FPSTR(TCONST_AUX)] = (*data)[FPSTR(TCONST_value)];   // change key name
+      (*data).remove(FPSTR(TCONST_value));
+      break;
+    }
+
+    // AUX PIN flip
+    case ra::aux_flip : {
+      if ( embui.paramVariant(FPSTR(TCONST_aux_gpio)) == -1) return;    // if AUX pin is not set, than quit
+      (*data)[FPSTR(TCONST_AUX)] = !digitalRead(embui.paramVariant(FPSTR(TCONST_aux_gpio)));  // we simply flip the state here
+      break;
+    }
+
     // demo mode On/Off
     case ra::demo : {
       (*data)[FPSTR(TCONST_Demo)] = (*data)[FPSTR(TCONST_value)];   // change key name

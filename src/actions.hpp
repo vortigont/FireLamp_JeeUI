@@ -56,6 +56,8 @@ those could be called either internaly or as a callbacks from WebUI/MQTT/HTTP
 enum class ra:uint8_t {
   off = 0,            // switch lamp Off
   on,                 // switch lamp On
+  aux,                // aux pin control
+  aux_flip,           // flip AUX pin
   demo,               // demo mode on/off
   demo_next,          // switch effect in demo mode
   eff_next,           // switch to next effect
