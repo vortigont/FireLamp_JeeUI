@@ -1310,19 +1310,50 @@ void set_drawing(Interface *interf, JsonObject *data){
             }
         }
         //LOG(printf_P, PSTR("Draw: x:%d, y:%d col:%s\n"), x, y, value);
-        myLamp.writeDrawBuf(col,x,y);
-    } else {       // screen fill
-        String key(FPSTR(TCONST_drawing_ctrl));
-        key += F("_fill");
-        if((*data)[key]){
-            remote_action(RA_FILLMATRIX, (*data)[key].as<const char*>(), NULL);
+        return myLamp.writeDrawBuf(col,x,y);
+    }
+
+    // screen solid fill
+    String key(FPSTR(TCONST_drawing_ctrl));
+    key += F("_fill");
+    if((*data)[key]){
+        //remote_action(RA_FILLMATRIX, (*data)[key].as<const char*>(), NULL);
+        String tmpStr((*data)[key].as<const char*>());
+        if(tmpStr.indexOf(",")!=-1){
+            int16_t pos = 0;
+            int16_t frompos = 0;
+            uint8_t val = 0;
+            uint32_t res = 0;
+            do {
+                frompos = pos;
+                pos = tmpStr.indexOf(",", pos);
+                if(pos!=-1){
+                    val = tmpStr.substring(frompos,pos).toInt();
+                    res=(res<<8)|val;
+                    pos++;
+                } else if(frompos<(signed)tmpStr.length()){
+                    val = tmpStr.substring(frompos,tmpStr.length()).toInt();
+                    res=(res<<8)|val; 
+                }
+            } while(pos!=-1);
+            LOG(printf_P,PSTR("RA_FILLMATRIX: %d\n"), res);
+            CRGB color(res);
+            myLamp.fillDrawBuf(color);
         }
+        tmpStr.replace(F("#"), F("0x"));
+        long val = strtol(tmpStr.c_str(), NULL, 0);
+        //LOG(printf_P, PSTR("%s:%ld\n"), tmpStr.c_str(), val);
+        CRGB color(val);
+        myLamp.fillDrawBuf(color);
     }
 }
 
+// clear draw buffer to solid balck
 void set_clear(Interface *interf, JsonObject *data){
-    if (!data) return;
-    remote_action(RA_FILLMATRIX, "#000000", NULL);
+        CRGB color=CRGB::Black;
+        myLamp.fillDrawBuf(color);
+//    if (!data) return;
+//    remote_action(RA_FILLMATRIX, "#000000", NULL);
 }
 
 void block_lamptext(Interface *interf, JsonObject *data){
@@ -3510,69 +3541,6 @@ void remote_action(RA action, ...){
             }
             break;
         }
-        case RA::RA_RGB: {
-            String tmpStr = value;
-            if(tmpStr.indexOf(",")!=-1){
-                int16_t pos = 0;
-                int16_t frompos = 0;
-                uint8_t val = 0;
-                uint32_t res = 0;
-                do {
-                    frompos = pos;
-                    pos = tmpStr.indexOf(",", pos);
-                    if(pos!=-1){
-                        val = tmpStr.substring(frompos,pos).toInt();
-                        res=(res<<8)|val;
-                        pos++;
-                    } else if(frompos<(signed)tmpStr.length()){
-                        val = tmpStr.substring(frompos,tmpStr.length()).toInt();
-                        res=(res<<8)|val; 
-                    }
-                } while(pos!=-1);
-                CRGB color=CRGB(res);
-                myLamp.startRGB(color);
-                break;
-            }
-            tmpStr.replace(F("#"), F("0x"));
-            long val = strtol(tmpStr.c_str(), NULL, 0);
-            LOG(printf_P, PSTR("%s:%ld\n"), tmpStr.c_str(), val);
-            CRGB color=CRGB(val);
-            myLamp.startRGB(color);
-            break; 
-        }
-//
-        case RA::RA_FILLMATRIX: {
-            String tmpStr = value;
-            if(tmpStr.indexOf(",")!=-1){
-                int16_t pos = 0;
-                int16_t frompos = 0;
-                uint8_t val = 0;
-                uint32_t res = 0;
-                do {
-                    frompos = pos;
-                    pos = tmpStr.indexOf(",", pos);
-                    if(pos!=-1){
-                        val = tmpStr.substring(frompos,pos).toInt();
-                        res=(res<<8)|val;
-                        pos++;
-                    } else if(frompos<(signed)tmpStr.length()){
-                        val = tmpStr.substring(frompos,tmpStr.length()).toInt();
-                        res=(res<<8)|val; 
-                    }
-                } while(pos!=-1);
-                LOG(printf_P,PSTR("RA_FILLMATRIX: %d\n"), res);
-                CRGB color=CRGB(res);
-                myLamp.fillDrawBuf(color);
-                break;
-            }
-            tmpStr.replace(F("#"), F("0x"));
-            long val = strtol(tmpStr.c_str(), NULL, 0);
-            LOG(printf_P, PSTR("%s:%ld\n"), tmpStr.c_str(), val);
-            CRGB color=CRGB(val);
-            myLamp.fillDrawBuf(color);
-            break; 
-        }
-//
         case RA::RA_SEND_IP:
             myLamp.sendString(WiFi.localIP().toString().c_str(), CRGB::White);
 #ifdef TM1637_CLOCK
@@ -3722,9 +3690,9 @@ String httpCallback(const String &param, const String &value, bool isset){
             run_action(ra::warn, obj);
             return result;
         }
-//        else if (upperParam == FPSTR(CMD_DRAW)) action = RA_DRAW;             // у меня не идей зачем нужно попиксельное рисование через единичные http запросы
-        else if (upperParam == FPSTR(CMD_FILL_MATRIX)) action = RA_FILLMATRIX;
-        else if (upperParam == FPSTR(CMD_RGB)) action = RA_RGB;
+//        else if (upperParam == FPSTR(CMD_DRAW)) action = RA_DRAW;             // у меня не идей зачем нужно попиксельное рисование через единичные http запросы /это делается через акшен set_drawing()/
+//        else if (upperParam == FPSTR(CMD_FILL_MATRIX)) action = RA_FILLMATRIX; // у меня не идей зачем нужно заливать поле рисование через единичные http запросы /это делается через акшен set_drawing()/
+//        else if (upperParam == FPSTR(CMD_RGB)) action = RA_RGB;               // what's the diff with FILL_MATRIX?
 #ifdef MP3PLAYER
         if (upperParam == FPSTR(CMD_MP3_PREV)) { run_action(ra::mp3_prev, 1); return result; }
         if (upperParam == FPSTR(CMD_MP3_NEXT)) { run_action(ra::mp3_next, 1); return result; }
