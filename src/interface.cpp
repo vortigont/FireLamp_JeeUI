@@ -3189,7 +3189,7 @@ void sync_parameters(){
     doc.clear();
     embui.timeProcessor.attach_callback(std::bind(&LAMP::setIsEventsHandled, &myLamp, myLamp.IsEventsHandled())); // только после синка будет понятно включены ли события
 
-    myLamp.setGlobalBrightness(embui.paramVariant(FPSTR(TCONST_GlobBRI))); // починить бросок яркости в 255 при первом включении
+    //myLamp.setGlobalBrightness(embui.paramVariant(FPSTR(TCONST_GlobBRI))); // починить бросок яркости в 255 при первом включении
     obj[FPSTR(TCONST_GBR)] = tmp.isGlobalBrightness;
     set_gbrflag(nullptr, &obj);
     doc.clear();

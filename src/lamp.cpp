@@ -70,7 +70,9 @@ void LAMP::lamp_init(const uint16_t curlimit)
   //FastLED.addLeds<WS2812B, LAMP_PIN, COLOR_ORDER>(leds, num_leds).setCorrection(TypicalPixelString);
   //FastLED.addLeds<WS2812B, LAMP_PIN, COLOR_ORDER>(getUnsafeLedsArray(), num_leds);
 
-  brightness(0, false);                          // начинаем с полностью потушеной матрицы 1-й яркости
+  brightness(0, false);                         // начинаем с полностью потушеной матрицы 1-й яркости
+  flags.isGlobalBrightness = true;              // force global brightness
+
   if (curlimit > 0){
     FastLED.setMaxPowerInVoltsAndMilliamps(5, curlimit); // установка максимального тока БП
   }
@@ -942,14 +944,17 @@ uint8_t LAMP::getBrightness(const bool natural){
  * Set global brightness
  * @param bool natural
  */
-void LAMP::brightness(const uint8_t _brt, bool natural){
+void LAMP::_brightness(uint8_t brt, bool absolute){
+    if (!absolute) brt = luma::curveMap(_curve, brt, MAX_BRIGHTNESS, MAX_BRIGHTNESS);
     uint8_t _cur = natural ? brighten8_video(FastLED.getBrightness()) : FastLED.getBrightness();
-    if ( _cur == _brt) return;
+    if ( brt == FastLED.getBrightness()) return;  // nothing to change here
 
-    if (_brt) {
-      FastLED.setBrightness(natural ? dim8_video(_brt) : _brt);
+    if (brt) {
+      FastLED.setBrightness(_brt);
     } else {
-      FastLED.setBrightness(1); // 8266 may crash if brightness is set to zero, need triage
+      // a dirty hack
+      // 8266 may crash if brightness is set to zero, need triage with newer lib/core versions
+      FastLED.setBrightness(1);
       FastLED.clear();
     }
     FastLED.show();

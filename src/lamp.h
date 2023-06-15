@@ -47,6 +47,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "char_const.h"
 #include "mp3player.h"
 #include "log.h"
+#include "luma_curves.hpp"
 
 #ifdef MIC_EFFECTS
 #include "micFFT.h"
@@ -152,7 +153,7 @@ _LAMPFLAGS(){
     isDebug = false; // флаг отладки
     isFaderON = true; // признак того, что используется фейдер для смены эффектов
     isEffClearing = false; // нужно ли очищать эффекты при переходах с одного на другой
-    isGlobalBrightness = false; // признак использования глобальной яркости для всех режимов
+    isGlobalBrightness = true; // признак использования глобальной яркости для всех режимов
     isEventsHandled = true;
     isMicOn = true; // глобальное испльзование микрофона
     numInList = false;
@@ -193,10 +194,14 @@ private:
 #endif
 
     LAMPFLAGS flags;
-    LAMPSTATE lampState;        // текущее состояние лампы, которое передается эффектам
+    LAMPSTATE lampState;                // текущее состояние лампы, которое передается эффектам
+
+    luma::curve _curve = luma::curve::cie1931;       // default luma correction curve for PWM driven LEDs
+    uint8_t globalBrightness = 127;     // глобальная яркость
+    uint8_t storedBright;               // "запасное" значение яркости
+    uint8_t BFade;                      // затенение фона под текстом
 
     uint8_t txtOffset = 0; // смещение текста относительно края матрицы
-    uint8_t globalBrightness = 127;     // глобальная яркость
     uint16_t curLimit = CURRENT_LIMIT; // ограничение тока
     uint8_t fps = 0;        // fps counter
 #ifdef LAMP_DEBUG
@@ -212,7 +217,6 @@ private:
     LAMPMODE mode = LAMPMODE::MODE_NORMAL; // текущий режим
     LAMPMODE storedMode = LAMPMODE::MODE_NORMAL; // предыдущий режим
     uint16_t storedEffect = (uint16_t)EFF_ENUM::EFF_NONE;
-    uint8_t storedBright;
     CRGB rgbColor = CRGB::White; // дефолтный цвет для RGB-режима
 
 #ifdef MIC_EFFECTS
@@ -220,7 +224,6 @@ private:
     void micHandler();
 #endif
 
-    uint8_t BFade; // затенение фона под текстом
 
     uint8_t alarmPT; // время будильника рассвет - старшие 4 бита и свечения после рассвета - младшие 4 бита
 #ifdef TM1637_CLOCK
@@ -237,7 +240,15 @@ private:
     Task *effectsTask= nullptr;  // динамический планировщик обработки эффектов
     WarningTask *warningTask = nullptr; // динамический планировщик переключалки флага lampState.isWarning
     Task *tmqtt_pub = nullptr;   // динамический планировщик публикации через mqtt
-    void brightness(const uint8_t _brt, bool natural=true);     // низкоуровневая крутилка глобальной яркостью для других методов
+
+    /**
+     * @brief set brightness value to FastLED backend
+     * method uses curve mapping to aplied value by default
+     * 
+     * @param _brt - brighntess value
+     * @param absolute - if true, than do not apply curve mapping
+     */
+    void _brightness(uint8_t brt, bool absolute=false);     // низкоуровневая крутилка глобальной яркостью (для других публичных методов)
 
     void effectsTick(); // обработчик эффектов
 
@@ -261,6 +272,9 @@ private:
 
     LAMP(const LAMP&);  // noncopyable
     LAMP& operator=(const LAMP&);  // noncopyable
+
+
+/***    PUBLIC  ***/
 public:
     // c-tor
     LAMP(LedFB &m);
@@ -310,13 +324,13 @@ public:
     // Lamp brightness control
     /**
      * @brief - Change global brightness with or without fade effect
-     * fade applied in non-blocking way
-     * FastLED dim8 function applied internaly for natural brightness controll
-     * @param uint8_t _tgtbrt - target brigtness level 0-255
-     * @param bool fade - use fade effect on brightness change
-     * @param bool natural - apply dim8 function for natural brightness controll
+     * if fade flag for the lamp is set, than fade applied in non-blocking way unless skipfade param is set to 'true'
+     * brightness is mapped to a current lamp's luma curve value
+     * 
+     * @param uint8_t tgtbrt - target brigtness level 0-255
+     * @param bool skipfade - force skip fade effect on brightness change
      */
-    void setBrightness(const uint8_t _tgtbrt, const bool fade=false, const bool natural=true);
+    void setBrightness(uint8_t tgtbrt, bool skipfade=false);
 
     /**
      * @brief - Get current FASTLED brightness
@@ -325,14 +339,19 @@ public:
      */
     uint8_t getBrightness(const bool natural=true);
 
-    // ыставляет ТОЛЬКО значение в кинфиге! Яркость не меняет!
-    void setGlobalBrightness(uint8_t brt) {globalBrightness = brt;}
-
+    /**
+     * @brief returns only CONFIGURED brightness value, not real FastLED brightness
+     * 
+     */
     uint8_t getLampBrightness() { return flags.isGlobalBrightness? globalBrightness : (effects.getControls()[0]->getVal()).toInt();}
-    void setLampBrightness(uint8_t brt) { lampState.brightness=brt; if (flags.isGlobalBrightness) setGlobalBrightness(brt); else effects.getControls()[0]->setVal(String(brt)); }
 
-    void setIsGlobalBrightness(bool val) {flags.isGlobalBrightness = val; if(effects.worker) { lampState.brightness=getLampBrightness(); effects.worker->setDynCtrl(effects.getControls()[0].get());} }
-    bool IsGlobalBrightness() {return flags.isGlobalBrightness;}
+    // выставляет ТОЛЬКО значение в конфиге! Яркость не меняет!
+    void setLampBrightness(uint8_t brt) { lampState.brightness=brt; if (flags.isGlobalBrightness) globalBrightness = brt; else effects.getControls()[0]->setVal(String(brt)); }
+
+    void setIsGlobalBrightness(bool val){};   // {flags.isGlobalBrightness = val; if(effects.worker) { lampState.brightness=getLampBrightness(); effects.worker->setDynCtrl(effects.getControls()[0].get());} }
+
+    // keep it for compatibily reasons
+    bool IsGlobalBrightness() const { return true; }
 
     /**
      * @brief get lamp brightness in percents 0-100
