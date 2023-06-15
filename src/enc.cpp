@@ -633,7 +633,7 @@ void toggleAUX() {
 }
 
 void sendTime() {
-  remote_action(RA::RA_SEND_TIME, NULL);
+  myLamp.showTimeOnScreen(NULL);
 }
 
 void sendIP() {

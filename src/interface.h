@@ -42,7 +42,7 @@ typedef enum _remote_action {
 #endif
 //    RA_EFFECT,          // called on effect change events
     RA_SEND_TEXT,
-    RA_SEND_TIME,
+//    RA_SEND_TIME,
     RA_SEND_IP,
     RA_WHITE_HI,
     RA_WHITE_LO,

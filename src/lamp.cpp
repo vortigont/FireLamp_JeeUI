@@ -792,20 +792,20 @@ void LAMP::newYearMessageHandle()
 }
 
 // при вызове - вывозит на лампу текущее время
-void LAMP::periodicTimeHandle(char *value, bool force)
+void LAMP::showTimeOnScreen(const char *value, bool force)
 {
   DynamicJsonDocument doc(512);
-  String buf = value;
+  String buf(value);
   buf.replace("'","\"");
   deserializeJson(doc,buf);
-  bool isShowOff = (doc.containsKey(FPSTR(TCONST_isShowOff)) ? doc[FPSTR(TCONST_isShowOff)] : String("0")) == "1" ? true : false;
-  bool isPlayTime = (doc.containsKey(FPSTR(TCONST_isPlayTime)) ? doc[FPSTR(TCONST_isPlayTime)] : String("0"))  == "1" ? true : false;
+  bool isShowOff = doc[FPSTR(TCONST_isShowOff)];
+  bool isPlayTime = doc[FPSTR(TCONST_isPlayTime)];
 
   const tm* t = localtime(embui.timeProcessor.now());
   if(t->tm_sec && !force)
     return;
 
-  LOG(printf_P, PSTR("periodicTimeHandle: %02d:%02d:%02d, isShowOff=%d, isPlayTime=%d\n"), t->tm_hour,t->tm_min,t->tm_sec, isShowOff, isPlayTime);
+  LOG(printf_P, PSTR("showTime: %02d:%02d, evenWhenOff=%d, PlayTime=%d\n"), t->tm_hour,t->tm_min, isShowOff, isPlayTime);
 
   time_t tm = t->tm_hour * 60 + t->tm_min;
   String time = isPlayTime ? String(F("%TM")) : embui.timeProcessor.getFormattedShortTime();
@@ -819,14 +819,12 @@ void LAMP::periodicTimeHandle(char *value, bool force)
     color =  CRGB::Blue;
   }
 #ifdef MP3PLAYER
-  if(isPlayTime && !isLampOn()){
-    if(mp3){
-      mp3->setIsOn(true, false);
-      mp3->playTime(embui.timeProcessor.getHours(), embui.timeProcessor.getMinutes(), (TIME_SOUND_TYPE)flags.playTime);
-    }
+  if(!isLampOn() && isPlayTime && mp3){ // произносить время
+    mp3->setIsOn(true, false);
+    mp3->playTime(embui.timeProcessor.getHours(), embui.timeProcessor.getMinutes(), (TIME_SOUND_TYPE)flags.playTime);
   }
 #endif
-  sendString(time.c_str(), color, isShowOff);
+  sendString(time.c_str(), color, isShowOff);  // выводить ли время при выключенной лампе
 }
 
 #ifdef MIC_EFFECTS

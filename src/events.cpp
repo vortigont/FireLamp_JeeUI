@@ -225,7 +225,7 @@ void event_worker(DEV_EVENT *event){
     //case EVENT_TYPE::EFF_CONFIG_LOAD:  action = RA_EFF_CONFIG; break;                 // была какая-то мутная загрузка индекса эффектов из папки /backup/idx
     case EVENT_TYPE::EVENTS_CONFIG_LOAD: action = RA_EVENTS_CONFIG; break;
     case EVENT_TYPE::SEND_TEXT:  action = RA_SEND_TEXT; break;
-    case EVENT_TYPE::SEND_TIME:  action = RA_SEND_TIME; break;
+    case EVENT_TYPE::SEND_TIME: return myLamp.showTimeOnScreen(event->getMessage().c_str(), true);
     case EVENT_TYPE::AUX_ON:  return run_action(ra::aux, event->getMessage().toInt());
     case EVENT_TYPE::AUX_OFF: return run_action(ra::aux, event->getMessage().toInt());
     case EVENT_TYPE::AUX_TOGGLE:  return run_action(ra::aux_flip);

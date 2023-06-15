@@ -93,7 +93,7 @@ bool Button::activate(btnflags& flg, bool reverse){
 			case BA_AUX_TOGLE: run_action(ra::aux_flip); return ret;			// set AUX pin
 			case BA_EFF_NEXT: run_action(ra::eff_next); return ret;
 			case BA_EFF_PREV: run_action(ra::eff_prev); return ret;
-			case BA_SEND_TIME: ract = RA_SEND_TIME; break;
+			case BA_SEND_TIME: myLamp.showTimeOnScreen(NULL); return ret;		// show time on screen
 			case BA_SEND_IP: ract = RA_SEND_IP; break;
 			case BA_WIFI_REC: ract = RA_WIFI_REC; break;
 			case BA_EFFECT: { run_action(ra::eff_switch, param.toInt()); return ret; }

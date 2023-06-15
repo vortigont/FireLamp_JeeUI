@@ -360,6 +360,14 @@ public:
     LAMPMODE getStoredMode() {return storedMode;}
     void setMode(LAMPMODE _mode) { storedMode = ((mode == _mode) ? storedMode: mode); mode=_mode;}
 
+    /**
+     * @brief 
+     * 
+     * @param text 
+     * @param letterColor 
+     * @param forcePrint - выводить текст при выключенной лампе
+     * @param clearQueue 
+     */
     void sendString(const char* text, const CRGB &letterColor, bool forcePrint = true, bool clearQueue = false);
     void sendStringToLamp(const char* text = nullptr,  const CRGB &letterColor = CRGB::Black, bool forcePrint = false, bool clearQueue = false, const int8_t textOffset = -128, const int16_t fixedPos = 0);
     void sendStringToLampDirect(const char* text = nullptr,  const CRGB &letterColor = CRGB::Black, bool forcePrint = false, bool clearQueue = false, const int8_t textOffset = -128, const int16_t fixedPos = 0);
@@ -441,7 +449,13 @@ public:
     void setAlatmSound(ALARM_SOUND_TYPE val) {flags.alarmSound = val;}
     void setEqType(uint8_t val) {flags.MP3eq = val;}
 
-    void periodicTimeHandle(char *value, bool force=false);
+    /**
+     * @brief prints current time on screen
+     * 
+     * @param value - some ugly json string with opts   {'isShowOff':false,'isPlayTime':true}
+     * @param force - print even if lamp is off
+     */
+    void showTimeOnScreen(const char *value, bool force=false);
 
 #ifdef TM1637_CLOCK
     void settm24 (bool flag) {flags.tm24 = flag;}

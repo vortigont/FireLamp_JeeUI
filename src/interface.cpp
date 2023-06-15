@@ -3547,10 +3547,6 @@ void remote_action(RA action, ...){
             if(tm1637) tm1637->showip();
 #endif
             break;
-        case RA::RA_SEND_TIME:
-            myLamp.periodicTimeHandle(value, true);
-            //myLamp.sendString(String(F("%TM")).c_str(), CRGB::Green);
-            break;
         default:;
     }
 }
