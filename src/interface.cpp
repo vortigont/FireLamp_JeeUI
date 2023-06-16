@@ -1851,10 +1851,14 @@ void set_eventflag(Interface *interf, JsonObject *data){
     save_lamp_flags();
 }
 
+/**
+ * @brief Save the event configuration data
+ * save/update event data from WebUI
+ */
 void set_event_conf(Interface *interf, JsonObject *data){
+    if (!data) return;
     DEV_EVENT event;
     String act;
-    if (!data) return;
 
     //String output;
     //serializeJson((*data), output);
@@ -1935,7 +1939,7 @@ void set_event_conf(Interface *interf, JsonObject *data){
             }
             break;
         default:
-            event.setMessage((*data)[FPSTR(TCONST_msg)]);
+            event.setMessage((*data)[FPSTR(TCONST_msg)] ? (*data)[FPSTR(TCONST_msg)] : String());
             myLamp.events.addEvent(event);
             break;
     }
