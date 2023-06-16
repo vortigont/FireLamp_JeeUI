@@ -209,7 +209,7 @@ void event_worker(DEV_EVENT *event){
             // вывести текст на лампу через 3 секунды
             StringTask *t = new StringTask(event->getMessage().c_str(), 3 * TASK_SECOND, TASK_ONCE, nullptr, &ts, false, nullptr,  [](){
                 StringTask *cur = (StringTask *)ts.getCurrentTask();
-                remote_action(RA::RA_SEND_TEXT, cur->getData(), NULL);
+                myLamp.sendString(cur->getData());
             }, true);
             t->enableDelayed();
         }
@@ -220,11 +220,12 @@ void event_worker(DEV_EVENT *event){
     case EVENT_TYPE::ALARM: return ALARMTASK::startAlarm(&myLamp, event->getMessage().c_str());               // взводим будильник
     //case EVENT_TYPE::LAMP_CONFIG_LOAD: action = RA_LAMP_CONFIG; break;                // была какая-то загрузка стороннего конфига embui
 #ifdef ESP_USE_BUTTON
-    case EVENT_TYPE::BUTTONS_CONFIG_LOAD:  action = RA_BUTTONS_CONFIG; break;
+    // load button configuration from side file
+    case EVENT_TYPE::BUTTONS_CONFIG_LOAD: return load_button_config(event->getMessage().c_str());
 #endif
     //case EVENT_TYPE::EFF_CONFIG_LOAD:  action = RA_EFF_CONFIG; break;                 // была какая-то мутная загрузка индекса эффектов из папки /backup/idx
-    case EVENT_TYPE::EVENTS_CONFIG_LOAD: action = RA_EVENTS_CONFIG; break;
-    case EVENT_TYPE::SEND_TEXT:  action = RA_SEND_TEXT; break;
+    case EVENT_TYPE::EVENTS_CONFIG_LOAD:  return load_events_config(event->getMessage().c_str());
+    case EVENT_TYPE::SEND_TEXT: return myLamp.sendString(event->getMessage().c_str());
     case EVENT_TYPE::SEND_TIME: return myLamp.showTimeOnScreen(event->getMessage().c_str(), true);
     case EVENT_TYPE::AUX_ON:  return run_action(ra::aux, event->getMessage().toInt());
     case EVENT_TYPE::AUX_OFF: return run_action(ra::aux, event->getMessage().toInt());

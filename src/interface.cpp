@@ -3512,35 +3512,6 @@ void remote_action(RA action, ...){
             obj[FPSTR(TCONST_force)] = true;
             set_effects_dynCtrl(nullptr, &obj);
             break;
-#ifdef ESP_USE_BUTTON
-        case RA::RA_BUTTONS_CONFIG:
-            if (value && *value) {
-                String filename(FPSTR(TCONST__backup_btn_));
-                filename.concat(value);
-                myButtons->clear();
-                if (!myButtons->loadConfig()) {
-                    default_buttons();
-                }
-            }
-            break;
-#endif
-        case RA::RA_EVENTS_CONFIG:
-            if (value && *value) {
-                String filename(FPSTR(TCONST__backup_evn_));
-                filename.concat(value);
-                myLamp.events.loadConfig(filename.c_str());
-            }
-            break;
-        case RA::RA_SEND_TEXT: {
-            if (value && *value) {
-                String tmpStr = embui.param(FPSTR(TCONST_txtColor));
-                tmpStr.replace(F("#"),F("0x"));
-                CRGB::HTMLColorCode color = (CRGB::HTMLColorCode)strtol(tmpStr.c_str(), NULL, 0);
-
-                myLamp.sendString(value, color);
-            }
-            break;
-        }
         case RA::RA_SEND_IP:
             myLamp.sendString(WiFi.localIP().toString().c_str(), CRGB::White);
 #ifdef TM1637_CLOCK
@@ -3671,8 +3642,9 @@ String httpCallback(const String &param, const String &value, bool isset){
         LOG(println, F("SET"));
         if ( upperParam == FPSTR(CMD_ON) || upperParam == FPSTR(CMD_OFF ) ){ run_action(value.toInt() ? ra::on : ra::off ); return result; }
         else if (upperParam == FPSTR(CMD_DEMO)) { run_action(ra::demo, value.toInt() ? true : false ); return result; }
-        else if (upperParam == FPSTR(CMD_MSG)) action = RA_SEND_TEXT;
-        else if (upperParam == FPSTR(CMD_EFFECT)) { run_action(ra::eff_next, value.toInt()); return result; }
+        // scroll text
+        else if (upperParam == FPSTR(CMD_MSG)) { myLamp.sendString(value.c_str()); return result; }
+        if (upperParam == FPSTR(CMD_EFFECT)) { run_action(ra::eff_next, value.toInt()); return result; }
         if (upperParam == FPSTR(CMD_MOVE_NEXT)) { run_action(ra::eff_next); return result; }
         if (upperParam == FPSTR(CMD_MOVE_PREV)) { run_action(ra::eff_prev); return result; }
         if (upperParam == FPSTR(CMD_MOVE_RND))  { run_action(ra::eff_rnd);  return result; }
@@ -3766,4 +3738,29 @@ String httpCallback(const String &param, const String &value, bool isset){
         remote_action(action, value.c_str(), NULL);
     }
     return result;
+}
+
+#ifdef ESP_USE_BUTTON
+void load_button_config(const char* path){
+    if (path){
+        String filename(FPSTR(TCONST__backup_btn_));
+        filename.concat(path);
+        myButtons->clear();
+        if (!myButtons->loadConfig(filename.c_str())) {
+            default_buttons();
+        }
+    } else {
+        if (!myButtons->loadConfig()) {
+            default_buttons();
+        }
+    }
+}
+#endif
+
+void load_events_config(const char* path){
+    if (!path) return myLamp.events.loadConfig();
+
+    String filename(FPSTR(TCONST__backup_evn_));
+    filename.concat(path);
+    myLamp.events.loadConfig(filename.c_str());
 }

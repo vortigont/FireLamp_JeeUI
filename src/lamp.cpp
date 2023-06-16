@@ -568,7 +568,14 @@ uint8_t LAMP::getFont(uint8_t bcount, uint8_t asciiCode, uint8_t row)       // �
   return 0;
 }
 
-void LAMP::sendString(const char* text, const CRGB &letterColor, bool forcePrint, bool clearQueue){
+void LAMP::sendString(const char* text){
+  String tmpStr = embui.param(FPSTR(TCONST_txtColor));
+  tmpStr.replace(F("#"),F("0x"));
+  CRGB::HTMLColorCode color = (CRGB::HTMLColorCode)strtol(tmpStr.c_str(), NULL, 0);
+  sendString(text, color);
+}
+
+void LAMP::sendString(const char* text, CRGB letterColor, bool forcePrint, bool clearQueue){
   if (!isLampOn() && forcePrint){
       disableEffectsUntilText(); // будем выводить текст, при выкюченной матрице
       setOffAfterText();
@@ -595,14 +602,14 @@ String &LAMP::prepareText(String &source){
   return source;  
 }
 
-void LAMP::sendStringToLampDirect(const char* text, const CRGB &letterColor, bool forcePrint, bool clearQueue, int8_t textOffset, int16_t fixedPos)
+void LAMP::sendStringToLampDirect(const char* text, CRGB letterColor, bool forcePrint, bool clearQueue, int8_t textOffset, int16_t fixedPos)
 {
     String storage = text;
     prepareText(storage);
     doPrintStringToLamp(storage.c_str(), letterColor, textOffset, fixedPos); // отправляем
 }
 
-void LAMP::sendStringToLamp(const char* text, const CRGB &letterColor, bool forcePrint, bool clearQueue, int8_t textOffset, int16_t fixedPos)
+void LAMP::sendStringToLamp(const char* text, CRGB letterColor, bool forcePrint, bool clearQueue, int8_t textOffset, int16_t fixedPos)
 {
   if((!flags.ONflag && !forcePrint) || (isAlarm() && !forcePrint)) return; // если выключена, или если будильник, но не задан принудительный вывод - то на выход
   if(textOffset==-128) textOffset=this->txtOffset;
@@ -696,7 +703,7 @@ void LAMP::sendStringToLamp(const char* text, const CRGB &letterColor, bool forc
   }
 }
 
-void LAMP::doPrintStringToLamp(const char* text,  const CRGB &letterColor, const int8_t textOffset, const int16_t fixedPos)
+void LAMP::doPrintStringToLamp(const char* text,  CRGB letterColor, const int8_t textOffset, const int16_t fixedPos)
 {
   static String toPrint;
   static CRGB _letterColor;

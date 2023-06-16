@@ -168,16 +168,6 @@ void run_action(ra act, JsonObject *data){
       break;
     }
 
-    // send text to lamp
-    case ra::sendtext : {
-      if (!(*data)[TCONST_value]) return;
-      String tmpStr( embui.param(FPSTR(TCONST_txtColor)) );
-      tmpStr.replace(F("#"),F("0x"));
-      CRGB::HTMLColorCode color = (CRGB::HTMLColorCode)strtol(tmpStr.c_str(), NULL, 0);
-      myLamp.sendString((*data)[TCONST_value], color);
-      return;
-    }
-
     // show warning on a lamp
     case ra::warn : {
       if ( !(*data).containsKey(TCONST_event) ) return;   // invalid object
@@ -205,3 +195,15 @@ void run_action(ra act, JsonObject *data){
   embui.post(*data, true);                    // inject packet back into EmbUI action selector
 }
 
+/*
+        case RA::RA_SEND_TEXT: {
+            if (value && *value) {
+                String tmpStr = embui.param(FPSTR(TCONST_txtColor));
+                tmpStr.replace(F("#"),F("0x"));
+                CRGB::HTMLColorCode color = (CRGB::HTMLColorCode)strtol(tmpStr.c_str(), NULL, 0);
+
+                myLamp.sendString(value, color);
+            }
+            break;
+        }
+*/

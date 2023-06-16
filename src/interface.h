@@ -12,10 +12,10 @@ typedef enum _remote_action {
 //    RA_ALARM_OFF,
 //    RA_LAMP_CONFIG,     // load another config for embui
 //    RA_EFF_CONFIG,
-#ifdef ESP_USE_BUTTON
-    RA_BUTTONS_CONFIG,
-#endif
-    RA_EVENTS_CONFIG,
+//#ifdef ESP_USE_BUTTON
+//    RA_BUTTONS_CONFIG,
+//#endif
+//    RA_EVENTS_CONFIG,
 /*
 #ifdef AUX_PIN
     RA_AUX_ON,
@@ -41,7 +41,7 @@ typedef enum _remote_action {
 //    RA_MICONOFF,
 #endif
 //    RA_EFFECT,          // called on effect change events
-    RA_SEND_TEXT,
+//    RA_SEND_TEXT,
 //    RA_SEND_TIME,
     RA_SEND_IP,
     RA_WHITE_HI,
@@ -60,6 +60,11 @@ void remote_action(RA action, ...);
 String httpCallback(const String &param, const String &value, bool isset);
 #ifdef ESP_USE_BUTTON
 void default_buttons();
+/**
+ * @brief подгрузить конфигурацию кнопки из стороннего файла
+ * path should be relative to TCONST__backup_btn_
+ */
+void load_button_config(const char* path = NULL);
 #endif
 
 // ---------------------
@@ -87,3 +92,10 @@ void block_effects_config(Interface *interf, JsonObject *data);
 #ifdef MIC_EFFECTS
 void show_settings_mic(Interface *interf, JsonObject *data);
 #endif
+
+/**
+ * @brief load events configuarion from file
+ * 
+ * @param path 
+ */
+void load_events_config(const char* path = NULL);
