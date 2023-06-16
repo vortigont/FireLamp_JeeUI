@@ -140,11 +140,11 @@ void encLoop() {
       switch (currAction)
       {
       case 1: // регулировка яркости
-        remote_action(RA::RA_BRIGHT_NF, (String(FPSTR(TCONST_dynCtrl)) + "0").c_str(), String(anyValue).c_str(), NULL);
+ 				run_action(ra::brt_nofade, anyValue);		// change brightness without fade effect
         done = true;
         break;
       case 3: // регулировка любого из динамических контролов в режиме "Настройки эффекта"
-        remote_action(RA::RA_CONTROL, (String(FPSTR(TCONST_dynCtrl)) + String(myLamp.getEffControls()[currDynCtrl]->getId())).c_str(), myLamp.getEffControls()[currDynCtrl]->getVal().c_str(), NULL);
+      	run_action(ra::eff_ctrl, String(FPSTR(TCONST_dynCtrl))+myLamp.getEffControls()[currDynCtrl]->getId(), myLamp.getEffControls()[currDynCtrl]->getVal());
         done = true;
       break;
       default:
@@ -615,8 +615,8 @@ void toggleDemo() {
 }
 
 void toggleGBright() {
-  remote_action(RA::RA_GLOBAL_BRIGHT, myLamp.IsGlobalBrightness() ? "0" : "1", NULL);
-  encSendString(String(FPSTR(TINTF_00C)) + String(myLamp.IsGlobalBrightness() ? F(": ON") : F(": OFF")), txtColor, true, txtDelay);
+  run_action(ra::brt_global, myLamp.IsGlobalBrightness());
+  encSendString(String(FPSTR(TINTF_00C)) + myLamp.IsGlobalBrightness() ? F(": ON") : F(": OFF"), txtColor, true, txtDelay);
 }
 
 void toggleMic() {

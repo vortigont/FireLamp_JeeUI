@@ -92,6 +92,17 @@ void run_action(ra act, JsonObject *data){
       break;
     }
 
+    // apply effect control value
+    case ra::brt :
+    case ra::brt_nofade :
+    case ra::eff_ctrl : {
+      // usually this action is called with key:value pair for a specific control
+        (*data)[FPSTR(TCONST_force)] = true;        // какой-то костыль с задержкой обновления WebUI
+        //set_effects_dynCtrl(nullptr, &obj);
+        //FPSTR(TCONST_dynCtrl_)
+      break;
+    }
+
     // switch to next effect
     case ra::eff_next : {
       // pick next available effect (considering it is enabled)

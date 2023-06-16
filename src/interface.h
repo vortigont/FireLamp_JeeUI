@@ -27,8 +27,8 @@ typedef enum _remote_action {
 //    RA_EFF_NEXT,
 //    RA_EFF_PREV,
 //    RA_EFF_RAND,
-    RA_BRIGHT_NF,
-    RA_CONTROL,
+//    RA_BRIGHT_NF,
+//    RA_CONTROL,
 //#ifdef MP3PLAYER
 //    RA_MP3_PREV,
 //    RA_MP3_NEXT,
@@ -47,8 +47,8 @@ typedef enum _remote_action {
     RA_WHITE_HI,
     RA_WHITE_LO,
     RA_WIFI_REC,
-    RA_GLOBAL_BRIGHT,
-    RA_BRIGHT_PCT,      // get/set brightness in percents
+//    RA_GLOBAL_BRIGHT,
+//    RA_BRIGHT_PCT,      // get/set brightness in percents
 //    RA_WARNING,
 //    RA_DRAW,
 //    RA_FILLMATRIX,

@@ -227,8 +227,8 @@ void event_worker(DEV_EVENT *event){
     case EVENT_TYPE::EVENTS_CONFIG_LOAD:  return load_events_config(event->getMessage().c_str());
     case EVENT_TYPE::SEND_TEXT: return myLamp.sendString(event->getMessage().c_str());
     case EVENT_TYPE::SEND_TIME: return myLamp.showTimeOnScreen(event->getMessage().c_str(), true);
-    case EVENT_TYPE::AUX_ON:  return run_action(ra::aux, event->getMessage().toInt());
-    case EVENT_TYPE::AUX_OFF: return run_action(ra::aux, event->getMessage().toInt());
+    case EVENT_TYPE::AUX_ON:  return run_action(ra::aux, static_cast<bool>(event->getMessage().toInt()));
+    case EVENT_TYPE::AUX_OFF: return run_action(ra::aux, static_cast<bool>(event->getMessage().toInt()));
     case EVENT_TYPE::AUX_TOGGLE:  return run_action(ra::aux_flip);
     case EVENT_TYPE::PIN_STATE: {
         if ((event->getMessage()).isEmpty()) break;
@@ -276,7 +276,7 @@ void event_worker(DEV_EVENT *event){
         run_action(ra::warn, &j);
         return;
     }
-    case EVENT_TYPE::SET_GLOBAL_BRIGHT: action = RA_GLOBAL_BRIGHT; break;
+    case EVENT_TYPE::SET_GLOBAL_BRIGHT: { run_action(ra::brt_global, static_cast<bool>(event->getMessage().toInt())); return; }
     case EVENT_TYPE::SET_WHITE_HI: action = RA_WHITE_HI; break;
     case EVENT_TYPE::SET_WHITE_LO: action = RA_WHITE_LO; break;
     default:;

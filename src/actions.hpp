@@ -58,8 +58,12 @@ enum class ra:uint8_t {
   on,                 // switch lamp On
   aux,                // aux pin control
   aux_flip,           // flip AUX pin
-  demo,               // demo mode on/off
-  demo_next,          // switch effect in demo mode
+  brt,                // brightness control, param int
+  brt_nofade,         // change brightness without fading effect, param int
+  brt_global,         // set/unset global brightness, param bool
+  demo,               // demo mode on/off, param bool
+  demo_next,          // switch effect in demo mode, param void
+  eff_ctrl,           // apply effect control value
   eff_next,           // switch to next effect
   eff_prev,           // switch to previous effect
   eff_rnd,            // switch to random effect
@@ -105,7 +109,27 @@ template<typename T>
 void run_action(ra act, const T& param) {
   StaticJsonDocument<ACTION_PARAM_SIZE> jdoc;
   JsonObject obj = jdoc.to<JsonObject>();
-  obj[TCONST_value] = param;
+
+  // action specific key:value setup
+  switch (act){
+    // AUX PIN On/Off
+    case ra::brt_global :
+      obj[FPSTR(TCONST_GBR)] = param;
+      break;
+    // brightness control
+    case ra::brt :
+    case ra::brt_nofade : {
+      String ctrl(FPSTR(TCONST_dynCtrl));
+      ctrl += 0;  // append '0' to the control name - 0 is for brightness
+      obj[ctrl] = param;
+      if (act == ra::brt_nofade) obj[FPSTR(TCONST_nofade)] = true;     // disable fader
+      break;
+    }
+
+    // all the rest we just assign "value": value pair
+    default:
+      obj[FPSTR(TCONST_value)] = param;
+  }
   run_action(act, &obj);
 }
 

@@ -2951,7 +2951,7 @@ bool notfound_handle(AsyncWebServerRequest *request, const String& req)
     if ((req.indexOf(F("&A=")) > 1)){
         bright = req.substring(req.indexOf(F("&A="))+3).toInt();
         if(bright)
-            remote_action(RA::RA_BRIGHT_NF, (String(FPSTR(TCONST_dynCtrl))+"0").c_str(), String(bright).c_str(), NULL);
+            run_action(ra::brt_nofade, bright);
     }
 
     String result = F("<?xml version=\"1.0\" ?><vs><ac>");
@@ -3487,6 +3487,7 @@ void remote_action(RA action, ...){
     LOG(println);
 
     switch (action) {
+/*
         case RA::RA_GLOBAL_BRIGHT:
             if (atoi(value) > 0){
                 CALL_INTF(FPSTR(TCONST_GBR), true, set_gbrflag);
@@ -3512,6 +3513,7 @@ void remote_action(RA action, ...){
             obj[FPSTR(TCONST_force)] = true;
             set_effects_dynCtrl(nullptr, &obj);
             break;
+*/
         case RA::RA_SEND_IP:
             myLamp.sendString(WiFi.localIP().toString().c_str(), CRGB::White);
 #ifdef TM1637_CLOCK
@@ -3650,8 +3652,10 @@ String httpCallback(const String &param, const String &value, bool isset){
         if (upperParam == FPSTR(CMD_MOVE_RND))  { run_action(ra::eff_rnd);  return result; }
         if (upperParam == FPSTR(CMD_REBOOT)) { run_action(ra::reboot); return result; }
         else if (upperParam == FPSTR(CMD_ALARM)) { ALARMTASK::startAlarm(&myLamp, value.c_str()); }
-        else if (upperParam == FPSTR(CMD_G_BRIGHT)) action = RA_GLOBAL_BRIGHT;
-        else if (upperParam == FPSTR(CMD_G_BRTPCT)) { action = RA_BRIGHT_PCT; remote_action(action, value.c_str(), NULL); return result; }
+        //else if (upperParam == FPSTR(CMD_G_BRIGHT)) action = RA_GLOBAL_BRIGHT;
+        else if (upperParam == FPSTR(CMD_G_BRTPCT)) {
+            int brt = brt >=100 ? 255 : brt * 255 / 100;    // normalize percents to 0-255
+            run_action(ra::brt, brt); return result; }
         else if (upperParam == FPSTR(CMD_WARNING)) {
             StaticJsonDocument<256> obj;
             deserializeJson(obj, value);
@@ -3681,7 +3685,7 @@ String httpCallback(const String &param, const String &value, bool isset){
             deserializeJson(doc,str);
             JsonArray arr = doc.as<JsonArray>();
             uint16_t id=0;
-            String val="";
+            String val;
 
             if(arr.size()<2){ // мало параметров, т.е. это GET команда, возвращаем состояние контрола
                 return httpCallback(FPSTR(CMD_CONTROL), value, false);
@@ -3690,7 +3694,6 @@ String httpCallback(const String &param, const String &value, bool isset){
             if(upperParam == FPSTR(CMD_INC_CONTROL)){ // это команда увеличения контрола на значение, соотвественно получаем текущее
                 val = arr[1].as<String>().toInt();
                 str = httpCallback(FPSTR(CMD_CONTROL), arr[0], false);
-                doc.clear(); doc.garbageCollect();
                 deserializeJson(doc,str);
                 arr = doc.as<JsonArray>();
                 arr[1] = arr[1].as<String>().toInt()+val.toInt();
@@ -3706,8 +3709,7 @@ String httpCallback(const String &param, const String &value, bool isset){
                     default : break;
                 }
 			}
-            remote_action(RA_CONTROL, (String(FPSTR(TCONST_dynCtrl))+id).c_str(), val.c_str(), NULL);
-
+            run_action(ra::eff_ctrl, String(FPSTR(TCONST_dynCtrl))+id, val.toInt());
             return httpCallback(FPSTR(CMD_CONTROL), String(id), false); // т.к. отложенный вызов, то иначе обрабатыаем
         }
         else if (upperParam == FPSTR(CMD_EFF_NAME))  {
