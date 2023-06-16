@@ -2907,7 +2907,7 @@ void page_gpiocfg(Interface *interf, JsonObject *data){
 
 
 // кастомный обработчик, для реализации особой обработки событий сокетов
-bool ws_action_handle(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len)
+void ws_action_handle(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len)
 {
     bool res = false; // false == EmbUI default action
     switch(type){
@@ -2929,41 +2929,29 @@ bool ws_action_handle(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsE
             res = false; 
             break;
     }
-    return res;
 }
 
-// кастомный обработчик, для поддержки приложения WLED APP ( https://play.google.com/store/apps/details?id=com.aircoookie.WLED )
-bool notfound_handle(AsyncWebServerRequest *request, const String& req)
-{
-    if (!(req.indexOf(F("win")) == 1)) return false;
-    LOG(println,req);
-
-    uint8_t bright = myLamp.getLampBrightness();
-    if ((req.indexOf(F("&T=2")) > 1)){
-        if(myLamp.isLampOn()){
-            run_action(ra::off);
-            bright = 0;
-        }
-        else
-            run_action(ra::on);
+// обработчик, для поддержки приложения WLED APP
+void wled_handle(AsyncWebServerRequest *request){
+    if(request->hasParam("T")){
+        int pwr = request->getParam("T")->value().toInt();
+        if (pwr == 2) run_action( myLamp.isLampOn() ? ra::off : ra::on);            // toggle is '2'
+        else run_action( pwr ? ra::on : ra::off);
     }
+    uint8_t bright = myLamp.isLampOn() ? myLamp.getLampBrightness() : 0;
 
-    if ((req.indexOf(F("&A=")) > 1)){
-        bright = req.substring(req.indexOf(F("&A="))+3).toInt();
-        if(bright)
-            run_action(ra::brt_nofade, bright);
+    if (request->hasParam("A")){
+        bright = request->getParam("A")->value().toInt();
+        run_action(ra::brt_nofade, bright);
     }
 
     String result = F("<?xml version=\"1.0\" ?><vs><ac>");
     result.concat(myLamp.isLampOn()?bright:0);
     result.concat(F("</ac><ds>"));
-    result.concat(embui.param(FPSTR(P_hostname)));
-    result.concat(F(".local-")); //lampname.local-IP
-    result.concat(WiFi.localIP().toString());
+    result.concat(embui.hostname());
     result.concat(F("</ds></vs>"));
 
     request->send(200, FPSTR(PGmimexml), result);
-    return true;
 }
 
 /**

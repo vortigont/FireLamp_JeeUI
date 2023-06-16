@@ -58,7 +58,6 @@ LAMP::LAMP(LedFB &m) : mx(m), tmStringStepTime(DEFAULT_TEXT_SPEED), tmNewYearMes
   lampState.flags = 0; // сборосить все флаги состояния
   lampState.speedfactor = 1.0; // дефолтное значение
   lampState.brightness = 127;
-  //lamp_init(); // инициализация и настройка лампы (убрано, будет настройка снаружи)
 }
 
 void LAMP::lamp_init(const uint16_t curlimit)

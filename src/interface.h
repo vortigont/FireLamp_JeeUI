@@ -57,9 +57,23 @@ typedef enum _remote_action {
 
 void remote_action(RA action, ...);
 
+// кастомный обработчик, для поддержки приложения WLED APP ( https://play.google.com/store/apps/details?id=com.aircoookie.WLED )
+/**
+ * @brief обработчик, для поддержки приложения WLED APP
+ * https://play.google.com/store/apps/details?id=com.aircoookie.WLED
+ * обслуживает '/win'
+ * https://kno.wled.ge/interfaces/http-api/
+ * @param request AsyncWebServerRequest
+ */
+void wled_handle(AsyncWebServerRequest *request);
+
+void ws_action_handle(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len);
+
 String httpCallback(const String &param, const String &value, bool isset);
+
 #ifdef ESP_USE_BUTTON
 void default_buttons();
+
 /**
  * @brief подгрузить конфигурацию кнопки из стороннего файла
  * path should be relative to TCONST__backup_btn_
