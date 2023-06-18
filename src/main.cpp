@@ -98,7 +98,9 @@ void setup() {
 #endif
 
     // Add mDNS handler for WLED app
+#ifndef ESP8266
     embui.set_callback(CallBack::attach, CallBack::STAGotIP, wled_announce);
+#endif
 
     // add WLED mobile app handler
     embui.server.on(PSTR("/win"), HTTP_ANY, [](AsyncWebServerRequest *request){ wled_handle(request); } );
@@ -107,6 +109,7 @@ void setup() {
 
     // EmbUI
     embui.begin(); // Инициализируем EmbUI фреймворк - загружаем конфиг, запускаем WiFi и все зависимые от него службы
+
 #ifdef EMBUI_USE_MQTT
     //embui.mqtt(embui.param(F("m_pref")), embui.param(F("m_host")), embui.param(F("m_port")).toInt(), embui.param(F("m_user")), embui.param(F("m_pass")), mqttCallback, true); // false - никакой автоподписки!!!
     //embui.mqtt(mqttCallback, true);
@@ -162,9 +165,8 @@ void setup() {
 
 void loop() {
     embui.handle(); // цикл, необходимый фреймворку
-    // TODO: Проконтроллировать и по возможности максимально уменьшить создание объектов на стеке
-    myLamp.handle(); // цикл, обработка лампы
 
+    myLamp.handle(); // цикл, обработка лампы
 #ifdef ENCODER
     encLoop(); // цикл обработки событий энкодера. Эта функция будет отправлять в УИ изменения, только тогда, когда подошло время ее loop
 #endif
