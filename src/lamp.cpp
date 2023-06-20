@@ -135,10 +135,10 @@ void LAMP::handle()
     LOG(printf_P, PSTR("Eff:%d, FPS: %u, FastLED FPS: %u\n"), effects.getEn(), avgfps, FastLED.getFPS());
 #ifdef ESP8266
 
-    LOG(printf_P, PSTR("MEM stat: %d, HF: %d, Time: %s\n"), lampState.freeHeap, lampState.HeapFragmentation, embui.timeProcessor.getFormattedShortTime().c_str());
+    LOG(printf_P, PSTR("MEM stat: %d, HF: %d, Time: %s\n"), lampState.freeHeap, lampState.HeapFragmentation, TimeProcessor::getInstance().getFormattedShortTime().c_str());
 
 #else
-    LOG(printf_P, PSTR("MEM stat: %d, Time: %s\n"), lampState.freeHeap, embui.timeProcessor.getFormattedShortTime().c_str());
+    LOG(printf_P, PSTR("MEM stat: %d, Time: %s\n"), lampState.freeHeap, TimeProcessor::getInstance().getFormattedShortTime().c_str());
 #endif
 #endif
   }
@@ -587,10 +587,10 @@ void LAMP::sendString(const char* text, CRGB letterColor, bool forcePrint, bool 
 }
 
 String &LAMP::prepareText(String &source){
-  source.replace(F("%TM"), embui.timeProcessor.getFormattedShortTime());
+  source.replace(F("%TM"), TimeProcessor::getInstance().getFormattedShortTime());
   source.replace(F("%IP"), WiFi.localIP().toString());
   source.replace(F("%EN"), effects.getEffectName());
-  const tm *tm = localtime(embui.timeProcessor.now());
+  const tm *tm = localtime(TimeProcessor::getInstance().now());
   char buffer[11]; //"xx.xx.xxxx"
   sprintf_P(buffer,PSTR("%02d.%02d.%04d"),tm->tm_mday,tm->tm_mon+1,tm->tm_year+ TM_BASE_YEAR);
   source.replace(F("%DT"), buffer);
@@ -629,7 +629,7 @@ void LAMP::sendStringToLamp(const char* text, CRGB letterColor, bool forcePrint,
           String tmpStr = var[F("s")];
           if(mp3!=nullptr && ((mp3->isOn() && isLampOn()) || isAlarm()) && flags.playTime && tmpStr.indexOf(String(F("%TM")))>=0)
             if(FastLED.getBrightness()!=OFF_BRIGHTNESS)
-              mp3->playTime(embui.timeProcessor.getHours(), embui.timeProcessor.getMinutes(), (TIME_SOUND_TYPE)flags.playTime);
+              mp3->playTime(TimeProcessor::getInstance().getHours(), TimeProcessor::getInstance().getMinutes(), (TIME_SOUND_TYPE)flags.playTime);
 #endif
         }
         if(arr.size()>0)
@@ -661,7 +661,7 @@ void LAMP::sendStringToLamp(const char* text, CRGB letterColor, bool forcePrint,
       String tmpStr = text;
       if(mp3!=nullptr && ((mp3->isOn() && isLampOn()) || isAlarm()) && flags.playTime && tmpStr.indexOf(String(F("%TM")))>=0)
         if(FastLED.getBrightness()!=OFF_BRIGHTNESS)
-          mp3->playTime(embui.timeProcessor.getHours(), embui.timeProcessor.getMinutes(), (TIME_SOUND_TYPE)flags.playTime);
+          mp3->playTime(TimeProcessor::getInstance().getHours(), TimeProcessor::getInstance().getMinutes(), (TIME_SOUND_TYPE)flags.playTime);
 #endif
     } else { // идет печать, помещаем в очередь
       JsonArray arr; // добавляем в очередь
@@ -748,10 +748,10 @@ void LAMP::newYearMessageHandle()
     return;
 
     char strMessage[256]; // буфер
-    time_t calc = NEWYEAR_UNIXDATETIME - embui.timeProcessor.getUnixTime();
+    time_t calc = NEWYEAR_UNIXDATETIME - TimeProcessor::getInstance().getUnixTime();
 
     if(calc<0) {
-      sprintf_P(strMessage, NY_MDG_STRING2, localtime(embui.timeProcessor.now())->tm_year+ TM_BASE_YEAR);
+      sprintf_P(strMessage, NY_MDG_STRING2, localtime(TimeProcessor::getInstance().now())->tm_year+ TM_BASE_YEAR);
     } else if(calc<300){
       sprintf_P(strMessage, NY_MDG_STRING1, (int)calc, String(FPSTR(TINTF_0C1)).c_str());
     } else if(calc/60<60){
@@ -807,14 +807,14 @@ void LAMP::showTimeOnScreen(const char *value, bool force)
   bool isShowOff = doc[FPSTR(TCONST_isShowOff)];
   bool isPlayTime = doc[FPSTR(TCONST_isPlayTime)];
 
-  const tm* t = localtime(embui.timeProcessor.now());
+  const tm* t = localtime(TimeProcessor::getInstance().now());
   if(t->tm_sec && !force)
     return;
 
   LOG(printf_P, PSTR("showTime: %02d:%02d, evenWhenOff=%d, PlayTime=%d\n"), t->tm_hour,t->tm_min, isShowOff, isPlayTime);
 
   time_t tm = t->tm_hour * 60 + t->tm_min;
-  String time = isPlayTime ? String(F("%TM")) : embui.timeProcessor.getFormattedShortTime();
+  String time = isPlayTime ? String(F("%TM")) : TimeProcessor::getInstance().getFormattedShortTime();
 
   CRGB color;
   if(!(tm%60)){
@@ -827,7 +827,7 @@ void LAMP::showTimeOnScreen(const char *value, bool force)
 #ifdef MP3PLAYER
   if(!isLampOn() && isPlayTime && mp3){ // произносить время
     mp3->setIsOn(true, false);
-    mp3->playTime(embui.timeProcessor.getHours(), embui.timeProcessor.getMinutes(), (TIME_SOUND_TYPE)flags.playTime);
+    mp3->playTime(TimeProcessor::getInstance().getHours(), TimeProcessor::getInstance().getMinutes(), (TIME_SOUND_TYPE)flags.playTime);
   }
 #endif
   sendString(time.c_str(), color, isShowOff);  // выводить ли время при выключенной лампе

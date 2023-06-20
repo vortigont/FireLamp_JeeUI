@@ -2852,7 +2852,7 @@ bool EffectTime::timePrintRoutine()
     EVERY_N_SECONDS(5){
       fb.clear();
 
-      String tmp = embui.timeProcessor.getFormattedShortTime();
+      String tmp = TimeProcessor::getInstance().getFormattedShortTime();
       if(fb.cfg.h()>=16){
         int16_t xPos = speed!=254 ? random(LET_WIDTH*2,fb.cfg.w()) : (fb.cfg.w()+LET_WIDTH*2)/2;
         myLamp.sendStringToLamp(tmp.substring(0,2).c_str(), ColorFromPalette(*curPalette, speed!=254 ? random8() : 64), false, false, fb.cfg.maxHeightIndex()-LET_HEIGHT, xPos);
@@ -2886,7 +2886,7 @@ bool EffectTime::timePrintRoutine()
       mColor[0] = ColorFromPalette(*curPalette, random8());
     }
 
-    String tmp = embui.timeProcessor.getFormattedShortTime();
+    String tmp = TimeProcessor::getInstance().getFormattedShortTime();
     uint8_t shift = beatsin8(speed/5, -1, 1);
     if(fb.cfg.h()>=16){
       myLamp.sendStringToLamp(tmp.substring(0,2).c_str(), hColor[0], false, false, fb.cfg.maxHeightIndex()-LET_HEIGHT+shift, xPos);

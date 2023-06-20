@@ -99,11 +99,8 @@ function custom_hook(tid, d, id){
 function sendpost(obj_id){
     id_num = obj_id.substring(1);
  
-    //������� ������ �����������
     var ind_ = id_num.indexOf('_');
-    //���������� ����� ������ ������
     var n_row = id_num.substring(0, ind_);   
-    //���������� ����� ������� ������
     var n_col = id_num.substring(ind_ + 1);
     
     var color = draw_ctrl.color;

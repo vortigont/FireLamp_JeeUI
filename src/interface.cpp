@@ -119,6 +119,7 @@ enum class lstfile_t {
 };
 
 // forward declarations
+void block_effects_main(Interface *interf, JsonObject *data);
 void block_effect_params(Interface *interf, JsonObject *data);
 void show_effects_config(Interface *interf, JsonObject *data);
 void show_settings_mp3(Interface *interf, JsonObject *data);
@@ -282,7 +283,7 @@ void pubCallback(Interface *interf){
     LOG(println, F("pubCallback :"));
     if (!interf) return;
     interf->json_frame_value();
-    interf->value(FPSTR(TCONST_pTime), embui.timeProcessor.getFormattedShortTime(), true);
+    interf->value(FPSTR(TCONST_pTime), TimeProcessor::getInstance().getFormattedShortTime(), true);
 
 #if !defined(ESP32) || !defined(BOARD_HAS_PSRAM)    
     #ifdef PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED
@@ -351,13 +352,13 @@ void block_effect_params(Interface *interf, JsonObject *data){
 
     interf->json_section_begin(FPSTR(TCONST_set_effect));
 
-    interf->text(FPSTR(TCONST_effname), "", FPSTR(TINTF_effrename), false);       // поле под новое имя оставляем пустым
+    interf->text(FPSTR(TCONST_effname), "", FPSTR(TINTF_effrename));       // поле под новое имя оставляем пустым
 #ifdef MP3PLAYER
-    interf->text(FPSTR(TCONST_soundfile), tmpSoundfile, FPSTR(TINTF_0B2), false);
+    interf->text(FPSTR(TCONST_soundfile), tmpSoundfile, FPSTR(TINTF_0B2));
 #endif
     interf->json_section_line();
-        interf->checkbox(FPSTR(TCONST_eff_sel), confEff->canBeSelected(), FPSTR(TINTF_in_sel_lst), false);      // доступен для выбора в выпадающем списке на главной странице
-        interf->checkbox(FPSTR(TCONST_eff_fav), confEff->isFavorite(), FPSTR(TINTF_in_demo), false);            // доступен в демо-режиме
+        interf->checkbox(FPSTR(TCONST_eff_sel), confEff->canBeSelected(), FPSTR(TINTF_in_sel_lst));      // доступен для выбора в выпадающем списке на главной странице
+        interf->checkbox(FPSTR(TCONST_eff_fav), confEff->isFavorite(), FPSTR(TINTF_in_demo));            // доступен в демо-режиме
     interf->json_section_end();
 
     interf->spacer();
@@ -392,6 +393,51 @@ void block_effect_params(Interface *interf, JsonObject *data){
     interf->button_submit_value(FPSTR(TCONST_set_effect), FPSTR(TCONST_makeidx), FPSTR(TINTF_007), FPSTR(P_BLACK));
 
     interf->json_section_end(); // json_section_begin(FPSTR(TCONST_set_effect));
+}
+
+/**
+ * @brief индексная страница WebUI
+ * 
+ */
+void section_main_frame(Interface *interf, JsonObject *data){
+    if (!interf) return;
+
+    interf->json_frame_interface(); //FPSTR(TINTF_080));
+
+    interf->json_section_manifest(TINTF_080, 0, LAMPFW_VERSION_STRING);       // app name/version manifest
+    interf->json_section_end();
+
+    block_menu(interf, data);
+    block_effects_main(interf, data);
+
+    interf->json_frame_flush();
+
+/*
+    // publish firmware version
+    interf->json_frame_value();
+    interf->value(F("lamp_ver"), F(LAMPFW_VERSION_STRING), true);
+    interf->json_frame_flush();
+*/
+#ifdef ESP8266
+    if(!(WiFi.getMode() & WIFI_STA))
+#else
+    if(!(WiFi.getMode() & WIFI_MODE_STA))
+#endif
+    {
+        // форсируем выбор вкладки настройки WiFi если контроллер не подключен к внешней AP
+        interf->json_frame_interface();
+            basicui::block_settings_netw(interf, data);
+/*
+            interf->json_section_main(FPSTR(T_SET_WIFI), FPSTR(TINTF_028));
+            block_only_wifi(interf, data);
+            interf->json_section_end();
+        interf->json_frame_flush();
+        if(!embui.sysData.isWiFiScanning){ // автосканирование при входе в настройки
+            embui.sysData.isWiFiScanning = true;
+            set_scan_wifi(interf, data);
+        }
+*/
+    }
 }
 
 /**
@@ -517,7 +563,6 @@ void show_effects_config(Interface *interf, JsonObject *data){
         interf->json_section_content();
         interf->select(FPSTR(TCONST_effListConf), (int)confEff->eff_nb, FPSTR(TINTF_00A),
                         true,   // direct
-                        false,  // skiplabel
                         FPSTR(TCONST_eff_fulllist_json)
                 );
         interf->json_section_end();
@@ -645,7 +690,6 @@ void block_effect_controls(Interface *interf, JsonObject *data){
                     if(interf) interf->text(String(FPSTR(TCONST_dynCtrl)) + String(ctrl->getId())
                     , ctrl->getVal()
                     , ctrlName
-                    , true
                     );
 #ifdef EMBUI_USE_MQTT
                     embui.publish(String(FPSTR(TCONST_embui_pub_)) + ctrlId, ctrl->getVal(), true);
@@ -899,7 +943,7 @@ void show_main_flags(Interface *interf, JsonObject *data){
 /* Страница "Эффекты" (начальная страница)
     здесь выводится список эффектов который не содержит "скрытые" элементы
 */
-void block_effects_main(Interface *interf, JsonObject *data, bool fast=true){
+void block_effects_main(Interface *interf, JsonObject *data){
     confEff = NULL; // т.к. не в конфигурировании, то сбросить данное значение
     if (!interf) return;
 
@@ -919,10 +963,10 @@ void block_effects_main(Interface *interf, JsonObject *data, bool fast=true){
 
     if(LittleFS.exists(FPSTR(TCONST_eff_list_json))){
         // формируем и отправляем кадр с запросом подгрузки внешнего ресурса
-        interf->json_frame_custom(FPSTR(TCONST_XLOAD));
+        interf->json_frame(FPSTR(TCONST_XLOAD));
         interf->json_section_content();
         // side load drop-down list from /eff_list.json file
-        interf->select(FPSTR(TCONST_eff_run), myLamp.effects.getEffnum(), FPSTR(TINTF_00A), true, false, FPSTR(TCONST_eff_list_json));
+        interf->select(FPSTR(TCONST_eff_run), myLamp.effects.getEffnum(), FPSTR(TINTF_00A), true, FPSTR(TCONST_eff_list_json));
         interf->json_section_end();
 
         // build a block of controls for current effect
@@ -1113,7 +1157,7 @@ void block_lamp_config(Interface *interf, JsonObject *data){
         }
     }
     interf->json_section_begin(FPSTR(TCONST_add_lamp_config));
-        interf->text(FPSTR(TCONST_fileName2), filename, FPSTR(TINTF_01A), false);
+        interf->text(FPSTR(TCONST_fileName2), filename, FPSTR(TINTF_01A));
         interf->button_submit(FPSTR(TCONST_add_lamp_config), FPSTR(TINTF_01B));
     interf->json_section_end();
 
@@ -1236,7 +1280,7 @@ void block_lamp_textsend(Interface *interf, JsonObject *data){
                 //interf->number(FPSTR(TCONST_ny_unix), FPSTR(TINTF_050));
                 String datetime;
                 TimeProcessor::getDateTimeString(datetime, embui.paramVariant(FPSTR(TCONST_ny_unix)));
-                interf->text(FPSTR(TCONST_ny_unix), datetime, FPSTR(TINTF_050), false);
+                interf->text(FPSTR(TCONST_ny_unix), datetime, FPSTR(TINTF_050));
                 interf->button_submit(FPSTR(TCONST_edit_text_config), FPSTR(TINTF_008), FPSTR(P_GRAY));
             interf->spacer();
                 //interf->button(FPSTR(TCONST_effects), FPSTR(TINTF_00B));
@@ -1263,7 +1307,7 @@ void block_drawing(Interface *interf, JsonObject *data){
     if (!interf) return;
     interf->json_section_main(FPSTR(TCONST_drawing), FPSTR(TINTF_0CE));
 
-    DynamicJsonDocument doc(512);
+    StaticJsonDocument<256>doc;
     JsonObject param = doc.to<JsonObject>();
 
     param[FPSTR(TCONST_width)] = mx.cfg.w();
@@ -1271,9 +1315,8 @@ void block_drawing(Interface *interf, JsonObject *data){
     param[FPSTR(TCONST_blabel)] = FPSTR(TINTF_0CF);
     param[FPSTR(TCONST_drawClear)] = FPSTR(TINTF_0D9);
 
-
     interf->checkbox(FPSTR(TCONST_drawbuff), myLamp.isDrawOn(), FPSTR(TINTF_0CE), true);
-    interf->custom(FPSTR(TCONST_drawing_ctrl), FPSTR(TCONST_drawing), embui.param(FPSTR(TCONST_txtColor)), FPSTR(TINTF_0D0), param);
+    interf->div(FPSTR(TCONST_drawing_ctrl), FPSTR(TCONST_drawing), embui.param(FPSTR(TCONST_txtColor)), FPSTR(TINTF_0D0), (char*)0, param);
     param.clear();
 
     interf->json_section_end();
@@ -1411,8 +1454,8 @@ void block_settings_mic(Interface *interf, JsonObject *data){
 
     interf->json_section_begin(FPSTR(TCONST_set_mic));
     if (!myLamp.isMicCalibration()) {
-        interf->number(FPSTR(TCONST_micScale), round(myLamp.getLampState().getMicScale() * 100) / 100, FPSTR(TINTF_022), 0.01, 0.0, 2.0);
-        interf->number(FPSTR(TCONST_micNoise), round(myLamp.getLampState().getMicNoise() * 100) / 100, FPSTR(TINTF_023), 0.01, 0.0, 32.0);
+        interf->number_constrained<float>(FPSTR(TCONST_micScale), round(myLamp.getLampState().getMicScale() * 100) / 100, FPSTR(TINTF_022), 0.01, 0.0, 2.0);
+        interf->number_constrained<float>(FPSTR(TCONST_micNoise), round(myLamp.getLampState().getMicNoise() * 100) / 100, FPSTR(TINTF_023), 0.01, 0.0, 32.0);
         interf->range (FPSTR(TCONST_micnRdcLvl), (unsigned)myLamp.getLampState().getMicNoiseRdcLevel(), 0, 4, 1, FPSTR(TINTF_024), false);
 
         interf->button_submit(FPSTR(TCONST_set_mic), FPSTR(TINTF_008), FPSTR(P_GRAY));
@@ -1787,7 +1830,7 @@ void set_settings_time(Interface *interf, JsonObject *data){
 #endif
     basicui::section_settings_frame(interf, data);
 }
-*/
+
 void block_settings_update(Interface *interf, JsonObject *data){
     if (!interf) return;
     interf->json_section_hidden(FPSTR(T_DO_OTAUPD), FPSTR(TINTF_056));
@@ -1796,6 +1839,7 @@ void block_settings_update(Interface *interf, JsonObject *data){
     interf->button(FPSTR(T_REBOOT), FPSTR(TINTF_096), !data ? FPSTR(P_RED) : F(""));       // кнопка перехода в настройки времени
     interf->json_section_end();
 }
+*/
 
 void block_settings_event(Interface *interf, JsonObject *data){
     if (!interf) return;
@@ -1804,7 +1848,7 @@ void block_settings_event(Interface *interf, JsonObject *data){
     interf->checkbox(FPSTR(TCONST_Events), myLamp.IsEventsHandled(), FPSTR(TINTF_086), true);
 
     interf->json_section_begin(FPSTR(TCONST_event_conf));
-    interf->select(FPSTR(TCONST_eventList), 0, FPSTR(TINTF_05B), false, false );
+    interf->select<int>(FPSTR(TCONST_eventList), 0, FPSTR(TINTF_05B));
 
     int num = 0;
     LList<DEV_EVENT *> *events= myLamp.events.getEvents();
@@ -2042,7 +2086,7 @@ void show_event_conf(Interface *interf, JsonObject *data){
                 String msg = !err && doc.containsKey(FPSTR(TCONST_msg)) ? doc[FPSTR(TCONST_msg)] : cur_edit_event->getMessage();
 
                 interf->spacer(FPSTR(TINTF_0BA));
-                interf->text(FPSTR(TCONST_msg), msg, FPSTR(TINTF_070), false);
+                interf->text(FPSTR(TCONST_msg), msg, FPSTR(TINTF_070));
                 interf->json_section_line();
                     interf->range(FPSTR(TCONST_alarmP), alarmP, 1, 15, 1, FPSTR(TINTF_0BB), false);
                     interf->range(FPSTR(TCONST_alarmT), alarmT, 1, 15, 1, FPSTR(TINTF_0BC), false);
@@ -2087,7 +2131,7 @@ void show_event_conf(Interface *interf, JsonObject *data){
             }
             break;
         default:
-            interf->text(FPSTR(TCONST_msg), cur_edit_event->getMessage(), FPSTR(TINTF_070), false);
+            interf->text(FPSTR(TCONST_msg), cur_edit_event->getMessage(), FPSTR(TINTF_070));
             break;
     }
     interf->json_section_hidden(FPSTR(TCONST_repeat), FPSTR(TINTF_071));
@@ -2248,11 +2292,11 @@ void show_butt_conf(Interface *interf, JsonObject *data){
     }
     interf->json_section_end();
 
-    interf->text(FPSTR(TCONST_bparam),(btn? btn->getParam() : String("")),FPSTR(TINTF_0B9),false);
+    interf->text(FPSTR(TCONST_bparam), btn? btn->getParam() : String(), FPSTR(TINTF_0B9));
 
     interf->checkbox(FPSTR(TCONST_on), btn? btn->flags.on : 0, FPSTR(TINTF_07C), false);
     interf->checkbox(FPSTR(TCONST_hold), btn? btn->flags.hold : 0, FPSTR(TINTF_07D), false);
-    interf->number(FPSTR(TCONST_clicks), btn? btn->flags.click : 0, FPSTR(TINTF_07E), 1, 0, 7);
+    interf->number_constrained(FPSTR(TCONST_clicks), btn? btn->flags.click : 0, FPSTR(TINTF_07E), 1, 0, 7);
     interf->checkbox(FPSTR(TCONST_onetime), btn? btn->flags.onetime&1 : 0, FPSTR(TINTF_07F), false);
 
     if (btn) {
@@ -2441,7 +2485,7 @@ void set_mp3flag(Interface *interf, JsonObject *data){
         mp3->setIsOn(myLamp.isONMP3(), false); // при выключенной - не форсировать, но произнести время, но не ранее чем через 10с после перезагрузки
         if(myLamp.isONMP3() && millis()>10000)
             if( !data->containsKey(FPSTR(TCONST_force)) || (*data)[FPSTR(TCONST_force)] ) // при наличие force="1" или без этого ключа
-                mp3->playTime(embui.timeProcessor.getHours(), embui.timeProcessor.getMinutes(), (TIME_SOUND_TYPE)myLamp.getLampSettings().playTime);
+                mp3->playTime(TimeProcessor::getInstance().getHours(), TimeProcessor::getInstance().getMinutes(), (TIME_SOUND_TYPE)myLamp.getLampSettings().playTime);
     }
     save_lamp_flags();
 }
@@ -2535,14 +2579,14 @@ void set_gpios(Interface *interf, JsonObject *data){
 
 void section_effects_frame(Interface *interf, JsonObject *data){
     if (!interf) return;
-    interf->json_frame_interface(FPSTR(TINTF_080));
+    interf->json_frame_interface(); //FPSTR(TINTF_080));
     block_effects_main(interf, data);
     interf->json_frame_flush();
 }
 
 void section_text_frame(Interface *interf, JsonObject *data){
     if (!interf) return;
-    interf->json_frame_interface(FPSTR(TINTF_080));
+    interf->json_frame_interface(); //FPSTR(TINTF_080));
     block_lamptext(interf, data);
     interf->json_frame_flush();
 }
@@ -2550,7 +2594,7 @@ void section_text_frame(Interface *interf, JsonObject *data){
 void section_drawing_frame(Interface *interf, JsonObject *data){
     // Рисование
     if (!interf) return;
-    interf->json_frame_interface(FPSTR(TINTF_080));
+    interf->json_frame_interface();  //FPSTR(TINTF_080));
     block_drawing(interf, data);
     interf->json_frame_flush();
 }
@@ -2742,61 +2786,20 @@ void user_settings_frame(Interface *interf, JsonObject *data){
     block_lamp_config(interf, data);
 }
 
-/**
- * @brief индексная страница WebUI
- * 
- */
-void section_main_frame(Interface *interf, JsonObject *data){
-    if (!interf) return;
-
-    interf->json_frame_interface(FPSTR(TINTF_080));
-
-    block_menu(interf, data);
-    block_effects_main(interf, data);
-
-    interf->json_frame_flush();
-
-    // publish firmware version
-    interf->json_frame_value();
-    interf->value(F("lamp_ver"), F(LAMPFW_VERSION_STRING), true);
-    interf->json_frame_flush();
-
-#ifdef ESP8266
-    if(!(WiFi.getMode() & WIFI_STA))
-#else
-    if(!(WiFi.getMode() & WIFI_MODE_STA))
-#endif
-    {
-        // форсируем выбор вкладки настройки WiFi если контроллер не подключен к внешней AP
-        interf->json_frame_interface();
-            basicui::block_settings_netw(interf, data);
-/*
-            interf->json_section_main(FPSTR(T_SET_WIFI), FPSTR(TINTF_028));
-            block_only_wifi(interf, data);
-            interf->json_section_end();
-        interf->json_frame_flush();
-        if(!embui.sysData.isWiFiScanning){ // автосканирование при входе в настройки
-            embui.sysData.isWiFiScanning = true;
-            set_scan_wifi(interf, data);
-        }
-*/
-    }
-}
-
 // Страница "Настройки ESP"
 void section_sys_settings_frame(Interface *interf, JsonObject *data){
     if (!interf) return;
-    interf->json_frame_interface(FPSTR(TINTF_08F));
+    interf->json_frame_interface(); // FPSTR(TINTF_08F));
 
     interf->json_section_main(FPSTR(TCONST_sysSettings), FPSTR(TINTF_08F));
         interf->spacer(FPSTR(TINTF_092)); // заголовок
         interf->json_section_line(FPSTR(TINTF_092)); // расположить в одной линии
 #ifdef ESP_USE_BUTTON
-            interf->number(FPSTR(TCONST_PINB),FPSTR(TINTF_094), 1, 0, NUM_OUPUT_PINS);
+            interf->number_constrained(FPSTR(TCONST_PINB),FPSTR(TINTF_094), 1, 0, NUM_OUPUT_PINS);
 #endif
         interf->json_section_end(); // конец контейнера
         interf->spacer();
-        interf->number(FPSTR(TCONST_CLmt), FPSTR(TINTF_095), /* step */ 100, /* min */ 1000, /* max*/ 16000);    // current limit
+        interf->number_constrained(FPSTR(TCONST_CLmt), FPSTR(TINTF_095), /* step */ 100, /* min */ 1000, /* max*/ 16000);    // current limit
 
         // Editor frame
         //interf->json_section_main(FPSTR(TCONST_edit), "");
@@ -2867,8 +2870,8 @@ void page_gpiocfg(Interface *interf, JsonObject *data){
     // gpio для подключения DP-плеера
     interf->json_section_hidden(FPSTR(TCONST_playMP3), "DFPlayer");
         interf->json_section_line(); // расположить в одной линии
-            interf->number(FPSTR(TCONST_mp3rx), doc[FPSTR(TCONST_mp3rx)] | static_cast<int>(GPIO_NUM_NC), FPSTR(TINTF_097), /*step*/ 1, /*min*/ -1, /*max*/ NUM_OUPUT_PINS);
-            interf->number(FPSTR(TCONST_mp3tx), doc[FPSTR(TCONST_mp3tx)] | static_cast<int>(GPIO_NUM_NC), FPSTR(TINTF_098), 1, -1, NUM_OUPUT_PINS);
+            interf->number_constrained(FPSTR(TCONST_mp3rx), doc[FPSTR(TCONST_mp3rx)] | static_cast<int>(GPIO_NUM_NC), FPSTR(TINTF_097), /*step*/ 1, /*min*/ -1, /*max*/ NUM_OUPUT_PINS);
+            interf->number_constrained(FPSTR(TCONST_mp3tx), doc[FPSTR(TCONST_mp3tx)] | static_cast<int>(GPIO_NUM_NC), FPSTR(TINTF_098), 1, -1, NUM_OUPUT_PINS);
         interf->json_section_end();
         interf->button_submit_value(FPSTR(TCONST_set_gpio), 1, FPSTR(TINTF_008));      // value 1 for DFPlayer gpio's
     interf->json_section_end();
@@ -2878,8 +2881,8 @@ void page_gpiocfg(Interface *interf, JsonObject *data){
     // gpio для подключения 7 сегментного индикатора
     interf->json_section_hidden(FPSTR(TCONST_tm24), "TM1637 Display");
         interf->json_section_line(); // расположить в одной линии
-            interf->number(FPSTR(TCONST_tm_clk), doc[FPSTR(TCONST_tm_clk)] | static_cast<int>(GPIO_NUM_NC), F("TM Clk gpio"), /*step*/ 1, /*min*/ -1, /*max*/ NUM_OUPUT_PINS);
-            interf->number(FPSTR(TCONST_tm_dio), doc[FPSTR(TCONST_tm_dio)] | static_cast<int>(GPIO_NUM_NC), F("TM DIO gpio"), 1, -1, NUM_OUPUT_PINS);
+            interf->number_constrained(FPSTR(TCONST_tm_clk), doc[FPSTR(TCONST_tm_clk)] | static_cast<int>(GPIO_NUM_NC), F("TM Clk gpio"), /*step*/ 1, /*min*/ -1, /*max*/ NUM_OUPUT_PINS);
+            interf->number_constrained(FPSTR(TCONST_tm_dio), doc[FPSTR(TCONST_tm_dio)] | static_cast<int>(GPIO_NUM_NC), F("TM DIO gpio"), 1, -1, NUM_OUPUT_PINS);
         interf->json_section_end();
         interf->button_submit_value(FPSTR(TCONST_set_gpio), 4, FPSTR(TINTF_008));      // value 4 for TM1637 gpio's
     interf->json_section_end();
@@ -2888,8 +2891,8 @@ void page_gpiocfg(Interface *interf, JsonObject *data){
     // gpio для подключения КМОП транзистора
     interf->json_section_hidden(FPSTR(TCONST_mosfet_gpio), "MOSFET");
         interf->json_section_line(); // расположить в одной линии
-            interf->number(FPSTR(TCONST_mosfet_gpio), doc[FPSTR(TCONST_mosfet_gpio)] | static_cast<int>(GPIO_NUM_NC), F("MOSFET gpio"), /*step*/ 1, /*min*/ -1, /*max*/ NUM_OUPUT_PINS);
-            interf->number(FPSTR(TCONST_mosfet_ll),   doc[FPSTR(TCONST_mosfet_ll)]   | 1, F("MOSFET logic level"), 1, 0, 1);
+            interf->number_constrained(FPSTR(TCONST_mosfet_gpio), doc[FPSTR(TCONST_mosfet_gpio)] | static_cast<int>(GPIO_NUM_NC), F("MOSFET gpio"), /*step*/ 1, /*min*/ -1, /*max*/ NUM_OUPUT_PINS);
+            interf->number_constrained(FPSTR(TCONST_mosfet_ll),   doc[FPSTR(TCONST_mosfet_ll)]   | 1, F("MOSFET logic level"), 1, 0, 1);
         interf->json_section_end();
         interf->button_submit_value(FPSTR(TCONST_set_gpio), 2, FPSTR(TINTF_008));      // value 2 for MOSFET gpio's
     interf->json_section_end();
@@ -2897,8 +2900,8 @@ void page_gpiocfg(Interface *interf, JsonObject *data){
     // gpio AUX
     interf->json_section_hidden(FPSTR(TCONST_aux_gpio), FPSTR(TCONST_AUX));
         interf->json_section_line(); // расположить в одной линии
-            interf->number(FPSTR(TCONST_aux_gpio), doc[FPSTR(TCONST_aux_gpio)] | static_cast<int>(GPIO_NUM_NC), F("AUX gpio"), /*step*/ 1, /*min*/ -1, /*max*/ NUM_OUPUT_PINS);
-            interf->number(FPSTR(TCONST_aux_ll),   doc[FPSTR(TCONST_aux_ll)]   | 1, F("AUX logic level"), 1, 0, 1);
+            interf->number_constrained(FPSTR(TCONST_aux_gpio), doc[FPSTR(TCONST_aux_gpio)] | static_cast<int>(GPIO_NUM_NC), F("AUX gpio"), /*step*/ 1, /*min*/ -1, /*max*/ NUM_OUPUT_PINS);
+            interf->number_constrained(FPSTR(TCONST_aux_ll),   doc[FPSTR(TCONST_aux_ll)]   | 1, F("AUX logic level"), 1, 0, 1);
         interf->json_section_end();
         interf->button_submit_value(FPSTR(TCONST_set_gpio), 3, FPSTR(TINTF_008));      // value 3 for AUX gpio's
     interf->json_section_end();
@@ -3210,7 +3213,7 @@ void sync_parameters(){
     CALL_INTF_OBJ(set_eventflag);
     //set_eventflag(nullptr, &obj);
     doc.clear();
-    embui.timeProcessor.attach_callback(std::bind(&LAMP::setIsEventsHandled, &myLamp, myLamp.IsEventsHandled())); // только после синка будет понятно включены ли события
+    TimeProcessor::getInstance().attach_callback(std::bind(&LAMP::setIsEventsHandled, &myLamp, myLamp.IsEventsHandled())); // только после синка будет понятно включены ли события
 
     myLamp.setGlobalBrightness(embui.paramVariant(FPSTR(TCONST_GlobBRI))); // починить бросок яркости в 255 при первом включении
     obj[FPSTR(TCONST_GBR)] = tmp.isGlobalBrightness;

@@ -200,7 +200,7 @@ void EVENT_MANAGER::saveConfig(const char *cfg)
 // обработка эвентов лампы
 void event_worker(DEV_EVENT *event){
     RA action = RA_UNKNOWN;
-    LOG(printf_P, PSTR("%s - %s\n"), ((DEV_EVENT *)event)->getName().c_str(), embui.timeProcessor.getFormattedShortTime().c_str());
+    LOG(printf_P, PSTR("%s - %s\n"), ((DEV_EVENT *)event)->getName().c_str(), TimeProcessor::getInstance().getFormattedShortTime().c_str());
 
     switch (event->getEvent()) {
     case EVENT_TYPE::ON : {

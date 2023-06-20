@@ -73,7 +73,7 @@ TMCLOCK *tm1637 = nullptr;
 void gpio_setup();
 
 // mDNS announce for WLED app
-void wled_announce();
+void wled_announce(WiFiEvent_t cbEvent, WiFiEventInfo_t i);   // wifi_event_id_t onEvent(WiFiEventFuncCb cbEvent, arduino_event_id_t event = ARDUINO_EVENT_MAX);
 // 404 handler
 void http_notfound(AsyncWebServerRequest *request);
 
@@ -99,7 +99,8 @@ void setup() {
 
     // Add mDNS handler for WLED app
 #ifndef ESP8266
-    embui.set_callback(CallBack::attach, CallBack::STAGotIP, wled_announce);
+//    embui.set_callback(CallBack::attach, CallBack::STAGotIP, wled_announce);
+    WiFi.onEvent([](WiFiEvent_t e, WiFiEventInfo_t i){wled_announce(e, i);});
 #endif
 
     // add WLED mobile app handler
@@ -347,9 +348,13 @@ void gpio_setup(){
 #endif 
 }
 
-void wled_announce(){
-    MDNS.addService("wled", "tcp", 80);
-    MDNS.addServiceTxt("wled", "tcp", "mac", (const char*)embui.mc);
+void wled_announce(WiFiEvent_t cbEvent, WiFiEventInfo_t i){
+    switch (cbEvent){
+        case SYSTEM_EVENT_STA_GOT_IP:
+            MDNS.addService("wled", "tcp", 80);
+            MDNS.addServiceTxt("wled", "tcp", "mac", (const char*)embui.macid());
+        default:;
+    }
 }
 
 // rewriter for buggy WLED app
