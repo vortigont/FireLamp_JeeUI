@@ -75,7 +75,7 @@ void gpio_setup();
 // mDNS announce for WLED app
 void wled_announce(WiFiEvent_t cbEvent, WiFiEventInfo_t i);   // wifi_event_id_t onEvent(WiFiEventFuncCb cbEvent, arduino_event_id_t event = ARDUINO_EVENT_MAX);
 // 404 handler
-void http_notfound(AsyncWebServerRequest *request);
+bool http_notfound(AsyncWebServerRequest *request);
 
 
 // Arduino setup
@@ -104,9 +104,9 @@ void setup() {
 #endif
 
     // add WLED mobile app handler
-    embui.server.on(PSTR("/win"), HTTP_ANY, [](AsyncWebServerRequest *request){ wled_handle(request); } );
-    // 404 handler
-    embui.server.onNotFound([](AsyncWebServerRequest *request){http_notfound(request);});
+    embui.server.on("/win", HTTP_ANY, [](AsyncWebServerRequest *request){ wled_handle(request); } );
+    // 404 handler for WLED workaround
+    embui.on_notfound( [](AsyncWebServerRequest *r){ return http_notfound(r);} );
 
     // EmbUI
     embui.begin(); // Инициализируем EmbUI фреймворк - загружаем конфиг, запускаем WiFi и все зависимые от него службы
@@ -359,12 +359,13 @@ void wled_announce(WiFiEvent_t cbEvent, WiFiEventInfo_t i){
 
 // rewriter for buggy WLED app
 // https://github.com/Aircoookie/WLED-App/issues/37
-void http_notfound(AsyncWebServerRequest *request){
+bool http_notfound(AsyncWebServerRequest *request){
     if (request->url().indexOf("win&")){
         String req(request->url());
         req.replace(F("win&"), F("win?"));
         request->redirect(req);
-        return;
+        return true;
     }
-    request->send(404);
+    // not our case, no action was made
+    return false;
 }
