@@ -58,17 +58,20 @@ function rgbToHex(color) {
   function hex(x) {
     return ("0" + parseInt(x).toString(16)).slice(-2);
   }
-  return     "#" + hex(bg[1]) + hex(bg[2]) + hex(bg[3]);
+  return     "0x" + hex(bg[1]) + hex(bg[2]) + hex(bg[3]);
 }
 
 function custom_hook(tid, d, id){
-	if(tid==id+"-c"){
+  if(id=="draw-color"){   // color selector
 		var cctrl = document.getElementById(tid);
 		if(cctrl.value=="#000000")
 			draw_ctrl.selcolor = "";
-  		else
+  	else
 			draw_ctrl.selcolor = cctrl.value;
-	} else if(tid==id+"-b"){
+    return;
+  }
+
+  if(id=="draw-fill"){  // fill button
 	    var elem;
 	    var elemColor = draw_ctrl.selcolor;
 	    if (elemColor === '#000000') elemColor = "";
@@ -76,23 +79,26 @@ function custom_hook(tid, d, id){
  
 	    for(var i=0; i<draw_ctrl.height; i++){
 	      for(var j=0; j<draw_ctrl.width; j++){
-		elem = document.getElementById("c"+i+"_"+j);
-		elem.style.backgroundColor = elemColor;
+          elem = document.getElementById("c"+i+"_"+j);
+          elem.style.backgroundColor = elemColor;
 	      }
 	    }
-	    var data = {}; data[draw_ctrl.ctrl+"_fill"]=draw_ctrl.selcolor;
-      
-	    ws.send_post(data);
+	    let data = { "fill": draw_ctrl.selcolor.replace("#", "0x")};
+      //data[draw_ctrl.ctrl+"_fill"]=draw_ctrl.selcolor;
+	    ws.send_post("draw_dat", data);
+      return;
 	}
-  else if(tid==id+"-d"){
+
+  if(id=="draw-clear"){  // clear button
     for(var i=0; i<draw_ctrl.height; i++){
       for(var j=0; j<draw_ctrl.width; j++){
         elem = document.getElementById("c"+i+"_"+j);
          elem.style.backgroundColor = "";
       }
     }
-    var data = {drawing_ctrl_fill: ""};
-    ws.send_post(data);
+    //var data = {};  // {drawing_ctrl_fill: ""};
+    let data = { "fill": "0x000000"};
+    ws.send_post("draw_dat", data);
   }
 }
 
@@ -100,16 +106,16 @@ function sendpost(obj_id){
     id_num = obj_id.substring(1);
  
     var ind_ = id_num.indexOf('_');
-    var n_row = id_num.substring(0, ind_);   
-    var n_col = id_num.substring(ind_ + 1);
+    let n_row = parseInt(id_num.substring(0, ind_));
+    let n_col = parseInt(id_num.substring(ind_ + 1));
     
     var color = draw_ctrl.color;
     if (color.slice(0, 1) != '#' && color!='')
     	color = rgbToHex(color);
 
-    console.log(n_col,n_row,color);
-    var data = {}; data[draw_ctrl.ctrl] = "[\""+color+"\","+n_col+","+n_row+"]"; 
-    ws.send_post(data);
+    //console.log(n_col,n_row,color);
+    let data = { "color": color, "row": n_row, "col": n_col};
+    ws.send_post("draw_dat", data);
 }
 
 function onTouch(evt) {

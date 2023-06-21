@@ -220,15 +220,15 @@
 		<!-- This is custom drawing control -->
 			<div class="pure-u-sm-1-3 {{#if2 _this.block.length > 2}}pure-u-md-1-3{{/if2}} {{#if2 _this.block.length > 3}}pure-u-lg-1-4{{/if2}} {{#if2 _this.block.length > 4}}pure-u-xl-1-5{{/if2}}">
 				<span>{{label}}</span><span id="{{id}}-val"> ({{value}})</span>
-				<input type="color" id="{{id}}-c" class="pure-u-1" value="{{value}}" style="height: 35px; margin-top: 10px" {{onevent "input", "on_input", id}}>
+				<input type="color" id="{{id}}-c" class="pure-u-1" value="{{value}}" style="height: 35px; margin-top: 10px" {{onevent "input", "on_input", "draw-color"}}>
 			</div>
 			<div class="pure-u-sm-1-3 {{#if2 _this.block.length > 2}}pure-u-md-1-3{{/if2}} {{#if2 _this.block.length > 3}}pure-u-lg-1-4{{/if2}} {{#if2 _this.block.length > 4}}pure-u-xl-1-5{{/if2}}">
 				<span>&nbsp;</span>
-				<div id="{{id}}-b" {{#if2 color}}style="background-color: {{param.bcolor}}"{{/if2}} class="pure-u-1 pure-button pure-button-primary mr" {{onevent "click", "on_change", id}}>{{params.blabel}}</div>
+				<div id="{{id}}-fill" {{#if2 color}}style="background-color: {{params.bcolor}}"{{/if2}} class="pure-u-1 pure-button pure-button-primary mr" {{onevent "click", "on_change", "draw-fill"}}>{{params.blabel}}</div>
 			</div>
 			<div class="pure-u-sm-1-3">
 				<span>&nbsp;</span>
-				<div id="{{id}}-d" {{#if2 color}}style="background-color: {{param.bcolor}}"{{/if2}} class="pure-u-1 pure-button pure-button-primary mr" {{onevent "click", "on_change", id}}>{{params.drawClear}}</div>
+				<div id="{{id}}-clear" {{#if2 color}}style="background-color: {{params.bcolor}}"{{/if2}} class="pure-u-1 pure-button pure-button-primary mr" {{onevent "click", "on_change", "draw-clear"}}>{{params.drawClear}}</div>
 			</div>
 			<div><table id="{{id}}-tbl" class="draw_ctrl"></table> <img src onerror='init_draw("{{id}}", {{params.width}}, {{params.height}})'></div>
 		<!-- This is custom drawing control -->

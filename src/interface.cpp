@@ -228,7 +228,7 @@ void resetAutoTimers(bool isEffects=false) // сброс таймера демо
 /**
  * @brief when action is called to display a specific page
  * this selector picks and calls correspoding method
- * using common seletor simplifes and reduces a number of registered actions required 
+ * using common selector simplifes and reduces a number of registered actions required 
  * 
  */
 void show_page_selector(Interface *interf, JsonObject *data){
@@ -1302,92 +1302,21 @@ void set_lamp_textsend(Interface *interf, JsonObject *data){
     myLamp.sendString((*data)[FPSTR(TCONST_msg)], (CRGB::HTMLColorCode)strtol(tmpStr.c_str(), NULL, 0));
 }
 
-void block_drawing(Interface *interf, JsonObject *data){
-    //Страница "Рисование"
-    if (!interf) return;
-    interf->json_section_main(FPSTR(TCONST_drawing), FPSTR(TINTF_0CE));
-
-    StaticJsonDocument<256>doc;
-    JsonObject param = doc.to<JsonObject>();
-
-    param[FPSTR(TCONST_width)] = mx.cfg.w();
-    param[FPSTR(TCONST_height)] = mx.cfg.h();
-    param[FPSTR(TCONST_blabel)] = FPSTR(TINTF_0CF);
-    param[FPSTR(TCONST_drawClear)] = FPSTR(TINTF_0D9);
-
-    interf->checkbox(FPSTR(TCONST_drawbuff), myLamp.isDrawOn(), FPSTR(TINTF_0CE), true);
-    interf->div(FPSTR(TCONST_drawing_ctrl), FPSTR(TCONST_drawing), embui.param(FPSTR(TCONST_txtColor)), FPSTR(TINTF_0D0), (char*)0, param);
-    param.clear();
-
-    interf->json_section_end();
-}
-
 /**
  * @brief UI Draw on screen function
  * 
  */
 void set_drawing(Interface *interf, JsonObject *data){
-    if (!data) return;
-
-    if(!(*data)[FPSTR(TCONST_drawing_ctrl)].isNull()){
-        StaticJsonDocument<128>doc;
-        deserializeJson(doc, (*data)[FPSTR(TCONST_drawing_ctrl)].as<const char*>());
-        JsonArray arr = doc.as<JsonArray>();
-        if (!arr.size()) return;
-        CRGB col=CRGB::White;
-        uint16_t x=mx.cfg.w()/2U, y=mx.cfg.h()/2U;
-
-        for (size_t i = 0; i < arr.size(); i++) {
-            switch(i){
-                case 0: {
-                    String tmpStr = arr[i];
-                    if (tmpStr.isEmpty()) break;
-                    tmpStr.replace(F("#"), F("0x"));
-                    unsigned long val = strtol(tmpStr.c_str(), NULL, 0);
-                    col = val;
-                    break;
-                }
-                case 1: x = arr[i]; break;
-                case 2: y = arr[i]; break;
-                default : break;
-            }
-        }
-        //LOG(printf_P, PSTR("Draw: x:%d, y:%d col:%s\n"), x, y, value);
-        return myLamp.writeDrawBuf(col,x,y);
+    // draw pixel
+    if ((*data)[P_color]){
+        CRGB c = strtol((*data)[P_color].as<const char*>(), NULL, 0);
+        myLamp.writeDrawBuf(c, (*data)["col"], (*data)["row"]);
+        return;
     }
-
     // screen solid fill
-    String key(FPSTR(TCONST_drawing_ctrl));
-    key += F("_fill");
-    if((*data)[key]){
-        //remote_action(RA_FILLMATRIX, (*data)[key].as<const char*>(), NULL);
-        String tmpStr((*data)[key].as<const char*>());
-        if(tmpStr.indexOf(",")!=-1){
-            int16_t pos = 0;
-            int16_t frompos = 0;
-            uint8_t val = 0;
-            uint32_t res = 0;
-            do {
-                frompos = pos;
-                pos = tmpStr.indexOf(",", pos);
-                if(pos!=-1){
-                    val = tmpStr.substring(frompos,pos).toInt();
-                    res=(res<<8)|val;
-                    pos++;
-                } else if(frompos<(signed)tmpStr.length()){
-                    val = tmpStr.substring(frompos,tmpStr.length()).toInt();
-                    res=(res<<8)|val; 
-                }
-            } while(pos!=-1);
-            LOG(printf_P,PSTR("RA_FILLMATRIX: %d\n"), res);
-            CRGB color(res);
-            myLamp.fillDrawBuf(color);
-        }
-        tmpStr.replace(F("#"), F("0x"));
-        long val = strtol(tmpStr.c_str(), NULL, 0);
-        //LOG(printf_P, PSTR("%s:%ld\n"), tmpStr.c_str(), val);
-        CRGB color(val);
-        myLamp.fillDrawBuf(color);
+    if ((*data)[TCONST_fill]){
+        CRGB val = strtol((*data)[TCONST_fill].as<const char*>(), NULL, 0);
+        myLamp.fillDrawBuf(val);
     }
 }
 
@@ -2591,11 +2520,23 @@ void section_text_frame(Interface *interf, JsonObject *data){
     interf->json_frame_flush();
 }
 
-void section_drawing_frame(Interface *interf, JsonObject *data){
-    // Рисование
+//Страница "Рисование"
+void page_drawing(Interface *interf, JsonObject *data){
     if (!interf) return;
     interf->json_frame_interface();  //FPSTR(TINTF_080));
-    block_drawing(interf, data);
+    interf->json_section_main(FPSTR(TCONST_drawing), FPSTR(TINTF_0CE));
+
+    StaticJsonDocument<256>doc;
+    JsonObject param = doc.to<JsonObject>();
+
+    param[FPSTR(TCONST_width)] = mx.cfg.w();
+    param[FPSTR(TCONST_height)] = mx.cfg.h();
+    param[FPSTR(TCONST_blabel)] = FPSTR(TINTF_0CF);
+    param[FPSTR(TCONST_drawClear)] = FPSTR(TINTF_0D9);
+
+    interf->checkbox(FPSTR(TCONST_drawbuff), myLamp.isDrawOn(), FPSTR(TINTF_0CE), true);
+    interf->div(FPSTR(TCONST_drawing), FPSTR(TCONST_drawing), embui.param(FPSTR(TCONST_txtColor)), FPSTR(TINTF_0D0), (char*)0, param);
+
     interf->json_frame_flush();
 }
 
@@ -3080,7 +3021,9 @@ void create_parameters(){
     embui.section_handle_add(FPSTR(TCONST_Demo), set_demoflag);
     embui.section_handle_add(FPSTR(TCONST_GBR), set_gbrflag);
     embui.section_handle_add(FPSTR(TCONST_AUX), set_auxflag);
-    embui.section_handle_add(FPSTR(TCONST_drawing), section_drawing_frame);
+    embui.section_handle_add(FPSTR(TCONST_drawing), page_drawing);
+    embui.section_handle_add(FPSTR(TCONST_draw_dat), set_drawing);
+    //embui.section_handle_add(FPSTR(TCONST_drawClear), set_clear);
 #ifdef USE_STREAMING    
     embui.section_handle_add(FPSTR(TCONST_streaming), section_streaming_frame);
     embui.section_handle_add(FPSTR(TCONST_isStreamOn), set_streaming);
@@ -3097,8 +3040,6 @@ void create_parameters(){
     embui.section_handle_add(FPSTR(TCONST_edit_lamp_config), edit_lamp_config);
 
     embui.section_handle_add(FPSTR(TCONST_edit_text_config), set_text_config);
-    embui.section_handle_add(FPSTR(TCONST_drawing_), set_drawing);
-    embui.section_handle_add(FPSTR(TCONST_drawClear), set_clear);
     embui.section_handle_add(FPSTR(TCONST_drawbuff), set_drawflag);
 
 /*
