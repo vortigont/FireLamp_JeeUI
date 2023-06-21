@@ -37,11 +37,63 @@
 */
 
 #include "actions.hpp"
-#include "lamp.h"
+
 
 void run_action(ra act){
-  // here we catch some really simple action that do not need reflecting any data to other components
+  LOG(printf_P, PSTR("run_action: %d\n"), static_cast<int>(act));
   switch (act){
+    // AUX PIN flip
+    case ra::aux_flip : {
+      if ( embui.paramVariant(FPSTR(TCONST_aux_gpio)) == -1) return;    // if AUX pin is not set, than quit
+      run_action(ra::aux, !digitalRead(embui.paramVariant(TCONST_aux_gpio)) );  // we simply flip the state here
+      break;
+    }
+
+    // demo next effect
+    case ra::demo_next : {
+      if (myLamp.getLampSettings().dRand)
+        myLamp.switcheffect(SW_RND, myLamp.getFaderFlag());
+      else
+        myLamp.switcheffect(SW_NEXT_DEMO, myLamp.getFaderFlag());
+
+      run_action(ra::eff_switch, myLamp.effects.getEffnum() );     // call switch effect as in GUI/main page
+      break;
+    }
+
+    // switch to next effect
+    case ra::eff_next : {
+      // pick next available effect (considering it is enabled)
+      run_action(ra::eff_switch, myLamp.effects.getNext());
+      break;
+    }
+
+    // switch to previous effect
+    case ra::eff_prev : {
+      // pick previous available effect (considering it is enabled)
+      run_action(ra::eff_switch, myLamp.effects.getPrev());
+      break;
+    }
+
+    // switch to previous effect
+    case ra::eff_rnd : {
+      // pick previous available effect (considering it is enabled)
+      run_action(ra::eff_switch, myLamp.effects.getByCnt(random(0, myLamp.effects.getEffectsListSize())) );
+      break;
+    }
+
+    // turn lamp ON
+    case ra::on : {
+      run_action(TCONST_ONflag, true);
+      break;
+    }
+
+    // turn lamp OFF
+    case ra::off : {
+      myLamp.stopRGB(); // выключение RGB-режима
+      run_action(TCONST_ONflag, false);
+      break;
+    }
+
     case ra::reboot : {
       // make warning signaling
       StaticJsonDocument<128> warn;
@@ -50,139 +102,31 @@ void run_action(ra act){
       run_action(ra::warn, &j);
       Task *t = new Task(5 * TASK_SECOND, TASK_ONCE, nullptr, &ts, false, nullptr, [](){ ESP.restart(); });
       t->enableDelayed();
-      return;
+      break;
     }
     default:;
   }
-  StaticJsonDocument<ACTION_PARAM_SIZE> jdoc;
-  JsonObject obj = jdoc.to<JsonObject>();
-  run_action(act, &obj);
+//  StaticJsonDocument<ACTION_PARAM_SIZE> jdoc;
+//  JsonObject obj = jdoc.to<JsonObject>();
+//  run_action(act, &obj);
 }
 
 void run_action(ra act, JsonObject *data){
-  LOG(printf_P, PSTR("run_action: %d\n"), static_cast<int>(act));
+  LOG(printf_P, PSTR("run_action_o: %d\n"), static_cast<int>(act));
   switch (act){
-    // AUX PIN On/Off
-    case ra::aux : {
-      (*data)[FPSTR(TCONST_AUX)] = (*data)[FPSTR(TCONST_value)];   // change key name
-      (*data).remove(FPSTR(TCONST_value));
-      break;
-    }
-
-    // AUX PIN flip
-    case ra::aux_flip : {
-      if ( embui.paramVariant(FPSTR(TCONST_aux_gpio)) == -1) return;    // if AUX pin is not set, than quit
-      (*data)[FPSTR(TCONST_AUX)] = !digitalRead(embui.paramVariant(FPSTR(TCONST_aux_gpio)));  // we simply flip the state here
-      break;
-    }
-
-    // demo mode On/Off
-    case ra::demo : {
-      (*data)[FPSTR(TCONST_Demo)] = (*data)[FPSTR(TCONST_value)];   // change key name
-      break;
-    }
-
-    // demo next effect
-    case ra::demo_next : {
-      if (myLamp.getLampSettings().dRand)
-          myLamp.switcheffect(SW_RND, myLamp.getFaderFlag());
-      else myLamp.switcheffect(SW_NEXT_DEMO, myLamp.getFaderFlag());
-
-      (*data)[FPSTR(TCONST_eff_run)] = myLamp.effects.getEffnum();   // call switch effect as in GUI/main page
-      break;
-    }
 
     // apply effect control value
     case ra::brt :
     case ra::brt_nofade :
     case ra::eff_ctrl : {
       // usually this action is called with key:value pair for a specific control
-        (*data)[FPSTR(TCONST_force)] = true;        // какой-то костыль с задержкой обновления WebUI
-        //set_effects_dynCtrl(nullptr, &obj);
-        //FPSTR(TCONST_dynCtrl_)
-      break;
-    }
-
-    // switch to next effect
-    case ra::eff_next : {
-      // pick next available effect (considering it is enabled)
-      (*data)[FPSTR(TCONST_eff_run)] = myLamp.effects.getNext();
-      break;
-    }
-
-    // switch to previous effect
-    case ra::eff_prev : {
-      // pick previous available effect (considering it is enabled)
-      (*data)[FPSTR(TCONST_eff_run)] = myLamp.effects.getPrev();
-      break;
-    }
-
-    // switch to previous effect
-    case ra::eff_rnd : {
-      // pick previous available effect (considering it is enabled)
-      (*data)[FPSTR(TCONST_eff_run)] = myLamp.effects.getByCnt(random(0, myLamp.effects.getEffectsListSize()));
-      break;
-    }
-
-    // switch effect to specific number
-    case ra::eff_switch : {
-      (*data)[FPSTR(TCONST_eff_run)] = (*data)[FPSTR(TCONST_value)];        // change key name and inject data to EmbUI action selector
-      break;
-    }
-#ifdef MIC_EFFECTS
-    // simple actions with provided key:value
-    case ra::miconoff : {
-      (*data)[FPSTR(TCONST_Mic)] = (*data)[FPSTR(TCONST_value)];   // change key name
-      break;
-    }
-#endif  //#ifdef MIC_EFFECTS
-#ifdef MP3PLAYER
-    //MP3: play specific track
-    case ra::mp3_eff : {
-      if(!myLamp.isONMP3()) return;
-      mp3->playEffect((*data)[FPSTR(TCONST_value)], "");
-      return; // no need to execute any UI action
-    }
-    //MP3: enable/disable
-    case ra::mp3_enable : {
-      if(!myLamp.isONMP3()) return;
-      (*data)[FPSTR(TCONST_isOnMP3)] = (*data)[FPSTR(TCONST_value)];   // change key name
-      break;
-    }
-    //MP3: play previous/next track?
-    case ra::mp3_next :
-    case ra::mp3_prev : {
-      if(!myLamp.isONMP3()) return;
-      int offset = (*data)[FPSTR(TCONST_value)];
-      if ( act == ra::mp3_prev) offset *= -1;
-      mp3->playEffect(mp3->getCurPlayingNb() + offset, "");
-      return; // no need to execute any UI action
-    }
-    //MP3: set volume
-    case ra::mp3_vol : {
-      if(!myLamp.isONMP3()) return;
-      (*data)[FPSTR(TCONST_mp3volume)] = (*data)[FPSTR(TCONST_value)];   // change key name
-      break;
-    }
-#endif  //#ifdef MP3PLAYER
-
-    // turn lamp ON
-    case ra::on : {
-      (*data)[FPSTR(TCONST_ONflag)] = true;
-      break;
-    }
-
-    // turn lamp OFF
-    case ra::off : {
-      myLamp.stopRGB(); // выключение RGB-режима
-      (*data)[FPSTR(TCONST_ONflag)] = false;
+      (*data)[P_data][TCONST_force] = true;        // какой-то костыль с задержкой обновления WebUI
       break;
     }
 
     // show warning on a lamp
     case ra::warn : {
       if ( !(*data).containsKey(TCONST_event) ) return;   // invalid object
-
       // here we receive JsonArray with alert params
       JsonArray arr = (*data)[TCONST_event];
       if (arr.size() < 3 ) return;    // some malformed warning config
@@ -197,8 +141,9 @@ void run_action(ra act, JsonObject *data){
              arr[3],          // type
              arr[4],          // overwrite
              arr[5]);         // text message
-      break; 
+      return;   // nothig to inject
     }
+
     default:
       return;
   }

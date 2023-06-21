@@ -3595,7 +3595,8 @@ String httpCallback(const String &param, const String &value, bool isset){
         else if (upperParam == FPSTR(CMD_WARNING)) {
             StaticJsonDocument<256> obj;
             deserializeJson(obj, value);
-            run_action(ra::warn, obj);
+            JsonObject o = obj.as<JsonObject>();
+            run_action(ra::warn, &o);
             return result;
         }
 //        else if (upperParam == FPSTR(CMD_DRAW)) action = RA_DRAW;             // у меня не идей зачем нужно попиксельное рисование через единичные http запросы /это делается через акшен set_drawing()/
@@ -3604,12 +3605,12 @@ String httpCallback(const String &param, const String &value, bool isset){
 #ifdef MP3PLAYER
         if (upperParam == FPSTR(CMD_MP3_PREV)) { run_action(ra::mp3_prev, 1); return result; }
         if (upperParam == FPSTR(CMD_MP3_NEXT)) { run_action(ra::mp3_next, 1); return result; }
-        if (upperParam == FPSTR(CMD_MP3_SOUND)){ run_action(ra::mp3_eff); return result; }
+        if (upperParam == FPSTR(CMD_MP3_SOUND)){ mp3->playEffect(value.toInt(), ""); return result; }
         if (upperParam == FPSTR(CMD_PLAYER)){    run_action(ra::mp3_enable, value.toInt()); return result; }
         if (upperParam == FPSTR(CMD_MP3_VOLUME)){ run_action(ra::mp3_vol, value.toInt()); return result; }
 #endif
 #ifdef MIC_EFFECTS
-        else if (upperParam == FPSTR(CMD_MIC)) { run_action(ra::miconoff, FPSTR(TCONST_Mic), value.toInt() ? true : false ); return result; }
+        else if (upperParam == FPSTR(CMD_MIC)) { run_action(ra::miconoff, value.toInt() ? true : false ); return result; }
 #endif
         //else if (upperParam.startsWith(FPSTR(TCONST_dynCtrl))) { action = RA_CONTROL; remote_action(action, upperParam.c_str(), value.c_str(), NULL); return result; }
         else if (upperParam == FPSTR(CMD_EFF_CONFIG)) {
@@ -3645,7 +3646,7 @@ String httpCallback(const String &param, const String &value, bool isset){
                     default : break;
                 }
 			}
-            run_action(ra::eff_ctrl, String(FPSTR(TCONST_dynCtrl))+id, val.toInt());
+            run_action(String(FPSTR(TCONST_dynCtrl))+id, val.toInt());
             return httpCallback(FPSTR(CMD_CONTROL), String(id), false); // т.к. отложенный вызов, то иначе обрабатыаем
         }
         else if (upperParam == FPSTR(CMD_EFF_NAME))  {

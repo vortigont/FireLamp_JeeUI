@@ -46,6 +46,7 @@ those could be called either internaly or as a callbacks from WebUI/MQTT/HTTP
 #pragma once
 #include <ArduinoJson.h>
 #include "char_const.h"
+#include "lamp.h"
 
 #define ACTION_PARAM_SIZE   256     // Static json document size to pass the parameters to actions
 
@@ -69,7 +70,6 @@ enum class ra:uint8_t {
   eff_rnd,            // switch to random effect
   eff_switch,         // switch effect to specific number
   miconoff,           // Mike: On/Off
-  mp3_eff,            // MP3: play sound for specific effect
   mp3_enable,         // MP3: enable/disable mp3 sounds
   mp3_next,           // MP3: play next track?
   mp3_prev,           // MP3: play previous track?
@@ -93,7 +93,7 @@ void run_action(ra act, JsonObject *data);
 
 /**
  * @brief a stub for really simple actions with no params
- * NOTE: will pass empty JsonObject to run_action()
+ * here we catch some really simple action that do not need reflecting any data to other components
  * @param action 
  */
 void run_action(ra act);
@@ -106,32 +106,7 @@ void run_action(ra act);
  * @param param parameter is added into JsonDocument and passed to run_action handler
  */
 template<typename T>
-void run_action(ra act, const T& param) {
-  StaticJsonDocument<ACTION_PARAM_SIZE> jdoc;
-  JsonObject obj = jdoc.to<JsonObject>();
-
-  // action specific key:value setup
-  switch (act){
-    // AUX PIN On/Off
-    case ra::brt_global :
-      obj[FPSTR(TCONST_GBR)] = param;
-      break;
-    // brightness control
-    case ra::brt :
-    case ra::brt_nofade : {
-      String ctrl(FPSTR(TCONST_dynCtrl));
-      ctrl += 0;  // append '0' to the control name - 0 is for brightness
-      obj[ctrl] = param;
-      if (act == ra::brt_nofade) obj[FPSTR(TCONST_nofade)] = true;     // disable fader
-      break;
-    }
-
-    // all the rest we just assign "value": value pair
-    default:
-      obj[FPSTR(TCONST_value)] = param;
-  }
-  run_action(act, &obj);
-}
+void run_action(ra act, const T& param);
 
 /**
  * @brief execute action with 
@@ -143,11 +118,117 @@ void run_action(ra act, const T& param) {
  * @return false 
  */
 template<typename T>
-void run_action(ra act, const String &key, const T& val) {
+void run_action(const String &key, const T& val);
+
+
+
+/**     IMPLEMENTATIONS FOLLOW        **/
+
+template<typename T>
+void run_action(ra act, const T& param) {
+  LOG(printf_P, PSTR("run_action_p: %d\n"), static_cast<int>(act));
   StaticJsonDocument<ACTION_PARAM_SIZE> jdoc;
   JsonObject obj = jdoc.to<JsonObject>();
-  obj[key] = val;
-  run_action(act, &obj);
+  JsonObject nested = obj.createNestedObject(P_data);
+
+  // action specific key:value setup
+  switch (act){
+    // AUX PIN On/Off
+    case ra::aux : {
+      obj[P_action] = TCONST_AUX;
+      nested[TCONST_AUX] = param;
+      break;
+    }
+
+    case ra::brt_global : {
+      obj[P_action] = TCONST_GBR;
+      nested[TCONST_GBR] = param;
+      break;
+    }
+
+    // brightness control
+    case ra::brt :
+    case ra::brt_nofade : {
+      String ctrl(TCONST_dynCtrl);
+      ctrl += 0;  // append '0' to the control name - 0 is for brightness
+      obj[P_action] = ctrl;
+      nested[ctrl] = param;
+
+      if (act == ra::brt_nofade) nested[TCONST_nofade] = true;     // disable fader
+      nested[TCONST_force] = true;        // какой-то костыль с задержкой обновления WebUI
+      break;
+    }
+
+    // switch to specified effect number
+    case ra::eff_switch : {
+      obj[P_action] = TCONST_eff_run;
+      nested[TCONST_eff_run] = param;
+      break;
+    }
+
+    // demo mode On/Off
+    case ra::demo : {
+      obj[P_action] = TCONST_Demo;
+      nested[TCONST_Demo] = param;
+      break;
+    }
+
+#ifdef MIC_EFFECTS
+    // simple actions with provided key:value
+    case ra::miconoff : {
+      obj[P_action] = TCONST_Mic;
+      nested[TCONST_Mic] = param;
+      break;
+    }
+#endif  //#ifdef MIC_EFFECTS
+
+#ifdef MP3PLAYER
+    //MP3: enable/disable
+    case ra::mp3_enable : {
+      if(!myLamp.isONMP3()) return;
+      obj[P_action] = TCONST_Mic;
+      nested[TCONST_Mic] = param;
+      break;
+    }
+    //MP3: set volume
+    case ra::mp3_vol : {
+      if(!myLamp.isONMP3()) return;
+      obj[P_action] = TCONST_mp3volume;
+      nested[TCONST_mp3volume] = param;
+      break;
+    }
+
+    //MP3: play previous/next track?
+    case ra::mp3_next :
+    case ra::mp3_prev : {
+      if(!myLamp.isONMP3()) return;
+      int offset = param;
+      if ( act == ra::mp3_prev) offset *= -1;
+      mp3->playEffect(mp3->getCurPlayingNb() + offset, "");
+      return; // no need to execute any UI action
+    }
+#endif  //#ifdef MP3PLAYER
+
+
+    // all the rest we just assign "action": 'value' pair
+    default:
+      obj[P_action] = param;
+  }
+
+  embui.post(obj, true);                    // inject packet back into EmbUI action selector
+  //run_action(act, &obj);
+}
+
+template<typename T>
+void run_action(const String &key, const T& val) {
+  LOG(printf_P, PSTR("run_action_kv: %s\n"), key.c_str());
+  StaticJsonDocument<ACTION_PARAM_SIZE> jdoc;
+  JsonObject obj = jdoc.to<JsonObject>();
+  obj[P_action] = key;
+  JsonObject nested = obj.createNestedObject(P_data);
+  nested[key] = val;
+
+  embui.post(obj, true);                    // inject packet back into EmbUI action selector
 }
 
 

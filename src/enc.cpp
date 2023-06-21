@@ -144,7 +144,7 @@ void encLoop() {
         done = true;
         break;
       case 3: // регулировка любого из динамических контролов в режиме "Настройки эффекта"
-      	run_action(ra::eff_ctrl, String(FPSTR(TCONST_dynCtrl))+myLamp.getEffControls()[currDynCtrl]->getId(), myLamp.getEffControls()[currDynCtrl]->getVal());
+      	run_action(String(FPSTR(TCONST_dynCtrl))+myLamp.getEffControls()[currDynCtrl]->getId(), myLamp.getEffControls()[currDynCtrl]->getVal());
         done = true;
       break;
       default:
