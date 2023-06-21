@@ -360,7 +360,7 @@ void wled_announce(WiFiEvent_t cbEvent, WiFiEventInfo_t i){
 // rewriter for buggy WLED app
 // https://github.com/Aircoookie/WLED-App/issues/37
 bool http_notfound(AsyncWebServerRequest *request){
-    if (request->url().indexOf("win&")){
+    if (request->url().indexOf("win&") != -1){
         String req(request->url());
         req.replace(F("win&"), F("win?"));
         request->redirect(req);
