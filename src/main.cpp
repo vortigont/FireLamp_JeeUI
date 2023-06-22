@@ -42,10 +42,13 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "DS18B20.h"
 #endif
 
+#include "w2812_fastled.hpp"
+
 // Led matrix frame buffer
 LedFB mx(WIDTH, HEIGHT);
 // FastLED controller
 CLEDController *cled;
+ESP32RMT_WS2812B<COLOR_ORDER> wsstrip(LAMP_PIN);
 
 // объект лампы
 LAMP myLamp(mx);
@@ -89,7 +92,8 @@ void setup() {
 #endif
 
     // setup LED matrix
-    cled = &FastLED.addLeds<WS2812B, LAMP_PIN, COLOR_ORDER>(mx.data(), mx.size());
+    //cled = &FastLED.addLeds<WS2812B, LAMP_PIN, COLOR_ORDER>(mx.data(), mx.size());
+    cled = &FastLED.addLeds(&wsstrip, mx.data(), mx.size());
     // hook framebuffer to contoller
     mx.bind(cled);
 
