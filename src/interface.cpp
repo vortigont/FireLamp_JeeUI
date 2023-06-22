@@ -88,6 +88,15 @@ enum class page : uint8_t {
     end = _count
 };
 
+// enumerator for gpio setup form
+enum class gpio_device:uint8_t {
+    ledstrip,
+    dfplayer,
+    mosfet,
+    aux,
+    tmdisplay
+};
+
 // cast enum to int
 template <class E>
 constexpr std::common_type_t<int, std::underlying_type_t<E>>
@@ -2451,12 +2460,13 @@ void set_gpios(Interface *interf, JsonObject *data){
 
     DynamicJsonDocument doc(512);
     if (!embuifs::deserializeFile(doc, FPSTR(TCONST_fcfg_gpio))) doc.clear();     // reset if cfg is broken or missing
-
     //LOG(printf, "Set GPIO configuration %d\n", (*data)[FPSTR(TCONST_set_gpio)].as<int>());
-    switch((*data)[FPSTR(TCONST_set_gpio)].as<int>()){
+
+    gpio_device dev = static_cast<gpio_device>((*data)[TCONST_set_gpio].as<int>());
+    switch(dev){
 #ifdef MP3PLAYER
         // DFPlayer gpios
-        case 1 : {
+        case gpio_device::dfplayer : {
             // save pin numbers into config file if present/valid
             if ( (*data)[FPSTR(TCONST_mp3rx)] == static_cast<int>(GPIO_NUM_NC) ) doc.remove(FPSTR(TCONST_mp3rx));
             else doc[FPSTR(TCONST_mp3rx)] = (*data)[FPSTR(TCONST_mp3rx)];
@@ -2467,7 +2477,7 @@ void set_gpios(Interface *interf, JsonObject *data){
         }
 #endif
         // MOSFET gpios
-        case 2 : {
+        case gpio_device::mosfet : {
             if ( (*data)[FPSTR(TCONST_mosfet_gpio)] == static_cast<int>(GPIO_NUM_NC) ) doc.remove(FPSTR(TCONST_mosfet_gpio));
             else doc[FPSTR(TCONST_mosfet_gpio)] = (*data)[FPSTR(TCONST_mosfet_gpio)];
 
@@ -2475,7 +2485,7 @@ void set_gpios(Interface *interf, JsonObject *data){
             break;
         }
         // AUX gpios
-        case 3 : {
+        case gpio_device::aux : {
             if ( (*data)[FPSTR(TCONST_aux_gpio)] == static_cast<int>(GPIO_NUM_NC) ) doc.remove(FPSTR(TCONST_aux_gpio));
             else doc[FPSTR(TCONST_aux_gpio)] = (*data)[FPSTR(TCONST_mosfet_gpio)];
 
@@ -2484,7 +2494,7 @@ void set_gpios(Interface *interf, JsonObject *data){
         }
 #ifdef TM1637_CLOCK
         // TM1637 gpios
-        case 4 : {
+        case gpio_device::tmdisplay : {
             // save pin numbers into config file if present/valid
             if ( (*data)[FPSTR(TCONST_tm_clk)] == static_cast<int>(GPIO_NUM_NC) ) doc.remove(FPSTR(TCONST_tm_clk));
             else doc[FPSTR(TCONST_tm_clk)] = (*data)[FPSTR(TCONST_tm_clk)];
@@ -2494,6 +2504,12 @@ void set_gpios(Interface *interf, JsonObject *data){
             break;
         }
 #endif
+        // WS LED strip gpios
+        case gpio_device::ledstrip : {
+            if ( (*data)[TCONST_mx_gpio] == static_cast<int>(GPIO_NUM_NC) ) doc.remove(TCONST_mx_gpio);
+            else doc[TCONST_mx_gpio] = (*data)[TCONST_mx_gpio];
+            break;
+        }
         default :
             return;     // for any uknown action - just quit
     }
@@ -2807,6 +2823,14 @@ void page_gpiocfg(Interface *interf, JsonObject *data){
     embuifs::deserializeFile(doc, FPSTR(TCONST_fcfg_gpio));
 
     interf->json_section_begin(FPSTR(TCONST_set_gpio), "");
+    // gpio для подключения LED матрицы
+    interf->json_section_hidden(TCONST_mx_gpio, "Matrix");
+        interf->json_section_line(); // расположить в одной линии
+            interf->number_constrained(TCONST_mx_gpio, doc[TCONST_mx_gpio] | static_cast<int>(GPIO_NUM_NC), "LED Matrix gpio", /*step*/ 1, /*min*/ -1, /*max*/ NUM_OUPUT_PINS);
+        interf->json_section_end();
+        interf->button_submit_value(TCONST_set_gpio, static_cast<int>(gpio_device::ledstrip), TINTF_008);
+    interf->json_section_end();
+
 #ifdef MP3PLAYER
     // gpio для подключения DP-плеера
     interf->json_section_hidden(FPSTR(TCONST_playMP3), "DFPlayer");
@@ -2814,7 +2838,7 @@ void page_gpiocfg(Interface *interf, JsonObject *data){
             interf->number_constrained(FPSTR(TCONST_mp3rx), doc[FPSTR(TCONST_mp3rx)] | static_cast<int>(GPIO_NUM_NC), FPSTR(TINTF_097), /*step*/ 1, /*min*/ -1, /*max*/ NUM_OUPUT_PINS);
             interf->number_constrained(FPSTR(TCONST_mp3tx), doc[FPSTR(TCONST_mp3tx)] | static_cast<int>(GPIO_NUM_NC), FPSTR(TINTF_098), 1, -1, NUM_OUPUT_PINS);
         interf->json_section_end();
-        interf->button_submit_value(FPSTR(TCONST_set_gpio), 1, FPSTR(TINTF_008));      // value 1 for DFPlayer gpio's
+        interf->button_submit_value(FPSTR(TCONST_set_gpio), static_cast<int>(gpio_device::dfplayer), FPSTR(TINTF_008));
     interf->json_section_end();
 #endif
 
@@ -2825,7 +2849,7 @@ void page_gpiocfg(Interface *interf, JsonObject *data){
             interf->number_constrained(FPSTR(TCONST_tm_clk), doc[FPSTR(TCONST_tm_clk)] | static_cast<int>(GPIO_NUM_NC), F("TM Clk gpio"), /*step*/ 1, /*min*/ -1, /*max*/ NUM_OUPUT_PINS);
             interf->number_constrained(FPSTR(TCONST_tm_dio), doc[FPSTR(TCONST_tm_dio)] | static_cast<int>(GPIO_NUM_NC), F("TM DIO gpio"), 1, -1, NUM_OUPUT_PINS);
         interf->json_section_end();
-        interf->button_submit_value(FPSTR(TCONST_set_gpio), 4, FPSTR(TINTF_008));      // value 4 for TM1637 gpio's
+        interf->button_submit_value(FPSTR(TCONST_set_gpio), static_cast<int>(gpio_device::tmdisplay), FPSTR(TINTF_008));
     interf->json_section_end();
 #endif
 
@@ -2835,7 +2859,7 @@ void page_gpiocfg(Interface *interf, JsonObject *data){
             interf->number_constrained(FPSTR(TCONST_mosfet_gpio), doc[FPSTR(TCONST_mosfet_gpio)] | static_cast<int>(GPIO_NUM_NC), F("MOSFET gpio"), /*step*/ 1, /*min*/ -1, /*max*/ NUM_OUPUT_PINS);
             interf->number_constrained(FPSTR(TCONST_mosfet_ll),   doc[FPSTR(TCONST_mosfet_ll)]   | 1, F("MOSFET logic level"), 1, 0, 1);
         interf->json_section_end();
-        interf->button_submit_value(FPSTR(TCONST_set_gpio), 2, FPSTR(TINTF_008));      // value 2 for MOSFET gpio's
+        interf->button_submit_value(FPSTR(TCONST_set_gpio), static_cast<int>(gpio_device::mosfet), FPSTR(TINTF_008));
     interf->json_section_end();
 
     // gpio AUX
@@ -2844,7 +2868,7 @@ void page_gpiocfg(Interface *interf, JsonObject *data){
             interf->number_constrained(FPSTR(TCONST_aux_gpio), doc[FPSTR(TCONST_aux_gpio)] | static_cast<int>(GPIO_NUM_NC), F("AUX gpio"), /*step*/ 1, /*min*/ -1, /*max*/ NUM_OUPUT_PINS);
             interf->number_constrained(FPSTR(TCONST_aux_ll),   doc[FPSTR(TCONST_aux_ll)]   | 1, F("AUX logic level"), 1, 0, 1);
         interf->json_section_end();
-        interf->button_submit_value(FPSTR(TCONST_set_gpio), 3, FPSTR(TINTF_008));      // value 3 for AUX gpio's
+        interf->button_submit_value(FPSTR(TCONST_set_gpio), static_cast<int>(gpio_device::aux), FPSTR(TINTF_008));
     interf->json_section_end();
 
     interf->json_section_end(); // json_section_begin ""

@@ -131,6 +131,7 @@ static const char TCONST_mp3_n5[] PROGMEM = "mp3_n5";
 static const char TCONST_mp3_p5[] PROGMEM = "mp3_p5";
 static const char TCONST_MQTTTopic[] PROGMEM = "MQTTTopic";
 static const char TCONST_msg[] PROGMEM = "msg";
+static const char TCONST_mx_gpio[] PROGMEM = "mx_gpio";
 static const char TCONST_nofade[] PROGMEM = "nofade";
 static const char TCONST_Normal[] PROGMEM = "Normal";
 static const char TCONST_numInList[] PROGMEM = "numInList";

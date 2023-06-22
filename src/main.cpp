@@ -42,13 +42,13 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "DS18B20.h"
 #endif
 
-#include "w2812_fastled.hpp"
+#include "w2812-rmt.hpp"
 
 // Led matrix frame buffer
 LedFB mx(WIDTH, HEIGHT);
 // FastLED controller
-CLEDController *cled;
-ESP32RMT_WS2812B<COLOR_ORDER> wsstrip(LAMP_PIN);
+CLEDController *cled = nullptr;
+ESP32RMT_WS2812B<COLOR_ORDER> *wsstrip = nullptr;
 
 // объект лампы
 LAMP myLamp(mx);
@@ -85,17 +85,7 @@ bool http_notfound(AsyncWebServerRequest *request);
 void setup() {
     Serial.begin(115200);
 
-    LOG(printf_P, PSTR("\n\nsetup: free heap  : %d\n"), ESP.getFreeHeap());
-
-#ifdef ESP32
-    LOG(printf_P, PSTR("setup: free PSRAM  : %d\n"), ESP.getFreePsram()); // 4194252
-#endif
-
-    // setup LED matrix
-    //cled = &FastLED.addLeds<WS2812B, LAMP_PIN, COLOR_ORDER>(mx.data(), mx.size());
-    cled = &FastLED.addLeds(&wsstrip, mx.data(), mx.size());
-    // hook framebuffer to contoller
-    mx.bind(cled);
+    LOG(printf_P, PSTR("\n\nsetup: free heap: %d, PSRAM:%d\n"), ESP.getFreeHeap(), ESP.getFreePsram());
 
 #ifdef EMBUI_USE_UDP
     embui.udp(); // Ответ на UDP запрс. в качестве аргумента - переменная, содержащая macid (по умолчанию)
@@ -334,6 +324,17 @@ void gpio_setup(){
     DynamicJsonDocument doc(512);
     embuifs::deserializeFile(doc, FPSTR(TCONST_fcfg_gpio));
     int rxpin, txpin;
+
+    // LED Strip setup
+    if (doc[TCONST_mx_gpio]){
+        // create new led strip object with our configured pin
+        wsstrip = new ESP32RMT_WS2812B<COLOR_ORDER>(doc[TCONST_mx_gpio].as<int>());
+        // attach strip to controller
+        cled = &FastLED.addLeds(wsstrip, mx.data(), mx.size());
+        // hook framebuffer to contoller
+        mx.bind(cled);
+    }
+
 #ifdef MP3PLAYER
     // spawn an instance of mp3player
     rxpin = doc[FPSTR(TCONST_mp3rx)] | -1;
