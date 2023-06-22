@@ -42,6 +42,11 @@ mandatory to define gpio number on compile time due to optimisation for some spe
 ESP32 uses RMT driver via commutation matrix, so actually it does not care about build time optimisation.
 With a bit of modified templates from FastLED, I can create a LEDController with a run-time definable gpio.
 
+with this wrapper class clockless LED strips could be configured run time in a way like this
+
+ESP32RMT_WS2812B<COLOR_ORDER> wsstrip(gpio_num);
+FastLED.addLeds(&wsstrip, CRGB_buffer*, CRGB_buffersize);
+
 /Vortigont/
 
 A reference issues
