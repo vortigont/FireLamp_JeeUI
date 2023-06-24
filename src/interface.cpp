@@ -3717,8 +3717,8 @@ void page_ledstrip_setup(Interface *interf, JsonObject *data){
     //interf->spacer();
 
     interf->json_section_line(); // расположить в одной линии
-        interf->number_constrained(TCONST_width, doc[TCONST_width].as<int>() | 16,  "ширина", 1, 1, 256);
-        interf->number_constrained(TCONST_height, doc[TCONST_width].as<int>() | 16, "высота", 1, 1, 256);
+        interf->number_constrained(TCONST_width,  doc[TCONST_width].as<int>()  ? doc[TCONST_width].as<int>()  : 16, "ширина", 1, 1, 256);
+        interf->number_constrained(TCONST_height, doc[TCONST_height].as<int>() ? doc[TCONST_height].as<int>() : 16, "высота", 1, 1, 256);
     interf->json_section_end();
 
     interf->json_section_line(); // расположить в одной линии
