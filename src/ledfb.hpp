@@ -48,22 +48,23 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
  */
 class Mtrx_cfg {
 friend class LedFB;
-    uint16_t _w, _h;          // matrix width, height
-    //bool mxtype;          // matrix type 0:zigzag, 1:parallel   (not implemented yet)
-    //uint8_t direction;    // strip direction        (not implemented yet)
-    //uint8_t angle;        // strip connection angle (not implemented yet)
-    bool _vmirror{0};        // vertical flip
-    bool _hmirror{0};        // horizontal flip
+    uint16_t _w, _h;         // matrix width, height
+    bool _snake;             // matrix type 1:snake( zigzag), 0:parallel
+    bool _vertical;          // strip direction: 0 - horizontal, 1 - vertical
+    bool _vmirror;           // vertical flip
+    bool _hmirror;           // horizontal flip
 
 public:
-    Mtrx_cfg(uint16_t w, uint16_t h, bool vm=false, bool hm=false) : _w(w), _h(h), _vmirror(vm), _hmirror(hm) {};
-    Mtrx_cfg(Mtrx_cfg const & rhs) : _w(rhs._w), _h(rhs._h), _vmirror(rhs._vmirror), _hmirror(rhs._hmirror) {};
+    Mtrx_cfg(uint16_t w, uint16_t h, bool snake = true, bool _vertical = false, bool vm=false, bool hm=false) : _w(w), _h(h), _snake(snake), _vertical(_vertical), _vmirror(vm), _hmirror(hm) {};
+    Mtrx_cfg(Mtrx_cfg const & rhs) : _w(rhs._w), _h(rhs._h), _snake(rhs._snake), _vertical(rhs._vertical), _vmirror(rhs._vmirror), _hmirror(rhs._hmirror) {};
 
     // get configured matrix width
     uint16_t w() const {return _w;}
     // get configured matrix height
     uint16_t h() const {return _h;}
 
+    bool snake()   const {return _snake;}
+    bool vertical()const {return _vertical;}
     bool vmirror() const {return _vmirror;}
     bool hmirror() const {return _hmirror;}
 
@@ -75,8 +76,9 @@ public:
     uint16_t maxHeightIndex() const { return _h-1; }
     uint16_t maxWidthIndex()  const { return _w-1; }
 
-
     // setters
+    void snake(bool m) {_snake=m;}
+    void vertical(bool m) {_vertical=m;}
     void vmirror(bool m){_vmirror=m;}
     void hmirror(bool m){_hmirror=m;}
 };
@@ -105,7 +107,7 @@ public:
     LedFB& operator=(LedFB const & rhs);
 
     // move semantics
-    LedFB(LedFB&& rhs) noexcept;// : fb(std::move(rhs.fb)), cfg(rhs.cfg){ LOG(printf, "Move Constructing: %u From: %u\n", reinterpret_cast<size_t>(&fb), reinterpret_cast<size_t>(&rhs.fb)); };
+    LedFB(LedFB&& rhs) noexcept;
     LedFB& operator=(LedFB&& rhs);
 
     // create from config struct
@@ -119,15 +121,16 @@ public:
 
     /**
      * @brief zero-copy swap CRGB data within two framebuffers
-     * only CRGB data is swapped, config struct in untouched.
+     * only CRGB data is swapped, config struct left intact.
+     * CLED binding, if any, is updated to point to a newly swapped data.
      * If buffer sizes are different, then no swap occurs.
-     * Only buffer sizes have to equal, other configuration mismatch ignored,
+     * Only buffer sizes have to be equal, other configuration mismatch ignored,
      * have to deal with it elsewhere
      * @param rhs 
      * @return true if swap occured
      * @return false if buffer sizes are different
      */
-    bool swap(LedFB&& rhs);
+    bool swap(LedFB& rhs);
 
     /**
      * @brief return size of FB in pixels
@@ -137,6 +140,26 @@ public:
 
     // get direct access to FB array
     CRGB* data(){ return fb.data(); }
+
+    /**
+     * @brief bind this framebuffer to a CLEDController instance
+     * 
+     * @param pLed instanle of the CLEDController
+     * @return true if bind success
+     * @return false if this instance is already bound to CLEDController
+     */
+    bool bind(CLEDController *pLed);
+
+    /**
+     * @brief resize LED buffer to specified size
+     * content will lost on resize
+     * 
+     * @param w width in px
+     * @param h heigh in px
+     */
+    void resize(uint16_t w, uint16_t h);
+
+    /***    access methods      ***/
 
     /**
      * @brief Transpose pixel coordinate x:y into framebuffer's array index
@@ -183,7 +206,8 @@ public:
     inline std::vector<CRGB>::iterator begin(){ return fb.begin(); };
     inline std::vector<CRGB>::iterator end(){ return fb.end(); };
 
-    /*      color operations        */
+
+    /***    color operations      ***/
 
     /**
      * @brief apply FastLED fadeToBlackBy() func to buffer
@@ -211,17 +235,9 @@ public:
      */
     void clear();
 
-    /**
-     * @brief bind this framebuffer to a CLEDController instance
-     * 
-     * @param pLed instanle of the CLEDController
-     * @return true if bind success
-     * @return false if this instance is already bound to CLEDController
-     */
-    bool bind(CLEDController *pLed);
 };
 
 /* a backward compatible wrappers for accessing LedMatrix obj instance,
 should be removed once other code refactoring is complete
 */
-extern LedFB mx;
+extern LedFB *mx;
