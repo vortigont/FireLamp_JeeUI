@@ -376,7 +376,7 @@ bool http_notfound(AsyncWebServerRequest *request){
 void led_fb_setup(){
     if (mx) return;     // this function is not idempotent, so refuse to mess with existing buffer
     DynamicJsonDocument doc(256);
-    if (!embuifs::deserializeFile(doc, TCONST_fcfg_ledstrip)) return;
+    embuifs::deserializeFile(doc, TCONST_fcfg_ledstrip);
     JsonObject o = doc.as<JsonObject>();
 
     Mtrx_cfg cfg(
