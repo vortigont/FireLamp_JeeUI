@@ -328,7 +328,7 @@ private:
     bool isMicActive = false; // признак включенного микрофона
     bool isMicOnState() {return lampstate!=nullptr ? lampstate->isMicOn : false;}
 protected:
-    LedFB &fb;          // Framebuffer to work on
+    LedFB *fb;          // Framebuffer to work on
     EFF_ENUM effect;        /**< энумератор эффекта */
     bool isDebug() {return lampstate!=nullptr ? lampstate->isDebug : false;}
     bool isRandDemo() {return lampstate!=nullptr ? lampstate->isRandDemo : false;}
@@ -373,7 +373,7 @@ protected:
     const String &getCtrlVal(unsigned idx);
 
 public:
-    EffectCalc(LedFB &framebuffer) : fb(framebuffer) {};
+    EffectCalc(LedFB *framebuffer) : fb(framebuffer) {};
     /**
      * деструктор по-умолчанию пустой, может быть переопределен
      */
@@ -457,7 +457,7 @@ public:
 class EffectWorker {
 private:
     LAMPSTATE *lampstate;   // ссылка на состояние лампы
-    LedFB &fb;              // framebuffer to run EffectCalcs
+    LedFB *fb;              // framebuffer to run EffectCalcs
     SORT_TYPE effSort;      // порядок сортировки в UI
 
     Effcfg curEff;          // конфигурация текущего эффекта, имя/версия и т.п.
@@ -511,12 +511,17 @@ private:
 
 public:
     // дефолтный конструктор
-    EffectWorker(LAMPSTATE *_lampstate, LedFB &framebuffer);
+    EffectWorker(LAMPSTATE *_lampstate, LedFB *framebuffer);
     //~EffectWorker();
 
     // указатель на экземпляр класса текущего эффекта
     std::unique_ptr<EffectCalc> worker = nullptr;
 
+    /**
+     * @brief set a new ledbuffer for worker
+     * it will pass it further on effects creation, etc...
+     */
+    void setLEDbuffer(LedFB *buff);
 
     // уделение списков из ФС
     void removeLists();
@@ -580,8 +585,6 @@ public:
     */
     void loadsoundfile(String& effectName, const uint16_t nb, const char *folder=NULL);
 
-    // текущий эффект или его копия
-    uint16_t getEn() const { return curEff.num; }
     // следующий эффект, кроме canBeSelected==false
     uint16_t getNext();
     // предыдущий эффект, кроме canBeSelected==false

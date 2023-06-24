@@ -195,7 +195,7 @@ String Effcfg::getSerializedEffConfig(uint8_t replaceBright) const {
 
 //  ***** EffectWorker implementation *****
 
-EffectWorker::EffectWorker(LAMPSTATE *_lampstate, LedFB &framebuffer) : lampstate(_lampstate), fb(framebuffer) {
+EffectWorker::EffectWorker(LAMPSTATE *_lampstate, LedFB *framebuffer) : lampstate(_lampstate), fb(framebuffer) {
   // create 3 'faivored' superusefull controls for 'brightness', 'speed', 'scale'
   for(int8_t id=0;id<3;id++){
     auto c = std::make_shared<UIControl>(
@@ -1068,6 +1068,11 @@ void EffectWorker::_rebuild_eff_list(const char *folder){
   }
 
   makeIndexFileFromList();
+}
+
+void EffectWorker::setLEDbuffer(LedFB *buff){
+  fb = buff;
+  workerset(getCurrent());    // reset current effect to release old buffer pointer
 }
 
 

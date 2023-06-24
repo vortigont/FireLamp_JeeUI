@@ -168,10 +168,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #endif
 #endif
 
-#ifndef LAMP_PIN
-#define LAMP_PIN              (0)                          // пин ленты                (D3)
-#endif
-
 #ifndef BTN_PIN
 #define BTN_PIN               (5U)                         // пин кнопки               (D1)
 #if BTN_PIN == 0
@@ -202,33 +198,11 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #endif
 
 
-// LED Matrix organization/orientation
-#ifndef WIDTH
-#define WIDTH                 (16U)                         // ширина матрицы
-#endif
-#ifndef HEIGHT
-#define HEIGHT                (16U)                         // высота матрицы
-#endif
 
 #ifndef COLOR_ORDER
 #define COLOR_ORDER           (GRB)                         // порядок цветов на ленте. Если цвет отображается некорректно - меняйте. Начать можно с RGB
 #endif
 
-#ifndef MATRIX_TYPE
-#define MATRIX_TYPE           (0U)                          // тип матрицы: 0 - зигзаг, 1 - параллельная
-#endif
-#ifndef CONNECTION_ANGLE
-#define CONNECTION_ANGLE      (1U)                          // угол подключения: 0 - левый нижний, 1 - левый верхний, 2 - правый верхний, 3 - правый нижний
-#endif
-#ifndef STRIP_DIRECTION
-#define STRIP_DIRECTION       (3U)                          // направление ленты из угла: 0 - вправо, 1 - вверх, 2 - влево, 3 - вниз
-                                                            // при неправильной настройке матрицы вы получите предупреждение "Wrong matrix parameters! Set to default"
-                                                            // шпаргалка по настройке матрицы здесь! https://alexgyver.ru/matrix_guide/
-#endif
-
-#ifndef SEGMENTS
-#define SEGMENTS              (1U)                          // диодов в одном "пикселе" (для создания матрицы из кусков ленты)
-#endif
 
 #ifndef NUMHOLD_TIME
 #define NUMHOLD_TIME          (3000U)                       // время запоминания последней комбинации яркости/скорости/масштаба в мс
@@ -260,7 +234,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #endif
 
 #ifndef SPEED_ADJ
-#define SPEED_ADJ (float)WIDTH*HEIGHT/256                   // Поправка скорости риал-тайм эффектов относительно размеров метрицы.
+#define SPEED_ADJ             (1.0)                         // Поправка скорости эффектов относительно размеров метрицы.
 #endif
 
 #define EFFECTS_RUN_TIMER   (uint16_t)(1000 / MAX_FPS)     // период обработки эффектов - при 10 это 10мс, т.е. 1000/10 = 100 раз в секунду, при 20 = 50 раз в секунду, желательно использовать диапазон 10...40

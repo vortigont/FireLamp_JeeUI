@@ -184,34 +184,10 @@ https://github.com/vortigont/FireLamp_JeeUI/wiki/%D0%9D%D0%B0%D0%B7%D0%BD%D0%B0%
 
 
 //------------------------------ Настройки LED Матрицы или Ленты
-
-#define LAMP_PIN              (0)                           // пин матрицы (D3)
-
-#define WIDTH                 (16U)                         // ширина матрицы
-#define HEIGHT                (16U)                         // высота матрицы
-
 #define COLOR_ORDER           (GRB)                         // порядок цветов на ленте. Если цвет отображается некорректно - меняйте. Начать можно с RGB
-
-#define MATRIX_TYPE           (0U)                          // тип матрицы: 0 - зигзаг, 1 - параллельная
-#define CONNECTION_ANGLE      (1U)                          // угол подключения: 0 - левый нижний, 1 - левый верхний, 2 - правый верхний, 3 - правый нижний
-#define STRIP_DIRECTION       (3U)                          // направление ленты из угла: 0 - вправо, 1 - вверх, 2 - влево, 3 - вниз
-                                                            // при неправильной настройке матрицы вы получите предупреждение "Wrong matrix parameters! Set to default"
-                                                            // шпаргалка по настройке матрицы здесь! https://alexgyver.ru/matrix_guide/
-#define SEGMENTS              (1U)                          // диодов в одном "пикселе" (для создания матрицы из кусков ленты)
-
 #define BRIGHTNESS            (255U)                        // стандартная максимальная яркость (0-255), чем меньше значение, тем меньше максимально возможная яркость
 #define OFF_BRIGHTNESS          (2U)                        // яркость вывода текста в случае выключенной лампы
 #define CURRENT_LIMIT         (2000U)                       // лимит по току в миллиамперах, автоматически управляет яркостью (пожалей свой блок питания!) 0 - выключить лимит
-
-//#define XY_EXTERN                                           // Пользовательский мапинг нестандартных матриц, читать в файле ../include/XY.h и\или тут 
-                                                            // https://community.alexgyver.ru/threads/wifi-lampa-budilnik-proshivka-firelamp_jeeui-gpl.2739/post-64771
-                                                            // тут отчет пользователя 
-                                                            // https://community.alexgyver.ru/threads/wifi-lampa-budilnik-proshivka-firelamp_jeeui-gpl.2739/post-72777
-
-//#define MATRIXx4                                            // Активировать, если ваша матрица состоит из 4-х одинаковых квадратных матриц размером 16х16 или 8х8 пикселей.
-                                                            // При этом, WIDTH и HEIGHT должны отвечать двухкратному размеру матриц, используеммых в панно. 
-                                                            // Пример: используются 4-ри матрицы размером 16х16, - WIDTH и HEIGHT долдны быть установлены в (32U)
-                                                            // Схема подключения тут https://community.alexgyver.ru/threads/wifi-lampa-budilnik-proshivka-firelamp_jeeui-gpl.2739/post-102618
 //------------------------------ 
 
 //------------------------------ Всякое разное

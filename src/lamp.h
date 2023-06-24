@@ -183,13 +183,13 @@ _LAMPFLAGS(){
 
 class LAMP {
     friend class LEDFader;
-    friend class ALARMTASK;         // будильник ходит сюда за MOSFET и AUX пином, todo: переписать будильник целиком
+    friend class ALARMTASK;        // будильник ходит сюда за MOSFET и AUX пином, todo: переписать будильник целиком
 private:
-    LedFB &mx;              // LED matrix framebuffer object
+    LedFB *mx;           // LED matrix framebuffer object
     LedFB *sledsbuff = nullptr;    // вспомогательный буфер для слоя после эффектов
     LedFB *drawbuff = nullptr;     // буфер для рисования
 #if defined(USE_STREAMING) && defined(EXT_STREAM_BUFFER)
-    std::vector<CRGB> streambuff; // буфер для трансляции
+    std::vector<CRGB> streambuff;  // буфер для трансляции
 #endif
 
     LAMPFLAGS flags;
@@ -263,7 +263,17 @@ private:
     LAMP& operator=(const LAMP&);  // noncopyable
 public:
     // c-tor
-    LAMP(LedFB &m);
+    LAMP();
+
+    /**
+     * @brief set a new ledbuffer for lamp
+     * it will pass it further on effects creation, etc...
+     * any existing buffer will be destructed!!!
+     * Do NOT do this for the buffer that is attached to FASTLED engine
+     */
+    void setLEDbuffer(LedFB *buff);
+    void reset_led_buffs();
+
 
     /**
      * @brief show a warning message on a matrix
@@ -442,8 +452,8 @@ public:
 #endif
     bool isONMP3() {return flags.isOnMP3;}
     void setONMP3(bool flag) {flags.isOnMP3=flag;}
-    void setMIRR_V(bool flag) {if (flag!=mx.cfg.vmirror()) { mx.cfg.vmirror(flag); mx.clear();} }
-    void setMIRR_H(bool flag) {if (flag!=mx.cfg.hmirror()) { mx.cfg.hmirror(flag); mx.clear();} }
+    //void setMIRR_V(bool flag) {if (flag!=mx.cfg.vmirror()) { mx.cfg.vmirror(flag); mx.clear();} }
+    //void setMIRR_H(bool flag) {if (flag!=mx.cfg.hmirror()) { mx.cfg.hmirror(flag); mx.clear();} }
     void setTextMovingSpeed(uint8_t val) {tmStringStepTime.setInterval(val);}
     uint32_t getTextMovingSpeed() {return tmStringStepTime.getInterval();}
     void setTextOffset(uint8_t val) { txtOffset=val;}

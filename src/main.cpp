@@ -44,14 +44,11 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 #include "w2812-rmt.hpp"
 
-// Led matrix frame buffer
-LedFB mx(WIDTH, HEIGHT);
+LedFB *mx = nullptr;
+
 // FastLED controller
 CLEDController *cled = nullptr;
 ESP32RMT_WS2812B<COLOR_ORDER> *wsstrip = nullptr;
-
-// объект лампы
-LAMP myLamp(mx);
 
 #ifdef ESP_USE_BUTTON
 Buttons *myButtons;
@@ -74,6 +71,9 @@ TMCLOCK *tm1637 = nullptr;
  * 
  */
 void gpio_setup();
+
+// restores LED fb config from file
+void led_fb_setup();
 
 // mDNS announce for WLED app
 void wled_announce(WiFiEvent_t cbEvent, WiFiEventInfo_t i);   // wifi_event_id_t onEvent(WiFiEventFuncCb cbEvent, arduino_event_id_t event = ARDUINO_EVENT_MAX);
@@ -139,6 +139,8 @@ void setup() {
 
     // configure and init attached devices
     gpio_setup();
+    // restore matrix configuration from file and create a proper LED buffer
+    led_fb_setup();
 
 #ifdef ESP8266
   embui.server.addHandler(new SPIFFSEditor(F("esp8266"),F("esp8266"), LittleFS));
@@ -329,10 +331,6 @@ void gpio_setup(){
     if (doc[TCONST_mx_gpio]){
         // create new led strip object with our configured pin
         wsstrip = new ESP32RMT_WS2812B<COLOR_ORDER>(doc[TCONST_mx_gpio].as<int>());
-        // attach strip to controller
-        cled = &FastLED.addLeds(wsstrip, mx.data(), mx.size());
-        // hook framebuffer to contoller
-        mx.bind(cled);
     }
 
 #ifdef MP3PLAYER
@@ -373,4 +371,33 @@ bool http_notfound(AsyncWebServerRequest *request){
     }
     // not our case, no action was made
     return false;
+}
+
+void led_fb_setup(){
+    if (mx) return;     // this function is not idempotent, so refuse to mess with existing buffer
+    DynamicJsonDocument doc(256);
+    if (!embuifs::deserializeFile(doc, TCONST_fcfg_ledstrip)) return;
+    JsonObject o = doc.as<JsonObject>();
+
+    Mtrx_cfg cfg(
+        o[TCONST_width] | 16,   // in case deserialization has failed, I create a default 16x16 buffer 
+        o[TCONST_height] | 16,
+        o[TCONST_snake],
+        o[TCONST_vertical],
+        o[TCONST_vflip],
+        o[TCONST_hflip]
+    );
+    LOG(printf, "LED cfg: w,h:(%d,%d) snake:%d, vert:%d, vflip:%d, hflip:%d\n", cfg.w(), cfg.h(), cfg.snake(), cfg.vertical(), cfg.vmirror(), cfg.hmirror());
+
+    mx = new LedFB(cfg);
+
+    if (wsstrip){
+        // attach buffer to RMT engine
+        cled = &FastLED.addLeds(wsstrip, mx->data(), mx->size());
+        // hook framebuffer to contoller
+        mx->bind(cled);
+    }
+
+    // replace the buffer for lamp object
+    myLamp.setLEDbuffer(mx);
 }

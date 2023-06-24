@@ -113,3 +113,8 @@ void show_settings_mic(Interface *interf, JsonObject *data);
  * @param path 
  */
 void load_events_config(const char* path = NULL);
+
+/*
+    сохраняет настройки LED ленты
+*/
+void set_ledstrip(Interface *interf, JsonObject *data);

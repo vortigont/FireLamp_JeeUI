@@ -44,7 +44,15 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 GAUGE *GAUGE::gauge = nullptr; // объект индикатора
 ALARMTASK *ALARMTASK::alarmTask = nullptr; // объект будильника
 
-LAMP::LAMP(LedFB &m) : mx(m), tmStringStepTime(DEFAULT_TEXT_SPEED), tmNewYearMessage(0), effects(&lampState, m){
+LAMP::LAMP() : tmStringStepTime(DEFAULT_TEXT_SPEED), tmNewYearMessage(0), effects(&lampState, mx){
+  /* в лампе везде торчит кадровый буфер, и объект лампы глобальный, создается в меин контексте
+  что требует иметь буфер во время создания объекта лампы.
+  Но! Я создаю буфер динамически во время запуска из сохраненной конфигурации и это происходит позже
+  уже когда экземпляр лампы создан. Поэтому втыкаем в лампу буфер-времянку, который позже заменим на
+  реальный
+  */
+  mx = new LedFB(2,2);
+
   lampState.isOptPass = false; // введен ли пароль для опций
   lampState.isInitCompleted = false; // завершилась ли инициализация лампы
   lampState.isStringPrinting = false; // печатается ли прямо сейчас строка?
@@ -132,7 +140,7 @@ void LAMP::handle()
 
 #ifdef LAMP_DEBUG
     // fps counter
-    LOG(printf_P, PSTR("Eff:%d, FPS: %u, FastLED FPS: %u\n"), effects.getEn(), avgfps, FastLED.getFPS());
+    LOG(printf_P, PSTR("Eff:%d, FPS: %u, FastLED FPS: %u\n"), effects.getCurrent(), avgfps, FastLED.getFPS());
 #ifdef ESP8266
 
     LOG(printf_P, PSTR("MEM stat: %d, HF: %d, Time: %s\n"), lampState.freeHeap, lampState.HeapFragmentation, TimeProcessor::getInstance().getFormattedShortTime().c_str());
@@ -186,15 +194,15 @@ void LAMP::effectsTick(){
     if(!lampState.isEffectsDisabledUntilText){  // если не выводится текст
       // if  there is a sledsbuff defined, than swap content with current mx buff, 'cause effects runner expect it to be intact from the last run
       if (sledsbuff)
-        mx.swap(std::move(*sledsbuff));
+        mx->swap(*sledsbuff);
 
       // посчитать текущий эффект (сохранить кадр в sledsbuff буфер, если был обсчет и до этого не было создано sleds буфера
       // ппц... копия будет создаваться ВСЕГДА, даже если оверлей не нужен Ж()
       if(effects.worker->run()) {
         if(!sledsbuff)
-          sledsbuff = new LedFB(mx);    // create buffer clone
+          sledsbuff = new LedFB(*mx);    // create buffer clone
         else
-          *sledsbuff = mx;               // copy mx buffer
+          *sledsbuff = *mx;             // copy mx buffer
 
       }
     }
@@ -202,11 +210,11 @@ void LAMP::effectsTick(){
 #if defined(USE_STREAMING) && defined(EXT_STREAM_BUFFER)
     if(!streambuff.empty()){
     uint8_t mi;
-    for(uint16_t i=0; i<streambuff.size() && i<mx.size(); i++){
+    for(uint16_t i=0; i<streambuff.size() && i<mx->size(); i++){
       mi = streambuff[i].r > streambuff[i].g ? streambuff[i].r : streambuff[i].g;
       mi = mi > streambuff[i].b ? mi : streambuff[i].b;
       if(mi>=5) {
-        mx.at(i) = streambuff[i];
+        mx->at(i) = streambuff[i];
       } else if(mi && mi<5) {
         EffectMath::setLedsNscale8(i, map(mi,1,4,128,10)); // 5 градаций прозрачности, где 0 - полностью прозрачный
       }
@@ -216,19 +224,19 @@ void LAMP::effectsTick(){
 
   if(drawbuff){
     uint8_t mi;
-    for(uint16_t i=0; i<mx.size(); i++){
+    for(uint16_t i=0; i<mx->size(); i++){
       mi = drawbuff->at(i).r > drawbuff->at(i).g ? drawbuff->at(i).r : drawbuff->at(i).g;
       mi = mi > drawbuff->at(i).b ? mi : drawbuff->at(i).b;
       if(mi>=5) {
-        mx.at(i) = drawbuff->at(i);
+        mx->at(i) = drawbuff->at(i);
       } else if(mi) {
-        mx.at(i).nscale8(map(mi,1,4,128,10)); // 5 градаций прозрачности, где 0 - полностью прозрачный
+        mx->at(i).nscale8(map(mi,1,4,128,10)); // 5 градаций прозрачности, где 0 - полностью прозрачный
       }
     }
   }
 
   if(isRGB()) { // режим заливки цветом
-    mx.fill(rgbColor);
+    mx->fill(rgbColor);
   }
 
   if(isWarning()) {
@@ -317,19 +325,19 @@ void LAMP::changePower(bool flag) // флаг включения/выключе�
 #ifdef DS18B20
     // восстанавливаем значение тока после включения. Так как значение 0 не работает в ограничителе тока по перегреву, 
     // то если ограничение тока установлено в 0, устанвливаем вместо него рассчетный максимум в 15.36А на 256 диодов (бред конечно, но нужно же хоть какое-то значение больше 0).
-    setcurLimit(embui.param(FPSTR(TCONST_CLmt)).toInt() == 0 ? (mx.size() * 60) : embui.param(FPSTR(TCONST_CLmt)).toInt());
+    setcurLimit(embui.param(FPSTR(TCONST_CLmt)).toInt() == 0 ? (mx->size() * 60) : embui.param(FPSTR(TCONST_CLmt)).toInt());
 #endif
     FastLED.setMaxPowerInVoltsAndMilliamps(5, curLimit); // установка максимального тока БП, более чем актуально))). Проверил, без этого куска - ограничение по току не работает :)
 }
 
 #ifdef MP3PLAYER
 void LAMP::playEffect(bool isPlayName, EFFSWITCH action){
-  if(mp3!=nullptr && mp3->isOn() && effects.getEn()>0 && (flags.playEffect || ((isLampOn() || millis()>5000) && flags.playMP3 && action!=EFFSWITCH::SW_NEXT_DEMO && action!=EFFSWITCH::SW_RND))){
-    LOG(printf_P, PSTR("playEffect soundfile:%s, effect:%d, delayed:%d\n"), effects.getSoundfile().c_str(), effects.getEn(), (flags.playName && !flags.playMP3));
+  if(mp3!=nullptr && mp3->isOn() && effects.getCurrent()>0 && (flags.playEffect || ((isLampOn() || millis()>5000) && flags.playMP3 && action!=EFFSWITCH::SW_NEXT_DEMO && action!=EFFSWITCH::SW_RND))){
+    LOG(printf_P, PSTR("playEffect soundfile:%s, effect:%d, delayed:%d\n"), effects.getSoundfile().c_str(), effects.getCurrent(), (flags.playName && !flags.playMP3));
     if(!flags.playMP3 || (flags.playEffect && action!=EFFSWITCH::SW_NEXT_DEMO && action!=EFFSWITCH::SW_RND)) // для mp3-плеера есть отдельное управление
-      mp3->playEffect(effects.getEn(), effects.getSoundfile(), (isPlayName && mp3!=nullptr && mp3->isOn() && !flags.playMP3)); // влияние на отложенное воспроизведение, но не для MP3-плеера
+      mp3->playEffect(effects.getCurrent(), effects.getSoundfile(), (isPlayName && mp3!=nullptr && mp3->isOn() && !flags.playMP3)); // влияние на отложенное воспроизведение, но не для MP3-плеера
   } else {
-    mp3->setCurEffect(effects.getEn());
+    mp3->setCurEffect(effects.getCurrent());
   }
 }
 #endif  // MP3PLAYER
@@ -363,7 +371,7 @@ void LAMP::startDemoMode(uint8_t tmout)
   if(!isLampOn()) run_action(ra::on);       // "включаем" лампу
   if(mode == LAMPMODE::MODE_DEMO) return;   // уже и так в "демо" режиме, выходим
   
-  storedEffect = ((static_cast<EFF_ENUM>(effects.getEn()%256) == EFF_ENUM::EFF_WHITE_COLOR) ? storedEffect : effects.getEn()); // сохраняем предыдущий эффект, если только это не белая лампа
+  storedEffect = ((static_cast<EFF_ENUM>(effects.getCurrent()%256) == EFF_ENUM::EFF_WHITE_COLOR) ? storedEffect : effects.getCurrent()); // сохраняем предыдущий эффект, если только это не белая лампа
   mode = LAMPMODE::MODE_DEMO;
   demoTimer(T_ENABLE, tmout);
   sendString(String(F("- Demo ON -")).c_str(), CRGB::Green, false);
@@ -371,7 +379,7 @@ void LAMP::startDemoMode(uint8_t tmout)
 
 void LAMP::storeEffect()
 {
-  storedEffect = ((static_cast<EFF_ENUM>(effects.getEn()%256) == EFF_ENUM::EFF_WHITE_COLOR) ? storedEffect : effects.getEn()); // сохраняем предыдущий эффект, если только это не белая лампа
+  storedEffect = ((static_cast<EFF_ENUM>(effects.getCurrent()%256) == EFF_ENUM::EFF_WHITE_COLOR) ? storedEffect : effects.getCurrent()); // сохраняем предыдущий эффект, если только это не белая лампа
   storedBright = getLampBrightness();
   lampState.isMicOn = false;
   LOG(printf_P, PSTR("storeEffect() %d,%d\n"),storedEffect,storedBright);
@@ -386,7 +394,7 @@ void LAMP::restoreStored()
   if (static_cast<EFF_ENUM>(storedEffect) != EFF_NONE) {    // ничего не должно происходить, включаемся на текущем :), текущий всегда определен...
     Task *_t = new Task(3 * TASK_SECOND, TASK_ONCE, [this](){ run_action( ra::eff_switch, storedEffect); }, &ts, false, nullptr, nullptr, true);
     _t->enableDelayed();
-  } else if(static_cast<EFF_ENUM>(effects.getEn()%256) == EFF_NONE) { // если по каким-то причинам текущий пустой, то выбираем рандомный
+  } else if(static_cast<EFF_ENUM>(effects.getCurrent()%256) == EFF_NONE) { // если по каким-то причинам текущий пустой, то выбираем рандомный
     Task *_t = new Task(3 * TASK_SECOND, TASK_ONCE, [this](){ run_action(ra::eff_rnd); }, &ts, false, nullptr, nullptr, true);
     _t->enableDelayed();
   }
@@ -406,15 +414,15 @@ typedef enum {FIRSTSYMB=1,LASTSYMB=2} SYMBPOS;
 
 bool LAMP::fillStringManual(const char* text,  const CRGB &letterColor, bool stopText, bool isInverse, int32_t pos, int8_t letSpace, int8_t txtOffset, int8_t letWidth, int8_t letHeight)
 {
-  static int32_t offset = mx.cfg.vmirror() ? 0 : mx.cfg.w();
+  static int32_t offset = mx->cfg.vmirror() ? 0 : mx->cfg.w();
   uint8_t bcount = 0;
 
   if(pos)
-    offset = (mx.cfg.vmirror() ? 0 + pos : mx.cfg.w() - pos);
+    offset = (mx->cfg.vmirror() ? 0 + pos : mx->cfg.w() - pos);
 
   if (!text || !strlen(text))
   {
-    offset = (mx.cfg.vmirror() ? 0 : mx.cfg.w());
+    offset = (mx->cfg.vmirror() ? 0 : mx->cfg.w());
     return true;
   }
 
@@ -431,7 +439,7 @@ bool LAMP::fillStringManual(const char* text,  const CRGB &letterColor, bool sto
     }
     else
     {
-      if(!mx.cfg.vmirror())
+      if(!mx->cfg.vmirror())
         drawLetter(bcount, text[i], offset + (int16_t)j * (letWidth + letSpace), letterColor, letSpace, txtOffset, isInverse, letWidth, letHeight, flSymb);
       else
         drawLetter(bcount, text[i], offset - (int16_t)j * (letWidth + letSpace), letterColor, letSpace, txtOffset, isInverse, letWidth, letHeight, flSymb);
@@ -443,15 +451,15 @@ bool LAMP::fillStringManual(const char* text,  const CRGB &letterColor, bool sto
   }
 
   if(!stopText)
-    (mx.cfg.vmirror() ? offset++ : offset--);
-  if ((!mx.cfg.vmirror() && offset < (int32_t)(-j * (letWidth + letSpace))) || (mx.cfg.vmirror() && offset > (int32_t)(j * (letWidth + letSpace))+(signed)mx.cfg.w()))       // строка убежала
+    (mx->cfg.vmirror() ? offset++ : offset--);
+  if ((!mx->cfg.vmirror() && offset < (int32_t)(-j * (letWidth + letSpace))) || (mx->cfg.vmirror() && offset > (int32_t)(j * (letWidth + letSpace))+(signed)mx->cfg.w()))       // строка убежала
   {
-    offset = (mx.cfg.vmirror() ? 0 : mx.cfg.w());
+    offset = (mx->cfg.vmirror() ? 0 : mx->cfg.w());
     return true;
   }
   if(pos) // если задана позиция, то считаем что уже отобразили
   {
-    offset = (mx.cfg.vmirror() ? 0 : mx.cfg.w());
+    offset = (mx->cfg.vmirror() ? 0 : mx->cfg.w());
     return true;
   }
 
@@ -462,7 +470,7 @@ void LAMP::drawLetter(uint8_t bcount, uint16_t letter, int16_t offset,  const CR
 {
   int16_t start_pos = 0, finish_pos = letWidth + letSpace;
 
-  if (offset < (int16_t)-letWidth || offset > (int16_t)mx.cfg.w())
+  if (offset < (int16_t)-letWidth || offset > (int16_t)mx->cfg.w())
   {
     return;
   }
@@ -470,9 +478,9 @@ void LAMP::drawLetter(uint8_t bcount, uint16_t letter, int16_t offset,  const CR
   {
     start_pos = (uint16_t)-offset;
   }
-  if (offset > (int16_t)(mx.cfg.w() - letWidth))
+  if (offset > (int16_t)(mx->cfg.w() - letWidth))
   {
-    finish_pos = (uint16_t)(mx.cfg.w() - offset);
+    finish_pos = (uint16_t)(mx->cfg.w() - offset);
   }
 
   if(flSymb){
@@ -502,19 +510,19 @@ void LAMP::drawLetter(uint8_t bcount, uint16_t letter, int16_t offset,  const CR
       bool thisBit = thisByte & (1 << (letHeight - 1 - j));
 
       // рисуем столбец (i - горизонтальная позиция, j - вертикальная)
-      if (offset + i >= 0 && offset + i < (int)mx.cfg.w() && txtOffset + j >= 0 && txtOffset + j < (int)mx.cfg.h()) {
+      if (offset + i >= 0 && offset + i < (int)mx->cfg.w() && txtOffset + j >= 0 && txtOffset + j < (int)mx->cfg.h()) {
         if (thisBit) {
           if(!isInverse)
-            mx.pixel(offset + i, txtOffset + j) = letterColor;
+            mx->pixel(offset + i, txtOffset + j) = letterColor;
           else
             //EffectMath::setLedsfadeToBlackBy(getPixelNumber(offset + i, txtOffset + j), (isWarning() && lampState.warnType==2) ? 0 : (isWarning() && lampState.warnType==1) ? 255 : getBFade());
-            mx.pixel(offset + i, txtOffset + j).fadeToBlackBy((isWarning() && lampState.warnType==2) ? 0 : (isWarning() && lampState.warnType==1) ? 255 : getBFade());
+            mx->pixel(offset + i, txtOffset + j).fadeToBlackBy((isWarning() && lampState.warnType==2) ? 0 : (isWarning() && lampState.warnType==1) ? 255 : getBFade());
         } else {
           if(isInverse)
-            mx.pixel(offset + i, txtOffset + j) = letterColor;
+            mx->pixel(offset + i, txtOffset + j) = letterColor;
           else
             //EffectMath::setLedsfadeToBlackBy(getPixelNumber(offset + i, txtOffset + j), (isWarning() && lampState.warnType==2) ? 0 : (isWarning() && lampState.warnType==1) ? 255 : getBFade());
-            mx.pixel(offset + i, txtOffset + j).fadeToBlackBy((isWarning() && lampState.warnType==2) ? 0 : (isWarning() && lampState.warnType==1) ? 255 : getBFade());
+            mx->pixel(offset + i, txtOffset + j).fadeToBlackBy((isWarning() && lampState.warnType==2) ? 0 : (isWarning() && lampState.warnType==1) ? 255 : getBFade());
         }
       }
     }
@@ -837,7 +845,7 @@ void LAMP::showTimeOnScreen(const char *value, bool force)
 void LAMP::micHandler()
 {
   static uint8_t counter=0;
-  if(effects.getEn()==EFF_ENUM::EFF_NONE)
+  if(effects.getCurrent()==EFF_ENUM::EFF_NONE)
     return;
   if(!mw && !lampState.isCalibrationRequest && lampState.micAnalyseDivider){ // обычный режим
     //mw = new(std::nothrow) MicWorker(lampState.mic_scale,lampState.mic_noise,!counter);
@@ -893,7 +901,7 @@ void LAMP::micHandler()
 void LAMP::setMicOnOff(bool val) {
     flags.isMicOn = val;
     lampState.isMicOn = val;
-    if(effects.getEn()==EFF_NONE || !effects.worker) return;
+    if(effects.getCurrent()==EFF_NONE || !effects.worker) return;
 
     unsigned foundc7 = 0;
     LList<std::shared_ptr<UIControl>>&controls = effects.getControls();
@@ -1021,8 +1029,8 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
     LOG(printf_P, PSTR("switcheffect() postfade act=%d, fade=%d, effnb=%d\n"), action, fade, effnb ? effnb : effects.getSelected());
   }
 
-  if(flags.isEffClearing || !effects.getEn()){ // для EFF_NONE или для случая когда включена опция - чистим матрицу
-    mx.clear();
+  if(flags.isEffClearing || !effects.getCurrent()){ // для EFF_NONE или для случая когда включена опция - чистим матрицу
+    mx->clear();
     FastLED.show();
   }
 
@@ -1033,7 +1041,7 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
 
   bool isShowName = (mode==LAMPMODE::MODE_DEMO && flags.showName);
 #ifdef MP3PLAYER
-  bool isPlayName = (isShowName && flags.playName && !flags.playMP3 && effects.getEn()>0);
+  bool isPlayName = (isShowName && flags.playName && !flags.playMP3 && effects.getCurrent()>0);
 #endif
 
   // show effects's name on screen and play name over speaker (if set)
@@ -1041,7 +1049,7 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
     sendStringToLamp(String(F("%EN")).c_str(), CRGB::Green);
 #ifdef MP3PLAYER
     if(isPlayName && mp3!=nullptr && mp3->isOn()) // воспроизведение 
-      mp3->playName(effects.getEn());
+      mp3->playName(effects.getCurrent());
 #endif
   }
 
@@ -1053,7 +1061,7 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
 
   if(effects.worker && flags.ONflag && !lampState.isEffectsDisabledUntilText){
     if(!sledsbuff){ // todo: WHY we need this clone here???
-      sledsbuff = new LedFB(mx);  // clone existing frambuffer
+      sledsbuff = new LedFB(*mx);  // clone existing frambuffer
     }
   }
   setBrightness(getLampBrightness(), fade, natural);
@@ -1144,18 +1152,18 @@ void LAMP::warningHelper(){
     String msg = warningTask->getData();
 
     uint16_t cnt = warningTask->getWarn_duration()/(warningTask->getWarn_blinkHalfPeriod()*2);
-    uint8_t xPos = (mx.cfg.w()+LET_WIDTH*(cnt>99?3:cnt>9?2:1))/2;    
+    uint8_t xPos = (mx->cfg.w()+LET_WIDTH*(cnt>99?3:cnt>9?2:1))/2;    
     switch(lampState.warnType){
-      case 0: mx.fill(warningTask->getWarn_color());
+      case 0: mx->fill(warningTask->getWarn_color());
         break;
       case 1: {
-        mx.fill(warningTask->getWarn_color());
+        mx->fill(warningTask->getWarn_color());
         if (!isPrintingNow())
           sendStringToLamp(msg.isEmpty() ? String(cnt).c_str() : msg.c_str(), warningTask->getWarn_color(), true, false, -128, xPos);
         break;
       }
       case 2: {
-        mx.fill(warningTask->getWarn_color());
+        mx->fill(warningTask->getWarn_color());
         if (!isPrintingNow())
           sendStringToLamp(msg.isEmpty() ? String(cnt).c_str() : msg.c_str(), -warningTask->getWarn_color(), true, false, -128, xPos);
         break;
@@ -1237,7 +1245,7 @@ void LAMP::setDraw(bool flag){
 void LAMP::setDrawBuff(bool active) {
   if (active){
     if (!drawbuff)
-      drawbuff = new LedFB(mx.cfg);   // create a buff with same layout as main FB
+      drawbuff = new LedFB(mx->cfg);   // create a buff with same layout as main FB
     return;
   }
 
@@ -1275,10 +1283,28 @@ void LAMP::setStreamBuff(bool active) {
             streambuff.shrink_to_fit();
         }
     } else if(streambuff.empty()){
-        streambuff.resize(mx.size());
+        streambuff.resize(mx->size());
     }
 }
 #endif
+
+void LAMP::setLEDbuffer(LedFB *buff){
+  // this is potentially dangerous if used with threads 
+  delete sledsbuff; sledsbuff = nullptr;
+  delete drawbuff;  drawbuff = nullptr;
+  delete mx;
+  mx = buff;
+  effects.setLEDbuffer(buff);
+  // wipe new buff
+  mx->clear();
+  FastLED.show();
+}
+
+void LAMP::reset_led_buffs(){
+  mx->clear();
+  delete sledsbuff; sledsbuff = nullptr;  // drop sleds buffer, it will be recreated on next run
+  setDraw(false); // drop draw buffer
+}
 
 
 /*  LEDFader class implementation */
@@ -1338,3 +1364,7 @@ void LEDFader::abort(){
   runner = nullptr;
   LOG(println,F("Fader aborted"));
 }
+
+// ============
+// объект лампы
+LAMP myLamp;

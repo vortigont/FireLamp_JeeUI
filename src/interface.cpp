@@ -77,6 +77,7 @@ enum class page : uint8_t {
     main = 0,
     eff_config,
     mike,
+    setup_ledstrip,
     setup_dfplayer,
     setup_bttn,
     setup_encdr,
@@ -137,6 +138,7 @@ void page_gpiocfg(Interface *interf, JsonObject *data);
 void show_settings_other(Interface *interf, JsonObject *data);
 void section_sys_settings_frame(Interface *interf, JsonObject *data);
 void show_settings_butt(Interface *interf, JsonObject *data);
+void page_ledstrip_setup(Interface *interf, JsonObject *data);
 
 /**
  * @brief rebuild cached json file with effects names list
@@ -276,6 +278,8 @@ void show_page_selector(Interface *interf, JsonObject *data){
             return section_sys_settings_frame(interf, nullptr);
         case page::setup_other :    // страница "настройки"-"другие"
             return show_settings_other(interf, nullptr);
+        case page::setup_ledstrip : // led struip setup
+            return page_ledstrip_setup(interf, nullptr);
 
         default:                    // by default simply show main page
             section_main_frame(interf, nullptr);
@@ -819,7 +823,7 @@ void direct_set_effects_dynCtrl(JsonObject *data){
                     controls[i]->setVal((*data)[ctrlName]); // для всех остальных
                 resetAutoTimers(true);
             }
-            if(myLamp.effects.worker) // && myLamp.effects.getEn()
+            if(myLamp.effects.worker) // && myLamp.effects.getCurrent()
                 myLamp.effects.worker->setDynCtrl(controls[i].get());
             break;
         }
@@ -1008,7 +1012,7 @@ void set_onflag(Interface *interf, JsonObject *data){
     if (newpower != myLamp.isLampOn()) {
         if (newpower) {
             // включаем через switcheffect, т.к. простого isOn недостаточно чтобы запустить фейдер и поменять яркость (при необходимости)
-            myLamp.switcheffect(SW_SPECIFIC, myLamp.getFaderFlag(), myLamp.effects.getEn());
+            myLamp.switcheffect(SW_SPECIFIC, myLamp.getFaderFlag(), myLamp.effects.getCurrent());
             myLamp.changePower(newpower);
 #ifdef RESTORE_STATE
             save_lamp_flags();
@@ -1281,7 +1285,7 @@ void block_lamp_textsend(Interface *interf, JsonObject *data){
         interf->json_section_begin(FPSTR(TCONST_edit_text_config));
             interf->spacer(FPSTR(TINTF_001));
                 interf->range(FPSTR(TCONST_txtSpeed), 110-embui.paramVariant(FPSTR(TCONST_txtSpeed)).as<int>(), 10, 100, 5, FPSTR(TINTF_044), false);
-                interf->range(FPSTR(TCONST_txtOf), -1, (int)(mx.cfg.h()>6?mx.cfg.h():6)-6, 1, FPSTR(TINTF_045));
+                interf->range(FPSTR(TCONST_txtOf), -1, (int)(mx->cfg.h()>6?mx->cfg.h():6)-6, 1, FPSTR(TINTF_045));
                 interf->range(FPSTR(TCONST_txtBfade), 0, 255, 1, FPSTR(TINTF_0CA));
                 
             interf->spacer(FPSTR(TINTF_04E));
@@ -1634,10 +1638,6 @@ void show_settings_other(Interface *interf, JsonObject *data){
     interf->json_section_main(FPSTR(TCONST_set_other), FPSTR(TINTF_002));
     
     interf->spacer(FPSTR(TINTF_030));
-#if !defined(MATRIXx4) and !defined(XY_EXTERN)
-    interf->checkbox(FPSTR(TCONST_MIRR_H), mx.cfg.hmirror() , FPSTR(TINTF_03B), false);
-    interf->checkbox(FPSTR(TCONST_MIRR_V), mx.cfg.vmirror() , FPSTR(TINTF_03C), false);
-#endif
     interf->checkbox(FPSTR(TCONST_isFaderON), myLamp.getLampSettings().isFaderON , FPSTR(TINTF_03D), false);
     interf->checkbox(FPSTR(TCONST_isClearing), myLamp.getLampSettings().isEffClearing , FPSTR(TINTF_083), false);
     interf->checkbox(FPSTR(TCONST_DRand), myLamp.getLampSettings().dRand , FPSTR(TINTF_03E), false);
@@ -1680,8 +1680,6 @@ void set_settings_other(Interface *interf, JsonObject *data){
         JsonObject *data = &dataStore;
 */
         // LOG(printf_P,PSTR("Settings: %s\n"),tmpData.c_str());
-        myLamp.setMIRR_H((*data)[FPSTR(TCONST_MIRR_H)]);
-        myLamp.setMIRR_V((*data)[FPSTR(TCONST_MIRR_V)]);
         myLamp.setFaderFlag((*data)[FPSTR(TCONST_isFaderON)]);
         myLamp.setClearingFlag((*data)[FPSTR(TCONST_isClearing)]);
         myLamp.setDRand((*data)[FPSTR(TCONST_DRand)]);
@@ -2545,8 +2543,8 @@ void page_drawing(Interface *interf, JsonObject *data){
     StaticJsonDocument<256>doc;
     JsonObject param = doc.to<JsonObject>();
 
-    param[FPSTR(TCONST_width)] = mx.cfg.w();
-    param[FPSTR(TCONST_height)] = mx.cfg.h();
+    param[FPSTR(TCONST_width)] = mx->cfg.w();
+    param[FPSTR(TCONST_height)] = mx->cfg.h();
     param[FPSTR(TCONST_blabel)] = FPSTR(TINTF_0CF);
     param[FPSTR(TCONST_drawClear)] = FPSTR(TINTF_0D9);
 
@@ -2573,8 +2571,8 @@ void block_streaming(Interface *interf, JsonObject *data){
         interf->range(FPSTR(TCONST_bright), (String)myLamp.getBrightness(), 0, 255, 1, (String)FPSTR(TINTF_00D), true);
         if (embui.paramVariant(FPSTR(TCONST_stream_type)).toInt() == E131){
             interf->range(FPSTR(TCONST_Universe), embui.paramVariant(FPSTR(TCONST_Universe)), 1, 255, 1, FPSTR(TINTF_0E8), true);
-            int uni = mx.cfg.h() / (512U / (mx.cfg.w() * 3)) + !!mx.cfg.h()%(512U / (mx.cfg.w() * 3));
-            interf->comment( String(F("Universes:")) + uni + F(";    X:") + mx.cfg.w() + F(";    Y:") + (512U / (mx.cfg.w() * 3)) );
+            int uni = mx->cfg.h() / (512U / (mx->cfg.w() * 3)) + !!mx->cfg.h()%(512U / (mx->cfg.w() * 3));
+            interf->comment( String(F("Universes:")) + uni + F(";    X:") + mx->cfg.w() + F(";    Y:") + (512U / (mx->cfg.w() * 3)) );
             interf->comment(String(F("Как настроить разметку матрицы в Jinx! можно посмотреть <a href=\"https://community.alexgyver.ru/threads/wifi-lampa-budilnik-proshivka-firelamp_jeeui-gpl.2739/page-454#post-103219\">на форуме</a>")));
         }
     interf->json_section_end();
@@ -2721,6 +2719,7 @@ void set_opt_pass(Interface *interf, JsonObject *data){
 // Additional buttons on "Settings" page
 void user_settings_frame(Interface *interf, JsonObject *data){
     if (!interf) return;
+    interf->button_value(TCONST_sh_page, e2int(page::setup_ledstrip), TINTF_ledstrip);
 #ifdef MIC_EFFECTS
     interf->button_value(FPSTR(TCONST_sh_page), e2int(page::mike), FPSTR(TINTF_020));
 #endif
@@ -3066,35 +3065,7 @@ void create_parameters(){
     embui.section_handle_add(FPSTR(TCONST_edit_text_config), set_text_config);
     embui.section_handle_add(FPSTR(TCONST_drawbuff), set_drawflag);
 
-/*
-    // меняю обработчики для страницы настроек :)
-    embui.section_handle_remove(FPSTR(T_SETTINGS));
-    embui.section_handle_add(FPSTR(T_SETTINGS), section_settings_frame); // своя главная страница настроек, со своим переводом
-
-    embui.section_handle_remove(FPSTR(T_SH_NETW)); // своя страница настроек сети, со своим переводом
-    embui.section_handle_add(FPSTR(T_SH_NETW), show_settings_wifi);
-
-    embui.section_handle_remove(FPSTR(T_SH_TIME)); // своя страница настроек времени, со своим переводом
-    embui.section_handle_add(FPSTR(T_SH_TIME), show_settings_time);
-
-    embui.section_handle_remove(FPSTR(T_SET_WIFI));
-    embui.section_handle_add(FPSTR(T_SET_WIFI), set_settings_wifi);
-
-    embui.section_handle_remove(FPSTR(T_SET_TIME));
-    embui.section_handle_add(FPSTR(T_SET_TIME), set_settings_time);
-#ifdef EMBUI_USE_MQTT
-    embui.section_handle_remove(FPSTR(T_SET_MQTT));
-    embui.section_handle_add(FPSTR(T_SET_MQTT), set_settings_mqtt);
-#endif
-#ifdef EMBUI_USE_FTP
-    embui.section_handle_remove(FPSTR(T_SET_FTP));
-    embui.section_handle_add(FPSTR(T_SET_FTP), set_ftp);
-#endif
-
-    embui.section_handle_remove(FPSTR(T_SET_SCAN));
-    embui.section_handle_add(FPSTR(T_SET_SCAN), set_scan_wifi);         // обработка сканирования WiFi
-*/
-
+    embui.section_handle_add(TCONST_settings_ledstrip, set_ledstrip);           // Set LED strip layout setup
     embui.section_handle_add(FPSTR(TCONST_set_other), set_settings_other);
     embui.section_handle_add(FPSTR(TCONST_set_gpio), set_gpios);        // Set gpios
 
@@ -3231,7 +3202,7 @@ void sync_parameters(){
     set_settings_mp3(nullptr, &obj);
     doc.clear();
 
-    mp3->setupplayer(myLamp.effects.getEn(), myLamp.effects.getSoundfile()); // установить начальные значения звука
+    mp3->setupplayer(myLamp.effects.getCurrent(), myLamp.effects.getSoundfile()); // установить начальные значения звука
     obj[FPSTR(TCONST_isOnMP3)] = tmp.isOnMP3 ;
     set_mp3flag(nullptr, &obj);
     }, true);
@@ -3303,8 +3274,8 @@ void sync_parameters(){
 
     // собираем конфигурацию для объекта лампы из сохраненного конфига и текущего же состояния лампы (масло масляное)
     // имеет смысл при первом запуске. todo: часть можно выкинуть ибо переписывание в самих себя
-    obj[FPSTR(TCONST_MIRR_H)] = mx.cfg.hmirror() ;
-    obj[FPSTR(TCONST_MIRR_V)] = mx.cfg.vmirror() ;
+    obj[FPSTR(TCONST_MIRR_H)] = mx->cfg.hmirror() ;
+    obj[FPSTR(TCONST_MIRR_V)] = mx->cfg.vmirror() ;
     obj[FPSTR(TCONST_isFaderON)] = tmp.isFaderON ;
     obj[FPSTR(TCONST_isClearing)] = tmp.isEffClearing ;
     obj[FPSTR(TCONST_DRand)] = tmp.dRand ;
@@ -3595,7 +3566,7 @@ String httpCallback(const String &param, const String &value, bool isset){
         if (upperParam == FPSTR(CMD_MOVE_RND))  { run_action(ra::eff_rnd);  return result; }
         if (upperParam == FPSTR(CMD_REBOOT)) { run_action(ra::reboot); return result; }
         else if (upperParam == FPSTR(CMD_ALARM)) { result = myLamp.isAlarm() ; }
-        else if (upperParam == FPSTR(CMD_MATRIX)) { char buf[32]; sprintf_P(buf, PSTR("[%d,%d]"), mx.cfg.w(), mx.cfg.h());  result = buf; }
+        else if (upperParam == FPSTR(CMD_MATRIX)) { char buf[32]; sprintf_P(buf, PSTR("[%d,%d]"), mx->cfg.w(), mx->cfg.h());  result = buf; }
 #ifdef EMBUI_USE_MQTT        
         embui.publish(String(FPSTR(TCONST_embui_pub_)) + upperParam, result, true);
 #endif
@@ -3726,4 +3697,61 @@ void load_events_config(const char* path){
     String filename(FPSTR(TCONST__backup_evn_));
     filename.concat(path);
     myLamp.events.loadConfig(filename.c_str());
+}
+
+/**
+ * @brief build a page with LED strip setup
+ * 
+ */
+void page_ledstrip_setup(Interface *interf, JsonObject *data){
+    if (!interf) return;
+
+    DynamicJsonDocument doc(256);
+    embuifs::deserializeFile(doc, TCONST_fcfg_ledstrip);
+
+    interf->json_frame_interface();
+    interf->json_section_main(TCONST_settings_ledstrip, TINTF_ledstrip);
+
+    //interf->comment(F("MCU will <b>reboot</b> to apply change! Wait 5-10 sec after each save</li>"));
+
+    //interf->spacer();
+
+    interf->json_section_line(); // расположить в одной линии
+        interf->number_constrained(TCONST_width, doc[TCONST_width].as<int>(),  "ширина", 1, 1, 256);
+        interf->number_constrained(TCONST_height, doc[TCONST_width].as<int>(), "высота", 1, 1, 256);
+    interf->json_section_end();
+
+    interf->json_section_line(); // расположить в одной линии
+        interf->checkbox(TCONST_snake, doc[TCONST_snake], "змейка", false);
+        interf->checkbox(TCONST_vertical, doc[TCONST_vertical], "вертикальная", false);
+        interf->checkbox(TCONST_vflip, doc[TCONST_vflip], "V-отражение", false);
+        interf->checkbox(TCONST_hflip, doc[TCONST_hflip], "H-отражение", false);
+    interf->json_section_end();
+
+    interf->button_submit(TCONST_settings_ledstrip, FPSTR(TINTF_008));  // Save
+    interf->button(FPSTR(TCONST_settings), FPSTR(TINTF_00B));           // Exit
+    interf->json_frame_flush();
+}
+
+
+/*
+    сохраняет настройки LED ленты
+*/
+void set_ledstrip(Interface *interf, JsonObject *data){
+    if (!data) return;
+    // save new led strip config
+    embuifs::serialize2file(*data, TCONST_fcfg_ledstrip);
+
+    // apply options that could be adjusted easily
+    mx->cfg.snake((*data)[TCONST_snake]);
+    mx->cfg.vertical((*data)[TCONST_vertical]);
+    mx->cfg.vmirror((*data)[TCONST_vflip]);
+    mx->cfg.hmirror((*data)[TCONST_hflip]);
+
+    // check if any dimension parameters has changed, then I need to resize led buffer
+    if (((*data)[TCONST_width] != mx->cfg.w()) || ((*data)[TCONST_height] != mx->cfg.h())){
+        mx->resize((*data)[TCONST_width], (*data)[TCONST_height]);
+        LOG(printf, "resize LED buffer to w,h:(%d,%d)\n", mx->cfg.w(), mx->cfg.h());
+    }
+    myLamp.reset_led_buffs();
 }
