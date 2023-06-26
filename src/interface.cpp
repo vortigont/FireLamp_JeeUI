@@ -504,7 +504,7 @@ void set_effects_config_param(Interface *interf, JsonObject *data){
         bool isCfgRemove = (act == FPSTR(TCONST_delall));
 
         if(tmpEffnb==myLamp.effects.getCurrent()){
-            myLamp.effects.directMoveBy(EFF_ENUM::EFF_NONE);
+            myLamp.effects.switchEffect(EFF_ENUM::EFF_NONE);
             run_action(ra::eff_next);
         }
         String tmpStr=F("- ");
@@ -780,7 +780,7 @@ void set_switch_effect(Interface *interf, JsonObject *data){
     if (myLamp.isLampOn()) {
         myLamp.switcheffect(SW_SPECIFIC, myLamp.getFaderFlag(), eff->eff_nb);
     } else {
-        myLamp.effects.directMoveBy(eff->eff_nb); // переходим прямо на выбранный эффект если лампа "выключена"
+        myLamp.effects.switchEffect(eff->eff_nb); // переходим прямо на выбранный эффект если лампа "выключена"
     }
 
     // save curent active effect number in cfg if lamp in "normal" mode
@@ -2886,9 +2886,9 @@ void ws_action_handle(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsE
             {
                 resetAutoTimers();
                 uint16_t effNum = myLamp.effects.getSelected();
-                myLamp.effects.directMoveBy(EFF_NONE);
+                myLamp.effects.switchEffect(EFF_NONE);
                 myLamp.effects.removeConfig(effNum);
-                myLamp.effects.directMoveBy(effNum);
+                myLamp.effects.switchEffect(effNum);
                 String tmpStr=F("- ");
                 tmpStr+=effNum;
                 myLamp.sendString(tmpStr.c_str(), CRGB::Red);

@@ -1017,14 +1017,15 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
     LOG(printf_P, PSTR("switcheffect() act=%d, fade=%d, effnb=%d\n"), action, fade, next_eff_num);
     // тухнем "вниз" только на включенной лампе
     if (fade && flags.ONflag) {
-      effects.preloadEffCtrls(next_eff_num);    // preload controls for next effect
+      effects.switchEffect(next_eff_num, true);       // preload controls for next effect
       // запускаем фейдер и уходим на второй круг переключения
       LEDFader::getInstance()->fadelight( myLamp.getLampBrightness() < 2*FADE_MINCHANGEBRT ? 0 : FADE_MINCHANGEBRT, FADE_TIME, std::bind(&LAMP::switcheffect, this, action, fade, next_eff_num, true));
       return;
     } else {
       // do direct switch to effect
-      effects.directMoveBy(next_eff_num);
+      effects.switchEffect(next_eff_num);
     }
+
   } else {
     LOG(printf_P, PSTR("switcheffect() postfade act=%d, fade=%d, effnb=%d\n"), action, fade, effnb ? effnb : effects.getSelected());
   }
@@ -1037,7 +1038,7 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
   // move to 'selected' only if lamp is On and fader is in effect (i.e. it's a second call after fade),
   // otherwise it's been switched already
   if (fade && flags.ONflag)
-    effects.moveSelected();
+    effects.switchEffect(effnb, true);
 
   bool isShowName = (mode==LAMPMODE::MODE_DEMO && flags.showName);
 #ifdef MP3PLAYER
