@@ -37,6 +37,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 */
 
 #include "ledfb.hpp"
+/*
 #ifdef XY_EXTERN
 #include "XY.h"
 #endif
@@ -44,56 +45,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #ifdef MATRIXx4
   #include "matrix4.h"
 #endif
-
-// ************* НАСТРОЙКА МАТРИЦЫ *****
-#if (CONNECTION_ANGLE == 0 && STRIP_DIRECTION == 0)
-#define _WIDTH cfg._w
-#define THIS_X (cfg._vmirror ? (cfg._w - x - 1) : x)
-#define THIS_Y (cfg._hmirror ? (cfg._h - y - 1) : y)
-
-#elif (CONNECTION_ANGLE == 0 && STRIP_DIRECTION == 1)
-#define _WIDTH cfg._h
-#define THIS_X (cfg._vmirror ? (cfg._h - y - 1) : y)
-#define THIS_Y (cfg._hmirror ? (cfg._w - x - 1) : x)
-
-#elif (CONNECTION_ANGLE == 1 && STRIP_DIRECTION == 0)
-#define _WIDTH cfg._w
-#define THIS_X (cfg._vmirror ? (cfg._w - x - 1) : x)
-#define THIS_Y (cfg._hmirror ?  y : (cfg._h - y - 1))
-
-#elif (CONNECTION_ANGLE == 1 && STRIP_DIRECTION == 3)
-#define _WIDTH cfg._h
-#define THIS_X (cfg._vmirror ? y : (cfg._h - y - 1))
-#define THIS_Y (cfg._hmirror ? (cfg._w - x - 1) : x)
-
-#elif (CONNECTION_ANGLE == 2 && STRIP_DIRECTION == 2)
-#define _WIDTH cfg._w
-#define THIS_X (cfg._vmirror ?  x : (cfg._w - x - 1))
-#define THIS_Y (cfg._hmirror ? y : (cfg._h - y - 1))
-
-#elif (CONNECTION_ANGLE == 2 && STRIP_DIRECTION == 3)
-#define _WIDTH cfg._h
-#define THIS_X (cfg._vmirror ? y : (cfg._h - y - 1))
-#define THIS_Y (cfg._hmirror ?  x : (cfg._w - x - 1))
-
-#elif (CONNECTION_ANGLE == 3 && STRIP_DIRECTION == 2)
-#define _WIDTH cfg._w
-#define THIS_X (cfg._vmirror ?  x : (cfg._w - x - 1))
-#define THIS_Y (cfg._hmirror ? (cfg._h - y - 1) : y)
-
-#elif (CONNECTION_ANGLE == 3 && STRIP_DIRECTION == 1)
-#define _WIDTH cfg._h
-#define THIS_X (cfg._vmirror ? (cfg._h - y - 1) : y)
-#define THIS_Y (cfg._hmirror ?  x : (cfg._w - x - 1))
-
-#else
-#define _WIDTH cfg._w
-#define THIS_X x
-#define THIS_Y y
-#pragma warning "Wrong matrix parameters! Set to default"
-
-#endif
-
+*/
 static CRGB blackhole;              // Kostyamat's invisible pixel :) current effects code can't live w/o it
 
 LedFB::LedFB(LedFB&& rhs) noexcept : fb(std::move(rhs.fb)), cfg(rhs.cfg){
@@ -126,6 +78,7 @@ LedFB& LedFB::operator=(LedFB&& rhs){
     if (rhs.cled){ cled = rhs.cled; rhs.cled = nullptr; }   // steal a pointer from rhs
     _reset_cled();      // if we moved data from rhs, than need to reset cled controller
     //LOG(printf, "Move assign: %u from: %u\n", reinterpret_cast<size_t>(fb.data()), reinterpret_cast<size_t>(rhs.fb.data()));
+    // : fb(std::move(rhs.fb)), cfg(rhs.cfg){ LOG(printf, "Move Constructing: %u From: %u\n", reinterpret_cast<size_t>(&fb), reinterpret_cast<size_t>(&rhs.fb)); };
     return *this;
 }
 
@@ -140,22 +93,23 @@ LedFB::~LedFB(){
     }
 }
 
+// matrix transformation
 size_t LedFB::transpose(unsigned x, unsigned y) const {
-#if defined(XY_EXTERN)
-    return pgm_read_dword(&XYTable[y * cfg._w + x]);
-#elif defined(MATRIXx4)
-    return matrix4_XY(x, y);
-#else
-    // default substitutions
-    if (MATRIX_TYPE || (THIS_Y % 2 == 0))                     // если чётная строка
-    {
-        return (THIS_Y * SEGMENTS * _WIDTH + THIS_X);
+    unsigned idx = y*cfg.w()+x;
+    if ( cfg.vertical() ){
+        // verticaly ordered stripes
+        bool ivm{cfg.hmirror()}, ihm{cfg.vmirror()};                // reverse mirror
+        bool virtual_mirror = (cfg.snake() && x%2) ? !ihm : ihm;    // for snake-shaped strip, invert vertical odd columns
+        size_t xx = virtual_mirror ? cfg.w() - idx/cfg.h()-1 : idx/cfg.h();
+        size_t yy = ivm ? cfg.h()-idx%cfg.h()-1 : idx%cfg.h();
+        return yy * cfg.w() + xx;
+    } else {
+        // horizontaly ordered stripes
+        bool virtual_mirror = (cfg.snake() && y%2) ? !cfg.hmirror() : cfg.hmirror(); // for snake-shaped displays, invert horizontal odd rows
+        size_t yy = cfg.vmirror() ? cfg.h() - idx/cfg.w()-1 : idx/cfg.w();
+        size_t xx = virtual_mirror ? cfg.w()-idx%cfg.w()-1 : idx%cfg.w();
+        return yy * cfg.w() + xx;
     }
-    else                                                      // если нечётная строка
-    {
-        return (THIS_Y * SEGMENTS * _WIDTH + _WIDTH - THIS_X - 1);
-    }
-#endif
 }
 
 CRGB& LedFB::at(size_t i){ return i < fb.size() ? fb.at(i) : blackhole; };
@@ -182,7 +136,7 @@ bool LedFB::bind(CLEDController *pLed){
     return true;
 }
 
-bool LedFB::swap(LedFB&& rhs){
+bool LedFB::swap(LedFB& rhs){
     if (rhs.fb.size() != fb.size()) return false;   // won't swap buffers of different size
     std::swap(fb, rhs.fb);
     // update CLEDControllers
@@ -190,3 +144,10 @@ bool LedFB::swap(LedFB&& rhs){
     rhs._reset_cled();
     return true;
 }
+
+void LedFB::resize(uint16_t w, uint16_t h){
+    cfg._w = w; cfg._h = h;
+    fb.reserve(w*h);
+    _reset_cled();
+    clear();
+};

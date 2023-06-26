@@ -42,13 +42,13 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "DS18B20.h"
 #endif
 
-// Led matrix frame buffer
-LedFB mx(WIDTH, HEIGHT);
-// FastLED controller
-CLEDController *cled;
+#include "w2812-rmt.hpp"
 
-// объект лампы
-LAMP myLamp(mx);
+LedFB *mx = nullptr;
+
+// FastLED controller
+CLEDController *cled = nullptr;
+ESP32RMT_WS2812B<COLOR_ORDER> *wsstrip = nullptr;
 
 #ifdef ESP_USE_BUTTON
 Buttons *myButtons;
@@ -72,33 +72,39 @@ TMCLOCK *tm1637 = nullptr;
  */
 void gpio_setup();
 
+// restores LED fb config from file
+void led_fb_setup();
+
 // mDNS announce for WLED app
-void wled_announce();
+void wled_announce(WiFiEvent_t cbEvent, WiFiEventInfo_t i);   // wifi_event_id_t onEvent(WiFiEventFuncCb cbEvent, arduino_event_id_t event = ARDUINO_EVENT_MAX);
+// 404 handler
+bool http_notfound(AsyncWebServerRequest *request);
 
 
+// Arduino setup
 void setup() {
     Serial.begin(115200);
 
-    LOG(printf_P, PSTR("\n\nsetup: free heap  : %d\n"), ESP.getFreeHeap());
-
-#ifdef ESP32
-    LOG(printf_P, PSTR("setup: free PSRAM  : %d\n"), ESP.getFreePsram()); // 4194252
-#endif
-
-    // setup LED matrix
-    cled = &FastLED.addLeds<WS2812B, LAMP_PIN, COLOR_ORDER>(mx.data(), mx.size());
-    // hook framebuffer to contoller
-    mx.bind(cled);
+    LOG(printf_P, PSTR("\n\nsetup: free heap: %d, PSRAM:%d\n"), ESP.getFreeHeap(), ESP.getFreePsram());
 
 #ifdef EMBUI_USE_UDP
     embui.udp(); // Ответ на UDP запрс. в качестве аргумента - переменная, содержащая macid (по умолчанию)
 #endif
 
     // Add mDNS handler for WLED app
-    embui.set_callback(CallBack::attach, CallBack::STAGotIP, wled_announce);
+#ifndef ESP8266
+//    embui.set_callback(CallBack::attach, CallBack::STAGotIP, wled_announce);
+    WiFi.onEvent([](WiFiEvent_t e, WiFiEventInfo_t i){wled_announce(e, i);});
+#endif
+
+    // add WLED mobile app handler
+    embui.server.on("/win", HTTP_ANY, [](AsyncWebServerRequest *request){ wled_handle(request); } );
+    // 404 handler for WLED workaround
+    embui.on_notfound( [](AsyncWebServerRequest *r){ return http_notfound(r);} );
 
     // EmbUI
     embui.begin(); // Инициализируем EmbUI фреймворк - загружаем конфиг, запускаем WiFi и все зависимые от него службы
+
 #ifdef EMBUI_USE_MQTT
     //embui.mqtt(embui.param(F("m_pref")), embui.param(F("m_host")), embui.param(F("m_port")).toInt(), embui.param(F("m_user")), embui.param(F("m_pass")), mqttCallback, true); // false - никакой автоподписки!!!
     //embui.mqtt(mqttCallback, true);
@@ -133,6 +139,8 @@ void setup() {
 
     // configure and init attached devices
     gpio_setup();
+    // restore matrix configuration from file and create a proper LED buffer
+    led_fb_setup();
 
 #ifdef ESP8266
   embui.server.addHandler(new SPIFFSEditor(F("esp8266"),F("esp8266"), LittleFS));
@@ -154,9 +162,8 @@ void setup() {
 
 void loop() {
     embui.handle(); // цикл, необходимый фреймворку
-    // TODO: Проконтроллировать и по возможности максимально уменьшить создание объектов на стеке
-    myLamp.handle(); // цикл, обработка лампы
 
+    myLamp.handle(); // цикл, обработка лампы
 #ifdef ENCODER
     encLoop(); // цикл обработки событий энкодера. Эта функция будет отправлять в УИ изменения, только тогда, когда подошло время ее loop
 #endif
@@ -319,6 +326,13 @@ void gpio_setup(){
     DynamicJsonDocument doc(512);
     embuifs::deserializeFile(doc, FPSTR(TCONST_fcfg_gpio));
     int rxpin, txpin;
+
+    // LED Strip setup
+    if (doc[TCONST_mx_gpio]){
+        // create new led strip object with our configured pin
+        wsstrip = new ESP32RMT_WS2812B<COLOR_ORDER>(doc[TCONST_mx_gpio].as<int>());
+    }
+
 #ifdef MP3PLAYER
     // spawn an instance of mp3player
     rxpin = doc[FPSTR(TCONST_mp3rx)] | -1;
@@ -337,7 +351,53 @@ void gpio_setup(){
 #endif 
 }
 
-void wled_announce(){
-    MDNS.addService("wled", "tcp", 80);
-    MDNS.addServiceTxt("wled", "tcp", "mac", (const char*)embui.mc);
+void wled_announce(WiFiEvent_t cbEvent, WiFiEventInfo_t i){
+    switch (cbEvent){
+        case SYSTEM_EVENT_STA_GOT_IP:
+            MDNS.addService("wled", "tcp", 80);
+            MDNS.addServiceTxt("wled", "tcp", "mac", (const char*)embui.macid());
+        default:;
+    }
+}
+
+// rewriter for buggy WLED app
+// https://github.com/Aircoookie/WLED-App/issues/37
+bool http_notfound(AsyncWebServerRequest *request){
+    if (request->url().indexOf("win&") != -1){
+        String req(request->url());
+        req.replace(F("win&"), F("win?"));
+        request->redirect(req);
+        return true;
+    }
+    // not our case, no action was made
+    return false;
+}
+
+void led_fb_setup(){
+    if (mx) return;     // this function is not idempotent, so refuse to mess with existing buffer
+    DynamicJsonDocument doc(256);
+    embuifs::deserializeFile(doc, TCONST_fcfg_ledstrip);
+    JsonObject o = doc.as<JsonObject>();
+
+    Mtrx_cfg cfg(
+        o[TCONST_width] | 16,   // in case deserialization has failed, I create a default 16x16 buffer 
+        o[TCONST_height] | 16,
+        o[TCONST_snake],
+        o[TCONST_vertical],
+        o[TCONST_vflip],
+        o[TCONST_hflip]
+    );
+    LOG(printf, "LED cfg: w,h:(%d,%d) snake:%d, vert:%d, vflip:%d, hflip:%d\n", cfg.w(), cfg.h(), cfg.snake(), cfg.vertical(), cfg.vmirror(), cfg.hmirror());
+
+    mx = new LedFB(cfg);
+
+    if (wsstrip){
+        // attach buffer to RMT engine
+        cled = &FastLED.addLeds(wsstrip, mx->data(), mx->size());
+        // hook framebuffer to contoller
+        mx->bind(cled);
+    }
+
+    // replace the buffer for lamp object
+    myLamp.setLEDbuffer(mx);
 }

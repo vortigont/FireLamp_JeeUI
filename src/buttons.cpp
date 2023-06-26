@@ -46,7 +46,7 @@ bool Button::activate(btnflags& flg, bool reverse){
 				if (myLamp.getGaugeType()!=GAUGETYPE::GT_NONE){
 						GAUGE::GaugeShow(newval, 255, 10);
 				}
-				remote_action(RA::RA_BRIGHT_NF, (String(FPSTR(TCONST_dynCtrl))+"0").c_str(), String(newval).c_str(), NULL);
+				run_action(ra::brt_nofade, newval);		// change brightness without fade effect
 				return true;
 			case BA_SPEED: {
 				byte speed = (myLamp.effects.getControls()[1]->getVal()).toInt();
@@ -61,7 +61,7 @@ bool Button::activate(btnflags& flg, bool reverse){
 				if (myLamp.getGaugeType()!=GAUGETYPE::GT_NONE){
 						GAUGE::GaugeShow(newval, 255, 100);
 				}
-				remote_action(RA::RA_CONTROL, (String(FPSTR(TCONST_dynCtrl))+"1").c_str(), String(newval).c_str(), NULL);
+				run_action(String(FPSTR(TCONST_dynCtrl))+1, newval);
 				return true;
 			}
 			case BA_SCALE: {
@@ -77,7 +77,7 @@ bool Button::activate(btnflags& flg, bool reverse){
 				if (myLamp.getGaugeType()!=GAUGETYPE::GT_NONE){
 						GAUGE::GaugeShow(newval, 255, 150);
 				}
-				remote_action(RA::RA_CONTROL, (String(FPSTR(TCONST_dynCtrl))+"2").c_str(), String(newval).c_str(), NULL);
+				run_action(String(FPSTR(TCONST_dynCtrl))+2, newval);
 				return true;
 			}
 			default:;
@@ -93,7 +93,7 @@ bool Button::activate(btnflags& flg, bool reverse){
 			case BA_AUX_TOGLE: run_action(ra::aux_flip); return ret;			// set AUX pin
 			case BA_EFF_NEXT: run_action(ra::eff_next); return ret;
 			case BA_EFF_PREV: run_action(ra::eff_prev); return ret;
-			case BA_SEND_TIME: ract = RA_SEND_TIME; break;
+			case BA_SEND_TIME: myLamp.showTimeOnScreen(NULL); return ret;		// show time on screen
 			case BA_SEND_IP: ract = RA_SEND_IP; break;
 			case BA_WIFI_REC: ract = RA_WIFI_REC; break;
 			case BA_EFFECT: { run_action(ra::eff_switch, param.toInt()); return ret; }

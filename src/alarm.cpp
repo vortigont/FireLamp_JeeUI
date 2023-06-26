@@ -153,7 +153,7 @@ void ALARMTASK::alarmWorker(){
     }
 
     //EVERY_N_SECONDS(1){
-    if (embui.timeProcessor.seconds00()) {
+    if (TimeProcessor::getInstance().seconds00()) {
         CRGB letterColor;
         hsv2rgb_rainbow(ALARMTASK::getInstance()->dawnColorMinus[0], letterColor); // конвертация цвета времени, с учетом текущей точки рассвета
         if(!ALARMTASK::getInstance()->curAlarm.msg.isEmpty() && ALARMTASK::getInstance()->curAlarm.msg != "-") {
@@ -195,7 +195,7 @@ void ALARMTASK::alarmWorker(){
     //}
 
     int cnt{0};
-    for (auto i = mx.begin(); i != mx.end(); ++i) {
+    for (auto i = mx->begin(); i != mx->end(); ++i) {
         *i = ALARMTASK::getInstance()->dawnColorMinus[cnt%(sizeof(dawnColorMinus)/sizeof(CHSV))];
         ++cnt;
     }

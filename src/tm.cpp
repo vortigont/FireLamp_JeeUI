@@ -79,13 +79,13 @@ void TMCLOCK::tm_loop() {
 
 /*
 // todo fix this missing method
-  if(embui.timeProcessor.isDirtyTime()) {      // Светим --:--, если не подтянулось время с инета или не было настроено вручную
+  if(TimeProcessor::getInstance().isDirtyTime()) {      // Светим --:--, если не подтянулось время с инета или не было настроено вручную
     auto d =  (showPoints) ? DisplayDigit().setG().setDot() : DisplayDigit().setG();
     const uint8_t rawBuffer[4] = {d, d, d, d};
     displayRawBytes(rawBuffer, 4);
   } else {
 */
-    const tm* t = localtime(embui.timeProcessor.now());  // Определяем для вывода времени 
+    const tm* t = localtime(TimeProcessor::getInstance().now());  // Определяем для вывода времени 
     char dispTime[6];            // Массив для сбора времени
 
     sprintf (dispTime,
@@ -110,25 +110,25 @@ void TMCLOCK::showBanner(){
   static uint8_t l = 0;           // Переменная для баннера
   if (l == 21) return;
   l++;   // Добавляем счетчик и ограничиваем, чтобы не гонял по кругу
-  if (embui.sysData.wifi_sta && l <= 20 && l > 4) {
+  if (WiFi.getMode() & WIFI_MODE_STA && l <= 20 && l > 4) {
     String ip = (String) F("IP.") + (String) WiFi.localIP().toString();
     splitIp(ip, F("."), splittedIp);
     display(formatIp(splittedIp, F("")))->scrollLeft(500, 4); // Запуск баннера (хоть и задержка указана 500, по факту она 1 сек), индекс 4 (выводит 4 цифры за раз)
   }
-  else if (!embui.sysData.wifi_sta && l <= 20 && l > 4) display(String(F("__AP_192_168___4___1")))->scrollLeft(500, 4);  // Если нет подключения, то крутим айпи точки доступа
+  else if (!WiFi.getMode() & WIFI_MODE_STA && l <= 20 && l > 4) display(String(F("__AP_192_168___4___1")))->scrollLeft(500, 4);  // Если нет подключения, то крутим айпи точки доступа
   if (l == 20) bannerShowed = 1;
 }
 #endif
 
 
 void TMCLOCK::scrollip(){
-  if (embui.sysData.wifi_sta) {
+  if (WiFi.getMode() & WIFI_MODE_STA) {
     String ip(F("IP."));
     ip += WiFi.localIP().toString();
     splitIp(ip, F("."), splittedIp);
     display(formatIp(splittedIp, ""))->scrollLeft(500, 4); // Запуск баннера (хоть и задержка указана 500, по факту она 1 сек), индекс 4 (выводит 4 цифры за раз)
   }
-  else if (!embui.sysData.wifi_sta) display(String(F("__AP_192_168___4___1")))->scrollLeft(500, 4);  // Если нет подключения, то крутим айпи точки доступа
+  else if (!(WiFi.getMode() & WIFI_MODE_STA)) display(String(F("__AP_192_168___4___1")))->scrollLeft(500, 4);  // Если нет подключения, то крутим айпи точки доступа
   ipShow--;
 }
 

@@ -319,33 +319,33 @@ class EffectWorker;
 */
 class EffectCalc {
 private:
-    EffectWorker *pworker = nullptr; // указатель на воркер
-    LAMPSTATE *lampstate = nullptr;
+    EffectWorker *_pworker = nullptr; // указатель на воркер
+    LAMPSTATE *_lampstate = nullptr;
     LList<std::shared_ptr<UIControl>> *ctrls;
     String dummy; // дефолтная затычка для отсутствующего контролла, в случае приведения к целому получится "0"
     bool active = false;          /**< работает ли воркер и был ли обсчет кадров с момента последнего вызова, пока нужно чтобы пропускать холостые кадры */
     bool isCtrlPallete = false; // признак наличия контрола палитры
     bool isMicActive = false; // признак включенного микрофона
-    bool isMicOnState() {return lampstate!=nullptr ? lampstate->isMicOn : false;}
+    bool isMicOnState() {return _lampstate ? _lampstate->isMicOn : false;}
 protected:
-    LedFB &fb;          // Framebuffer to work on
+    LedFB *fb;          // Framebuffer to work on
     EFF_ENUM effect;        /**< энумератор эффекта */
-    bool isDebug() {return lampstate!=nullptr ? lampstate->isDebug : false;}
-    bool isRandDemo() {return lampstate!=nullptr ? lampstate->isRandDemo : false;}
-    float getSpeedFactor() {return lampstate!=nullptr ? lampstate->speedfactor : 1.0;}
-    float getBrightness() {return lampstate!=nullptr ? lampstate->brightness : 127;}
+    bool isDebug() {return _lampstate ? _lampstate->isDebug : false;}
+    bool isRandDemo() {return _lampstate ? _lampstate->isRandDemo : false;}
+    float getSpeedFactor() {return _lampstate ? _lampstate->speedfactor : 1.0;}
+    float getBrightness() {return _lampstate ? _lampstate->brightness : 127;}
 
 #ifdef MIC_EFFECTS
-    void setMicAnalyseDivider(uint8_t val) {if(lampstate!=nullptr) lampstate->micAnalyseDivider = val&3;}
-    uint8_t getMicMapMaxPeak() {return lampstate!=nullptr ? lampstate->getMicMapMaxPeak() : 0;}
-    uint8_t getMicMapFreq() {return lampstate!=nullptr ? lampstate->getMicMapFreq() : 0;}
-    uint8_t getMicMaxPeak() {return lampstate!=nullptr ? lampstate->getMicMaxPeak() : 0;}
+    void setMicAnalyseDivider(uint8_t val) {if(_lampstate) _lampstate->micAnalyseDivider = val&3;}
+    uint8_t getMicMapMaxPeak() {return _lampstate ? _lampstate->getMicMapMaxPeak() : 0;}
+    uint8_t getMicMapFreq() {return _lampstate ? _lampstate->getMicMapFreq() : 0;}
+    uint8_t getMicMaxPeak() {return _lampstate ? _lampstate->getMicMaxPeak() : 0;}
     
-    float getCurVal() {return lampstate!=nullptr ? lampstate->getCurVal() : 0;}
-    float getMicFreq() {return lampstate!=nullptr ? lampstate->getMicFreq() : 0;}
-    float getMicScale() {return lampstate!=nullptr ? lampstate->getMicScale() : 1;}
-    float getMicNoise() {return lampstate!=nullptr ? lampstate->getMicNoise() : 0;}
-    mic_noise_reduce_level_t getMicNoiseRdcLevel() {return lampstate!=nullptr ? lampstate->getMicNoiseRdcLevel() : mic_noise_reduce_level_t::NR_NONE;}
+    float getCurVal() {return _lampstate ? _lampstate->getCurVal() : 0;}
+    float getMicFreq() {return _lampstate ? _lampstate->getMicFreq() : 0;}
+    float getMicScale() {return _lampstate ? _lampstate->getMicScale() : 1;}
+    float getMicNoise() {return _lampstate ? _lampstate->getMicNoise() : 0;}
+    mic_noise_reduce_level_t getMicNoiseRdcLevel() {return _lampstate ? _lampstate->getMicNoiseRdcLevel() : mic_noise_reduce_level_t::NR_NONE;}
     
 #endif
     bool isActive() {return active;}
@@ -373,7 +373,8 @@ protected:
     const String &getCtrlVal(unsigned idx);
 
 public:
-    EffectCalc(LedFB &framebuffer) : fb(framebuffer) {};
+    EffectCalc(LedFB *framebuffer) : fb(framebuffer) {}
+
     /**
      * деструктор по-умолчанию пустой, может быть переопределен
      */
@@ -383,12 +384,6 @@ public:
     bool isMicOn() {return isMicActive;}
 
     /**
-     * pre_init метод, вызывается отдельно после создания экземпляра эффекта до каких либо иных инициализаций
-     * это нужно чтобы объект понимал кто он и возможно было вычитать конфиг для мультиэфектов, никаких иных действий здесь не предполагается
-    */
-    void pre_init(EFF_ENUM _eff, EffectWorker *_pworker, LList<std::shared_ptr<UIControl>> *_ctrls, LAMPSTATE* _state) {effect = _eff; pworker = _pworker; ctrls = _ctrls; lampstate = _state;}
-
-    /**
      * intit метод, вызывается отдельно после создания экземпляра эффекта для установки базовых переменных
      * в конце выполнения вызывает метод load() который может быть переопределен в дочернем классе
      * @param _eff - энумератор эффекта
@@ -396,7 +391,7 @@ public:
      * @param _state - текущее состояние лампы
      *
     */
-    void init(EFF_ENUM _eff, LList<std::shared_ptr<UIControl>> *_controls, LAMPSTATE* _state);
+    void init(EFF_ENUM _eff, LList<std::shared_ptr<UIControl>> *_controls, EffectWorker *_pworker, LAMPSTATE* _state);
 
     /**
      * load метод, по умолчанию пустой. Вызывается автоматом из init(), в дочернем классе можно заменять на процедуру первой загрузки эффекта (вместо того что выполняется под флагом load)
@@ -457,7 +452,7 @@ public:
 class EffectWorker {
 private:
     LAMPSTATE *lampstate;   // ссылка на состояние лампы
-    LedFB &fb;              // framebuffer to run EffectCalcs
+    LedFB *fb;              // framebuffer to run EffectCalcs
     SORT_TYPE effSort;      // порядок сортировки в UI
 
     Effcfg curEff;          // конфигурация текущего эффекта, имя/версия и т.п.
@@ -511,12 +506,17 @@ private:
 
 public:
     // дефолтный конструктор
-    EffectWorker(LAMPSTATE *_lampstate, LedFB &framebuffer);
+    EffectWorker(LAMPSTATE *_lampstate, LedFB *framebuffer);
     //~EffectWorker();
 
     // указатель на экземпляр класса текущего эффекта
     std::unique_ptr<EffectCalc> worker = nullptr;
 
+    /**
+     * @brief set a new ledbuffer for worker
+     * it will pass it further on effects creation, etc...
+     */
+    void setLEDbuffer(LedFB *buff);
 
     // уделение списков из ФС
     void removeLists();
@@ -580,31 +580,28 @@ public:
     */
     void loadsoundfile(String& effectName, const uint16_t nb, const char *folder=NULL);
 
-    // текущий эффект или его копия
-    uint16_t getEn() const { return curEff.num; }
     // следующий эффект, кроме canBeSelected==false
     uint16_t getNext();
     // предыдущий эффект, кроме canBeSelected==false
     uint16_t getPrev();
 
-    // перейти по предворительно выбранному
-    void moveSelected();
-
     // перейти на количество шагов, к ближйшему большему (для DEMO)
-    void moveByCnt(byte cnt){ uint16_t eff = getByCnt(cnt); directMoveBy(eff); }
+    void moveByCnt(byte cnt){ switchEffect(getByCnt(cnt)); }
+
     // получить номер эффекта смещенного на количество шагов (для DEMO)
     uint16_t getByCnt(byte cnt);
+
     bool validByList(int val);
+
     // получить реальный номер эффекта по номеру элемента списка (для плагинов)
     uint16_t realEffNumdByList(uint16_t val) { return effects[val].eff_nb; }
+
     // получить индекс эффекта по номеру (для плагинов)
     uint16_t effIndexByList(uint16_t val);
 
     // получить флаг canBeSelected по номеру элемента списка (для плагинов)
     bool effCanBeSelected(uint16_t val) { return effects.exist(val) ? effects[val].canBeSelected() : false; }
 
-    // перейти на указанный в обход нормального переключения, использовать только понимая что это (нужно для начальной инициализации и переключений выключенной лампы)
-    void directMoveBy(uint16_t select);
     // вернуть первый элемент списка
     EffectListElem *getFirstEffect();
     // вернуть следующий эффект
@@ -648,13 +645,14 @@ public:
     void autoSaveConfig(){ curEff.autosave(); }
 
     /**
-     * @brief preload controls for pending effect
-     * used when switching effects with fading. Preloaded controls are waiting
-     * for fader to finish before being applied to hz kuda...
-     * todo: it need to be redesined from scratch
-     * @param effnb 
+     * @brief switch to the specified effect
+     * two-stage switch required for fading effect, first time call will only preload controls for a new effect,
+     * second one does the switching
+     * 
+     * @param effnb - effect to switch to
+     * @param twostate - use two staged switching
      */
-    void preloadEffCtrls(const uint16_t effnb);
+    void switchEffect(uint16_t effnb, bool twostate = false);
 
     /**
      * @brief returns true if effect switching is pending for fader

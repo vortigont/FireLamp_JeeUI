@@ -200,7 +200,7 @@ void EVENT_MANAGER::saveConfig(const char *cfg)
 // обработка эвентов лампы
 void event_worker(DEV_EVENT *event){
     RA action = RA_UNKNOWN;
-    LOG(printf_P, PSTR("%s - %s\n"), ((DEV_EVENT *)event)->getName().c_str(), embui.timeProcessor.getFormattedShortTime().c_str());
+    LOG(printf_P, PSTR("%s - %s\n"), ((DEV_EVENT *)event)->getName().c_str(), TimeProcessor::getInstance().getFormattedShortTime().c_str());
 
     switch (event->getEvent()) {
     case EVENT_TYPE::ON : {
@@ -209,7 +209,7 @@ void event_worker(DEV_EVENT *event){
             // вывести текст на лампу через 3 секунды
             StringTask *t = new StringTask(event->getMessage().c_str(), 3 * TASK_SECOND, TASK_ONCE, nullptr, &ts, false, nullptr,  [](){
                 StringTask *cur = (StringTask *)ts.getCurrentTask();
-                remote_action(RA::RA_SEND_TEXT, cur->getData(), NULL);
+                myLamp.sendString(cur->getData());
             }, true);
             t->enableDelayed();
         }
@@ -220,14 +220,15 @@ void event_worker(DEV_EVENT *event){
     case EVENT_TYPE::ALARM: return ALARMTASK::startAlarm(&myLamp, event->getMessage().c_str());               // взводим будильник
     //case EVENT_TYPE::LAMP_CONFIG_LOAD: action = RA_LAMP_CONFIG; break;                // была какая-то загрузка стороннего конфига embui
 #ifdef ESP_USE_BUTTON
-    case EVENT_TYPE::BUTTONS_CONFIG_LOAD:  action = RA_BUTTONS_CONFIG; break;
+    // load button configuration from side file
+    case EVENT_TYPE::BUTTONS_CONFIG_LOAD: return load_button_config(event->getMessage().c_str());
 #endif
     //case EVENT_TYPE::EFF_CONFIG_LOAD:  action = RA_EFF_CONFIG; break;                 // была какая-то мутная загрузка индекса эффектов из папки /backup/idx
-    case EVENT_TYPE::EVENTS_CONFIG_LOAD: action = RA_EVENTS_CONFIG; break;
-    case EVENT_TYPE::SEND_TEXT:  action = RA_SEND_TEXT; break;
-    case EVENT_TYPE::SEND_TIME:  action = RA_SEND_TIME; break;
-    case EVENT_TYPE::AUX_ON:  return run_action(ra::aux, event->getMessage().toInt());
-    case EVENT_TYPE::AUX_OFF: return run_action(ra::aux, event->getMessage().toInt());
+    case EVENT_TYPE::EVENTS_CONFIG_LOAD:  return load_events_config(event->getMessage().c_str());
+    case EVENT_TYPE::SEND_TEXT: return myLamp.sendString(event->getMessage().c_str());
+    case EVENT_TYPE::SEND_TIME: return myLamp.showTimeOnScreen(event->getMessage().c_str(), true);
+    case EVENT_TYPE::AUX_ON:  return run_action(ra::aux, static_cast<bool>(event->getMessage().toInt()));
+    case EVENT_TYPE::AUX_OFF: return run_action(ra::aux, static_cast<bool>(event->getMessage().toInt()));
     case EVENT_TYPE::AUX_TOGGLE:  return run_action(ra::aux_flip);
     case EVENT_TYPE::PIN_STATE: {
         if ((event->getMessage()).isEmpty()) break;
@@ -275,7 +276,7 @@ void event_worker(DEV_EVENT *event){
         run_action(ra::warn, &j);
         return;
     }
-    case EVENT_TYPE::SET_GLOBAL_BRIGHT: action = RA_GLOBAL_BRIGHT; break;
+    case EVENT_TYPE::SET_GLOBAL_BRIGHT: { run_action(ra::brt_global, static_cast<bool>(event->getMessage().toInt())); return; }
     case EVENT_TYPE::SET_WHITE_HI: action = RA_WHITE_HI; break;
     case EVENT_TYPE::SET_WHITE_LO: action = RA_WHITE_LO; break;
     default:;

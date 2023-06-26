@@ -195,7 +195,7 @@ String Effcfg::getSerializedEffConfig(uint8_t replaceBright) const {
 
 //  ***** EffectWorker implementation *****
 
-EffectWorker::EffectWorker(LAMPSTATE *_lampstate, LedFB &framebuffer) : lampstate(_lampstate), fb(framebuffer) {
+EffectWorker::EffectWorker(LAMPSTATE *_lampstate, LedFB *framebuffer) : lampstate(_lampstate), fb(framebuffer) {
   // create 3 'faivored' superusefull controls for 'brightness', 'speed', 'scale'
   for(int8_t id=0;id<3;id++){
     auto c = std::make_shared<UIControl>(
@@ -215,7 +215,6 @@ EffectWorker::EffectWorker(LAMPSTATE *_lampstate, LedFB &framebuffer) : lampstat
  */
 void EffectWorker::workerset(uint16_t effect){
   LOG(printf_P,PSTR("Wrkr set: %u\n"), effect);
-  curEff.flushcfg();  // сохраняем конфигурацию предыдущего эффекта если были несохраненные изменения
 
   if(worker)
      worker.reset(); // освободим явно, т.к. 100% здесь будем пересоздавать
@@ -465,10 +464,9 @@ void EffectWorker::workerset(uint16_t effect){
 
   if(worker){
     // запихать в экземпляр калькулятор эффекта ссылки на все то барахло из чего состоит лампа вместе с самой лампой 8()
-    worker->pre_init(static_cast<EFF_ENUM>(effect%256), this, &(getControls()), lampstate);
     curEff.loadeffconfig(effect);
     // окончательная инициализация эффекта тут
-    worker->init(static_cast<EFF_ENUM>(effect%256), &(getControls()), lampstate);
+    worker->init(static_cast<EFF_ENUM>(effect%256), &(getControls()), this, lampstate);
   }
 }
 
@@ -714,16 +712,6 @@ EffectListElem *EffectWorker::getNextEffect(EffectListElem *current){
     return nullptr; // NONE
 }
 
-// перейти на указанный
-// выполняется в обход фейдера, как моментальное переключение
-void EffectWorker::directMoveBy(uint16_t select)
-{
-  LOG(printf_P,PSTR("Direct Switch EffWorker to %d\n"), select);
-  curEff.num = pendingEff.num = select;
-  workerset(curEff.num);
-  pendingEff.controls.clear();        // no longer needed
-}
-
 // получить номер эффекта смещенного на количество шагов, к ближайшему большему при превышении (для DEMO)
 uint16_t EffectWorker::getByCnt(byte cnt)
 {
@@ -809,23 +797,33 @@ uint16_t EffectWorker::getNext()
   return firstfound;
 }
 
-// выбор нового эффекта с отложенной сменой, на время смены эффекта читаем его список контроллов отдельно
-void EffectWorker::preloadEffCtrls(uint16_t effnb)
-{
-  if (effnb == pendingEff.num) return;
-  pendingEff.loadeffconfig(effnb);
+void EffectWorker::switchEffect(uint16_t effnb, bool twostage){
+  LOG(print, "switchEffect() ");
+  // NOTE: if call has been made to the SAME effect number as the current one, than it MUST be force-switched anyway to recreate EffectCalc object
+  // (it's required for a cases like new LedFB has been proviced, etc)
 
-  LOG(printf_P,PSTR("Preloaded controls for eff: %u, current eff:%u\n"), effnb, curEff.num);
-}
-
-void EffectWorker::moveSelected(){
-  LOG(printf_P,PSTR("Move EffWorker to selected eff %d\n"), pendingEff.num);
-  if(isEffSwPending()){
-    workerset(pendingEff.num);   // first we change the effect
-    //curEff = pendingEffNum;     // than change the number! Effect's config data saving depends on it
-                                // todo: resolve this stuped dependency via private members
-    pendingEff.controls.clear();        // no longer needed anyway
+  // if it's a first call for two-stage switch, than we just preload coontrols and quit
+  if (twostage && effnb != pendingEff.num){
+    LOG(printf_P,PSTR("preloading controls for eff: %u, current eff:%u\n"), effnb, curEff.num);
+    pendingEff.loadeffconfig(effnb);
+    return;
   }
+
+  curEff.flushcfg();  // сохраняем конфигурацию предыдущего эффекта если были несохраненные изменения
+
+  // if it's a second of a two-stage call, than switch to pending
+  if (twostage && isEffSwPending()){
+    LOG(printf_P,PSTR("to pending %d\n"), pendingEff.num);
+    workerset(pendingEff.num);      // first we change the effect
+    pendingEff.controls.clear();    // no longer needed anyway
+  } else {
+    // other way, consider it as a direct switch to specified effect
+    LOG(printf_P,PSTR("direct switch EffWorker to %d\n"), effnb);
+    workerset(effnb);
+  }
+
+  pendingEff.controls.clear();        // no longer needed
+  pendingEff.num = curEff.num;
 }
 
 void EffectWorker::fsinforenew(){
@@ -1070,12 +1068,18 @@ void EffectWorker::_rebuild_eff_list(const char *folder){
   makeIndexFileFromList();
 }
 
+void EffectWorker::setLEDbuffer(LedFB *buff){
+  fb = buff;
+  workerset(getCurrent());    // reset current effect to release old buffer pointer
+}
+
 
 /*  *** EffectCalc  implementation  ***   */
-
-void EffectCalc::init(EFF_ENUM _eff, LList<std::shared_ptr<UIControl>> *controls, LAMPSTATE *_lampstate){
-  effect=_eff;
-  lampstate = _lampstate;
+void EffectCalc::init(EFF_ENUM eff, LList<std::shared_ptr<UIControl>> *controls, EffectWorker *pworker, LAMPSTATE* state){
+  effect = eff;
+  ctrls = controls;
+  _pworker = pworker;
+  _lampstate = state;
 
   isMicActive = isMicOnState();
   for(unsigned i=0; i<controls->size(); i++){
@@ -1150,8 +1154,8 @@ String EffectCalc::setDynCtrl(UIControl*_val){
   if(_val->getId()==7 && _val->getName().startsWith(FPSTR(TINTF_020))==1){ // Начинается с микрофон и имеет 7 id
     isMicActive = (ret_val.toInt() && isMicOnState()) ? true : false;
 #ifdef MIC_EFFECTS
-    if(lampstate!=nullptr)
-      lampstate->setMicAnalyseDivider(isMicActive);
+    if(_lampstate)
+      _lampstate->setMicAnalyseDivider(isMicActive);
 #endif
   } else {
     if(isRandDemo()){ // для режима рандомного ДЕМО, если это не микрофон - то вернуть рандомное значение в пределах диапазона значений

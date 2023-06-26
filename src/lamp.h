@@ -184,13 +184,13 @@ _LAMPFLAGS(){
 
 class LAMP {
     friend class LEDFader;
-    friend class ALARMTASK;         // будильник ходит сюда за MOSFET и AUX пином, todo: переписать будильник целиком
+    friend class ALARMTASK;        // будильник ходит сюда за MOSFET и AUX пином, todo: переписать будильник целиком
 private:
-    LedFB &mx;              // LED matrix framebuffer object
+    LedFB *mx;           // LED matrix framebuffer object
     LedFB *sledsbuff = nullptr;    // вспомогательный буфер для слоя после эффектов
     LedFB *drawbuff = nullptr;     // буфер для рисования
 #if defined(USE_STREAMING) && defined(EXT_STREAM_BUFFER)
-    std::vector<CRGB> streambuff; // буфер для трансляции
+    std::vector<CRGB> streambuff;  // буфер для трансляции
 #endif
 
     LAMPFLAGS flags;
@@ -253,7 +253,7 @@ private:
     void effectsTick(); // обработчик эффектов
 
     String &prepareText(String &source);
-    void doPrintStringToLamp(const char* text = nullptr,  const CRGB &letterColor = CRGB::Black, const int8_t textOffset = -128, const int16_t fixedPos = 0);
+    void doPrintStringToLamp(const char* text = nullptr, CRGB letterColor = CRGB::Black, const int8_t textOffset = -128, const int16_t fixedPos = 0);
     bool fillStringManual(const char* text,  const CRGB &letterColor, bool stopText = false, bool isInverse = false, int32_t pos = 0, int8_t letSpace = LET_SPACE, int8_t txtOffset = TEXT_OFFSET, int8_t letWidth = LET_WIDTH, int8_t letHeight = LET_HEIGHT); // -2147483648
     void drawLetter(uint8_t bcount, uint16_t letter, int16_t offset,  const CRGB &letterColor, uint8_t letSpace, int8_t txtOffset, bool isInverse, int8_t letWidth, int8_t letHeight, uint8_t flSymb=0);
     uint8_t getFont(uint8_t bcount, uint8_t asciiCode, uint8_t row);
@@ -277,7 +277,17 @@ private:
 /***    PUBLIC  ***/
 public:
     // c-tor
-    LAMP(LedFB &m);
+    LAMP();
+
+    /**
+     * @brief set a new ledbuffer for lamp
+     * it will pass it further on effects creation, etc...
+     * any existing buffer will be destructed!!!
+     * Do NOT do this for the buffer that is attached to FASTLED engine
+     */
+    void setLEDbuffer(LedFB *buff);
+    void reset_led_buffs();
+
 
     /**
      * @brief show a warning message on a matrix
@@ -379,9 +389,24 @@ public:
     LAMPMODE getStoredMode() {return storedMode;}
     void setMode(LAMPMODE _mode) { storedMode = ((mode == _mode) ? storedMode: mode); mode=_mode;}
 
-    void sendString(const char* text, const CRGB &letterColor, bool forcePrint = true, bool clearQueue = false);
-    void sendStringToLamp(const char* text = nullptr,  const CRGB &letterColor = CRGB::Black, bool forcePrint = false, bool clearQueue = false, const int8_t textOffset = -128, const int16_t fixedPos = 0);
-    void sendStringToLampDirect(const char* text = nullptr,  const CRGB &letterColor = CRGB::Black, bool forcePrint = false, bool clearQueue = false, const int8_t textOffset = -128, const int16_t fixedPos = 0);
+    /**
+     * @brief send text to scroll on screen
+     * using default color and options
+     * @param text - text to scroll
+     */
+    void sendString(const char* text);
+
+    /**
+     * @brief 
+     * 
+     * @param text 
+     * @param letterColor 
+     * @param forcePrint - выводить текст при выключенной лампе
+     * @param clearQueue 
+     */
+    void sendString(const char* text, CRGB letterColor, bool forcePrint = true, bool clearQueue = false);
+    void sendStringToLamp(const char* text = nullptr, CRGB letterColor = CRGB::Black, bool forcePrint = false, bool clearQueue = false, const int8_t textOffset = -128, const int16_t fixedPos = 0);
+    void sendStringToLampDirect(const char* text = nullptr,  CRGB letterColor = CRGB::Black, bool forcePrint = false, bool clearQueue = false, const int8_t textOffset = -128, const int16_t fixedPos = 0);
     bool isPrintingNow() { return lampState.isStringPrinting; }
 
     void handle();          // главная функция обработки эффектов
@@ -446,8 +471,8 @@ public:
 #endif
     bool isONMP3() {return flags.isOnMP3;}
     void setONMP3(bool flag) {flags.isOnMP3=flag;}
-    void setMIRR_V(bool flag) {if (flag!=mx.cfg.vmirror()) { mx.cfg.vmirror(flag); mx.clear();} }
-    void setMIRR_H(bool flag) {if (flag!=mx.cfg.hmirror()) { mx.cfg.hmirror(flag); mx.clear();} }
+    //void setMIRR_V(bool flag) {if (flag!=mx.cfg.vmirror()) { mx.cfg.vmirror(flag); mx.clear();} }
+    //void setMIRR_H(bool flag) {if (flag!=mx.cfg.hmirror()) { mx.cfg.hmirror(flag); mx.clear();} }
     void setTextMovingSpeed(uint8_t val) {tmStringStepTime.setInterval(val);}
     uint32_t getTextMovingSpeed() {return tmStringStepTime.getInterval();}
     void setTextOffset(uint8_t val) { txtOffset=val;}
@@ -460,7 +485,13 @@ public:
     void setAlatmSound(ALARM_SOUND_TYPE val) {flags.alarmSound = val;}
     void setEqType(uint8_t val) {flags.MP3eq = val;}
 
-    void periodicTimeHandle(char *value, bool force=false);
+    /**
+     * @brief prints current time on screen
+     * 
+     * @param value - some ugly json string with opts   {'isShowOff':false,'isPlayTime':true}
+     * @param force - print even if lamp is off
+     */
+    void showTimeOnScreen(const char *value, bool force=false);
 
 #ifdef TM1637_CLOCK
     void settm24 (bool flag) {flags.tm24 = flag;}

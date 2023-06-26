@@ -12,10 +12,10 @@ typedef enum _remote_action {
 //    RA_ALARM_OFF,
 //    RA_LAMP_CONFIG,     // load another config for embui
 //    RA_EFF_CONFIG,
-#ifdef ESP_USE_BUTTON
-    RA_BUTTONS_CONFIG,
-#endif
-    RA_EVENTS_CONFIG,
+//#ifdef ESP_USE_BUTTON
+//    RA_BUTTONS_CONFIG,
+//#endif
+//    RA_EVENTS_CONFIG,
 /*
 #ifdef AUX_PIN
     RA_AUX_ON,
@@ -27,8 +27,8 @@ typedef enum _remote_action {
 //    RA_EFF_NEXT,
 //    RA_EFF_PREV,
 //    RA_EFF_RAND,
-    RA_BRIGHT_NF,
-    RA_CONTROL,
+//    RA_BRIGHT_NF,
+//    RA_CONTROL,
 //#ifdef MP3PLAYER
 //    RA_MP3_PREV,
 //    RA_MP3_NEXT,
@@ -41,25 +41,44 @@ typedef enum _remote_action {
 //    RA_MICONOFF,
 #endif
 //    RA_EFFECT,          // called on effect change events
-    RA_SEND_TEXT,
-    RA_SEND_TIME,
+//    RA_SEND_TEXT,
+//    RA_SEND_TIME,
     RA_SEND_IP,
     RA_WHITE_HI,
     RA_WHITE_LO,
     RA_WIFI_REC,
-    RA_GLOBAL_BRIGHT,
-    RA_BRIGHT_PCT,      // get/set brightness in percents
+//    RA_GLOBAL_BRIGHT,
+//    RA_BRIGHT_PCT,      // get/set brightness in percents
 //    RA_WARNING,
 //    RA_DRAW,
-    RA_FILLMATRIX,
-    RA_RGB
+//    RA_FILLMATRIX,
+//    RA_RGB
 } RA;
 
 void remote_action(RA action, ...);
 
+// кастомный обработчик, для поддержки приложения WLED APP ( https://play.google.com/store/apps/details?id=com.aircoookie.WLED )
+/**
+ * @brief обработчик, для поддержки приложения WLED APP
+ * https://play.google.com/store/apps/details?id=com.aircoookie.WLED
+ * обслуживает '/win'
+ * https://kno.wled.ge/interfaces/http-api/
+ * @param request AsyncWebServerRequest
+ */
+void wled_handle(AsyncWebServerRequest *request);
+
+void ws_action_handle(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len);
+
 String httpCallback(const String &param, const String &value, bool isset);
+
 #ifdef ESP_USE_BUTTON
 void default_buttons();
+
+/**
+ * @brief подгрузить конфигурацию кнопки из стороннего файла
+ * path should be relative to TCONST__backup_btn_
+ */
+void load_button_config(const char* path = NULL);
 #endif
 
 // ---------------------
@@ -87,3 +106,15 @@ void block_effects_config(Interface *interf, JsonObject *data);
 #ifdef MIC_EFFECTS
 void show_settings_mic(Interface *interf, JsonObject *data);
 #endif
+
+/**
+ * @brief load events configuarion from file
+ * 
+ * @param path 
+ */
+void load_events_config(const char* path = NULL);
+
+/*
+    сохраняет настройки LED ленты
+*/
+void set_ledstrip(Interface *interf, JsonObject *data);

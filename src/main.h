@@ -69,7 +69,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #endif
 
 #define LAMPFW_VERSION_MAJOR     3
-#define LAMPFW_VERSION_MINOR     1
+#define LAMPFW_VERSION_MINOR     2
 #define LAMPFW_VERSION_REVISION  0
 
 #define LAMPFW_VERSION_VALUE     (MAJ, MIN, REV) ((MAJ) << 16 | (MIN) << 8 | (REV))
@@ -102,7 +102,5 @@ void sendData();
 
 void create_parameters();
 void sync_parameters();
-bool notfound_handle(AsyncWebServerRequest *request, const String& req); // кастомный обработчик, для поддержки приложения WLED APP ( https://play.google.com/store/apps/details?id=com.aircoookie.WLED )
-bool ws_action_handle(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len);
 
 #endif
