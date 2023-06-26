@@ -1063,8 +1063,10 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
   if(effects.worker && flags.ONflag && !lampState.isEffectsDisabledUntilText){
     if(!sledsbuff){ // todo: WHY we need this clone here???
       sledsbuff = new LedFB(*mx);  // clone existing frambuffer
+    } else {
+      *sledsbuff = *mx;           // copy buffer content
     }
-  }
+  } 
   setBrightness(getLampBrightness(), fade, natural);
   LOG(println, F("eof switcheffect"));
 }

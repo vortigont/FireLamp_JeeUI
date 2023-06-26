@@ -815,15 +815,14 @@ void EffectWorker::switchEffect(uint16_t effnb, bool twostage){
   if (twostage && isEffSwPending()){
     LOG(printf_P,PSTR("to pending %d\n"), pendingEff.num);
     workerset(pendingEff.num);      // first we change the effect
-    pendingEff.controls.clear();    // no longer needed anyway
   } else {
     // other way, consider it as a direct switch to specified effect
     LOG(printf_P,PSTR("direct switch EffWorker to %d\n"), effnb);
+    pendingEff.num = effnb;
     workerset(effnb);
   }
 
   pendingEff.controls.clear();        // no longer needed
-  pendingEff.num = curEff.num;
 }
 
 void EffectWorker::fsinforenew(){

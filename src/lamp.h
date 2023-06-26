@@ -314,7 +314,7 @@ public:
 
     void setSpeedFactor(float val) {
         lampState.speedfactor = val;
-        if(effects.worker) effects.worker->setDynCtrl(effects.getControls()[1].get());
+        if(effects.worker && effects.getControls().exist(1)) effects.worker->setDynCtrl(effects.getControls()[1].get());
     }
 
     // Lamp brightness control
