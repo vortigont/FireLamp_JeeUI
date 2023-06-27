@@ -99,7 +99,7 @@ class MP3PlayerDevice : protected DFRobotDFPlayerMini {
      * @param rxPin 
      * @param txPin 
      */
-    MP3PlayerDevice(uint8_t rxPin, uint8_t txPin, uint8_t vol = DFPLAYER_DEFAULT_VOL);
+    MP3PlayerDevice(int8_t rxPin, int8_t txPin, uint8_t vol = DFPLAYER_DEFAULT_VOL);
 
     /**
      * @brief Construct a new MP3PlayerDevice object
