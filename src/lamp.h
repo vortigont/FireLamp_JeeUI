@@ -259,11 +259,19 @@ private:
     void playEffect(bool isPlayName = false, EFFSWITCH action = EFFSWITCH::SW_NEXT);
 #endif
 
-    LAMP(const LAMP&);  // noncopyable
-    LAMP& operator=(const LAMP&);  // noncopyable
+    /**
+     * @brief effectiveley wipes LedBuffers and renders fill the LED Strip with Black
+     * 
+     */
+    void _wipe_screen();
+
 public:
     // c-tor
     LAMP();
+
+    // noncopyable
+    LAMP (const LAMP&) = delete;
+    LAMP& operator= (const LAMP&) = delete;
 
     /**
      * @brief set a new ledbuffer for lamp

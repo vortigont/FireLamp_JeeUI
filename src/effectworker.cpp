@@ -800,7 +800,8 @@ uint16_t EffectWorker::getNext()
 void EffectWorker::switchEffect(uint16_t effnb, bool twostage){
   LOG(print, "switchEffect() ");
   // NOTE: if call has been made to the SAME effect number as the current one, than it MUST be force-switched anyway to recreate EffectCalc object
-  // (it's required for a cases like new LedFB has been proviced, etc)
+  // (it's required for a cases like new LedFB has been provided, etc)
+  if (effnb == curEff.num) return reset();
 
   // if it's a first call for two-stage switch, than we just preload coontrols and quit
   if (twostage && effnb != pendingEff.num){
@@ -1069,9 +1070,12 @@ void EffectWorker::_rebuild_eff_list(const char *folder){
 
 void EffectWorker::setLEDbuffer(LedFB *buff){
   fb = buff;
-  workerset(getCurrent());    // reset current effect to release old buffer pointer
+  reset();    // reset current effect to release old buffer pointer
 }
 
+void EffectWorker::reset(){
+  if (worker) workerset(getCurrent());
+}
 
 /*  *** EffectCalc  implementation  ***   */
 void EffectCalc::init(EFF_ENUM eff, LList<std::shared_ptr<UIControl>> *controls, EffectWorker *pworker, LAMPSTATE* state){
