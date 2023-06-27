@@ -3079,11 +3079,11 @@ bool EffectPicasso::metaBallsRoutine(){
           sum += EffectMath::mapcurve(d, 2, sc, mx, 0, EffectMath::OutQuart);
         }
 
-        if (sum >= 255) { sum = 255; break; }
+        if (sum > 255) { sum = 255; break; }
       }
       CRGB color = palettes[pidx].GetColor((uint8_t)sum, 255);
       fb->pixel(x, y) = color;
-      }
+    }
   }
 
   return true;
@@ -3093,15 +3093,14 @@ bool EffectPicasso::run(){
   switch (effect)
   {
   case EFF_PICASSO:
-    picassoRoutine();
+    return picassoRoutine();
     break;
   case EFF_PICASSO4:
-    metaBallsRoutine();
+    return metaBallsRoutine();
     break;
-  default:
-    break;
+  default:;
   }
-  return true;
+  return false;
 }
 
 // -------- Эффект "Прыгуны" (c) obliterator
