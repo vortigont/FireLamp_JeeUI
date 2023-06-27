@@ -1052,6 +1052,8 @@ private:
     uint16_t sPseudotime = 0;
     uint16_t sLastMillis = 0;
     uint16_t sHue16 = 0;
+    bool linear = true;
+    String setDynCtrl(UIControl*_val) override;
 
 public:
     EffectShadows(LedFB *framebuffer) : EffectCalc(framebuffer){}
