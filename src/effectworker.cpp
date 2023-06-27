@@ -466,7 +466,7 @@ void EffectWorker::workerset(uint16_t effect){
     // запихать в экземпляр калькулятор эффекта ссылки на все то барахло из чего состоит лампа вместе с самой лампой 8()
     curEff.loadeffconfig(effect);
     // окончательная инициализация эффекта тут
-    worker->init(static_cast<EFF_ENUM>(effect%256), &(getControls()), this, lampstate);
+    worker->init(static_cast<EFF_ENUM>(effect%256), &curEff.controls, this, lampstate);
   }
 }
 
