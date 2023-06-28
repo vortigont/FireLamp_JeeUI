@@ -466,7 +466,7 @@ void EffectWorker::workerset(uint16_t effect){
     // запихать в экземпляр калькулятор эффекта ссылки на все то барахло из чего состоит лампа вместе с самой лампой 8()
     curEff.loadeffconfig(effect);
     // окончательная инициализация эффекта тут
-    worker->init(static_cast<EFF_ENUM>(effect%256), &(getControls()), this, lampstate);
+    worker->init(static_cast<EFF_ENUM>(effect%256), &curEff.controls, this, lampstate);
   }
 }
 
@@ -800,7 +800,8 @@ uint16_t EffectWorker::getNext()
 void EffectWorker::switchEffect(uint16_t effnb, bool twostage){
   LOG(print, "switchEffect() ");
   // NOTE: if call has been made to the SAME effect number as the current one, than it MUST be force-switched anyway to recreate EffectCalc object
-  // (it's required for a cases like new LedFB has been proviced, etc)
+  // (it's required for a cases like new LedFB has been provided, etc)
+  if (effnb == curEff.num) return reset();
 
   // if it's a first call for two-stage switch, than we just preload coontrols and quit
   if (twostage && effnb != pendingEff.num){
@@ -815,15 +816,14 @@ void EffectWorker::switchEffect(uint16_t effnb, bool twostage){
   if (twostage && isEffSwPending()){
     LOG(printf_P,PSTR("to pending %d\n"), pendingEff.num);
     workerset(pendingEff.num);      // first we change the effect
-    pendingEff.controls.clear();    // no longer needed anyway
   } else {
     // other way, consider it as a direct switch to specified effect
     LOG(printf_P,PSTR("direct switch EffWorker to %d\n"), effnb);
+    pendingEff.num = effnb;
     workerset(effnb);
   }
 
   pendingEff.controls.clear();        // no longer needed
-  pendingEff.num = curEff.num;
 }
 
 void EffectWorker::fsinforenew(){
@@ -1070,9 +1070,12 @@ void EffectWorker::_rebuild_eff_list(const char *folder){
 
 void EffectWorker::setLEDbuffer(LedFB *buff){
   fb = buff;
-  workerset(getCurrent());    // reset current effect to release old buffer pointer
+  reset();    // reset current effect to release old buffer pointer
 }
 
+void EffectWorker::reset(){
+  if (worker) workerset(getCurrent());
+}
 
 /*  *** EffectCalc  implementation  ***   */
 void EffectCalc::init(EFF_ENUM eff, LList<std::shared_ptr<UIControl>> *controls, EffectWorker *pworker, LAMPSTATE* state){

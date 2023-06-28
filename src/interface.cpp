@@ -66,6 +66,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include <type_traits>
 // задержка вывода ip адреса при включении лампы после перезагрузки
 #define SHOWIP_DELAY    5
+#define RESCHEDULE_DELAY    100         // async callback delay
 
 #ifdef ESP8266
 #define NUM_OUPUT_PINS  16
@@ -996,11 +997,17 @@ void block_effects_main(Interface *interf, JsonObject *data){
 }
 
 void set_eff_prev(Interface *interf, JsonObject *data){
-    run_action(ra::eff_prev);
+    // effect switch action call should be made in main loop to maintain thread safety
+    Task *_t = new Task( RESCHEDULE_DELAY, TASK_ONCE, [](){ run_action(ra::eff_prev); }, &ts, false, nullptr, nullptr, true);
+    _t->enableDelayed();
+    //run_action(ra::eff_prev);
 }
 
 void set_eff_next(Interface *interf, JsonObject *data){
-    run_action(ra::eff_next);
+    // effect switch action call should be made in main loop to maintain thread safety
+    Task *_t = new Task( RESCHEDULE_DELAY, TASK_ONCE, [](){ run_action(ra::eff_next); }, &ts, false, nullptr, nullptr, true);
+    _t->enableDelayed();
+    //run_action(ra::eff_next);
 }
 
 /**

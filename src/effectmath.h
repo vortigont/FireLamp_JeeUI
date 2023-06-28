@@ -517,7 +517,7 @@ struct Noise3dMap {
     inline size_t idx(uint8_t x, uint8_t y) const { return w*y + x; }
 
     // return a reference to map element via layer,x,y coordinates
-    uint8_t &lxy(uint8_t layer, uint8_t x, uint8_t y){ return map.at(layer).at(idx(y, x)); }
+    uint8_t &lxy(uint8_t layer, uint8_t x, uint8_t y){ return map.at(layer).at(idx(x, y)); }
 
     /**
      * @brief fill noise map
