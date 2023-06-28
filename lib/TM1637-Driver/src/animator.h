@@ -168,7 +168,7 @@ public:
     }
 
     void reset(const String& value) {
-        buffer_ = "";
+        buffer_.clear();
         for (decltype(value.length()) counter{}; counter < value.length(); ++counter) {
             auto d = toDisplayDigit(value[counter]);
             if (d == 0x80u && buffer_.length() > 0) {
@@ -181,7 +181,7 @@ public:
 
     void clear()
     {
-        buffer_ = "";
+        buffer_.clear();
         for (size_t counter{}; counter < totalDigits_; ++counter)
             buffer_.concat(static_cast<char>(0x00u));
         refresh();
@@ -262,11 +262,11 @@ private:
         mi2C_.endTransmission();
     }
 
-    String              buffer_ = "";
+    String              buffer_;
     MI2C                mi2C_;
     DisplayControl_e    brightness_ = DisplayControl_e::DISPLAY_ON;
-    uint8_t             dp_;
-    uint8_t             colon_;
+    uint8_t             dp_{0};
+    uint8_t             colon_{0};
     //const unsigned int  totalDigits_;
 	const uint8_t		totalDigits_;
     Tasker              tasker;
