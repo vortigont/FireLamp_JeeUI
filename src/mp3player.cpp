@@ -46,7 +46,7 @@ MP3PlayerDevice::MP3PlayerDevice(Stream *port, uint8_t vol) : cur_volume(vol), m
 }
 
 
-MP3PlayerDevice::MP3PlayerDevice(uint8_t rxPin, uint8_t txPin, uint8_t vol) : cur_volume(vol) {
+MP3PlayerDevice::MP3PlayerDevice(int8_t rxPin, int8_t txPin, uint8_t vol) : cur_volume(vol) {
 #ifdef ESP8266
   SoftwareSerial *s = new (std::nothrow) SoftwareSerial(rxPin, txPin);
   if (!s) return;
@@ -54,7 +54,9 @@ MP3PlayerDevice::MP3PlayerDevice(uint8_t rxPin, uint8_t txPin, uint8_t vol) : cu
   s->begin(9600);
   mp3player = s;
 #else // ESP32xx
-  MP3SERIAL.begin(9600, SERIAL_8N1, rxPin, txPin);    // use hwserial #2
+  if (rxPin != GPIO_NUM_NC && txPin != GPIO_NUM_NC)
+    MP3SERIAL.begin(9600, SERIAL_8N1, rxPin, txPin);    // use hwserial #2
+
   mp3player = &MP3SERIAL;
 #endif
   init();

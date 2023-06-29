@@ -270,14 +270,19 @@ private:
     void playEffect(bool isPlayName = false, EFFSWITCH action = EFFSWITCH::SW_NEXT);
 #endif
 
-    LAMP(const LAMP&);  // noncopyable
-    LAMP& operator=(const LAMP&);  // noncopyable
+    /**
+     * @brief effectiveley wipes LedBuffers and renders fill the LED Strip with Black
+     * 
+     */
+    void _wipe_screen();
 
-
-/***    PUBLIC  ***/
 public:
     // c-tor
     LAMP();
+
+    // noncopyable
+    LAMP (const LAMP&) = delete;
+    LAMP& operator= (const LAMP&) = delete;
 
     /**
      * @brief set a new ledbuffer for lamp
@@ -328,7 +333,7 @@ public:
 
     void setSpeedFactor(float val) {
         lampState.speedfactor = val;
-        if(effects.worker) effects.worker->setDynCtrl(effects.getControls()[1].get());
+        if(effects.worker && effects.getControls().exist(1)) effects.worker->setDynCtrl(effects.getControls()[1].get());
     }
 
     // Lamp brightness control

@@ -38,7 +38,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #ifndef _TM_H
 #define _TM_H
 
-#include "TM1637.h"
+#include "TM1637.h"   //  https://github.com/AKJ7/TM1637
 #include "config.h"
 
 #ifndef TM_TIME_DELAY

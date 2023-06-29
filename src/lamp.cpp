@@ -111,8 +111,7 @@ void LAMP::lamp_init(const uint16_t curlimit)
   }
 }
 
-void LAMP::handle()
-{
+void LAMP::handle(){
 #ifdef MIC_EFFECTS
   static unsigned long mic_check = 0; // = 40000; // пропускаю первые 40 секунд
   if(effects.worker && flags.isMicOn && (flags.ONflag || isMicCalibration()) && !isAlarm() && mic_check + MIC_POLLRATE < millis()){
@@ -252,13 +251,17 @@ void LAMP::effectsTick(){
   GAUGE::GetGaugeInstance()->GaugeMix((GAUGETYPE)flags.GaugeType);
 
   // это жесть...
-  if (isRGB() || isWarning() || isAlarm() || lampState.isEffectsDisabledUntilText || LEDFader::getInstance()->running() || (effects.worker ? effects.worker->status() : 1) || lampState.isStringPrinting) {
+  if (isRGB() || isWarning() || isAlarm() || lampState.isEffectsDisabledUntilText || LEDFader::getInstance()->running() || (effects.worker ? effects.worker->status() : false) || lampState.isStringPrinting) {
     // выводим 1 кадр на матрицу только если есть текст или эффект
     effectsTimer(T_FRAME_ENABLE, _begin);
   } else if(isLampOn()) {
     // иначе перезапускаем этот же метод бесконечно
     effectsTimer(T_ENABLE);
+  } else {
+    // not sure how we ended up here
+    _wipe_screen();
   }
+
 }
 
 /*
@@ -266,7 +269,7 @@ void LAMP::effectsTick(){
  * и перезапуск эффект-процессора
  */
 void LAMP::frameShow(const uint32_t ticktime){
-  if ( !LEDFader::getInstance()->running() && !isLampOn() && !isAlarm() ) return;
+  if ( !LEDFader::getInstance()->running() && !isLampOn() && !isAlarm() ) return _wipe_screen();
 
   FastLED.show();
 
@@ -292,24 +295,27 @@ void LAMP::changePower(bool flag) // флаг включения/выключе�
     mode = LAMPMODE::MODE_NORMAL;
 
   if (flag){
+    // POWER ON
 #ifdef USE_STREAMING
     if (flags.isStream)
       Led_Stream::newStreamObj((STREAM_TYPE)embui.param(FPSTR(TCONST_stream_type)).toInt());
     if(!flags.isDirect || !flags.isStream)
 #endif
+    effects.reset();
     effectsTimer(T_ENABLE);
     if(mode == LAMPMODE::MODE_DEMO)
       demoTimer(T_ENABLE);
+
   } else  {
+    // POWER OFF
 #ifdef USE_STREAMING
     Led_Stream::clearStreamObj();
 #endif
     if(flags.isFaderON && !lampState.isOffAfterText){
-      LEDFader::getInstance()->fadelight(0, FADE_TIME, std::bind(&LAMP::effectsTimer, this, SCHEDULER::T_DISABLE, 0));  // гасим эффект-процессор
-    }
-    else {
-      brightness(0);
+      LEDFader::getInstance()->fadelight(0, FADE_TIME, [this](){ effectsTimer(SCHEDULER::T_DISABLE); _wipe_screen(); } );     // гасим эффект-процессор
+    } else {
       effectsTimer(SCHEDULER::T_DISABLE);
+      _wipe_screen();  // forse wipe the screen to black
     }
     lampState.isOffAfterText = false;
     lampState.isStringPrinting = false;
@@ -1068,8 +1074,10 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
   if(effects.worker && flags.ONflag && !lampState.isEffectsDisabledUntilText){
     if(!sledsbuff){ // todo: WHY we need this clone here???
       sledsbuff = new LedFB(*mx);  // clone existing frambuffer
+    } else {
+      *sledsbuff = *mx;           // copy buffer content
     }
-  }
+  } 
   setBrightness(getLampBrightness(), fade, natural);
   LOG(println, F("eof switcheffect"));
 }
@@ -1310,6 +1318,15 @@ void LAMP::reset_led_buffs(){
   mx->clear();
   delete sledsbuff; sledsbuff = nullptr;  // drop sleds buffer, it will be recreated on next run
   setDraw(false); // drop draw buffer
+}
+
+void LAMP::_wipe_screen(){
+  LOG(println, F("Wipe Screen"));
+  if (mx) mx->clear();
+  if (sledsbuff) sledsbuff->clear();
+  delete sledsbuff;
+  sledsbuff = nullptr;
+  FastLED.show();
 }
 
 

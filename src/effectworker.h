@@ -474,9 +474,6 @@ private:
     */
     void workerset(uint16_t effect);
 
-    EffectWorker(const EffectWorker&);  // noncopyable
-    EffectWorker& operator=(const EffectWorker&);  // noncopyable
-
     void effectsReSort(SORT_TYPE st=(SORT_TYPE)(255));
 
     /**
@@ -509,8 +506,21 @@ public:
     EffectWorker(LAMPSTATE *_lampstate, LedFB *framebuffer);
     //~EffectWorker();
 
+    // noncopyable
+    EffectWorker (const EffectWorker&) = delete;
+    EffectWorker& operator= (const EffectWorker&) = delete;
+
     // указатель на экземпляр класса текущего эффекта
     std::unique_ptr<EffectCalc> worker = nullptr;
+
+    /**
+     * @brief reset worker by recreating current EffectCalc instance
+     * it will destroy and recreate effect instance and reload it's config
+     * effectively reloading it
+     * 
+     */
+    void reset();
+
 
     /**
      * @brief set a new ledbuffer for worker

@@ -3079,11 +3079,11 @@ bool EffectPicasso::metaBallsRoutine(){
           sum += EffectMath::mapcurve(d, 2, sc, mx, 0, EffectMath::OutQuart);
         }
 
-        if (sum >= 255) { sum = 255; break; }
+        if (sum > 255) { sum = 255; break; }
       }
       CRGB color = palettes[pidx].GetColor((uint8_t)sum, 255);
       fb->pixel(x, y) = color;
-      }
+    }
   }
 
   return true;
@@ -3093,15 +3093,14 @@ bool EffectPicasso::run(){
   switch (effect)
   {
   case EFF_PICASSO:
-    picassoRoutine();
+    return picassoRoutine();
     break;
   case EFF_PICASSO4:
-    metaBallsRoutine();
+    return metaBallsRoutine();
     break;
-  default:
-    break;
+  default:;
   }
-  return true;
+  return false;
 }
 
 // -------- Эффект "Прыгуны" (c) obliterator
@@ -4404,16 +4403,22 @@ bool EffectButterfly::run()
 
 // ---- Эффект "Тени"
 // https://github.com/vvip-68/GyverPanelWiFi/blob/master/firmware/GyverPanelWiFi_v1.02/effects.ino
+String EffectShadows::setDynCtrl(UIControl*_val) {
+  if(_val->getId()==3) linear = EffectCalc::setDynCtrl(_val).toInt();
+  else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
+  return String();
+}
+
 bool EffectShadows::run() {
 
   uint8_t sat8 = beatsin88( 87, 220, 250);
   uint8_t brightdepth = beatsin88( 341, 96, 224);
   uint16_t brightnessthetainc16 = beatsin88( 203, (25 * 225), (40 * 256));
 #ifdef MIC_EFFECTS
-  uint8_t msmultiplier = isMicOn() ? getMicMapMaxPeak() : getCtrlVal(3) == "false" ? beatsin88(map(speed, 1, 255, 100, 255), 32, map(speed, 1, 255, 60, 255)) : speed; // beatsin88(147, 32, 60);
+  uint8_t msmultiplier = isMicOn() ? getMicMapMaxPeak() : linear? beatsin88(map(speed, 1, 255, 100, 255), 32, map(speed, 1, 255, 60, 255)) : speed; // beatsin88(147, 32, 60);
   byte effectBrightness = isMicOn() ? getMicMapMaxPeak() * 1.5f : scale;
 #else
-  uint8_t msmultiplier = getCtrlVal(3) == "false" ? beatsin88(map(speed, 1, 255, 100, 255), 32, map(speed, 1, 255, 60, 255)) : speed; // beatsin88(147, 32, 60);
+  uint8_t msmultiplier = linear ? beatsin88(map(speed, 1, 255, 100, 255), 32, map(speed, 1, 255, 60, 255)) : speed; // beatsin88(147, 32, 60);
   byte effectBrightness = scale;
 #endif
   uint16_t hue16 = sHue16;//gHue * 256;

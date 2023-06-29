@@ -122,7 +122,8 @@ class GradientPaletteList{
     GradientPaletteList(){}
     // ~GradientPaletteList(){} d-tor is trivial
 
-    GradientPalette operator[](int i){ return palletes[i]; }
+    // return element at [index], if index is out of bounds returns last element
+    GradientPalette operator[](unsigned i){ return (i < size()) ? palletes[i] : palletes.back(); }
 
     int size(){ return palletes.size(); }
     void del(int idx){ palletes.unlink(idx); }

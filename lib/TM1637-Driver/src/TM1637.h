@@ -91,9 +91,9 @@ public:
 
     void offMode() const noexcept { animator_.off(); };
     void onMode() const noexcept { animator_.on(animator_.brightness_); };
-    inline void colonOff() noexcept { animator_.colon_ = false; };
-    inline void colonOn() noexcept { animator_.colon_ = true; };
-    inline Animator* switchColon() noexcept { animator_.colon_ = !animator_.colon_; return &animator_; };
+    inline void colonOff() noexcept { animator_.colon_ = 0xff; };
+    inline void colonOn() noexcept { animator_.colon_ = 0; };
+    inline Animator* switchColon() noexcept { animator_.colon_ ? colonOff() : colonOn(); return &animator_; };
     void clearScreen() noexcept { animator_.clear(); animator_.refresh(); };
     inline void setDp(uint8_t value) noexcept { animator_.dp_ = value; }
     inline uint8_t getBrightness() const noexcept { return static_cast<uint8_t>(animator_.brightness_); }
