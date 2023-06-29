@@ -89,17 +89,13 @@ void TMCLOCK::tm_loop() {
     char dispTime[6];            // Массив для сбора времени
 
     sprintf (dispTime,
-              myLamp.isTmZero() ? (showPoints ? "%02d.%02d" : "%02d%02d") : (showPoints ? "%d.%02d" : "%d%02d"),
+              myLamp.isTmZero() ? "%02d%s%02d" : "%d%s%02d",
               myLamp.isTm24() ? t->tm_hour : t->tm_hour % 12,
+              showPoints ? "." : "",
               t->tm_min);
 
-    if (!showPoints){
-      colonOff();
-      clearScreen();
-    }
     myLamp.isTmZero() ? display(String(dispTime)) : ((t->tm_hour < 10 || (!myLamp.isTm24() && t->tm_hour > 12 && t->tm_hour < 22)) ? display(String(dispTime), true, false, 1) : display(String(dispTime)));
-
-  showPoints=!showPoints;
+    showPoints=!showPoints;
 #endif
 }
 

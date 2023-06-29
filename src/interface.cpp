@@ -1097,7 +1097,7 @@ void set_demoflag(Interface *interf, JsonObject *data){
 
 void set_auxflag(Interface *interf, JsonObject *data){
     if (!data) return;
-    int pin = embui.paramVariant(FPSTR(TCONST_aux_gpio));
+    int pin = embui.paramVariant(TCONST_aux_gpio);
     if ( pin == -1) return;
     bool state = ( digitalRead(pin) == embui.paramVariant(FPSTR(TCONST_aux_ll)) );
 
@@ -2491,8 +2491,8 @@ void set_gpios(Interface *interf, JsonObject *data){
         }
         // AUX gpios
         case gpio_device::aux : {
-            if ( (*data)[FPSTR(TCONST_aux_gpio)] == static_cast<int>(GPIO_NUM_NC) ) doc.remove(FPSTR(TCONST_aux_gpio));
-            else doc[FPSTR(TCONST_aux_gpio)] = (*data)[FPSTR(TCONST_mosfet_gpio)];
+            if ( (*data)[TCONST_aux_gpio] == static_cast<int>(GPIO_NUM_NC) ) doc.remove(TCONST_aux_gpio);
+            else doc[TCONST_aux_gpio] = (*data)[TCONST_aux_gpio];
 
             doc[FPSTR(TCONST_aux_ll)] = (*data)[FPSTR(TCONST_aux_ll)];
             break;
@@ -2869,9 +2869,9 @@ void page_gpiocfg(Interface *interf, JsonObject *data){
     interf->json_section_end();
 
     // gpio AUX
-    interf->json_section_hidden(FPSTR(TCONST_aux_gpio), FPSTR(TCONST_AUX));
+    interf->json_section_hidden(TCONST_aux_gpio, FPSTR(TCONST_AUX));
         interf->json_section_line(); // расположить в одной линии
-            interf->number_constrained(FPSTR(TCONST_aux_gpio), doc[FPSTR(TCONST_aux_gpio)] | static_cast<int>(GPIO_NUM_NC), F("AUX gpio"), /*step*/ 1, /*min*/ -1, /*max*/ NUM_OUPUT_PINS);
+            interf->number_constrained(TCONST_aux_gpio, doc[TCONST_aux_gpio] | static_cast<int>(GPIO_NUM_NC), F("AUX gpio"), /*step*/ 1, /*min*/ -1, /*max*/ NUM_OUPUT_PINS);
             interf->number_constrained(FPSTR(TCONST_aux_ll),   doc[FPSTR(TCONST_aux_ll)]   | 1, F("AUX logic level"), 1, 0, 1);
         interf->json_section_end();
         interf->button_submit_value(FPSTR(TCONST_set_gpio), static_cast<int>(gpio_device::aux), FPSTR(TINTF_008));
