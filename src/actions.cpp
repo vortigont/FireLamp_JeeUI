@@ -37,7 +37,7 @@
 */
 
 #include "actions.hpp"
-
+#include "lamp.h"
 
 void run_action(ra act){
   LOG(printf_P, PSTR("run_action: %d\n"), static_cast<int>(act));

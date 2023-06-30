@@ -65,27 +65,20 @@ LAMP::LAMP() : tmStringStepTime(DEFAULT_TEXT_SPEED), tmNewYearMessage(0), effect
 //#endif
   lampState.flags = 0; // сборосить все флаги состояния
   lampState.speedfactor = 1.0; // дефолтное значение
-  lampState.brightness = 127;
 }
 
-void LAMP::lamp_init(const uint16_t curlimit)
+void LAMP::lamp_init()
 {
-  setcurLimit(curlimit);
-
-  // moved into main.cpp
-  //FastLED.addLeds<WS2812B, LAMP_PIN, COLOR_ORDER>(leds, num_leds).setCorrection(TypicalLEDStrip);
-  //FastLED.addLeds<WS2812B, LAMP_PIN, COLOR_ORDER>(leds, num_leds).setCorrection(TypicalPixelString);
-  //FastLED.addLeds<WS2812B, LAMP_PIN, COLOR_ORDER>(getUnsafeLedsArray(), num_leds);
-
-  brightness(0, false);                         // начинаем с полностью потушеной матрицы 1-й яркости
-  flags.isGlobalBrightness = true;              // force global brightness
-
-  if (curlimit > 0){
-    FastLED.setMaxPowerInVoltsAndMilliamps(5, curlimit); // установка максимального тока БП
+  _wipe_screen();
+  // restore LED's current limit
+  curLimit = embui.paramVariant(TCONST_CLmt);
+  if (curLimit > 0){
+    FastLED.setMaxPowerInVoltsAndMilliamps(5, curLimit); // установка максимального тока БП
   }
-  FastLED.clearData();
-  //FastLED.clear();                                            // очистка матрицы
-  //FastLED.show(); // для ESP32 вызывает перезагрузку циклическую!!! Убираю, т.к. при 160Мгц вызывает бросок тока и яркости!!! Не включать и оставить как напоминание!
+
+  globalBrightness = embui.paramVariant(TCONST_GlobBRI);
+  _brightness(globalBrightness, true);          // начинаем с полностью потушеной матрицы 0-й яркости
+  flags.isGlobalBrightness = true;              // force global brightness
 
   // initialize fader instance
   LEDFader::getInstance()->setLamp(this);
@@ -161,7 +154,7 @@ void LAMP::handle(){
   //alarmWorker();
 
   if(lampState.isEffectsDisabledUntilText && !lampState.isStringPrinting) {
-    setBrightness(0,false,false); // напечатали, можно гасить матрицу :)
+    _wipe_screen(); //setBrightness(0,false,false); // напечатали, можно гасить матрицу :)
     lampState.isEffectsDisabledUntilText = false;
   }
 
@@ -361,7 +354,7 @@ void LAMP::startRGB(CRGB &val){
 void LAMP::stopRGB(){
   if (mode != LAMPMODE::MODE_RGBLAMP) return;
 
-  setBrightness(getLampBrightness(), false, false);
+  //setBrightness(getLampBrightness(), false, false);
   mode = (storedMode != LAMPMODE::MODE_RGBLAMP ? storedMode : LAMPMODE::MODE_NORMAL); // возвращаем предыдущий режим
   if(mode==LAMPMODE::MODE_DEMO)
     demoTimer(T_ENABLE);     // вернуть демо-таймер
@@ -595,7 +588,7 @@ void LAMP::sendString(const char* text, CRGB letterColor, bool forcePrint, bool 
       disableEffectsUntilText(); // будем выводить текст, при выкюченной матрице
       setOffAfterText();
       changePower(true);
-      setBrightness(OFF_BRIGHTNESS, false, false); // выводить будем минимальной яркостью в OFF_BRIGHTNESS пункта
+      setBrightness(OFF_BRIGHTNESS, fade_t::off, true); // выводить будем минимальной яркостью в OFF_BRIGHTNESS пункта
       sendStringToLamp(text, letterColor, forcePrint, clearQueue);
   } else {
       sendStringToLamp(text, letterColor, forcePrint, clearQueue);
@@ -932,20 +925,20 @@ void LAMP::setMicOnOff(bool val) {
 }
 #endif  // MIC_EFFECTS
 
-/*
- * Change global brightness with or without fade effect
- * fade applied in non-blocking way
- * FastLED dim8 function applied internaly for natural brightness controll
- * @param uint8_t _brt - target brigtness level 0-255
- * @param bool fade - use fade effect on brightness change
- */
-void LAMP::setBrightness(const uint8_t _brt, const bool fade, const bool natural){
-    LOG(printf_P, PSTR("setBrightness(): %u\n"), _brt);
-    if (fade) {
-        LEDFader::getInstance()->fadelight(_brt);
+void LAMP::setBrightness(uint8_t tgtbrt, fade_t fade, bool bypass){
+    LOG(printf_P, PSTR("setBrightness(): %u\n"), tgtbrt);
+    if (bypass)
+      return _brightness(tgtbrt, true);
+
+    globalBrightness = tgtbrt;
+
+    if ( fade == fade_t::on || (fade == fade_t::preset) && flags.isFaderON) {
+        LEDFader::getInstance()->fadelight(tgtbrt);
     } else {
-        brightness(_brt, natural);
+        _brightness(tgtbrt);
     }
+
+    embui.var(TCONST_GlobBRI, tgtbrt);
 }
 
 /*
@@ -953,10 +946,11 @@ void LAMP::setBrightness(const uint8_t _brt, const bool fade, const bool natural
  * FastLED brighten8 function applied internaly for natural brightness compensation
  * @param bool natural - return compensated or absolute brightness
  */
+/*
 uint8_t LAMP::getBrightness(const bool natural){
     return (natural ? brighten8_raw(FastLED.getBrightness()) : FastLED.getBrightness());
 }
-
+*/
 
 /*
  * Set global brightness
@@ -964,17 +958,10 @@ uint8_t LAMP::getBrightness(const bool natural){
  */
 void LAMP::_brightness(uint8_t brt, bool absolute){
     if (!absolute) brt = luma::curveMap(_curve, brt, MAX_BRIGHTNESS, MAX_BRIGHTNESS);
-    uint8_t _cur = natural ? brighten8_video(FastLED.getBrightness()) : FastLED.getBrightness();
+    //uint8_t _cur = natural ? brighten8_video(FastLED.getBrightness()) : FastLED.getBrightness();
     if ( brt == FastLED.getBrightness()) return;  // nothing to change here
 
-    if (brt) {
-      FastLED.setBrightness(_brt);
-    } else {
-      // a dirty hack
-      // 8266 may crash if brightness is set to zero, need triage with newer lib/core versions
-      FastLED.setBrightness(1);
-      FastLED.clear();
-    }
+    FastLED.setBrightness(brt);
     FastLED.show();
 }
 
@@ -985,6 +972,12 @@ uint8_t LAMP::lampBrightnesspct(uint8_t brt){
     setLampBrightness(brt * 255 / 100);
   return brt;
 }
+
+void LAMP::setLumaCurve(luma::curve c){
+  if (c == _curve) return;
+  _curve = c;
+  setBrightness(getBrightness(), fade_t::off);    // switch to the adjusted brightness level
+};
 
 /*
  * переключатель эффектов для других методов,
@@ -1069,16 +1062,14 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
   playEffect(isPlayName, action); // воспроизведение звука, с проверкой текущего состояния
 #endif
 
-  bool natural = true;
-
   if(effects.worker && flags.ONflag && !lampState.isEffectsDisabledUntilText){
     if(!sledsbuff){ // todo: WHY we need this clone here???
       sledsbuff = new LedFB(*mx);  // clone existing frambuffer
     } else {
       *sledsbuff = *mx;           // copy buffer content
     }
-  } 
-  setBrightness(getLampBrightness(), fade, natural);
+  }
+  setBrightness(globalBrightness);      // need to reapply brightness as effect's curve might have changed
   LOG(println, F("eof switcheffect"));
 }
 
@@ -1348,7 +1339,7 @@ void LEDFader::fadelight(const uint8_t _targetbrightness, const uint32_t _durati
   _cb = callback;
   int _steps = (abs(_tgtbrt - _brt) > FADE_MININCREMENT * _duration / FADE_STEPTIME) ? _duration / FADE_STEPTIME : abs(_tgtbrt - _brt)/FADE_MININCREMENT;
   if (_steps < 3) {   // no need to fade for such small difference
-    lmp->brightness(_tgtbrt);
+    lmp->_brightness(_tgtbrt);
     LOG(printf_P, PSTR("Fast fade to %d->%d\n"), _brt, _tgtbrt);
     if (runner) abort();
     if (callback) callback();
@@ -1362,12 +1353,12 @@ void LEDFader::fadelight(const uint8_t _targetbrightness, const uint32_t _durati
   } else {
     runner = new Task((unsigned long)FADE_STEPTIME,
       _steps,
-      [this](){ _brt += _brtincrement; lmp->brightness(_brt); /* LOG(printf_P, PSTR("fd brt %d/%d, glbr:%d, gbr:%d, vid:%d, vid2:%d\n"), _brt, _brtincrement, lmp->getLampBrightness(), lmp->getBrightness(), brighten8_video(FastLED.getBrightness()), brighten8_video(brighten8_video(FastLED.getBrightness()))  ); */ },
+      [this](){ _brt += _brtincrement; lmp->_brightness(_brt); /* LOG(printf_P, PSTR("fd brt %d/%d, glbr:%d, gbr:%d, vid:%d, vid2:%d\n"), _brt, _brtincrement, lmp->getLampBrightness(), lmp->getBrightness(), brighten8_video(FastLED.getBrightness()), brighten8_video(brighten8_video(FastLED.getBrightness()))  ); */ },
       &ts,
       true,
       nullptr,
       [this](){
-          lmp->brightness(_tgtbrt);
+          lmp->_brightness(_tgtbrt);
           LOG(printf_P, PSTR("Fading to %d done\n"), _tgtbrt);
           // use new task for callback, 'cause effect switching will immiatetly respawn new fader from callback
           // so need to release a task instance

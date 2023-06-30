@@ -41,6 +41,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "LList.h"
 #include "effects_types.h"
 #include "ledfb.hpp"
+#include "luma_curves.hpp"
 #include <vector>
 
 #ifdef MIC_EFFECTS
@@ -89,7 +90,7 @@ typedef struct {
         };
     };
     float speedfactor;
-    uint8_t brightness;
+    //uint8_t brightness;
 
 #ifdef MIC_EFFECTS
     float mic_noise = 0.0; // уровень шума в ед.
@@ -225,6 +226,8 @@ public:
     uint16_t num = 0;       // номер эффекта
     uint8_t version = 0;    // версия эффекта
     EFFFLAGS flags;         // effect flags
+    uint8_t brt{0};         // effect's private brightness
+    luma::curve curve{luma::curve::cie1931};
     String effectName;      // имя эффекта (предварительно заданное или из конфига)
     String soundfile;       // имя/путь к звуковому файлу (DF Player Mini)
     // список контроллов эффекта
@@ -333,7 +336,7 @@ protected:
     bool isDebug() {return _lampstate ? _lampstate->isDebug : false;}
     bool isRandDemo() {return _lampstate ? _lampstate->isRandDemo : false;}
     float getSpeedFactor() {return _lampstate ? _lampstate->speedfactor : 1.0;}
-    float getBrightness() {return _lampstate ? _lampstate->brightness : 127;}
+    //float getBrightness() {return _lampstate ? _lampstate->brightness : 127;}
 
 #ifdef MIC_EFFECTS
     void setMicAnalyseDivider(uint8_t val) {if(_lampstate) _lampstate->micAnalyseDivider = val&3;}
@@ -527,6 +530,13 @@ public:
      * it will pass it further on effects creation, etc...
      */
     void setLEDbuffer(LedFB *buff);
+
+    /**
+     * @brief Set the Luma Curve value for the current effect configuration
+     * 
+     * @param c luma curve enum
+     */
+    void setLumaCurve(luma::curve c);
 
     // уделение списков из ФС
     void removeLists();

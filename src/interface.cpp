@@ -42,6 +42,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "extra_tasks.h"
 #include "events.h"
 #include "alarm.h"
+#include "templates.hpp"
 
 #ifdef TM1637_CLOCK
     #include "tm.h"				// Подключаем функции
@@ -98,13 +99,6 @@ enum class gpio_device:uint8_t {
     aux,
     tmdisplay
 };
-
-// cast enum to int
-template <class E>
-constexpr std::common_type_t<int, std::underlying_type_t<E>>
-e2int(E e) {
-    return static_cast<std::common_type_t<int, std::underlying_type_t<E>>>(e);
-}
 
 namespace INTERFACE {
 // ------------- глобальные переменные построения интерфейса
@@ -574,12 +568,14 @@ void show_effects_config(Interface *interf, JsonObject *data){
     if(LittleFS.exists(FPSTR(TCONST_eff_fulllist_json))){
         // формируем и отправляем кадр с запросом подгрузки внешнего ресурса
         interf->json_frame(FPSTR(TCONST_XLOAD));
+
         interf->json_section_content();
         interf->select(FPSTR(TCONST_effListConf), (int)confEff->eff_nb, FPSTR(TINTF_00A),
                         true,   // direct
                         FPSTR(TCONST_eff_fulllist_json)
                 );
         interf->json_section_end();
+
         // generate block with effect settings controls
         block_effect_params(interf, nullptr);
         interf->spacer();
@@ -619,8 +615,8 @@ void set_effects_config_list(Interface *interf, JsonObject *data){
     myLamp.effects.loadsoundfile(tmpSoundfile,confEff->eff_nb);
     interf->value(FPSTR(TCONST_soundfile), tmpSoundfile, false);
 #endif
-    interf->value(FPSTR(TCONST_eff_sel), confEff->canBeSelected(), false);      // доступен для выбора в выпадающем списке на главной странице
-    interf->value(FPSTR(TCONST_eff_fav), confEff->isFavorite(), false);            // доступен в демо-режиме
+    interf->value(FPSTR(TCONST_eff_sel), confEff->canBeSelected(), false);          // доступен для выбора в выпадающем списке на главной странице
+    interf->value(FPSTR(TCONST_eff_fav), confEff->isFavorite(), false);             // доступен в демо-режиме
 
     interf->json_frame_flush();
 }
@@ -643,17 +639,23 @@ void block_effect_controls(Interface *interf, JsonObject *data){
     // there could be no ws clients connected
     if(interf) interf->json_section_begin(FPSTR(TCONST_eff_ctrls));
 
+    // brightness control
+    if(interf) interf->range(TCONST_GBR, myLamp.getBrightness(), 0, 255, 1, "Lamp Brightness", true);
+
     LList<std::shared_ptr<UIControl>> &controls = myLamp.effects.getControls();
     uint8_t ctrlCaseType; // тип контрола, старшие 4 бита соответствуют CONTROL_CASE, младшие 4 - CONTROL_TYPE
 #ifdef MIC_EFFECTS
-   bool isMicOn = myLamp.isMicOnOff();
-   LOG(printf_P,PSTR("Make UI for %d controls\n"), controls.size());
+    bool isMicOn = myLamp.isMicOnOff();
+    LOG(printf_P,PSTR("Make UI for %d controls\n"), controls.size());
     for(unsigned i=0; i<controls.size();i++)
         if(controls[i]->getId()==7 && controls[i]->getName().startsWith(FPSTR(TINTF_020)))
             isMicOn = isMicOn && controls[i]->getVal().toInt();
 #endif
+
     LOG(printf_P, PSTR("block_effect_controls() got %u ctrls\n"), controls.size());
     for (const auto &ctrl : controls){
+        if (!ctrl->getId()) continue;       // skip old "brightness control"
+
         ctrlCaseType = ctrl->getType();
         switch(ctrlCaseType>>4){
             case CONTROL_CASE::HIDE :
@@ -799,31 +801,15 @@ void direct_set_effects_dynCtrl(JsonObject *data){
 
     String ctrlName;
     LList<std::shared_ptr<UIControl>>&controls = myLamp.effects.getControls();
-    for(unsigned i=0; i<controls.size();i++){
+    for(unsigned i=1; i<controls.size();i++){       // I skip first control here [0] as it's the old 'individual brightness'
         ctrlName = String(FPSTR(TCONST_dynCtrl))+String(controls[i]->getId());
         if((*data).containsKey(ctrlName)){
-            if(!i){ // яркость???
-                byte bright = (*data)[ctrlName];
-                if (myLamp.getLampBrightness() != bright) {
-                    myLamp.setLampBrightness(bright);
-                    if(myLamp.isLampOn())
-                        myLamp.setBrightness(myLamp.getLampBrightness(), !((*data)[FPSTR(TCONST_nofade)]));
-                    if (myLamp.IsGlobalBrightness()) {
-                        embui.var(FPSTR(TCONST_GlobBRI), (*data)[ctrlName]);
-                    } else
-                        resetAutoTimers(true);
-                } else {
-                    myLamp.setLampBrightness(bright);
-                    if (!myLamp.IsGlobalBrightness())
-                        resetAutoTimers(true);
-                }
-            } else {
-                if ((*data)[ctrlName].is<bool>() ){
-                    controls[i]->setVal((*data)[ctrlName] ? "1" : "0");     // больше стрингов во славу Богу стрингов!
-                } else
-                    controls[i]->setVal((*data)[ctrlName]); // для всех остальных
-                resetAutoTimers(true);
-            }
+            if ((*data)[ctrlName].is<bool>() ){
+                controls[i]->setVal((*data)[ctrlName] ? "1" : "0");     // больше стрингов во славу Богу стрингов!
+            } else
+                controls[i]->setVal((*data)[ctrlName]); // для всех остальных
+
+            resetAutoTimers(true);
             if(myLamp.effects.worker) // && myLamp.effects.getCurrent()
                 myLamp.effects.worker->setDynCtrl(controls[i].get());
             break;
@@ -924,6 +910,16 @@ void block_main_flags(Interface *interf, JsonObject *data){
 #ifdef LAMP_DEBUG
     interf->checkbox(FPSTR(TCONST_debug), myLamp.isDebugOn(), FPSTR(TINTF_08E), true);
 #endif
+    // curve selector
+    interf->select(TCONST_lcurve, e2int(myLamp.effects.getEffCfg().curve), "Luma curve", true);  // luma curve selector
+    interf->option(0, "binary");
+    interf->option(1, "linear");
+    interf->option(2, "cie1931");
+    interf->option(3, "exponent");
+    interf->option(4, "sine");
+    interf->option(5, "square");
+    interf->json_section_end();     // select
+
     interf->json_section_end();
 #ifdef MP3PLAYER
     interf->json_section_line(F("line124")); // спец. имя - разбирается внутри html
@@ -1108,6 +1104,13 @@ void set_auxflag(Interface *interf, JsonObject *data){
 
 
 void set_gbrflag(Interface *interf, JsonObject *data){
+    // set brightness
+    myLamp.setBrightness((*data)[FPSTR(TCONST_GBR)]);
+
+    // todo:
+    // save
+    // publisg
+/*
     if (!data) return;
     myLamp.setIsGlobalBrightness((*data)[FPSTR(TCONST_GBR)]);
 #ifdef EMBUI_USE_MQTT
@@ -1118,6 +1121,12 @@ void set_gbrflag(Interface *interf, JsonObject *data){
         myLamp.setBrightness(myLamp.getLampBrightness());
     }
     show_effect_controls(interf, data);
+*/
+}
+
+void set_lcurve(Interface *interf, JsonObject *data){
+    myLamp.setLumaCurve(static_cast<luma::curve>((*data)[TCONST_lcurve].as<int>()));
+    myLamp.effects.setLumaCurve(static_cast<luma::curve>((*data)[TCONST_lcurve].as<int>()));
 }
 
 void block_lamp_config(Interface *interf, JsonObject *data){
@@ -3049,7 +3058,8 @@ void create_parameters(){
 
     embui.section_handle_add(FPSTR(TCONST_ONflag), set_onflag);
     embui.section_handle_add(FPSTR(TCONST_Demo), set_demoflag);
-    embui.section_handle_add(FPSTR(TCONST_GBR), set_gbrflag);
+    embui.section_handle_add(FPSTR(TCONST_GBR), set_gbrflag);                           // Lamp brightness
+    embui.section_handle_add(TCONST_lcurve, set_lcurve);                                // luma curve control
     embui.section_handle_add(FPSTR(TCONST_AUX), set_auxflag);
     embui.section_handle_add(FPSTR(TCONST_drawing), page_drawing);
     embui.section_handle_add(FPSTR(TCONST_draw_dat), set_drawing);

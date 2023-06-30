@@ -1,4 +1,6 @@
 #pragma once
+#include <string_view>
+
 /** набор служебных текстовых констант (не для локализации)
  */
 static const char TCONST_1609459200[] PROGMEM = "1609459200";
@@ -106,6 +108,7 @@ static const char TCONST_isShowOff[] PROGMEM = "isShowOff";
 static const char TCONST_isStreamOn[] PROGMEM = "isStreamOn";
 static const char TCONST_lamptext[] PROGMEM = "lamptext";
 static const char TCONST_lamp_config[] PROGMEM = "lamp_config";
+static const char TCONST_lcurve[] = "lcurve";
 static const char TCONST_limitAlarmVolume[] PROGMEM = "limitAlarmVolume";
 static const char TCONST_load[] PROGMEM = "load";
 static const char TCONST_lV[] PROGMEM = "lV";

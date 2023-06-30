@@ -91,6 +91,16 @@ typedef enum _SCHEDULER {
     T_RESET,          // сброс
 } SCHEDULER;
 
+/**
+ * @brief if method should use a fader when changing brightness
+ * 
+ */
+enum class fade_t {
+    off=0,
+    on,
+    preset
+};
+
 // Timings from FastLED chipsets.h
 // WS2812@800kHz - 250ns, 625ns, 375ns
 // время "отправки" кадра в матрицу, мс. где 1.5 эмпирический коэффициент
@@ -243,7 +253,7 @@ private:
 
     /**
      * @brief set brightness value to FastLED backend
-     * method uses curve mapping to aplied value by default
+     * method uses curve mapping to the aplied value by default
      * 
      * @param _brt - brighntess value
      * @param absolute - if true, than do not apply curve mapping
@@ -284,6 +294,8 @@ public:
     LAMP (const LAMP&) = delete;
     LAMP& operator= (const LAMP&) = delete;
 
+    void lamp_init();       // первичная инициализация Лампы
+
     /**
      * @brief set a new ledbuffer for lamp
      * it will pass it further on effects creation, etc...
@@ -309,7 +321,6 @@ public:
     void showWarning(const CRGB &color, uint32_t duration, uint16_t blinkHalfPeriod, uint8_t warnType=0, bool forcerestart=true, const String &msg = String()); // Неблокирующая мигалка
     void warningHelper();
 
-    void lamp_init(const uint16_t curlimit);       // первичная инициализация Лампы
     EffectWorker effects; // объект реализующий доступ к эффектам
     EVENT_MANAGER events; // Объект реализующий доступ к событиям
     uint64_t getLampFlags() {return flags.lampflags;} // возвращает упакованные флаги лампы
@@ -343,25 +354,39 @@ public:
      * brightness is mapped to a current lamp's luma curve value
      * 
      * @param uint8_t tgtbrt - target brigtness level 0-255
-     * @param bool skipfade - force skip fade effect on brightness change
+     * @param fade_t fade - use/skip or use default fade effect
      */
-    void setBrightness(uint8_t tgtbrt, bool skipfade=false);
+    void setBrightness(uint8_t tgtbrt, fade_t fade=fade_t::preset, bool bypass = false);
 
     /**
      * @brief - Get current FASTLED brightness
      * FastLED brighten8 function applied internaly for natural brightness compensation
      * @param bool natural - return compensated or absolute brightness
      */
-    uint8_t getBrightness(const bool natural=true);
+    uint8_t getBrightness() const { return globalBrightness; };
+
+    /**
+     * @brief Set the Luma Curve for brightness correction
+     * 
+     * @param c luma curve enum
+     */
+    void setLumaCurve(luma::curve c);
+
+    /**
+     * @brief Get current Luma Curve value
+     * 
+     * @return luma::curve 
+     */
+    luma::curve getLumaCurve() const { return _curve; };
 
     /**
      * @brief returns only CONFIGURED brightness value, not real FastLED brightness
      * 
      */
-    uint8_t getLampBrightness() { return flags.isGlobalBrightness? globalBrightness : (effects.getControls()[0]->getVal()).toInt();}
+    uint8_t getLampBrightness() const { return globalBrightness; } // { return flags.isGlobalBrightness? globalBrightness : (effects.getControls()[0]->getVal()).toInt();}
 
     // выставляет ТОЛЬКО значение в конфиге! Яркость не меняет!
-    void setLampBrightness(uint8_t brt) { lampState.brightness=brt; if (flags.isGlobalBrightness) globalBrightness = brt; else effects.getControls()[0]->setVal(String(brt)); }
+    void setLampBrightness(uint8_t brt) { /* lampState.brightness=brt; */ if (flags.isGlobalBrightness) globalBrightness = brt; else effects.getControls()[0]->setVal(String(brt)); }
 
     void setIsGlobalBrightness(bool val){};   // {flags.isGlobalBrightness = val; if(effects.worker) { lampState.brightness=getLampBrightness(); effects.worker->setDynCtrl(effects.getControls()[0].get());} }
 
@@ -624,6 +649,3 @@ public:
 
 //-----------------------------------------------
 extern LAMP myLamp; // Объект лампы
-#ifdef MP3PLAYER
-extern MP3PlayerDevice *mp3;
-#endif
