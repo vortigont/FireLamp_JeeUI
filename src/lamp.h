@@ -365,7 +365,7 @@ public:
      * FastLED brighten8 function applied internaly for natural brightness compensation
      * @param bool natural - return compensated or absolute brightness
      */
-    uint8_t getBrightness() const { return luma::curveUnMap(_curve, globalBrightness, MAX_BRIGHTNESS, _brightnessScale); };
+    uint8_t getBrightness() const { return globalBrightness; };
 
     /**
      * @brief Set the Luma Curve for brightness correction
