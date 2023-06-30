@@ -34,9 +34,10 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
    вместе с этой программой. Если это не так, см.
    <https://www.gnu.org/licenses/>.)
 */
-#include "main.h"
+#include "config.h"
 #ifdef MP3PLAYER
 #include "mp3player.h"
+#include "log.h"
 
 // which serial to use for esp32
 #define MP3SERIAL Serial1

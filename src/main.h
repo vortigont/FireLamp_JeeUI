@@ -44,9 +44,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #endif
 
 #include "config.h"
-#include "EmbUI.h"
-#include "log.h"
-#include "lamp.h"
 
 #ifdef ESP_USE_BUTTON
 #include "buttons.h"
@@ -80,9 +77,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 /* make version as string, i.e. "2.6.1" */
 #define LAMPFW_VERSION_STRING    TOSTRING(LAMPFW_VERSION_MAJOR) "." TOSTRING(LAMPFW_VERSION_MINOR) "." TOSTRING(LAMPFW_VERSION_REVISION)
 
-
-// TaskScheduler
-extern Scheduler ts;
 
 // глобальные переменные для работы с ними в программе
 

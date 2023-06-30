@@ -36,6 +36,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 */
 
 #include "alarm.h"
+#include "main.h"
 
 void ALARMTASK::initAlarm(const char *value){
     String buf(value);
@@ -111,7 +112,7 @@ void ALARMTASK::stopAlarm(){
 
     LOG(printf_P, PSTR("Отключение будильника рассвет, ONflag=%d\n"), lamp->isLampOn());
     //lamp->brightness(lamp->getNormalizedLampBrightness());
-    lamp->setBrightness(lamp->getLampBrightness(), false, false);
+    //lamp->setBrightness(lamp->getLampBrightness(), false, false);
     if (!lamp->isLampOn()) {
         lamp->effectsTimer(T_DISABLE);
         FastLED.clear();
@@ -135,7 +136,7 @@ void ALARMTASK::alarmWorker(){
         memset(ALARMTASK::getInstance()->dawnColorMinus,0,sizeof(dawnColorMinus));
         ALARMTASK::getInstance()->dawnCounter = 0;
         FastLED.clear();
-        lamp->setBrightness(MAX_BRIGHTNESS, false, false);
+        lamp->setBrightness(MAX_BRIGHTNESS, fade_t::off, true);
         // величина рассвета 0-255
         int16_t dawnPosition = map((millis()-ALARMTASK::getInstance()->startmillis)/1000,0,ALARMTASK::getInstance()->curAlarm.alarmP*60,0,255); // 0...curAlarm.alarmP*60 секунд приведенные к 0...255
         dawnPosition = constrain(dawnPosition, 0, 255);
