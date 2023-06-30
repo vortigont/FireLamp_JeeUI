@@ -19,6 +19,7 @@ static const char TCONST_bactList[] PROGMEM = "bactList";
 static const char TCONST_blabel[] PROGMEM = "blabel";
 static const char TCONST_bparam[] PROGMEM = "bparam";
 static const char TCONST_bright[] PROGMEM = "bright";
+static const char TCONST_brtScl[] PROGMEM = "brtScl";                 // brightness scale
 static const char TCONST_Btn[] PROGMEM = "Btn";
 static const char TCONST_buttList[] PROGMEM = "buttList";
 static const char TCONST_butt_conf[] PROGMEM = "butt_conf";

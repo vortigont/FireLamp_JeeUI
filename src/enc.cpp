@@ -466,7 +466,7 @@ void encSetBri(int val) {
   resetTimers();
 
   if (done or currAction !=1) { 
-    anyValue = myLamp.getLampBrightness();
+    anyValue = myLamp.getBrightness();
     done = false;
   }
   if (currAction == 2) {
@@ -613,12 +613,12 @@ void toggleDemo() {
   else 
     run_action(ra::demo, true);
 }
-
+/*
 void toggleGBright() {
   run_action(ra::brt_global, myLamp.IsGlobalBrightness());
   encSendString(String(FPSTR(TINTF_00C)) + myLamp.IsGlobalBrightness() ? F(": ON") : F(": OFF"), txtColor, true, txtDelay);
 }
-
+*/
 void toggleMic() {
 #ifdef MIC_EFFECTS
   run_action(ra::miconoff, myLamp.isMicOnOff());

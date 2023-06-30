@@ -76,9 +76,10 @@ void LAMP::lamp_init()
     FastLED.setMaxPowerInVoltsAndMilliamps(5, curLimit); // установка максимального тока БП
   }
 
-  globalBrightness = embui.paramVariant(TCONST_GlobBRI);
+  _brightnessScale = embui.paramVariant(TCONST_brtScl)  | DEF_BRT_SCALE;
+  globalBrightness = embui.paramVariant(TCONST_GlobBRI) | DEF_BRT_SCALE/2;
+
   _brightness(globalBrightness, true);          // начинаем с полностью потушеной матрицы 0-й яркости
-  flags.isGlobalBrightness = true;              // force global brightness
 
   // initialize fader instance
   LEDFader::getInstance()->setLamp(this);
@@ -354,7 +355,6 @@ void LAMP::startRGB(CRGB &val){
 void LAMP::stopRGB(){
   if (mode != LAMPMODE::MODE_RGBLAMP) return;
 
-  //setBrightness(getLampBrightness(), false, false);
   mode = (storedMode != LAMPMODE::MODE_RGBLAMP ? storedMode : LAMPMODE::MODE_NORMAL); // возвращаем предыдущий режим
   if(mode==LAMPMODE::MODE_DEMO)
     demoTimer(T_ENABLE);     // вернуть демо-таймер
@@ -381,7 +381,7 @@ void LAMP::startDemoMode(uint8_t tmout)
 void LAMP::storeEffect()
 {
   storedEffect = ((static_cast<EFF_ENUM>(effects.getCurrent()%256) == EFF_ENUM::EFF_WHITE_COLOR) ? storedEffect : effects.getCurrent()); // сохраняем предыдущий эффект, если только это не белая лампа
-  storedBright = getLampBrightness();
+  storedBright = getBrightness();
   lampState.isMicOn = false;
   LOG(printf_P, PSTR("storeEffect() %d,%d\n"),storedEffect,storedBright);
 }
@@ -390,7 +390,7 @@ void LAMP::restoreStored()
 {
   LOG(printf_P, PSTR("restoreStored() %d,%d\n"),storedEffect,storedBright);
   if(storedBright)
-    setLampBrightness(storedBright);
+    setBrightness(storedBright);
   lampState.isMicOn = flags.isMicOn;
   if (static_cast<EFF_ENUM>(storedEffect) != EFF_NONE) {    // ничего не должно происходить, включаемся на текущем :), текущий всегда определен...
     Task *_t = new Task(3 * TASK_SECOND, TASK_ONCE, [this](){ run_action( ra::eff_switch, storedEffect); }, &ts, false, nullptr, nullptr, true);
@@ -942,23 +942,11 @@ void LAMP::setBrightness(uint8_t tgtbrt, fade_t fade, bool bypass){
 }
 
 /*
- * Get current brightness
- * FastLED brighten8 function applied internaly for natural brightness compensation
- * @param bool natural - return compensated or absolute brightness
- */
-/*
-uint8_t LAMP::getBrightness(const bool natural){
-    return (natural ? brighten8_raw(FastLED.getBrightness()) : FastLED.getBrightness());
-}
-*/
-
-/*
  * Set global brightness
  * @param bool natural
  */
 void LAMP::_brightness(uint8_t brt, bool absolute){
-    if (!absolute) brt = luma::curveMap(_curve, brt, MAX_BRIGHTNESS, MAX_BRIGHTNESS);
-    //uint8_t _cur = natural ? brighten8_video(FastLED.getBrightness()) : FastLED.getBrightness();
+    if (!absolute) brt = luma::curveMap(_curve, brt, MAX_BRIGHTNESS, _brightnessScale);
     if ( brt == FastLED.getBrightness()) return;  // nothing to change here
 
     FastLED.setBrightness(brt);
@@ -967,9 +955,9 @@ void LAMP::_brightness(uint8_t brt, bool absolute){
 
 uint8_t LAMP::lampBrightnesspct(uint8_t brt){
   if (brt >=100)
-    setLampBrightness(255);
+    setBrightness(255);
   else
-    setLampBrightness(brt * 255 / 100);
+    setBrightness(brt * 255 / 100);
   return brt;
 }
 
@@ -1023,7 +1011,7 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
     if (fade && flags.ONflag) {
       effects.switchEffect(next_eff_num, true);       // preload controls for next effect
       // запускаем фейдер и уходим на второй круг переключения
-      LEDFader::getInstance()->fadelight( myLamp.getLampBrightness() < 2*FADE_MINCHANGEBRT ? 0 : FADE_MINCHANGEBRT, FADE_TIME, std::bind(&LAMP::switcheffect, this, action, fade, next_eff_num, true));
+      LEDFader::getInstance()->fadelight( myLamp.getBrightness() < 2*FADE_MINCHANGEBRT ? 0 : FADE_MINCHANGEBRT, FADE_TIME, std::bind(&LAMP::switcheffect, this, action, fade, next_eff_num, true));
       return;
     } else {
       // do direct switch to effect
@@ -1353,7 +1341,7 @@ void LEDFader::fadelight(const uint8_t _targetbrightness, const uint32_t _durati
   } else {
     runner = new Task((unsigned long)FADE_STEPTIME,
       _steps,
-      [this](){ _brt += _brtincrement; lmp->_brightness(_brt); /* LOG(printf_P, PSTR("fd brt %d/%d, glbr:%d, gbr:%d, vid:%d, vid2:%d\n"), _brt, _brtincrement, lmp->getLampBrightness(), lmp->getBrightness(), brighten8_video(FastLED.getBrightness()), brighten8_video(brighten8_video(FastLED.getBrightness()))  ); */ },
+      [this](){ _brt += _brtincrement; lmp->_brightness(_brt); /* LOG(printf_P, PSTR("fd brt %d/%d, glbr:%d, gbr:%d, vid:%d, vid2:%d\n"), _brt, _brtincrement, lmp->getBrightness(), lmp->getBrightness(), brighten8_video(FastLED.getBrightness()), brighten8_video(brighten8_video(FastLED.getBrightness()))  ); */ },
       &ts,
       true,
       nullptr,

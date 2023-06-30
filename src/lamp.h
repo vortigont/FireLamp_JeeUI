@@ -57,7 +57,8 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
     #define DEFAULT_MQTTPUB_INTERVAL 30
 #endif
 
-#define MAX_BRIGHTNESS            (255U)                    // стандартная максимальная яркость (255)
+#define MAX_BRIGHTNESS            (255U)                    // максимальная яркость LED
+#define DEF_BRT_SCALE               20                      // шкала регулировки яркости по-умолчанию
 
 // a stub for 8266
 #ifndef GPIO_NUM_NC
@@ -124,7 +125,7 @@ struct {
     bool isDraw:1; // режим рисования
     bool ONflag:1; // флаг включения/выключения
     bool isFaderON:1; // признак того, что фейдер используется для эффектов
-    bool isGlobalBrightness:1; // признак использования глобальной яркости для всех режимов
+    bool reserved5:1;       // ex. isGlobalBrightness
     bool tm24:1;   // 24х часовой формат
     bool tmZero:1;  // ведущий 0
     bool limitAlarmVolume:1; // ограничивать громкость будильника
@@ -163,7 +164,7 @@ _LAMPFLAGS(){
     isDebug = false; // флаг отладки
     isFaderON = true; // признак того, что используется фейдер для смены эффектов
     isEffClearing = false; // нужно ли очищать эффекты при переходах с одного на другой
-    isGlobalBrightness = true; // признак использования глобальной яркости для всех режимов
+    //isGlobalBrightness = true; // признак использования глобальной яркости для всех режимов
     isEventsHandled = true;
     isMicOn = true; // глобальное испльзование микрофона
     numInList = false;
@@ -206,6 +207,7 @@ private:
     LAMPFLAGS flags;
     LAMPSTATE lampState;                // текущее состояние лампы, которое передается эффектам
 
+    uint8_t _brightnessScale = DEF_BRT_SCALE;
     luma::curve _curve = luma::curve::cie1931;       // default luma correction curve for PWM driven LEDs
     uint8_t globalBrightness = 127;     // глобальная яркость
     uint8_t storedBright;               // "запасное" значение яркости
@@ -363,7 +365,7 @@ public:
      * FastLED brighten8 function applied internaly for natural brightness compensation
      * @param bool natural - return compensated or absolute brightness
      */
-    uint8_t getBrightness() const { return globalBrightness; };
+    uint8_t getBrightness() const { return luma::curveUnMap(_curve, globalBrightness, MAX_BRIGHTNESS, _brightnessScale); };
 
     /**
      * @brief Set the Luma Curve for brightness correction
@@ -380,25 +382,26 @@ public:
     luma::curve getLumaCurve() const { return _curve; };
 
     /**
-     * @brief returns only CONFIGURED brightness value, not real FastLED brightness
+     * @brief Set the Brightness Scale range
+     * i.e. 100 equals to 0-100% sclae
+     * default is DEF_BRT_SCALE
      * 
+     * @param scale 
      */
-    uint8_t getLampBrightness() const { return globalBrightness; } // { return flags.isGlobalBrightness? globalBrightness : (effects.getControls()[0]->getVal()).toInt();}
+    void setBrightnessScale(uint8_t scale){ _brightnessScale = scale ? scale : DEF_BRT_SCALE; };
 
-    // выставляет ТОЛЬКО значение в конфиге! Яркость не меняет!
-    void setLampBrightness(uint8_t brt) { /* lampState.brightness=brt; */ if (flags.isGlobalBrightness) globalBrightness = brt; else effects.getControls()[0]->setVal(String(brt)); }
-
-    void setIsGlobalBrightness(bool val){};   // {flags.isGlobalBrightness = val; if(effects.worker) { lampState.brightness=getLampBrightness(); effects.worker->setDynCtrl(effects.getControls()[0].get());} }
-
-    // keep it for compatibily reasons
-    bool IsGlobalBrightness() const { return true; }
+    /**
+     * @brief Get the Brightness Scale
+     * see setBrightnessScale()
+     */
+    uint8_t getBrightnessScale() const { return _brightnessScale; };
 
     /**
      * @brief get lamp brightness in percents 0-100
      * 
      * @return uint8_t brightness value in percents
      */
-    uint8_t lampBrightnesspct(){ return getLampBrightness() * 100 / 255; };
+    uint8_t lampBrightnesspct(){ return globalBrightness * 100 / 255; };
 
     /**
      * @brief set lamp brightness in percents

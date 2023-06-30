@@ -130,7 +130,7 @@ void show_effects_config(Interface *interf, JsonObject *data);
 void show_settings_mp3(Interface *interf, JsonObject *data);
 void show_settings_enc(Interface *interf, JsonObject *data);
 void page_gpiocfg(Interface *interf, JsonObject *data);
-void show_settings_other(Interface *interf, JsonObject *data);
+void page_settings_other(Interface *interf, JsonObject *data);
 void section_sys_settings_frame(Interface *interf, JsonObject *data);
 void show_settings_butt(Interface *interf, JsonObject *data);
 void page_ledstrip_setup(Interface *interf, JsonObject *data);
@@ -272,7 +272,7 @@ void show_page_selector(Interface *interf, JsonObject *data){
         case page::setup_esp :      // страница настроек ESP
             return section_sys_settings_frame(interf, nullptr);
         case page::setup_other :    // страница "настройки"-"другие"
-            return show_settings_other(interf, nullptr);
+            return page_settings_other(interf, nullptr);
         case page::setup_ledstrip : // led struip setup
             return page_ledstrip_setup(interf, nullptr);
 
@@ -624,7 +624,7 @@ void set_effects_config_list(Interface *interf, JsonObject *data){
 #ifdef EMBUI_USE_MQTT
 void mqtt_publish_selected_effect_config_json(){
   if (!embui.isMQTTconected()) return;
-  embui.publish(String(FPSTR(TCONST_embui_pub_)) + FPSTR(TCONST_eff_config), myLamp.effects.getEffCfg().getSerializedEffConfig(myLamp.getLampBrightness()), true);
+  embui.publish(String(FPSTR(TCONST_embui_pub_)) + FPSTR(TCONST_eff_config), myLamp.effects.getEffCfg().getSerializedEffConfig(), true);
 }
 #endif
 
@@ -640,7 +640,7 @@ void block_effect_controls(Interface *interf, JsonObject *data){
     if(interf) interf->json_section_begin(FPSTR(TCONST_eff_ctrls));
 
     // brightness control
-    if(interf) interf->range(TCONST_GBR, myLamp.getBrightness(), 0, 255, 1, "Lamp Brightness", true);
+    if(interf) interf->range(TCONST_GBR, myLamp.getBrightness(), 0, static_cast<int>(myLamp.getBrightnessScale()), 1, "Lamp Brightness", true);
 
     LList<std::shared_ptr<UIControl>> &controls = myLamp.effects.getControls();
     uint8_t ctrlCaseType; // тип контрола, старшие 4 бита соответствуют CONTROL_CASE, младшие 4 - CONTROL_TYPE
@@ -683,14 +683,14 @@ void block_effect_controls(Interface *interf, JsonObject *data){
         bool isRandDemo = (myLamp.getLampSettings().dRand && myLamp.getMode()==LAMPMODE::MODE_DEMO);
         String ctrlId(FPSTR(TCONST_dynCtrl));
         ctrlId += ctrl->getId();
-        String ctrlName = ctrl->getId() ? ctrl->getName() : (myLamp.IsGlobalBrightness() ? FPSTR(TINTF_00C) : FPSTR(TINTF_00D));
+        String ctrlName = ctrl->getId() ? ctrl->getName() : TINTF_00D;
 
         switch(ctrlCaseType&0x0F){
             case CONTROL_TYPE::RANGE :
                 {
                     if(isRandDemo && ctrl->getId()>0 && !(ctrl->getId()==7 && ctrl->getName().startsWith(FPSTR(TINTF_020))==1))
                         ctrlName=String(FPSTR(TINTF_0C9))+ctrlName;
-                    int value = ctrl->getId() ? ctrl->getVal().toInt() : myLamp.getLampBrightness();
+                    int value = ctrl->getId() ? ctrl->getVal().toInt() : myLamp.getBrightness();
                     if(interf) interf->range( ctrlId, value, ctrl->getMin(), ctrl->getMax(), ctrl->getStep(), ctrlName, true);
 #ifdef EMBUI_USE_MQTT
                     embui.publish(String(FPSTR(TCONST_embui_pub_)) + ctrlId, String(value), true);
@@ -893,7 +893,7 @@ void block_main_flags(Interface *interf, JsonObject *data){
     interf->json_section_line("");
     interf->checkbox(FPSTR(TCONST_ONflag), myLamp.isLampOn(), FPSTR(TINTF_00E), true);
     interf->checkbox(FPSTR(TCONST_Demo), myLamp.getMode() == LAMPMODE::MODE_DEMO, FPSTR(TINTF_00F), true);
-    interf->checkbox(FPSTR(TCONST_GBR), myLamp.IsGlobalBrightness(), FPSTR(TINTF_010), true);
+    //interf->checkbox(FPSTR(TCONST_GBR), myLamp.IsGlobalBrightness(), FPSTR(TINTF_010), true);
     interf->checkbox(FPSTR(TCONST_Events), myLamp.IsEventsHandled(), FPSTR(TINTF_011), true);
     interf->checkbox(FPSTR(TCONST_drawbuff), myLamp.isDrawOn(), FPSTR(TINTF_0CE), true);
 
@@ -1108,7 +1108,6 @@ void set_gbrflag(Interface *interf, JsonObject *data){
     myLamp.setBrightness((*data)[FPSTR(TCONST_GBR)]);
 
     // todo:
-    // save
     // publisg
 /*
     if (!data) return;
@@ -1118,7 +1117,7 @@ void set_gbrflag(Interface *interf, JsonObject *data){
 #endif
     save_lamp_flags();
     if (myLamp.isLampOn()) {
-        myLamp.setBrightness(myLamp.getLampBrightness());
+        myLamp.setBrightness(myLamp.getBrightness());
     }
     show_effect_controls(interf, data);
 */
@@ -1648,33 +1647,50 @@ void set_ftp(Interface *interf, JsonObject *data){
 }
 #endif
 
-void show_settings_other(Interface *interf, JsonObject *data){
+/**
+ * @brief WebUI страница "Настройки" - "другие"
+ * 
+ */
+void page_settings_other(Interface *interf, JsonObject *data){
     if (!interf) return;
     interf->json_frame_interface();
     interf->json_section_main(FPSTR(TCONST_set_other), FPSTR(TINTF_002));
     
     interf->spacer(FPSTR(TINTF_030));
+
     interf->checkbox(FPSTR(TCONST_isFaderON), myLamp.getLampSettings().isFaderON , FPSTR(TINTF_03D), false);
     interf->checkbox(FPSTR(TCONST_isClearing), myLamp.getLampSettings().isEffClearing , FPSTR(TINTF_083), false);
     interf->checkbox(FPSTR(TCONST_DRand), myLamp.getLampSettings().dRand , FPSTR(TINTF_03E), false);
     interf->checkbox(FPSTR(TCONST_showName), myLamp.getLampSettings().showName , FPSTR(TINTF_09A), false);
+
+    interf->number_constrained<int>(TCONST_brtScl, static_cast<int>(myLamp.getBrightnessScale()), "Brightness Scale", 1, 5, static_cast<int>(MAX_BRIGHTNESS));
+
     interf->range(FPSTR(TCONST_DTimer), 30, 600, 15, FPSTR(TINTF_03F));
     float sf = embui.paramVariant(FPSTR(TCONST_spdcf));
     interf->range(FPSTR(TCONST_spdcf), sf, 0.25, 4.0, 0.25, FPSTR(TINTF_0D3), false);
 
 #ifdef TM1637_CLOCK
     interf->spacer(FPSTR(TINTF_0D4));
-    interf->checkbox(FPSTR(TCONST_tm24), myLamp.getLampSettings().tm24, FPSTR(TINTF_0D7), false);
-    interf->checkbox(FPSTR(TCONST_tmZero), myLamp.getLampSettings().tmZero, FPSTR(TINTF_0D8), false);
-    interf->range(FPSTR(TCONST_tmBrightOn),  myLamp.getBrightOn(),  0, 7, 1, FPSTR(TINTF_0D5), false);
-    interf->range(FPSTR(TCONST_tmBrightOff), myLamp.getBrightOff(), 0, 7, 1, FPSTR(TINTF_0D6), false);
+    interf->json_section_line();
+        interf->checkbox(FPSTR(TCONST_tm24), myLamp.getLampSettings().tm24, FPSTR(TINTF_0D7), false);
+        interf->checkbox(FPSTR(TCONST_tmZero), myLamp.getLampSettings().tmZero, FPSTR(TINTF_0D8), false);
+    interf->json_section_end(); // line
+
+    interf->json_section_line();
+        interf->range(FPSTR(TCONST_tmBrightOn),  myLamp.getBrightOn(),  0, 7, 1, FPSTR(TINTF_0D5), false);
+        interf->range(FPSTR(TCONST_tmBrightOff), myLamp.getBrightOff(), 0, 7, 1, FPSTR(TINTF_0D6), false);
+    interf->json_section_end(); // line
+
     #ifdef DS18B20
     interf->checkbox(FPSTR(TCONST_ds18b20), myLamp.getLampSettings().isTempOn, FPSTR(TINTF_0E0), false);
     #endif
 #endif
     interf->spacer(FPSTR(TINTF_0BA));
-    interf->range(FPSTR(TCONST_alarmP), myLamp.getAlarmP(), 1, 15, 1, FPSTR(TINTF_0BB), false);
-    interf->range(FPSTR(TCONST_alarmT), myLamp.getAlarmT(), 1, 15, 1, FPSTR(TINTF_0BC), false);
+
+    interf->json_section_line();
+        interf->range(FPSTR(TCONST_alarmP), myLamp.getAlarmP(), 1, 15, 1, FPSTR(TINTF_0BB), false);     // рассвет длительность
+        interf->range(FPSTR(TCONST_alarmT), myLamp.getAlarmT(), 1, 15, 1, FPSTR(TINTF_0BC), false);     // рассвет светить после
+    interf->json_section_end(); // line
 
     interf->button_submit(FPSTR(TCONST_set_other), FPSTR(TINTF_008), FPSTR(P_GRAY));
 
@@ -1687,14 +1703,6 @@ void show_settings_other(Interface *interf, JsonObject *data){
 void set_settings_other(Interface *interf, JsonObject *data){
     if (!data) return;
     resetAutoTimers();
-/*
-    DynamicJsonDocument *_str = new DynamicJsonDocument(1024);
-    (*_str)=(*data);
-
-    Task *_t = new Task(300, TASK_ONCE, [_str](){
-        JsonObject dataStore = (*_str).as<JsonObject>();
-        JsonObject *data = &dataStore;
-*/
         // LOG(printf_P,PSTR("Settings: %s\n"),tmpData.c_str());
         myLamp.setFaderFlag((*data)[FPSTR(TCONST_isFaderON)]);
         myLamp.setClearingFlag((*data)[FPSTR(TCONST_isClearing)]);
@@ -1705,6 +1713,12 @@ void set_settings_other(Interface *interf, JsonObject *data){
 
         float sf = (*data)[FPSTR(TCONST_spdcf)];
         SETPARAM(FPSTR(TCONST_spdcf), myLamp.setSpeedFactor(sf));
+
+        // save non-default brightness scale
+        if ( (*data)[TCONST_brtScl] != DEF_BRT_SCALE ){
+            embui.var(TCONST_brtScl, (*data)[TCONST_brtScl], true);
+            myLamp.setBrightnessScale((*data)[TCONST_brtScl]);
+        }
 
     #ifdef TM1637_CLOCK
         uint8_t tmBri = ((*data)[FPSTR(TCONST_tmBrightOn)]).as<uint8_t>()<<4; // старшие 4 бита
@@ -1724,11 +1738,6 @@ void set_settings_other(Interface *interf, JsonObject *data){
         //LOG(printf_P, PSTR("alatmPT=%d, alatmP=%d, alatmT=%d\n"), alatmPT, myLamp.getAlarmP(), myLamp.getAlarmT());
 
         save_lamp_flags();
-/*        delete _str; },
-        &ts, false, nullptr, nullptr, true
-    );
-    _t->enableDelayed();
-*/
 
     if(interf)
         basicui::section_settings_frame(interf, data);
@@ -2925,7 +2934,7 @@ void wled_handle(AsyncWebServerRequest *request){
         if (pwr == 2) run_action( myLamp.isLampOn() ? ra::off : ra::on);            // toggle is '2'
         else run_action( pwr ? ra::on : ra::off);
     }
-    uint8_t bright = myLamp.isLampOn() ? myLamp.getLampBrightness() : 0;
+    uint8_t bright = myLamp.isLampOn() ? myLamp.getBrightness() : 0;
 
     if (request->hasParam("A")){
         bright = request->getParam("A")->value().toInt();
@@ -3169,9 +3178,9 @@ void sync_parameters(){
     TimeProcessor::getInstance().attach_callback(std::bind(&LAMP::setIsEventsHandled, &myLamp, myLamp.IsEventsHandled())); // только после синка будет понятно включены ли события
 
     //myLamp.setGlobalBrightness(embui.paramVariant(FPSTR(TCONST_GlobBRI))); // починить бросок яркости в 255 при первом включении
-    obj[FPSTR(TCONST_GBR)] = tmp.isGlobalBrightness;
-    set_gbrflag(nullptr, &obj);
-    doc.clear();
+    //obj[FPSTR(TCONST_GBR)] = tmp.isGlobalBrightness;
+    //set_gbrflag(nullptr, &obj);
+    //doc.clear();
 
 #ifdef RESTORE_STATE
     obj[FPSTR(TCONST_ONflag)] = tmp.ONflag;
@@ -3189,8 +3198,8 @@ void sync_parameters(){
     CALL_SETTER(FPSTR(TCONST_eff_run), embui.paramVariant(FPSTR(TCONST_eff_run)), set_switch_effect);
 #endif
 
-    if(tmp.isGlobalBrightness)
-        CALL_SETTER(String(FPSTR(TCONST_dynCtrl)) + "0", myLamp.getLampBrightness(), set_effects_dynCtrl);
+    //if(tmp.isGlobalBrightness)
+    //    CALL_SETTER(String(FPSTR(TCONST_dynCtrl)) + "0", myLamp.getBrightness(), set_effects_dynCtrl);
 
 #ifdef MP3PLAYER
     // т.к. sync_parameters запускается при перезапуске лампы, установку мп3 нужно отложить до момента инициализации плеера
@@ -3485,8 +3494,7 @@ String httpCallback(const String &param, const String &value, bool isset){
             { result = myLamp.isLampOn() ; }
         else if (upperParam == FPSTR(CMD_OFF))
             { result = !myLamp.isLampOn() ; }
-        else if (upperParam == FPSTR(CMD_G_BRIGHT))
-            { result = myLamp.IsGlobalBrightness() ; }
+//        else if (upperParam == FPSTR(CMD_G_BRIGHT)){ result = myLamp.IsGlobalBrightness() ; }
         else if (upperParam == FPSTR(CMD_G_BRTPCT))
             { result = myLamp.lampBrightnesspct(); return result; }
         else if (upperParam == FPSTR(CMD_DEMO))
@@ -3508,7 +3516,7 @@ String httpCallback(const String &param, const String &value, bool isset){
         else if (upperParam == FPSTR(CMD_WARNING))
             { myLamp.showWarning(CRGB::Orange,5000,500); }
         else if (upperParam == FPSTR(CMD_EFF_CONFIG)) {
-                String result(myLamp.effects.getEffCfg().getSerializedEffConfig(myLamp.getLampBrightness()));
+                String result(myLamp.effects.getEffCfg().getSerializedEffConfig());
 #ifdef EMBUI_USE_MQTT
                 embui.publish(String(FPSTR(TCONST_embui_pub_)) + FPSTR(TCONST_eff_config), result, true);
 #endif
@@ -3518,7 +3526,7 @@ String httpCallback(const String &param, const String &value, bool isset){
             LList<std::shared_ptr<UIControl>>&controls = myLamp.effects.getControls();
             for(unsigned i=0; i<controls.size();i++){
                 if(value == String(controls[i]->getId())){
-                    result = String(F("[")) + controls[i]->getId() + F(",\"") + (controls[i]->getId()==0 ? String(myLamp.getLampBrightness()) : controls[i]->getVal()) + F("\"]");
+                    result = String(F("[")) + controls[i]->getId() + F(",\"") + (controls[i]->getId()==0 ? String(myLamp.getBrightness()) : controls[i]->getVal()) + F("\"]");
 #ifdef EMBUI_USE_MQTT
                     embui.publish(String(FPSTR(TCONST_embui_pub_)) + FPSTR(TCONST_control), result, true);
 #endif
