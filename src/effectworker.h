@@ -354,7 +354,7 @@ protected:
     bool isActive() {return active;}
     void setActive(bool flag) {active=flag;}
     uint32_t lastrun=0;     /**< счетчик времени для эффектов с "задержкой" */
-    byte brightness=1;
+    static constexpr byte brightness{128};    // рудиментная "яркость", должна быть удалена из кода эффектов
     byte speed=1;
     byte scale=1;
     float speedfactor=1.0;      // коэффициент скорости эффекта
