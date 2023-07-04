@@ -2254,7 +2254,7 @@ bool EffectFire2018::run()
   // shift error values
   for (auto &i : noise.opt){
     i.e_x = 3 * ctrl * _speed;
-    i.e_y = 5 * millis() * _speed;
+    i.e_y = 3 * millis() * _speed;
     i.e_z = 5 * millis() * _speed;
     i.e_scaleX = ctrl1 / 2;
     i.e_scaleY = ctrl2 / 2;
@@ -2275,7 +2275,7 @@ bool EffectFire2018::run()
   for (uint8_t y = 0; y != noise.h; y++)
     for (uint8_t x = 0; x != noise.w; x++)
     {
-      uint8_t dim = 255 - noise.lxy(0, x, y) / 1.7 * constrain(0.05*brightness+0.01,0.01,1.0);  // todo: wtf??? this constrain has a range of ~0-20 ints, why floats for this???
+      uint8_t dim = 255 - noise.lxy(0, x, y) / 1.7 * constrain(0.05*fade_amount+0.01,0.01,1.0);  // todo: wtf??? this constrain has a range of ~0-20 ints, why floats for this???
       fire18heat[y][x] = scale8(fire18heat[y][x], dim);
 
       // map the colors based on heatmap

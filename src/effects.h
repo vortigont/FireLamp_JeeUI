@@ -596,6 +596,7 @@ class EffectFire2018 : public EffectCalc {
 #define FIRE_NUM_LAYERS     2
 private:
   bool isLinSpeed = true;
+  uint8_t fade_amount = 15;      // this could be a new control for flame size/height
   // use vector of vectors to take benefit of swap operations
   std::vector<std::vector<uint8_t>> fire18heat;
   Noise3dMap noise;
