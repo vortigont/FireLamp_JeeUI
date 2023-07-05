@@ -120,7 +120,7 @@ enum class fade_t {
 typedef union _LAMPFLAGS {
 struct {
     // ВНИМАНИЕ: порядок следования не менять, флаги не исключать, переводить в reserved!!! используется как битовый массив в конфиге!
-    bool reserved0:1;
+    bool restoreState:1;        // restore lamp on/off/demo state on restart
     bool reserved1:1;
     bool isDraw:1; // режим рисования
     bool ONflag:1; // флаг включения/выключения
@@ -158,7 +158,7 @@ struct {
 };
 uint64_t lampflags; // набор битов для конфига
 _LAMPFLAGS(){
-    reserved0 = false;
+    restoreState = false;
     reserved1 = false;
     ONflag = false; // флаг включения/выключения
     isDebug = false; // флаг отладки
@@ -325,9 +325,13 @@ public:
 
     EffectWorker effects; // объект реализующий доступ к эффектам
     EVENT_MANAGER events; // Объект реализующий доступ к событиям
-    uint64_t getLampFlags() {return flags.lampflags;} // возвращает упакованные флаги лампы
-    const LAMPFLAGS &getLampSettings() {return flags;} // возвращает упакованные флаги лампы
-    //void setLampFlags(uint32_t _lampflags) {flags.lampflags=_lampflags;} // устананавливает упакованные флаги лампы
+
+    // возвращает упакованные в целое флаги лампы
+    uint64_t getLampFlags() {return flags.lampflags;}
+
+     // возвращает структуру флагов лампы
+    const LAMPFLAGS &getLampFlagsStuct() const {return flags;}
+
     void setbPin(uint8_t val) {bPin = val;}
     uint8_t getbPin() {return bPin;}
     void setcurLimit(uint16_t val) {curLimit = val;}
@@ -444,6 +448,7 @@ public:
 
     void handle();          // главная функция обработки эффектов
 
+    // flag get/set methods
     void setFaderFlag(bool flag) {flags.isFaderON = flag;}
     bool getFaderFlag() {return flags.isFaderON;}
     void setClearingFlag(bool flag) {flags.isEffClearing = flag;}
@@ -459,6 +464,9 @@ public:
     void setDebug(bool flag) {flags.isDebug=flag; lampState.isDebug=flag;}
     void setButton(bool flag) {flags.isBtn=flag;}
     void setDraw(bool flag);
+
+    // set/clear "restore on/off/demo" state on boot
+    void setRestoreState(bool flag){flags.restoreState = flag;}
 
     /**
      * @brief creates/destroys buffer for "drawing"

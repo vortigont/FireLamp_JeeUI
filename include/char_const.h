@@ -86,6 +86,7 @@ static const char TCONST_eventList[] PROGMEM = "eventList";
 static const char TCONST_Events[] PROGMEM = "Events";
 static const char TCONST_event_conf[] PROGMEM = "event_conf";
 static const char TCONST_evList[] PROGMEM = "evList";
+static const char TCONST_f_restore_state[] PROGMEM = "f_rstt";          // Lamp flag "restore state"
 static const char TCONST_fcfg_gpio[] PROGMEM = "/gpio.json";
 static const char TCONST_fcfg_ledstrip[] = "/ledstrip.json";
 static const char TCONST_fileName2[] PROGMEM = "fileName2";

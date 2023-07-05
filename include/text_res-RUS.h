@@ -459,7 +459,7 @@ static const char TINTF_0F0[] PROGMEM = "Горизонтальная";
 
 static const char TINTF_gpiocfg[] PROGMEM = "Конфигурация GPIO";
 static const char TINTF_ledstrip[] PROGMEM = "Топология LED ленты";
-
+static const char TINTF_f_restore_state[] PROGMEM = "Восстанавливать состояние при включении";
 
 static const char NY_MDG_STRING1[] PROGMEM = "До нового года осталось %d %s";
 static const char NY_MDG_STRING2[] PROGMEM = "C новым %d годом!";
