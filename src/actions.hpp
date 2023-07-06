@@ -44,9 +44,9 @@ those could be called either internaly or as a callbacks from WebUI/MQTT/HTTP
 */
 
 #pragma once
-#include <ArduinoJson.h>
+#include "EmbUI.h"
 #include "char_const.h"
-#include "lamp.h"
+#include "main.h"
 
 #define ACTION_PARAM_SIZE   256     // Static json document size to pass the parameters to actions
 
@@ -61,6 +61,7 @@ enum class ra:uint8_t {
   aux_flip,           // flip AUX pin
   brt,                // brightness control, param int
   brt_nofade,         // change brightness without fading effect, param int
+  brt_lcurve,         // set brightness luma curve
   brt_global,         // set/unset global brightness, param bool
   demo,               // demo mode on/off, param bool
   demo_next,          // switch effect in demo mode, param void
@@ -146,6 +147,12 @@ void run_action(ra act, const T& param) {
       break;
     }
 
+    case ra::brt_lcurve : {
+      obj[P_action] = TCONST_lcurve;
+      nested[TCONST_lcurve] = param;
+      break;
+    }
+
     // brightness control
     case ra::brt :
     case ra::brt_nofade : {
@@ -185,14 +192,12 @@ void run_action(ra act, const T& param) {
 #ifdef MP3PLAYER
     //MP3: enable/disable
     case ra::mp3_enable : {
-      if(!myLamp.isONMP3()) return;
       obj[P_action] = TCONST_Mic;
       nested[TCONST_Mic] = param;
       break;
     }
     //MP3: set volume
     case ra::mp3_vol : {
-      if(!myLamp.isONMP3()) return;
       obj[P_action] = TCONST_mp3volume;
       nested[TCONST_mp3volume] = param;
       break;
@@ -201,7 +206,7 @@ void run_action(ra act, const T& param) {
     //MP3: play previous/next track?
     case ra::mp3_next :
     case ra::mp3_prev : {
-      if(!myLamp.isONMP3()) return;
+      //if(!myLamp.isONMP3()) return;
       int offset = param;
       if ( act == ra::mp3_prev) offset *= -1;
       mp3->playEffect(mp3->getCurPlayingNb() + offset, "");

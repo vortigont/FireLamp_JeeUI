@@ -35,7 +35,7 @@ bool Button::activate(btnflags& flg, bool reverse){
 		if (reverse) flags.direction = !flags.direction;
 		switch (action) {
 			case BA_BRIGHT:
-				newval = constrain(myLamp.getLampBrightness() + (myLamp.getLampBrightness() / 25 + 1) * (flags.direction * 2 - 1), 1 , 255);
+				newval = constrain(myLamp.getBrightness() + (myLamp.getBrightness() / 25 + 1) * (flags.direction * 2 - 1), 1 , 255);
 				if ((newval == 1 || newval == 255) && tReverseTimeout==nullptr){
 					tReverseTimeout = new Task(2 * TASK_SECOND, TASK_ONCE,
 									[this](){ flags.direction = !flags.direction; LOG(println,F("reverse")); },

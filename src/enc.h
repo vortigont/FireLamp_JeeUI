@@ -96,7 +96,7 @@ CRGB getEncTxtColor();
 void setEncTxtColor(const CRGB color);
 
 void toggleDemo();
-void toggleGBright();
+//void toggleGBright();
 void toggleMic();
 void toggleAUX();
 void sendTime();

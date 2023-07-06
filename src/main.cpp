@@ -37,6 +37,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "main.h"
 #include "filehelpers.hpp"
 #include <SPIFFSEditor.h>
+#include "lamp.h"
 
 #ifdef DS18B20
 #include "DS18B20.h"
@@ -124,7 +125,7 @@ void setup() {
 #endif
 
     // restore matrix current limit from config
-    myLamp.lamp_init(embui.paramVariant(FPSTR(TCONST_CLmt)));
+    myLamp.lamp_init();
 
 #ifdef ESP_USE_BUTTON
     myLamp.setbPin(embui.param(FPSTR(TCONST_PINB)).toInt());
@@ -148,7 +149,7 @@ void setup() {
   embui.server.addHandler(new SPIFFSEditor(LittleFS, F("esp32"), F("esp32")));
 #endif
 
-  sync_parameters();
+    sync_parameters();
 
   embui.setPubInterval(10);   // change periodic WebUI publish interval from EMBUI_PUB_PERIOD to 10 secs
 

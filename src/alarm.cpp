@@ -36,6 +36,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 */
 
 #include "alarm.h"
+#include "main.h"
 
 void ALARMTASK::initAlarm(const char *value){
     String buf(value);
@@ -45,14 +46,14 @@ void ALARMTASK::initAlarm(const char *value){
     curAlarm.alarmP = doc.containsKey(FPSTR(TCONST_alarmP)) ? doc[FPSTR(TCONST_alarmP)] : lamp->getAlarmP();
     curAlarm.alarmT = doc.containsKey(FPSTR(TCONST_alarmT)) ? doc[FPSTR(TCONST_alarmT)] : lamp->getAlarmT();
     curAlarm.msg = doc.containsKey(FPSTR(TCONST_msg)) ? doc[FPSTR(TCONST_msg)] : String("");
-    curAlarm.isLimitVol = doc.containsKey(FPSTR(TCONST_lV)) ? doc[FPSTR(TCONST_lV)].as<String>()=="1" : lamp->getLampSettings().limitAlarmVolume;
+    curAlarm.isLimitVol = doc.containsKey(FPSTR(TCONST_lV)) ? doc[FPSTR(TCONST_lV)].as<String>()=="1" : lamp->getLampFlagsStuct().limitAlarmVolume;
     curAlarm.isStartSnd = doc.containsKey(FPSTR(TCONST_afS)) ? doc[FPSTR(TCONST_afS)].as<String>()=="1" : true;
-    curAlarm.type = (ALARM_SOUND_TYPE)(doc.containsKey(FPSTR(TCONST_sT)) ? doc[FPSTR(TCONST_sT)].as<uint8_t>() : lamp->getLampSettings().alarmSound);
+    curAlarm.type = (ALARM_SOUND_TYPE)(doc.containsKey(FPSTR(TCONST_sT)) ? doc[FPSTR(TCONST_sT)].as<uint8_t>() : lamp->getLampFlagsStuct().alarmSound);
 
     lamp->setMode(LAMPMODE::MODE_ALARMCLOCK);
     lamp->demoTimer(T_DISABLE);     // гасим Демо-таймер
     #ifdef USE_STREAMING
-    if(!lamp->getLampSettings().isDirect || !lamp->getLampSettings().isStream)
+    if(!lamp->getLampFlagsStuct().isDirect || !lamp->getLampFlagsStuct().isStream)
     #endif
     lamp->effectsTimer(T_ENABLE);
     #ifdef MP3PLAYER
@@ -111,7 +112,7 @@ void ALARMTASK::stopAlarm(){
 
     LOG(printf_P, PSTR("Отключение будильника рассвет, ONflag=%d\n"), lamp->isLampOn());
     //lamp->brightness(lamp->getNormalizedLampBrightness());
-    lamp->setBrightness(lamp->getLampBrightness(), false, false);
+    //lamp->setBrightness(lamp->getLampBrightness(), false, false);
     if (!lamp->isLampOn()) {
         lamp->effectsTimer(T_DISABLE);
         FastLED.clear();
@@ -135,7 +136,7 @@ void ALARMTASK::alarmWorker(){
         memset(ALARMTASK::getInstance()->dawnColorMinus,0,sizeof(dawnColorMinus));
         ALARMTASK::getInstance()->dawnCounter = 0;
         FastLED.clear();
-        lamp->setBrightness(MAX_BRIGHTNESS, false, false);
+        lamp->setBrightness(MAX_BRIGHTNESS, fade_t::off, true);
         // величина рассвета 0-255
         int16_t dawnPosition = map((millis()-ALARMTASK::getInstance()->startmillis)/1000,0,ALARMTASK::getInstance()->curAlarm.alarmP*60,0,255); // 0...curAlarm.alarmP*60 секунд приведенные к 0...255
         dawnPosition = constrain(dawnPosition, 0, 255);

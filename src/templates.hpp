@@ -1,8 +1,8 @@
 /*
-Copyright © 2020 Dmytro Korniienko (kDn)
-JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
+    This file is a part of FireLamp_JeeUI project
+    https://github.com/vortigont/FireLamp_JeeUI
 
-    This file is part of FireLamp_JeeUI.
+    Copyright © 2023 Emil Muratov (vortigont)
 
     FireLamp_JeeUI is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -36,65 +36,10 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 */
 
 #pragma once
-#ifndef __MAIN_H_
-#define __MAIN_H_
 
-#if __cplusplus >= 201703L
-#define register // keyword 'register' is banned with c++17
-#endif
-
-#include "config.h"
-
-#ifdef ESP_USE_BUTTON
-#include "buttons.h"
-#endif
-
-#ifdef TM1637_CLOCK
-  #include "tm.h"
-#endif
-
-#ifdef ENCODER
-  #include "enc.h"
-#endif
-
-#ifdef RTC
-  #include "rtc.h"
-#endif
-
-#ifdef USE_STREAMING
-  #include "ledStream.h"
-#endif
-
-#define LAMPFW_VERSION_MAJOR     3
-#define LAMPFW_VERSION_MINOR     2
-#define LAMPFW_VERSION_REVISION  0
-
-#define LAMPFW_VERSION_VALUE     (MAJ, MIN, REV) ((MAJ) << 16 | (MIN) << 8 | (REV))
-
-/* make version as integer for comparison */
-#define LAMPFW_VERSION           LAMPFW_VERSION_VALUE(LAMPFW_VERSION_MAJOR, LAMPFW_VERSION_MINOR, LAMPFW_VERSION_REVISION)
-
-/* make version as string, i.e. "2.6.1" */
-#define LAMPFW_VERSION_STRING    TOSTRING(LAMPFW_VERSION_MAJOR) "." TOSTRING(LAMPFW_VERSION_MINOR) "." TOSTRING(LAMPFW_VERSION_REVISION)
-
-
-// глобальные переменные для работы с ними в программе
-
-#ifdef ESP_USE_BUTTON
-extern Buttons *myButtons;
-#endif
-#ifdef MP3PLAYER
-#include "mp3player.h"
-extern MP3PlayerDevice *mp3;
-#endif
-
-#ifdef EMBUI_USE_MQTT
-void mqttCallback(const String &topic, const String &payload);
-void mqttConnect();
-void sendData();
-#endif
-
-void create_parameters();
-void sync_parameters();
-
-#endif
+// cast enum to int
+template <class E>
+constexpr std::common_type_t<int, std::underlying_type_t<E>>
+e2int(E e) {
+    return static_cast<std::common_type_t<int, std::underlying_type_t<E>>>(e);
+}

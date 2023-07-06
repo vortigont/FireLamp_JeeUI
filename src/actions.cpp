@@ -37,7 +37,7 @@
 */
 
 #include "actions.hpp"
-
+#include "lamp.h"
 
 void run_action(ra act){
   LOG(printf_P, PSTR("run_action: %d\n"), static_cast<int>(act));
@@ -51,7 +51,7 @@ void run_action(ra act){
 
     // demo next effect
     case ra::demo_next : {
-      if (myLamp.getLampSettings().dRand)
+      if (myLamp.getLampFlagsStuct().dRand)
         myLamp.switcheffect(SW_RND, myLamp.getFaderFlag());
       else
         myLamp.switcheffect(SW_NEXT_DEMO, myLamp.getFaderFlag());

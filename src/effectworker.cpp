@@ -37,8 +37,11 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "effectworker.h"
 #include "effects.h"
 #include "char_const.h"
+#include "constants.h"        // EmbUI string literals
 #include "filehelpers.hpp"
 #include "embuifs.hpp"
+#include "templates.hpp"
+#include "actions.hpp"
 #include "log.h"
 
 #define DYNJSON_SIZE_EFF_CFG   2048
@@ -112,6 +115,9 @@ bool Effcfg::loadeffconfig(uint16_t nb, const char *folder){
   version = doc[F("ver")];
   effectName = doc[F("name")] | String(FPSTR(T_EFFNAMEID[(uint8_t)nb]));
   soundfile = doc[F("snd")].as<String>();
+  brt = doc["brt"];
+  curve = doc[TCONST_lcurve] ? static_cast<luma::curve>(doc[TCONST_lcurve].as<int>()) : luma::curve::cie1931;
+
 
   return _eff_ctrls_load_from_jdoc(doc, controls);
 }
@@ -172,18 +178,20 @@ String Effcfg::getSerializedEffConfig(uint8_t replaceBright) const {
   doc[F("flags")] = flags.mask;
   doc[F("name")] = effectName;
   doc[F("ver")] = version;
+  if (brt) doc["brt"] = brt;
+  if (curve != luma::curve::cie1931) doc[TCONST_lcurve] = e2int(curve);
   doc[F("snd")] = soundfile;
   JsonArray arr = doc.createNestedArray(F("ctrls"));
   for (auto c = controls.cbegin(); c != controls.cend(); ++c){
     auto ctrl = c->get();
     JsonObject var = arr.createNestedObject();
-    var[F("id")]=ctrl->getId();
-    var[F("type")]=ctrl->getType();
-    var[F("name")]=ctrl->getName();
-    var[F("val")]=(ctrl->getId()==0 && replaceBright) ? String(replaceBright) : ctrl->getVal();
-    var[F("min")]=ctrl->getMin();
-    var[F("max")]=ctrl->getMax();
-    var[F("step")]=ctrl->getStep();
+    var[P_id]=ctrl->getId();
+    var[P_type]=ctrl->getType();
+    var[F("name")] = ctrl->getName();
+    var[F("val")]  = ctrl->getVal();
+    var[P_min]=ctrl->getMin();
+    var[P_max]=ctrl->getMax();
+    var[P_step]=ctrl->getStep();
   }
 
   String cfg_str;
@@ -463,10 +471,12 @@ void EffectWorker::workerset(uint16_t effect){
   }
 
   if(worker){
-    // запихать в экземпляр калькулятор эффекта ссылки на все то барахло из чего состоит лампа вместе с самой лампой 8()
     curEff.loadeffconfig(effect);
     // окончательная инициализация эффекта тут
     worker->init(static_cast<EFF_ENUM>(effect%256), &curEff.controls, this, lampstate);
+
+    // set newly loaded luma curve to the lamp
+    run_action(ra::brt_lcurve, e2int(curEff.curve));
   }
 }
 
@@ -1077,6 +1087,13 @@ void EffectWorker::reset(){
   if (worker) workerset(getCurrent());
 }
 
+void EffectWorker::setLumaCurve(luma::curve c){
+  if (c == curEff.curve) return;  // quit if same value
+  curEff.curve = c; curEff.autosave();
+};
+
+
+
 /*  *** EffectCalc  implementation  ***   */
 void EffectCalc::init(EFF_ENUM eff, LList<std::shared_ptr<UIControl>> *controls, EffectWorker *pworker, LAMPSTATE* state){
   effect = eff;
@@ -1167,7 +1184,7 @@ String EffectCalc::setDynCtrl(UIControl*_val){
   }
 
   switch(_val->getId()){
-    case 0: brightness = getBrightness(); break; // яркость всегда как есть, без рандома, но с учетом глобальности :) //LOG(printf_P,PSTR("brightness=%d\n"), brightness);
+    //case 0: brightness = getBrightness(); break; // яркость всегда как есть, без рандома, но с учетом глобальности :) //LOG(printf_P,PSTR("brightness=%d\n"), brightness);
     case 1: speed = ret_val.toInt(); speedfactor = getSpeedFactor()*SPEED_ADJ; break; // LOG(printf_P,PSTR("speed=%d, speedfactor=%2.2f\n"), speed, speedfactor);
     case 2: scale = ret_val.toInt(); break;
     default: break;

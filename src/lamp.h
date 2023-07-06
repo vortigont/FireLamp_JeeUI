@@ -47,6 +47,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "char_const.h"
 #include "mp3player.h"
 #include "log.h"
+#include "luma_curves.hpp"
 
 #ifdef MIC_EFFECTS
 #include "micFFT.h"
@@ -56,7 +57,8 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
     #define DEFAULT_MQTTPUB_INTERVAL 30
 #endif
 
-#define MAX_BRIGHTNESS            (255U)                    // стандартная максимальная яркость (255)
+#define MAX_BRIGHTNESS            (255U)                    // максимальная яркость LED
+#define DEF_BRT_SCALE               20                      // шкала регулировки яркости по-умолчанию
 
 // a stub for 8266
 #ifndef GPIO_NUM_NC
@@ -90,6 +92,16 @@ typedef enum _SCHEDULER {
     T_RESET,          // сброс
 } SCHEDULER;
 
+/**
+ * @brief if method should use a fader when changing brightness
+ * 
+ */
+enum class fade_t {
+    off=0,
+    on,
+    preset
+};
+
 // Timings from FastLED chipsets.h
 // WS2812@800kHz - 250ns, 625ns, 375ns
 // время "отправки" кадра в матрицу, мс. где 1.5 эмпирический коэффициент
@@ -108,12 +120,12 @@ typedef enum _SCHEDULER {
 typedef union _LAMPFLAGS {
 struct {
     // ВНИМАНИЕ: порядок следования не менять, флаги не исключать, переводить в reserved!!! используется как битовый массив в конфиге!
-    bool reserved0:1;
+    bool restoreState:1;        // restore lamp on/off/demo state on restart
     bool reserved1:1;
     bool isDraw:1; // режим рисования
     bool ONflag:1; // флаг включения/выключения
     bool isFaderON:1; // признак того, что фейдер используется для эффектов
-    bool isGlobalBrightness:1; // признак использования глобальной яркости для всех режимов
+    bool reserved5:1;       // ex. isGlobalBrightness
     bool tm24:1;   // 24х часовой формат
     bool tmZero:1;  // ведущий 0
     bool limitAlarmVolume:1; // ограничивать громкость будильника
@@ -146,13 +158,13 @@ struct {
 };
 uint64_t lampflags; // набор битов для конфига
 _LAMPFLAGS(){
-    reserved0 = false;
+    restoreState = false;
     reserved1 = false;
     ONflag = false; // флаг включения/выключения
     isDebug = false; // флаг отладки
     isFaderON = true; // признак того, что используется фейдер для смены эффектов
     isEffClearing = false; // нужно ли очищать эффекты при переходах с одного на другой
-    isGlobalBrightness = false; // признак использования глобальной яркости для всех режимов
+    //isGlobalBrightness = true; // признак использования глобальной яркости для всех режимов
     isEventsHandled = true;
     isMicOn = true; // глобальное испльзование микрофона
     numInList = false;
@@ -193,10 +205,15 @@ private:
 #endif
 
     LAMPFLAGS flags;
-    LAMPSTATE lampState;        // текущее состояние лампы, которое передается эффектам
+    LAMPSTATE lampState;                // текущее состояние лампы, которое передается эффектам
+
+    uint8_t _brightnessScale = DEF_BRT_SCALE;
+    luma::curve _curve = luma::curve::cie1931;       // default luma correction curve for PWM driven LEDs
+    uint8_t globalBrightness = 127;     // глобальная яркость
+    uint8_t storedBright;               // "запасное" значение яркости
+    uint8_t BFade;                      // затенение фона под текстом
 
     uint8_t txtOffset = 0; // смещение текста относительно края матрицы
-    uint8_t globalBrightness = 127;     // глобальная яркость
     uint16_t curLimit = CURRENT_LIMIT; // ограничение тока
     uint8_t fps = 0;        // fps counter
 #ifdef LAMP_DEBUG
@@ -212,7 +229,6 @@ private:
     LAMPMODE mode = LAMPMODE::MODE_NORMAL; // текущий режим
     LAMPMODE storedMode = LAMPMODE::MODE_NORMAL; // предыдущий режим
     uint16_t storedEffect = (uint16_t)EFF_ENUM::EFF_NONE;
-    uint8_t storedBright;
     CRGB rgbColor = CRGB::White; // дефолтный цвет для RGB-режима
 
 #ifdef MIC_EFFECTS
@@ -220,7 +236,6 @@ private:
     void micHandler();
 #endif
 
-    uint8_t BFade; // затенение фона под текстом
 
     uint8_t alarmPT; // время будильника рассвет - старшие 4 бита и свечения после рассвета - младшие 4 бита
 #ifdef TM1637_CLOCK
@@ -237,7 +252,15 @@ private:
     Task *effectsTask= nullptr;  // динамический планировщик обработки эффектов
     WarningTask *warningTask = nullptr; // динамический планировщик переключалки флага lampState.isWarning
     Task *tmqtt_pub = nullptr;   // динамический планировщик публикации через mqtt
-    void brightness(const uint8_t _brt, bool natural=true);     // низкоуровневая крутилка глобальной яркостью для других методов
+
+    /**
+     * @brief set brightness value to FastLED backend
+     * method uses curve mapping to the aplied value by default
+     * 
+     * @param _brt - brighntess value
+     * @param absolute - if true, than do not apply curve mapping
+     */
+    void _brightness(uint8_t brt, bool absolute=false);     // низкоуровневая крутилка глобальной яркостью (для других публичных методов)
 
     void effectsTick(); // обработчик эффектов
 
@@ -273,6 +296,8 @@ public:
     LAMP (const LAMP&) = delete;
     LAMP& operator= (const LAMP&) = delete;
 
+    void lamp_init();       // первичная инициализация Лампы
+
     /**
      * @brief set a new ledbuffer for lamp
      * it will pass it further on effects creation, etc...
@@ -298,12 +323,15 @@ public:
     void showWarning(const CRGB &color, uint32_t duration, uint16_t blinkHalfPeriod, uint8_t warnType=0, bool forcerestart=true, const String &msg = String()); // Неблокирующая мигалка
     void warningHelper();
 
-    void lamp_init(const uint16_t curlimit);       // первичная инициализация Лампы
     EffectWorker effects; // объект реализующий доступ к эффектам
     EVENT_MANAGER events; // Объект реализующий доступ к событиям
-    uint64_t getLampFlags() {return flags.lampflags;} // возвращает упакованные флаги лампы
-    const LAMPFLAGS &getLampSettings() {return flags;} // возвращает упакованные флаги лампы
-    //void setLampFlags(uint32_t _lampflags) {flags.lampflags=_lampflags;} // устананавливает упакованные флаги лампы
+
+    // возвращает упакованные в целое флаги лампы
+    uint64_t getLampFlags() {return flags.lampflags;}
+
+     // возвращает структуру флагов лампы
+    const LAMPFLAGS &getLampFlagsStuct() const {return flags;}
+
     void setbPin(uint8_t val) {bPin = val;}
     uint8_t getbPin() {return bPin;}
     void setcurLimit(uint16_t val) {curLimit = val;}
@@ -328,36 +356,56 @@ public:
     // Lamp brightness control
     /**
      * @brief - Change global brightness with or without fade effect
-     * fade applied in non-blocking way
-     * FastLED dim8 function applied internaly for natural brightness controll
-     * @param uint8_t _tgtbrt - target brigtness level 0-255
-     * @param bool fade - use fade effect on brightness change
-     * @param bool natural - apply dim8 function for natural brightness controll
+     * if fade flag for the lamp is set, than fade applied in non-blocking way unless skipfade param is set to 'true'
+     * brightness is mapped to a current lamp's luma curve value
+     * 
+     * @param uint8_t tgtbrt - target brigtness level 0-255
+     * @param fade_t fade - use/skip or use default fade effect
      */
-    void setBrightness(const uint8_t _tgtbrt, const bool fade=false, const bool natural=true);
+    void setBrightness(uint8_t tgtbrt, fade_t fade=fade_t::preset, bool bypass = false);
 
     /**
      * @brief - Get current FASTLED brightness
      * FastLED brighten8 function applied internaly for natural brightness compensation
      * @param bool natural - return compensated or absolute brightness
      */
-    uint8_t getBrightness(const bool natural=true);
+    uint8_t getBrightness() const { return globalBrightness; };
 
-    // ыставляет ТОЛЬКО значение в кинфиге! Яркость не меняет!
-    void setGlobalBrightness(uint8_t brt) {globalBrightness = brt;}
+    /**
+     * @brief Set the Luma Curve for brightness correction
+     * 
+     * @param c luma curve enum
+     */
+    void setLumaCurve(luma::curve c);
 
-    uint8_t getLampBrightness() { return flags.isGlobalBrightness? globalBrightness : (effects.getControls()[0]->getVal()).toInt();}
-    void setLampBrightness(uint8_t brt) { lampState.brightness=brt; if (flags.isGlobalBrightness) setGlobalBrightness(brt); else effects.getControls()[0]->setVal(String(brt)); }
+    /**
+     * @brief Get current Luma Curve value
+     * 
+     * @return luma::curve 
+     */
+    luma::curve getLumaCurve() const { return _curve; };
 
-    void setIsGlobalBrightness(bool val) {flags.isGlobalBrightness = val; if(effects.worker) { lampState.brightness=getLampBrightness(); effects.worker->setDynCtrl(effects.getControls()[0].get());} }
-    bool IsGlobalBrightness() {return flags.isGlobalBrightness;}
+    /**
+     * @brief Set the Brightness Scale range
+     * i.e. 100 equals to 0-100% sclae
+     * default is DEF_BRT_SCALE
+     * 
+     * @param scale 
+     */
+    void setBrightnessScale(uint8_t scale){ _brightnessScale = scale ? scale : DEF_BRT_SCALE; };
+
+    /**
+     * @brief Get the Brightness Scale
+     * see setBrightnessScale()
+     */
+    uint8_t getBrightnessScale() const { return _brightnessScale; };
 
     /**
      * @brief get lamp brightness in percents 0-100
      * 
      * @return uint8_t brightness value in percents
      */
-    uint8_t lampBrightnesspct(){ return getLampBrightness() * 100 / 255; };
+    uint8_t lampBrightnesspct(){ return globalBrightness * 100 / 255; };
 
     /**
      * @brief set lamp brightness in percents
@@ -400,6 +448,7 @@ public:
 
     void handle();          // главная функция обработки эффектов
 
+    // flag get/set methods
     void setFaderFlag(bool flag) {flags.isFaderON = flag;}
     bool getFaderFlag() {return flags.isFaderON;}
     void setClearingFlag(bool flag) {flags.isEffClearing = flag;}
@@ -415,6 +464,9 @@ public:
     void setDebug(bool flag) {flags.isDebug=flag; lampState.isDebug=flag;}
     void setButton(bool flag) {flags.isBtn=flag;}
     void setDraw(bool flag);
+
+    // set/clear "restore on/off/demo" state on boot
+    void setRestoreState(bool flag){flags.restoreState = flag;}
 
     /**
      * @brief creates/destroys buffer for "drawing"
@@ -608,6 +660,3 @@ public:
 
 //-----------------------------------------------
 extern LAMP myLamp; // Объект лампы
-#ifdef MP3PLAYER
-extern MP3PlayerDevice *mp3;
-#endif

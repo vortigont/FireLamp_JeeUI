@@ -1,4 +1,6 @@
 #pragma once
+#include <string_view>
+
 /** набор служебных текстовых констант (не для локализации)
  */
 static const char TCONST_1609459200[] PROGMEM = "1609459200";
@@ -17,6 +19,7 @@ static const char TCONST_bactList[] PROGMEM = "bactList";
 static const char TCONST_blabel[] PROGMEM = "blabel";
 static const char TCONST_bparam[] PROGMEM = "bparam";
 static const char TCONST_bright[] PROGMEM = "bright";
+static const char TCONST_brtScl[] PROGMEM = "brtScl";                 // brightness scale
 static const char TCONST_Btn[] PROGMEM = "Btn";
 static const char TCONST_buttList[] PROGMEM = "buttList";
 static const char TCONST_butt_conf[] PROGMEM = "butt_conf";
@@ -83,6 +86,7 @@ static const char TCONST_eventList[] PROGMEM = "eventList";
 static const char TCONST_Events[] PROGMEM = "Events";
 static const char TCONST_event_conf[] PROGMEM = "event_conf";
 static const char TCONST_evList[] PROGMEM = "evList";
+static const char TCONST_f_restore_state[] PROGMEM = "f_rstt";          // Lamp flag "restore state"
 static const char TCONST_fcfg_gpio[] PROGMEM = "/gpio.json";
 static const char TCONST_fcfg_ledstrip[] = "/ledstrip.json";
 static const char TCONST_fileName2[] PROGMEM = "fileName2";
@@ -106,6 +110,7 @@ static const char TCONST_isShowOff[] PROGMEM = "isShowOff";
 static const char TCONST_isStreamOn[] PROGMEM = "isStreamOn";
 static const char TCONST_lamptext[] PROGMEM = "lamptext";
 static const char TCONST_lamp_config[] PROGMEM = "lamp_config";
+static const char TCONST_lcurve[] = "lcurve";
 static const char TCONST_limitAlarmVolume[] PROGMEM = "limitAlarmVolume";
 static const char TCONST_load[] PROGMEM = "load";
 static const char TCONST_lV[] PROGMEM = "lV";
