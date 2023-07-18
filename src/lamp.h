@@ -407,21 +407,6 @@ public:
      */
     uint8_t getBrightnessScale() const { return _brightnessScale; };
 
-    /**
-     * @brief get lamp brightness in percents 0-100
-     * 
-     * @return uint8_t brightness value in percents
-     */
-    uint8_t lampBrightnesspct(){ return globalBrightness * 100 / 255; };
-
-    /**
-     * @brief set lamp brightness in percents
-     * 
-     * @param brt value 0-100
-     * @return uint8_t 
-     */
-    uint8_t lampBrightnesspct(uint8_t brt);
-
     bool isAlarm() {return mode == LAMPMODE::MODE_ALARMCLOCK;}
     bool isWarning() {return lampState.isWarning;}
 

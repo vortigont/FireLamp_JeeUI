@@ -62,7 +62,6 @@ enum class ra:uint8_t {
   brt,                // brightness control, param int
   brt_nofade,         // change brightness without fading effect, param int
   brt_lcurve,         // set brightness luma curve
-  brt_global,         // set/unset global brightness, param bool
   demo,               // demo mode on/off, param bool
   demo_next,          // switch effect in demo mode, param void
   eff_ctrl,           // apply effect control value
@@ -138,12 +137,6 @@ void run_action(ra act, const T& param) {
     case ra::aux : {
       obj[P_action] = TCONST_AUX;
       nested[TCONST_AUX] = param;
-      break;
-    }
-
-    case ra::brt_global : {
-      obj[P_action] = TCONST_GBR;
-      nested[TCONST_GBR] = param;
       break;
     }
 

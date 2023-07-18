@@ -335,14 +335,14 @@ void block_menu(Interface *interf, JsonObject *data){
     // создаем меню
     interf->json_section_menu();
 
-    interf->option(FPSTR(TCONST_effects), FPSTR(TINTF_000));        //  Эффекты
-    interf->option(FPSTR(TCONST_lamptext), FPSTR(TINTF_001));       //  Вывод текста
-    interf->option(FPSTR(TCONST_drawing), FPSTR(TINTF_0CE));        //  Рисование
+    interf->option(TCONST_effects, TINTF_000);        //  Эффекты
+    interf->option(TCONST_lamptext, TINTF_001);       //  Вывод текста
+    interf->option(TCONST_drawing, TINTF_0CE);        //  Рисование
 #ifdef USE_STREAMING
-    interf->option(FPSTR(TCONST_streaming), FPSTR(TINTF_0E2));   //  Трансляция
+    interf->option(TCONST_streaming, TINTF_0E2);      //  Трансляция
 #endif
-    interf->option(FPSTR(TCONST_show_event), FPSTR(TINTF_011));     //  События
-    interf->option(FPSTR(TCONST_settings), FPSTR(TINTF_002));       //  настройки
+    interf->option(TCONST_show_event, TINTF_011);     //  События
+    interf->option(TCONST_settings, TINTF_002);       //  настройки
 
     interf->json_section_end();
 }
@@ -3497,9 +3497,7 @@ String httpCallback(const String &param, const String &value, bool isset){
             { result = myLamp.isLampOn() ; }
         else if (upperParam == FPSTR(CMD_OFF))
             { result = !myLamp.isLampOn() ; }
-//        else if (upperParam == FPSTR(CMD_G_BRIGHT)){ result = myLamp.IsGlobalBrightness() ; }
-        else if (upperParam == FPSTR(CMD_G_BRTPCT))
-            { result = myLamp.lampBrightnesspct(); return result; }
+        else if (upperParam == CMD_G_BRIGHT) { result = myLamp.getBrightness(); }
         else if (upperParam == FPSTR(CMD_DEMO))
             { result = myLamp.getMode() == LAMPMODE::MODE_DEMO ; }
 #ifdef MP3PLAYER
@@ -3604,17 +3602,14 @@ String httpCallback(const String &param, const String &value, bool isset){
         if ( upperParam == FPSTR(CMD_ON) || upperParam == FPSTR(CMD_OFF ) ){ run_action(value.toInt() ? ra::on : ra::off ); return result; }
         else if (upperParam == FPSTR(CMD_DEMO)) { run_action(ra::demo, value.toInt() ? true : false ); return result; }
         // scroll text
-        else if (upperParam == FPSTR(CMD_MSG)) { myLamp.sendString(value.c_str()); return result; }
-        if (upperParam == FPSTR(CMD_EFFECT)) { run_action(ra::eff_next, value.toInt()); return result; }
+        else if (upperParam == FPSTR(CMD_MSG))  { myLamp.sendString(value.c_str()); return result; }
+        if (upperParam == FPSTR(CMD_EFFECT))    { run_action(ra::eff_next, value.toInt()); return result; }
         if (upperParam == FPSTR(CMD_MOVE_NEXT)) { run_action(ra::eff_next); return result; }
         if (upperParam == FPSTR(CMD_MOVE_PREV)) { run_action(ra::eff_prev); return result; }
         if (upperParam == FPSTR(CMD_MOVE_RND))  { run_action(ra::eff_rnd);  return result; }
-        if (upperParam == FPSTR(CMD_REBOOT)) { run_action(ra::reboot); return result; }
-        else if (upperParam == FPSTR(CMD_ALARM)) { ALARMTASK::startAlarm(&myLamp, value.c_str()); }
-        //else if (upperParam == FPSTR(CMD_G_BRIGHT)) action = RA_GLOBAL_BRIGHT;
-        else if (upperParam == FPSTR(CMD_G_BRTPCT)) {
-            int brt = brt >=100 ? 255 : brt * 255 / 100;    // normalize percents to 0-255
-            run_action(ra::brt, brt); return result; }
+        if (upperParam == FPSTR(CMD_REBOOT))    { run_action(ra::reboot); return result; }
+        if (upperParam == CMD_G_BRIGH)  { run_action(ra::brt, value.toInt()); return result; }
+        if (upperParam == FPSTR(CMD_ALARM)) { ALARMTASK::startAlarm(&myLamp, value.c_str()); }
         else if (upperParam == FPSTR(CMD_WARNING)) {
             StaticJsonDocument<256> obj;
             deserializeJson(obj, value);

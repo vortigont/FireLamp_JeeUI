@@ -276,7 +276,7 @@ void event_worker(DEV_EVENT *event){
         run_action(ra::warn, &j);
         return;
     }
-    case EVENT_TYPE::SET_GLOBAL_BRIGHT: { run_action(ra::brt_global, static_cast<bool>(event->getMessage().toInt())); return; }
+    case EVENT_TYPE::SET_GLOBAL_BRIGHT: { run_action(ra::brt, event->getMessage().toInt()); return; }
     case EVENT_TYPE::SET_WHITE_HI: action = RA_WHITE_HI; break;
     case EVENT_TYPE::SET_WHITE_LO: action = RA_WHITE_LO; break;
     default:;

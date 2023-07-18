@@ -955,14 +955,6 @@ uint8_t LAMP::_brightness(bool absolute){
   return absolute ? FastLED.getBrightness() : luma::curveUnMap(_curve, FastLED.getBrightness(), MAX_BRIGHTNESS, _brightnessScale);
 }
 
-uint8_t LAMP::lampBrightnesspct(uint8_t brt){
-  if (brt >=100)
-    setBrightness(255);
-  else
-    setBrightness(brt * 255 / 100);
-  return brt;
-}
-
 void LAMP::setLumaCurve(luma::curve c){
   if (c == _curve) return;
   _curve = c;
