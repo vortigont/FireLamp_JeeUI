@@ -225,8 +225,8 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #ifndef FADE_MININCREMENT
 #define FADE_MININCREMENT     (2U)                          // Minimal increment for fading steps
 #endif
-#ifndef FADE_MINCHANGEBRT
-#define FADE_MINCHANGEBRT     (25U)                         // минимальная яркость затухания между сменой эффектов (лампа не будет полностью гаснуть при смене эффектов)
+#ifndef FADE_LOWBRTFRACT
+#define FADE_LOWBRTFRACT      (10U)                         // доля от максимальной яркости, до которой работает затухание при смене эффектов. Если текущая яркость ниже двойной доли, то затухание будет достигать нуля
 #endif
 
 #ifndef MAX_FPS

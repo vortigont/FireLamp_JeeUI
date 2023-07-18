@@ -3608,7 +3608,7 @@ String httpCallback(const String &param, const String &value, bool isset){
         if (upperParam == FPSTR(CMD_MOVE_PREV)) { run_action(ra::eff_prev); return result; }
         if (upperParam == FPSTR(CMD_MOVE_RND))  { run_action(ra::eff_rnd);  return result; }
         if (upperParam == FPSTR(CMD_REBOOT))    { run_action(ra::reboot); return result; }
-        if (upperParam == CMD_G_BRIGH)  { run_action(ra::brt, value.toInt()); return result; }
+        if (upperParam == CMD_G_BRIGHT)  { run_action(ra::brt, value.toInt()); return result; }
         if (upperParam == FPSTR(CMD_ALARM)) { ALARMTASK::startAlarm(&myLamp, value.c_str()); }
         else if (upperParam == FPSTR(CMD_WARNING)) {
             StaticJsonDocument<256> obj;

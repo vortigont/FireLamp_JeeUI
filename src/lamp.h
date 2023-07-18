@@ -268,7 +268,7 @@ private:
      * @param absolute - get absolute brightness
      * @return uint8_t - brightness value
      */
-    uint8_t _brightness(bool absolute=false);
+    uint8_t _get_brightness(bool absolute=false);
 
     void effectsTick(); // обработчик эффектов
 

@@ -951,7 +951,7 @@ void LAMP::_brightness(uint8_t brt, bool absolute){
     FastLED.show();
 }
 
-uint8_t LAMP::_brightness(bool absolute){
+uint8_t LAMP::_get_brightness(bool absolute){
   return absolute ? FastLED.getBrightness() : luma::curveUnMap(_curve, FastLED.getBrightness(), MAX_BRIGHTNESS, _brightnessScale);
 }
 
@@ -1006,7 +1006,7 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
       effects.switchEffect(next_eff_num, true);       // preload controls for next effect
       // запускаем фейдер и уходим на второй круг переключения
       // если текущая абсолютная яркость больше чем 2*FADE_MINCHANGEBRT, то затухаем не полностью, а только до значения FADE_MINCHANGEBRTб в противном случае гаснем полностью
-      LEDFader::getInstance()->fadelight( _brightness(true) < 2*FADE_MINCHANGEBRT ? 0 : FADE_MINCHANGEBRT, FADE_TIME, std::bind(&LAMP::switcheffect, this, action, fade, next_eff_num, true));
+      LEDFader::getInstance()->fadelight( _get_brightness(true) < 3*MAX_BRIGHTNESS/FADE_LOWBRTFRACT/2 ? 0 : _brightnessScale/FADE_LOWBRTFRACT, FADE_TIME, std::bind(&LAMP::switcheffect, this, action, fade, next_eff_num, true));
       return;
     } else {
       // do direct switch to effect
@@ -1308,22 +1308,22 @@ void LAMP::_wipe_screen(){
 
 void LEDFader::fadelight(const uint8_t _targetbrightness, const uint32_t _duration, std::function<void()> callback){
   if (!lmp) return;
-  LOG(printf, "Fader: tgt:%u, lamp:%u/%u, _br/_br(abs):%u/%u\n", _targetbrightness, lmp->getBrightness(), lmp->getBrightnessScale(), lmp->_brightness(), lmp->_brightness(true));
+  LOG(printf, "Fader: tgt:%u, lamp:%u/%u, _br/_br(abs):%u/%u\n", _targetbrightness, lmp->getBrightness(), lmp->getBrightnessScale(), lmp->_get_brightness(), lmp->_get_brightness(true));
 
-  if (lmp->_brightness() == _targetbrightness) {
+  if (lmp->_get_brightness() == _targetbrightness) {
     // no need to fade, already at this brightness
     if (callback) callback();
     return;
   }
 
-  _brt = lmp->_brightness(true);        // get current absolute fastled brightness
+  _brt = lmp->_get_brightness(true);        // get current absolute fastled brightness
   _tgtbrt = luma::curveMap(lmp->_curve, _targetbrightness, MAX_BRIGHTNESS, lmp->_brightnessScale);
   _cb = callback;
   // calculate required steps
   int _steps = (abs(_tgtbrt - _brt) > FADE_MININCREMENT * _duration / FADE_STEPTIME) ? _duration / FADE_STEPTIME : abs(_tgtbrt - _brt)/FADE_MININCREMENT;
   if (_steps < 3) {   // no need to fade for such small difference
     LOG(printf_P, PSTR("Fast fade to %d->%d\n"), _brt, _tgtbrt);
-    lmp->_brightness(_tgtbrt);
+    lmp->_brightness(_tgtbrt, true);
     if (runner) abort();
     if (callback) callback();
     return;
@@ -1355,7 +1355,7 @@ void LEDFader::fadelight(const uint8_t _targetbrightness, const uint32_t _durati
     );
   }
 
-  LOG(printf_P, PSTR("Fading lamp/fled:%d/%d->%d/%u, steps/inc %d/%d\n"), lmp->getBrightness(), lmp->_brightness(true), _targetbrightness, _tgtbrt, _steps, _brtincrement);
+  LOG(printf_P, PSTR("Fading lamp/fled:%d/%d->%d/%u, steps/inc %d/%d\n"), lmp->getBrightness(), lmp->_get_brightness(true), _targetbrightness, _tgtbrt, _steps, _brtincrement);
 }
 
 void LEDFader::abort(){
