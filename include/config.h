@@ -217,16 +217,16 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #endif
 
 #ifndef FADE_STEPTIME
-#define FADE_STEPTIME         (50U)                         // default time between fade steps, ms (2 seconds with max steps)
+#define FADE_STEPTIME         (50U)                         // default time between fade steps, ms
 #endif
 #ifndef FADE_TIME
 #define FADE_TIME             (2000U)                       // Default fade time, ms
 #endif
 #ifndef FADE_MININCREMENT
-#define FADE_MININCREMENT     (2U)                          // Minimal increment for brightness fade
+#define FADE_MININCREMENT     (2U)                          // Minimal increment for fading steps
 #endif
 #ifndef FADE_MINCHANGEBRT
-#define FADE_MINCHANGEBRT     (30U)                         // Minimal brightness for effects changer
+#define FADE_MINCHANGEBRT     (25U)                         // минимальная яркость затухания между сменой эффектов (лампа не будет полностью гаснуть при смене эффектов)
 #endif
 
 #ifndef MAX_FPS
