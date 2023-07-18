@@ -626,7 +626,7 @@ void EffectWorker::makeIndexFileFromList(const char *folder, bool forceRemove)
   hndlr.close();
   delete buff;
 
-  LOG(printf_P, PSTR("Индекс эффектов обновлен, %ums\n"), millis()-s );
+  LOG(printf_P, PSTR("Индекс эффектов обновлен, %lums\n"), millis()-s );
   effectsReSort(); // восстанавливаем сортировку
 }
 
@@ -1267,7 +1267,7 @@ const String& EffectCalc::getCtrlVal(unsigned idx) {
 
     // Добавлена поддержка вариантов следования индексов контролов вида 0,1,2,5,7 т.е. с пропусками
     dummy.clear();
-    if(idx<ctrls->size() && idx>=0 && idx<=2 && (*ctrls)[idx]->getId()==idx){
+    if(idx<ctrls->size() && idx<=2 && (*ctrls)[idx]->getId()==idx){
         return (*ctrls)[idx]->getVal();
     } else {
         for(unsigned i = 3; i<ctrls->size(); i++){
@@ -1363,5 +1363,5 @@ void build_eff_names_list_file(EffectWorker &w, bool full){
   hndlr.close();
 
   LittleFS.rename(FPSTR(TCONST_eff_list_json_tmp), full ? FPSTR(TCONST_eff_fulllist_json) : FPSTR(TCONST_eff_list_json));
-  LOG(printf_P, PSTR("\nGENERATE effects name json file for GUI(%s): %ums\n"), full ? "brief" : "full", millis()-s);
+  LOG(printf_P, PSTR("\nGENERATE effects name json file for GUI(%s): %lums\n"), full ? "brief" : "full", millis()-s);
 }

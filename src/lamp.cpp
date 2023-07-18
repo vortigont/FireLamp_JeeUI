@@ -753,8 +753,7 @@ void LAMP::doPrintStringToLamp(const char* text,  CRGB letterColor, const int8_t
 
 void LAMP::newYearMessageHandle()
 {
-  if(!tmNewYearMessage.isReady())
-    return;
+    if(!tmNewYearMessage.isReady()) return;
 
     char strMessage[256]; // буфер
     time_t calc = NEWYEAR_UNIXDATETIME - TimeProcessor::getInstance().getUnixTime();

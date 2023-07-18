@@ -81,7 +81,7 @@ void MP3PlayerDevice::init(){
   // try to connect (5 times, each second)
   Task *_t = new Task(TASK_SECOND, 5, [this](){
     if(!begin(*mp3player)){
-        LOG(printf_P, PSTR("DFPlayer: Unable to begin: %d...\n"), ts.getCurrentTask()->getIterations() );
+        LOG(printf_P, PSTR("DFPlayer: Unable to begin: %ld...\n"), ts.getCurrentTask()->getIterations() );
         return;
     }
 
