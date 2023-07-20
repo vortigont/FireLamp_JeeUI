@@ -54,7 +54,7 @@ namespace fshlpr{
         if (folder && folder[0]){ // если указан каталог и первый символ не пустой, то берем как есть
             filename.concat(folder);
         } else
-            filename.concat(FPSTR(TCONST_eff_index));
+            filename.concat(TCONST_eff_index);
         
         fhandle = LittleFS.open(filename, "w");
         return fhandle;

@@ -112,7 +112,7 @@ void setup() {
     embui.mqtt(mqttCallback, mqttConnect, true);
 #endif
 
-    myLamp.effects.setEffSortType((SORT_TYPE)embui.paramVariant(FPSTR(TCONST_effSort)).as<int>()); // сортировка должна быть определена до заполнения
+    myLamp.effects.setEffSortType((SORT_TYPE)embui.paramVariant(TCONST_effSort).as<int>()); // сортировка должна быть определена до заполнения
     myLamp.effects.initDefault(); // если вызывать из конструктора, то не забыть о том, что нужно инициализировать Serial.begin(115200); иначе ничего не увидеть!
     myLamp.events.loadConfig();
 
@@ -128,7 +128,7 @@ void setup() {
     myLamp.lamp_init();
 
 #ifdef ESP_USE_BUTTON
-    myLamp.setbPin(embui.param(FPSTR(TCONST_PINB)).toInt());
+    myLamp.setbPin(embui.param(TCONST_PINB).toInt());
     myButtons = new Buttons(myLamp.getbPin(), PULL_MODE, NORM_OPEN);
     if (!myButtons->loadConfig()) {
       default_buttons();
@@ -197,10 +197,10 @@ String ha_autodiscovery()
 {
     LOG(println,F("MQTT: Autodiscovery"));
     DynamicJsonDocument hass_discover(1024);
-    String name = embui.param(FPSTR(P_hostname));
+    String name = embui.param(P_hostname);
     String unique_id = embui.mc;
 
-    hass_discover[F("~")] = embui.id(FPSTR(TCONST_embui_));     // embui.param(FPSTR(P_m_pref)) + F("/embui/")
+    hass_discover[F("~")] = embui.id(TCONST_embui_);     // embui.param(P_m_pref) + F("/embui/")
     hass_discover[F("name")] = name;                // name
     hass_discover[F("uniq_id")] = unique_id;        // String(ESP.getChipId(), HEX); // unique_id
 
@@ -223,12 +223,12 @@ String ha_autodiscovery()
     hass_discover[F("bri_scl")] = 255;
 
     JsonArray data = hass_discover.createNestedArray(F("effect_list"));
-    data.add(FPSTR(TCONST_Normal));
-    data.add(FPSTR(TCONST_Alarm));
-    data.add(FPSTR(TCONST_Demo));
-    data.add(FPSTR(TCONST_RGB));
-    data.add(FPSTR(TCONST_White));
-    data.add(FPSTR(TCONST_Other));
+    data.add(TCONST_Normal);
+    data.add(TCONST_Alarm);
+    data.add(TCONST_Demo);
+    data.add(TCONST_RGB);
+    data.add(TCONST_White);
+    data.add(TCONST_Other);
 
     //---------------------
 
@@ -265,14 +265,14 @@ void mqttConnect(){
 
 ICACHE_FLASH_ATTR void mqttCallback(const String &topic, const String &payload){ // функция вызывается, когда приходят данные MQTT
   LOG(printf_P, PSTR("Message [%s - %s]\n"), topic.c_str() , payload.c_str());
-  if(topic.startsWith(FPSTR(TCONST_embui_get_))){
+  if(topic.startsWith(TCONST_embui_get_)){
     String sendtopic=topic;
-    sendtopic.replace(FPSTR(TCONST_embui_get_), "");
-    if(sendtopic==FPSTR(TCONST_eff_config)){
-        sendtopic=String(FPSTR(TCONST_embui_pub_))+sendtopic;
+    sendtopic.replace(TCONST_embui_get_, "");
+    if(sendtopic==TCONST_eff_config){
+        sendtopic=String(TCONST_embui_pub_)+sendtopic;
         String effcfg;
         if (fshlpr::getfseffconfig(myLamp.effects.getCurrent(), effcfg)) embui.publish(sendtopic, effcfg, true); // отправляем обратно в MQTT в топик embui/pub/
-    } else if(sendtopic==FPSTR(TCONST_state)){
+    } else if(sendtopic==TCONST_state){
         sendData();
     }
   }
@@ -286,35 +286,35 @@ void sendData(){
     switch (myLamp.getMode())
     {
         case LAMPMODE::MODE_NORMAL :
-            obj[FPSTR(TCONST_Mode)] = FPSTR(TCONST_Normal);
+            obj[TCONST_Mode] = TCONST_Normal;
             break;
         case LAMPMODE::MODE_ALARMCLOCK :
-            obj[FPSTR(TCONST_Mode)] = FPSTR(TCONST_Alarm);
+            obj[TCONST_Mode] = TCONST_Alarm;
             break;
         case LAMPMODE::MODE_DEMO :
-            obj[FPSTR(TCONST_Mode)] = FPSTR(TCONST_Demo);
+            obj[TCONST_Mode] = TCONST_Demo;
             break;
         case LAMPMODE::MODE_RGBLAMP :
-            obj[FPSTR(TCONST_Mode)] = FPSTR(TCONST_RGB);
+            obj[TCONST_Mode] = TCONST_RGB;
             break;
         case LAMPMODE::MODE_WHITELAMP :
-            obj[FPSTR(TCONST_Mode)] = FPSTR(TCONST_White);
+            obj[TCONST_Mode] = TCONST_White;
             break;
         default:
-            obj[FPSTR(TCONST_Mode)] = FPSTR(TCONST_Other);
+            obj[TCONST_Mode] = TCONST_Other;
             break;
     }
-    obj[FPSTR(TCONST_Time)] = String(embui.timeProcessor.getFormattedShortTime());
-    obj[FPSTR(TCONST_Memory)] = String(myLamp.getLampState().freeHeap);
-    obj[FPSTR(TCONST_Uptime)] = String(embui.getUptime());
-    obj[FPSTR(TCONST_RSSI)] = String(myLamp.getLampState().rssi);
-    obj[FPSTR(TCONST_Ip)] = WiFi.localIP().toString();
-    obj[FPSTR(TCONST_Mac)] = WiFi.macAddress();
-    obj[FPSTR(TCONST_Host)] = String(F("http://"))+WiFi.localIP().toString();
-    obj[FPSTR(TCONST_Version)] = embui.getEmbUIver();
-    obj[FPSTR(TCONST_MQTTTopic)] = embui.id(FPSTR(TCONST_embui_));     // embui.param(FPSTR(P_m_pref)) + F("/embui/")
-    String sendtopic=FPSTR(TCONST_embui_pub_);
-    sendtopic+=FPSTR(TCONST_state);
+    obj[TCONST_Time] = String(embui.timeProcessor.getFormattedShortTime());
+    obj[TCONST_Memory] = String(myLamp.getLampState().freeHeap);
+    obj[TCONST_Uptime] = String(embui.getUptime());
+    obj[TCONST_RSSI] = String(myLamp.getLampState().rssi);
+    obj[TCONST_Ip] = WiFi.localIP().toString();
+    obj[TCONST_Mac] = WiFi.macAddress();
+    obj[TCONST_Host] = String(F("http://"))+WiFi.localIP().toString();
+    obj[TCONST_Version] = embui.getEmbUIver();
+    obj[TCONST_MQTTTopic] = embui.id(TCONST_embui_);     // embui.param(P_m_pref) + F("/embui/")
+    String sendtopic=TCONST_embui_pub_;
+    sendtopic+=TCONST_state;
     String out;
     serializeJson(obj, out);
     LOG(println, F("send MQTT Data :"));
@@ -325,7 +325,7 @@ void sendData(){
 
 void gpio_setup(){
     DynamicJsonDocument doc(512);
-    embuifs::deserializeFile(doc, FPSTR(TCONST_fcfg_gpio));
+    embuifs::deserializeFile(doc, TCONST_fcfg_gpio);
     int rxpin, txpin;
 
     // LED Strip setup
@@ -336,15 +336,15 @@ void gpio_setup(){
 
 #ifdef MP3PLAYER
     // spawn an instance of mp3player
-    rxpin = doc[FPSTR(TCONST_mp3rx)] | -1;
-    txpin = doc[FPSTR(TCONST_mp3tx)] | -1;
+    rxpin = doc[TCONST_mp3rx] | -1;
+    txpin = doc[TCONST_mp3tx] | -1;
     LOG(printf_P, PSTR("DFPlayer: rx:%d tx:%d\n"), rxpin, txpin);
-    mp3 = new MP3PlayerDevice(rxpin, txpin, embui.paramVariant(FPSTR(TCONST_mp3volume)) | DFPLAYER_DEFAULT_VOL );
+    mp3 = new MP3PlayerDevice(rxpin, txpin, embui.paramVariant(TCONST_mp3volume) | DFPLAYER_DEFAULT_VOL );
 #endif
 
 #ifdef TM1637_CLOCK
-    rxpin = doc[FPSTR(TCONST_tm_clk)] | -1;
-    txpin = doc[FPSTR(TCONST_tm_dio)] | -1;
+    rxpin = doc[TCONST_tm_clk] | -1;
+    txpin = doc[TCONST_tm_dio] | -1;
     if (rxpin != -1 && txpin != -1){
         tm1637 = new TMCLOCK(rxpin, txpin);
         tm1637->tm_setup();

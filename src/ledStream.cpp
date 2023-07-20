@@ -149,7 +149,7 @@ Led_Stream::Led_Stream(const STREAM_TYPE type, uint16_t width, uint16_t height) 
     LOG(printf_P, PSTR("Stream ON, type %d \n"), (uint8_t)type);
     streamType = type;
     if (type == E131) {
-        firstUni = embui.param(FPSTR(TCONST_Universe)).toInt();
+        firstUni = embui.param(TCONST_Universe).toInt();
         e131 = new ESPAsyncE131(&handleE131Packet);
         // bufLeds = new CRGB[NUM_LEDS]{CRGB::Black};
         lastSeqNum = new uint8_t[uniQt];
@@ -314,7 +314,7 @@ void Led_Stream::fillBuff(const uint8_t *col){
 void Led_Stream::sendConfig(uint32_t id){       // TODO: доработать
     StaticJsonDocument<EMBUI_IFACE_STA_JSON_SIZE> obj;
     obj[F("name")] = String(F("FireLamp-")) + String(embui.mc);
-    // obj[F("version")] = FPSTR(PGversion);
+    // obj[F("version")] = PGversion;
     obj[F("version")] = F("2.5.0");
     obj[F("cols")] = String(_h);
     obj[F("rows")] = String(_w);

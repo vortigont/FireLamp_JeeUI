@@ -86,13 +86,13 @@ void LAMP::lamp_init()
 
   // GPIO's
   DynamicJsonDocument doc(512);
-  if (!embuifs::deserializeFile(doc, FPSTR(TCONST_fcfg_gpio))) return;     // GPIO cfg is broken or missing
+  if (!embuifs::deserializeFile(doc, TCONST_fcfg_gpio)) return;     // GPIO cfg is broken or missing
   // restore fet gpio
-  fet_gpio = doc[FPSTR(TCONST_mosfet_gpio)] | static_cast<int>(GPIO_NUM_NC);
-  fet_ll = doc[FPSTR(TCONST_mosfet_ll)];
+  fet_gpio = doc[TCONST_mosfet_gpio] | static_cast<int>(GPIO_NUM_NC);
+  fet_ll = doc[TCONST_mosfet_ll];
 
-  aux_gpio = doc[FPSTR(TCONST_aux_gpio)] | static_cast<int>(GPIO_NUM_NC);
-  aux_ll = doc[FPSTR(TCONST_aux_ll)];
+  aux_gpio = doc[TCONST_aux_gpio] | static_cast<int>(GPIO_NUM_NC);
+  aux_ll = doc[TCONST_aux_ll];
   // gpio that controls FET (for disabling matrix)
   if (fet_gpio > static_cast<int>(GPIO_NUM_NC)){
     pinMode(fet_gpio, OUTPUT);
@@ -292,7 +292,7 @@ void LAMP::changePower(bool flag) // флаг включения/выключе�
     // POWER ON
 #ifdef USE_STREAMING
     if (flags.isStream)
-      Led_Stream::newStreamObj((STREAM_TYPE)embui.param(FPSTR(TCONST_stream_type)).toInt());
+      Led_Stream::newStreamObj((STREAM_TYPE)embui.param(TCONST_stream_type).toInt());
     if(!flags.isDirect || !flags.isStream)
 #endif
     effects.reset();
@@ -327,7 +327,7 @@ void LAMP::changePower(bool flag) // флаг включения/выключе�
 #ifdef DS18B20
     // восстанавливаем значение тока после включения. Так как значение 0 не работает в ограничителе тока по перегреву, 
     // то если ограничение тока установлено в 0, устанвливаем вместо него рассчетный максимум в 15.36А на 256 диодов (бред конечно, но нужно же хоть какое-то значение больше 0).
-    setcurLimit(embui.param(FPSTR(TCONST_CLmt)).toInt() == 0 ? (mx->size() * 60) : embui.param(FPSTR(TCONST_CLmt)).toInt());
+    setcurLimit(embui.param(TCONST_CLmt).toInt() == 0 ? (mx->size() * 60) : embui.param(TCONST_CLmt).toInt());
 #endif
     FastLED.setMaxPowerInVoltsAndMilliamps(5, curLimit); // установка максимального тока БП, более чем актуально))). Проверил, без этого куска - ограничение по току не работает :)
 }
@@ -577,7 +577,7 @@ uint8_t LAMP::getFont(uint8_t bcount, uint8_t asciiCode, uint8_t row)       // �
 }
 
 void LAMP::sendString(const char* text){
-  String tmpStr = embui.param(FPSTR(TCONST_txtColor));
+  String tmpStr = embui.param(TCONST_txtColor);
   tmpStr.replace(F("#"),F("0x"));
   CRGB::HTMLColorCode color = (CRGB::HTMLColorCode)strtol(tmpStr.c_str(), NULL, 0);
   sendString(text, color);
@@ -761,17 +761,17 @@ void LAMP::newYearMessageHandle()
     if(calc<0) {
       sprintf_P(strMessage, NY_MDG_STRING2, localtime(TimeProcessor::getInstance().now())->tm_year+ TM_BASE_YEAR);
     } else if(calc<300){
-      sprintf_P(strMessage, NY_MDG_STRING1, (int)calc, String(FPSTR(TINTF_0C1)).c_str());
+      sprintf_P(strMessage, NY_MDG_STRING1, (int)calc, String(TINTF_0C1).c_str());
     } else if(calc/60<60){
       uint16_t calcT=calc/(60*60); // минуты
       uint8_t calcN=calcT%10; // остаток от деления на 10
       String str;
       if(calcN>=2 && calcN<=4) {
-        str = FPSTR(TINTF_0CC); // минуты
+        str = TINTF_0CC; // минуты
       } else if(calcN==1) {
-        str = FPSTR(TINTF_0CD); // минута
+        str = TINTF_0CD; // минута
       } else {
-        str = FPSTR(TINTF_0C2); // минут
+        str = TINTF_0C2; // минут
       }
       sprintf_P(strMessage, NY_MDG_STRING1, calcT, str.c_str());
     } else if(calc/(60*60)<60){
@@ -779,11 +779,11 @@ void LAMP::newYearMessageHandle()
       uint8_t calcN=calcT%10; // остаток от деления на 10
       String str;
       if(calcN>=2 && calcN<=4) {
-        str = FPSTR(TINTF_0C7); // часа
+        str = TINTF_0C7; // часа
       } else if(calcN==1) {
-        str = FPSTR(TINTF_0C8); // час
+        str = TINTF_0C8; // час
       } else {
-        str = FPSTR(TINTF_0C3); // часов
+        str = TINTF_0C3; // часов
       }
       sprintf_P(strMessage, NY_MDG_STRING1, calcT, str.c_str());
     } else {
@@ -791,13 +791,13 @@ void LAMP::newYearMessageHandle()
       uint8_t calcN=calcT%10; // остаток от деления на 10
       String str;
       if(calcT>=11 && calcT<=20)
-        str = FPSTR(TINTF_0C4);
+        str = TINTF_0C4;
       else if(calcN>=2 && calcN<=4)
-        str = FPSTR(TINTF_0C5);
+        str = TINTF_0C5;
       else if(calc!=11 && calcN==1)
-        str = FPSTR(TINTF_0C6);
+        str = TINTF_0C6;
       else
-        str = FPSTR(TINTF_0C4);
+        str = TINTF_0C4;
       sprintf_P(strMessage, NY_MDG_STRING1, calcT, str.c_str());
     }
 
@@ -812,8 +812,8 @@ void LAMP::showTimeOnScreen(const char *value, bool force)
   String buf(value);
   buf.replace("'","\"");
   deserializeJson(doc,buf);
-  bool isShowOff = doc[FPSTR(TCONST_isShowOff)];
-  bool isPlayTime = doc[FPSTR(TCONST_isPlayTime)];
+  bool isShowOff = doc[TCONST_isShowOff];
+  bool isPlayTime = doc[TCONST_isPlayTime];
 
   const tm* t = localtime(TimeProcessor::getInstance().now());
   if(t->tm_sec && !force)
@@ -907,7 +907,7 @@ void LAMP::setMicOnOff(bool val) {
     LList<std::shared_ptr<UIControl>>&controls = effects.getControls();
     if(val){
         for(unsigned i=3; i<controls.size(); i++) {
-            if(controls[i]->getId()==7 && controls[i]->getName().startsWith(FPSTR(TINTF_020))==1){
+            if(controls[i]->getId()==7 && controls[i]->getName().startsWith(TINTF_020)==1){
                 effects.worker->setDynCtrl(controls[i].get());
                 return;
             } else if(controls[i]->getId()==7) {
@@ -916,7 +916,7 @@ void LAMP::setMicOnOff(bool val) {
         }
     }
 
-    UIControl ctrl(7,(CONTROL_TYPE)18,String(FPSTR(TINTF_020)), val ? "1" : "0", "0", "1", "1");
+    UIControl ctrl(7,(CONTROL_TYPE)18,String(TINTF_020), val ? "1" : "0", "0", "1", "1");
     effects.worker->setDynCtrl(&ctrl);
     if(foundc7){ // был найден 7 контрол, но не микрофон
         effects.worker->setDynCtrl(controls[foundc7].get());

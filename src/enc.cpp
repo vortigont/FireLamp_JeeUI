@@ -144,7 +144,7 @@ void encLoop() {
         done = true;
         break;
       case 3: // регулировка любого из динамических контролов в режиме "Настройки эффекта"
-      	run_action(String(FPSTR(TCONST_dynCtrl))+myLamp.getEffControls()[currDynCtrl]->getId(), myLamp.getEffControls()[currDynCtrl]->getVal());
+      	run_action(String(TCONST_dynCtrl)+myLamp.getEffControls()[currDynCtrl]->getId(), myLamp.getEffControls()[currDynCtrl]->getVal());
         done = true;
       break;
       default:
@@ -174,7 +174,7 @@ void encLoop() {
       LOG(printf_P, PSTR("Enc: New effect number: %d\n"), currEffNum);
       myLamp.switcheffect(SW_SPECIFIC, myLamp.getFaderFlag(), currEffNum);
       run_action(ra::eff_switch, myLamp.effects.getSelected());
-      encSendString(String(FPSTR(TINTF_00A)) + ": " + (currEffNum <= 255 ? String(currEffNum) : (String((byte)(currEffNum & 0xFF)) + "." + String((byte)(currEffNum >> 8) - 1U))), txtColor, true, txtDelay);
+      encSendString(String(TINTF_00A) + ": " + (currEffNum <= 255 ? String(currEffNum) : (String((byte)(currEffNum & 0xFF)) + "." + String((byte)(currEffNum >> 8) - 1U))), txtColor, true, txtDelay);
       done = true;
       currAction = 0;
     }
@@ -283,7 +283,7 @@ void isClick() {
 
       if (validControl(myLamp.getEffControls()[currDynCtrl]->getType())) break;
     }
-    encDisplay(myLamp.getEffControls()[currDynCtrl]->getVal().toInt(), String(myLamp.getEffControls()[currDynCtrl]->getId()) + String(FPSTR(".")));
+    encDisplay(myLamp.getEffControls()[currDynCtrl]->getVal().toInt(), String(myLamp.getEffControls()[currDynCtrl]->getId()) + ".");
     encSendString(myLamp.getEffControls()[currDynCtrl]->getName(), txtColor, true, txtDelay);  
   }
   //interrupt();
@@ -294,7 +294,7 @@ bool validControl(const CONTROL_TYPE ctrlCaseType) {
   bool isOk = false;
 #ifdef MIC_EFFECTS
   bool isMicOn = myLamp.isMicOnOff();
-  if (myLamp.getEffControls()[myLamp.getEffControls().size()-1]->getName().startsWith(FPSTR(TINTF_020)))
+  if (myLamp.getEffControls()[myLamp.getEffControls().size()-1]->getName().startsWith(TINTF_020))
     isMicOn = isMicOn && myLamp.getEffControls()[myLamp.getEffControls().size()-1]->getVal().toInt();
 #endif
 
@@ -315,7 +315,7 @@ bool validControl(const CONTROL_TYPE ctrlCaseType) {
       break;
 #ifdef MIC_EFFECTS
     case CONTROL_CASE::ISMICON: // проверка "спрятан по микрофону"
-      if (!isMicOn && (!myLamp.isMicOnOff() || !(myLamp.getEffControls()[currDynCtrl]->getId() == 7 && myLamp.getEffControls()[currDynCtrl]->getName().startsWith(FPSTR(TINTF_020)) == 1)))
+      if (!isMicOn && (!myLamp.isMicOnOff() || !(myLamp.getEffControls()[currDynCtrl]->getId() == 7 && myLamp.getEffControls()[currDynCtrl]->getName().startsWith(TINTF_020) == 1)))
         isOk = false;
       break;
 #endif
@@ -344,7 +344,7 @@ void isHolded() {
     currEffNum = myLamp.effects.getCurrent();
     LOG(printf_P, PSTR("Enc: Effect number: %d controls amount %d\n"), currEffNum, myLamp.getEffControls().size());
 #endif
-    encSendString(String(FPSTR(TINTF_01A)), CRGB::Green, true, txtDelay);
+    encSendString(String(TINTF_01A), CRGB::Green, true, txtDelay);
     encDisplay(myLamp.getEffControls()[currDynCtrl]->getVal().toInt(), String(currDynCtrl) + String(F(".")));
     encSendString(myLamp.getEffControls()[currDynCtrl]->getName(), txtColor, false, txtDelay);
   } else {
@@ -364,7 +364,7 @@ void exitSettings() {
   anyValue = 0;
   inSettings = false;
   encDisplay(String(F("done")));
-  encSendString(String(FPSTR(TINTF_00B)), CRGB::Red, true, txtDelay);
+  encSendString(String(TINTF_00B), CRGB::Red, true, txtDelay);
   myLamp.effects.autoSaveConfig();
 #ifdef DS18B20
   canDisplayTemp() = true;
@@ -616,20 +616,20 @@ void toggleDemo() {
 /*
 void toggleGBright() {
   run_action(ra::brt_global, myLamp.IsGlobalBrightness());
-  encSendString(String(FPSTR(TINTF_00C)) + myLamp.IsGlobalBrightness() ? F(": ON") : F(": OFF"), txtColor, true, txtDelay);
+  encSendString(String(TINTF_00C) + myLamp.IsGlobalBrightness() ? F(": ON") : F(": OFF"), txtColor, true, txtDelay);
 }
 */
 void toggleMic() {
 #ifdef MIC_EFFECTS
   run_action(ra::miconoff, myLamp.isMicOnOff());
-  encSendString(String(FPSTR(TINTF_021)) + String(myLamp.isMicOnOff() ? F(": ON") : F(": OFF")), txtColor, true, txtDelay);
+  encSendString(String(TINTF_021) + String(myLamp.isMicOnOff() ? F(": ON") : F(": OFF")), txtColor, true, txtDelay);
 #endif
 }
 
 void toggleAUX() {
-  if ( embui.paramVariant(FPSTR(TCONST_aux_gpio)) == -1) return;
+  if ( embui.paramVariant(TCONST_aux_gpio) == -1) return;
   run_action(ra::aux_flip);
-  encSendString(String(FPSTR(TCONST_AUX)) + digitalRead(embui.paramVariant(FPSTR(TCONST_aux_gpio))) == embui.paramVariant(FPSTR(TCONST_aux_ll)) ? F(": ON") : F(": OFF"), txtColor, true, txtDelay);
+  encSendString(String(TCONST_AUX) + digitalRead(embui.paramVariant(TCONST_aux_gpio)) == embui.paramVariant(TCONST_aux_ll) ? F(": ON") : F(": OFF"), txtColor, true, txtDelay);
 }
 
 void sendTime() {

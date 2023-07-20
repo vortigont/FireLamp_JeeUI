@@ -240,8 +240,8 @@ void event_worker(DEV_EVENT *event){
         JsonArray arr = doc.as<JsonArray>();
         for (size_t i = 0; i < arr.size(); i++) {
             JsonObject item = arr[i];
-            uint8_t pin = item[FPSTR(TCONST_pin)].as<int>();
-            String action = item[FPSTR(TCONST_act)].as<String>();
+            uint8_t pin = item[TCONST_pin].as<int>();
+            String action = item[TCONST_act].as<String>();
             pinMode(pin, OUTPUT);
             switch(action.c_str()[0]){
                 case 'H':
@@ -287,7 +287,7 @@ void event_worker(DEV_EVENT *event){
 
 String DEV_EVENT::getName() {
     String buffer;
-    String day_buf = FPSTR(T_EVENT_DAYS);
+    String day_buf = T_EVENT_DAYS;
 
     buffer.concat(isEnabled?F(" "):F("!"));
     
