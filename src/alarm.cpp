@@ -165,7 +165,7 @@ void ALARMTASK::alarmWorker(){
         if(mp3->isAlarm()) // если отложенный звук будильника, то время тоже не выводим, т.к. может быть включено озвучивание
 #endif
             if(ALARMTASK::getInstance()->curAlarm.msg != "-") // отключение вывода по спец. символу "минус"
-                lamp->sendStringToLamp(String(F("%TM")).c_str(), letterColor, true);
+                lamp->sendStringToLamp(String("%TM").c_str(), letterColor, true);
 #endif
         }
     } else if(!(localtime(TimeProcessor::now())->tm_sec%6)){ // проверка рассвета каждые 6 секунд, кроме 0 секунды

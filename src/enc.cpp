@@ -268,7 +268,7 @@ void isTurn() {
 void isClick() {
   //noInterrupt();
   resetTimers();
-  if (!inSettings) encDisplay(enc.clicks, String(F("CL.")));
+  if (!inSettings) encDisplay(enc.clicks, String("CL."));
   else {
     enc.clicks = 0;
     resetTimers();
@@ -345,7 +345,7 @@ void isHolded() {
     LOG(printf_P, PSTR("Enc: Effect number: %d controls amount %d\n"), currEffNum, myLamp.getEffControls().size());
 #endif
     encSendString(String(TINTF_01A), CRGB::Green, true, txtDelay);
-    encDisplay(myLamp.getEffControls()[currDynCtrl]->getVal().toInt(), String(currDynCtrl) + String(F(".")));
+    encDisplay(myLamp.getEffControls()[currDynCtrl]->getVal().toInt(), String(currDynCtrl) + String("."));
     encSendString(myLamp.getEffControls()[currDynCtrl]->getName(), txtColor, false, txtDelay);
   } else {
       exitSettings();
@@ -363,7 +363,7 @@ void exitSettings() {
   currAction = 0;
   anyValue = 0;
   inSettings = false;
-  encDisplay(String(F("done")));
+  encDisplay(String("done"));
   encSendString(String(TINTF_00B), CRGB::Red, true, txtDelay);
   myLamp.effects.autoSaveConfig();
 #ifdef DS18B20
@@ -392,7 +392,7 @@ void myClicks() {
 #ifdef TM1637_CLOCK
       if (tm1637) {
         tm1637->getSetDelay() = 1;
-        tm1637->display(String(F("Off")), true, false, 1);  // Выводим 
+        tm1637->display(String("Off"), true, false, 1);  // Выводим 
       }
 #endif
     } else {
@@ -400,7 +400,7 @@ void myClicks() {
 #ifdef TM1637_CLOCK
       if (tm1637) {
         tm1637->getSetDelay() = 1;
-        tm1637->display(String(F("On")), true, false, 2);  // Выводим 
+        tm1637->display(String("On"), true, false, 2);  // Выводим 
       }
 #endif
     }
@@ -478,7 +478,7 @@ void encSetBri(int val) {
   if (myLamp.getGaugeType()!=GAUGETYPE::GT_NONE){
       GAUGE::GaugeShow(anyValue, 255);
   }
-  encDisplay(anyValue, String(F("b.")));
+  encDisplay(anyValue, String("b."));
 }
 
 // Функция смены эффекта зажатым энкодером
@@ -537,11 +537,11 @@ void encSetDynCtrl(int val) {
   else // если чекбокс
     myLamp.getEffControls()[currDynCtrl]->setVal(String(constrain(myLamp.getEffControls()[currDynCtrl]->getVal().toInt() + val, 0, 1)));
   
-  if ((myLamp.getEffControls()[currDynCtrl]->getType() & 0x0F) == 2) encSendString(myLamp.getEffControls()[currDynCtrl]->getName() + String(myLamp.getEffControls()[currDynCtrl]->getVal().toInt() ? F(": ON") : F(": OFF")), txtColor, true, txtDelay); 
+  if ((myLamp.getEffControls()[currDynCtrl]->getType() & 0x0F) == 2) encSendString(myLamp.getEffControls()[currDynCtrl]->getName() + String(myLamp.getEffControls()[currDynCtrl]->getVal().toInt() ? ": ON" : ": OFF"), txtColor, true, txtDelay); 
   else if (myLamp.getGaugeType()!=GAUGETYPE::GT_NONE){
       GAUGE::GaugeShow(myLamp.getEffControls()[currDynCtrl]->getVal().toInt(), myLamp.getEffControls()[currDynCtrl]->getMax().toInt());
   }
-  encDisplay(myLamp.getEffControls()[currDynCtrl]->getVal().toInt(), String(myLamp.getEffControls()[currDynCtrl]->getId()) + String(F(".")));
+  encDisplay(myLamp.getEffControls()[currDynCtrl]->getVal().toInt(), String(myLamp.getEffControls()[currDynCtrl]->getId()) + String("."));
   interrupt();
 }
 
@@ -608,7 +608,7 @@ void encSendStringNumEff(String str, CRGB color) {
 void toggleDemo() {
   if (myLamp.getMode() == LAMPMODE::MODE_DEMO) {
     run_action(ra::demo, false);
-    encSendString(String(F("Demo OFF")), txtColor, true, txtDelay);
+    encSendString(String("Demo OFF"), txtColor, true, txtDelay);
   }
   else 
     run_action(ra::demo, true);
@@ -616,20 +616,20 @@ void toggleDemo() {
 /*
 void toggleGBright() {
   run_action(ra::brt_global, myLamp.IsGlobalBrightness());
-  encSendString(String(TINTF_00C) + myLamp.IsGlobalBrightness() ? F(": ON") : F(": OFF"), txtColor, true, txtDelay);
+  encSendString(String(TINTF_00C) + myLamp.IsGlobalBrightness() ? ": ON" : ": OFF", txtColor, true, txtDelay);
 }
 */
 void toggleMic() {
 #ifdef MIC_EFFECTS
   run_action(ra::miconoff, myLamp.isMicOnOff());
-  encSendString(String(TINTF_021) + String(myLamp.isMicOnOff() ? F(": ON") : F(": OFF")), txtColor, true, txtDelay);
+  encSendString(String(TINTF_021) + String(myLamp.isMicOnOff() ? ": ON" : ": OFF"), txtColor, true, txtDelay);
 #endif
 }
 
 void toggleAUX() {
   if ( embui.paramVariant(TCONST_aux_gpio) == -1) return;
   run_action(ra::aux_flip);
-  encSendString(String(TCONST_AUX) + digitalRead(embui.paramVariant(TCONST_aux_gpio)) == embui.paramVariant(TCONST_aux_ll) ? F(": ON") : F(": OFF"), txtColor, true, txtDelay);
+  encSendString(String(TCONST_AUX) + digitalRead(embui.paramVariant(TCONST_aux_gpio)) == embui.paramVariant(TCONST_aux_ll) ? ": ON" : ": OFF", txtColor, true, txtDelay);
 }
 
 void sendTime() {

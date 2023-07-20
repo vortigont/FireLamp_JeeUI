@@ -107,11 +107,11 @@ void TMCLOCK::showBanner(){
   if (l == 21) return;
   l++;   // Добавляем счетчик и ограничиваем, чтобы не гонял по кругу
   if (WiFi.getMode() & WIFI_MODE_STA && l <= 20 && l > 4) {
-    String ip = (String) F("IP.") + (String) WiFi.localIP().toString();
-    splitIp(ip, F("."), splittedIp);
-    display(formatIp(splittedIp, F("")))->scrollLeft(500, 4); // Запуск баннера (хоть и задержка указана 500, по факту она 1 сек), индекс 4 (выводит 4 цифры за раз)
+    String ip("IP."); ip += WiFi.localIP().toString();
+    splitIp(ip, ".", splittedIp);
+    display(formatIp(splittedIp, ""))->scrollLeft(500, 4); // Запуск баннера (хоть и задержка указана 500, по факту она 1 сек), индекс 4 (выводит 4 цифры за раз)
   }
-  else if (!(WiFi.getMode() & WIFI_MODE_STA) && l <= 20 && l > 4) display(String(F("__AP_192_168___4___1")))->scrollLeft(500, 4);  // Если нет подключения, то крутим айпи точки доступа
+  else if (!(WiFi.getMode() & WIFI_MODE_STA) && l <= 20 && l > 4) display(String("__AP_192_168___4___1")))->scrollLeft(500, 4);  // Если нет подключения, то крутим айпи точки доступа
   if (l == 20) bannerShowed = 1;
 }
 #endif
@@ -119,12 +119,12 @@ void TMCLOCK::showBanner(){
 
 void TMCLOCK::scrollip(){
   if (WiFi.getMode() & WIFI_MODE_STA) {
-    String ip(F("IP."));
+    String ip("IP.");
     ip += WiFi.localIP().toString();
-    splitIp(ip, F("."), splittedIp);
+    splitIp(ip, ".", splittedIp);
     display(formatIp(splittedIp, ""))->scrollLeft(500, 4); // Запуск баннера (хоть и задержка указана 500, по факту она 1 сек), индекс 4 (выводит 4 цифры за раз)
   }
-  else if (!(WiFi.getMode() & WIFI_MODE_STA)) display(String(F("__AP_192_168___4___1")))->scrollLeft(500, 4);  // Если нет подключения, то крутим айпи точки доступа
+  else if (!(WiFi.getMode() & WIFI_MODE_STA)) display(String("__AP_192_168___4___1"))->scrollLeft(500, 4);  // Если нет подключения, то крутим айпи точки доступа
   ipShow--;
 }
 
@@ -149,8 +149,8 @@ void TMCLOCK::splitIp(String str, String dlm, String dest[])
 // |----------
 String TMCLOCK::formatIp(String inArr[], String dlm)
 {
-  String tmp    = F("____");
-  String output = F("");
+  String tmp("____");
+  String output;
 
   for(uint8_t i=0; i<5; i++){
     String crnt = inArr[i];
@@ -164,7 +164,7 @@ String TMCLOCK::formatIp(String inArr[], String dlm)
       output += dlm;
     }
 
-    tmp    = F("____");
+    tmp    = "____";
   }
 
   return output;

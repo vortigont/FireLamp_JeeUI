@@ -107,7 +107,7 @@ void setup() {
     embui.begin(); // Инициализируем EmbUI фреймворк - загружаем конфиг, запускаем WiFi и все зависимые от него службы
 
 #ifdef EMBUI_USE_MQTT
-    //embui.mqtt(embui.param(F("m_pref")), embui.param(F("m_host")), embui.param(F("m_port")).toInt(), embui.param(F("m_user")), embui.param(F("m_pass")), mqttCallback, true); // false - никакой автоподписки!!!
+    //embui.mqtt(embui.param("m_pref")), embui.param("m_host")), embui.param("m_port")).toInt(), embui.param("m_user")), embui.param("m_pass")), mqttCallback, true); // false - никакой автоподписки!!!
     //embui.mqtt(mqttCallback, true);
     embui.mqtt(mqttCallback, mqttConnect, true);
 #endif
@@ -144,9 +144,9 @@ void setup() {
     led_fb_setup();
 
 #ifdef ESP8266
-  embui.server.addHandler(new SPIFFSEditor(F("esp8266"),F("esp8266"), LittleFS));
+  embui.server.addHandler(new SPIFFSEditor("esp8266"),"esp8266"), LittleFS));
 #else
-  embui.server.addHandler(new SPIFFSEditor(LittleFS, F("esp32"), F("esp32")));
+  embui.server.addHandler(new SPIFFSEditor(LittleFS, "esp32", "esp32"));
 #endif
 
     sync_parameters();
@@ -157,7 +157,7 @@ void setup() {
   enc_setup();
 #endif
 
-    LOG(println, F("setup() done"));
+    LOG(println, "setup() done");
 }   // End setup()
 
 
@@ -195,34 +195,34 @@ void loop() {
 // реализация autodiscovery
 String ha_autodiscovery()
 {
-    LOG(println,F("MQTT: Autodiscovery"));
+    LOG(println,"MQTT: Autodiscovery"));
     DynamicJsonDocument hass_discover(1024);
     String name = embui.param(P_hostname);
     String unique_id = embui.mc;
 
-    hass_discover[F("~")] = embui.id(TCONST_embui_);     // embui.param(P_m_pref) + F("/embui/")
-    hass_discover[F("name")] = name;                // name
-    hass_discover[F("uniq_id")] = unique_id;        // String(ESP.getChipId(), HEX); // unique_id
+    hass_discover["~")] = embui.id(TCONST_embui_);     // embui.param(P_m_pref) + "/embui/")
+    hass_discover["name")] = name;                // name
+    hass_discover["uniq_id")] = unique_id;        // String(ESP.getChipId(), HEX); // unique_id
 
-    hass_discover[F("avty_t")] = F("~pub/online");  // availability_topic
-    hass_discover[F("pl_avail")] = F("1");          // payload_available
-    hass_discover[F("pl_not_avail")] = F("0");      // payload_not_available
+    hass_discover["avty_t")] = "~pub/online");  // availability_topic
+    hass_discover["pl_avail")] = "1");          // payload_available
+    hass_discover["pl_not_avail")] = "0");      // payload_not_available
 
-    hass_discover[F("cmd_t")] = F("~set/on");       // command_topic
-    hass_discover[F("stat_t")] = F("~pub/on");      // state_topic
-    hass_discover[F("pl_on")] = F("1");             // payload_on
-    hass_discover[F("pl_off")] = F("0");            // payload_off
+    hass_discover["cmd_t")] = "~set/on");       // command_topic
+    hass_discover["stat_t")] = "~pub/on");      // state_topic
+    hass_discover["pl_on")] = "1");             // payload_on
+    hass_discover["pl_off")] = "0");            // payload_off
 
-    hass_discover[F("json_attr_t")] = F("~pub/state"); // json_attributes_topic
+    hass_discover["json_attr_t")] = "~pub/state"); // json_attributes_topic
 
-    hass_discover[F("rgb_cmd_t")] = "~set/rgb";        // rgb_command_topic
-    hass_discover[F("rgb_stat_t")] = "~pub/rgb";       // rgb_state_topic
+    hass_discover["rgb_cmd_t")] = "~set/rgb";        // rgb_command_topic
+    hass_discover["rgb_stat_t")] = "~pub/rgb";       // rgb_state_topic
 
-    hass_discover[F("bri_cmd_t")] = F("~set/g_bright");     // brightness_command_topic
-    hass_discover[F("bri_stat_t")] = F("~pub/dynCtrl0");    // brightness_state_topic
-    hass_discover[F("bri_scl")] = 255;
+    hass_discover["bri_cmd_t")] = "~set/g_bright");     // brightness_command_topic
+    hass_discover["bri_stat_t")] = "~pub/dynCtrl0");    // brightness_state_topic
+    hass_discover["bri_scl")] = 255;
 
-    JsonArray data = hass_discover.createNestedArray(F("effect_list"));
+    JsonArray data = hass_discover.createNestedArray("effect_list"));
     data.add(TCONST_Normal);
     data.add(TCONST_Alarm);
     data.add(TCONST_Demo);
@@ -232,28 +232,28 @@ String ha_autodiscovery()
 
     //---------------------
 
-    hass_discover[F("fx_cmd_t")] = F("~set/mode");                                 // effect_command_topic
-    hass_discover[F("fx_stat_t")] = F("~pub/state");                               // effect_state_topic
-    hass_discover[F("fx_tpl")] = F("{{ value_json.Mode }}");                       // effect_template
+    hass_discover["fx_cmd_t")] = "~set/mode");                                 // effect_command_topic
+    hass_discover["fx_stat_t")] = "~pub/state");                               // effect_state_topic
+    hass_discover["fx_tpl")] = "{{ value_json.Mode }}");                       // effect_template
 
-    hass_discover[F("clr_temp_cmd_t")] = F("~set/speed");     // speed as color temperature
-    hass_discover[F("clr_temp_stat_t")] = F("~pub/speed");    // speed as color temperature
-    hass_discover[F("min_mireds")] = 1;
-    hass_discover[F("max_mireds")] = 255;
+    hass_discover["clr_temp_cmd_t")] = "~set/speed");     // speed as color temperature
+    hass_discover["clr_temp_stat_t")] = "~pub/speed");    // speed as color temperature
+    hass_discover["min_mireds")] = 1;
+    hass_discover["max_mireds")] = 255;
 
-    hass_discover[F("whit_val_cmd_t")] = F("~set/scale");     // scale as white level (Яркость белого)
-    hass_discover[F("whit_val_stat_t")] = F("~pub/scale");    // scale as white level
-    hass_discover[F("whit_val_scl")] = 255;
+    hass_discover["whit_val_cmd_t")] = "~set/scale");     // scale as white level (Яркость белого)
+    hass_discover["whit_val_stat_t")] = "~pub/scale");    // scale as white level
+    hass_discover["whit_val_scl")] = 255;
 
-    // hass_discover[F("xy_cmd_t")] = F("~set/speed");     // scale as white level (Яркость белого)
-    // hass_discover[F("xy_stat_t")] = F("~pub/speed");    // scale as white level
-    //hass_discover[F("whit_val_scl")] = 255; // 'xy_val_tpl':          'xy_value_template',
+    // hass_discover["xy_cmd_t")] = "~set/speed");     // scale as white level (Яркость белого)
+    // hass_discover["xy_stat_t")] = "~pub/speed");    // scale as white level
+    //hass_discover["whit_val_scl")] = 255; // 'xy_val_tpl':          'xy_value_template',
 
     String hass_discover_str;
     serializeJson(hass_discover, hass_discover_str);
     hass_discover.clear();
 
-    embui.publishto(String(F("homeassistant/light/")) + name + F("/config"), hass_discover_str, true);
+    embui.publishto(String("homeassistant/light/")) + name + "/config"), hass_discover_str, true);
     return hass_discover_str;
 }
 
@@ -310,14 +310,14 @@ void sendData(){
     obj[TCONST_RSSI] = String(myLamp.getLampState().rssi);
     obj[TCONST_Ip] = WiFi.localIP().toString();
     obj[TCONST_Mac] = WiFi.macAddress();
-    obj[TCONST_Host] = String(F("http://"))+WiFi.localIP().toString();
+    obj[TCONST_Host] = String("http://"))+WiFi.localIP().toString();
     obj[TCONST_Version] = embui.getEmbUIver();
-    obj[TCONST_MQTTTopic] = embui.id(TCONST_embui_);     // embui.param(P_m_pref) + F("/embui/")
+    obj[TCONST_MQTTTopic] = embui.id(TCONST_embui_);     // embui.param(P_m_pref) + "/embui/")
     String sendtopic=TCONST_embui_pub_;
     sendtopic+=TCONST_state;
     String out;
     serializeJson(obj, out);
-    LOG(println, F("send MQTT Data :"));
+    LOG(println, "send MQTT Data :"));
     LOG(println, out);
     embui.publish(sendtopic, out, true); // отправляем обратно в MQTT в топик embui/pub/
 }
@@ -366,7 +366,7 @@ void wled_announce(WiFiEvent_t cbEvent, WiFiEventInfo_t i){
 bool http_notfound(AsyncWebServerRequest *request){
     if (request->url().indexOf("win&") != -1){
         String req(request->url());
-        req.replace(F("win&"), F("win?"));
+        req.replace("win&", "win?");
         request->redirect(req);
         return true;
     }

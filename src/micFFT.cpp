@@ -119,8 +119,8 @@ void MicWorker::PrintVector(float *vData, uint16_t bufferSize, uint8_t scaleType
     }
     LOG(print, abscissa, 6);
     if(scaleType==SCL_FREQUENCY)
-      LOG(print, F("Hz"));
-    LOG(print, F(" "));
+      LOG(print, "Hz");
+    LOG(print, " ");
     LOG(println, vData[i], 4);
   }
   LOG(println, );
@@ -242,22 +242,22 @@ float MicWorker::fillSizeScaledArray(float *arr, size_t size, bool bound) // bou
 void MicWorker::debug()
 {
   /* Print the results of the simulated sampling according to time */
-  // LOG(println, F("Data:"));
+  // LOG(println, "Data:"));
   // PrintVector(data, samples, SCL_TIME);
 
   FFT.windowing(FFTWindow::Hamming, FFTDirection::Forward);	/* Weigh data */
-  // LOG(println, F("Weighed data:"));
+  // LOG(println, "Weighed data:"));
   // PrintVector(data, samples, SCL_TIME);
 
   FFT.compute(FFTDirection::Forward); /* Compute FFT */
-  // LOG(println, F("Computed Real values:"));
+  // LOG(println, "Computed Real values:"));
   // PrintVector(data, samples, SCL_INDEX);
 
-  // LOG(println, F("Computed Imaginary values:"));
+  // LOG(println, "Computed Imaginary values:"));
   // PrintVector(vImag, samples, SCL_INDEX);
 
   FFT.complexToMagnitude(); /* Compute magnitudes */
-  LOG(println, F("Computed magnitudes:"));
+  LOG(println, "Computed magnitudes:");
   // PrintVector(vReal, (samples >> 1), SCL_FREQUENCY);
 
   double x = FFT.majorPeak();
@@ -285,7 +285,7 @@ void MicWorker::calibrate()
     sum+=(double)vReal[i] * cnt;
     count+=cnt;
   }
-  //LOG(print(F("dbgAVG Count="));LOG(print(count);LOG(print(F(", sum="));LOG(print(sum);LOG(print(F(", sum/count="));LOG(println, sum/count);
+  //LOG(print("dbgAVG Count="));LOG(print(count);LOG(print(", sum="));LOG(print(sum);LOG(print(", sum/count="));LOG(println, sum/count);
 
   double average = sum/count;
   double sumSq=0;
@@ -299,7 +299,7 @@ void MicWorker::calibrate()
   double D = sumSq / count; // dispersion
   if(D>500) return; // слишком большой разброс, не включаем данный замер...
   //sqrt(D); // standard error
-  //LOG(print(F("dispersion="));LOG(print(D);LOG(print(F(", standard error="));LOG(println, sqrt(D));
+  //LOG(print("dispersion="));LOG(print(D);LOG(print(", standard error="));LOG(println, sqrt(D));
 
   uint16_t step; // где мы сейчас
   for(step=0; step<samples/2; step++){ // делим на 2 диапазона AVG+stderr
@@ -328,6 +328,6 @@ void MicWorker::calibrate()
     scale = 2048.0*count/sum; // смещение
 #endif
     noise = (sum2/count2)*scale; //+/- единиц шума
-    LOG(print, F("AVG=")); LOG(print, sum/count); LOG(print, F(", noise=")); LOG(println, sum2/count2);
+    LOG(print, "AVG="); LOG(print, sum/count); LOG(print, ", noise="); LOG(println, sum2/count2);
   }
 }

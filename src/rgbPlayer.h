@@ -25,7 +25,7 @@ class RGBPlayer {
         File rgbFile;
 
         void load_PGM(uint8_t *data) {
-            LOG(println, F("RGBPlayer: Start. PROGMEM mode."));
+            LOG(println, "RGBPlayer: Start. PROGMEM mode."));
             frameWidth = pgm_read_byte(data);
             frameHeight = pgm_read_byte(data + 1);
             frames = pgm_read_byte(data + 2);
@@ -35,7 +35,7 @@ class RGBPlayer {
         }
 
         void load_FILE_332(String filename) {
-            LOG(println, F("RGBPlayer: Start. File rgb332 mode."));
+            LOG(println, "RGBPlayer: Start. File rgb332 mode."));
             File rgbFile = LittleFS.open(filename, "r");
             if (rgbFile and rgbFile.isFile() and rgbFile.size() >= (3 + WIDTH*HEIGHT)) {
                 rgbFile.read(&frameWidth, 1);
@@ -45,7 +45,7 @@ class RGBPlayer {
             
                 calc();
             } else {
-                LOG(println, F("File not found or wrong format!"));
+                LOG(println, "File not found or wrong format!"));
             }
         }
 
@@ -146,10 +146,10 @@ class RGBPlayer {
         ~RGBPlayer() {
             if (rgbFile and rgbFile.isFile()) {
                 rgbFile.close();
-                LOG(println, F("RGBPlayer: Stop. File closed."));
+                LOG(println, "RGBPlayer: Stop. File closed."));
             }
             delete [] frameBuf;
-            LOG(println, F("RGBPlayer: Stop and destroyed."));
+            LOG(println, "RGBPlayer: Stop and destroyed."));
         }
 };
 

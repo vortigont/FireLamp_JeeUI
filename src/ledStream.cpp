@@ -93,7 +93,7 @@ void Led_Stream::handleWSPacket(AsyncWebSocket *server, AsyncWebSocketClient *cl
 
     if(type == WS_EVT_CONNECT){
 
-        if ((*(AsyncWebServerRequest*)arg).hasArg(F("config")));
+        if ((*(AsyncWebServerRequest*)arg).hasArg("config")));
             ledStream->id = client->id();
         LOG(printf_P, PSTR("Stream: ws[%s][%u] connect MEM: %u\n"), server->url(), client->id(), ESP.getFreeHeap());
 
@@ -313,13 +313,13 @@ void Led_Stream::fillBuff(const uint8_t *col){
 
 void Led_Stream::sendConfig(uint32_t id){       // TODO: доработать
     StaticJsonDocument<EMBUI_IFACE_STA_JSON_SIZE> obj;
-    obj[F("name")] = String(F("FireLamp-")) + String(embui.mc);
-    // obj[F("version")] = PGversion;
-    obj[F("version")] = F("2.5.0");
-    obj[F("cols")] = String(_h);
-    obj[F("rows")] = String(_w);
-    obj[F("ledType")] = F("ws2812b");
-    obj[F("serpentine")] = String(MATRIX_TYPE);
+    obj["name")] = String("FireLamp-")) + String(embui.mc);
+    // obj["version")] = PGversion;
+    obj["version")] = "2.5.0");
+    obj["cols")] = String(_h);
+    obj["rows")] = String(_w);
+    obj["ledType")] = "ws2812b");
+    obj["serpentine")] = String(MATRIX_TYPE);
     String message;
     serializeJson(obj, message);
     wsStream.text(id, message);
