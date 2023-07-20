@@ -111,7 +111,7 @@ void TMCLOCK::showBanner(){
     splitIp(ip, ".", splittedIp);
     display(formatIp(splittedIp, ""))->scrollLeft(500, 4); // Запуск баннера (хоть и задержка указана 500, по факту она 1 сек), индекс 4 (выводит 4 цифры за раз)
   }
-  else if (!(WiFi.getMode() & WIFI_MODE_STA) && l <= 20 && l > 4) display(String("__AP_192_168___4___1")))->scrollLeft(500, 4);  // Если нет подключения, то крутим айпи точки доступа
+  else if (!(WiFi.getMode() & WIFI_MODE_STA) && l <= 20 && l > 4) display(String("__AP_192_168___4___1"))->scrollLeft(500, 4);  // Если нет подключения, то крутим айпи точки доступа
   if (l == 20) bannerShowed = 1;
 }
 #endif
