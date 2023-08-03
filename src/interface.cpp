@@ -362,7 +362,7 @@ void block_effect_params(Interface *interf, JsonObject *data){
 
     interf->text(TCONST_effname, "", TINTF_effrename);       // поле под новое имя оставляем пустым
 #ifdef MP3PLAYER
-    interf->text(TCONST_soundfile, tmpSoundfile, TINTF_0B2);
+    interf->text(TCONST_soundfile, tmpSoundfile.c_str(), TINTF_0B2);
 #endif
     interf->json_section_line();
         interf->checkbox(TCONST_eff_sel, confEff->canBeSelected(), TINTF_in_sel_lst);      // доступен для выбора в выпадающем списке на главной странице
@@ -387,18 +387,18 @@ void block_effect_params(Interface *interf, JsonObject *data){
     //interf->checkbox(TCONST_effHasMic, myLamp.getLampFlagsStuct().effHasMic , TINTF_091, false); // значек микрофона в списке эффектов
 #endif
 
-    interf->button_submit(TCONST_set_effect, TINTF_Save, P_GRAY);
-    interf->button_submit_value(TCONST_set_effect, TCONST_copy, TINTF_005);
+    interf->button(button_t::submit, TCONST_set_effect, TINTF_Save, P_GRAY);            // Save btn
+    interf->button_value(button_t::submit, TCONST_set_effect, TCONST_copy, TINTF_005);  // Copy button
     //if (confEff->eff_nb&0xFF00) { // пока удаление только для копий, но в теории можно удалять что угодно
-        // interf->button_submit_value(TCONST_set_effect, TCONST_del_, TINTF_006, P_RED);
+        // interf->button_value(button_t::submit, TCONST_set_effect, TCONST_del_, TINTF_006, P_RED);
     //}
 
     interf->json_section_line();
-        interf->button_submit_value(TCONST_set_effect, TCONST_delfromlist, TINTF_0B5, P_ORANGE);
-        interf->button_submit_value(TCONST_set_effect, TCONST_delall, TINTF_0B4, P_RED);
+        interf->button_value(button_t::submit, TCONST_set_effect, TCONST_delfromlist, TINTF_0B5, P_ORANGE);
+        interf->button_value(button_t::submit, TCONST_set_effect, TCONST_delall, TINTF_0B4, P_RED);
     interf->json_section_end();
 
-    interf->button_submit_value(TCONST_set_effect, TCONST_makeidx, TINTF_007, P_BLACK);
+    interf->button_value(button_t::submit, TCONST_set_effect, TCONST_makeidx, TINTF_007, P_BLACK);
 
     interf->json_section_end(); // json_section_begin(TCONST_set_effect);
 }
@@ -579,12 +579,12 @@ void show_effects_config(Interface *interf, JsonObject *data){
         // generate block with effect settings controls
         block_effect_params(interf, nullptr);
         interf->spacer();
-        interf->button(TCONST_effects, TINTF_00B);
+        interf->button(button_t::generic, TCONST_effects, TINTF_00B);
         interf->json_frame_flush();
         return;
     }
 
-    interf->constant("cmt", "Rebuilding effects list, pls retry in a second...");
+    interf->constant("Rebuilding effects list, pls retry in a second...");
     interf->json_frame_flush();
     rebuild_effect_list_files(lstfile_t::full);
 }
@@ -640,7 +640,7 @@ void block_effect_controls(Interface *interf, JsonObject *data){
     if(interf) interf->json_section_begin(TCONST_eff_ctrls);
 
     // brightness control
-    if(interf) interf->range(TCONST_GBR, myLamp.getBrightness(), 0, static_cast<int>(myLamp.getBrightnessScale()), 1, "Lamp Brightness", true);
+    if(interf) interf->range(TCONST_GBR, static_cast<int>(myLamp.getBrightness()), 0, static_cast<int>(myLamp.getBrightnessScale()), 1, "Lamp Brightness", true);
 
     LList<std::shared_ptr<UIControl>> &controls = myLamp.effects.getControls();
     uint8_t ctrlCaseType; // тип контрола, старшие 4 бита соответствуют CONTROL_CASE, младшие 4 - CONTROL_TYPE
@@ -691,7 +691,7 @@ void block_effect_controls(Interface *interf, JsonObject *data){
                     if(isRandDemo && ctrl->getId()>0 && !(ctrl->getId()==7 && ctrl->getName().startsWith(TINTF_020)==1))
                         ctrlName=String(TINTF_0C9)+ctrlName;
                     int value = ctrl->getId() ? ctrl->getVal().toInt() : myLamp.getBrightness();
-                    if(interf) interf->range( ctrlId, value, ctrl->getMin(), ctrl->getMax(), ctrl->getStep(), ctrlName, true);
+                    if(interf) interf->range( ctrlId, (long)value, ctrl->getMin().toInt(), ctrl->getMax().toInt(), ctrl->getStep().toInt(), ctrlName, true);
 #ifdef EMBUI_USE_MQTT
                     embui.publish(String(TCONST_embui_pub_) + ctrlId, String(value), true);
 #endif
@@ -718,7 +718,7 @@ void block_effect_controls(Interface *interf, JsonObject *data){
                     if(isRandDemo && ctrl->getId()>0 && !(ctrl->getId()==7 && ctrl->getName().startsWith(TINTF_020)==1))
                         ctrlName=String(TINTF_0C9)+ctrlName;
 
-                    if(interf) interf->checkbox(String(TCONST_dynCtrl) + String(ctrl->getId())
+                    if(interf) interf->checkbox(String(TCONST_dynCtrl) + ctrl->getId()
                     , ctrl->getVal() == "1" ? true : false
                     , ctrlName
                     , true
@@ -900,7 +900,7 @@ void block_main_flags(Interface *interf, JsonObject *data){
 #ifdef MIC_EFFECTS
     interf->checkbox(TCONST_Mic, myLamp.isMicOnOff(), TINTF_012, true);
 #endif
-    interf->checkbox(TCONST_AUX, TCONST_AUX, true);
+    interf->checkbox_cfg(TCONST_AUX, TCONST_AUX, true);
 #ifdef ESP_USE_BUTTON
     interf->checkbox(TCONST_Btn, myButtons->isButtonOn(), TINTF_013, true);
 #endif
@@ -924,15 +924,15 @@ void block_main_flags(Interface *interf, JsonObject *data){
 #ifdef MP3PLAYER
     interf->json_section_line("line124"); // спец. имя - разбирается внутри html
     if(mp3->isMP3Mode()){
-        interf->button(CMD_MP3_PREV, TINTF_0BD, P_GRAY);
-        interf->button(CMD_MP3_NEXT, TINTF_0BE, P_GRAY);
-        interf->button(TCONST_mp3_p5, TINTF_0BF, P_GRAY);
-        interf->button(TCONST_mp3_n5, TINTF_0C0, P_GRAY);
+        interf->button(button_t::generic, CMD_MP3_PREV, TINTF_0BD, P_GRAY);
+        interf->button(button_t::generic, CMD_MP3_NEXT, TINTF_0BE, P_GRAY);
+        interf->button(button_t::generic, TCONST_mp3_p5, TINTF_0BF, P_GRAY);
+        interf->button(button_t::generic, TCONST_mp3_n5, TINTF_0C0, P_GRAY);
     }
-    //interf->button("time", TINTF_016, TCONST__5f9ea0);    
+
     interf->json_section_end();
-    // регулятор громкости mp3 леера
-    interf->range(TCONST_mp3volume, 1, 30, 1, TINTF_09B, true);
+    // регулятор громкости mp3 плеера
+    interf->range(TCONST_mp3volume, embui.paramVariant(TCONST_mp3volume).as<int>(), 1, 30, 1, TINTF_09B, true);
 #endif
     interf->json_section_end();
 }
@@ -946,7 +946,7 @@ void show_main_flags(Interface *interf, JsonObject *data){
     interf->json_frame_interface();
     block_main_flags(interf, data);
     interf->spacer();
-    interf->button(TCONST_effects, TINTF_00B);
+    interf->button(button_t::generic, TCONST_effects, TINTF_00B);
     interf->json_frame_flush();
 }
 
@@ -961,13 +961,13 @@ void block_effects_main(Interface *interf, JsonObject *data){
 
     interf->json_section_line(TCONST_flags);
     interf->checkbox(TCONST_ONflag, myLamp.isLampOn(), TINTF_00E, true);
-    interf->button(TCONST_show_flags, TINTF_014);
+    interf->button(button_t::generic, TCONST_show_flags, TINTF_014);
     interf->json_section_end();
 
     // 'next', 'prev' buttons << >>
     interf->json_section_line();
-    interf->button(TCONST_eff_prev, TINTF_015, TCONST__708090);
-    interf->button(TCONST_eff_next, TINTF_016, TCONST__5f9ea0);
+    interf->button(button_t::generic, TCONST_eff_prev, TINTF_015, TCONST__708090);
+    interf->button(button_t::generic, TCONST_eff_next, TINTF_016, TCONST__5f9ea0);
     interf->json_section_end();
 
 
@@ -982,10 +982,10 @@ void block_effects_main(Interface *interf, JsonObject *data){
         // build a block of controls for current effect
         block_effect_controls(interf, data);
 
-        interf->button_value(TCONST_sh_page, e2int(page::eff_config), TINTF_009);
+        interf->button_value(button_t::generic, TCONST_sh_page, e2int(page::eff_config), TINTF_009);
         interf->json_section_end();
     } else {
-        interf->constant("cmt", "Rebuilding effects list, pls retry in a sec...");
+        interf->constant("Rebuilding effects list, pls retry in a sec...");
         rebuild_effect_list_files(lstfile_t::selected);
     }
 
@@ -1176,17 +1176,17 @@ void block_lamp_config(Interface *interf, JsonObject *data){
             interf->json_section_end(); // select
 
             interf->json_section_line();
-                interf->button_submit_value(TCONST_edit_lamp_config, TCONST_load, TINTF_019, P_GREEN);
-                interf->button_submit_value(TCONST_edit_lamp_config, TCONST_save, TINTF_Save);
-                interf->button_submit_value(TCONST_edit_lamp_config, TCONST_delCfg, TINTF_006, P_RED);
+                interf->button_value(button_t::submit, TCONST_edit_lamp_config, TCONST_load, TINTF_019, P_GREEN);
+                interf->button_value(button_t::submit, TCONST_edit_lamp_config, TCONST_save, TINTF_Save);
+                interf->button_value(button_t::submit, TCONST_edit_lamp_config, TCONST_delCfg, TINTF_006, P_RED);
             interf->json_section_end(); // json_section_line
             filename.clear();
             interf->spacer();
         }
     }
     interf->json_section_begin(TCONST_add_lamp_config);
-        interf->text(TCONST_fileName2, filename, TINTF_01A);
-        interf->button_submit(TCONST_add_lamp_config, TINTF_01B);
+        interf->text(TCONST_fileName2, filename.c_str(), TINTF_01A);
+        interf->button(button_t::submit, TCONST_add_lamp_config, TINTF_01B);
     interf->json_section_end();
 
     interf->json_section_end(); // json_section_begin
@@ -1292,27 +1292,27 @@ void block_lamp_textsend(Interface *interf, JsonObject *data){
     interf->json_section_begin(TCONST_textsend);
 
     interf->spacer(TINTF_01C);
-    interf->text(TCONST_msg, TINTF_01D);
-    interf->color(TCONST_txtColor, TINTF_01E);
-    interf->button_submit(TCONST_textsend, TINTF_01F, P_GRAY);
+    interf->text(TCONST_msg, P_EMPTY, TINTF_01D);
+    interf->color(TCONST_txtColor, embui.paramVariant(TCONST_txtColor), TINTF_01E);
+    interf->button(button_t::submit, TCONST_textsend, TINTF_01F, P_GRAY);
 
     interf->json_section_hidden(TCONST_text_config, TINTF_002);
         interf->json_section_begin(TCONST_edit_text_config);
             interf->spacer(TINTF_001);
                 interf->range(TCONST_txtSpeed, 110-embui.paramVariant(TCONST_txtSpeed).as<int>(), 10, 100, 5, TINTF_044, false);
-                interf->range(TCONST_txtOf, -1, (int)(mx->cfg.h()>6?mx->cfg.h():6)-6, 1, TINTF_045);
-                interf->range(TCONST_txtBfade, 0, 255, 1, TINTF_0CA);
+                interf->range(TCONST_txtOf, embui.paramVariant(TCONST_txtOf).as<int>(), -1, (int)(mx->cfg.h()>6?mx->cfg.h():6)-6, 1, TINTF_045);
+                interf->range(TCONST_txtBfade, embui.paramVariant(TCONST_txtBfade).as<int>(), 0, 255, 1, TINTF_0CA);
                 
             interf->spacer(TINTF_04E);
-                interf->number(TCONST_ny_period, TINTF_04F);
+                interf->number(TCONST_ny_period, embui.paramVariant(TCONST_ny_period).as<int>(), TINTF_04F);
                 //interf->number(TCONST_ny_unix, TINTF_050);
                 String datetime;
                 TimeProcessor::getDateTimeString(datetime, embui.paramVariant(TCONST_ny_unix));
-                interf->text(TCONST_ny_unix, datetime, TINTF_050);
-                interf->button_submit(TCONST_edit_text_config, TINTF_Save, P_GRAY);
+                interf->text(TCONST_ny_unix, datetime.c_str(), TINTF_050);
+                interf->button(button_t::submit, TCONST_edit_text_config, TINTF_Save, P_GRAY);
             interf->spacer();
-                //interf->button(TCONST_effects, TINTF_00B);
-                interf->button(TCONST_lamptext, TINTF_00B);
+                //interf->button(button_t::generic, TCONST_effects, TINTF_00B);
+                interf->button(button_t::generic, TCONST_lamptext, TINTF_00B);
         interf->json_section_end();
     interf->json_section_end();
 
@@ -1411,21 +1411,21 @@ void block_settings_mic(Interface *interf, JsonObject *data){
 
     interf->json_section_begin(TCONST_set_mic);
     if (!myLamp.isMicCalibration()) {
-        interf->number_constrained<float>(TCONST_micScale, round(myLamp.getLampState().getMicScale() * 100) / 100, TINTF_022, 0.01, 0.0, 2.0);
-        interf->number_constrained<float>(TCONST_micNoise, round(myLamp.getLampState().getMicNoise() * 100) / 100, TINTF_023, 0.01, 0.0, 32.0);
-        interf->range (TCONST_micnRdcLvl, (unsigned)myLamp.getLampState().getMicNoiseRdcLevel(), 0, 4, 1, TINTF_024, false);
+        interf->number_constrained(TCONST_micScale, round(myLamp.getLampState().getMicScale() * 100) / 100, TINTF_022, 0.01f, 0.0f, 2.0f);
+        interf->number_constrained(TCONST_micNoise, round(myLamp.getLampState().getMicNoise() * 100) / 100, TINTF_023, 0.01f, 0.0f, 32.0f);
+        interf->range (TCONST_micnRdcLvl, (int)myLamp.getLampState().getMicNoiseRdcLevel(), 0, 4, 1, TINTF_024, false);
 
-        interf->button_submit(TCONST_set_mic, TINTF_Save, P_GRAY);
+        interf->button(button_t::submit, TCONST_set_mic, TINTF_Save, P_GRAY);
         interf->json_section_end();
 
         interf->spacer();
-        interf->button(TCONST_mic_cal, TINTF_025, P_RED);
+        interf->button(button_t::generic, TCONST_mic_cal, TINTF_025, P_RED);
     } else {
-        interf->button(TCONST_mic_cal, TINTF_027, P_RED );
+        interf->button(button_t::generic, TCONST_mic_cal, TINTF_027, P_RED );
     }
 
     interf->spacer();
-    interf->button(TCONST_settings, TINTF_00B);
+    interf->button(button_t::generic, TCONST_settings, TINTF_00B);
 
     interf->json_section_end();
 }
@@ -1494,7 +1494,7 @@ void scan_complete(int n){
         if(ssid.isEmpty())
             interf->option("", ""); // at the end of list
         interf->json_section_end();
-        interf->button(TCONST_SET_SCAN, TINTF_0DA, P_GREEN, 22);
+        interf->button(button_t::generic, TCONST_SET_SCAN, TINTF_0DA, P_GREEN, 22);
         interf->json_section_end();
         interf->json_frame_flush();
 
@@ -1556,10 +1556,10 @@ void block_only_wifi(Interface *interf, JsonObject *data) {
     interf->json_section_line(TCONST_LOAD_WIFI);
     interf->select_edit(P_WCSSID, String(WiFi.SSID()), String(TINTF_02C));
     interf->json_section_end();
-    interf->button(TCONST_SET_SCAN, TINTF_0DA, P_GREEN, 22); // отступ
+    interf->button(button_t::generic, TCONST_SET_SCAN, TINTF_0DA, P_GREEN, 22); // отступ
     interf->json_section_end();
     interf->password(TCONST_wcpass, TINTF_02D);
-    interf->button_submit(TCONST_SET_WIFI, TINTF_02E, P_GRAY);
+    interf->button(button_t::submit, TCONST_SET_WIFI, TINTF_02E, P_GRAY);
 }
 
 // формирование интерфейса настроек WiFi/MQTT
@@ -1582,7 +1582,7 @@ void block_settings_wifi(Interface *interf, JsonObject *data){
     interf->password(P_m_pass, TINTF_02D);
     interf->text(P_m_pref, TINTF_08C);
     interf->number(P_m_tupd, TINTF_039);
-    interf->button_submit(TCONST_set_mqtt, TINTF_03A, P_GRAY);
+    interf->button(button_t::submit, TCONST_set_mqtt, TINTF_03A, P_GRAY);
     interf->json_section_end();
 #endif
 
@@ -1595,13 +1595,13 @@ void block_settings_wifi(Interface *interf, JsonObject *data){
         interf->json_section_begin(TCONST_SET_FTP, "");
             interf->text(P_ftpuser, TINTF_038);
             interf->password(P_ftppass, TINTF_02D);
-            interf->button_submit(TCONST_SET_FTP, TINTF_Save, P_GRAY);
+            interf->button(button_t::submit, TCONST_SET_FTP, TINTF_Save, P_GRAY);
         interf->json_section_end();
     interf->json_section_end();
 #endif
 
     interf->spacer();
-    interf->button(TCONST_settings, TINTF_00B);
+    interf->button(button_t::generic, TCONST_settings, TINTF_00B);
 
     interf->json_section_end();
 }
@@ -1664,11 +1664,11 @@ void page_settings_other(Interface *interf, JsonObject *data){
     interf->checkbox(TCONST_DRand, myLamp.getLampFlagsStuct().dRand , TINTF_03E, false);
     interf->checkbox(TCONST_showName, myLamp.getLampFlagsStuct().showName , TINTF_09A, false);
 
-    interf->number_constrained<int>(TCONST_brtScl, static_cast<int>(myLamp.getBrightnessScale()), "Brightness Scale", 1, 5, static_cast<int>(MAX_BRIGHTNESS));
+    interf->number_constrained(TCONST_brtScl, static_cast<int>(myLamp.getBrightnessScale()), "Brightness Scale", 1, 5, static_cast<int>(MAX_BRIGHTNESS));
 
-    interf->range(TCONST_DTimer, 30, 600, 15, TINTF_03F);
+    interf->range(TCONST_DTimer, embui.paramVariant(TCONST_DTimer).as<int>(), 30, 600, 15, TINTF_03F);
     float sf = embui.paramVariant(TCONST_spdcf);
-    interf->range(TCONST_spdcf, sf, 0.25, 4.0, 0.25, TINTF_0D3, false);
+    interf->range(TCONST_spdcf, sf, 0.25f, 4.0f, 0.25f, TINTF_0D3, false);
 
 #ifdef TM1637_CLOCK
     interf->spacer(TINTF_0D4);
@@ -1678,8 +1678,8 @@ void page_settings_other(Interface *interf, JsonObject *data){
     interf->json_section_end(); // line
 
     interf->json_section_line();
-        interf->range(TCONST_tmBrightOn,  myLamp.getBrightOn(),  0, 7, 1, TINTF_0D5, false);
-        interf->range(TCONST_tmBrightOff, myLamp.getBrightOff(), 0, 7, 1, TINTF_0D6, false);
+        interf->range(TCONST_tmBrightOn,  (int)myLamp.getBrightOn(),  0, 7, 1, TINTF_0D5, false);
+        interf->range(TCONST_tmBrightOff, (int)myLamp.getBrightOff(), 0, 7, 1, TINTF_0D6, false);
     interf->json_section_end(); // line
 
     #ifdef DS18B20
@@ -1689,14 +1689,14 @@ void page_settings_other(Interface *interf, JsonObject *data){
     interf->spacer(TINTF_0BA);
 
     interf->json_section_line();
-        interf->range(TCONST_alarmP, myLamp.getAlarmP(), 1, 15, 1, TINTF_0BB, false);     // рассвет длительность
-        interf->range(TCONST_alarmT, myLamp.getAlarmT(), 1, 15, 1, TINTF_0BC, false);     // рассвет светить после
+        interf->range(TCONST_alarmP, (int)myLamp.getAlarmP(), 1, 15, 1, TINTF_0BB, false);     // рассвет длительность
+        interf->range(TCONST_alarmT, (int)myLamp.getAlarmT(), 1, 15, 1, TINTF_0BC, false);     // рассвет светить после
     interf->json_section_end(); // line
 
-    interf->button_submit(TCONST_set_other, TINTF_Save, P_GRAY);
+    interf->button(button_t::submit, TCONST_set_other, TINTF_Save, P_GRAY);
 
     interf->spacer();
-    interf->button(TCONST_settings, TINTF_00B);
+    interf->button(button_t::generic, TCONST_settings, TINTF_00B);
 
     interf->json_frame_flush();
 }
@@ -1764,12 +1764,12 @@ void show_settings_time(Interface *interf, JsonObject *data){
     interf->comment(TINTF_055);
     interf->datetime(P_DTIME, "", true);
     interf->hidden(P_DEVICEDATETIME,""); // скрытое поле для получения времени с устройства
-    interf->button_submit(TCONST_SET_TIME, TINTF_Save, P_GRAY);
+    interf->button(button_t::submit, TCONST_SET_TIME, TINTF_Save, P_GRAY);
 
     interf->spacer();
 
     // exit button
-    interf->button(TCONST_SETTINGS, TINTF_00B);
+    interf->button(button_t::generic, TCONST_SETTINGS, TINTF_00B);
 
     // close and send frame
     interf->json_section_end();
@@ -1799,7 +1799,7 @@ void block_settings_update(Interface *interf, JsonObject *data){
     interf->json_section_hidden(T_DO_OTAUPD, TINTF_056);
     interf->spacer(TINTF_059);
     interf->file(T_DO_OTAUPD, T_DO_OTAUPD, TINTF_05A);
-    interf->button(TCONST_REBOOT, TINTF_096, !data ? P_RED : "");       // кнопка перехода в настройки времени
+    interf->button(button_t::generic, TCONST_REBOOT, TINTF_096, !data ? P_RED : "");       // кнопка перехода в настройки времени
     interf->json_section_end();
 }
 */
@@ -1811,7 +1811,7 @@ void block_settings_event(Interface *interf, JsonObject *data){
     interf->checkbox(TCONST_Events, myLamp.IsEventsHandled(), TINTF_086, true);
 
     interf->json_section_begin(TCONST_event_conf);
-    interf->select<int>(TCONST_eventList, 0, TINTF_05B);
+    interf->select(TCONST_eventList, 0, TINTF_05B);
 
     int num = 0;
     LList<DEV_EVENT *> *events= myLamp.events.getEvents();
@@ -1822,16 +1822,16 @@ void block_settings_event(Interface *interf, JsonObject *data){
     interf->json_section_end();
 
     interf->json_section_line();
-    interf->button_submit_value(TCONST_event_conf, TCONST_edit, TINTF_05C, P_GREEN);
-    interf->button_submit_value(TCONST_event_conf, TCONST_delete, TINTF_006, P_RED);
+    interf->button_value(button_t::submit, TCONST_event_conf, TCONST_edit, TINTF_05C, P_GREEN);
+    interf->button_value(button_t::submit, TCONST_event_conf, TCONST_delete, TINTF_006, P_RED);
     interf->json_section_end();
 
     interf->json_section_end();
 
-    interf->button(TCONST_event_conf, TINTF_05D);
+    interf->button(button_t::generic, TCONST_event_conf, TINTF_05D);
 
     interf->spacer();
-    interf->button(TCONST_effects, TINTF_00B);
+    interf->button(button_t::generic, TCONST_effects, TINTF_00B);
 
     interf->json_section_end();
 }
@@ -2000,7 +2000,7 @@ void show_event_conf(Interface *interf, JsonObject *data){
 
     if (edit) {
         interf->json_section_main(TCONST_set_event, TINTF_05C);
-        interf->constant(TCONST_eventList, num, cur_edit_event->getName());
+        interf->constant(TCONST_eventList, cur_edit_event->getName(), num);
         interf->checkbox(TCONST_enabled, (cur_edit_event->isEnabled), TINTF_05E, false);
     } else {
         interf->json_section_main(TCONST_set_event, TINTF_05D);
@@ -2049,7 +2049,7 @@ void show_event_conf(Interface *interf, JsonObject *data){
                 String msg = !err && doc.containsKey(TCONST_msg) ? doc[TCONST_msg] : cur_edit_event->getMessage();
 
                 interf->spacer(TINTF_0BA);
-                interf->text(TCONST_msg, msg, TINTF_070);
+                interf->text(TCONST_msg, msg.c_str(), TINTF_070);
                 interf->json_section_line();
                     interf->range(TCONST_alarmP, alarmP, 1, 15, 1, TINTF_0BB, false);
                     interf->range(TCONST_alarmT, alarmT, 1, 15, 1, TINTF_0BC, false);
@@ -2094,7 +2094,7 @@ void show_event_conf(Interface *interf, JsonObject *data){
             }
             break;
         default:
-            interf->text(TCONST_msg, cur_edit_event->getMessage(), TINTF_070);
+            interf->text(TCONST_msg, cur_edit_event->getMessage().c_str(), TINTF_070);
             break;
     }
     interf->json_section_hidden(TCONST_repeat, TINTF_071);
@@ -2111,14 +2111,14 @@ void show_event_conf(Interface *interf, JsonObject *data){
 
     if (edit) {
         interf->hidden(TCONST_save, true); // режим редактирования
-        interf->button_submit(TCONST_set_event, TINTF_079);
+        interf->button(button_t::submit, TCONST_set_event, TINTF_079);
     } else {
         interf->hidden(TCONST_save, false); // режим добавления
-        interf->button_submit(TCONST_set_event, TINTF_05D, P_GREEN);
+        interf->button(button_t::submit, TCONST_set_event, TINTF_05D, P_GREEN);
     }
 
     interf->spacer();
-    interf->button(TCONST_show_event, TINTF_00B);
+    interf->button(button_t::generic, TCONST_show_event, TINTF_00B);
 
     interf->json_section_end();
     interf->json_frame_flush();
@@ -2161,16 +2161,16 @@ void block_settings_butt(Interface *interf, JsonObject *data){
     interf->json_section_end();
 
     interf->json_section_line();
-    interf->button_submit_value(TCONST_butt_conf, TCONST_edit, TINTF_05C, P_GREEN);
-    interf->button_submit_value(TCONST_butt_conf, TCONST_delete, TINTF_006, P_RED);
+    interf->button_value(button_t::submit, TCONST_butt_conf, TCONST_edit, TINTF_05C, P_GREEN);
+    interf->button_value(button_t::submit, TCONST_butt_conf, TCONST_delete, TINTF_006, P_RED);
     interf->json_section_end();
 
     interf->json_section_end();
 
-    interf->button(TCONST_butt_conf, TINTF_05D);
+    interf->button(button_t::generic, TCONST_butt_conf, TINTF_05D);
 
     interf->spacer();
-    interf->button(TCONST_settings, TINTF_00B);
+    interf->button(button_t::generic, TCONST_settings, TINTF_00B);
 
     interf->json_section_end();
 }
@@ -2264,13 +2264,13 @@ void show_butt_conf(Interface *interf, JsonObject *data){
 
     if (btn) {
         interf->hidden(TCONST_save, true);
-        interf->button_submit(TCONST_set_butt, TINTF_079);
+        interf->button(button_t::submit, TCONST_set_butt, TINTF_079);
     } else {
-        interf->button_submit(TCONST_set_butt, TINTF_05D, P_GREEN);
+        interf->button(button_t::submit, TCONST_set_butt, TINTF_05D, P_GREEN);
     }
 
     interf->spacer();
-    interf->button_value(TCONST_sh_page, e2int(page::setup_bttn), TINTF_00B);
+    interf->button_value(button_t::generic, TCONST_sh_page, e2int(page::setup_bttn), TINTF_00B);
 
     interf->json_section_end();
     interf->json_frame_flush();
@@ -2296,14 +2296,14 @@ void block_settings_enc(Interface *interf, JsonObject *data){
         interf->option(GAUGETYPE::GT_VERT, TINTF_0EF);
         interf->option(GAUGETYPE::GT_HORIZ, TINTF_0F0);
     interf->json_section_end();
-    interf->color(TCONST_EncVGCol, TINTF_0DE);
+    interf->color(TCONST_EncVGCol, embui.paramVariant(TCONST_EncVGCol), TINTF_0DE);
     interf->spacer();
 
-    interf->color(TCONST_encTxtCol, TINTF_0DF);
+    interf->color(TCONST_encTxtCol, embui.paramVariant(TCONST_encTxtCol), TINTF_0DF);
     interf->range(TCONST_encTxtDel, 110-getEncTxtDelay(), 10, 100, 5, TINTF_044, false);
-    interf->button_submit(TCONST_set_enc, TINTF_Save, P_GRAY);
+    interf->button(button_t::submit, TCONST_set_enc, TINTF_Save, P_GRAY);
     interf->spacer();
-    interf->button(TCONST_settings, TINTF_00B);
+    interf->button(button_t::generic, TCONST_settings, TINTF_00B);
     interf->json_section_end();
 }
 void show_settings_enc(Interface *interf, JsonObject *data){
@@ -2353,16 +2353,16 @@ void show_settings_mp3(Interface *interf, JsonObject *data){
     interf->json_section_main(TCONST_settings_mp3, TINTF_099);
 
     // volume
-    interf->range(TCONST_mp3volume, 1, 30, 1, TINTF_09B, true);
+    interf->range(TCONST_mp3volume, embui.paramVariant(TCONST_mp3volume).as<int>(), 1, 30, 1, TINTF_09B, true);
 
     // выключатель и статус плеера
     interf->json_section_line(); // расположить в одной линии
         interf->checkbox(TCONST_isOnMP3, myLamp.isONMP3(), TINTF_099, true);
         // show message if DFPlayer is not available
         if (!mp3->isReady())
-            interf->constant("cmt", "DFPlayer is not connected, not ready or not responding :(");
+            interf->constant("DFPlayer is not connected, not ready or not responding :(");
         else
-            interf->constant("cmt", "DFPlayer player: Connected");
+            interf->constant("DFPlayer player: Connected");
     interf->json_section_end();
 
     interf->json_section_begin(TCONST_set_mp3);
@@ -2407,11 +2407,11 @@ void show_settings_mp3(Interface *interf, JsonObject *data){
         interf->number(TCONST_mp3count, mp3->getMP3count(), TINTF_0B0);
     interf->json_section_end();
 
-    interf->button_submit(TCONST_set_mp3, TINTF_Save, P_GRAY);
+    interf->button(button_t::submit, TCONST_set_mp3, TINTF_Save, P_GRAY);
     interf->json_section_end();
 
     interf->spacer();
-    interf->button(TCONST_settings, TINTF_00B);
+    interf->button(button_t::generic, TCONST_settings, TINTF_00B);
 
     interf->json_frame_flush();
 }
@@ -2576,7 +2576,7 @@ void page_drawing(Interface *interf, JsonObject *data){
     param[TCONST_drawClear] = TINTF_0D9;
 
     interf->checkbox(TCONST_drawbuff, myLamp.isDrawOn(), TINTF_0CE, true);
-    interf->div(TCONST_drawing, TCONST_drawing, embui.param(TCONST_txtColor), TINTF_0D0, (char*)0, param);
+    interf->div(TCONST_drawing, TCONST_drawing, embui.param(TCONST_txtColor), TINTF_0D0, P_EMPTY, param);
 
     interf->json_frame_flush();
 }
@@ -2708,18 +2708,18 @@ void section_settings_frame(Interface *interf, JsonObject *data){
     if(!myLamp.getLampState().isOptPass){
         interf->json_section_line(TCONST_set_opt_pass);
             interf->password(TCONST_opt_pass, TINTF_02D);
-            interf->button_submit(TCONST_set_opt_pass, TINTF_01F, "", 19);
+            interf->button(button_t::submit, TCONST_set_opt_pass, TINTF_01F, "", 19);
         interf->json_section_end();
     } else {
-        interf->button(TCONST_SH_TIME, TINTF_051);
-        interf->button(TCONST_SH_NETW, TINTF_081);
+        interf->button(button_t::generic, TCONST_SH_TIME, TINTF_051);
+        interf->button(button_t::generic, TCONST_SH_NETW, TINTF_081);
         user_settings_frame(interf, data);
         interf->spacer();
         block_settings_update(interf, data);
     }
 #else
-    interf->button(TCONST_SH_TIME, TINTF_051);
-    interf->button(TCONST_SH_NETW, TINTF_081);
+    interf->button(button_t::generic, TCONST_SH_TIME, TINTF_051);
+    interf->button(button_t::generic, TCONST_SH_NETW, TINTF_081);
     user_settings_frame(interf, data);
     interf->spacer();
     block_settings_update(interf, data);
@@ -2746,25 +2746,25 @@ void set_opt_pass(Interface *interf, JsonObject *data){
 // Additional buttons on "Settings" page
 void user_settings_frame(Interface *interf, JsonObject *data){
     if (!interf) return;
-    interf->button_value(TCONST_sh_page, e2int(page::setup_ledstrip), TINTF_ledstrip);
+    interf->button_value(button_t::generic, TCONST_sh_page, e2int(page::setup_ledstrip), TINTF_ledstrip);
 #ifdef MIC_EFFECTS
-    interf->button_value(TCONST_sh_page, e2int(page::mike), TINTF_020);
+    interf->button_value(button_t::generic, TCONST_sh_page, e2int(page::mike), TINTF_020);
 #endif
 #ifdef MP3PLAYER
-    interf->button_value(TCONST_sh_page, e2int(page::setup_dfplayer), TINTF_099);
+    interf->button_value(button_t::generic, TCONST_sh_page, e2int(page::setup_dfplayer), TINTF_099);
 #endif
 #ifdef ESP_USE_BUTTON
-    interf->button_value(TCONST_sh_page, e2int(page::setup_bttn), TINTF_013);
+    interf->button_value(button_t::generic, TCONST_sh_page, e2int(page::setup_bttn), TINTF_013);
 #endif
 #ifdef ENCODER
-    interf->button_value(TCONST_sh_page, e2int(page::setup_encdr), TINTF_0DC);
+    interf->button_value(button_t::generic, TCONST_sh_page, e2int(page::setup_encdr), TINTF_0DC);
 #endif
-    interf->button_value(TCONST_sh_page, e2int(page::setup_other), TINTF_082);
+    interf->button_value(button_t::generic, TCONST_sh_page, e2int(page::setup_other), TINTF_082);
 
-    interf->button_value(TCONST_sh_page, e2int(page::setup_esp), TINTF_08F);
+    interf->button_value(button_t::generic, TCONST_sh_page, e2int(page::setup_esp), TINTF_08F);
 
     // show gpio setup page button
-    interf->button_value(TCONST_sh_page, e2int(page::setup_gpio), TINTF_gpiocfg);
+    interf->button_value(button_t::generic, TCONST_sh_page, e2int(page::setup_gpio), TINTF_gpiocfg);
 
     block_lamp_config(interf, data);
 }
@@ -2782,17 +2782,17 @@ void section_sys_settings_frame(Interface *interf, JsonObject *data){
 #endif
         interf->json_section_end(); // конец контейнера
         interf->spacer();
-        interf->number_constrained(TCONST_CLmt, TINTF_095, /* step */ 100, /* min */ 1000, /* max*/ 16000);    // current limit
+        interf->number_constrained(TCONST_CLmt, embui.paramVariant(TCONST_CLmt).as<int>(), TINTF_095, /* step */ 100, /* min */ 1000, /* max*/ 16000);    // current limit
 
         // Editor frame
         //interf->json_section_main(TCONST_edit, "");
         //interf->iframe(TCONST_edit, TCONST_edit);
         //interf->json_section_end();
 
-        interf->button_submit(TCONST_sysSettings, TINTF_Save, P_GRAY);
+        interf->button(button_t::submit, TCONST_sysSettings, TINTF_Save, P_GRAY);
 
         interf->spacer();
-        interf->button(TCONST_settings, TINTF_00B);
+        interf->button(button_t::generic, TCONST_settings, TINTF_00B);
     interf->json_frame_flush();
 }
 
@@ -2843,7 +2843,7 @@ void page_gpiocfg(Interface *interf, JsonObject *data){
     interf->json_frame_interface();
     interf->json_section_main(TCONST_pin, "GPIO Configuration");
 
-    interf->comment("<ul><li>Check <a href=\"https://github.com/vortigont/FireLamp_JeeUI/wiki/\" target=\"_blank\">WiKi page</a> for GPIO reference</li><li>Set '-1' to disable GPIO</li><li>MCU will <b>reboot</b> on any gpio change! Wait 5-10 sec after each save</li>");
+    interf->comment((char*)0, "<ul><li>Check <a href=\"https://github.com/vortigont/FireLamp_JeeUI/wiki/\" target=\"_blank\">WiKi page</a> for GPIO reference</li><li>Set '-1' to disable GPIO</li><li>MCU will <b>reboot</b> on any gpio change! Wait 5-10 sec after each save</li>");
 
     DynamicJsonDocument doc(512);
     embuifs::deserializeFile(doc, TCONST_fcfg_gpio);
@@ -2854,7 +2854,7 @@ void page_gpiocfg(Interface *interf, JsonObject *data){
         interf->json_section_line(); // расположить в одной линии
             interf->number_constrained(TCONST_mx_gpio, doc[TCONST_mx_gpio] | static_cast<int>(GPIO_NUM_NC), "LED Matrix gpio", /*step*/ 1, /*min*/ -1, /*max*/ NUM_OUPUT_PINS);
         interf->json_section_end();
-        interf->button_submit_value(TCONST_set_gpio, static_cast<int>(gpio_device::ledstrip), TINTF_Save);
+        interf->button_value(button_t::submit, TCONST_set_gpio, static_cast<int>(gpio_device::ledstrip), TINTF_Save);
     interf->json_section_end();
 
 #ifdef MP3PLAYER
@@ -2864,7 +2864,7 @@ void page_gpiocfg(Interface *interf, JsonObject *data){
             interf->number_constrained(TCONST_mp3rx, doc[TCONST_mp3rx] | static_cast<int>(GPIO_NUM_NC), TINTF_097, /*step*/ 1, /*min*/ -1, /*max*/ NUM_OUPUT_PINS);
             interf->number_constrained(TCONST_mp3tx, doc[TCONST_mp3tx] | static_cast<int>(GPIO_NUM_NC), TINTF_098, 1, -1, NUM_OUPUT_PINS);
         interf->json_section_end();
-        interf->button_submit_value(TCONST_set_gpio, static_cast<int>(gpio_device::dfplayer), TINTF_Save);
+        interf->button_value(button_t::submit, TCONST_set_gpio, static_cast<int>(gpio_device::dfplayer), TINTF_Save);
     interf->json_section_end();
 #endif
 
@@ -2875,7 +2875,7 @@ void page_gpiocfg(Interface *interf, JsonObject *data){
             interf->number_constrained(TCONST_tm_clk, doc[TCONST_tm_clk] | static_cast<int>(GPIO_NUM_NC), "TM Clk gpio", /*step*/ 1, /*min*/ -1, /*max*/ NUM_OUPUT_PINS);
             interf->number_constrained(TCONST_tm_dio, doc[TCONST_tm_dio] | static_cast<int>(GPIO_NUM_NC), "TM DIO gpio", 1, -1, NUM_OUPUT_PINS);
         interf->json_section_end();
-        interf->button_submit_value(TCONST_set_gpio, static_cast<int>(gpio_device::tmdisplay), TINTF_Save);
+        interf->button_value(button_t::submit, TCONST_set_gpio, static_cast<int>(gpio_device::tmdisplay), TINTF_Save);
     interf->json_section_end();
 #endif
 
@@ -2885,7 +2885,7 @@ void page_gpiocfg(Interface *interf, JsonObject *data){
             interf->number_constrained(TCONST_mosfet_gpio, doc[TCONST_mosfet_gpio] | static_cast<int>(GPIO_NUM_NC), "MOSFET gpio", /*step*/ 1, /*min*/ -1, /*max*/ NUM_OUPUT_PINS);
             interf->number_constrained(TCONST_mosfet_ll,   doc[TCONST_mosfet_ll]   | 1, "MOSFET logic level", 1, 0, 1);
         interf->json_section_end();
-        interf->button_submit_value(TCONST_set_gpio, static_cast<int>(gpio_device::mosfet), TINTF_Save);
+        interf->button_value(button_t::submit, TCONST_set_gpio, static_cast<int>(gpio_device::mosfet), TINTF_Save);
     interf->json_section_end();
 
     // gpio AUX
@@ -2894,7 +2894,7 @@ void page_gpiocfg(Interface *interf, JsonObject *data){
             interf->number_constrained(TCONST_aux_gpio, doc[TCONST_aux_gpio] | static_cast<int>(GPIO_NUM_NC), "AUX gpio", /*step*/ 1, /*min*/ -1, /*max*/ NUM_OUPUT_PINS);
             interf->number_constrained(TCONST_aux_ll,   doc[TCONST_aux_ll]   | 1, "AUX logic level", 1, 0, 1);
         interf->json_section_end();
-        interf->button_submit_value(TCONST_set_gpio, static_cast<int>(gpio_device::aux), TINTF_Save);
+        interf->button_value(button_t::submit, TCONST_set_gpio, static_cast<int>(gpio_device::aux), TINTF_Save);
     interf->json_section_end();
 
     interf->json_section_end(); // json_section_begin ""
@@ -3753,8 +3753,8 @@ void page_ledstrip_setup(Interface *interf, JsonObject *data){
         interf->checkbox(TCONST_hflip, doc[TCONST_hflip], "H-отражение", false);
     interf->json_section_end();
 
-    interf->button_submit(TCONST_settings_ledstrip, TINTF_Save);  // Save
-    interf->button(TCONST_settings, TINTF_00B);           // Exit
+    interf->button(button_t::submit, TCONST_settings_ledstrip, TINTF_Save);  // Save
+    interf->button(button_t::generic, TCONST_settings, TINTF_00B);           // Exit
     interf->json_frame_flush();
 }
 
