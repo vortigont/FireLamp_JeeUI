@@ -2154,7 +2154,7 @@ void block_settings_butt(Interface *interf, JsonObject *data){
     interf->spacer();
 
     interf->json_section_begin(TCONST_butt_conf);
-    interf->select<int>(TCONST_buttList, 0, TINTF_07A);
+    interf->select(TCONST_buttList, 0, TINTF_07A);
     for (int i = 0; i < myButtons->size(); i++) {
         interf->option(i, (*myButtons)[i]->getName());
     }
@@ -2778,7 +2778,7 @@ void section_sys_settings_frame(Interface *interf, JsonObject *data){
         interf->spacer(TINTF_092); // заголовок
         interf->json_section_line(TINTF_092); // расположить в одной линии
 #ifdef ESP_USE_BUTTON
-            interf->number_constrained(TCONST_PINB,TINTF_094, 1, 0, NUM_OUPUT_PINS);
+            interf->number_constrained(TCONST_PINB, embui.paramVariant(TCONST_PINB).as<int>(), TINTF_094, 1, 0, NUM_OUPUT_PINS);
 #endif
         interf->json_section_end(); // конец контейнера
         interf->spacer();

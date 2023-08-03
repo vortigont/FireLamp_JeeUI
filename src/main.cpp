@@ -128,7 +128,7 @@ void setup() {
     myLamp.lamp_init();
 
 #ifdef ESP_USE_BUTTON
-    myLamp.setbPin(embui.param(TCONST_PINB).toInt());
+    myLamp.setbPin(embui.paramVariant(TCONST_PINB));
     myButtons = new Buttons(myLamp.getbPin(), PULL_MODE, NORM_OPEN);
     if (!myButtons->loadConfig()) {
       default_buttons();
