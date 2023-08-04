@@ -113,8 +113,8 @@ bool Effcfg::loadeffconfig(uint16_t nb, const char *folder){
   if (!_eff_cfg_deserialize(doc, folder)) return false;   // error loading file
 
   version = doc["ver"];
-  effectName = doc["name"] | String(T_EFFNAMEID[(uint8_t)nb]);
-  soundfile = doc["snd"].as<String>();
+  effectName = doc["name"] ? doc["name"].as<const char*>() : T_EFFNAMEID[(uint8_t)nb];
+  soundfile = doc["snd"].as<const char*>();
   brt = doc["brt"];
   curve = doc[TCONST_lcurve] ? static_cast<luma::curve>(doc[TCONST_lcurve].as<int>()) : luma::curve::cie1931;
 
@@ -124,8 +124,8 @@ bool Effcfg::loadeffconfig(uint16_t nb, const char *folder){
 
 void Effcfg::create_eff_default_cfg_file(uint16_t nb, String &filename){
 
-  const String efname(T_EFFNAMEID[(uint8_t)nb]); // выдергиваем имя эффекта из таблицы
-  LOG(printf_P,PSTR("Make default config: %d %s\n"), nb, efname.c_str());
+  const char* efname = T_EFFNAMEID[(uint8_t)nb]; // выдергиваем имя эффекта из таблицы
+  LOG(printf_P,PSTR("Make default config: %d %s\n"), nb, efname);
 
   String  cfg(T_EFFUICFG[(uint8_t)nb]);    // извлекаем конфиг для UI-эффекта по-умолчанию из флеш-таблицы
   cfg.replace("@name@", efname);
@@ -534,7 +534,7 @@ void EffectWorker::effectsReSort(SORT_TYPE _effSort)
       //effects.sort([](EffectListElem *&a, EffectListElem *&b){ EffectWorker *tmp = new EffectWorker((uint16_t)0); String tmp1; tmp->loadeffname(tmp1, a->eff_nb); String tmp2; tmp->loadeffname(tmp2,b->eff_nb); delete tmp; return strcmp_P(tmp1.c_str(), tmp2.c_str());});
       //break;
     case SORT_TYPE::ST_AB :
-      effects.sort([](EffectListElem &a, EffectListElem &b){ String tmp(T_EFFNAMEID[(uint8_t)a.eff_nb]); return strcmp_P(tmp.c_str(), (T_EFFNAMEID[(uint8_t)b.eff_nb]));});
+      effects.sort([](EffectListElem &a, EffectListElem &b){ return std::string_view(T_EFFNAMEID[(uint8_t)a.eff_nb]).compare(T_EFFNAMEID[(uint8_t)b.eff_nb]); });
       break;
 #ifdef MIC_EFFECTS
     case SORT_TYPE::ST_MIC :
@@ -559,7 +559,7 @@ void EffectWorker::loadeffname(String& _effectName, const uint16_t nb, const cha
   DynamicJsonDocument doc(DYNJSON_SIZE_EFF_CFG);
   bool ok = embuifs::deserializeFile(doc, filename.c_str());
   if (ok && doc["name"]){
-    _effectName = doc["name"].as<String>(); // перенакрываем именем из конфига, если есть
+    _effectName = doc["name"].as<const char*>(); // перенакрываем именем из конфига, если есть
   } else {
     _effectName = T_EFFNAMEID[(uint8_t)nb];   // выбираем имя по-умолчанию из флеша если конфиг поврежден
   }
@@ -952,7 +952,7 @@ void EffectWorker::_load_default_fweff_list(){
   effects.clear();
 
   for (uint16_t i = 0; i != 256U; i++){
-    if (!strlen_P(T_EFFNAMEID[i]) && i)   // пропускаем индексы-"пустышки" без названия, кроме 0 "EFF_NONE"
+    if (!strlen(T_EFFNAMEID[i]) && i)   // пропускаем индексы-"пустышки" без названия, кроме 0 "EFF_NONE"
       continue;
 
 #ifndef MIC_EFFECTS
@@ -1330,7 +1330,7 @@ void build_eff_names_list_file(EffectWorker &w, bool full){
     if (!full && !itr->flags.canBeSelected)
       continue;
 
-    String effname((char *)0);
+    String effname;
     // if effect was renamed, than read it's name from json, otherwise from flash
     if (itr->flags.renamed)
       w.loadeffname(effname, itr->eff_nb);
