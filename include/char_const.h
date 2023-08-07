@@ -5,7 +5,7 @@
  */
 static constexpr const char* TCONST_1609459200 = "1609459200";
 static constexpr const char* TCONST_act = "act";
-static constexpr const char* TCONST_add_lamp_config = "add_lamp_config";
+//static constexpr const char* TCONST_add_lamp_config = "add_lamp_config";
 static constexpr const char* TCONST_afS = "afS";
 static constexpr const char* TCONST_alarmPT = "alarmPT";
 static constexpr const char* TCONST_alarmP = "alarmP";
@@ -51,7 +51,7 @@ static constexpr const char* TCONST_ds18b20 = "ds18b20";
 static constexpr const char* TCONST_DTimer = "DTimer";
 static constexpr const char* TCONST_dynCtrl = "dynCtrl";
 static constexpr const char* TCONST_dynCtrl_ = "dynCtrl*";
-static constexpr const char* TCONST_edit_lamp_config = "edit_lamp_config";
+//static constexpr const char* TCONST_edit_lamp_config = "edit_lamp_config";
 static constexpr const char* TCONST_edit_text_config = "edit_text_config";
 static constexpr const char* TCONST_edit = "edit";
 static constexpr const char* TCONST_eff_config = "eff_config";

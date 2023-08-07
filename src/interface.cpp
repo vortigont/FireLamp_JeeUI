@@ -1128,6 +1128,10 @@ void set_lcurve(Interface *interf, JsonObject *data){
     myLamp.effects.setLumaCurve(static_cast<luma::curve>((*data)[TCONST_lcurve].as<int>()));
 }
 
+/*
+// since the following code manipulates embiu's config files, not lamp specific settings,
+// this is no longer covers reqired functionality
+// obsolete untill other implementation available
 void block_lamp_config(Interface *interf, JsonObject *data){
     if (!interf) return;
     interf->json_section_hidden(TCONST_lamp_config, TINTF_018);
@@ -1137,42 +1141,23 @@ void block_lamp_config(Interface *interf, JsonObject *data){
     String cfg(TINTF_018); cfg+=" ("; cfg+=filename; cfg+=")";
 
     // проверка на наличие конфигураций
-    if(LittleFS.begin()){
-#ifdef ESP32
         File tst = LittleFS.open(TCONST__backup_idx);
         if(tst.openNextFile())
-#else
-        Dir tst = LittleFS.openDir(TCONST__backup_idx);
-        if(tst.next())
-#endif    
         {
             interf->select(TCONST_fileName, cfg);
-#ifdef ESP32
             File root = LittleFS.open(TCONST__backup_idx);
             File file = root.openNextFile();
-#else
-            Dir dir = LittleFS.openDir(TCONST__backup_idx);
-#endif
             String fn;
-#ifdef ESP32
+
             while (file) {
                 fn=file.name();
                 if(!file.isDirectory()){
-#else
-            while (dir.next()) {
-                fn=dir.fileName();
-#endif
-
-                fn.replace(TCONST__backup_idx_,"");
-                //LOG(println, fn);
-                interf->option(fn, fn);
-#ifdef ESP32
+                    fn.replace(TCONST__backup_idx_,"");
+                    //LOG(println, fn);
+                    interf->option(fn, fn);
                     file = root.openNextFile();
                 }
             }
-#else
-            }
-#endif
             interf->json_section_end(); // select
 
             interf->json_section_line();
@@ -1183,7 +1168,7 @@ void block_lamp_config(Interface *interf, JsonObject *data){
             filename.clear();
             interf->spacer();
         }
-    }
+
     interf->json_section_begin(TCONST_add_lamp_config);
         interf->text(TCONST_fileName2, filename.c_str(), TINTF_01A);
         interf->button(button_t::submit, TCONST_add_lamp_config, TINTF_01B);
@@ -1286,6 +1271,7 @@ void edit_lamp_config(Interface *interf, JsonObject *data){
 
     show_lamp_config(interf, data);
 }
+*/
 
 void block_lamp_textsend(Interface *interf, JsonObject *data){
     if (!interf) return;
@@ -2766,7 +2752,8 @@ void user_settings_frame(Interface *interf, JsonObject *data){
     // show gpio setup page button
     interf->button_value(button_t::generic, TCONST_sh_page, e2int(page::setup_gpio), TINTF_gpiocfg);
 
-    block_lamp_config(interf, data);
+    // obsolete
+    //block_lamp_config(interf, data);
 }
 
 // Страница "Настройки ESP"
@@ -3083,8 +3070,8 @@ void create_parameters(){
 
     embui.section_handle_add(TCONST_lamptext, section_text_frame);
     embui.section_handle_add(TCONST_textsend, set_lamp_textsend);
-    embui.section_handle_add(TCONST_add_lamp_config, edit_lamp_config);
-    embui.section_handle_add(TCONST_edit_lamp_config, edit_lamp_config);
+    //embui.section_handle_add(TCONST_add_lamp_config, edit_lamp_config);
+    //embui.section_handle_add(TCONST_edit_lamp_config, edit_lamp_config);
 
     embui.section_handle_add(TCONST_edit_text_config, set_text_config);
     embui.section_handle_add(TCONST_drawbuff, set_drawflag);
