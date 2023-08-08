@@ -1,4 +1,5 @@
 /*
+Copyright © 2023 Emil Muratov (vortigont)
 Copyright © 2020 Dmytro Korniienko (kDn)
 JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
@@ -193,35 +194,6 @@ String ulltos(uint64_t longlong){
     for (int i = bfr.length()-1; i >= 0; i--)
         tmp += (String)bfr[i];
     return tmp;
-}
-
-bool check_recovery_state(bool isSet){
-    //return false; // оключено до выяснения... какого-то хрена не работает :(
-#ifndef ESP8266
-    static RTC_DATA_ATTR uint32_t chk;
-#else
-    uint32_t chk;
-    ESP.rtcUserMemoryRead(0,&chk,sizeof(chk));
-#endif
-    if(isSet && (chk&0xFF00)==0xDB00){
-        uint16_t data = chk&0x00FF;
-        data++;
-        chk=0xDB00|data;
-        LOG(printf_P, PSTR("Reboot count=%d\n"), data);
-#ifdef ESP8266
-        ESP.rtcUserMemoryWrite(0, &chk, sizeof(chk));
-#endif
-        if(data>3)
-            return true; // все плохо, три перезагрузки...
-        else
-            return false; // все хорошо
-    } else {
-        chk=0xDB00; // сбрасываем цикл перезагрузок
-#ifdef ESP8266
-        ESP.rtcUserMemoryWrite(0, &chk, sizeof(chk));
-#endif
-    }
-    return false;
 }
 
 void resetAutoTimers(bool isEffects=false) // сброс таймера демо и настройка автосохранений
@@ -420,31 +392,11 @@ void section_main_frame(Interface *interf, JsonObject *data){
 
     interf->json_frame_flush();
 
-/*
-    // publish firmware version
-    interf->json_frame_value();
-    interf->value("lamp_ver", LAMPFW_VERSION_STRING, true);
-    interf->json_frame_flush();
-*/
-#ifdef ESP8266
-    if(!(WiFi.getMode() & WIFI_STA))
-#else
     if(!(WiFi.getMode() & WIFI_MODE_STA))
-#endif
     {
         // форсируем выбор вкладки настройки WiFi если контроллер не подключен к внешней AP
         interf->json_frame_interface();
             basicui::block_settings_netw(interf, data);
-/*
-            interf->json_section_main(TCONST_SET_WIFI, TINTF_028);
-            block_only_wifi(interf, data);
-            interf->json_section_end();
-        interf->json_frame_flush();
-        if(!embui.sysData.isWiFiScanning){ // автосканирование при входе в настройки
-            embui.sysData.isWiFiScanning = true;
-            set_scan_wifi(interf, data);
-        }
-*/
     }
 }
 
@@ -893,7 +845,6 @@ void block_main_flags(Interface *interf, JsonObject *data){
     interf->json_section_line("");
     interf->checkbox(TCONST_ONflag, myLamp.isLampOn(), TINTF_00E, true);
     interf->checkbox(TCONST_Demo, myLamp.getMode() == LAMPMODE::MODE_DEMO, TINTF_00F, true);
-    //interf->checkbox(TCONST_GBR, myLamp.IsGlobalBrightness(), TINTF_010, true);
     interf->checkbox(TCONST_Events, myLamp.IsEventsHandled(), TINTF_011, true);
     interf->checkbox(TCONST_drawbuff, myLamp.isDrawOn(), TINTF_0CE, true);
 
@@ -996,14 +947,12 @@ void set_eff_prev(Interface *interf, JsonObject *data){
     // effect switch action call should be made in main loop to maintain thread safety
     Task *_t = new Task( RESCHEDULE_DELAY, TASK_ONCE, [](){ run_action(ra::eff_prev); }, &ts, false, nullptr, nullptr, true);
     _t->enableDelayed();
-    //run_action(ra::eff_prev);
 }
 
 void set_eff_next(Interface *interf, JsonObject *data){
     // effect switch action call should be made in main loop to maintain thread safety
     Task *_t = new Task( RESCHEDULE_DELAY, TASK_ONCE, [](){ run_action(ra::eff_next); }, &ts, false, nullptr, nullptr, true);
     _t->enableDelayed();
-    //run_action(ra::eff_next);
 }
 
 /**
@@ -1109,18 +1058,6 @@ void set_gbrflag(Interface *interf, JsonObject *data){
 
     // todo:
     // publisg
-/*
-    if (!data) return;
-    myLamp.setIsGlobalBrightness((*data)[TCONST_GBR]);
-#ifdef EMBUI_USE_MQTT
-    embui.publish(String(TCONST_embui_pub_) + String(TCONST_gbright), String(myLamp.IsGlobalBrightness() ), true);
-#endif
-    save_lamp_flags();
-    if (myLamp.isLampOn()) {
-        myLamp.setBrightness(myLamp.getBrightness());
-    }
-    show_effect_controls(interf, data);
-*/
 }
 
 void set_lcurve(Interface *interf, JsonObject *data){
@@ -1338,8 +1275,6 @@ void set_drawing(Interface *interf, JsonObject *data){
 void set_clear(Interface *interf, JsonObject *data){
         CRGB color=CRGB::Black;
         myLamp.fillDrawBuf(color);
-//    if (!data) return;
-//    remote_action(RA_FILLMATRIX, "#000000", NULL);
 }
 
 void block_lamptext(Interface *interf, JsonObject *data){
@@ -1376,7 +1311,6 @@ void set_text_config(Interface *interf, JsonObject *data){
     time_t ny_unixtime = mktime(tm);
     LOG(printf_P, PSTR("Set New Year at %d %d %d %d %d (%ld)\n"), tm->tm_year, tm->tm_mon, tm->tm_mday, tm->tm_hour, tm->tm_min, ny_unixtime);
 
-    //SETPARAM(TCONST_ny_unix, myLamp.setNYUnixTime(ny_unixtime));
     embui.var(TCONST_ny_unix, ny_unixtime); myLamp.setNYUnixTime(ny_unixtime);
 
     if(!interf){
@@ -1463,154 +1397,7 @@ void set_settings_mic_calib(Interface *interf, JsonObject *data){
     show_settings_mic(interf, data);
 }
 #endif
-/*
-// после завершения сканирования обновляем список WiFi
-void scan_complete(int n){
-    Interface *interf = embui.ws.count()? new Interface(&embui, &embui.ws) : nullptr;
-    LOG(printf_P, PSTR("UI WiFi: Scan complete %d networks found\n"), n);
-    if(interf){
-        interf->json_frame_interface();
-        interf->json_section_line(TCONST_LOAD_WIFI);
-        String ssid = WiFi.SSID();
-        interf->select_edit(P_WCSSID, ssid, String(TINTF_02C));
-        for (int i = 0; i < WiFi.scanComplete(); i++) {
-            interf->option(WiFi.SSID(i), WiFi.SSID(i));
-            LOG(printf_P, PSTR("UI WiFi: WiFi Net %s\n"), WiFi.SSID(i).c_str());
-        }
-        if(ssid.isEmpty())
-            interf->option("", ""); // at the end of list
-        interf->json_section_end();
-        interf->button(button_t::generic, TCONST_SET_SCAN, TINTF_0DA, P_GREEN, 22);
-        interf->json_section_end();
-        interf->json_frame_flush();
 
-        delete interf;
-    }
-    Task *_t = new Task(
-        TASK_SECOND,
-        TASK_ONCE, [](){
-            if (WiFi.scanComplete() >= 0) {
-                embui.sysData.isWiFiScanning = false;
-                WiFi.scanDelete();
-                LOG(printf_P, PSTR("UI WiFi: Scan List deleted\n"));
-            }
-        },
-        &ts, false);
-    _t->enableDelayed();
-}
-
-void set_scan_wifi(Interface *interf, JsonObject *data){
-    if (!interf) return;
-
-    if (WiFi.scanComplete() == -2) {
-        LOG(printf_P, PSTR("UI WiFi: WiFi scan starting\n"));
-        interf->json_frame_custom(TCONST_XLOAD);
-        interf->json_section_content();
-        interf->constant(TCONST_SET_SCAN, TINTF_0DA, true, P_GREEN, 22);
-        interf->json_section_end();
-        interf->json_frame_flush();
-
-        Task *t = new Task(300, TASK_ONCE, nullptr, &ts, false, nullptr, [](){
-            embui.sysData.isWiFiScanning = true;
-            #ifdef ESP8266
-            WiFi.scanNetworksAsync(scan_complete);     // Сканируем с коллбеком, по завершению скана запустится scan_complete()
-            #endif
-            #ifdef ESP32
-            embui.setWiFiScanCB(&scan_complete);
-            WiFi.scanNetworks(true);         // У ESP нет метода с коллбеком, поэтому просто сканируем
-            #endif
-        }, true);
-        t->enableDelayed();
-    }
-};
-
-// Блок настроек WiFi
-void block_only_wifi(Interface *interf, JsonObject *data) {
-    interf->spacer(TINTF_031);
-    interf->select(String(P_WIFIMODE), embui.param(P_WIFIMODE), String(TINTF_033));
-        interf->option("0", TINTF_029);
-        interf->option("1", TINTF_02F);
-        interf->option("2", TINTF_046);
-    interf->json_section_end();
-
-    interf->comment(TINTF_032);
-
-    interf->text(P_hostname, TINTF_02B);
-    interf->password(P_APpwd, TINTF_034);
-
-    interf->spacer(TINTF_02A);
-    interf->json_section_line(TCONST_LOAD_WIFI);
-    interf->select_edit(P_WCSSID, String(WiFi.SSID()), String(TINTF_02C));
-    interf->json_section_end();
-    interf->button(button_t::generic, TCONST_SET_SCAN, TINTF_0DA, P_GREEN, 22); // отступ
-    interf->json_section_end();
-    interf->password(TCONST_wcpass, TINTF_02D);
-    interf->button(button_t::submit, TCONST_SET_WIFI, TINTF_02E, P_GRAY);
-}
-
-// формирование интерфейса настроек WiFi/MQTT
-void block_settings_wifi(Interface *interf, JsonObject *data){
-    if (!interf) return;
-
-    interf->json_section_main(TCONST_settings_wifi, TINTF_081);
-
-    // форма настроек Wi-Fi
-    interf->json_section_hidden(TCONST_SET_WIFI, TINTF_028);
-        block_only_wifi(interf, data);
-    interf->json_section_end();
-
-#ifdef EMBUI_USE_MQTT
-    // форма настроек MQTT
-    interf->json_section_hidden(TCONST_set_mqtt, TINTF_035);
-    interf->text(P_m_host, TINTF_036);
-    interf->number(P_m_port, TINTF_037);
-    interf->text(P_m_user, TINTF_038);
-    interf->password(P_m_pass, TINTF_02D);
-    interf->text(P_m_pref, TINTF_08C);
-    interf->number(P_m_tupd, TINTF_039);
-    interf->button(button_t::submit, TCONST_set_mqtt, TINTF_03A, P_GRAY);
-    interf->json_section_end();
-#endif
-
-#ifdef EMBUI_USE_FTP
-    // форма настроек FTP
-    interf->json_section_hidden("H", TINTF_0DB);
-        interf->json_section_begin("C", "");
-            interf->checkbox(TCONST_CHK_FTP, String(embui.cfgData.isftp), TINTF_0DB, true);
-        interf->json_section_end();
-        interf->json_section_begin(TCONST_SET_FTP, "");
-            interf->text(P_ftpuser, TINTF_038);
-            interf->password(P_ftppass, TINTF_02D);
-            interf->button(button_t::submit, TCONST_SET_FTP, TINTF_Save, P_GRAY);
-        interf->json_section_end();
-    interf->json_section_end();
-#endif
-
-    interf->spacer();
-    interf->button(button_t::generic, TCONST_settings, TINTF_00B);
-
-    interf->json_section_end();
-}
-
-void show_settings_wifi(Interface *interf, JsonObject *data){
-    if (!interf) return;
-    interf->json_frame_interface();
-    block_settings_wifi(interf, data);
-    interf->json_frame_flush();
-    if(!embui.sysData.isWiFiScanning){ // автосканирование при входе в настройки
-        embui.sysData.isWiFiScanning = true;
-        set_scan_wifi(interf, data);
-    }
-}
-
-// настройка подключения WiFi
-void set_settings_wifi(Interface *interf, JsonObject *data){
-    if (!data) return;
-
-    basicui::set_settings_wifi(interf, data);
-    basicui::section_settings_frame(interf, data);
-}
-*/
 #ifdef EMBUI_USE_MQTT
 void set_settings_mqtt(Interface *interf, JsonObject *data){
     if (!data) return;
@@ -2682,53 +2469,6 @@ void set_streaming_universe(Interface *interf, JsonObject *data){
 }
 #endif
 
-// Точка входа в настройки
-/*
-void section_settings_frame(Interface *interf, JsonObject *data){
-    // Страница "Настройки"
-    if (!interf) return;
-    interf->json_frame_interface(TINTF_080);
-
-    interf->json_section_main(TCONST_SETTINGS, TINTF_002);
-#ifdef OPTIONS_PASSWORD
-    if(!myLamp.getLampState().isOptPass){
-        interf->json_section_line(TCONST_set_opt_pass);
-            interf->password(TCONST_opt_pass, TINTF_02D);
-            interf->button(button_t::submit, TCONST_set_opt_pass, TINTF_01F, "", 19);
-        interf->json_section_end();
-    } else {
-        interf->button(button_t::generic, TCONST_SH_TIME, TINTF_051);
-        interf->button(button_t::generic, TCONST_SH_NETW, TINTF_081);
-        user_settings_frame(interf, data);
-        interf->spacer();
-        block_settings_update(interf, data);
-    }
-#else
-    interf->button(button_t::generic, TCONST_SH_TIME, TINTF_051);
-    interf->button(button_t::generic, TCONST_SH_NETW, TINTF_081);
-    user_settings_frame(interf, data);
-    interf->spacer();
-    block_settings_update(interf, data);
-#endif
-    interf->json_section_end();
-    interf->json_frame_flush();
-}
-*/
-
-#ifdef OPTIONS_PASSWORD
-void set_opt_pass(Interface *interf, JsonObject *data){
-    if(!data) return;
-
-    if((*data)[TCONST_opt_pass]==OPTIONS_PASSWORD){
-        LOG(println, "Options unlocked for 10 minutes");
-        myLamp.getLampState().isOptPass = true;
-        Task *_t = new Task(TASK_MINUTE*10, TASK_ONCE, [](){ myLamp.getLampState().isOptPass = false; }, &ts, false, nullptr, nullptr, true ); // через 10 минут отключаем
-        _t->enableDelayed();
-        basicui::section_settings_frame(interf, nullptr);
-    }
-}
-#endif  // OPTIONS_PASSWORD
-
 // Additional buttons on "Settings" page
 void user_settings_frame(Interface *interf, JsonObject *data){
     if (!interf) return;
@@ -2949,20 +2689,7 @@ void create_parameters(){
     embui.var_create(TCONST_eff_run, 1);
     embui.var_create(P_m_tupd, DEFAULT_MQTTPUB_INTERVAL); // "m_tupd" интервал отправки данных по MQTT в секундах (параметр в энергонезависимой памяти)
 
-/*  (managed by EmbUI)
-    //WiFi
-    //embui.var_create(P_hostname, "");
-    //embui.var_create(P_WIFIMODE, String("0"));       // STA/AP/AP+STA, STA by default
-    //embui.var_create(P_APpwd, "");                   // пароль внутренней точки доступа
-
-    // параметры подключения к MQTT
-    embui.var_create(P_m_host, ""); // Дефолтные настройки для MQTT
-    embui.var_create(P_m_port, "1883");
-    embui.var_create(P_m_user, "");
-    embui.var_create(P_m_pass, "");
-    embui.var_create(P_m_pref, embui.mc);  // m_pref == MAC по дефолту
-*/
-    embui.var_create(TCONST_fileName, "cfg1.json"); // "fileName"
+    //embui.var_create(TCONST_fileName, "cfg1.json"); // "fileName"
 
     embui.var_create(TCONST_AUX, false);
     embui.var_create(TCONST_msg, "");
@@ -2973,11 +2700,6 @@ void create_parameters(){
     embui.var_create(TCONST_effSort, 1);
     embui.var_create(TCONST_GlobBRI, 127);
 
-    // date/time related vars
-/*
-    embui.var_create(TCONST_0057, "");
-    embui.var_create(TCONST_0058, "");
-*/
     embui.var_create(TCONST_ny_period, 0);
     embui.var_create(TCONST_ny_unix, TCONST_1609459200);
 
@@ -3080,10 +2802,6 @@ void create_parameters(){
     embui.section_handle_add(TCONST_set_other, set_settings_other);
     embui.section_handle_add(TCONST_set_gpio, set_gpios);        // Set gpios
 
-    #ifdef OPTIONS_PASSWORD
-    embui.section_handle_add(TCONST_set_opt_pass, set_opt_pass);
-    #endif // OPTIONS_PASSWORD
-
 #ifdef MIC_EFFECTS
     embui.section_handle_add(TCONST_set_mic, set_settings_mic);
     embui.section_handle_add(TCONST_Mic, set_micflag);
@@ -3125,14 +2843,6 @@ void sync_parameters(){
     DynamicJsonDocument doc(1024);
     JsonObject obj = doc.to<JsonObject>();
 
-/*
-    // какая-то затычка от бесконечных ребутов для глючных эффектов. Эффект не чиним, втыкаем затычку Ж() todo: выдрать с корнями
-    if(check_recovery_state(true)){
-        LOG(printf_P,PSTR("Critical Error: Lamp recovered from corrupted effect number: %s\n"),String(embui.param(TCONST_eff_run)).c_str());
-        embui.var(TCONST_eff_run,String(0)); // что-то пошло не так, был циклический ребут, сбрасываем эффект
-    }
-*/
-
 #ifdef EMBUI_USE_MQTT
     myLamp.setmqtt_int(embui.paramVariant(P_m_tupd));
 #endif
@@ -3140,9 +2850,6 @@ void sync_parameters(){
     String syslampFlags(embui.param(TCONST_syslampFlags));
     LAMPFLAGS tmp;
     tmp.lampflags = stoull(syslampFlags); //atol(embui.param(TCONST_syslampFlags).c_str());
-//#ifndef ESP32
-//    LOG(printf_P, PSTR("tmp.lampflags=%llu (%s)\n"), tmp.lampflags, syslampFlags.c_str());
-//#endif
     LOG(printf_P, PSTR("tmp.lampflags=%llu\n"), tmp.lampflags);
 
     obj[TCONST_drawbuff] = tmp.isDraw;
@@ -3155,17 +2862,10 @@ void sync_parameters(){
     doc.clear();
 #endif
 
-    //LOG(printf_P,PSTR("tmp.isEventsHandled=%d\n"), tmp.isEventsHandled);
     obj[TCONST_Events] = tmp.isEventsHandled;
     CALL_INTF_OBJ(set_eventflag);
-    //set_eventflag(nullptr, &obj);
     doc.clear();
     TimeProcessor::getInstance().attach_callback(std::bind(&LAMP::setIsEventsHandled, &myLamp, myLamp.IsEventsHandled())); // только после синка будет понятно включены ли события
-
-    //myLamp.setGlobalBrightness(embui.paramVariant(TCONST_GlobBRI)); // починить бросок яркости в 255 при первом включении
-    //obj[TCONST_GBR] = tmp.isGlobalBrightness;
-    //set_gbrflag(nullptr, &obj);
-    //doc.clear();
 
     // check "restore state" flag
     if (tmp.restoreState){
@@ -3184,11 +2884,7 @@ void sync_parameters(){
             //CALL_SETTER(TCONST_Demo, embui.paramVariant(TCONST_Demo), set_demoflag); // Демо через режимы, для него нужнен отдельный флаг :(
     } else {
         run_action(ra::eff_switch, embui.paramVariant(TCONST_eff_run));
-        //CALL_SETTER(TCONST_eff_run, embui.paramVariant(TCONST_eff_run), set_switch_effect);
     }
-
-    //if(tmp.isGlobalBrightness)
-    //    CALL_SETTER(String(TCONST_dynCtrl) + "0", myLamp.getBrightness(), set_effects_dynCtrl);
 
 #ifdef MP3PLAYER
     // т.к. sync_parameters запускается при перезапуске лампы, установку мп3 нужно отложить до момента инициализации плеера
@@ -3351,7 +3047,6 @@ void sync_parameters(){
 #endif
     //--------------- начальная инициализация состояния
 
-    check_recovery_state(false); // удаляем маркер, считаем что у нас все хорошо...
     Task *_t = new Task(TASK_SECOND, TASK_ONCE, [](){ // откладыаем задачу на 1 секунду, т.к. выше есть тоже отложенные инициализации, см. set_settings_other()
         myLamp.getLampState().isInitCompleted = true; // ставим признак того, что инициализация уже завершилась, больше его не менять и должен быть в самом конце sync_parameters() !!!
     }, &ts, false, nullptr, nullptr, true);
@@ -3434,33 +3129,6 @@ void remote_action(RA action, ...){
     LOG(println);
 
     switch (action) {
-/*
-        case RA::RA_GLOBAL_BRIGHT:
-            if (atoi(value) > 0){
-                CALL_INTF(TCONST_GBR, true, set_gbrflag);
-                return remote_action(RA_CONTROL, (String(TCONST_dynCtrl)+"0").c_str(), value, NULL);
-            }
-            else
-                CALL_INTF(TCONST_GBR, value, set_gbrflag);
-            break;
-        // change brightness in percents
-        case RA::RA_BRIGHT_PCT:{
-            int brt = atoi(value);
-            brt = brt >=100 ? 255 : brt * 255 / 100;    // normalize percents to 0-255
-            return remote_action(RA_CONTROL, (String(TCONST_dynCtrl)+"0").c_str(), String(brt).c_str(), NULL);
-        }
-        case RA::RA_BRIGHT_NF:
-            obj[TCONST_nofade] = true;
-            obj[TCONST_force] = true;
-            //CALL_INTF_OBJ(set_effects_dynCtrl);
-            set_effects_dynCtrl(nullptr, &obj);
-            break;
-        case RA::RA_CONTROL:
-            //CALL_INTF_OBJ(set_effects_dynCtrl);
-            obj[TCONST_force] = true;
-            set_effects_dynCtrl(nullptr, &obj);
-            break;
-*/
         case RA::RA_SEND_IP:
             myLamp.sendString(WiFi.localIP().toString().c_str(), CRGB::White);
 #ifdef TM1637_CLOCK
@@ -3723,10 +3391,6 @@ void page_ledstrip_setup(Interface *interf, JsonObject *data){
 
     interf->json_frame_interface();
     interf->json_section_main(TCONST_settings_ledstrip, TINTF_ledstrip);
-
-    //interf->comment("MCU will <b>reboot</b> to apply change! Wait 5-10 sec after each save</li>");
-
-    //interf->spacer();
 
     interf->json_section_line(); // расположить в одной линии
         interf->number_constrained(TCONST_width,  doc[TCONST_width].as<int>()  ? doc[TCONST_width].as<int>()  : 16, "ширина", 1, 1, 256);
