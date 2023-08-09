@@ -53,6 +53,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #define ARR_LIST_SIZE   1024
 #endif
 
+static constexpr const char c_snd[] = "snd";
 
 /*
 // true deep-copy of UIControl ponters
@@ -114,7 +115,11 @@ bool Effcfg::loadeffconfig(uint16_t nb, const char *folder){
 
   version = doc["ver"];
   effectName = doc["name"] ? doc["name"].as<const char*>() : T_EFFNAMEID[(uint8_t)nb];
-  soundfile = doc["snd"].as<const char*>();
+  if (doc[c_snd])
+    soundfile = doc[c_snd].as<const char*>();
+  else
+    soundfile.clear();
+
   brt = doc["brt"];
   curve = doc[TCONST_lcurve] ? static_cast<luma::curve>(doc[TCONST_lcurve].as<int>()) : luma::curve::cie1931;
 

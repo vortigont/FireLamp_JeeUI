@@ -2205,7 +2205,6 @@ void set_settings_mp3(Interface *interf, JsonObject *data){
     myLamp.setLimitAlarmVolume((*data)[TCONST_limitAlarmVolume]);
 
     SETPARAM(TCONST_mp3count, mp3->setMP3count((*data)[TCONST_mp3count].as<int>())); // кол-во файлов в папке мп3
-    embui.var(TCONST_mp3volume, (*data)[TCONST_mp3volume], true);
 
     save_lamp_flags();
     basicui::section_settings_frame(interf, data);
