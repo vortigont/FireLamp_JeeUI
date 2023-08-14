@@ -86,13 +86,13 @@ void LAMP::lamp_init()
 
   // GPIO's
   DynamicJsonDocument doc(512);
-  if (!embuifs::deserializeFile(doc, FPSTR(TCONST_fcfg_gpio))) return;     // GPIO cfg is broken or missing
+  if (!embuifs::deserializeFile(doc, TCONST_fcfg_gpio)) return;     // GPIO cfg is broken or missing
   // restore fet gpio
-  fet_gpio = doc[FPSTR(TCONST_mosfet_gpio)] | static_cast<int>(GPIO_NUM_NC);
-  fet_ll = doc[FPSTR(TCONST_mosfet_ll)];
+  fet_gpio = doc[TCONST_mosfet_gpio] | static_cast<int>(GPIO_NUM_NC);
+  fet_ll = doc[TCONST_mosfet_ll];
 
-  aux_gpio = doc[FPSTR(TCONST_aux_gpio)] | static_cast<int>(GPIO_NUM_NC);
-  aux_ll = doc[FPSTR(TCONST_aux_ll)];
+  aux_gpio = doc[TCONST_aux_gpio] | static_cast<int>(GPIO_NUM_NC);
+  aux_ll = doc[TCONST_aux_ll];
   // gpio that controls FET (for disabling matrix)
   if (fet_gpio > static_cast<int>(GPIO_NUM_NC)){
     pinMode(fet_gpio, OUTPUT);
@@ -282,7 +282,7 @@ void LAMP::changePower(bool flag) // флаг включения/выключе�
 {
   ALARMTASK::stopAlarm();            // любая активность в интерфейсе - отключаем будильник
   if (flag == flags.ONflag) return;  // пропускаем холостые вызовы
-  LOG(print, F("Lamp powering ")); LOG(println, flag ? F("On"): F("Off"));
+  LOG(print, "Lamp powering "); LOG(println, flag ? "On": "Off");
   flags.ONflag = flag;
 
   if(mode == LAMPMODE::MODE_OTA)
@@ -292,7 +292,7 @@ void LAMP::changePower(bool flag) // флаг включения/выключе�
     // POWER ON
 #ifdef USE_STREAMING
     if (flags.isStream)
-      Led_Stream::newStreamObj((STREAM_TYPE)embui.param(FPSTR(TCONST_stream_type)).toInt());
+      Led_Stream::newStreamObj((STREAM_TYPE)embui.param(TCONST_stream_type).toInt());
     if(!flags.isDirect || !flags.isStream)
 #endif
     effects.reset();
@@ -327,7 +327,7 @@ void LAMP::changePower(bool flag) // флаг включения/выключе�
 #ifdef DS18B20
     // восстанавливаем значение тока после включения. Так как значение 0 не работает в ограничителе тока по перегреву, 
     // то если ограничение тока установлено в 0, устанвливаем вместо него рассчетный максимум в 15.36А на 256 диодов (бред конечно, но нужно же хоть какое-то значение больше 0).
-    setcurLimit(embui.param(FPSTR(TCONST_CLmt)).toInt() == 0 ? (mx->size() * 60) : embui.param(FPSTR(TCONST_CLmt)).toInt());
+    setcurLimit(embui.param(TCONST_CLmt).toInt() == 0 ? (mx->size() * 60) : embui.param(TCONST_CLmt).toInt());
 #endif
     FastLED.setMaxPowerInVoltsAndMilliamps(5, curLimit); // установка максимального тока БП, более чем актуально))). Проверил, без этого куска - ограничение по току не работает :)
 }
@@ -368,14 +368,14 @@ void LAMP::stopRGB(){
  */
 void LAMP::startDemoMode(uint8_t tmout)
 {
-  LOG(println,F("Demo mode"));
+  LOG(println,"Demo mode");
   if(!isLampOn()) run_action(ra::on);       // "включаем" лампу
   if(mode == LAMPMODE::MODE_DEMO) return;   // уже и так в "демо" режиме, выходим
   
   storedEffect = ((static_cast<EFF_ENUM>(effects.getCurrent()%256) == EFF_ENUM::EFF_WHITE_COLOR) ? storedEffect : effects.getCurrent()); // сохраняем предыдущий эффект, если только это не белая лампа
   mode = LAMPMODE::MODE_DEMO;
   demoTimer(T_ENABLE, tmout);
-  sendString(String(F("- Demo ON -")).c_str(), CRGB::Green, false);
+  sendString(String("- Demo ON -").c_str(), CRGB::Green, false);
 }
 
 void LAMP::storeEffect()
@@ -403,7 +403,7 @@ void LAMP::restoreStored()
 
 void LAMP::startNormalMode(bool forceOff)
 {
-  LOG(println,F("Normal mode"));
+  LOG(println,"Normal mode");
   if(forceOff)
     flags.ONflag=false;
   mode = LAMPMODE::MODE_NORMAL;
@@ -577,8 +577,8 @@ uint8_t LAMP::getFont(uint8_t bcount, uint8_t asciiCode, uint8_t row)       // �
 }
 
 void LAMP::sendString(const char* text){
-  String tmpStr = embui.param(FPSTR(TCONST_txtColor));
-  tmpStr.replace(F("#"),F("0x"));
+  String tmpStr = embui.param(TCONST_txtColor);
+  tmpStr.replace("#","0x");
   CRGB::HTMLColorCode color = (CRGB::HTMLColorCode)strtol(tmpStr.c_str(), NULL, 0);
   sendString(text, color);
 }
@@ -596,13 +596,13 @@ void LAMP::sendString(const char* text, CRGB letterColor, bool forcePrint, bool 
 }
 
 String &LAMP::prepareText(String &source){
-  source.replace(F("%TM"), TimeProcessor::getInstance().getFormattedShortTime());
-  source.replace(F("%IP"), WiFi.localIP().toString());
-  source.replace(F("%EN"), effects.getEffectName());
+  source.replace("%TM", TimeProcessor::getInstance().getFormattedShortTime());
+  source.replace("%IP", WiFi.localIP().toString());
+  source.replace("%EN", effects.getEffectName());
   const tm *tm = localtime(TimeProcessor::getInstance().now());
   char buffer[11]; //"xx.xx.xxxx"
   sprintf_P(buffer,PSTR("%02d.%02d.%04d"),tm->tm_mday,tm->tm_mon+1,tm->tm_year+ TM_BASE_YEAR);
-  source.replace(F("%DT"), buffer);
+  source.replace("%DT", buffer);
 #ifdef LAMP_DEBUG  
   if(!source.isEmpty() && effects.getCurrent()!=EFF_ENUM::EFF_TIME && !isWarning()) // спам эффекта часы и предупреждений убираем костыльным способом :)
     LOG(println, source.c_str()); // вывести в лог строку, которая после преобразований получилась
@@ -631,12 +631,12 @@ void LAMP::sendStringToLamp(const char* text, CRGB letterColor, bool forcePrint,
         JsonArray arr = (*docArrMessages).as<JsonArray>(); // используем имеющийся
         JsonObject var=arr[0]; // извлекаем очередной
         if(!var.isNull()){
-          String storage = var[F("s")];
+          String storage = var["s"];
           prepareText(storage);
-          doPrintStringToLamp(storage.c_str(), (var[F("c")].as<unsigned long>()), (var[F("o")].as<int>()), (var[F("f")].as<int>())); // отправляем
+          doPrintStringToLamp(storage.c_str(), (var["c"].as<unsigned long>()), (var["o"].as<int>()), (var["f"].as<int>())); // отправляем
 #ifdef MP3PLAYER
-          String tmpStr = var[F("s")];
-          if(mp3!=nullptr && ((mp3->isOn() && isLampOn()) || isAlarm()) && flags.playTime && tmpStr.indexOf(String(F("%TM")))>=0)
+          String tmpStr = var["s"];
+          if(mp3!=nullptr && ((mp3->isOn() && isLampOn()) || isAlarm()) && flags.playTime && tmpStr.indexOf(String("%TM"))>=0)
             if(FastLED.getBrightness()!=OFF_BRIGHTNESS)
               mp3->playTime(TimeProcessor::getInstance().getHours(), TimeProcessor::getInstance().getMinutes(), (TIME_SOUND_TYPE)flags.playTime);
 #endif
@@ -654,7 +654,7 @@ void LAMP::sendStringToLamp(const char* text, CRGB letterColor, bool forcePrint,
     }
   } else { // текст не пустой
     if(clearQueue){
-      LOG(println, F("Clear message queue"));
+      LOG(println, "Clear message queue");
       if(docArrMessages){ // очистить очередь, освободить память
           delete docArrMessages;
           docArrMessages = nullptr;
@@ -668,7 +668,7 @@ void LAMP::sendStringToLamp(const char* text, CRGB letterColor, bool forcePrint,
       doPrintStringToLamp(storage.c_str(), letterColor, textOffset, fixedPos); // отправляем
 #ifdef MP3PLAYER
       String tmpStr = text;
-      if(mp3!=nullptr && ((mp3->isOn() && isLampOn()) || isAlarm()) && flags.playTime && tmpStr.indexOf(String(F("%TM")))>=0)
+      if(mp3!=nullptr && ((mp3->isOn() && isLampOn()) || isAlarm()) && flags.playTime && tmpStr.indexOf(String("%TM"))>=0)
         if(FastLED.getBrightness()!=OFF_BRIGHTNESS)
           mp3->playTime(TimeProcessor::getInstance().getHours(), TimeProcessor::getInstance().getMinutes(), (TIME_SOUND_TYPE)flags.playTime);
 #endif
@@ -684,28 +684,28 @@ void LAMP::sendStringToLamp(const char* text, CRGB letterColor, bool forcePrint,
 
       for (size_t i = 0; i < arr.size(); i++)
       {
-        if((arr[i])[F("s")]==text
-          && (arr[i])[F("c")]==((unsigned long)letterColor.r<<16)+((unsigned long)letterColor.g<<8)+(unsigned long)letterColor.b
-          && (arr[i])[F("o")]==textOffset
-          && (arr[i])[F("f")]==fixedPos
+        if((arr[i])["s"]==text
+          && (arr[i])["c"]==((unsigned long)letterColor.r<<16)+((unsigned long)letterColor.g<<8)+(unsigned long)letterColor.b
+          && (arr[i])["o"]==textOffset
+          && (arr[i])["f"]==fixedPos
         ){
-          LOG(println, F("Duplicate string skipped"));
+          LOG(println, "Duplicate string skipped");
           //LOG(println, (*docArrMessages).as<String>());
           return;
         }
       }
 
       JsonObject var = arr.createNestedObject();
-      var[F("s")]=text;
-      var[F("c")]=((unsigned long)letterColor.r<<16)+((unsigned long)letterColor.g<<8)+(unsigned long)letterColor.b;
-      var[F("o")]=textOffset;
-      var[F("f")]=fixedPos;
+      var["s"]=text;
+      var["c"]=((unsigned long)letterColor.r<<16)+((unsigned long)letterColor.g<<8)+(unsigned long)letterColor.b;
+      var["o"]=textOffset;
+      var["f"]=fixedPos;
 
       String tmp; // Тут шаманство, чтобы не ломало JSON
       serializeJson((*docArrMessages), tmp);
       deserializeJson((*docArrMessages), tmp);
 
-      LOG(print, F("Array: "));
+      LOG(print, "Array: ");
       LOG(println, (*docArrMessages).as<String>());
     }
   }
@@ -753,8 +753,7 @@ void LAMP::doPrintStringToLamp(const char* text,  CRGB letterColor, const int8_t
 
 void LAMP::newYearMessageHandle()
 {
-  if(!tmNewYearMessage.isReady())
-    return;
+    if(!tmNewYearMessage.isReady()) return;
 
     char strMessage[256]; // буфер
     time_t calc = NEWYEAR_UNIXDATETIME - TimeProcessor::getInstance().getUnixTime();
@@ -762,17 +761,17 @@ void LAMP::newYearMessageHandle()
     if(calc<0) {
       sprintf_P(strMessage, NY_MDG_STRING2, localtime(TimeProcessor::getInstance().now())->tm_year+ TM_BASE_YEAR);
     } else if(calc<300){
-      sprintf_P(strMessage, NY_MDG_STRING1, (int)calc, String(FPSTR(TINTF_0C1)).c_str());
+      sprintf_P(strMessage, NY_MDG_STRING1, (int)calc, String(TINTF_0C1).c_str());
     } else if(calc/60<60){
       uint16_t calcT=calc/(60*60); // минуты
       uint8_t calcN=calcT%10; // остаток от деления на 10
       String str;
       if(calcN>=2 && calcN<=4) {
-        str = FPSTR(TINTF_0CC); // минуты
+        str = TINTF_0CC; // минуты
       } else if(calcN==1) {
-        str = FPSTR(TINTF_0CD); // минута
+        str = TINTF_0CD; // минута
       } else {
-        str = FPSTR(TINTF_0C2); // минут
+        str = TINTF_0C2; // минут
       }
       sprintf_P(strMessage, NY_MDG_STRING1, calcT, str.c_str());
     } else if(calc/(60*60)<60){
@@ -780,11 +779,11 @@ void LAMP::newYearMessageHandle()
       uint8_t calcN=calcT%10; // остаток от деления на 10
       String str;
       if(calcN>=2 && calcN<=4) {
-        str = FPSTR(TINTF_0C7); // часа
+        str = TINTF_0C7; // часа
       } else if(calcN==1) {
-        str = FPSTR(TINTF_0C8); // час
+        str = TINTF_0C8; // час
       } else {
-        str = FPSTR(TINTF_0C3); // часов
+        str = TINTF_0C3; // часов
       }
       sprintf_P(strMessage, NY_MDG_STRING1, calcT, str.c_str());
     } else {
@@ -792,13 +791,13 @@ void LAMP::newYearMessageHandle()
       uint8_t calcN=calcT%10; // остаток от деления на 10
       String str;
       if(calcT>=11 && calcT<=20)
-        str = FPSTR(TINTF_0C4);
+        str = TINTF_0C4;
       else if(calcN>=2 && calcN<=4)
-        str = FPSTR(TINTF_0C5);
+        str = TINTF_0C5;
       else if(calc!=11 && calcN==1)
-        str = FPSTR(TINTF_0C6);
+        str = TINTF_0C6;
       else
-        str = FPSTR(TINTF_0C4);
+        str = TINTF_0C4;
       sprintf_P(strMessage, NY_MDG_STRING1, calcT, str.c_str());
     }
 
@@ -813,8 +812,8 @@ void LAMP::showTimeOnScreen(const char *value, bool force)
   String buf(value);
   buf.replace("'","\"");
   deserializeJson(doc,buf);
-  bool isShowOff = doc[FPSTR(TCONST_isShowOff)];
-  bool isPlayTime = doc[FPSTR(TCONST_isPlayTime)];
+  bool isShowOff = doc[TCONST_isShowOff];
+  bool isPlayTime = doc[TCONST_isPlayTime];
 
   const tm* t = localtime(TimeProcessor::getInstance().now());
   if(t->tm_sec && !force)
@@ -823,7 +822,7 @@ void LAMP::showTimeOnScreen(const char *value, bool force)
   LOG(printf_P, PSTR("showTime: %02d:%02d, evenWhenOff=%d, PlayTime=%d\n"), t->tm_hour,t->tm_min, isShowOff, isPlayTime);
 
   time_t tm = t->tm_hour * 60 + t->tm_min;
-  String time = isPlayTime ? String(F("%TM")) : TimeProcessor::getInstance().getFormattedShortTime();
+  String time = isPlayTime ? String("%TM") : TimeProcessor::getInstance().getFormattedShortTime();
 
   CRGB color;
   if(!(tm%60)){
@@ -908,7 +907,7 @@ void LAMP::setMicOnOff(bool val) {
     LList<std::shared_ptr<UIControl>>&controls = effects.getControls();
     if(val){
         for(unsigned i=3; i<controls.size(); i++) {
-            if(controls[i]->getId()==7 && controls[i]->getName().startsWith(FPSTR(TINTF_020))==1){
+            if(controls[i]->getId()==7 && controls[i]->getName().startsWith(TINTF_020)==1){
                 effects.worker->setDynCtrl(controls[i].get());
                 return;
             } else if(controls[i]->getId()==7) {
@@ -917,7 +916,7 @@ void LAMP::setMicOnOff(bool val) {
         }
     }
 
-    UIControl ctrl(7,(CONTROL_TYPE)18,String(FPSTR(TINTF_020)), val ? "1" : "0", "0", "1", "1");
+    UIControl ctrl(7,(CONTROL_TYPE)18,String(TINTF_020), val ? "1" : "0", "0", "1", "1");
     effects.worker->setDynCtrl(&ctrl);
     if(foundc7){ // был найден 7 контрол, но не микрофон
         effects.worker->setDynCtrl(controls[foundc7].get());
@@ -926,19 +925,18 @@ void LAMP::setMicOnOff(bool val) {
 #endif  // MIC_EFFECTS
 
 void LAMP::setBrightness(uint8_t tgtbrt, fade_t fade, bool bypass){
-    LOG(printf_P, PSTR("setBrightness(): %u\n"), tgtbrt);
+    LOG(printf, "setBrightness(%u,%u,%u)\n", tgtbrt, static_cast<uint8_t>(fade), bypass);
     if (bypass)
       return _brightness(tgtbrt, true);
 
-    globalBrightness = tgtbrt;
-
-    if ( fade == fade_t::on || (fade == fade_t::preset) && flags.isFaderON) {
+    if ( fade == fade_t::on || ( (fade == fade_t::preset) && flags.isFaderON) ) {
         LEDFader::getInstance()->fadelight(tgtbrt);
     } else {
         _brightness(tgtbrt);
     }
+    globalBrightness = tgtbrt;            // set configured brightness variable
 
-    embui.var(TCONST_GlobBRI, tgtbrt);
+    embui.var(TCONST_GlobBRI, tgtbrt);    // save brightness variable
 }
 
 /*
@@ -953,12 +951,8 @@ void LAMP::_brightness(uint8_t brt, bool absolute){
     FastLED.show();
 }
 
-uint8_t LAMP::lampBrightnesspct(uint8_t brt){
-  if (brt >=100)
-    setBrightness(255);
-  else
-    setBrightness(brt * 255 / 100);
-  return brt;
+uint8_t LAMP::_get_brightness(bool absolute){
+  return absolute ? FastLED.getBrightness() : luma::curveUnMap(_curve, FastLED.getBrightness(), MAX_BRIGHTNESS, _brightnessScale);
 }
 
 void LAMP::setLumaCurve(luma::curve c){
@@ -1011,7 +1005,8 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
     if (fade && flags.ONflag) {
       effects.switchEffect(next_eff_num, true);       // preload controls for next effect
       // запускаем фейдер и уходим на второй круг переключения
-      LEDFader::getInstance()->fadelight( myLamp.getBrightness() < 2*FADE_MINCHANGEBRT ? 0 : FADE_MINCHANGEBRT, FADE_TIME, std::bind(&LAMP::switcheffect, this, action, fade, next_eff_num, true));
+      // если текущая абсолютная яркость больше чем 2*FADE_MINCHANGEBRT, то затухаем не полностью, а только до значения FADE_MINCHANGEBRTб в противном случае гаснем полностью
+      LEDFader::getInstance()->fadelight( _get_brightness(true) < 3*MAX_BRIGHTNESS/FADE_LOWBRTFRACT/2 ? 0 : _brightnessScale/FADE_LOWBRTFRACT, FADE_TIME, std::bind(&LAMP::switcheffect, this, action, fade, next_eff_num, true));
       return;
     } else {
       // do direct switch to effect
@@ -1039,7 +1034,7 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
 
   // show effects's name on screen and play name over speaker (if set)
   if(isShowName){
-    sendStringToLamp(String(F("%EN")).c_str(), CRGB::Green);
+    sendStringToLamp(String("%EN").c_str(), CRGB::Green);
 #ifdef MP3PLAYER
     if(isPlayName && mp3!=nullptr && mp3->isOn()) // воспроизведение 
       mp3->playName(effects.getCurrent());
@@ -1058,7 +1053,7 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
     }
   }
   setBrightness(globalBrightness);      // need to reapply brightness as effect's curve might have changed
-  LOG(println, F("eof switcheffect"));
+  LOG(println, "eof switcheffect");
 }
 
 /*
@@ -1300,7 +1295,7 @@ void LAMP::reset_led_buffs(){
 }
 
 void LAMP::_wipe_screen(){
-  LOG(println, F("Wipe Screen"));
+  LOG(println, "Wipe Screen");
   if (mx) mx->clear();
   if (sledsbuff) sledsbuff->clear();
   delete sledsbuff;
@@ -1313,50 +1308,54 @@ void LAMP::_wipe_screen(){
 
 void LEDFader::fadelight(const uint8_t _targetbrightness, const uint32_t _duration, std::function<void()> callback){
   if (!lmp) return;
-  //LOG(printf_P, PSTR("FDR lamp_getbr:%d, fled_getbr:%d, fled_vid%d\n"), lmp->getBrightness(), FastLED.getBrightness(), brighten8_video(FastLED.getBrightness()));
+  LOG(printf, "Fader: tgt:%u, lamp:%u/%u, _br/_br(abs):%u/%u\n", _targetbrightness, lmp->getBrightness(), lmp->getBrightnessScale(), lmp->_get_brightness(), lmp->_get_brightness(true));
 
-  // will take previous value of fader target value as current lamp brightness,
-  // during fadedown lamp's configured brightness does no change, so we can't rely on it
-  _brt = _tgtbrt;
-  if (_brt == _targetbrightness) {
-    // no need to fade, already same brightness
+  if (lmp->_get_brightness() == _targetbrightness) {
+    // no need to fade, already at this brightness
     if (callback) callback();
     return;
   }
-  _tgtbrt = _targetbrightness;
+
+  _brt = lmp->_get_brightness(true);        // get current absolute fastled brightness
+  _tgtbrt = luma::curveMap(lmp->_curve, _targetbrightness, MAX_BRIGHTNESS, lmp->_brightnessScale);
   _cb = callback;
+  // calculate required steps
   int _steps = (abs(_tgtbrt - _brt) > FADE_MININCREMENT * _duration / FADE_STEPTIME) ? _duration / FADE_STEPTIME : abs(_tgtbrt - _brt)/FADE_MININCREMENT;
   if (_steps < 3) {   // no need to fade for such small difference
-    lmp->_brightness(_tgtbrt);
     LOG(printf_P, PSTR("Fast fade to %d->%d\n"), _brt, _tgtbrt);
+    lmp->_brightness(_tgtbrt, true);
     if (runner) abort();
     if (callback) callback();
     return;
   }
+
   _brtincrement = (_tgtbrt - _brt) / _steps;
 
   if (runner){
+    // fading is already in progress, let's readjust it
     runner->setIterations(_steps);
     runner->restartDelayed();
   } else {
     runner = new Task((unsigned long)FADE_STEPTIME,
       _steps,
-      [this](){ _brt += _brtincrement; lmp->_brightness(_brt); /* LOG(printf_P, PSTR("fd brt %d/%d, glbr:%d, gbr:%d, vid:%d, vid2:%d\n"), _brt, _brtincrement, lmp->getBrightness(), lmp->getBrightness(), brighten8_video(FastLED.getBrightness()), brighten8_video(brighten8_video(FastLED.getBrightness()))  ); */ },
-      &ts,
-      true,
-      nullptr,
+      [this](){ _brt += _brtincrement; lmp->_brightness(_brt, true);  // set absolute backend brightness here
+                FastLED.show();
+                /* LOG(printf_P, PSTR("fd brt %d/%d, glbr:%d, gbr:%d, vid:%d, vid2:%d\n"), _brt, _brtincrement, lmp->getBrightness(), lmp->getBrightness(), brighten8_video(FastLED.getBrightness()), brighten8_video(brighten8_video(FastLED.getBrightness()))  ); */
+              },
+      &ts, true, nullptr,
+      // onDisable
       [this](){
-          lmp->_brightness(_tgtbrt);
-          LOG(printf_P, PSTR("Fading to %d done\n"), _tgtbrt);
-          // use new task for callback, 'cause effect switching will immiatetly respawn new fader from callback
-          // so need to release a task instance
+          lmp->_brightness(_tgtbrt, true);  // set exact target brightness value
+          LOG(printf, "Fading to %d done\n", _tgtbrt);
+          // use new task for callback, 'cause effect switching will immidiatetly respawn new fader from callback, so I need to release a Task instance
           if(_cb) { new Task(FADE_STEPTIME, TASK_ONCE, [this](){ if (_cb) { _cb(); _cb = nullptr; } }, &ts, true, nullptr, nullptr, true ); }
           runner = nullptr;
       },
-      true);
+      true
+    );
   }
 
-  LOG(printf_P, PSTR("Fading l:%d(led:%d)->%d, in %d steps, inc %d\n"), lmp->getBrightness(), _brt, _targetbrightness, _steps, _brtincrement);
+  LOG(printf_P, PSTR("Fading lamp/fled:%d/%d->%d/%u, steps/inc %d/%d\n"), lmp->getBrightness(), lmp->_get_brightness(true), _targetbrightness, _tgtbrt, _steps, _brtincrement);
 }
 
 void LEDFader::abort(){
@@ -1364,7 +1363,7 @@ void LEDFader::abort(){
   runner->abort();
   delete runner;
   runner = nullptr;
-  LOG(println,F("Fader aborted"));
+  LOG(println,"Fader aborted");
 }
 
 // ============

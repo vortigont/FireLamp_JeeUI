@@ -53,6 +53,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #define ARR_LIST_SIZE   1024
 #endif
 
+static constexpr const char c_snd[] = "snd";
 
 /*
 // true deep-copy of UIControl ponters
@@ -90,10 +91,10 @@ bool Effcfg::_eff_cfg_deserialize(DynamicJsonDocument &doc, const char *folder){
   bool retry = true;
   READALLAGAIN:
   if (embuifs::deserializeFile(doc, filename.c_str() )){
-    if ( num>255 || geteffcodeversion((uint8_t)num) == doc[F("ver")] ){ // только для базовых эффектов эта проверка
+    if ( num>255 || geteffcodeversion((uint8_t)num) == doc["ver"] ){ // только для базовых эффектов эта проверка
       return true;   // we are OK
     }
-    LOG(printf_P, PSTR("Wrong version in effect cfg file, reset cfg to default (%d vs %d)\n"), doc[F("ver")].as<uint8_t>(), geteffcodeversion((uint8_t)num));
+    LOG(printf_P, PSTR("Wrong version in effect cfg file, reset cfg to default (%d vs %d)\n"), doc["ver"].as<uint8_t>(), geteffcodeversion((uint8_t)num));
   }
   // something is wrong with eff config file, recreate it to default
   create_eff_default_cfg_file(num, filename);   // пробуем перегенерировать поврежденный конфиг (todo: remove it and provide default from code)
@@ -112,9 +113,13 @@ bool Effcfg::loadeffconfig(uint16_t nb, const char *folder){
   DynamicJsonDocument doc(DYNJSON_SIZE_EFF_CFG);
   if (!_eff_cfg_deserialize(doc, folder)) return false;   // error loading file
 
-  version = doc[F("ver")];
-  effectName = doc[F("name")] | String(FPSTR(T_EFFNAMEID[(uint8_t)nb]));
-  soundfile = doc[F("snd")].as<String>();
+  version = doc["ver"];
+  effectName = doc["name"] ? doc["name"].as<const char*>() : T_EFFNAMEID[(uint8_t)nb];
+  if (doc[c_snd])
+    soundfile = doc[c_snd].as<const char*>();
+  else
+    soundfile.clear();
+
   brt = doc["brt"];
   curve = doc[TCONST_lcurve] ? static_cast<luma::curve>(doc[TCONST_lcurve].as<int>()) : luma::curve::cie1931;
 
@@ -124,13 +129,13 @@ bool Effcfg::loadeffconfig(uint16_t nb, const char *folder){
 
 void Effcfg::create_eff_default_cfg_file(uint16_t nb, String &filename){
 
-  const String efname(FPSTR(T_EFFNAMEID[(uint8_t)nb])); // выдергиваем имя эффекта из таблицы
-  LOG(printf_P,PSTR("Make default config: %d %s\n"), nb, efname.c_str());
+  const char* efname = T_EFFNAMEID[(uint8_t)nb]; // выдергиваем имя эффекта из таблицы
+  LOG(printf_P,PSTR("Make default config: %d %s\n"), nb, efname);
 
-  String  cfg(FPSTR(T_EFFUICFG[(uint8_t)nb]));    // извлекаем конфиг для UI-эффекта по-умолчанию из флеш-таблицы
-  cfg.replace(F("@name@"), efname);
-  cfg.replace(F("@ver@"), String(geteffcodeversion((uint8_t)nb)) );
-  cfg.replace(F("@nb@"), String(nb));
+  String  cfg(T_EFFUICFG[(uint8_t)nb]);    // извлекаем конфиг для UI-эффекта по-умолчанию из флеш-таблицы
+  cfg.replace("@name@", efname);
+  cfg.replace("@ver@", String(geteffcodeversion((uint8_t)nb)) );
+  cfg.replace("@nb@", String(nb));
   
   File configFile = LittleFS.open(filename, "w");
   if (configFile){
@@ -174,21 +179,21 @@ void Effcfg::autosave(bool force) {
 String Effcfg::getSerializedEffConfig(uint8_t replaceBright) const {
   DynamicJsonDocument doc(DYNJSON_SIZE_EFF_CFG);
 
-  doc[F("nb")] = num;
-  doc[F("flags")] = flags.mask;
-  doc[F("name")] = effectName;
-  doc[F("ver")] = version;
+  doc["nb"] = num;
+  doc["flags"] = flags.mask;
+  doc["name"] = effectName;
+  doc["ver"] = version;
   if (brt) doc["brt"] = brt;
   if (curve != luma::curve::cie1931) doc[TCONST_lcurve] = e2int(curve);
-  doc[F("snd")] = soundfile;
-  JsonArray arr = doc.createNestedArray(F("ctrls"));
+  doc["snd"] = soundfile;
+  JsonArray arr = doc.createNestedArray("ctrls");
   for (auto c = controls.cbegin(); c != controls.cend(); ++c){
     auto ctrl = c->get();
     JsonObject var = arr.createNestedObject();
     var[P_id]=ctrl->getId();
     var[P_type]=ctrl->getType();
-    var[F("name")] = ctrl->getName();
-    var[F("val")]  = ctrl->getVal();
+    var["name"] = ctrl->getName();
+    var["val"]  = ctrl->getVal();
     var[P_min]=ctrl->getMin();
     var[P_max]=ctrl->getMax();
     var[P_step]=ctrl->getStep();
@@ -209,7 +214,7 @@ EffectWorker::EffectWorker(LAMPSTATE *_lampstate, LedFB *framebuffer) : lampstat
     auto c = std::make_shared<UIControl>(
       id,                                     // id
       CONTROL_TYPE::RANGE,                    // type
-      id==0 ? String(FPSTR(TINTF_00D)) : id==1 ? String(FPSTR(TINTF_087)) : String(FPSTR(TINTF_088))           // name
+      id==0 ? String(TINTF_00D) : id==1 ? String(TINTF_087) : String(TINTF_088)           // name
     );
     curEff.controls.add(c);
   }
@@ -482,23 +487,23 @@ void EffectWorker::workerset(uint16_t effect){
 
 void EffectWorker::initDefault(const char *folder)
 {
-  if(!LittleFS.exists(F("/eff"))){
-    LittleFS.mkdir(F("/eff"));
+  if(!LittleFS.exists("/eff")){
+    LittleFS.mkdir("/eff");
   }
-  if(!LittleFS.exists(F("/backup"))){
-    LittleFS.mkdir(F("/backup"));
+  if(!LittleFS.exists("/backup")){
+    LittleFS.mkdir("/backup");
   }
-  if(!LittleFS.exists(F("/backup/btn"))){
-    LittleFS.mkdir(F("/backup/btn"));
+  if(!LittleFS.exists("/backup/btn")){
+    LittleFS.mkdir("/backup/btn");
   }
-  if(!LittleFS.exists(F("/backup/evn"))){
-    LittleFS.mkdir(F("/backup/evn"));
+  if(!LittleFS.exists("/backup/evn")){
+    LittleFS.mkdir("/backup/evn");
   }
-  if(!LittleFS.exists(F("/backup/glb"))){
-    LittleFS.mkdir(F("/backup/glb"));
+  if(!LittleFS.exists("/backup/glb")){
+    LittleFS.mkdir("/backup/glb");
   }
-  if(!LittleFS.exists(F("/backup/idx"))){
-    LittleFS.mkdir(F("/backup/idx"));
+  if(!LittleFS.exists("/backup/idx")){
+    LittleFS.mkdir("/backup/idx");
   }
 
   // try to load effects index from FS, or default index from FW if FS index is missing or corrupted
@@ -534,7 +539,7 @@ void EffectWorker::effectsReSort(SORT_TYPE _effSort)
       //effects.sort([](EffectListElem *&a, EffectListElem *&b){ EffectWorker *tmp = new EffectWorker((uint16_t)0); String tmp1; tmp->loadeffname(tmp1, a->eff_nb); String tmp2; tmp->loadeffname(tmp2,b->eff_nb); delete tmp; return strcmp_P(tmp1.c_str(), tmp2.c_str());});
       //break;
     case SORT_TYPE::ST_AB :
-      effects.sort([](EffectListElem &a, EffectListElem &b){ String tmp=FPSTR(T_EFFNAMEID[(uint8_t)a.eff_nb]); return strcmp_P(tmp.c_str(), (T_EFFNAMEID[(uint8_t)b.eff_nb]));});
+      effects.sort([](EffectListElem &a, EffectListElem &b){ return std::string_view(T_EFFNAMEID[(uint8_t)a.eff_nb]).compare(T_EFFNAMEID[(uint8_t)b.eff_nb]); });
       break;
 #ifdef MIC_EFFECTS
     case SORT_TYPE::ST_MIC :
@@ -558,10 +563,10 @@ void EffectWorker::loadeffname(String& _effectName, const uint16_t nb, const cha
   String filename = fshlpr::getEffectCfgPath(nb,folder);
   DynamicJsonDocument doc(DYNJSON_SIZE_EFF_CFG);
   bool ok = embuifs::deserializeFile(doc, filename.c_str());
-  if (ok && doc[F("name")]){
-    _effectName = doc[F("name")].as<String>(); // перенакрываем именем из конфига, если есть
+  if (ok && doc["name"]){
+    _effectName = doc["name"].as<const char*>(); // перенакрываем именем из конфига, если есть
   } else {
-    _effectName = FPSTR(T_EFFNAMEID[(uint8_t)nb]);   // выбираем имя по-умолчанию из флеша если конфиг поврежден
+    _effectName = T_EFFNAMEID[(uint8_t)nb];   // выбираем имя по-умолчанию из флеша если конфиг поврежден
   }
 }
 
@@ -577,9 +582,9 @@ void EffectWorker::loadsoundfile(String& _soundfile, const uint16_t nb, const ch
   String filename = fshlpr::getEffectCfgPath(nb,folder);
   DynamicJsonDocument doc(2048);
   bool ok = embuifs::deserializeFile(doc, filename.c_str());
-  LOG(printf_P,PSTR("snd: %s\n"),doc[F("snd")].as<String>().c_str());
-  if (ok && doc[F("snd")]){
-    _soundfile = doc[F("snd")].as<String>(); // перенакрываем именем из конфига, если есть
+  LOG(printf_P,PSTR("snd: %s\n"),doc["snd"].as<String>().c_str());
+  if (ok && doc["snd"]){
+    _soundfile = doc["snd"].as<String>(); // перенакрываем именем из конфига, если есть
   } else if(!ok) {
     _soundfile.clear();
   }
@@ -587,9 +592,9 @@ void EffectWorker::loadsoundfile(String& _soundfile, const uint16_t nb, const ch
 
 
 void EffectWorker::removeLists(){
-  LittleFS.remove(FPSTR(TCONST_eff_list_json));
-  LittleFS.remove(FPSTR(TCONST_eff_fulllist_json));
-  LittleFS.remove(FPSTR(TCONST_eff_index));
+  LittleFS.remove(TCONST_eff_list_json);
+  LittleFS.remove(TCONST_eff_fulllist_json);
+  LittleFS.remove(TCONST_eff_index);
 }
 
 void EffectWorker::makeIndexFileFromList(const char *folder, bool forceRemove)
@@ -613,7 +618,7 @@ void EffectWorker::makeIndexFileFromList(const char *folder, bool forceRemove)
     // {"n":%d,"f":%d},   => 32 bytes is more than enough
     if (ARR_LIST_SIZE - offset < 32){
       // write to file and purge buffer
-      //LOG(println,F("Dumping buff..."));
+      //LOG(println,"Dumping buff...");
       hndlr.write(reinterpret_cast<uint8_t*>(buff->data()), offset);
       offset = 0;
     }
@@ -626,7 +631,7 @@ void EffectWorker::makeIndexFileFromList(const char *folder, bool forceRemove)
   hndlr.close();
   delete buff;
 
-  LOG(printf_P, PSTR("Индекс эффектов обновлен, %ums\n"), millis()-s );
+  LOG(printf_P, PSTR("Индекс эффектов обновлен, %lums\n"), millis()-s );
   effectsReSort(); // восстанавливаем сортировку
 }
 
@@ -661,7 +666,7 @@ void EffectWorker::copyEffect(const EffectListElem *base)
   Effcfg copycfg(base->eff_nb);
   copycfg.num = newnum;
   // имя формируем с базового + индекс копии
-  copycfg.effectName.concat(F("_"));
+  copycfg.effectName.concat("_");
   copycfg.effectName.concat(newnum>>8);
 
   // save new config file
@@ -850,7 +855,7 @@ void EffectWorker::fsinforenew(){
 }
 
 void EffectWorker::setEffectName(const String &name, EffectListElem*to){
-  if (name == FPSTR(T_EFFNAMEID[(uint8_t)to->eff_nb])){
+  if (name == T_EFFNAMEID[(uint8_t)to->eff_nb]){
     to->flags.renamed = false;
     return;   // имя совпадает с исходным значением во флеше, нечего переименовывать
   } 
@@ -893,31 +898,31 @@ uint16_t EffectWorker::effIndexByList(uint16_t val) {
 
 bool Effcfg::_eff_ctrls_load_from_jdoc(DynamicJsonDocument &effcfg, LList<std::shared_ptr<UIControl>> &ctrls){
   LOG(print, PSTR("_eff_ctrls_load_from_jdoc(), "));
-  //LOG(printf_P, PSTR("Load MEM: %s - CFG: %s - DEF: %s\n"), effectName.c_str(), doc[F("name")].as<String>().c_str(), worker->getName().c_str());
+  //LOG(printf_P, PSTR("Load MEM: %s - CFG: %s - DEF: %s\n"), effectName.c_str(), doc["name"].as<String>().c_str(), worker->getName().c_str());
   // вычитываею список контроллов
   // повторные - скипаем, нехватающие - создаем
   // обязательные контролы 0, 1, 2 - яркость, скорость, масштаб, остальные пользовательские
-  JsonArray arr = effcfg[F("ctrls")].as<JsonArray>();
+  JsonArray arr = effcfg["ctrls"].as<JsonArray>();
   if (!arr) return false;
   LOG(printf_P, PSTR("got arr of %u controls\n"), arr.size());
 
   ctrls.clear();
   uint8_t id_tst = 0x0; // пустой
   for (JsonObject item : arr) {
-      uint8_t id = item[F("id")].as<uint8_t>();
+      uint8_t id = item["id"].as<uint8_t>();
       if(!(id_tst&(1<<id))){ // проверка на существование контрола
-          id_tst |= 1<<item[F("id")].as<uint8_t>(); // закладываемся не более чем на 8 контролов, этого хватит более чем :)
-          String name = item.containsKey(F("name")) ?
-              item[F("name")].as<String>()
-              : id == 0 ? String(FPSTR(TINTF_00D))
-              : id == 1 ? String(FPSTR(TINTF_087))
-              : id == 2 ? String(FPSTR(TINTF_088))
-              : String(F("Доп."))+String(id);
-          String val = item.containsKey(F("val")) ? item[F("val")].as<String>() : String(1);
-          String min = item.containsKey(F("min")) && id>2 ? item[F("min")].as<String>() : String(1);
-          String max = item.containsKey(F("max")) && id>2 ? item[F("max")].as<String>() : String(255);
-          String step = item.containsKey(F("step")) && id>2 ?  item[F("step")].as<String>() : String(1);
-          CONTROL_TYPE type = item[F("type")].as<CONTROL_TYPE>();
+          id_tst |= 1<<item["id"].as<uint8_t>(); // закладываемся не более чем на 8 контролов, этого хватит более чем :)
+          String name = item.containsKey("name") ?
+              item["name"].as<String>()
+              : id == 0 ? String(TINTF_00D)
+              : id == 1 ? String(TINTF_087)
+              : id == 2 ? String(TINTF_088)
+              : String("Доп.")+String(id);
+          String val = item.containsKey("val") ? item["val"].as<String>() : String(1);
+          String min = item.containsKey("min") && id>2 ? item["min"].as<String>() : String(1);
+          String max = item.containsKey("max") && id>2 ? item["max"].as<String>() : String(255);
+          String step = item.containsKey("step") && id>2 ?  item["step"].as<String>() : String(1);
+          CONTROL_TYPE type = item["type"].as<CONTROL_TYPE>();
           type = ((type & 0x0F)!=CONTROL_TYPE::RANGE) && id<3 ? CONTROL_TYPE::RANGE : type;
           min = ((type & 0x0F)==CONTROL_TYPE::CHECKBOX) ? "0" : min;
           max = ((type & 0x0F)==CONTROL_TYPE::CHECKBOX) ? "1" : max;
@@ -934,7 +939,7 @@ bool Effcfg::_eff_ctrls_load_from_jdoc(DynamicJsonDocument &effcfg, LList<std::s
         auto c = std::make_shared<UIControl>(
               id,                                     // id
               CONTROL_TYPE::RANGE,                    // type
-              id==0 ? FPSTR(TINTF_00D) : id==1 ? FPSTR(TINTF_087) : FPSTR(TINTF_088),           // name
+              id==0 ? TINTF_00D : id==1 ? TINTF_087 : TINTF_088,           // name
               "127",                            // value
               "1",                              // min
               "255",                            // max
@@ -952,7 +957,7 @@ void EffectWorker::_load_default_fweff_list(){
   effects.clear();
 
   for (uint16_t i = 0; i != 256U; i++){
-    if (!strlen_P(T_EFFNAMEID[i]) && i)   // пропускаем индексы-"пустышки" без названия, кроме 0 "EFF_NONE"
+    if (!strlen(T_EFFNAMEID[i]) && i)   // пропускаем индексы-"пустышки" без названия, кроме 0 "EFF_NONE"
       continue;
 
 #ifndef MIC_EFFECTS
@@ -968,7 +973,7 @@ void EffectWorker::_load_default_fweff_list(){
 void EffectWorker::_load_eff_list_from_idx_file(const char *folder){
   // todo: check if supplied alternative path starts with '/'
   String filename(folder ? folder : "");
-  filename += FPSTR(TCONST_eff_index); // append 'eff_index.json' filename
+  filename += TCONST_eff_index; // append 'eff_index.json' filename
 
   // if index file does not exist - load default list from firmware tables
   if (!LittleFS.exists(filename)){
@@ -986,17 +991,17 @@ void EffectWorker::_load_eff_list_from_idx_file(const char *folder){
   JsonArray arr = doc.as<JsonArray>();
   if(arr.isNull() || arr.size()==0){
     LittleFS.remove(filename);    // remove corrupted index file
-    LOG(println, F("eff index file corrupted, loading fw defaults"));
+    LOG(println, "eff index file corrupted, loading fw defaults");
     return _rebuild_eff_list();
   }
 
   effects.clear();
   for (JsonObject item : arr){
       if(item.containsKey("n")){
-        EffectListElem el(item[F("n")].as<uint16_t>(), item[F("f")].as<uint8_t>());
+        EffectListElem el(item["n"].as<uint16_t>(), item["f"].as<uint8_t>());
         effects.add(el);
       }
-      //LOG(printf_P,PSTR("%d : %d\n"),item[F("n")].as<uint16_t>(), item[F("f")].as<uint8_t>());
+      //LOG(printf_P,PSTR("%d : %d\n"),item["n"].as<uint16_t>(), item["f"].as<uint8_t>());
   }
 
   effects.sort([](EffectListElem &a, EffectListElem &b){ return a.eff_nb - b.eff_nb;}); // сортирую по eff_nb
@@ -1014,17 +1019,17 @@ void EffectWorker::_load_eff_list_from_idx_file(const char *folder){
 }
 
 void EffectWorker::_rebuild_eff_list(const char *folder){
-  LOG(println, F("_rebuild_eff_list()"));
+  LOG(println, "_rebuild_eff_list()");
   // load default fw list first
   _load_default_fweff_list();
 
   String sourcedir;
 
   if (folder) {
-      sourcedir.concat(F("/"));
+      sourcedir.concat("/");
       sourcedir.concat(folder);
   }
-  sourcedir.concat(F("/eff"));
+  sourcedir.concat("/eff");
 
 #ifdef ESP8266
   Dir dir = LittleFS.openDir(sourcedir);
@@ -1033,7 +1038,7 @@ void EffectWorker::_rebuild_eff_list(const char *folder){
 #ifdef ESP32
   File dir = LittleFS.open(sourcedir);
   if (!dir || !dir.isDirectory()){
-    LOG(print, F("Can't open dir: ")); LOG(println, sourcedir);
+    LOG(print, "Can't open dir: "); LOG(println, sourcedir);
     return;
   }
 #endif
@@ -1063,8 +1068,8 @@ void EffectWorker::_rebuild_eff_list(const char *folder){
       continue;
     }
 
-    uint16_t nb = doc[F("nb")].as<uint16_t>();
-    uint8_t flags = doc[F("flags")].as<uint8_t>();
+    uint16_t nb = doc["nb"].as<uint16_t>();
+    uint8_t flags = doc["flags"].as<uint8_t>();
     EffectListElem *eff = getEffect(nb);
     if(eff){  // such effect exist in list, apply flags
       flags = eff->flags.mask;
@@ -1162,7 +1167,7 @@ String EffectCalc::setDynCtrl(UIControl*_val){
     return String();
   String ret_val = _val->getVal();
   //LOG(printf_P, PSTR("ctrlVal=%s\n"), ret_val.c_str());
-  if (usepalettes && _val->getName().startsWith(FPSTR(TINTF_084))==1){ // Начинается с Палитра
+  if (usepalettes && _val->getName().startsWith(TINTF_084)==1){ // Начинается с Палитра
     if(isRandDemo()){
       paletteIdx = random(_val->getMin().toInt(),_val->getMax().toInt()+1);
     } else
@@ -1171,7 +1176,7 @@ String EffectCalc::setDynCtrl(UIControl*_val){
     isCtrlPallete = true;
   }
 
-  if(_val->getId()==7 && _val->getName().startsWith(FPSTR(TINTF_020))==1){ // Начинается с микрофон и имеет 7 id
+  if(_val->getId()==7 && _val->getName().startsWith(TINTF_020)==1){ // Начинается с микрофон и имеет 7 id
     isMicActive = (ret_val.toInt() && isMicOnState()) ? true : false;
 #ifdef MIC_EFFECTS
     if(_lampstate)
@@ -1230,7 +1235,7 @@ void EffectCalc::palettesload(){
  */
 void EffectCalc::palettemap(std::vector<PGMPalette*> &_pals, const uint8_t _val, const uint8_t _min,  const uint8_t _max){
   if (!_pals.size() || _val>_max) {
-    LOG(println,F("No palettes loaded or wrong value!"));
+    LOG(println,"No palettes loaded or wrong value!");
     return;
   }
   ptPallete = (_max+0.1)/_pals.size();     // сколько пунктов приходится на одну палитру; 255.1 - диапазон ползунка, не включая 255, т.к. растягиваем только нужное :)
@@ -1252,7 +1257,7 @@ void EffectCalc::scale2pallete(){
   if (!usepalettes)
     return;
 
-  LOG(println, F("scale2pallete() Reset all controls, wtf???"));
+  LOG(println, "scale2pallete() Reset all controls, wtf???");
   // setbrt((*ctrls)[0]->getVal().toInt());
   // setspd((*ctrls)[1]->getVal().toInt());
   // setscl((*ctrls)[2]->getVal().toInt());
@@ -1267,7 +1272,7 @@ const String& EffectCalc::getCtrlVal(unsigned idx) {
 
     // Добавлена поддержка вариантов следования индексов контролов вида 0,1,2,5,7 т.е. с пропусками
     dummy.clear();
-    if(idx<ctrls->size() && idx>=0 && idx<=2 && (*ctrls)[idx]->getId()==idx){
+    if(idx<ctrls->size() && idx<=2 && (*ctrls)[idx]->getId()==idx){
         return (*ctrls)[idx]->getVal();
     } else {
         for(unsigned i = 3; i<ctrls->size(); i++){
@@ -1312,14 +1317,14 @@ void build_eff_names_list_file(EffectWorker &w, bool full){
   unsigned long s = millis();
 
   // delete existing file if any
-  if(LittleFS.exists(full ? FPSTR(TCONST_eff_fulllist_json) : FPSTR(TCONST_eff_list_json))){
-    LittleFS.remove(full ? FPSTR(TCONST_eff_fulllist_json) : FPSTR(TCONST_eff_list_json));
+  if(LittleFS.exists(full ? TCONST_eff_fulllist_json : TCONST_eff_list_json)){
+    LittleFS.remove(full ? TCONST_eff_fulllist_json : TCONST_eff_list_json);
   }
 
   std::array<char, ARR_LIST_SIZE> *buff = new(std::nothrow) std::array<char, ARR_LIST_SIZE>;
   if (!buff) return;    // not enough mem
 
-  fs::File hndlr = LittleFS.open(FPSTR(TCONST_eff_list_json_tmp), "w");
+  fs::File hndlr = LittleFS.open(TCONST_eff_list_json_tmp, "w");
   
   size_t offset = 0;
   auto itr =  w.getEffectsList().cbegin();  // get const interator
@@ -1330,12 +1335,12 @@ void build_eff_names_list_file(EffectWorker &w, bool full){
     if (!full && !itr->flags.canBeSelected)
       continue;
 
-    String effname((char *)0);
+    String effname;
     // if effect was renamed, than read it's name from json, otherwise from flash
     if (itr->flags.renamed)
       w.loadeffname(effname, itr->eff_nb);
     else
-      effname = FPSTR(T_EFFNAMEID[(uint8_t)itr->eff_nb]);
+      effname = T_EFFNAMEID[(uint8_t)itr->eff_nb];
     
 
     // {"label":"50. Прыгуны","value":"50"}, => 30 bytes + NameLen (assume 35 to be safe)
@@ -1352,7 +1357,7 @@ void build_eff_names_list_file(EffectWorker &w, bool full){
     // for effect copies it will append clone number suffix, i.e. '75.0 '
     String name(EFF_NUMBER(itr->eff_nb));
     name += effname + MIC_SYMBOL(itr->eff_nb);    // add microphone symbol for effects that support it
-    //name + (eff->eff_nb>255 ? String(F(" (")) + String(eff->eff_nb&0xFF) + String(F(")")) : String("")) + String(F(". "))
+    //name + (eff->eff_nb>255 ? String(" (") + String(eff->eff_nb&0xFF) + String(")") : String("")) + String(". ")
 
     offset += sprintf_P(buff->data()+offset, PSTR("{\"label\":\"%s\",\"value\":\"%d\"},"), name.c_str(), itr->eff_nb);
   } while (++itr != w.getEffectsList().cend());
@@ -1362,6 +1367,6 @@ void build_eff_names_list_file(EffectWorker &w, bool full){
   delete buff;
   hndlr.close();
 
-  LittleFS.rename(FPSTR(TCONST_eff_list_json_tmp), full ? FPSTR(TCONST_eff_fulllist_json) : FPSTR(TCONST_eff_list_json));
-  LOG(printf_P, PSTR("\nGENERATE effects name json file for GUI(%s): %ums\n"), full ? "brief" : "full", millis()-s);
+  LittleFS.rename(TCONST_eff_list_json_tmp, full ? TCONST_eff_fulllist_json : TCONST_eff_list_json);
+  LOG(printf_P, PSTR("\nGENERATE effects name json file for GUI(%s): %lums\n"), full ? "brief" : "full", millis()-s);
 }

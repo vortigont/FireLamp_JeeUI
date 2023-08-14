@@ -142,9 +142,9 @@ void EVENT_MANAGER::loadConfig(const char *cfg)
     if(LittleFS.begin()){
         clear_events();
         DynamicJsonDocument doc(4096);
-        String filename = cfg ? String(cfg) : String(F("/events_config.json"));
+        String filename = cfg ? String(cfg) : String("/events_config.json");
         if (!embuifs::deserializeFile(doc, filename.c_str())){
-            LOG(print, F("deserializeJson error: "));
+            LOG(print, "deserializeJson error: ");
             LOG(println, filename);
             return;
         }
@@ -152,19 +152,19 @@ void EVENT_MANAGER::loadConfig(const char *cfg)
         DEV_EVENT event;
         for (size_t i=0; i<arr.size(); i++) {
             JsonObject item = arr[i];
-            event.raw_data = item[F("raw")].as<int>();
-            event.unixtime = item[F("ut")].as<time_t>();
-            event.event = (EVENT_TYPE)(item[F("ev")].as<int>());
-            event.repeat = item[F("rp")].as<int>();
-            event.stopat = item[F("sa")].as<int>();
-            event.message = item[F("msg")].as<String>();
+            event.raw_data = item["raw"].as<int>();
+            event.unixtime = item["ut"].as<time_t>();
+            event.event = (EVENT_TYPE)(item["ev"].as<int>());
+            event.repeat = item["rp"].as<int>();
+            event.stopat = item["sa"].as<int>();
+            event.message = item["msg"].as<String>();
             DEV_EVENT *new_event = addEvent(event);
             if(new_event){
                 LOG(printf_P, PSTR("[%u - %llu - %u - %u - %u - %s]\n"), new_event->raw_data, (unsigned long long)new_event->unixtime, new_event->event, new_event->repeat, new_event->stopat, new_event->message.c_str());
             }
         }
 
-        LOG(println, F("Events config loaded"));
+        LOG(println, "Events config loaded");
         doc.clear();
     }
 }
@@ -174,12 +174,12 @@ void EVENT_MANAGER::saveConfig(const char *cfg)
     if(LittleFS.begin()){
         File configFile;
         if(cfg == nullptr)
-            configFile = LittleFS.open(F("/events_config.json"), "w"); // PSTR("w") использовать нельзя, будет исключение!
+            configFile = LittleFS.open("/events_config.json", "w"); // PSTR("w") использовать нельзя, будет исключение!
         else
             configFile = LittleFS.open(cfg, "w"); // PSTR("w") использовать нельзя, будет исключение!
         configFile.print("[");
         
-        LOG(println, F("Save events config"));
+        LOG(println, "Save events config");
         bool firstLine=true;
         DEV_EVENT *next;
         for(unsigned i=0;i<events->size();i++){
@@ -193,7 +193,7 @@ void EVENT_MANAGER::saveConfig(const char *cfg)
         configFile.print("]");
         configFile.flush();
         configFile.close();
-        LOG(println, F("\nSave events config"));
+        LOG(println, "\nSave events config");
     }
 }
 
@@ -234,14 +234,14 @@ void event_worker(DEV_EVENT *event){
         if ((event->getMessage()).isEmpty()) break;
 
         String tmpS = event->getMessage();
-        tmpS.replace(F("'"),F("\"")); // так делать не красиво, но шопаделаешь...
+        tmpS.replace("'","\""); // так делать не красиво, но шопаделаешь...
         StaticJsonDocument<256> doc;
         deserializeJson(doc, tmpS);
         JsonArray arr = doc.as<JsonArray>();
         for (size_t i = 0; i < arr.size(); i++) {
             JsonObject item = arr[i];
-            uint8_t pin = item[FPSTR(TCONST_pin)].as<int>();
-            String action = item[FPSTR(TCONST_act)].as<String>();
+            uint8_t pin = item[TCONST_pin].as<int>();
+            String action = item[TCONST_act].as<String>();
             pinMode(pin, OUTPUT);
             switch(action.c_str()[0]){
                 case 'H':
@@ -276,7 +276,7 @@ void event_worker(DEV_EVENT *event){
         run_action(ra::warn, &j);
         return;
     }
-    case EVENT_TYPE::SET_GLOBAL_BRIGHT: { run_action(ra::brt_global, static_cast<bool>(event->getMessage().toInt())); return; }
+    case EVENT_TYPE::SET_GLOBAL_BRIGHT: { run_action(ra::brt, event->getMessage().toInt()); return; }
     case EVENT_TYPE::SET_WHITE_HI: action = RA_WHITE_HI; break;
     case EVENT_TYPE::SET_WHITE_LO: action = RA_WHITE_LO; break;
     default:;
@@ -287,96 +287,96 @@ void event_worker(DEV_EVENT *event){
 
 String DEV_EVENT::getName() {
     String buffer;
-    String day_buf = FPSTR(T_EVENT_DAYS);
+    String day_buf = T_EVENT_DAYS;
 
-    buffer.concat(isEnabled?F(" "):F("!"));
+    buffer.concat(isEnabled?" ":"!");
     
     TimeProcessor::getDateTimeString(buffer, unixtime);
 
-    buffer.concat(F(","));
+    buffer.concat(",");
     switch (event)
     {
     case EVENT_TYPE::ON:
-        buffer.concat(F("ON"));
+        buffer.concat("ON");
         break;
     case EVENT_TYPE::OFF:
-        buffer.concat(F("OFF"));
+        buffer.concat("OFF");
         break;
     case EVENT_TYPE::ALARM:
-        buffer.concat(F("ALARM"));
+        buffer.concat("ALARM");
         break;
     case EVENT_TYPE::DEMO:
-        buffer.concat(F("DEMO"));
+        buffer.concat("DEMO");
         break;
     case EVENT_TYPE::LAMP_CONFIG_LOAD:
-        buffer.concat(F("LMP_GFG"));
+        buffer.concat("LMP_GFG");
         break;
     case EVENT_TYPE::EFF_CONFIG_LOAD:
-        buffer.concat(F("EFF_GFG"));
+        buffer.concat("EFF_GFG");
         break;
 #ifdef ESP_USE_BUTTON
     case EVENT_TYPE::BUTTONS_CONFIG_LOAD:
-        buffer.concat(F("BUT_GFG"));
+        buffer.concat("BUT_GFG");
         break;
 #endif
     case EVENT_TYPE::EVENTS_CONFIG_LOAD:
-        buffer.concat(F("EVT_GFG"));
+        buffer.concat("EVT_GFG");
         break;
     case EVENT_TYPE::SEND_TEXT:
-        buffer.concat(F("TEXT"));
+        buffer.concat("TEXT");
         break;
     case EVENT_TYPE::SEND_TIME:
-        buffer.concat(F("TIME"));
+        buffer.concat("TIME");
         break;
     case EVENT_TYPE::PIN_STATE:
-        buffer.concat(F("PIN"));
+        buffer.concat("PIN");
         break; 
     case EVENT_TYPE::AUX_ON:
-        buffer.concat(F("AUX ON"));
+        buffer.concat("AUX ON");
         break; 
     case EVENT_TYPE::AUX_OFF:
-        buffer.concat(F("AUX OFF"));
+        buffer.concat("AUX OFF");
         break; 
     case EVENT_TYPE::AUX_TOGGLE:
-        buffer.concat(F("AUX TOGGLE"));
+        buffer.concat("AUX TOGGLE");
         break; 
     case EVENT_TYPE::SET_EFFECT:
-        buffer.concat(F("EFFECT"));
+        buffer.concat("EFFECT");
         break;
     case EVENT_TYPE::SET_WARNING:
-        buffer.concat(F("WARNING"));
+        buffer.concat("WARNING");
         break;
     case EVENT_TYPE::SET_GLOBAL_BRIGHT:
-        buffer.concat(F("GLOBAL BR"));
+        buffer.concat("GLOBAL BR");
         break;
     case EVENT_TYPE::SET_WHITE_HI:
-        buffer.concat(F("WHITE HI"));
+        buffer.concat("WHITE HI");
         break;
     case EVENT_TYPE::SET_WHITE_LO:
-        buffer.concat(F("WHITE LO"));
+        buffer.concat("WHITE LO");
         break;
     default:
         break;
     }
 
-    if(repeat) {buffer.concat(F(",")); buffer.concat(repeat);}
-    if(repeat && stopat) { buffer.concat(F(",")); buffer.concat(stopat);}
+    if(repeat) {buffer.concat(","); buffer.concat(repeat);}
+    if(repeat && stopat) { buffer.concat(","); buffer.concat(stopat);}
 
     uint8_t t_raw_data = raw_data>>1;
     if(t_raw_data)
-        buffer.concat(F(","));
+        buffer.concat(",");
     for(uint8_t i=1;i<8; i++){
         if(t_raw_data&1){
             //Serial.println, day_buf.substring((i-1)*2*2,i*2*2)); // по 2 байта на символ UTF16
             buffer.concat(day_buf.substring((i-1)*2*2,i*2*2)); // по 2 байта на символ UTF16
             if(t_raw_data >> 1)
-                buffer.concat(F(",")); // кроме последнего
+                buffer.concat(","); // кроме последнего
         }
         t_raw_data >>= 1;
     }
 
     if(message){
-        buffer.concat(F(","));
+        buffer.concat(",");
         if(message.length()>5){
             buffer.concat(message.substring(0,4)+"...");
         } else {

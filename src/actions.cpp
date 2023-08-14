@@ -44,7 +44,7 @@ void run_action(ra act){
   switch (act){
     // AUX PIN flip
     case ra::aux_flip : {
-      if ( embui.paramVariant(FPSTR(TCONST_aux_gpio)) == -1) return;    // if AUX pin is not set, than quit
+      if ( embui.paramVariant(TCONST_aux_gpio) == -1) return;    // if AUX pin is not set, than quit
       run_action(ra::aux, !digitalRead(embui.paramVariant(TCONST_aux_gpio)) );  // we simply flip the state here
       break;
     }
@@ -97,7 +97,7 @@ void run_action(ra act){
     case ra::reboot : {
       // make warning signaling
       StaticJsonDocument<128> warn;
-      deserializeJson(warn, F("{\"event\":[\"#ec21ee\",3000,500,true,\"Reboot...\"]}"));
+      deserializeJson(warn, "{\"event\":[\"#ec21ee\",3000,500,true,\"Reboot...\"]}");
       JsonObject j = warn.as<JsonObject>();
       run_action(ra::warn, &j);
       Task *t = new Task(5 * TASK_SECOND, TASK_ONCE, nullptr, &ts, false, nullptr, [](){ ESP.restart(); });
@@ -133,7 +133,7 @@ void run_action(ra act, JsonObject *data){
 
       // color
       String tmpStr(arr[0].as<const char*>());
-      tmpStr.replace(F("#"), F("0x"));
+      tmpStr.replace("#", "0x");
       uint32_t col = strtol(tmpStr.c_str(), NULL, 0);
       myLamp.showWarning(col, // color
              arr[1],          // duration
@@ -154,8 +154,8 @@ void run_action(ra act, JsonObject *data){
 /*
         case RA::RA_SEND_TEXT: {
             if (value && *value) {
-                String tmpStr = embui.param(FPSTR(TCONST_txtColor));
-                tmpStr.replace(F("#"),F("0x"));
+                String tmpStr = embui.param(TCONST_txtColor);
+                tmpStr.replace("#","0x");
                 CRGB::HTMLColorCode color = (CRGB::HTMLColorCode)strtol(tmpStr.c_str(), NULL, 0);
 
                 myLamp.sendString(value, color);

@@ -262,6 +262,14 @@ private:
      */
     void _brightness(uint8_t brt, bool absolute=false);     // низкоуровневая крутилка глобальной яркостью (для других публичных методов)
 
+    /**
+     * @brief get actual matrix led brightness
+     * returns either scaled and curve-mapped or absolute value 
+     * @param absolute - get absolute brightness
+     * @return uint8_t - brightness value
+     */
+    uint8_t _get_brightness(bool absolute=false);
+
     void effectsTick(); // обработчик эффектов
 
     String &prepareText(String &source);
@@ -283,7 +291,7 @@ private:
 #endif
 
     /**
-     * @brief effectiveley wipes LedBuffers and renders fill the LED Strip with Black
+     * @brief effectiveley wipes LedBuffers and fills LED Strip with Black
      * 
      */
     void _wipe_screen();
@@ -365,9 +373,8 @@ public:
     void setBrightness(uint8_t tgtbrt, fade_t fade=fade_t::preset, bool bypass = false);
 
     /**
-     * @brief - Get current FASTLED brightness
-     * FastLED brighten8 function applied internaly for natural brightness compensation
-     * @param bool natural - return compensated or absolute brightness
+     * @brief - Get configured lamp's brightness
+     * returns scaled brightness according to the defined luma curve
      */
     uint8_t getBrightness() const { return globalBrightness; };
 
@@ -399,21 +406,6 @@ public:
      * see setBrightnessScale()
      */
     uint8_t getBrightnessScale() const { return _brightnessScale; };
-
-    /**
-     * @brief get lamp brightness in percents 0-100
-     * 
-     * @return uint8_t brightness value in percents
-     */
-    uint8_t lampBrightnesspct(){ return globalBrightness * 100 / 255; };
-
-    /**
-     * @brief set lamp brightness in percents
-     * 
-     * @param brt value 0-100
-     * @return uint8_t 
-     */
-    uint8_t lampBrightnesspct(uint8_t brt);
 
     bool isAlarm() {return mode == LAMPMODE::MODE_ALARMCLOCK;}
     bool isWarning() {return lampState.isWarning;}

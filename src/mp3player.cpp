@@ -76,26 +76,26 @@ void MP3PlayerDevice::init(){
 
   setTimeOut(MP3_SERIAL_TIMEOUT); //Set serial communictaion time out ~300ms
 
-  LOG(println, F("DFplayer: Initializing DFPlayer ... (May take up to 5 seconds)"));
+  LOG(println, "DFplayer: Initializing DFPlayer ... (May take up to 5 seconds)");
 
   // try to connect (5 times, each second)
   Task *_t = new Task(TASK_SECOND, 5, [this](){
     if(!begin(*mp3player)){
-        LOG(printf_P, PSTR("DFPlayer: Unable to begin: %d...\n"), ts.getCurrentTask()->getIterations() );
+        LOG(printf_P, PSTR("DFPlayer: Unable to begin: %ld...\n"), ts.getCurrentTask()->getIterations() );
         return;
     }
 
     ready = true;
     outputDevice(DFPLAYER_DEVICE_SD);
     setVolume(cur_volume);
-    LOG(println, F("DFplayer: DFPlayer Mini online."));
+    LOG(println, "DFplayer: DFPlayer Mini online.");
 
     ts.getCurrentTask()->disable();
   }, 
   &ts, false, nullptr,
   [this](){
     if (!ready) {
-      LOG(println, F("DFplayer: Pls, recheck the connection/insert the SD card!"));
+      LOG(println, "DFplayer: Pls, recheck the connection/insert the SD card!");
     }
   },
   true);
@@ -136,26 +136,26 @@ void MP3PlayerDevice::printSatusDetail(){
 
   switch (type) {
     case TimeOut:
-      LOG(println, F("DFplayer: Time Out!"));
+      LOG(println, "DFplayer: Time Out!");
       if(isAlarm()){
         isplaying = false;
         restartSound();
       }
       break;
     case WrongStack:
-      LOG(println, F("DFplayer: Stack Wrong!"));
+      LOG(println, "DFplayer: Stack Wrong!");
       break;
     case DFPlayerCardInserted:
-      LOG(println, F("DFplayer: Card Inserted!"));
+      LOG(println, "DFplayer: Card Inserted!");
       ready = true;
       setVolume(cur_volume); // в случае перетыкания карты или сборса плеера - восстановим громкость
       break;
     case DFPlayerCardRemoved:
-      LOG(println, F("DFplayer: Card Removed!"));
+      LOG(println, "DFplayer: Card Removed!");
       ready = false;
       break;
     case DFPlayerCardOnline:
-      LOG(println, F("DFplayer: Card Online!"));
+      LOG(println, "DFplayer: Card Online!");
       setVolume(cur_volume); // в случае перетыкания карты или сборса плеера - восстановим громкость
       break;
     //case DFPlayerFeedBack:  // этот кейс добавлен для нормальной работы с некоторыми версиями DFPlayer - поправлено в библиотеке, требуется проверка
@@ -174,31 +174,31 @@ void MP3PlayerDevice::printSatusDetail(){
       }
       break;
     case DFPlayerError:
-      LOG(print, F("DFPlayerError:"));
+      LOG(print, "DFPlayerError:");
       switch (value) {
         case Busy:
-          LOG(println, F("Card not found"));
+          LOG(println, "Card not found");
           break;
         case Sleeping:
-          LOG(println, F("Sleeping"));
+          LOG(println, "Sleeping");
           break;
         case SerialWrongStack:
-          LOG(println, F("Get Wrong Stack"));
+          LOG(println, "Get Wrong Stack");
           break;
         case CheckSumNotMatch:
-          LOG(println, F("Check Sum Not Match"));
+          LOG(println, "Check Sum Not Match");
           break;
         case FileIndexOut:
-          LOG(println, F("File Index Out of Bound"));
+          LOG(println, "File Index Out of Bound");
           break;
         case FileMismatch:
-          LOG(println, F("Cannot Find File"));
+          LOG(println, "Cannot Find File");
           if(isplayname) // только для случая когда нет файла с именем эффекта, если нет самой озвучки эффекта, то не рестартуем
             restartSound();
           isplaying = false;
           break;
         case Advertise:
-          LOG(println, F("In Advertise"));
+          LOG(println, "In Advertise");
           isplaying = false;
           isadvert = false;
           // возникла ошибка с минутами или будильником, попробуем еще раз
@@ -281,7 +281,7 @@ void MP3PlayerDevice::playAdvertise(int filenb) {
   Task *_t = new Task(
       6.66 * TASK_SECOND,
       TASK_ONCE, [this](){
-        LOG(println, F("DFplayer: isadvert = false"));
+        LOG(println, "DFplayer: isadvert = false");
         isadvert = false; // через 6.66 секунд снимим флаг, шаманство!
       },
       &ts, false, nullptr, nullptr, true);

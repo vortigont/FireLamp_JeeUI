@@ -43,12 +43,12 @@ void ALARMTASK::initAlarm(const char *value){
     buf.replace("'","\"");
     DynamicJsonDocument doc(1024);
     deserializeJson(doc,buf);
-    curAlarm.alarmP = doc.containsKey(FPSTR(TCONST_alarmP)) ? doc[FPSTR(TCONST_alarmP)] : lamp->getAlarmP();
-    curAlarm.alarmT = doc.containsKey(FPSTR(TCONST_alarmT)) ? doc[FPSTR(TCONST_alarmT)] : lamp->getAlarmT();
-    curAlarm.msg = doc.containsKey(FPSTR(TCONST_msg)) ? doc[FPSTR(TCONST_msg)] : String("");
-    curAlarm.isLimitVol = doc.containsKey(FPSTR(TCONST_lV)) ? doc[FPSTR(TCONST_lV)].as<String>()=="1" : lamp->getLampFlagsStuct().limitAlarmVolume;
-    curAlarm.isStartSnd = doc.containsKey(FPSTR(TCONST_afS)) ? doc[FPSTR(TCONST_afS)].as<String>()=="1" : true;
-    curAlarm.type = (ALARM_SOUND_TYPE)(doc.containsKey(FPSTR(TCONST_sT)) ? doc[FPSTR(TCONST_sT)].as<uint8_t>() : lamp->getLampFlagsStuct().alarmSound);
+    curAlarm.alarmP = doc.containsKey(TCONST_alarmP) ? doc[TCONST_alarmP] : lamp->getAlarmP();
+    curAlarm.alarmT = doc.containsKey(TCONST_alarmT) ? doc[TCONST_alarmT] : lamp->getAlarmT();
+    curAlarm.msg = doc.containsKey(TCONST_msg) ? doc[TCONST_msg] : String("");
+    curAlarm.isLimitVol = doc.containsKey(TCONST_lV) ? doc[TCONST_lV].as<String>()=="1" : lamp->getLampFlagsStuct().limitAlarmVolume;
+    curAlarm.isStartSnd = doc.containsKey(TCONST_afS) ? doc[TCONST_afS].as<String>()=="1" : true;
+    curAlarm.type = (ALARM_SOUND_TYPE)(doc.containsKey(TCONST_sT) ? doc[TCONST_sT].as<uint8_t>() : lamp->getLampFlagsStuct().alarmSound);
 
     lamp->setMode(LAMPMODE::MODE_ALARMCLOCK);
     lamp->demoTimer(T_DISABLE);     // гасим Демо-таймер
@@ -165,7 +165,7 @@ void ALARMTASK::alarmWorker(){
         if(mp3->isAlarm()) // если отложенный звук будильника, то время тоже не выводим, т.к. может быть включено озвучивание
 #endif
             if(ALARMTASK::getInstance()->curAlarm.msg != "-") // отключение вывода по спец. символу "минус"
-                lamp->sendStringToLamp(String(F("%TM")).c_str(), letterColor, true);
+                lamp->sendStringToLamp(String("%TM").c_str(), letterColor, true);
 #endif
         }
     } else if(!(localtime(TimeProcessor::now())->tm_sec%6)){ // проверка рассвета каждые 6 секунд, кроме 0 секунды

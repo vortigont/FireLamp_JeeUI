@@ -38,7 +38,7 @@ bool Button::activate(btnflags& flg, bool reverse){
 				newval = constrain(myLamp.getBrightness() + (myLamp.getBrightness() / 25 + 1) * (flags.direction * 2 - 1), 1 , 255);
 				if ((newval == 1 || newval == 255) && tReverseTimeout==nullptr){
 					tReverseTimeout = new Task(2 * TASK_SECOND, TASK_ONCE,
-									[this](){ flags.direction = !flags.direction; LOG(println,F("reverse")); },
+									[this](){ flags.direction = !flags.direction; LOG(println,"reverse"); },
 									&ts, false, nullptr, [](){ tReverseTimeout = nullptr;}, true
 							);
 					tReverseTimeout->enableDelayed();
@@ -53,7 +53,7 @@ bool Button::activate(btnflags& flg, bool reverse){
 				newval = constrain( speed + (speed / 25 + 1) * (flags.direction * 2 - 1), 1 , 255);
 				if ((newval == 1 || newval == 255) && tReverseTimeout==nullptr){
 					tReverseTimeout = new Task(2 * TASK_SECOND, TASK_ONCE,
-									[this](){ flags.direction = !flags.direction; LOG(println,F("reverse")); },
+									[this](){ flags.direction = !flags.direction; LOG(println,"reverse"); },
 									&ts, false, nullptr, [](){ tReverseTimeout = nullptr;}, true
 							);
 					tReverseTimeout->enableDelayed();
@@ -61,7 +61,7 @@ bool Button::activate(btnflags& flg, bool reverse){
 				if (myLamp.getGaugeType()!=GAUGETYPE::GT_NONE){
 						GAUGE::GaugeShow(newval, 255, 100);
 				}
-				run_action(String(FPSTR(TCONST_dynCtrl))+1, newval);
+				run_action(String(TCONST_dynCtrl)+1, newval);
 				return true;
 			}
 			case BA_SCALE: {
@@ -69,7 +69,7 @@ bool Button::activate(btnflags& flg, bool reverse){
 				newval = constrain(scale + (scale / 25 + 1) * (flags.direction * 2 - 1), 1 , 255);
 				if ((newval == 1 || newval == 255) && tReverseTimeout==nullptr){
 					tReverseTimeout = new Task(2 * TASK_SECOND, TASK_ONCE,
-									[this](){ flags.direction = !flags.direction; LOG(println,F("reverse")); },
+									[this](){ flags.direction = !flags.direction; LOG(println,"reverse"); },
 									&ts, false, nullptr, [](){ tReverseTimeout = nullptr; }, true
 							);
 					tReverseTimeout->enableDelayed();
@@ -77,7 +77,7 @@ bool Button::activate(btnflags& flg, bool reverse){
 				if (myLamp.getGaugeType()!=GAUGETYPE::GT_NONE){
 						GAUGE::GaugeShow(newval, 255, 150);
 				}
-				run_action(String(FPSTR(TCONST_dynCtrl))+2, newval);
+				run_action(String(TCONST_dynCtrl)+2, newval);
 				return true;
 			}
 			default:;
@@ -112,20 +112,20 @@ bool Button::activate(btnflags& flg, bool reverse){
 
 String Button::getName(){
 		String buffer;
-		buffer.concat(flags.on? F("ON: ") : F("OFF: "));
+		buffer.concat(flags.on? "ON: " : "OFF: ");
 		if (flags.hold) {
 			if (flags.click) {
 				buffer.concat(String(flags.click));
-				buffer.concat(F(" Click + "));
+				buffer.concat(" Click + ");
 			}
-			buffer.concat(F("HOLD - "));
+			buffer.concat("HOLD - ");
 		} else
 		if (flags.click) {
 			buffer.concat(String(flags.click));
-			buffer.concat(F(" Click - "));
+			buffer.concat(" Click - ");
 		}
 
-		buffer.concat(FPSTR(btn_get_desc(action)));
+		buffer.concat(btn_get_desc(action));
 
 		return buffer;
 };
@@ -177,7 +177,7 @@ void Buttons::buttonTick(){
 		onoffLampState = myLamp.isLampOn(); // получить статус на начало удержания
 		reverse = true;
 		if(tReverseTimeout){ // сброс реверса, если он включен
-			LOG(println,F("reverce canceled"));
+			LOG(println,"reverce canceled");
 			tReverseTimeout->cancel();
 		}
 		LOG(printf_P, PSTR("start hold - buttonEnabled=%d, onoffLampState=%d, holding=%d, holded=%d, clicks=%d, reverse=%d\n"), buttonEnabled, onoffLampState, holding, holded, clicks, reverse);
@@ -187,7 +187,7 @@ void Buttons::buttonTick(){
 			tClicksClear->restartDelayed(); // отсрочиваем сброс нажатий
 	} else if (!touch.hasClicks() || !(clicks = touch.getClicks())) {
 		if( (!touch.isHold() && holded) )	{ // кнопку уже не трогают
-			LOG(println,F("Сброс состояния кнопки после окончания удержания"));
+			LOG(println,"Сброс состояния кнопки после окончания удержания");
 			resetStates();
 			onoffLampState = myLamp.isLampOn(); // сменить статус после удержания
 			LOG(printf_P, PSTR("reset - buttonEnabled=%d, onoffLampState=%d, holding=%d, holded=%d, clicks=%d, reverse=%d\n"), buttonEnabled, onoffLampState, holding, holded, clicks, reverse);
@@ -228,7 +228,7 @@ void Buttons::buttonTick(){
 
 	// Здесь уже все отработало, и кнопка точно не удерживается
 	if(!holding){
-		LOG(println,F("Сброс состояния кнопки"));
+		LOG(println,"Сброс состояния кнопки");
 		resetStates();
 		onoffLampState = myLamp.isLampOn(); // обновить статус по итогу работы
 		isrEnable();
@@ -246,22 +246,22 @@ int Buttons::loadConfig(const char *cfg){
 	if (LittleFS.begin()) {
 		File configFile;
 		if (cfg == nullptr) {
-			LOG(println, F("Load default buttons config file"));
-			configFile = LittleFS.open(F("/buttons_config.json"), "r"); // PSTR("r") использовать нельзя, будет исключение!
+			LOG(println, "Load default buttons config file");
+			configFile = LittleFS.open("/buttons_config.json", "r"); // PSTR("r") использовать нельзя, будет исключение!
 		} else {
 			LOG(printf_P, PSTR("Load %s buttons config file\n"), cfg);
 			configFile = LittleFS.open(cfg, "r"); // PSTR("r") использовать нельзя, будет исключение!
 		}
 		String cfg_str = configFile.readString();
-		if (cfg_str == F("")){
-			LOG(println, F("Failed to open buttons config file"));
+		if (cfg_str.isEmpty()){
+			LOG(println, "Failed to open buttons config file");
 			return 0;
 		}
 
 		DynamicJsonDocument doc(2048);
 		DeserializationError error = deserializeJson(doc, cfg_str);
 		if (error) {
-			LOG(print, F("deserializeJson error: "));
+			LOG(print, "deserializeJson error: ");
 			LOG(println, error.code());
 			LOG(println, cfg_str);
 			return 0;
@@ -269,10 +269,10 @@ int Buttons::loadConfig(const char *cfg){
 		JsonArray arr = doc.as<JsonArray>();
 		for (size_t i = 0; i < arr.size(); i++) {
 			JsonObject item = arr[i];
-			uint8_t mask = item[F("flg")].as<uint8_t>();
-			BA ac = (BA)item[F("ac")].as<int>();
-			if(item.containsKey(F("p"))){
-				String param = item[F("p")].as<String>();
+			uint8_t mask = item["flg"].as<uint8_t>();
+			BA ac = (BA)item["ac"].as<int>();
+			if(item.containsKey("p")){
+				String param = item["p"].as<String>();
 				buttons.add(new Button(mask, ac, param));
 			} else {
 				buttons.add(new Button(mask, ac));
@@ -287,8 +287,8 @@ void Buttons::saveConfig(const char *cfg){
 	if (LittleFS.begin()) {
 		File configFile;
 		if (cfg == nullptr) {
-			LOG(println, F("Save default buttons config file"));
-			configFile = LittleFS.open(F("/buttons_config.json"), "w"); // PSTR("w") использовать нельзя, будет исключение!
+			LOG(println, "Save default buttons config file");
+			configFile = LittleFS.open("/buttons_config.json", "w"); // PSTR("w") использовать нельзя, будет исключение!
 		} else {
 			LOG(printf_P, PSTR("Save %s buttons config file\n"), cfg);
 			configFile = LittleFS.open(cfg, "w"); // PSTR("w") использовать нельзя, будет исключение!
@@ -298,10 +298,10 @@ void Buttons::saveConfig(const char *cfg){
 		for (unsigned i = 0; i < buttons.size(); i++) {
 			Button *btn = buttons[i];
 			configFile.printf_P(PSTR("%s{\"flg\":%u,\"ac\":%u,\"p\":\"%s\"}"),
-				(char*)(i? F(",") : F("")), btn->flags.mask, btn->action, btn->getParam().c_str()
+				(char*)(i? "," : ""), btn->flags.mask, btn->action, btn->getParam().c_str()
 			);
 			LOG(printf_P, PSTR("%s{\"flg\":%u,\"ac\":%u,\"p\":\"%s\"}"),
-				(char*)(i? F(",") : F("")), btn->flags.mask, btn->action, btn->getParam().c_str()
+				(char*)(i? "," : ""), btn->flags.mask, btn->action, btn->getParam().c_str()
 			);
 		}
 		configFile.print("]");
@@ -321,7 +321,7 @@ void IRAM_ATTR Buttons::isrPress() {
 }
 
 void Buttons::isrEnable(){
-	LOG(println,F("Button switch to isr"));
+	LOG(println,"Button switch to isr");
 	attachInterrupt(pin, std::bind(&Buttons::isrPress,this), pullmode==LOW_PULL ? RISING : FALLING );
 	if(tButton)
 		tButton->restartDelayed();
@@ -333,12 +333,12 @@ void Buttons::setButtonOn(bool flag) {
 	buttonEnabled = flag;
 	resetStates();
 	if (flag){
-		LOG(println,F("Button watch enabled"));
+		LOG(println,"Button watch enabled");
 		isrEnable();
 	} else {
 	  detachInterrupt(pin);
 		if(tButton)
 			tButton->cancel();
-		LOG(println,F("Button watch disabled"));
+		LOG(println,"Button watch disabled");
 	}
 }
