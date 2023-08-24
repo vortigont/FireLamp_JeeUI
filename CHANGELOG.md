@@ -1,8 +1,76 @@
 # Change Log
 
+## 3.3.0 (2023-08-24)
+- removed lamp configurations editor
+- adjust UI related code to match EmbUI BAPI changes
+- removed 8266 legacy - F() macro, FPSTR macro, PROGMEM
+- fader changes
+  - adjust lower fader brightness with FADE_LOWBRTFRACT parameter,
+  - fixed brightness for fast fading
+- use run-time tunable for save/restore on/off/demo state on power-up, Closes #24
+- fix fire2018 dependence on 'brightness' variable, Closes #28
+- reworked brightness control, add luma curves lib
+   - removed Global/Individual brightness for effects, using only Global brightness from now on
+   - ignore first "special" control for brightness in the code
+   - introduce selectable luma curve correction for brightness, applies globally, could be overriden per each effect config
+   - adjusted API/actions to work with global brightness only
+   - brightness could be scaled to any range, i.e. 0%-100%, or 1-20 (default)
+- includes alignment
+- tm1637 fix for blinking dots
+- add thread safety WA for effect switching via '<<','>>' UI buttons
+- fix race condition in EffectShadows
+- DFPlayer - fix crash on start with undefined pins
+- LAMP power ON/OFF consistency
+  - EffectWorker will reset active effect on switch-on
+  - LAMP object will force-wipe the matrix when shutting OFF
+    - when led fader is done
+    - when switch-off without fader
+    - when LAMP::frameShow() has been called but lamp is no state for drawing anything (it fixes issues with leftover artifacts when not using fader)
+    - when LAMP::effectsTick() ended up in a no rerun state for effectsTimer scheduler
+- fix potential out-of-bound access crash in GradientPaletteList::[] operator
+- implement EffectWorker::switchEffect
+    - regression when switching effects without fader
+    - controls settings were not saved on switch
+    - sometimes lamp crashed on switch
+    - removed EffectCalc::pre_init()
+    - replaced several similar methods for delayed effect switching with a single EffectWorker::switchEffect()
+- all in a run-time matrix configuration
+    - настройка вывода подключения матрицы из WebUI
+    - настройка размеров матрицы из WebUI
+    - настройка ориентации/топологии матрицы из WebUI
+- LedFB - implement run-time topology transformation
+- other fixes
+    * fixed crash when accessin non-existing speedfactor control on empty controls list
+    * fixed wrong loading of controls for non-fading effect switch
+    * fix potential issue with dirty sleds buffer
+    * fix argument reodreding Noise3dMap::lxy()
+- rework drawing feature
+    - adopted drawing functionality for my framework (js and mcu code)
+    - drastically simplified backend side code, removed strings deserialization, parsing and processing
+    - removed extra actions for drawing, using one callback for all data
+    - adjusted front-end code to do most string conversion and serialize formatted data for backend
+- implement additional 404 handler for WLED that does not break Captive Portal detection
+- bye bye 8266!
+
+
+## 3.2.0 (2023-07-18)
+last release branch with esp8266 support
+
+- disable WLED announce for 8266 (it crashes in sys context if adding MDNS announce for wled), won't fix
+- annouce manifest for WLED mobile app
+- removed most of _remote_action::RA* calls based on variadics and pointers, it's UB in C++
+   reimplemented remote_action features with templated functions and EmbUI callback injection,
+   making data/events flow in proper way reusing registered actions for WebUI
+- rework AUX pin control actions, made it run-time ping configurable
+- fix LOG macro warnings
+- removed ace_editor from FS
+- remove code related to WHITE_LAMP_MODE
+- fix tm display dots blink
+
+
 ## v3.1.1 (2023-05-29)
  - исправлена сборка с TM1637 display
- - для энкодера упрощены вызовы из обработчика прерываний, длинные опеции вынесены в loop()
+ - для энкодера упрощены вызовы из обработчика прерываний, длинные операции вынесены в loop()
  - fix issue with incorrect brightness on effect save
  - fix FIre2018 - last column is always off
  - fix in EffectMaze

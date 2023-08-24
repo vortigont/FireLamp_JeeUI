@@ -2,7 +2,7 @@
 
 # embui branch/tag name to fetch
 embuirepo='https://github.com/vortigont/EmbUI'
-embuitag="v2.6"
+embuitag="v2.8.0"
 
 #####
 # no changes below this point!
