@@ -36,20 +36,13 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 */
 #include "main.h"
 #include "filehelpers.hpp"
-#include <SPIFFSEditor.h>
+//#include <SPIFFSEditor.h>
 #include "lamp.h"
+#include "ledfb.hpp"
 
 #ifdef DS18B20
 #include "DS18B20.h"
 #endif
-
-#include "w2812-rmt.hpp"
-
-LedFB *mx = nullptr;
-
-// FastLED controller
-CLEDController *cled = nullptr;
-ESP32RMT_WS2812B<COLOR_ORDER> *wsstrip = nullptr;
 
 #ifdef ESP_USE_BUTTON
 Buttons *myButtons;
@@ -142,16 +135,16 @@ void setup() {
     gpio_setup();
     // restore matrix configuration from file and create a proper LED buffer
     led_fb_setup();
-
+/*
 #ifdef ESP8266
   embui.server.addHandler(new SPIFFSEditor("esp8266"),"esp8266"), LittleFS));
 #else
   embui.server.addHandler(new SPIFFSEditor(LittleFS, "esp32", "esp32"));
 #endif
-
+*/
     sync_parameters();
 
-  embui.setPubInterval(10);   // change periodic WebUI publish interval from EMBUI_PUB_PERIOD to 10 secs
+    embui.setPubInterval(10);   // change periodic WebUI publish interval from EMBUI_PUB_PERIOD to 10 secs
 
 #ifdef ENCODER
   enc_setup();
@@ -330,8 +323,8 @@ void gpio_setup(){
 
     // LED Strip setup
     if (doc[TCONST_mx_gpio]){
-        // create new led strip object with our configured pin
-        wsstrip = new ESP32RMT_WS2812B<COLOR_ORDER>(doc[TCONST_mx_gpio].as<int>());
+        // create new led strip object using our configured pin
+        display = new OverlayEngine(doc[TCONST_mx_gpio].as<int>());
     }
 
 #ifdef MP3PLAYER
@@ -375,7 +368,6 @@ bool http_notfound(AsyncWebServerRequest *request){
 }
 
 void led_fb_setup(){
-    if (mx) return;     // this function is not idempotent, so refuse to mess with existing buffer
     DynamicJsonDocument doc(256);
     embuifs::deserializeFile(doc, TCONST_fcfg_ledstrip);
     JsonObject o = doc.as<JsonObject>();
@@ -390,15 +382,9 @@ void led_fb_setup(){
     );
     LOG(printf, "LED cfg: w,h:(%d,%d) snake:%d, vert:%d, vflip:%d, hflip:%d\n", cfg.w(), cfg.h(), cfg.snake(), cfg.vertical(), cfg.vmirror(), cfg.hmirror());
 
-    mx = new LedFB(cfg);
+    display->makeCanvas(cfg);
 
-    if (wsstrip){
-        // attach buffer to RMT engine
-        cled = &FastLED.addLeds(wsstrip, mx->data(), mx->size());
-        // hook framebuffer to contoller
-        mx->bind(cled);
-    }
-
-    // replace the buffer for lamp object
-    myLamp.setLEDbuffer(mx);
+    // replace the buffer for lamp object (for compatibility)
+    //myLamp.setLEDbuffer(display->getCanvas());
+    mx = display->getCanvas();
 }

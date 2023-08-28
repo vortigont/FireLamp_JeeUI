@@ -762,8 +762,8 @@ void direct_set_effects_dynCtrl(JsonObject *data){
                 controls[i]->setVal((*data)[ctrlName]); // для всех остальных
 
             resetAutoTimers(true);
-            if(myLamp.effects.worker) // && myLamp.effects.getCurrent()
-                myLamp.effects.worker->setDynCtrl(controls[i].get());
+            //if(myLamp.effects.worker) // && myLamp.effects.getCurrent()
+                myLamp.effects.setDynCtrl(controls[i].get());
             break;
         }
     }
@@ -2866,8 +2866,13 @@ void sync_parameters(){
     doc.clear();
     TimeProcessor::getInstance().attach_callback(std::bind(&LAMP::setIsEventsHandled, &myLamp, myLamp.IsEventsHandled())); // только после синка будет понятно включены ли события
 
+    // restore last running effect from config
+    run_action(ra::eff_switch, embui.paramVariant(TCONST_eff_run));
+
     // check "restore state" flag
     if (tmp.restoreState){
+        tmp.ONflag ? run_action(ra::on) : run_action(ra::off);
+/*
         if(tmp.ONflag){ // если лампа включена, то устанавливаем эффект ДО включения
             run_action(ra::eff_switch, embui.paramVariant(TCONST_eff_run));
             //CALL_SETTER(TCONST_eff_run, embui.paramVariant(TCONST_eff_run), set_switch_effect);
@@ -2877,12 +2882,11 @@ void sync_parameters(){
             run_action(ra::eff_switch, embui.paramVariant(TCONST_eff_run));
             //CALL_SETTER(TCONST_eff_run, embui.paramVariant(TCONST_eff_run), set_switch_effect);
         }
+*/
         doc.clear();
         if(myLamp.isLampOn())
             run_action(ra::demo, embui.paramVariant(TCONST_Demo));
             //CALL_SETTER(TCONST_Demo, embui.paramVariant(TCONST_Demo), set_demoflag); // Демо через режимы, для него нужнен отдельный флаг :(
-    } else {
-        run_action(ra::eff_switch, embui.paramVariant(TCONST_eff_run));
     }
 
 #ifdef MP3PLAYER
@@ -2984,8 +2988,6 @@ void sync_parameters(){
 
     // собираем конфигурацию для объекта лампы из сохраненного конфига и текущего же состояния лампы (масло масляное)
     // имеет смысл при первом запуске. todo: часть можно выкинуть ибо переписывание в самих себя
-    obj[TCONST_MIRR_H] = mx->cfg.hmirror() ;
-    obj[TCONST_MIRR_V] = mx->cfg.vmirror() ;
     obj[TCONST_isFaderON] = tmp.isFaderON ;
     obj[TCONST_isClearing] = tmp.isEffClearing ;
     obj[TCONST_DRand] = tmp.dRand ;

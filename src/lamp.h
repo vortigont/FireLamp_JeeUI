@@ -102,11 +102,6 @@ enum class fade_t {
     preset
 };
 
-// Timings from FastLED chipsets.h
-// WS2812@800kHz - 250ns, 625ns, 375ns
-// время "отправки" кадра в матрицу, мс. где 1.5 эмпирический коэффициент
-//#define FastLED_SHOW_TIME = WIDTH * HEIGHT * 24 * (0.250 + 0.625) / 1000 * 1.5
-
 /*
  минимальная задержка между обсчетом и выводом кадра, мс
  нужна для обработки других задач в loop() между длинными вызовами
@@ -197,7 +192,6 @@ class LAMP {
     friend class LEDFader;
     friend class ALARMTASK;        // будильник ходит сюда за MOSFET и AUX пином, todo: переписать будильник целиком
 private:
-    LedFB *mx;           // LED matrix framebuffer object
     LedFB *sledsbuff = nullptr;    // вспомогательный буфер для слоя после эффектов
     LedFB *drawbuff = nullptr;     // буфер для рисования
 #if defined(USE_STREAMING) && defined(EXT_STREAM_BUFFER)
@@ -215,10 +209,6 @@ private:
 
     uint8_t txtOffset = 0; // смещение текста относительно края матрицы
     uint16_t curLimit = CURRENT_LIMIT; // ограничение тока
-    uint8_t fps = 0;        // fps counter
-#ifdef LAMP_DEBUG
-    uint16_t avgfps = 0;    // avarage fps counter
-#endif
 
     // GPIO's
     uint8_t bPin = BTN_PIN;        // пин кнопки
@@ -358,7 +348,7 @@ public:
 
     void setSpeedFactor(float val) {
         lampState.speedfactor = val;
-        if(effects.worker && effects.getControls().exist(1)) effects.worker->setDynCtrl(effects.getControls()[1].get());
+        if(effects.getControls().exist(1)) effects.setDynCtrl(effects.getControls()[1].get());
     }
 
     // Lamp brightness control

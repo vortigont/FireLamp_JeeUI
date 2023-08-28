@@ -53,6 +53,18 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #define ARR_LIST_SIZE   1024
 #endif
 
+#define WRKR_TASK_CORE          CONFIG_ARDUINO_RUNNING_CORE    // task MUST be pinned to the second core to avoid LED glitches (if applicable)
+#define WRKR_TASK_PRIO          tskIDLE_PRIORITY+1    // task priority
+#define WRKR_TASK_STACK         1024                  // effects code should mostly allocate mem on heap
+#define WRKR_TASK_NAME          "EFF_WRKR"
+
+constexpr int target_fps{50};                     // desired FPS rate for effect runner
+constexpr int interframe_delay_ms = 1000 / target_fps;
+
+
+// TaskScheduler - Let the runner object be a global, single instance shared between object files.
+extern Scheduler ts;
+
 static constexpr const char c_snd[] = "snd";
 
 /*
@@ -208,7 +220,7 @@ String Effcfg::getSerializedEffConfig(uint8_t replaceBright) const {
 
 //  ***** EffectWorker implementation *****
 
-EffectWorker::EffectWorker(LAMPSTATE *_lampstate, LedFB *framebuffer) : lampstate(_lampstate), fb(framebuffer) {
+EffectWorker::EffectWorker(LAMPSTATE *_lampstate) : lampstate(_lampstate) {
   // create 3 'faivored' superusefull controls for 'brightness', 'speed', 'scale'
   for(int8_t id=0;id<3;id++){
     auto c = std::make_shared<UIControl>(
@@ -229,8 +241,13 @@ EffectWorker::EffectWorker(LAMPSTATE *_lampstate, LedFB *framebuffer) : lampstat
 void EffectWorker::workerset(uint16_t effect){
   LOG(printf_P,PSTR("Wrkr set: %u\n"), effect);
 
-  if(worker)
-     worker.reset(); // освободим явно, т.к. 100% здесь будем пересоздавать
+  LedFB *fb = display->getCanvas();
+  if (!fb) { LOG(println, "E: no canvas buffer!"); return; }
+
+  // load effect configuration from a saved file
+  curEff.loadeffconfig(effect);
+
+  if (!_status) { LOG(println, "W: worker is inactive"); return; }
 
   switch (static_cast<EFF_ENUM>(effect%256)) // номер может быть больше чем ENUM из-за копирований, находим эффект по модулю
   {
@@ -476,12 +493,12 @@ void EffectWorker::workerset(uint16_t effect){
   }
 
   if(worker){
-    curEff.loadeffconfig(effect);
     // окончательная инициализация эффекта тут
-    worker->init(static_cast<EFF_ENUM>(effect%256), &curEff.controls, this, lampstate);
+    worker->init(static_cast<EFF_ENUM>(effect%256), &curEff.controls, lampstate);
 
     // set newly loaded luma curve to the lamp
     run_action(ra::brt_lcurve, e2int(curEff.curve));
+    _start_runner();  // start calculator task IF we are marked as active
   }
 }
 
@@ -1082,12 +1099,12 @@ void EffectWorker::_rebuild_eff_list(const char *folder){
 
   makeIndexFileFromList();
 }
-
+/*
 void EffectWorker::setLEDbuffer(LedFB *buff){
   fb = buff;
   reset();    // reset current effect to release old buffer pointer
 }
-
+*/
 void EffectWorker::reset(){
   if (worker) workerset(getCurrent());
 }
@@ -1097,13 +1114,62 @@ void EffectWorker::setLumaCurve(luma::curve c){
   curEff.curve = c; curEff.autosave();
 };
 
+void EffectWorker::_start_runner(){
+  if (_runnerTask_h) return;    // we are already running
+  xTaskCreatePinnedToCore(EffectWorker::_runnerTask,
+                          WRKR_TASK_NAME,
+                          WRKR_TASK_STACK,
+                          (void *)this,
+                          WRKR_TASK_PRIO,
+                          &_runnerTask_h,
+                          WRKR_TASK_CORE) == pdPASS;
+}
+
+void EffectWorker::_runnerHndlr(){
+  TickType_t xLastWakeTime = xTaskGetTickCount ();
+
+  for (;;){
+    // if task has been delayed, than we can't keep up with desired frame rate, let's give other tasks time to run anyway
+    if ( xTaskDelayUntil( &xLastWakeTime, pdMS_TO_TICKS(interframe_delay_ms) ) ) taskYIELD();
+
+    if (!worker || !_status){
+      worker.release();
+      display->clear();
+      _runnerTask_h = nullptr;
+      vTaskDelete(NULL);    // if there is no Effect instance spawned, there must be something wrong
+      return;
+    }
+
+    if (worker->run()){
+      // effect has rendered a data in buffer, need to call the engine to outpu it
+      display->show();             // the task could have been destroyed
+    }
+    // effectcalc returned no data
+  }
+  // Task must self-terminate (if ever)
+  vTaskDelete(NULL);
+}
+
+void EffectWorker::start(){
+  _status = true;
+  if (_runnerTask_h) return;    // we are already running
+  workerset(getCurrent());      // spawn an instance of effect and run the task
+}
+
+void EffectWorker::stop(){
+  _status = false;
+  if (!_runnerTask_h){
+    worker.release();
+    display->clear();
+  }
+  // otherwise task will self destruct on next iteration
+}
 
 
 /*  *** EffectCalc  implementation  ***   */
-void EffectCalc::init(EFF_ENUM eff, LList<std::shared_ptr<UIControl>> *controls, EffectWorker *pworker, LAMPSTATE* state){
+void EffectCalc::init(EFF_ENUM eff, LList<std::shared_ptr<UIControl>> *controls, LAMPSTATE* state){
   effect = eff;
   ctrls = controls;
-  _pworker = pworker;
   _lampstate = state;
 
   isMicActive = isMicOnState();

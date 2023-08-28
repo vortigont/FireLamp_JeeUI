@@ -44,14 +44,14 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 GAUGE *GAUGE::gauge = nullptr; // объект индикатора
 ALARMTASK *ALARMTASK::alarmTask = nullptr; // объект будильника
 
-LAMP::LAMP() : tmStringStepTime(DEFAULT_TEXT_SPEED), tmNewYearMessage(0), effects(&lampState, mx){
+LAMP::LAMP() : tmStringStepTime(DEFAULT_TEXT_SPEED), tmNewYearMessage(0), effects(&lampState){
   /* в лампе везде торчит кадровый буфер, и объект лампы глобальный, создается в меин контексте
   что требует иметь буфер во время создания объекта лампы.
   Но! Я создаю буфер динамически во время запуска из сохраненной конфигурации и это происходит позже
   уже когда экземпляр лампы создан. Поэтому втыкаем в лампу буфер-времянку, который позже заменим на
   реальный
   */
-  mx = new LedFB(2,2);
+  //mx = new LedFB(2,2);
 
   lampState.isOptPass = false; // введен ли пароль для опций
   lampState.isInitCompleted = false; // завершилась ли инициализация лампы
@@ -69,7 +69,7 @@ LAMP::LAMP() : tmStringStepTime(DEFAULT_TEXT_SPEED), tmNewYearMessage(0), effect
 
 void LAMP::lamp_init()
 {
-  _wipe_screen();
+  //_wipe_screen();
   // restore LED's current limit
   curLimit = embui.paramVariant(TCONST_CLmt);
   if (curLimit > 0){
@@ -108,8 +108,8 @@ void LAMP::lamp_init()
 void LAMP::handle(){
 #ifdef MIC_EFFECTS
   static unsigned long mic_check = 0; // = 40000; // пропускаю первые 40 секунд
-  if(effects.worker && flags.isMicOn && (flags.ONflag || isMicCalibration()) && !isAlarm() && mic_check + MIC_POLLRATE < millis()){
-    if(effects.worker->isMicOn() || isMicCalibration())
+  if(effects.status() && flags.isMicOn && (flags.ONflag || isMicCalibration()) && !isAlarm() && mic_check + MIC_POLLRATE < millis()){
+    if(effects.isMicOn() || isMicCalibration())
       micHandler();
     mic_check = millis();
   } else {
@@ -135,7 +135,7 @@ void LAMP::handle(){
 
 #ifdef LAMP_DEBUG
     // fps counter
-    LOG(printf_P, PSTR("Eff:%d, FPS: %u, FastLED FPS: %u\n"), effects.getCurrent(), avgfps, FastLED.getFPS());
+    LOG(printf_P, PSTR("Eff:%d, FastLED FPS: %u\n"), effects.getCurrent(), FastLED.getFPS());
 #ifdef ESP8266
 
     LOG(printf_P, PSTR("MEM stat: %d, HF: %d, Time: %s\n"), lampState.freeHeap, lampState.HeapFragmentation, TimeProcessor::getInstance().getFormattedShortTime().c_str());
@@ -145,10 +145,6 @@ void LAMP::handle(){
 #endif
 #endif
   }
-#ifdef LAMP_DEBUG
-  avgfps = (avgfps+fps) / 2;
-#endif
-  fps = 0; // сброс FPS раз в секунду
 
 
   // будильник обрабатываем раз в секунду
@@ -180,7 +176,7 @@ void LAMP::handle(){
   }
 
 }
-
+/*    // OBSOLETE
 void LAMP::effectsTick(){
   uint32_t _begin = millis();
 
@@ -257,11 +253,11 @@ void LAMP::effectsTick(){
   }
 
 }
-
+*/
 /*
  * вывод готового кадра на матрицу,
  * и перезапуск эффект-процессора
- */
+
 void LAMP::frameShow(const uint32_t ticktime){
   if ( !LEDFader::getInstance()->running() && !isLampOn() && !isAlarm() ) return _wipe_screen();
 
@@ -275,7 +271,7 @@ void LAMP::frameShow(const uint32_t ticktime){
   effectsTimer(T_ENABLE, delay);
   ++fps;
 }
-
+ */
 void LAMP::changePower() {changePower(!flags.ONflag);}
 
 void LAMP::changePower(bool flag) // флаг включения/выключения меняем через один метод
@@ -295,7 +291,7 @@ void LAMP::changePower(bool flag) // флаг включения/выключе�
       Led_Stream::newStreamObj((STREAM_TYPE)embui.param(TCONST_stream_type).toInt());
     if(!flags.isDirect || !flags.isStream)
 #endif
-    effects.reset();
+    //effects.reset();
     effectsTimer(T_ENABLE);
     if(mode == LAMPMODE::MODE_DEMO)
       demoTimer(T_ENABLE);
@@ -901,14 +897,14 @@ void LAMP::micHandler()
 void LAMP::setMicOnOff(bool val) {
     flags.isMicOn = val;
     lampState.isMicOn = val;
-    if(effects.getCurrent()==EFF_NONE || !effects.worker) return;
+    if(effects.getCurrent()==EFF_NONE || !effects.status()) return;
 
     unsigned foundc7 = 0;
     LList<std::shared_ptr<UIControl>>&controls = effects.getControls();
     if(val){
         for(unsigned i=3; i<controls.size(); i++) {
             if(controls[i]->getId()==7 && controls[i]->getName().startsWith(TINTF_020)==1){
-                effects.worker->setDynCtrl(controls[i].get());
+                effects.setDynCtrl(controls[i].get());
                 return;
             } else if(controls[i]->getId()==7) {
                 foundc7 = i;
@@ -917,9 +913,9 @@ void LAMP::setMicOnOff(bool val) {
     }
 
     UIControl ctrl(7,(CONTROL_TYPE)18,String(TINTF_020), val ? "1" : "0", "0", "1", "1");
-    effects.worker->setDynCtrl(&ctrl);
+    effects.setDynCtrl(&ctrl);
     if(foundc7){ // был найден 7 контрол, но не микрофон
-        effects.worker->setDynCtrl(controls[foundc7].get());
+        effects.setDynCtrl(controls[foundc7].get());
     }
 }
 #endif  // MIC_EFFECTS
@@ -1018,8 +1014,9 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
   }
 
   if(flags.isEffClearing || !effects.getCurrent()){ // для EFF_NONE или для случая когда включена опция - чистим матрицу
-    mx->clear();
-    FastLED.show();
+    display->clear();
+    //mx->clear();
+    //FastLED.show();
   }
 
   // move to 'selected' only if lamp is On and fader is in effect (i.e. it's a second call after fade),
@@ -1045,7 +1042,7 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
   playEffect(isPlayName, action); // воспроизведение звука, с проверкой текущего состояния
 #endif
 
-  if(effects.worker && flags.ONflag && !lampState.isEffectsDisabledUntilText){
+  if(effects.status() && flags.ONflag && !lampState.isEffectsDisabledUntilText){
     if(!sledsbuff){ // todo: WHY we need this clone here???
       sledsbuff = new LedFB(*mx);  // clone existing frambuffer
     } else {
@@ -1096,7 +1093,16 @@ void LAMP::demoTimer(SCHEDULER action, uint8_t tmout){
  * @param SCHEDULER enable/disable/reset - вкл/выкл/сброс
  */
 void LAMP::effectsTimer(SCHEDULER action, uint32_t _begin) {
-//  LOG.printf_P(PSTR("effectsTimer: %u\n"), action);
+  LOG(printf, "effectsTimer: %u\n", (unsigned)action);
+  switch (action){
+  case SCHEDULER::T_ENABLE :
+  case SCHEDULER::T_RESET :
+    effects.start();
+    break;
+  default:
+    effects.stop();
+  }
+/*
   switch (action)
   {
   case SCHEDULER::T_DISABLE :
@@ -1128,6 +1134,7 @@ void LAMP::effectsTimer(SCHEDULER action, uint32_t _begin) {
   default:
     return;
   }
+*/
 }
 
 //-----------------------------
@@ -1280,27 +1287,29 @@ void LAMP::setLEDbuffer(LedFB *buff){
   // this is potentially dangerous if used with threads 
   delete sledsbuff; sledsbuff = nullptr;
   delete drawbuff;  drawbuff = nullptr;
-  delete mx;
-  mx = buff;
-  effects.setLEDbuffer(buff);
+  //delete mx;
+  //mx = buff;
+  //effects.setLEDbuffer(buff);
   // wipe new buff
-  mx->clear();
-  FastLED.show();
+  //mx->clear();
+  //FastLED.show();
 }
 
 void LAMP::reset_led_buffs(){
-  mx->clear();
+  //mx->clear();
+  display->clear();
   delete sledsbuff; sledsbuff = nullptr;  // drop sleds buffer, it will be recreated on next run
   setDraw(false); // drop draw buffer
 }
 
 void LAMP::_wipe_screen(){
   LOG(println, "Wipe Screen");
-  if (mx) mx->clear();
-  if (sledsbuff) sledsbuff->clear();
+  //if (mx) mx->clear();
+  //if (sledsbuff) sledsbuff->clear();
   delete sledsbuff;
   sledsbuff = nullptr;
-  FastLED.show();
+  //FastLED.show();
+  display->clear();
 }
 
 

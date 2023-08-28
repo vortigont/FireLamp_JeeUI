@@ -37,20 +37,18 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 #pragma once
 
+#include "freertos/FreeRTOS.h"
 #include "filehelpers.hpp"
 #include "LList.h"
 #include "effects_types.h"
 #include "ledfb.hpp"
 #include "luma_curves.hpp"
-#include <vector>
 
 #ifdef MIC_EFFECTS
 #include "micFFT.h"
 #endif
 
 #include "ts.h"
-// TaskScheduler - Let the runner object be a global, single instance shared between object files.
-extern Scheduler ts;
 
 // Вывод значка микрофона в списке эффектов
 #ifdef MIC_EFFECTS
@@ -322,7 +320,7 @@ class EffectWorker;
 */
 class EffectCalc {
 private:
-    EffectWorker *_pworker = nullptr; // указатель на воркер
+    //EffectWorker *_pworker = nullptr; // указатель на воркер
     LAMPSTATE *_lampstate = nullptr;
     LList<std::shared_ptr<UIControl>> *ctrls;
     String dummy; // дефолтная затычка для отсутствующего контролла, в случае приведения к целому получится "0"
@@ -394,7 +392,7 @@ public:
      * @param _state - текущее состояние лампы
      *
     */
-    void init(EFF_ENUM _eff, LList<std::shared_ptr<UIControl>> *_controls, EffectWorker *_pworker, LAMPSTATE* _state);
+    void init(EFF_ENUM eff, LList<std::shared_ptr<UIControl>> *controls, LAMPSTATE* state);
 
     /**
      * load метод, по умолчанию пустой. Вызывается автоматом из init(), в дочернем классе можно заменять на процедуру первой загрузки эффекта (вместо того что выполняется под флагом load)
@@ -455,7 +453,7 @@ public:
 class EffectWorker {
 private:
     LAMPSTATE *lampstate;   // ссылка на состояние лампы
-    LedFB *fb;              // framebuffer to run EffectCalcs
+    //LedFB *fb;              // framebuffer to run EffectCalcs
     SORT_TYPE effSort;      // порядок сортировки в UI
 
     Effcfg curEff;          // конфигурация текущего эффекта, имя/версия и т.п.
@@ -463,6 +461,12 @@ private:
     
     // список эффектов с флагами из индекса
     LList<EffectListElem> effects;
+
+    // указатель на экземпляр класса текущего эффекта
+    std::unique_ptr<EffectCalc> worker = nullptr;
+
+    volatile bool _status = false;    // if worker is in active (enabled and running state)
+    TaskHandle_t    _runnerTask_h=nullptr;          // effect calculator task
 
     /**
      * @brief WTF???
@@ -504,17 +508,29 @@ private:
      */
     void _rebuild_eff_list(const char *folder = NULL);
 
+    // static wrapper for _runner Task to call handling class member
+    static inline void _runnerTask(void* pvParams){ ((EffectWorker*)pvParams)->_runnerHndlr(); }
+
+    // worker Task method that runs periodic Effect calculation
+    void _runnerHndlr();
+
+    // start a task that periodically runs effect calculation
+    void _start_runner();
+
 public:
     // дефолтный конструктор
-    EffectWorker(LAMPSTATE *_lampstate, LedFB *framebuffer);
-    //~EffectWorker();
+    EffectWorker(LAMPSTATE *_lampstate);
+    ~EffectWorker(){ if(_runnerTask_h) vTaskDelete(_runnerTask_h); _runnerTask_h = nullptr; };
 
     // noncopyable
     EffectWorker (const EffectWorker&) = delete;
     EffectWorker& operator= (const EffectWorker&) = delete;
 
-    // указатель на экземпляр класса текущего эффекта
-    std::unique_ptr<EffectCalc> worker = nullptr;
+    // start effect calculator and renderer
+    void start();
+
+    // stop effect calculator and release resources
+    void stop();
 
     /**
      * @brief reset worker by recreating current EffectCalc instance
@@ -524,12 +540,13 @@ public:
      */
     void reset();
 
+    bool status() const { return _status; };
 
     /**
      * @brief set a new ledbuffer for worker
      * it will pass it further on effects creation, etc...
      */
-    void setLEDbuffer(LedFB *buff);
+   //void setLEDbuffer(LedFB *buff);
 
     /**
      * @brief Set the Luma Curve value for the current effect configuration
@@ -683,6 +700,19 @@ public:
     void copyEffect(const EffectListElem *base);
     // удалить эффект
     void deleteEffect(const EffectListElem *eff, bool isCfgRemove = false);
+
+
+    // COMPAT methods
+
+    /**
+     * @brief a wrapper for EffectCalc's setDynCtrl method
+     * (exist for compatibility for the time of refactoring control's code)
+     */
+    String setDynCtrl(UIControl*_val){ return worker ? worker->setDynCtrl(_val) : String(); };  // damn String()
+
+    bool isMicOn(){ return worker ? worker->isMicOn() : false; }
+
+
 };
 
 /**
