@@ -37,16 +37,27 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 */
 
 #include "ledfb.hpp"
-/*
-#ifdef XY_EXTERN
-#include "XY.h"
-#endif
 
-#ifdef MATRIXx4
-  #include "matrix4.h"
-#endif
-*/
-static CRGB blackhole;              // Kostyamat's invisible pixel :) current effects code can't live w/o it
+// Timings from FastLED chipsets.h
+// WS2812@800kHz - 250ns, 625ns, 375ns
+// время "отправки" кадра в матрицу, мс. где 1.5 эмпирический коэффициент
+// #define FastLED_SHOW_TIME = WIDTH * HEIGHT * 24 * (0.250 + 0.625) / 1000 * 1.5
+
+// An object ref I'll use to access LED device
+OverlayEngine *display = nullptr;
+
+// compatibility buff reference
+LedFB *mx = nullptr;
+
+// Kostyamat's "invisible" pixel :) current effects code can't live w/o it
+static CRGB blackhole;
+
+// copy via assignment
+LedFB& LedFB::operator=(LedFB const& rhs){
+    fb = rhs.fb;
+    cfg=rhs.cfg;
+    return *this;
+}
 
 LedFB::LedFB(LedFB&& rhs) noexcept : fb(std::move(rhs.fb)), cfg(rhs.cfg){
     cled = rhs.cled;
@@ -56,12 +67,6 @@ LedFB::LedFB(LedFB&& rhs) noexcept : fb(std::move(rhs.fb)), cfg(rhs.cfg){
     _reset_cled();      // if we moved data from rhs, than need to reset cled controller
     //LOG(printf, "Move Constructing: %u From: %u\n", reinterpret_cast<size_t>(fb.data()), reinterpret_cast<size_t>(rhs.fb.data()));
 };
-
-LedFB& LedFB::operator=(LedFB const& rhs){
-    fb = rhs.fb;
-    cfg=rhs.cfg;
-    return *this;
-}
 
 LedFB& LedFB::operator=(LedFB&& rhs){
     fb = std::move(rhs.fb);
@@ -151,3 +156,34 @@ void LedFB::resize(uint16_t w, uint16_t h){
     _reset_cled();
     clear();
 };
+
+OverlayEngine::OverlayEngine(int gpio){
+    wsstrip = new(std::nothrow) ESP32RMT_WS2812B<COLOR_ORDER>(gpio);
+}
+
+bool OverlayEngine::makeCanvas(Mtrx_cfg &cfg){
+    if (cled) return false; // this function is not idempotent, so refuse to mess with existing controller
+
+    if (!canvas) canvas = new(std::nothrow) LedFB(cfg);
+
+    if (wsstrip && canvas){
+        // attach buffer to RMT engine
+        cled = &FastLED.addLeds(wsstrip, canvas->data(), canvas->size());
+        // hook framebuffer to contoller
+        canvas->bind(cled);
+        show();
+        return true;
+    }
+
+    return false;   // somethign went either wrong or already been setup 
+}
+
+void OverlayEngine::show(){
+    FastLED.show();
+};
+
+void OverlayEngine::clear(){
+    if (!canvas) return;
+    canvas->clear();
+    FastLED.show();
+}

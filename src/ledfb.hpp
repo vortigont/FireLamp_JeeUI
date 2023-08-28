@@ -38,8 +38,9 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 #pragma once
 #include "config.h"
-#include <FastLED.h>
+#include "w2812-rmt.hpp"
 #include <vector>
+#include <memory>
 //#include "log.h"
 
 /**
@@ -102,12 +103,34 @@ class LedFB {
 public:
     LedFB(uint16_t w, uint16_t h) : fb(w*h), cfg(w,h) {}
 
-    // copy c-tor
+    /**
+     * @brief Copy-Construct a new Led FB object
+     *  copy c-tor only copies data, it does NOT copy/move cled assignment (if any)
+     * @param rhs 
+     */
     LedFB(LedFB const & rhs) : fb(rhs.fb), cfg(rhs.cfg) {};
+
+    /**
+     * @brief Copy-assign a new Led FB object
+     *  operator only copies data, it does NOT copy/move cled assignment (if any)
+     * @param rhs 
+     */
     LedFB& operator=(LedFB const & rhs);
 
     // move semantics
+    /**
+     * @brief Move Construct a new LedFB object
+     * constructor will stear a cled pointer from a rhs object
+     * @param rhs 
+     */
     LedFB(LedFB&& rhs) noexcept;
+
+    /**
+     * @brief Move assignment operator
+     * will steal a cled pointer from a rhs object
+     * @param rhs 
+     * @return LedFB& 
+     */
     LedFB& operator=(LedFB&& rhs);
 
     // create from config struct
@@ -236,6 +259,60 @@ public:
     void clear();
 
 };
+
+
+class OverlayEngine {
+
+    LedFB *canvas   = nullptr;      // canvas buffer where background data is stored
+    LedFB *backbuff = nullptr;      // back buffer, where we will mix data with overlay before sending to LEDs
+    std::shared_ptr<LedFB> overlay;     // overlay buffer
+    std::weak_ptr<LedFB> ovr_watcher;   // overlay usage monitor
+
+    // FastLED controller
+    CLEDController *cled = nullptr;
+    // led strip driver
+    ESP32RMT_WS2812B<COLOR_ORDER> *wsstrip;
+
+public:
+    /**
+     * @brief Construct a new Overlay Engine object
+     * 
+     * @param gpio - gpio to bind
+     */
+    OverlayEngine(int gpio);
+
+    /**
+     * @brief create canvas buffer and attach it to FastLED engine
+     * 
+     * @param cfg - buffer configuration
+     * @return true - on success
+     * @return false - if canvas is already created or on any mem allocation error
+     */
+    bool makeCanvas(Mtrx_cfg &cfg);
+
+    /**
+     * @brief Get a reference to canvas buffer
+     * 
+     * @return LedFB* 
+     */
+    LedFB* getCanvas(){ return canvas; };
+
+    /**
+     * @brief show buffer content on display
+     * it will draw a canvas content (or render an overlay over it if necessary)
+     * 
+     */
+    void show();
+
+    /**
+     * @brief wipe buffers and draw a blank screen
+     * 
+     */
+    void clear();
+};
+
+// An object ref I'll use to access LED device
+extern OverlayEngine *display;
 
 /* a backward compatible wrappers for accessing LedMatrix obj instance,
 should be removed once other code refactoring is complete
