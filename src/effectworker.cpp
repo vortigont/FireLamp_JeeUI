@@ -55,7 +55,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 #define WRKR_TASK_CORE          CONFIG_ARDUINO_RUNNING_CORE    // task MUST be pinned to the second core to avoid LED glitches (if applicable)
 #define WRKR_TASK_PRIO          tskIDLE_PRIORITY+1    // task priority
-#define WRKR_TASK_STACK         1024                  // effects code should mostly allocate mem on heap
+#define WRKR_TASK_STACK         1536                  // effects code should mostly allocate mem on heap
 #define WRKR_TASK_NAME          "EFF_WRKR"
 
 constexpr int target_fps{50};                     // desired FPS rate for effect runner
@@ -498,6 +498,7 @@ void EffectWorker::workerset(uint16_t effect){
 
     // set newly loaded luma curve to the lamp
     run_action(ra::brt_lcurve, e2int(curEff.curve));
+    fb->persistent = eff_persistent_buff[effect%256];     // set 'persistent' frambuffer flag if effect's manifest demands it
     _start_runner();  // start calculator task IF we are marked as active
   }
 }
@@ -1163,6 +1164,7 @@ void EffectWorker::stop(){
     display->clear();
   }
   // otherwise task will self destruct on next iteration
+  display->getCanvas()->persistent = false;     // force clear persistent flag for frambuffer (if any) 
 }
 
 

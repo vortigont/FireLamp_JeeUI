@@ -377,10 +377,9 @@ public:
     EffectCalc(LedFB *framebuffer) : fb(framebuffer) {}
 
     /**
-     * деструктор по-умолчанию пустой, может быть переопределен
+     * деструктор по-умолчанию
      */
     virtual ~EffectCalc() = default;
-    //virtual ~EffectCalc(){ LOG(println,PSTR("DEGUG: Effect was destroyed\n")); } // отладка, можно будет затем закомментировать
 
     bool isMicOn() {return isMicActive;}
 
