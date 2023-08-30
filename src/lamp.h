@@ -117,7 +117,7 @@ struct {
     // ВНИМАНИЕ: порядок следования не менять, флаги не исключать, переводить в reserved!!! используется как битовый массив в конфиге!
     bool restoreState:1;        // restore lamp on/off/demo state on restart
     bool reserved1:1;
-    bool isDraw:1; // режим рисования
+    bool reserved2:1;       // ex. режим рисования
     bool ONflag:1; // флаг включения/выключения
     bool isFaderON:1; // признак того, что фейдер используется для эффектов
     bool reserved5:1;       // ex. isGlobalBrightness
@@ -176,7 +176,6 @@ _LAMPFLAGS(){
     MP3eq = 0;
     playMP3 = false;
     limitAlarmVolume = false;
-    isDraw = false;
     tm24 = true;
     tmZero = false;
     GaugeType = GAUGETYPE::GT_VERT;
@@ -192,10 +191,9 @@ class LAMP {
     friend class LEDFader;
     friend class ALARMTASK;        // будильник ходит сюда за MOSFET и AUX пином, todo: переписать будильник целиком
 private:
-    LedFB *sledsbuff = nullptr;    // вспомогательный буфер для слоя после эффектов
-    LedFB *drawbuff = nullptr;     // буфер для рисования
+    std::shared_ptr<LedFB> _overlay;     // буфер для оверлея
 #if defined(USE_STREAMING) && defined(EXT_STREAM_BUFFER)
-    std::vector<CRGB> streambuff;  // буфер для трансляции
+    //std::vector<CRGB> streambuff;  // буфер для трансляции
 #endif
 
     LAMPFLAGS flags;
@@ -296,13 +294,7 @@ public:
 
     void lamp_init();       // первичная инициализация Лампы
 
-    /**
-     * @brief set a new ledbuffer for lamp
-     * it will pass it further on effects creation, etc...
-     * any existing buffer will be destructed!!!
-     * Do NOT do this for the buffer that is attached to FASTLED engine
-     */
-    void setLEDbuffer(LedFB *buff);
+    // wipe all screen buffers to black
     void reset_led_buffs();
 
 
@@ -442,32 +434,32 @@ public:
     bool isLampOn() {return flags.ONflag;}
     bool isDebugOn() {return flags.isDebug;}
     bool isDebug() {return lampState.isDebug;}
-    bool isDrawOn() {return flags.isDraw;}
     void setDebug(bool flag) {flags.isDebug=flag; lampState.isDebug=flag;}
     void setButton(bool flag) {flags.isBtn=flag;}
-    void setDraw(bool flag);
 
     // set/clear "restore on/off/demo" state on boot
     void setRestoreState(bool flag){flags.restoreState = flag;}
 
-    /**
-     * @brief creates/destroys buffer for "drawing"
-     * 
-     * @param active - if 'true' creates new buffer, otherwise destory/release buffer mem
-     */
-    void setDrawBuff(bool active);
-    void writeDrawBuf(CRGB &color, uint16_t x, uint16_t y) { if(drawbuff) { drawbuff->pixel(x,y) = color; } }
-    void writeDrawBuf(CRGB &color, uint16_t num) { if(drawbuff) { drawbuff->at(num)=color; } }
+
+    // Drawing methods
+    bool isDrawOn() const { return _overlay.get(); }
+
+    // activate/disable overlay for drawing
+    void enableDrawing(bool state){ _overlay_buffer(state); };
+
+    // draw a pixel in overlay
+    void writeDrawBuf(CRGB color, uint16_t x, uint16_t y);
+    //void writeDrawBuf(CRGB color, uint16_t num);
 
     /**
      * @brief fill DrawBuffer with solid color
      * 
      * @param color 
      */
-    void fillDrawBuf(CRGB &color);
+    void fillDrawBuf(CRGB color);
 
     /**
-     * @brief fill DrawBuf with solid black
+     * @brief fill DrawBuf with solid black (make it transparent)
      * 
      */
     void clearDrawBuf() { CRGB c = CRGB::Black; fillDrawBuf(c); }
@@ -578,6 +570,16 @@ void setTempDisp(bool flag) {flags.isTempOn = flag;}
      * @param SCHEDULER action - enable/disable/reset
      */
     void effectsTimer(SCHEDULER action, uint32_t _begin = 0);
+
+private:
+    /**
+     * @brief creates/destroys buffer for "drawing, etc..."
+     * 
+     * @param active - if 'true' creates new buffer, otherwise destory/release buffer
+     */
+    void _overlay_buffer(bool activate);
+
+
 };
 
 /**

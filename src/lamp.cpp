@@ -40,6 +40,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "fontHEX.h"
 #include "actions.hpp"
 #include "alarm.h"
+#include "ledfb.hpp"
 
 GAUGE *GAUGE::gauge = nullptr; // объект индикатора
 ALARMTASK *ALARMTASK::alarmTask = nullptr; // объект будильника
@@ -157,7 +158,6 @@ void LAMP::handle(){
 
   // отложенное включение/выключение
   if(lampState.isOffAfterText && !lampState.isStringPrinting) {
-    changePower(false);
     run_action(ra::off);
   }
 
@@ -167,14 +167,6 @@ void LAMP::handle(){
   if (flags.isEventsHandled) {
     events.events_handle();
   }
-
-  if(!lampState.isStringPrinting && !flags.ONflag && !LEDFader::getInstance()->running()){ // освобождать буфер только если не выводится строка, иначе держать его
-    if(sledsbuff){
-      delete sledsbuff;
-      sledsbuff = nullptr;
-    }
-  }
-
 }
 /*    // OBSOLETE
 void LAMP::effectsTick(){
@@ -213,10 +205,10 @@ void LAMP::effectsTick(){
   }
 #endif
 
-  if(drawbuff){
+  if(_overlay){
     uint8_t mi;
     for(uint16_t i=0; i<mx->size(); i++){
-      mi = drawbuff->at(i).r > drawbuff->at(i).g ? drawbuff->at(i).r : drawbuff->at(i).g;
+      mi = _overlay->at(i).r > drawbuff->at(i).g ? drawbuff->at(i).r : drawbuff->at(i).g;
       mi = mi > drawbuff->at(i).b ? mi : drawbuff->at(i).b;
       if(mi>=5) {
         mx->at(i) = drawbuff->at(i);
@@ -254,24 +246,7 @@ void LAMP::effectsTick(){
 
 }
 */
-/*
- * вывод готового кадра на матрицу,
- * и перезапуск эффект-процессора
 
-void LAMP::frameShow(const uint32_t ticktime){
-  if ( !LEDFader::getInstance()->running() && !isLampOn() && !isAlarm() ) return _wipe_screen();
-
-  FastLED.show();
-
-  // откладываем пересчет эффекта на время для желаемого FPS, либо
-  // на минимальный интервал в следующем loop()
-  int32_t delay = (ticktime + EFFECTS_RUN_TIMER) - millis();
-  if (delay < LED_SHOW_DELAY) delay = LED_SHOW_DELAY;
-
-  effectsTimer(T_ENABLE, delay);
-  ++fps;
-}
- */
 void LAMP::changePower() {changePower(!flags.ONflag);}
 
 void LAMP::changePower(bool flag) // флаг включения/выключения меняем через один метод
@@ -302,10 +277,10 @@ void LAMP::changePower(bool flag) // флаг включения/выключе�
     Led_Stream::clearStreamObj();
 #endif
     if(flags.isFaderON && !lampState.isOffAfterText){
-      LEDFader::getInstance()->fadelight(0, FADE_TIME, [this](){ effectsTimer(SCHEDULER::T_DISABLE); _wipe_screen(); } );     // гасим эффект-процессор
+      LEDFader::getInstance()->fadelight(0, FADE_TIME, [this](){ effectsTimer(SCHEDULER::T_DISABLE); } );     // гасим эффект-процессор
     } else {
       effectsTimer(SCHEDULER::T_DISABLE);
-      _wipe_screen();  // forse wipe the screen to black
+      //_wipe_screen();  // forse wipe the screen to black
     }
     lampState.isOffAfterText = false;
     lampState.isStringPrinting = false;
@@ -1041,7 +1016,7 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
 #ifdef MP3PLAYER
   playEffect(isPlayName, action); // воспроизведение звука, с проверкой текущего состояния
 #endif
-
+/*
   if(effects.status() && flags.ONflag && !lampState.isEffectsDisabledUntilText){
     if(!sledsbuff){ // todo: WHY we need this clone here???
       sledsbuff = new LedFB(*mx);  // clone existing frambuffer
@@ -1049,6 +1024,7 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
       *sledsbuff = *mx;           // copy buffer content
     }
   }
+*/
   setBrightness(globalBrightness);      // need to reapply brightness as effect's curve might have changed
   LOG(println, "eof switcheffect");
 }
@@ -1226,31 +1202,16 @@ void LAMP::showWarning(
   }
 }
 
-void LAMP::setDraw(bool flag){
-    flags.isDraw=flag;
-// #if defined(USE_STREAMING) && !defined(EXT_STREAM_BUFFER)
-//         if (flag && ledStream) {
-//             flags.isStream=false;
-//             remote_action();                // TODO: сделать нужный RA для стрима и рисования
-//         }
-// #endif
-    setDrawBuff(flag);
+void LAMP::fillDrawBuf(CRGB color) {
+  if(_overlay) _overlay->fill(color);
 }
 
-void LAMP::setDrawBuff(bool active) {
-  if (active){
-    if (!drawbuff)
-      drawbuff = new LedFB(mx->cfg);   // create a buff with same layout as main FB
-    return;
-  }
-
-  delete drawbuff;
-  drawbuff = nullptr;
+void LAMP::writeDrawBuf(CRGB color, uint16_t x, uint16_t y){
+  if (_overlay) { _overlay->pixel(x,y) = color; }
 }
 
-void LAMP::fillDrawBuf(CRGB &color) {
-  if(drawbuff) drawbuff->fill(color);
-}
+//void LAMP::writeDrawBuf(CRGB color, uint16_t num) { if(_overlay) { _overlay->at(num)=color; } }
+
 
 #ifdef EMBUI_USE_MQTT
 void LAMP::setmqtt_int(int val) {
@@ -1283,36 +1244,26 @@ void LAMP::setStreamBuff(bool active) {
 }
 #endif
 
-void LAMP::setLEDbuffer(LedFB *buff){
-  // this is potentially dangerous if used with threads 
-  delete sledsbuff; sledsbuff = nullptr;
-  delete drawbuff;  drawbuff = nullptr;
-  //delete mx;
-  //mx = buff;
-  //effects.setLEDbuffer(buff);
-  // wipe new buff
-  //mx->clear();
-  //FastLED.show();
-}
-
 void LAMP::reset_led_buffs(){
   //mx->clear();
   display->clear();
-  delete sledsbuff; sledsbuff = nullptr;  // drop sleds buffer, it will be recreated on next run
-  setDraw(false); // drop draw buffer
+  //delete sledsbuff; sledsbuff = nullptr;  // drop sleds buffer, it will be recreated on next run
+  _overlay_buffer(false); // drop overlay buffer
 }
 
 void LAMP::_wipe_screen(){
   LOG(println, "Wipe Screen");
-  //if (mx) mx->clear();
-  //if (sledsbuff) sledsbuff->clear();
-  delete sledsbuff;
-  sledsbuff = nullptr;
-  //FastLED.show();
   display->clear();
 }
 
+void LAMP::_overlay_buffer(bool activate) {
+  if (activate && !_overlay)
+    _overlay = display->getOverlay();   // obtain overlay buffer
+  else
+    _overlay.reset();
+}
 
+// *********************************
 /*  LEDFader class implementation */
 
 void LEDFader::fadelight(const uint8_t _targetbrightness, const uint32_t _duration, std::function<void()> callback){

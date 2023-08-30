@@ -2111,10 +2111,10 @@ void set_debugflag(Interface *interf, JsonObject *data){
     save_lamp_flags();
 }
 
-void set_drawflag(Interface *interf, JsonObject *data){
+// enable/disable overlay drawing
+void set_overlay_drawing(Interface *interf, JsonObject *data){
     if (!data) return;
-    myLamp.setDraw((*data)[TCONST_drawbuff]);
-    save_lamp_flags();
+    myLamp.enableDrawing((*data)[TCONST_drawbuff]);
 }
 
 #ifdef MP3PLAYER
@@ -2774,11 +2774,14 @@ void create_parameters(){
     embui.section_handle_add(TCONST_ONflag, set_onflag);
     embui.section_handle_add(TCONST_Demo, set_demoflag);
     embui.section_handle_add(TCONST_GBR, set_gbrflag);                           // Lamp brightness
-    embui.section_handle_add(TCONST_lcurve, set_lcurve);                                // luma curve control
+    embui.section_handle_add(TCONST_lcurve, set_lcurve);                         // luma curve control
     embui.section_handle_add(TCONST_AUX, set_auxflag);
+
+    // overlay drawing
     embui.section_handle_add(TCONST_drawing, page_drawing);
     embui.section_handle_add(TCONST_draw_dat, set_drawing);
-    //embui.section_handle_add(TCONST_drawClear, set_clear);
+    embui.section_handle_add(TCONST_drawbuff, set_overlay_drawing);
+
 #ifdef USE_STREAMING    
     embui.section_handle_add(TCONST_streaming, section_streaming_frame);
     embui.section_handle_add(TCONST_isStreamOn, set_streaming);
@@ -2795,7 +2798,6 @@ void create_parameters(){
     //embui.section_handle_add(TCONST_edit_lamp_config, edit_lamp_config);
 
     embui.section_handle_add(TCONST_edit_text_config, set_text_config);
-    embui.section_handle_add(TCONST_drawbuff, set_drawflag);
 
     embui.section_handle_add(TCONST_settings_ledstrip, set_ledstrip);           // Set LED strip layout setup
     embui.section_handle_add(TCONST_set_other, set_settings_other);
@@ -2850,10 +2852,6 @@ void sync_parameters(){
     LAMPFLAGS tmp;
     tmp.lampflags = stoull(syslampFlags); //atol(embui.param(TCONST_syslampFlags).c_str());
     LOG(printf_P, PSTR("tmp.lampflags=%llu\n"), tmp.lampflags);
-
-    obj[TCONST_drawbuff] = tmp.isDraw;
-    set_drawflag(nullptr, &obj);
-    doc.clear();
 
 #ifdef LAMP_DEBUG
     obj[TCONST_debug] = tmp.isDebug ;
@@ -3275,9 +3273,7 @@ String httpCallback(const String &param, const String &value, bool isset){
             run_action(ra::warn, &o);
             return result;
         }
-//        else if (upperParam == CMD_DRAW) action = RA_DRAW;             // у меня не идей зачем нужно попиксельное рисование через единичные http запросы /это делается через акшен set_drawing()/
-//        else if (upperParam == CMD_FILL_MATRIX) action = RA_FILLMATRIX; // у меня не идей зачем нужно заливать поле рисование через единичные http запросы /это делается через акшен set_drawing()/
-//        else if (upperParam == CMD_RGB) action = RA_RGB;               // what's the diff with FILL_MATRIX?
+
 #ifdef MP3PLAYER
         if (upperParam == CMD_MP3_PREV) { run_action(ra::mp3_prev, 1); return result; }
         if (upperParam == CMD_MP3_NEXT) { run_action(ra::mp3_next, 1); return result; }
