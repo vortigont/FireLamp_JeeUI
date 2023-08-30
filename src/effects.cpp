@@ -7465,6 +7465,7 @@ String EffectStarShips::setDynCtrl(UIControl*_val){
 void EffectStarShips::load() {
   palettesload();
   fb->clear();
+  fb->persistent = true;       // this effect needs persistent buffer
 }
 
 bool EffectStarShips::run() {
