@@ -41,7 +41,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "w2812-rmt.hpp"
 #include <vector>
 #include <memory>
-//#include "log.h"
 
 /**
  * @brief matrix configuration for LedFB
@@ -101,11 +100,22 @@ class LedFB {
     void _reset_cled(){ if (cled) {cled->setLeds(fb.data(), fb.size());} };
 
 public:
+    // buffer topology configuration
+    Mtrx_cfg cfg;
+
+    /**
+     * @brief flag that marks buffer as persistent storage that should NOT be changed
+     * by overlay operations. In tthat case overlay is applied on top of a copy in back buffer
+     * 
+     */
+    bool persistent = false;
+
     LedFB(uint16_t w, uint16_t h) : fb(w*h), cfg(w,h) {}
 
     /**
      * @brief Copy-Construct a new Led FB object
      *  copy c-tor only copies data, it does NOT copy/move cled assignment (if any)
+     *  it also does NOT copy persistence flag
      * @param rhs 
      */
     LedFB(LedFB const & rhs) : fb(rhs.fb), cfg(rhs.cfg) {};
@@ -120,7 +130,7 @@ public:
     // move semantics
     /**
      * @brief Move Construct a new LedFB object
-     * constructor will stear a cled pointer from a rhs object
+     * constructor will steal a cled pointer from a rhs object
      * @param rhs 
      */
     LedFB(LedFB&& rhs) noexcept;
@@ -138,9 +148,6 @@ public:
 
     // d-tor
     ~LedFB();
-
-    // buffer topology configuration
-    Mtrx_cfg cfg;
 
     /**
      * @brief zero-copy swap CRGB data within two framebuffers
@@ -174,8 +181,20 @@ public:
     bool bind(CLEDController *pLed);
 
     /**
+     * @brief steal binding to CLED controller from another LedFB instance
+     * 
+     * @param rhs other instance that must have active CLED binding
+     * @return true on success
+     * @return false on any error
+     */
+    void rebind(LedFB &rhs);
+
+    /***/
+    bool isBound() const { return cled; }
+
+    /**
      * @brief resize LED buffer to specified size
-     * content will lost on resize
+     * content will be lost on resize
      * 
      * @param w width in px
      * @param h heigh in px
@@ -263,10 +282,11 @@ public:
 
 class OverlayEngine {
 
-    LedFB *canvas   = nullptr;      // canvas buffer where background data is stored
-    LedFB *backbuff = nullptr;      // back buffer, where we will mix data with overlay before sending to LEDs
-    std::shared_ptr<LedFB> overlay;     // overlay buffer
-    std::weak_ptr<LedFB> ovr_watcher;   // overlay usage monitor
+    std::unique_ptr<LedFB> canvas;      // canvas buffer where background data is stored
+    std::unique_ptr<LedFB> backbuff;    // back buffer, where we will mix data with overlay before sending to LEDs
+    std::weak_ptr<LedFB> overlay;       // overlay buffer weak pointer
+
+    CRGB _transparent_color = CRGB::Black;
 
     // FastLED controller
     CLEDController *cled = nullptr;
@@ -295,7 +315,9 @@ public:
      * 
      * @return LedFB* 
      */
-    LedFB* getCanvas(){ return canvas; };
+    LedFB* getCanvas(){ return canvas.get(); };
+
+    std::shared_ptr<LedFB> getOverlay();
 
     /**
      * @brief show buffer content on display
@@ -309,6 +331,20 @@ public:
      * 
      */
     void clear();
+
+private:
+    /**
+     * @brief apply overlay to canvas
+     * pixels with _transparent_color will be skipped
+     */
+    void _ovr_overlap();
+
+    /**
+     * @brief switch active output to a back buffe
+     * used in case if canvas is marked as persistent and should not be changed with overlay data
+     * 
+     */
+    void _switch_to_bb();
 };
 
 // An object ref I'll use to access LED device

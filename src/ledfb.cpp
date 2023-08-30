@@ -37,6 +37,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 */
 
 #include "ledfb.hpp"
+//#include "log.h"
 
 // Timings from FastLED chipsets.h
 // WS2812@800kHz - 250ns, 625ns, 375ns
@@ -157,6 +158,15 @@ void LedFB::resize(uint16_t w, uint16_t h){
     clear();
 };
 
+void LedFB::rebind(LedFB &rhs){
+    //LOG(println, "LedFB rebind");
+    std::swap(cled, rhs.cled);  // swap pointers, if any
+    _reset_cled();
+    rhs._reset_cled();
+}
+
+// *** OverlayEngine implementation ***
+
 OverlayEngine::OverlayEngine(int gpio){
     wsstrip = new(std::nothrow) ESP32RMT_WS2812B<COLOR_ORDER>(gpio);
 }
@@ -164,7 +174,7 @@ OverlayEngine::OverlayEngine(int gpio){
 bool OverlayEngine::makeCanvas(Mtrx_cfg &cfg){
     if (cled) return false; // this function is not idempotent, so refuse to mess with existing controller
 
-    if (!canvas) canvas = new(std::nothrow) LedFB(cfg);
+    if (!canvas) canvas = std::make_unique<LedFB>(cfg);
 
     if (wsstrip && canvas){
         // attach buffer to RMT engine
@@ -179,11 +189,67 @@ bool OverlayEngine::makeCanvas(Mtrx_cfg &cfg){
 }
 
 void OverlayEngine::show(){
+    if (!overlay.expired() && canvas->persistent && !backbuff)    // check if I need to switch to back buff due to canvas persistency and overlay data present 
+        _switch_to_bb();
+
+    // check if back-buffer is present but no longer needed (if no overlay present or canvas is not persistent anymore)
+    if (backbuff && (overlay.expired() || !canvas->persistent)){
+        //LOG(println, "BB release");
+        canvas->rebind(*backbuff.get());
+        backbuff.release();
+    }
+
+    _ovr_overlap(); // apply overlay to either canvas or back buffer, if bb is present
     FastLED.show();
 };
 
 void OverlayEngine::clear(){
     if (!canvas) return;
     canvas->clear();
+    if (backbuff)
+        backbuff->clear();
     FastLED.show();
+}
+
+std::shared_ptr<LedFB> OverlayEngine::getOverlay(){
+    auto p = overlay.lock();
+    if (!p){
+        // no overlay exist at the moment
+        p = std::make_shared<LedFB>(canvas->cfg);
+        overlay = p;
+    }
+    return p;
+}
+
+void OverlayEngine::_ovr_overlap(){
+    if (overlay.expired()) return;     // no overlay data exist
+
+    auto ovr = overlay.lock();
+
+    if (canvas->size() != ovr->size()) return;  // a safe-check for buffer sizes
+
+    auto ovr_iterator = ovr->begin();
+
+    if (backbuff.get()){
+        auto bb_iterator = backbuff->begin();
+        // fill BackBuffer with either canvas or overlay based on keycolor
+        for (auto i = canvas->begin(); i != canvas->end(); ++i ){
+            *bb_iterator = (*ovr_iterator == _transparent_color) ? *i : *ovr_iterator;
+            ++ovr_iterator;
+            ++bb_iterator;
+        }
+    } else {
+        // apply all non key-color pixels to canvas
+        for (auto i = canvas->begin(); i != canvas->end(); ++i ){
+            if (*ovr_iterator != _transparent_color)
+                *i = *ovr_iterator;
+            ++ovr_iterator;
+        }
+    }   
+}
+
+void OverlayEngine::_switch_to_bb(){
+    //LOG(println, "Switch to BB");
+    backbuff = std::make_unique<LedFB>(*canvas);
+    backbuff->rebind(*canvas);    // switch backend binding
 }
