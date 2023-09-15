@@ -79,8 +79,8 @@ https://gist.github.com/StefanPetrick/170fbf141390fafb9c0c76b8a0d34e54
 class EffectMetaBalls : public EffectCalc {
 private:
 	float speedFactor;
-	const float hormap = (256 / fb->cfg.w());
-    const float vermap = (256 / fb->cfg.h());
+	const float hormap = (256 / fb->w());
+    const float vermap = (256 / fb->h());
 	String setDynCtrl(UIControl*_val) override;
     void load() override;
 public:
@@ -95,8 +95,8 @@ public:
 */
 class EffectSinusoid3 : public EffectCalc {
 private:
-	const uint8_t semiHeightMajor =  fb->cfg.h() / 2 + (fb->cfg.h() % 2);
-	const uint8_t semiWidthMajor =  fb->cfg.w() / 2  + (fb->cfg.w() % 2);
+	const uint8_t semiHeightMajor =  fb->h() / 2 + (fb->h() % 2);
+	const uint8_t semiWidthMajor =  fb->w() / 2  + (fb->w() % 2);
 	float e_s3_speed;
 	float e_s3_size;
 	uint8_t _scale;
@@ -145,8 +145,8 @@ public:
 class EffectLightBalls : public EffectCalc {
 private:
 	#define BORDERTHICKNESS       (1U)   // глубина бордюра для размытия яркой частицы: 0U - без границы (резкие края); 1U - 1 пиксель (среднее размытие) ; 2U - 2 пикселя (глубокое размытие)
-	const uint8_t paintWidth = fb->cfg.w() - BORDERTHICKNESS * 2;
-	const uint8_t paintHeight = fb->cfg.h() - BORDERTHICKNESS * 2;
+	const uint8_t paintWidth = fb->w() - BORDERTHICKNESS * 2;
+	const uint8_t paintHeight = fb->h() - BORDERTHICKNESS * 2;
 	float speedFactor;
 	
 	String setDynCtrl(UIControl*_val) override;
@@ -160,8 +160,8 @@ public:
 class EffectPulse : public EffectCalc {
     uint8_t pulse_hue;
     float pulse_step = 0;
-    uint8_t centerX = random8(fb->cfg.w() - 5U) + 3U;
-    uint8_t centerY = random8(fb->cfg.h() - 5U) + 3U;
+    uint8_t centerX = random8(fb->w() - 5U) + 3U;
+    uint8_t centerY = random8(fb->h() - 5U) + 3U;
     uint8_t currentRadius = 4;
     float _pulse_hue = 0;
     uint8_t _pulse_hueall = 0;
@@ -265,7 +265,7 @@ public:
 // совместное творчество юзеров форума https://community.alexgyver.ru/
 class EffectEverythingFall : public EffectCalc {
 private:
-    Vector2D<uint8_t> heat{ Vector2D<uint8_t>(fb->cfg.w(),fb->cfg.h()) };
+    Vector2D<uint8_t> heat{ Vector2D<uint8_t>(fb->w(),fb->h()) };
 
 public:
     EffectEverythingFall(LedFB *framebuffer) : EffectCalc(framebuffer){}
@@ -296,11 +296,11 @@ private:
     String setDynCtrl(UIControl*_val) override;
 
     /** полезные обертки **/
-    uint8_t wrapX(int8_t x){ return (x + fb->cfg.w()) % fb->cfg.w(); }
-    uint8_t wrapY(int8_t y){ return (y + fb->cfg.h()) % fb->cfg.h(); }
+    uint8_t wrapX(int8_t x){ return (x + fb->w()) % fb->w(); }
+    uint8_t wrapY(int8_t y){ return (y + fb->h()) % fb->h(); }
 
 public:
-    EffectFire2012(LedFB *framebuffer) : EffectCalc(framebuffer), noise(fb->cfg.w(), fb->cfg.h()) {}
+    EffectFire2012(LedFB *framebuffer) : EffectCalc(framebuffer), noise(fb->w(), fb->h()) {}
     void load() override;
     bool run() override;
 };
@@ -379,7 +379,7 @@ private:
     Vector2D<uint8_t> noise;
 
 public:
-    Effect3DNoise(LedFB *framebuffer) : EffectCalc(framebuffer), noise(2*fb->cfg.w(), fb->cfg.h()) {}
+    Effect3DNoise(LedFB *framebuffer) : EffectCalc(framebuffer), noise(2*fb->w(), fb->h()) {}
     void load() override;
     bool run() override;
     String setDynCtrl(UIControl*_val) override;
@@ -394,16 +394,16 @@ public:
  */
 class EffectSpiro : public EffectCalc {
 private:
-  const uint8_t spiroradiusx = fb->cfg.w() /4;
-  const uint8_t spiroradiusy = fb->cfg.h() /4;
+  const uint8_t spiroradiusx = fb->w() /4;
+  const uint8_t spiroradiusy = fb->h() /4;
 
-  const uint8_t spirocenterX = fb->cfg.w() /2;
-  const uint8_t spirocenterY = fb->cfg.h() /2;
+  const uint8_t spirocenterX = fb->w() /2;
+  const uint8_t spirocenterY = fb->h() /2;
 
   const uint8_t spirominx = spirocenterX - spiroradiusx;
-  const uint8_t spiromaxx = spirocenterX + spiroradiusx - (fb->cfg.w()%2 == 0 ? 1:0);// + 1;
+  const uint8_t spiromaxx = spirocenterX + spiroradiusx - (fb->w()%2 == 0 ? 1:0);// + 1;
   const uint8_t spirominy = spirocenterY - spiroradiusy;
-  const uint8_t spiromaxy = spirocenterY + spiroradiusy - (fb->cfg.h()%2 == 0 ? 1:0); // + 1;
+  const uint8_t spiromaxy = spirocenterY + spiroradiusy - (fb->h()%2 == 0 ? 1:0); // + 1;
 
   bool spiroincrement = false;
   bool spirohandledChange = false;
@@ -478,8 +478,8 @@ class EffectComet : public EffectCalc {
     // 3D Noise map
     Noise3dMap noise3d;
 
-    const uint8_t e_centerX = (fb->cfg.w() / 2) - ((fb->cfg.w() - 1) & 0x01);
-    const uint8_t e_centerY = (fb->cfg.h() / 2) - ((fb->cfg.h() - 1) & 0x01);
+    const uint8_t e_centerX = (fb->w() / 2) - ((fb->w() - 1) & 0x01);
+    const uint8_t e_centerY = (fb->h() / 2) - ((fb->h() - 1) & 0x01);
 
 
     void drawFillRect2_fast(int8_t x1, int8_t y1, int8_t x2, int8_t y2, CRGB color);
@@ -494,7 +494,7 @@ class EffectComet : public EffectCalc {
     String setDynCtrl(UIControl*_val) override;
 
 public:
-    EffectComet(LedFB *framebuffer) :  EffectCalc(framebuffer), noise3d(COMET_NOISE_LAYERS, framebuffer->cfg.w(), framebuffer->cfg.h()) {}
+    EffectComet(LedFB *framebuffer) :  EffectCalc(framebuffer), noise3d(COMET_NOISE_LAYERS, framebuffer->w(), framebuffer->h()) {}
     void load() override;
     bool run() override;
 };
@@ -518,7 +518,7 @@ public:
 // https://github.com/pixelmatix/aurora/blob/master/PatternIncrementalDrift.h
 class EffectDrift : public EffectCalc {
 private:
-	byte maxDim_steps(){ return 256 / fb->cfg.maxDim(); }
+	byte maxDim_steps(){ return 256 / fb->maxDim(); }
 	uint8_t dri_phase;
 	float _dri_speed;
 	uint8_t _dri_delta;
@@ -528,8 +528,8 @@ private:
 	bool incrementalDriftRoutine();
 	bool incrementalDriftRoutine2();
     // some adjustments
-    int width_adj(){ return (fb->cfg.w() < fb->cfg.h() ? (fb->cfg.h() - fb->cfg.w()) /2 : 0); };
-    int height_adj(){ return (fb->cfg.h() < fb->cfg.w() ? (fb->cfg.w() - fb->cfg.h()) /2: 0); };
+    int width_adj(){ return (fb->w() < fb->h() ? (fb->h() - fb->w()) /2 : 0); };
+    int height_adj(){ return (fb->h() < fb->w() ? (fb->w() - fb->h()) /2: 0); };
 
 public:
     EffectDrift(LedFB *framebuffer) : EffectCalc(framebuffer){}
@@ -543,13 +543,13 @@ class EffectTwinkles : public EffectCalc {
 private:
   uint8_t thue = 0U;
   uint8_t tnum;
-  LedFB ledsbuff;
+  PixelDataBuffer ledsbuff;
   float speedFactor;
   bool twinklesRoutine();
   String setDynCtrl(UIControl*_val) override;
   //void setscl(const byte _scl) override;
 public:
-    EffectTwinkles(LedFB *framebuffer) : EffectCalc(framebuffer), ledsbuff(fb->cfg) {}
+    EffectTwinkles(LedFB *framebuffer) : EffectCalc(framebuffer), ledsbuff(fb->size()) {}
     void load() override;
     void setup();
     bool run() override { return twinklesRoutine(); };
@@ -578,10 +578,10 @@ private:
     float eff_theta;  // глобальная переменная угла для работы эффектов
     bool subPix = false;
     byte hue;
-    const float width_adj_f = (float)(fb->cfg.w() < fb->cfg.h() ? (fb->cfg.h() - fb->cfg.w()) / 2. : 0);
-    const float height_adj_f= (float)(fb->cfg.h() < fb->cfg.w() ? (fb->cfg.w() - fb->cfg.h()) / 2. : 0);
-    int width_adj(){ return (fb->cfg.w() < fb->cfg.h() ? (fb->cfg.h() - fb->cfg.w()) /2 : 0); };
-    int height_adj(){ return (fb->cfg.h() < fb->cfg.w() ? (fb->cfg.w() - fb->cfg.h()) /2: 0); };
+    const float width_adj_f = (float)(fb->w() < fb->h() ? (fb->h() - fb->w()) / 2. : 0);
+    const float height_adj_f= (float)(fb->h() < fb->w() ? (fb->w() - fb->h()) / 2. : 0);
+    int width_adj(){ return (fb->w() < fb->h() ? (fb->h() - fb->w()) /2 : 0); };
+    int height_adj(){ return (fb->h() < fb->w() ? (fb->w() - fb->h()) /2: 0); };
 
     bool radarRoutine();
     String setDynCtrl(UIControl *_val) override;
@@ -606,8 +606,8 @@ private:
 public:
     EffectFire2018(LedFB *framebuffer) : 
         EffectCalc(framebuffer),
-        fire18heat(std::vector<std::vector<uint8_t>>(framebuffer->cfg.h(), std::vector<uint8_t>(framebuffer->cfg.w()))),
-        noise(FIRE_NUM_LAYERS, framebuffer->cfg.w(), framebuffer->cfg.h()) { fb->clear(); }
+        fire18heat(std::vector<std::vector<uint8_t>>(framebuffer->h(), std::vector<uint8_t>(framebuffer->w()))),
+        noise(FIRE_NUM_LAYERS, framebuffer->w(), framebuffer->h()) { fb->clear(); }
     bool run() override;
 };
 
@@ -619,9 +619,9 @@ private:
   uint8_t ringNb; // количество колец от 2 до height
   uint8_t downRingHue, upRingHue; // количество пикселей в нижнем (downRingHue) и верхнем (upRingHue) кольцах
 
-  std::vector<uint8_t> ringColor{std::vector<uint8_t>(fb->cfg.h())};    // начальный оттенок каждого кольца (оттенка из палитры) 0-255
-  std::vector<uint8_t> huePos{std::vector<uint8_t>(fb->cfg.h())};       // местоположение начального оттенка кольца 0-w-1
-  std::vector<uint8_t> shiftHueDir{std::vector<uint8_t>(fb->cfg.h())};  // 4 бита на ringHueShift, 4 на ringHueShift2
+  std::vector<uint8_t> ringColor{std::vector<uint8_t>(fb->h())};    // начальный оттенок каждого кольца (оттенка из палитры) 0-255
+  std::vector<uint8_t> huePos{std::vector<uint8_t>(fb->h())};       // местоположение начального оттенка кольца 0-w-1
+  std::vector<uint8_t> shiftHueDir{std::vector<uint8_t>(fb->h())};  // 4 бита на ringHueShift, 4 на ringHueShift2
   ////ringHueShift[ringsCount]; // шаг градиета оттенка внутри кольца -8 - +8 случайное число
   ////ringHueShift2[ringsCount]; // обычная скорость переливания оттенка всего кольца -8 - +8 случайное число
   uint8_t currentRing; // кольцо, которое в настоящий момент нужно провернуть
@@ -815,7 +815,7 @@ struct Drop{
     uint16_t x{0}, y{0}, z{0};
     Vector2D<uint8_t> noise;
 
-    inline uint8_t maxRadius(){return fb->cfg.w() + fb->cfg.h();};
+    inline uint8_t maxRadius(){return fb->w() + fb->h();};
     std::vector<Drop> drops;
     uint8_t satur;
     uint8_t glare = 0;
@@ -828,8 +828,8 @@ struct Drop{
 
 public:
     EffectAquarium(LedFB *framebuffer) : EffectCalc(framebuffer),
-        noise(framebuffer->cfg.w(), framebuffer->cfg.h()),
-        drops(std::vector<Drop>((fb->cfg.h() + fb->cfg.w()) / 6)) {}
+        noise(framebuffer->w(), framebuffer->h()),
+        drops(std::vector<Drop>((fb->h() + fb->w()) / 6)) {}
 
     void load() override;
     String setDynCtrl(UIControl*_val) override;
@@ -857,8 +857,8 @@ private:
 	float _speed;
     bool setup = true;
     uint8_t micPick = 0;
-    const uint8_t spirocenterX = fb->cfg.w() / 2;
-    const uint8_t spirocenterY = fb->cfg.h() / 2;
+    const uint8_t spirocenterX = fb->w() / 2;
+    const uint8_t spirocenterY = fb->h() / 2;
     std::vector<Star> stars{std::vector<Star>(STARS_NUM)};
 
     void drawStar(float xlocl, float ylocl, float biggy, float little, int16_t points, float dangle, uint8_t koler);
@@ -921,10 +921,10 @@ class EffectFireworks : public EffectCalc {
     std::vector<Dot> gSparks;
     String setDynCtrl(UIControl*_val) override;
     void draw(Dot &d);
-    int16_t _model_w(){ return 2*(fb->cfg.w() - 4) + fb->cfg.w(); };  // как далеко за экран может вылетить снаряд, если снаряд вылетает за экран, то всышка белого света (не особо логично)
-    int16_t _model_h(){ return 2*(fb->cfg.h() - 4) + fb->cfg.h(); };
-    int16_t _x_offset(){ return (_model_w()-fb->cfg.w())/2; };
-    int16_t _y_offset(){ return (_model_h()-fb->cfg.h())/2; };
+    int16_t _model_w(){ return 2*(fb->w() - 4) + fb->w(); };  // как далеко за экран может вылетить снаряд, если снаряд вылетает за экран, то всышка белого света (не особо логично)
+    int16_t _model_h(){ return 2*(fb->h() - 4) + fb->h(); };
+    int16_t _x_offset(){ return (_model_w()-fb->w())/2; };
+    int16_t _y_offset(){ return (_model_h()-fb->h())/2; };
     void _screenscale(accum88 a, byte N, byte &screen, byte &screenerr);
 
 public:
@@ -971,7 +971,7 @@ private:
     
 
 public:
-    EffectOsc(LedFB *framebuffer) : EffectCalc(framebuffer), oscHV(fb->cfg.w()), oscilLimit(fb->cfg.h()) {}
+    EffectOsc(LedFB *framebuffer) : EffectCalc(framebuffer), oscHV(fb->w()), oscilLimit(fb->h()) {}
     bool run() override;
 };
 #endif
@@ -987,7 +987,7 @@ private:
     byte mic[2];
     byte rand;
     bool flag = false;
-    uint8_t minDimLocal = fb->cfg.maxDim() > 32 ? 32 : 16;
+    uint8_t minDimLocal = fb->maxDim() > 32 ? 32 : 16;
 
     String setDynCtrl(UIControl*_val) override;
     bool munchRoutine();
@@ -1003,9 +1003,9 @@ public:
 class EffectNoise : public EffectCalc {
 private:
 
-    const uint8_t centreX = (fb->cfg.w() / 2) - 1;
-    const uint8_t centreY = (fb->cfg.h() / 2) - 1;
-    Noise3dMap  noise{Noise3dMap(1, fb->cfg.w(), fb->cfg.h())};
+    const uint8_t centreX = (fb->w() / 2) - 1;
+    const uint8_t centreY = (fb->h() / 2) - 1;
+    Noise3dMap  noise{Noise3dMap(1, fb->w(), fb->h())};
 	uint8_t speedFactor;
     bool type = false;
 
@@ -1165,8 +1165,8 @@ public:
 // доведено до ума - kostyamat
 class EffectAttract : public EffectCalc {
 private:
-    const uint8_t spirocenterX = fb->cfg.w() / 2;
-    const uint8_t spirocenterY = fb->cfg.h() / 2;
+    const uint8_t spirocenterX = fb->w() / 2;
+    const uint8_t spirocenterY = fb->h() / 2;
     float speedFactor;
     float mass{10};    // Mass, tied to size
     float G{0.5};      // Gravitational Constant
@@ -1183,7 +1183,7 @@ private:
 
 public:
     EffectAttract(LedFB *framebuffer) : EffectCalc(framebuffer) {
-        boids.assign(fb->cfg.h() *2 - fb->cfg.w() /2, Boid());
+        boids.assign(fb->h() *2 - fb->w() /2, Boid());
         location = PVector(spirocenterX, spirocenterY);
     }
     void load() override;
@@ -1195,7 +1195,7 @@ public:
 #define MAX_SNAKES    (16U) 
 class EffectSnake : public EffectCalc {
 private:
-    const int snake_len{fb->cfg.h()/2};
+    const int snake_len{fb->h()/2};
     float hue;
     float speedFactor;
     bool subPix = false;
@@ -1274,7 +1274,7 @@ class EffectNexus: public EffectCalc {
 // адаптация и доработки kostyamat
 #define MAX_SNAKES    (16U)
 class EffectSnakeIsland : public EffectCalc {
-    const uint8_t snake_len = fb->cfg.h()/2;
+    const uint8_t snake_len = fb->h()/2;
     struct Snake {
         long  last;            // тут будет траектория тела червяка
         float posX, posY;      // тут будет позиция головы
@@ -1306,7 +1306,7 @@ private:
     bool revCol = false;
     //bool tiltDirec;
     float speedFactor;
-    float center = (float)fb->cfg.w() / 2.;
+    float center = (float)fb->w() / 2.;
 
     struct Rocket {
         float x, y, xd, yd;
@@ -1340,7 +1340,7 @@ class EffectSmokeballs: public EffectCalc {
     };
     uint8_t _scale = 1;
     float speedFactor = 0.1;
-    std::vector<Wave> waves{std::vector<Wave>(fb->cfg.w())};
+    std::vector<Wave> waves{std::vector<Wave>(fb->w())};
 
     void shiftUp();
     void regen();
@@ -1357,7 +1357,7 @@ class EffectSmokeballs: public EffectCalc {
 class EffectCell: public EffectCalc {
   private:
     const uint8_t Lines = 5;
-	const bool glitch = abs((int)fb->cfg.w()-(int)fb->cfg.h()) >= fb->cfg.minDim()/4;
+	const bool glitch = abs((int)fb->w()-(int)fb->h()) >= fb->minDim()/4;
 	const byte density = 50;
     uint8_t Scale = 6;
     uint8_t _scale = 1;
@@ -1374,8 +1374,8 @@ class EffectCell: public EffectCalc {
     void spruce();
     void vals();
 
-    int width_adj(){ return (fb->cfg.w() < fb->cfg.h() ? (fb->cfg.h() - fb->cfg.w()) /2 : 0); };
-    int height_adj(){ return (fb->cfg.h() < fb->cfg.w() ? (fb->cfg.w() - fb->cfg.h()) /2: 0); };
+    int width_adj(){ return (fb->w() < fb->h() ? (fb->h() - fb->w()) /2 : 0); };
+    int height_adj(){ return (fb->h() < fb->w() ? (fb->w() - fb->h()) /2: 0); };
 
   public:
     EffectCell(LedFB *framebuffer) : EffectCalc(framebuffer){}
@@ -1419,7 +1419,7 @@ class EffectOscilator: public EffectCalc {
         byte color;
     };
 
-    Vector2D<OscillatingCell> oscillatingWorld{ Vector2D<OscillatingCell>(fb->cfg.w(), fb->cfg.h()) };
+    Vector2D<OscillatingCell> oscillatingWorld{ Vector2D<OscillatingCell>(fb->w(), fb->h()) };
 
     void drawPixelXYFseamless(float x, float y, CRGB color);
     int redNeighbours(uint8_t x, uint8_t y);
@@ -1446,7 +1446,7 @@ class EffectWrain: public EffectCalc {
         uint8_t bri{0};      // яркость капли
     };
 
-    const uint8_t cloudHeight = fb->cfg.h() / 5 + 1;
+    const uint8_t cloudHeight = fb->h() / 5 + 1;
     float dotChaos;         // сила ветра
     int8_t dotDirect;       // направление ветра 
     bool clouds = false;
@@ -1459,8 +1459,8 @@ class EffectWrain: public EffectCalc {
     float windProgress = 0;
     float speedFactor = 0.5;
     uint32_t timer = 0;
-    Vector2D<uint8_t> _noise {Vector2D<uint8_t>(fb->cfg.w(), cloudHeight)};
-    std::vector<Drop> drops {std::vector<Drop>(fb->cfg.w() * 3)};
+    Vector2D<uint8_t> _noise {Vector2D<uint8_t>(fb->w(), cloudHeight)};
+    std::vector<Drop> drops {std::vector<Drop>(fb->w() * 3)};
 
     void reload();
     String setDynCtrl(UIControl*_val) override;
@@ -1509,7 +1509,7 @@ struct TObject {
     uint8_t _video = 255;
     uint8_t gain;
 
-    int _max_units(){ return fb->cfg.minDim()*3; }
+    int _max_units(){ return fb->minDim()*3; }
     void particlesUpdate(TObject &i);
     void fairyEmit(TObject &i);
     void fountEmit(TObject &i);
@@ -1547,8 +1547,8 @@ private:
     std::vector<Circle> circles{ std::vector<Circle>(CIRCLES_MIN) };
 
     void move(Circle &c) {
-        c.centerX = random(0, fb->cfg.maxWidthIndex());
-        c.centerY = random(0, fb->cfg.maxHeightIndex());
+        c.centerX = random(0, fb->maxWidthIndex());
+        c.centerY = random(0, fb->maxHeightIndex());
         c.bpm = random(0, 255);
     }
     
@@ -1580,13 +1580,13 @@ class EffectBengalL : public EffectCalc {
     };
 
     const uint8_t minSparks = 4;
-    const uint8_t maxSparks = fb->cfg.w() * 4;
+    const uint8_t maxSparks = fb->w() * 4;
     uint8_t gPosx, gPosy;
 
     bool centerRun = true;
     byte period = 10;
-    byte _x = fb->cfg.w()/2;
-    byte _y = fb->cfg.h()/2;
+    byte _x = fb->w()/2;
+    byte _y = fb->h()/2;
     std::vector<Spark> sparks{ std::vector<Spark>(minSparks) };
 
     void regen(Spark &s);
@@ -1614,7 +1614,7 @@ private:
         bool rrad;
     };
 
-    const float radiusMax = (float)fb->cfg.maxDim() /5;
+    const float radiusMax = (float)fb->maxDim() /5;
     std::vector<Ball> balls{ std::vector<Ball>(BALLS_MIN) };
     float speedFactor;
     String setDynCtrl(UIControl*_val) override;
@@ -1712,10 +1712,10 @@ public:
 // (c) Stepko + kostyamat https://editor.soulmatelights.com/my-patterns/655
 class EffectRacer: public EffectCalc {
 private:
-    float posX = random(0, fb->cfg.w()-1);
-    float posY = random(0, fb->cfg.h()-1);
-    uint8_t aimX = random(0, fb->cfg.w())-1;
-    uint8_t aimY = random(0, fb->cfg.h()-1);
+    float posX = random(0, fb->w()-1);
+    float posY = random(0, fb->h()-1);
+    uint8_t aimX = random(0, fb->w())-1;
+    uint8_t aimY = random(0, fb->h()-1);
     float radius = 0;
     byte hue = millis()>>1; //random(0, 255);
     CRGB color;
@@ -1742,8 +1742,8 @@ public:
 // ----------------- Эффект "Магма"
 // (c) Сотнег (SottNick) 2021
 // адаптация и доводка до ума - kostyamat
-#define MAGMA_MIN_OBJ   (fb->cfg.w()/2)
-#define MAGMA_MAX_OBJ   (fb->cfg.w()*3)
+#define MAGMA_MIN_OBJ   (fb->w()/2)
+#define MAGMA_MAX_OBJ   (fb->w()*3)
 class EffectMagma: public EffectCalc {
 private:
 
@@ -1759,10 +1759,10 @@ private:
     const byte deltaValue = 6U;     // 2-12 
     const byte deltaHue = 8U;       // высота языков пламени должна уменьшаться не так быстро, как ширина
     const float gravity = 0.1;
-    uint8_t step = fb->cfg.w();
+    uint8_t step = fb->w();
     float speedFactor{0.1};
-    std::vector<uint8_t> shiftHue{std::vector<uint8_t>(fb->cfg.h())};
-    std::vector<Magma> particles{std::vector<Magma>(fb->cfg.w(), Magma())};
+    std::vector<uint8_t> shiftHue{std::vector<uint8_t>(fb->h())};
+    std::vector<Magma> particles{std::vector<Magma>(fb->w(), Magma())};
 
     void palettesload();
     void regen();
@@ -1782,7 +1782,7 @@ public:
 // https://editor.soulmatelights.com/gallery/739-flags
 class EffectFlags: public EffectCalc {
 private:
-    const float DEVIATOR = 512. / fb->cfg.w();
+    const float DEVIATOR = 512. / fb->w();
     float counter;
     uint8_t flag = 0;
     uint8_t _flag;
@@ -1861,15 +1861,15 @@ private:
         purple_gp,    rainbowsherbet_gp, 
         redyellow_gp, Colorfull_gp, es_ocean_breeze_068_gp
     };
-    uint8_t bands = fb->cfg.w();
+    uint8_t bands = fb->w();
     uint8_t bar_width{1};
     uint8_t calcArray = 1;          // уменьшение частоты пересчета массива
     uint8_t colorTimer = 0;
-    const uint8_t colorDev = 256/fb->cfg.maxHeightIndex();
+    const uint8_t colorDev = 256/fb->maxHeightIndex();
     // Sampling and FFT stuff
-    std::vector<float> peak{std::vector<float>(fb->cfg.w())};              // The length of these arrays must be >= bands
-    std::vector<float> oldBarHeights{std::vector<float>(fb->cfg.w())};
-    std::vector<float> bandValues{std::vector<float>(fb->cfg.w())};
+    std::vector<float> peak{std::vector<float>(fb->w())};              // The length of these arrays must be >= bands
+    std::vector<float> oldBarHeights{std::vector<float>(fb->w())};
+    std::vector<float> bandValues{std::vector<float>(fb->w())};
     MicWorker *mw = nullptr;
 
     float samp_freq;
@@ -1884,7 +1884,7 @@ private:
     int effId = 0;
     bool type = false;
     bool colorShifting = false;
-    const float speedFactorVertical = (float)fb->cfg.h() / 16;
+    const float speedFactorVertical = (float)fb->h() / 16;
     bool averaging = true;
 
     String setDynCtrl(UIControl*_val) override;
@@ -1916,8 +1916,8 @@ private:
     uint32_t t;
     bool withSparks = false;
 
-    const uint8_t sparksCount = fb->cfg.w() / 4;
-    const uint8_t spacer = fb->cfg.h()/4;
+    const uint8_t sparksCount = fb->w() / 4;
+    const uint8_t spacer = fb->h()/4;
 
     class Spark {
     private:
@@ -1998,7 +1998,7 @@ public:
 //https://vk.com/ldirko программный код которого он запретил брать
 class EffectDNA : public EffectCalc {
 private:
-    float a = (256.0 / (float)fb->cfg.w());
+    float a = (256.0 / (float)fb->w());
     float t = 0.0;
     float speedFactor = 0.5;
     bool flag = true; 
@@ -2035,11 +2035,11 @@ public:
 class EffectMirage : public EffectCalc {
 private:
     const float div = 10.;
-    const uint16_t width = (fb->cfg.w() - 1) * div, height = fb->cfg.h() * div;
+    const uint16_t width = (fb->w() - 1) * div, height = fb->h() * div;
     uint16_t _speed;
     byte color;
     bool colorShift = false;
-    Noise3dMap buff{Noise3dMap(1, fb->cfg.w()+2, fb->cfg.h()+2)};
+    Noise3dMap buff{Noise3dMap(1, fb->w()+2, fb->h()+2)};
     bool a = true;
 	float speedFactor;
 
@@ -2084,7 +2084,7 @@ private:
     };
 
 
-    std::vector<Blot> blots = std::vector<Blot>(BLOT_COUNT, fb->cfg.w()/2);
+    std::vector<Blot> blots = std::vector<Blot>(BLOT_COUNT, fb->w()/2);
 
     String setDynCtrl(UIControl*_val) override;
 
@@ -2096,10 +2096,10 @@ public:
 
 class EffectRadialFire : public EffectCalc {
 private:
-    const int8_t maximum = fb->cfg.maxDim();
-    const int8_t centre = fb->cfg.maxDim() / 2;
-    const uint8_t X = fb->cfg.w() > fb->cfg.h() ? 0: (fb->cfg.w() - fb->cfg.h()) /2; 
-    const uint8_t Y = fb->cfg.w() < fb->cfg.h() ? 0: (fb->cfg.h() - fb->cfg.w()) /2;
+    const int8_t maximum = fb->maxDim();
+    const int8_t centre = fb->maxDim() / 2;
+    const uint8_t X = fb->w() > fb->h() ? 0: (fb->w() - fb->h()) /2; 
+    const uint8_t Y = fb->w() < fb->h() ? 0: (fb->h() - fb->w()) /2;
     Vector2D<float> xy_angle{ Vector2D<float>(maximum, maximum) };
     Vector2D<float> xy_radius{ Vector2D<float>(maximum, maximum) };
     float t{0};
@@ -2157,8 +2157,8 @@ class EffectFlower : public EffectCalc {
 	private:
         uint8_t effTimer;
         float ZVoffset = 0;
-        const float COLS_HALF = fb->cfg.w() * .5;
-        const float ROWS_HALF = fb->cfg.h() * .5;
+        const float COLS_HALF = fb->w() * .5;
+        const float ROWS_HALF = fb->h() * .5;
         int16_t ZVcalcDist(uint8_t x, uint8_t y, float center_x, float center_y);
 	public:
     EffectFlower(LedFB *framebuffer) : EffectCalc(framebuffer){}

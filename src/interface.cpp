@@ -1223,7 +1223,7 @@ void block_lamp_textsend(Interface *interf, JsonObject *data){
         interf->json_section_begin(TCONST_edit_text_config);
             interf->spacer(TINTF_001);
                 interf->range(TCONST_txtSpeed, 110-embui.paramVariant(TCONST_txtSpeed).as<int>(), 10, 100, 5, TINTF_044, false);
-                interf->range(TCONST_txtOf, embui.paramVariant(TCONST_txtOf).as<int>(), -1, (int)(mx->cfg.h()>6?mx->cfg.h():6)-6, 1, TINTF_045);
+                interf->range(TCONST_txtOf, embui.paramVariant(TCONST_txtOf).as<int>(), -1, (int)(mx->h()>6?mx->h():6)-6, 1, TINTF_045);
                 interf->range(TCONST_txtBfade, embui.paramVariant(TCONST_txtBfade).as<int>(), 0, 255, 1, TINTF_0CA);
                 
             interf->spacer(TINTF_04E);
@@ -2342,8 +2342,8 @@ void page_drawing(Interface *interf, JsonObject *data){
     StaticJsonDocument<256>doc;
     JsonObject param = doc.to<JsonObject>();
 
-    param[TCONST_width] = mx->cfg.w();
-    param[TCONST_height] = mx->cfg.h();
+    param[TCONST_width] = mx->w();
+    param[TCONST_height] = mx->h();
     param[TCONST_blabel] = TINTF_0CF;
     param[TCONST_drawClear] = TINTF_0D9;
 
@@ -2370,8 +2370,8 @@ void block_streaming(Interface *interf, JsonObject *data){
         interf->range(TCONST_bright, (String)myLamp.getBrightness(), 0, 255, 1, (String)TINTF_00D, true);
         if (embui.paramVariant(TCONST_stream_type).toInt() == E131){
             interf->range(TCONST_Universe, embui.paramVariant(TCONST_Universe), 1, 255, 1, TINTF_0E8, true);
-            int uni = mx->cfg.h() / (512U / (mx->cfg.w() * 3)) + !!mx->cfg.h()%(512U / (mx->cfg.w() * 3));
-            interf->comment( String("Universes:") + uni + ";    X:" + mx->cfg.w() + ";    Y:" + (512U / (mx->cfg.w() * 3)) );
+            int uni = mx->h() / (512U / (mx->w() * 3)) + !!mx->h()%(512U / (mx->w() * 3));
+            interf->comment( String("Universes:") + uni + ";    X:" + mx->w() + ";    Y:" + (512U / (mx->w() * 3)) );
             interf->comment(String("Как настроить разметку матрицы в Jinx! можно посмотреть <a href=\"https://community.alexgyver.ru/threads/wifi-lampa-budilnik-proshivka-firelamp_jeeui-gpl.2739/page-454#post-103219\">на форуме</a>"));
         }
     interf->json_section_end();
@@ -3248,7 +3248,7 @@ String httpCallback(const String &param, const String &value, bool isset){
         if (upperParam == CMD_MOVE_RND)  { run_action(ra::eff_rnd);  return result; }
         if (upperParam == CMD_REBOOT) { run_action(ra::reboot); return result; }
         else if (upperParam == CMD_ALARM) { result = myLamp.isAlarm() ; }
-        else if (upperParam == CMD_MATRIX) { char buf[32]; sprintf_P(buf, PSTR("[%d,%d]"), mx->cfg.w(), mx->cfg.h());  result = buf; }
+        else if (upperParam == CMD_MATRIX) { char buf[32]; sprintf_P(buf, PSTR("[%d,%d]"), mx->w(), mx->h());  result = buf; }
 #ifdef EMBUI_USE_MQTT        
         embui.publish(String(TCONST_embui_pub_) + upperParam, result, true);
 #endif
@@ -3415,16 +3415,13 @@ void set_ledstrip(Interface *interf, JsonObject *data){
     // save new led strip config
     embuifs::serialize2file(*data, TCONST_fcfg_ledstrip);
 
-    // apply options that could be adjusted easily
-    mx->cfg.snake((*data)[TCONST_snake]);
-    mx->cfg.vertical((*data)[TCONST_vertical]);
-    mx->cfg.vmirror((*data)[TCONST_vflip]);
-    mx->cfg.hmirror((*data)[TCONST_hflip]);
-
-    // check if any dimension parameters has changed, then I need to resize led buffer
-    if (((*data)[TCONST_width] != mx->cfg.w()) || ((*data)[TCONST_height] != mx->cfg.h())){
-        mx->resize((*data)[TCONST_width], (*data)[TCONST_height]);
-        LOG(printf, "resize LED buffer to w,h:(%d,%d)\n", mx->cfg.w(), mx->cfg.h());
-    }
-    myLamp.reset_led_buffs();
+    // update led strip layout
+    display.updateTopo((*data)[TCONST_width],
+                        (*data)[TCONST_height],
+                        (*data)[TCONST_snake],
+                        (*data)[TCONST_vertical],
+                        (*data)[TCONST_vflip],
+                        (*data)[TCONST_hflip]
+                        );
+    LOG(printf, "resize LED buffer to w,h:(%d,%d)\n", mx->w(), mx->h());
 }

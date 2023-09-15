@@ -152,7 +152,8 @@ void LAMP::handle(){
   //alarmWorker();
 
   if(lampState.isEffectsDisabledUntilText && !lampState.isStringPrinting) {
-    _wipe_screen(); //setBrightness(0,false,false); // напечатали, можно гасить матрицу :)
+    // не акутально
+    //_wipe_screen(); //setBrightness(0,false,false); // напечатали, можно гасить матрицу :)
     lampState.isEffectsDisabledUntilText = false;
   }
 
@@ -386,15 +387,15 @@ typedef enum {FIRSTSYMB=1,LASTSYMB=2} SYMBPOS;
 
 bool LAMP::fillStringManual(const char* text,  const CRGB &letterColor, bool stopText, bool isInverse, int32_t pos, int8_t letSpace, int8_t txtOffset, int8_t letWidth, int8_t letHeight)
 {
-  static int32_t offset = mx->cfg.vmirror() ? 0 : mx->cfg.w();
+  static int32_t offset = mx->vmirror() ? 0 : mx->w();
   uint8_t bcount = 0;
 
   if(pos)
-    offset = (mx->cfg.vmirror() ? 0 + pos : mx->cfg.w() - pos);
+    offset = (mx->vmirror() ? 0 + pos : mx->w() - pos);
 
   if (!text || !strlen(text))
   {
-    offset = (mx->cfg.vmirror() ? 0 : mx->cfg.w());
+    offset = (mx->vmirror() ? 0 : mx->w());
     return true;
   }
 
@@ -411,7 +412,7 @@ bool LAMP::fillStringManual(const char* text,  const CRGB &letterColor, bool sto
     }
     else
     {
-      if(!mx->cfg.vmirror())
+      if(!mx->vmirror())
         drawLetter(bcount, text[i], offset + (int16_t)j * (letWidth + letSpace), letterColor, letSpace, txtOffset, isInverse, letWidth, letHeight, flSymb);
       else
         drawLetter(bcount, text[i], offset - (int16_t)j * (letWidth + letSpace), letterColor, letSpace, txtOffset, isInverse, letWidth, letHeight, flSymb);
@@ -423,15 +424,15 @@ bool LAMP::fillStringManual(const char* text,  const CRGB &letterColor, bool sto
   }
 
   if(!stopText)
-    (mx->cfg.vmirror() ? offset++ : offset--);
-  if ((!mx->cfg.vmirror() && offset < (int32_t)(-j * (letWidth + letSpace))) || (mx->cfg.vmirror() && offset > (int32_t)(j * (letWidth + letSpace))+(signed)mx->cfg.w()))       // строка убежала
+    (mx->vmirror() ? offset++ : offset--);
+  if ((!mx->vmirror() && offset < (int32_t)(-j * (letWidth + letSpace))) || (mx->vmirror() && offset > (int32_t)(j * (letWidth + letSpace))+(signed)mx->w()))       // строка убежала
   {
-    offset = (mx->cfg.vmirror() ? 0 : mx->cfg.w());
+    offset = (mx->vmirror() ? 0 : mx->w());
     return true;
   }
   if(pos) // если задана позиция, то считаем что уже отобразили
   {
-    offset = (mx->cfg.vmirror() ? 0 : mx->cfg.w());
+    offset = (mx->vmirror() ? 0 : mx->w());
     return true;
   }
 
@@ -442,7 +443,7 @@ void LAMP::drawLetter(uint8_t bcount, uint16_t letter, int16_t offset,  const CR
 {
   int16_t start_pos = 0, finish_pos = letWidth + letSpace;
 
-  if (offset < (int16_t)-letWidth || offset > (int16_t)mx->cfg.w())
+  if (offset < (int16_t)-letWidth || offset > (int16_t)mx->w())
   {
     return;
   }
@@ -450,9 +451,9 @@ void LAMP::drawLetter(uint8_t bcount, uint16_t letter, int16_t offset,  const CR
   {
     start_pos = (uint16_t)-offset;
   }
-  if (offset > (int16_t)(mx->cfg.w() - letWidth))
+  if (offset > (int16_t)(mx->w() - letWidth))
   {
-    finish_pos = (uint16_t)(mx->cfg.w() - offset);
+    finish_pos = (uint16_t)(mx->w() - offset);
   }
 
   if(flSymb){
@@ -482,19 +483,19 @@ void LAMP::drawLetter(uint8_t bcount, uint16_t letter, int16_t offset,  const CR
       bool thisBit = thisByte & (1 << (letHeight - 1 - j));
 
       // рисуем столбец (i - горизонтальная позиция, j - вертикальная)
-      if (offset + i >= 0 && offset + i < (int)mx->cfg.w() && txtOffset + j >= 0 && txtOffset + j < (int)mx->cfg.h()) {
+      if (offset + i >= 0 && offset + i < (int)mx->w() && txtOffset + j >= 0 && txtOffset + j < (int)mx->h()) {
         if (thisBit) {
           if(!isInverse)
-            mx->pixel(offset + i, txtOffset + j) = letterColor;
+            mx->at(offset + i, txtOffset + j) = letterColor;
           else
             //EffectMath::setLedsfadeToBlackBy(getPixelNumber(offset + i, txtOffset + j), (isWarning() && lampState.warnType==2) ? 0 : (isWarning() && lampState.warnType==1) ? 255 : getBFade());
-            mx->pixel(offset + i, txtOffset + j).fadeToBlackBy((isWarning() && lampState.warnType==2) ? 0 : (isWarning() && lampState.warnType==1) ? 255 : getBFade());
+            mx->at(offset + i, txtOffset + j).fadeToBlackBy((isWarning() && lampState.warnType==2) ? 0 : (isWarning() && lampState.warnType==1) ? 255 : getBFade());
         } else {
           if(isInverse)
-            mx->pixel(offset + i, txtOffset + j) = letterColor;
+            mx->at(offset + i, txtOffset + j) = letterColor;
           else
             //EffectMath::setLedsfadeToBlackBy(getPixelNumber(offset + i, txtOffset + j), (isWarning() && lampState.warnType==2) ? 0 : (isWarning() && lampState.warnType==1) ? 255 : getBFade());
-            mx->pixel(offset + i, txtOffset + j).fadeToBlackBy((isWarning() && lampState.warnType==2) ? 0 : (isWarning() && lampState.warnType==1) ? 255 : getBFade());
+            mx->at(offset + i, txtOffset + j).fadeToBlackBy((isWarning() && lampState.warnType==2) ? 0 : (isWarning() && lampState.warnType==1) ? 255 : getBFade());
         }
       }
     }
@@ -989,7 +990,7 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
   }
 
   if(flags.isEffClearing || !effects.getCurrent()){ // для EFF_NONE или для случая когда включена опция - чистим матрицу
-    display->clear();
+    display.getCanvas()->clear();
     //mx->clear();
     //FastLED.show();
   }
@@ -1123,7 +1124,7 @@ void LAMP::warningHelper(){
     String msg = warningTask->getData();
 
     uint16_t cnt = warningTask->getWarn_duration()/(warningTask->getWarn_blinkHalfPeriod()*2);
-    uint8_t xPos = (mx->cfg.w()+LET_WIDTH*(cnt>99?3:cnt>9?2:1))/2;    
+    uint8_t xPos = (mx->w()+LET_WIDTH*(cnt>99?3:cnt>9?2:1))/2;    
     switch(lampState.warnType){
       case 0: mx->fill(warningTask->getWarn_color());
         break;
@@ -1207,7 +1208,7 @@ void LAMP::fillDrawBuf(CRGB color) {
 }
 
 void LAMP::writeDrawBuf(CRGB color, uint16_t x, uint16_t y){
-  if (_overlay) { _overlay->pixel(x,y) = color; }
+  if (_overlay) { _overlay->at(x,y) = color; }
 }
 
 //void LAMP::writeDrawBuf(CRGB color, uint16_t num) { if(_overlay) { _overlay->at(num)=color; } }
@@ -1243,7 +1244,7 @@ void LAMP::setStreamBuff(bool active) {
     }
 }
 #endif
-
+/*
 void LAMP::reset_led_buffs(){
   //mx->clear();
   display->clear();
@@ -1255,10 +1256,10 @@ void LAMP::_wipe_screen(){
   LOG(println, "Wipe Screen");
   display->clear();
 }
-
+*/
 void LAMP::_overlay_buffer(bool activate) {
   if (activate && !_overlay)
-    _overlay = display->getOverlay();   // obtain overlay buffer
+    _overlay = display.getOverlay();   // obtain overlay buffer
   else
     _overlay.reset();
 }
