@@ -44,23 +44,37 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 // время "отправки" кадра в матрицу, мс. где 1.5 эмпирический коэффициент
 // #define FastLED_SHOW_TIME = WIDTH * HEIGHT * 24 * (0.250 + 0.625) / 1000 * 1.5
 
-// An object ref I'll use to access LED device
-OverlayEngine *display = nullptr;
-
-// compatibility buff reference
-LedFB *mx = nullptr;
-
-// Kostyamat's "invisible" pixel :) current effects code can't live w/o it
+// stub pixel that is mapped to either nonexistent buffer access or blackholed CLedController mapping
 static CRGB blackhole;
 
 // copy via assignment
-LedFB& LedFB::operator=(LedFB const& rhs){
+PixelDataBuffer& PixelDataBuffer::operator=(PixelDataBuffer const& rhs){
     fb = rhs.fb;
-    cfg=rhs.cfg;
     return *this;
 }
 
-LedFB::LedFB(LedFB&& rhs) noexcept : fb(std::move(rhs.fb)), cfg(rhs.cfg){
+// move assignment
+PixelDataBuffer& PixelDataBuffer::operator=(PixelDataBuffer&& rhs){
+    fb = std::move(rhs.fb);
+    return *this;
+}
+
+CRGB& PixelDataBuffer::at(size_t i){ return i < fb.size() ? fb.at(i) : blackhole; };
+
+void PixelDataBuffer::fill(CRGB color){ fb.assign(fb.size(), color); };
+
+void PixelDataBuffer::clear(){ fill(CRGB::Black); };
+
+bool PixelDataBuffer::resize(size_t s){
+    fb.reserve(s);
+    clear();
+    return fb.size() == s;
+};
+
+// *** CLedCDB implementation ***
+
+// move construct
+CLedCDB::CLedCDB(CLedCDB&& rhs) noexcept : PixelDataBuffer(std::forward<CLedCDB>(rhs)) {
     cled = rhs.cled;
     if (rhs.cled){  // steal cled pointer, if set
         rhs.cled = nullptr;
@@ -69,9 +83,9 @@ LedFB::LedFB(LedFB&& rhs) noexcept : fb(std::move(rhs.fb)), cfg(rhs.cfg){
     //LOG(printf, "Move Constructing: %u From: %u\n", reinterpret_cast<size_t>(fb.data()), reinterpret_cast<size_t>(rhs.fb.data()));
 };
 
-LedFB& LedFB::operator=(LedFB&& rhs){
+// move assignment
+CLedCDB& CLedCDB::operator=(CLedCDB&& rhs){
     fb = std::move(rhs.fb);
-    cfg=rhs.cfg;
 
     if (cled && rhs.cled && (cled != rhs.cled)){
         /* oops... we are moving from a buff binded to some other cled controller
@@ -88,7 +102,7 @@ LedFB& LedFB::operator=(LedFB&& rhs){
     return *this;
 }
 
-LedFB::~LedFB(){
+CLedCDB::~CLedCDB(){
     if (cled){
         /* oops... somehow we ended up in destructor with binded cled controller
         * since there is no method to detach active controller from CFastLED
@@ -99,36 +113,24 @@ LedFB::~LedFB(){
     }
 }
 
-// matrix transformation
-size_t LedFB::transpose(unsigned x, unsigned y) const {
-    unsigned idx = y*cfg.w()+x;
-    if ( cfg.vertical() ){
-        // verticaly ordered stripes
-        bool ivm{cfg.hmirror()}, ihm{cfg.vmirror()};                // reverse mirror
-        bool virtual_mirror = (cfg.snake() && x%2) ? !ihm : ihm;    // for snake-shaped strip, invert vertical odd columns
-        size_t xx = virtual_mirror ? cfg.w() - idx/cfg.h()-1 : idx/cfg.h();
-        size_t yy = ivm ? cfg.h()-idx%cfg.h()-1 : idx%cfg.h();
-        return yy * cfg.w() + xx;
-    } else {
-        // horizontaly ordered stripes
-        bool virtual_mirror = (cfg.snake() && y%2) ? !cfg.hmirror() : cfg.hmirror(); // for snake-shaped displays, invert horizontal odd rows
-        size_t yy = cfg.vmirror() ? cfg.h() - idx/cfg.w()-1 : idx/cfg.w();
-        size_t xx = virtual_mirror ? cfg.w()-idx%cfg.w()-1 : idx%cfg.w();
-        return yy * cfg.w() + xx;
-    }
+void CLedCDB::swap(PixelDataBuffer& rhs){
+    rhs.swap(*this);
+    _reset_cled();
 }
 
-CRGB& LedFB::at(size_t i){ return i < fb.size() ? fb.at(i) : blackhole; };
+void CLedCDB::swap(CLedCDB& rhs){
+    std::swap(fb, rhs.fb);
+    _reset_cled();
+    rhs._reset_cled();
+}
 
-CRGB& LedFB::at(unsigned x, unsigned y){
-    return ( x >= cfg.w() || y >= cfg.h() ) ? blackhole : at(transpose(x,y));
+bool CLedCDB::resize(size_t s){
+    bool result = PixelDataBuffer::resize(s);
+    _reset_cled();
+    return result;
 };
 
-void LedFB::fill(const CRGB &color){ fb.assign(fb.size(), color); };
-
-void LedFB::clear(){ fill(CRGB::Black); };
-
-bool LedFB::bind(CLEDController *pLed){
+bool CLedCDB::bind(CLEDController *pLed){
     if (!pLed) return false;  // some empty pointer
 
     /* since there is no method to unbind CRGB buffer from CLEDController,
@@ -142,114 +144,60 @@ bool LedFB::bind(CLEDController *pLed){
     return true;
 }
 
-bool LedFB::swap(LedFB& rhs){
-    if (rhs.fb.size() != fb.size()) return false;   // won't swap buffers of different size
-    std::swap(fb, rhs.fb);
-    // update CLEDControllers
-    _reset_cled();
-    rhs._reset_cled();
-    return true;
-}
-
-void LedFB::resize(uint16_t w, uint16_t h){
-    cfg._w = w; cfg._h = h;
-    fb.reserve(w*h);
-    _reset_cled();
-    clear();
-};
-
-void LedFB::rebind(LedFB &rhs){
-    //LOG(println, "LedFB rebind");
+void CLedCDB::rebind(CLedCDB &rhs){
+    //LOG(println, "PixelDataBuffer rebind");
     std::swap(cled, rhs.cled);  // swap pointers, if any
     _reset_cled();
     rhs._reset_cled();
 }
 
-// *** OverlayEngine implementation ***
 
-OverlayEngine::OverlayEngine(int gpio){
-    wsstrip = new(std::nothrow) ESP32RMT_WS2812B<COLOR_ORDER>(gpio);
+// *** Topology mapping classes implementation ***
+
+LedFB::LedFB(uint16_t w, uint16_t h) : _w(w), _h(h){
+    buffer = std::make_shared<PixelDataBuffer>(PixelDataBuffer(w*h));
 }
 
-bool OverlayEngine::makeCanvas(Mtrx_cfg &cfg){
-    if (cled) return false; // this function is not idempotent, so refuse to mess with existing controller
-
-    if (!canvas) canvas = std::make_unique<LedFB>(cfg);
-
-    if (wsstrip && canvas){
-        // attach buffer to RMT engine
-        cled = &FastLED.addLeds(wsstrip, canvas->data(), canvas->size());
-        // hook framebuffer to contoller
-        canvas->bind(cled);
-        show();
-        return true;
-    }
-
-    return false;   // somethign went either wrong or already been setup 
-}
-
-void OverlayEngine::show(){
-    if (!overlay.expired() && canvas->persistent && !backbuff)    // check if I need to switch to back buff due to canvas persistency and overlay data present 
-        _switch_to_bb();
-
-    // check if back-buffer is present but no longer needed (if no overlay present or canvas is not persistent anymore)
-    if (backbuff && (overlay.expired() || !canvas->persistent)){
-        //LOG(println, "BB release");
-        canvas->rebind(*backbuff.get());
-        backbuff.release();
-    }
-
-    _ovr_overlap(); // apply overlay to either canvas or back buffer, if bb is present
-    FastLED.show();
+LedFB::LedFB(uint16_t w, uint16_t h, std::shared_ptr<PixelDataBuffer> fb): _w(w), _h(h), buffer(fb){
+    // a safety check if supplied buffer and dimentions are matching
+    if (buffer->size() != w*h)   buffer->resize(w*h);
 };
 
-void OverlayEngine::clear(){
-    if (!canvas) return;
-    canvas->clear();
-    if (backbuff)
-        backbuff->clear();
-    FastLED.show();
+LedFB::LedFB(LedFB const & rhs) : _w(rhs._w), _h(rhs._h) {
+    buffer = rhs.buffer;
+    // deep copy
+    //buffer = std::make_shared<PixelDataBuffer>(*rhs.buffer.get());
 }
 
-std::shared_ptr<LedFB> OverlayEngine::getOverlay(){
-    auto p = overlay.lock();
-    if (!p){
-        // no overlay exist at the moment
-        p = std::make_shared<LedFB>(canvas->cfg);
-        overlay = p;
+CRGB& LedFB::at(int16_t x, int16_t y){
+    return ( static_cast<uint16_t>(x) >= w() || static_cast<uint16_t>(y) >= h() ) ? blackhole : buffer->at(transpose(static_cast<uint16_t>(x), static_cast<uint16_t>(y)));
+};
+
+bool LedFB::resize(uint16_t w, uint16_t h){
+    // safety check
+    if (buffer->resize(w*h) && buffer->size() == w*h){
+        _w=w; _h=h;
+        return true;
     }
-    return p;
+    return false;
 }
 
-void OverlayEngine::_ovr_overlap(){
-    if (overlay.expired()) return;     // no overlay data exist
-
-    auto ovr = overlay.lock();
-
-    if (canvas->size() != ovr->size()) return;  // a safe-check for buffer sizes
-
-    auto ovr_iterator = ovr->begin();
-
-    if (backbuff.get()){
-        auto bb_iterator = backbuff->begin();
-        // fill BackBuffer with either canvas or overlay based on keycolor
-        for (auto i = canvas->begin(); i != canvas->end(); ++i ){
-            *bb_iterator = (*ovr_iterator == _transparent_color) ? *i : *ovr_iterator;
-            ++ovr_iterator;
-            ++bb_iterator;
-        }
+// matrix stripe layout transformation
+size_t LedStripe::transpose(unsigned x, unsigned y) const {
+    unsigned idx = y*w()+x;
+    if ( vertical() ){
+        // verticaly ordered stripes
+        bool ivm{hmirror()}, ihm{vmirror()};                // reverse mirror
+        bool virtual_mirror = (snake() && x%2) ? !ihm : ihm;    // for snake-shaped strip, invert vertical odd columns
+        size_t xx = virtual_mirror ? w() - idx/h()-1 : idx/h();
+        size_t yy = ivm ? h()-idx%h()-1 : idx%h();
+        return yy * w() + xx;
     } else {
-        // apply all non key-color pixels to canvas
-        for (auto i = canvas->begin(); i != canvas->end(); ++i ){
-            if (*ovr_iterator != _transparent_color)
-                *i = *ovr_iterator;
-            ++ovr_iterator;
-        }
-    }   
+        // horizontaly ordered stripes
+        bool virtual_mirror = (snake() && y%2) ? !hmirror() : hmirror(); // for snake-shaped displays, invert horizontal odd rows
+        size_t yy = vmirror() ? h() - idx/w()-1 : idx/w();
+        size_t xx = virtual_mirror ? w()-idx%w()-1 : idx%w();
+        return yy * w() + xx;
+    }
 }
 
-void OverlayEngine::_switch_to_bb(){
-    //LOG(println, "Switch to BB");
-    backbuff = std::make_unique<LedFB>(*canvas);
-    backbuff->rebind(*canvas);    // switch backend binding
-}
