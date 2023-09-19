@@ -127,23 +127,23 @@ void CLedCDB::rebind(CLedCDB &rhs){
 
 // *** Topology mapping classes implementation ***
 
-LedFB::LedFB(uint16_t w, uint16_t h) : _w(w), _h(h){
+LedFB::LedFB(uint16_t w, uint16_t h) : _w(w), _h(h), _xymap(map_2d) {
     buffer = std::make_shared<PixelDataBuffer<CRGB>>(PixelDataBuffer<CRGB>(w*h));
 }
 
-LedFB::LedFB(uint16_t w, uint16_t h, std::shared_ptr<PixelDataBuffer<CRGB>> &fb): _w(w), _h(h), buffer(fb){
+LedFB::LedFB(uint16_t w, uint16_t h, std::shared_ptr<PixelDataBuffer<CRGB>> fb): _w(w), _h(h), buffer(fb), _xymap(map_2d) {
     // a safety check if supplied buffer and dimentions are matching
     if (buffer->size() != w*h)   buffer->resize(w*h);
 };
 
-LedFB::LedFB(LedFB const & rhs) : _w(rhs._w), _h(rhs._h) {
+LedFB::LedFB(LedFB const & rhs) : _w(rhs._w), _h(rhs._h), _xymap(map_2d) {
     buffer = rhs.buffer;
     // deep copy
     //buffer = std::make_shared<PixelDataBuffer>(*rhs.buffer.get());
 }
 
 CRGB& LedFB::at(int16_t x, int16_t y){
-    return ( static_cast<uint16_t>(x) >= w() || static_cast<uint16_t>(y) >= h() ) ? blackhole : buffer->at(transpose(static_cast<uint16_t>(x), static_cast<uint16_t>(y)));
+    return ( static_cast<uint16_t>(x) >= _w || static_cast<uint16_t>(y) >= _h ) ? blackhole : buffer->at(_xymap(_w, _h, static_cast<uint16_t>(x), static_cast<uint16_t>(y)));
 };
 
 bool LedFB::resize(uint16_t w, uint16_t h){
@@ -156,21 +156,20 @@ bool LedFB::resize(uint16_t w, uint16_t h){
 }
 
 // matrix stripe layout transformation
-size_t LedStripe::transpose(unsigned x, unsigned y) const {
-    unsigned idx = y*w()+x;
-    if ( vertical() ){
+size_t LedStripe::transpose(unsigned w, unsigned h, unsigned x, unsigned y) const {
+    unsigned idx = y*w+x;
+    if ( _vertical ){
         // verticaly ordered stripes
-        bool ivm{hmirror()}, ihm{vmirror()};                // reverse mirror
-        bool virtual_mirror = (snake() && x%2) ? !ihm : ihm;    // for snake-shaped strip, invert vertical odd columns
-        size_t xx = virtual_mirror ? w() - idx/h()-1 : idx/h();
-        size_t yy = ivm ? h()-idx%h()-1 : idx%h();
-        return yy * w() + xx;
+        bool virtual_mirror = (_snake && x%2) ? !_vmirror : _vmirror;    // for snake-shaped strip, invert vertical odd columns
+        size_t xx = virtual_mirror ? w - idx/h-1 : idx/h;
+        size_t yy = _hmirror ? h - idx%h-1 : idx%h;
+        return yy * w + xx;
     } else {
         // horizontaly ordered stripes
-        bool virtual_mirror = (snake() && y%2) ? !hmirror() : hmirror(); // for snake-shaped displays, invert horizontal odd rows
-        size_t yy = vmirror() ? h() - idx/w()-1 : idx/w();
-        size_t xx = virtual_mirror ? w()-idx%w()-1 : idx%w();
-        return yy * w() + xx;
+        bool virtual_mirror = (_snake && y%2) ? !_hmirror : _hmirror; // for snake-shaped displays, invert horizontal odd rows
+        size_t xx = virtual_mirror ? w - idx%w-1 : idx%w;
+        size_t yy = _vmirror ? h - idx/w-1 : idx/w;
+        return yy * w + xx;
     }
 }
 

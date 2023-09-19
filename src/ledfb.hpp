@@ -41,7 +41,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include <vector>
 #include <memory>
 
-// Out-of-bound CRGB placeholder
+// Out-of-bound CRGB placeholder - stub pixel that is mapped to either nonexistent buffer access or blackholed CLedController mapping
 static CRGB blackhole;
 
 /**
@@ -270,6 +270,13 @@ public:
     bool resize(size_t s) override;
 };
 
+
+static size_t map_2d(unsigned w, unsigned h, unsigned x, unsigned y) { return y*w+x; };
+
+
+// coordinate transformation callback prototype
+using transpose_t = std::function<size_t(unsigned w, unsigned h, unsigned x, unsigned y)>;
+
 /**
  * @brief basic 2D buffer
  * provides generic abstraction for 2D topology
@@ -283,6 +290,8 @@ protected:
     uint16_t _w, _h;
     // pixel buffer storage
     std::shared_ptr<PixelDataBuffer<CRGB>> buffer;
+    // coordinate to buffer index mapper callback
+    transpose_t _xymap;
 
 public:
     // c-tor
@@ -301,7 +310,7 @@ public:
      * @param h - heigh
      * @param fb - preallocated buffer storage
      */
-    LedFB(uint16_t w, uint16_t h, std::shared_ptr<PixelDataBuffer<CRGB>> &fb);
+    LedFB(uint16_t w, uint16_t h, std::shared_ptr<PixelDataBuffer<CRGB>> fb);
 
     /**
      * @brief Copy Construct a new LedFB object
@@ -318,13 +327,12 @@ public:
      */
     LedFB& operator=(LedFB const & rhs) = delete;
 
-
     // DIMENSIONS
 
     // get configured matrix width
-    virtual uint16_t w() const {return _w;}
+    uint16_t w() const {return _w;}
     // get configured matrix height
-    virtual uint16_t h() const {return _h;}
+    uint16_t h() const {return _h;}
 
     // get size in pixels
     uint16_t size() const {return w()*h();}
@@ -340,6 +348,17 @@ public:
     // Topology transformation
 
     /**
+     * @brief Set topology Remap Function
+     * it will remap (x,y) coordinate into underlaying buffer vector index
+     * could be used for various layouts of led canvases, tiles, stripes, etc...
+     * affect access methods like at(), drawPixel(), etc...
+     * 
+     * @param mapper 
+     * @return * assign 
+     */
+    void setRemapFunction(transpose_t mapper){ _xymap = mapper; };
+
+    /**
      * @brief Transpose pixel 2D coordinates (x,y) into framebuffer's array index
      * 0's index is at top-left corner, X axis goes to the 'right', Y axis goes 'down'
      * it calculates array index based on matrix orientation and configuration
@@ -349,7 +368,7 @@ public:
      * @param y 
      * @return size_t 
      */
-    virtual size_t transpose(unsigned x, unsigned y) const { return y*_w+x; }
+    //size_t transpose(unsigned x, unsigned y) const { return _xymap(_w, _h, x, y); }
 
 
     // DATA BUFFER OPERATIONS
@@ -437,7 +456,7 @@ public:
  * - transpose rows vs columns, i.e. stripe goes horisontaly (default) or vertically
  * 
  */
-class LedStripe : public LedFB {
+class LedStripe {
 protected:
     bool _snake;             // matrix type 1:snake( zigzag), 0:parallel
     bool _vertical;          // strip direction: 0 - horizontal, 1 - vertical
@@ -455,11 +474,7 @@ public:
      * @param vm - vertical mirroring
      * @param hm - horizontal mirroring
      */
-    LedStripe(uint16_t w, uint16_t h, bool snake = true, bool _vertical = false, bool vm=false, bool hm=false) : LedFB(w, h), _snake(snake), _vertical(_vertical), _vmirror(vm), _hmirror(hm) {};
-    LedStripe(LedStripe const & rhs) :  LedFB(rhs._w, rhs._h), _snake(rhs._snake), _vertical(rhs._vertical), _vmirror(rhs._vmirror), _hmirror(rhs._hmirror) {};
-    LedStripe(LedFB const & rhs) :  LedFB(rhs.w(), rhs.h()), _snake(false), _vertical(false), _vmirror(false), _hmirror(false) {};
-    LedStripe(uint16_t w, uint16_t h, std::shared_ptr<PixelDataBuffer<CRGB>> fb) : LedFB(w, h, fb), _snake(false), _vertical(false), _vmirror(false), _hmirror(false) {};
-
+    LedStripe(bool snake = true, bool _vertical = false, bool vm=false, bool hm=false) : _snake(snake), _vertical(_vertical), _vmirror(vm), _hmirror(hm) {};
     virtual ~LedStripe() = default;
 
     // getters
@@ -484,7 +499,7 @@ public:
      * @param y 
      * @return size_t 
      */
-    virtual size_t transpose(unsigned x, unsigned y) const override;
+    virtual size_t transpose(unsigned w, unsigned h, unsigned x, unsigned y) const;
 };
 
 
