@@ -44,33 +44,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 // время "отправки" кадра в матрицу, мс. где 1.5 эмпирический коэффициент
 // #define FastLED_SHOW_TIME = WIDTH * HEIGHT * 24 * (0.250 + 0.625) / 1000 * 1.5
 
-// stub pixel that is mapped to either nonexistent buffer access or blackholed CLedController mapping
-static CRGB blackhole;
-
-// copy via assignment
-PixelDataBuffer& PixelDataBuffer::operator=(PixelDataBuffer const& rhs){
-    fb = rhs.fb;
-    return *this;
-}
-
-// move assignment
-PixelDataBuffer& PixelDataBuffer::operator=(PixelDataBuffer&& rhs){
-    fb = std::move(rhs.fb);
-    return *this;
-}
-
-CRGB& PixelDataBuffer::at(size_t i){ return i < fb.size() ? fb.at(i) : blackhole; };
-
-void PixelDataBuffer::fill(CRGB color){ fb.assign(fb.size(), color); };
-
-void PixelDataBuffer::clear(){ fill(CRGB::Black); };
-
-bool PixelDataBuffer::resize(size_t s){
-    fb.reserve(s);
-    clear();
-    return fb.size() == s;
-};
-
 // *** CLedCDB implementation ***
 
 // move construct
@@ -155,10 +128,10 @@ void CLedCDB::rebind(CLedCDB &rhs){
 // *** Topology mapping classes implementation ***
 
 LedFB::LedFB(uint16_t w, uint16_t h) : _w(w), _h(h){
-    buffer = std::make_shared<PixelDataBuffer>(PixelDataBuffer(w*h));
+    buffer = std::make_shared<PixelDataBuffer<CRGB>>(PixelDataBuffer<CRGB>(w*h));
 }
 
-LedFB::LedFB(uint16_t w, uint16_t h, std::shared_ptr<PixelDataBuffer> fb): _w(w), _h(h), buffer(fb){
+LedFB::LedFB(uint16_t w, uint16_t h, std::shared_ptr<PixelDataBuffer<CRGB>> &fb): _w(w), _h(h), buffer(fb){
     // a safety check if supplied buffer and dimentions are matching
     if (buffer->size() != w*h)   buffer->resize(w*h);
 };
@@ -200,4 +173,6 @@ size_t LedStripe::transpose(unsigned x, unsigned y) const {
         return yy * w() + xx;
     }
 }
+
+
 

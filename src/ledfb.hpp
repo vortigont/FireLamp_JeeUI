@@ -41,16 +41,20 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include <vector>
 #include <memory>
 
+// Out-of-bound CRGB placeholder
+static CRGB blackhole;
 
 /**
  * @brief Base class with CRGB data storage that acts as a pixel buffer storage
  * it provides basic operations with pixel data with no any backend engine to display data
  * 
  */
+template <class COLOR_TYPE = CRGB>
 class PixelDataBuffer {
 
 protected:
-    std::vector<CRGB> fb;     // main frame buffer
+    std::vector<COLOR_TYPE> fb;     // container that holds pixel data
+    // stub pixel that is mapped to either nonexistent buffer access or blackholed CLedController mapping
 
 public:
     PixelDataBuffer(size_t size) : fb(size) {}
@@ -66,7 +70,7 @@ public:
      * @brief Copy-assign a new Led FB object
      * @param rhs 
      */
-    PixelDataBuffer& operator=(PixelDataBuffer const & rhs);
+    PixelDataBuffer& operator=(PixelDataBuffer<COLOR_TYPE> const & rhs);
 
     // move semantics
     /**
@@ -100,7 +104,7 @@ public:
     virtual void swap(PixelDataBuffer& rhs){ std::swap(fb, rhs.fb); };
 
     // get direct access to FB array
-    std::vector<CRGB> &data(){ return fb; }
+    std::vector<COLOR_TYPE> &data(){ return fb; }
 
 
     /**
@@ -119,7 +123,7 @@ public:
      * @param i offset index
      * @return CRGB& 
      */
-    CRGB& at(size_t i);
+    COLOR_TYPE& at(size_t i);
 
     // access pixel at coordinates x:y (obsolete)
     //CRGB& pixel(unsigned x, unsigned y){ return at(x,y); };
@@ -130,14 +134,14 @@ public:
      * @param i offset index
      * @return CRGB& 
      */
-    CRGB& operator[](size_t i){ return at(i); };
+    COLOR_TYPE& operator[](size_t i){ return at(i); };
 
     /*
         iterators
         TODO: need proper declaration for this
     */
-    inline std::vector<CRGB>::iterator begin(){ return fb.begin(); };
-    inline std::vector<CRGB>::iterator end(){ return fb.end(); };
+    typename std::vector<COLOR_TYPE>::iterator begin(){ return fb.begin(); };
+    typename std::vector<COLOR_TYPE>::iterator end(){ return fb.end(); };
 
 
     /***    color operations      ***/
@@ -160,7 +164,7 @@ public:
      * @brief fill the buffer with solid color
      * 
      */
-    void fill(CRGB color);
+    void fill(COLOR_TYPE color);
 
     /**
      * @brief clear buffer to black
@@ -175,7 +179,7 @@ public:
  * and maintaining bound on move/copy/swap operations
  * 
  */
-class CLedCDB : public PixelDataBuffer {
+class CLedCDB : public PixelDataBuffer<CRGB> {
     /**
      * @brief a poor-man's mutex
      * points to the instance that owns global FastLED's buffer reference
@@ -266,7 +270,6 @@ public:
     bool resize(size_t s) override;
 };
 
-
 /**
  * @brief basic 2D buffer
  * provides generic abstraction for 2D topology
@@ -279,7 +282,7 @@ protected:
     // buffer width, height
     uint16_t _w, _h;
     // pixel buffer storage
-    std::shared_ptr<PixelDataBuffer> buffer;
+    std::shared_ptr<PixelDataBuffer<CRGB>> buffer;
 
 public:
     // c-tor
@@ -298,7 +301,7 @@ public:
      * @param h - heigh
      * @param fb - preallocated buffer storage
      */
-    LedFB(uint16_t w, uint16_t h, std::shared_ptr<PixelDataBuffer> fb);
+    LedFB(uint16_t w, uint16_t h, std::shared_ptr<PixelDataBuffer<CRGB>> &fb);
 
     /**
      * @brief Copy Construct a new LedFB object
@@ -379,6 +382,10 @@ public:
      */
     CRGB& at(size_t idx){ return buffer->at(idx); };
 
+    // mimic Adafruit's low-level methods
+    virtual void drawPixel(int16_t x, int16_t y, uint16_t color){ at(x, y) = color16toCRGB(color); }
+    virtual void drawPixel(int16_t x, int16_t y, CRGB color){ at(x, y) = color; }
+
     /*
         iterators
         TODO: need proper declaration for this
@@ -408,6 +415,7 @@ public:
      * 
      */
     void fill(CRGB color){ buffer->fill(color); };
+    void fill(uint16_t color){ buffer->fill(color16toCRGB(color)); };
 
     /**
      * @brief clear buffer to black
@@ -415,6 +423,9 @@ public:
      */
     void clear(){ buffer->clear(); };
 
+    // Color conversion
+    static CRGB color16toCRGB(uint16_t c){ return CRGB(c>>11 & 0xf8, c>>5 & 0xfc, c<<3); }
+    static uint16_t colorCRGBto16(CRGB c){ return c.r >> 3 << 11 | c.g >> 2 << 5 | c.b >> 3; }
 
 };
 
@@ -447,7 +458,7 @@ public:
     LedStripe(uint16_t w, uint16_t h, bool snake = true, bool _vertical = false, bool vm=false, bool hm=false) : LedFB(w, h), _snake(snake), _vertical(_vertical), _vmirror(vm), _hmirror(hm) {};
     LedStripe(LedStripe const & rhs) :  LedFB(rhs._w, rhs._h), _snake(rhs._snake), _vertical(rhs._vertical), _vmirror(rhs._vmirror), _hmirror(rhs._hmirror) {};
     LedStripe(LedFB const & rhs) :  LedFB(rhs.w(), rhs.h()), _snake(false), _vertical(false), _vmirror(false), _hmirror(false) {};
-    LedStripe(uint16_t w, uint16_t h, std::shared_ptr<PixelDataBuffer> fb) : LedFB(w, h, fb), _snake(false), _vertical(false), _vmirror(false), _hmirror(false) {};
+    LedStripe(uint16_t w, uint16_t h, std::shared_ptr<PixelDataBuffer<CRGB>> fb) : LedFB(w, h, fb), _snake(false), _vertical(false), _vmirror(false), _hmirror(false) {};
 
     virtual ~LedStripe() = default;
 
@@ -492,9 +503,9 @@ public:
      * 
      * @return PixelDataBuffer* 
      */
-    virtual std::shared_ptr<PixelDataBuffer> getCanvas() = 0;
+    virtual std::shared_ptr<PixelDataBuffer<CRGB>> getCanvas() = 0;
 
-    virtual std::shared_ptr<PixelDataBuffer> getOverlay() = 0;
+    virtual std::shared_ptr<PixelDataBuffer<CRGB>> getOverlay() = 0;
 
     /**
      * @brief protect canvs buffer from altering by overlay mixing
@@ -579,15 +590,15 @@ public:
      */
     bool attachCanvas(std::shared_ptr<CLedCDB> &fb);
 
-    std::shared_ptr<PixelDataBuffer> getCanvas() override { return canvas; }
+    std::shared_ptr<PixelDataBuffer<CRGB>> getCanvas() override { return canvas; }
 
     /**
      * @brief Get a pointer to Overlay buffer
      * Note: consumer MUST release a pointer once overlay operations is no longer needed
      * 
-     * @return std::shared_ptr<PixelDataBuffer> 
+     * @return std::shared_ptr<PixelDataBuffer<CRGB>> 
      */
-    std::shared_ptr<PixelDataBuffer> getOverlay() override;
+    std::shared_ptr<PixelDataBuffer<CRGB>> getOverlay() override;
 
     /**
      * @brief show buffer content on display
@@ -617,8 +628,37 @@ private:
     void _switch_to_bb();
 };
 
+//  *** TEMPLATES IMPLEMENTATION FOLLOWS *** //
 
-//  *** TEMPLATE IMPLEMENTATION FOLLOWS *** //
+// copy via assignment
+template <class COLOR_TYPE>
+PixelDataBuffer<COLOR_TYPE>& PixelDataBuffer<COLOR_TYPE>::operator=(PixelDataBuffer<COLOR_TYPE> const& rhs){
+    fb = rhs.fb;
+    return *this;
+}
+
+// move assignment
+template <class COLOR_TYPE>
+PixelDataBuffer<COLOR_TYPE>& PixelDataBuffer<COLOR_TYPE>::operator=(PixelDataBuffer<COLOR_TYPE>&& rhs){
+    fb = std::move(rhs.fb);
+    return *this;
+}
+
+template <class COLOR_TYPE>
+COLOR_TYPE& PixelDataBuffer<COLOR_TYPE>::at(size_t i){ return i < fb.size() ? fb.at(i) : blackhole; };      // blackhole is only of type CRGB, need some other specialisations
+
+template <class COLOR_TYPE>
+void PixelDataBuffer<COLOR_TYPE>::fill(COLOR_TYPE color){ fb.assign(fb.size(), color); };
+
+template <class COLOR_TYPE>
+void PixelDataBuffer<COLOR_TYPE>::clear(){ fill(COLOR_TYPE()); };
+
+template <class COLOR_TYPE>
+bool PixelDataBuffer<COLOR_TYPE>::resize(size_t s){
+    fb.reserve(s);
+    clear();
+    return fb.size() == s;
+};
 
 template<EOrder RGB_ORDER>
 ESP32RMTOverlayEngine<RGB_ORDER>::ESP32RMTOverlayEngine(int gpio){
@@ -687,7 +727,7 @@ void ESP32RMTOverlayEngine<RGB_ORDER>::clear(){
 }
 
 template<EOrder RGB_ORDER>
-std::shared_ptr<PixelDataBuffer> ESP32RMTOverlayEngine<RGB_ORDER>::getOverlay(){
+std::shared_ptr<PixelDataBuffer<CRGB>> ESP32RMTOverlayEngine<RGB_ORDER>::getOverlay(){
     auto p = overlay.lock();
     if (!p){
         // no overlay exist at the moment
@@ -700,7 +740,6 @@ std::shared_ptr<PixelDataBuffer> ESP32RMTOverlayEngine<RGB_ORDER>::getOverlay(){
 template<EOrder RGB_ORDER>
 void ESP32RMTOverlayEngine<RGB_ORDER>::_ovr_overlap(){
     auto ovr = overlay.lock();
-
     if (canvas->size() != ovr->size()) return;  // a safe-check for buffer sizes
 
     auto ovr_iterator = ovr->begin();
