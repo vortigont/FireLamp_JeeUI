@@ -127,34 +127,6 @@ void CLedCDB::rebind(CLedCDB &rhs){
 
 // *** Topology mapping classes implementation ***
 
-LedFB::LedFB(uint16_t w, uint16_t h) : _w(w), _h(h), _xymap(map_2d) {
-    buffer = std::make_shared<PixelDataBuffer<CRGB>>(PixelDataBuffer<CRGB>(w*h));
-}
-
-LedFB::LedFB(uint16_t w, uint16_t h, std::shared_ptr<PixelDataBuffer<CRGB>> fb): _w(w), _h(h), buffer(fb), _xymap(map_2d) {
-    // a safety check if supplied buffer and dimentions are matching
-    if (buffer->size() != w*h)   buffer->resize(w*h);
-};
-
-LedFB::LedFB(LedFB const & rhs) : _w(rhs._w), _h(rhs._h), _xymap(map_2d) {
-    buffer = rhs.buffer;
-    // deep copy
-    //buffer = std::make_shared<PixelDataBuffer>(*rhs.buffer.get());
-}
-
-CRGB& LedFB::at(int16_t x, int16_t y){
-    return ( static_cast<uint16_t>(x) >= _w || static_cast<uint16_t>(y) >= _h ) ? blackhole : buffer->at(_xymap(_w, _h, static_cast<uint16_t>(x), static_cast<uint16_t>(y)));
-};
-
-bool LedFB::resize(uint16_t w, uint16_t h){
-    // safety check
-    if (buffer->resize(w*h) && buffer->size() == w*h){
-        _w=w; _h=h;
-        return true;
-    }
-    return false;
-}
-
 // matrix stripe layout transformation
 size_t LedStripe::transpose(unsigned w, unsigned h, unsigned x, unsigned y) const {
     unsigned idx = y*w+x;
@@ -175,3 +147,28 @@ size_t LedStripe::transpose(unsigned w, unsigned h, unsigned x, unsigned y) cons
 
 
 
+void LedFB_GFX::drawPixel(int16_t x, int16_t y, uint16_t color) {
+    std::visit(
+        Overload {
+            [this, &x, &y, &color](const auto& variant_item) { _drawPixelC16(variant_item.get(), x,y,color); },
+        },
+        _fb
+    );
+}
+
+void LedFB_GFX::fillScreen(uint16_t color) {
+    std::visit(
+        Overload {
+            [this, &color](const auto& variant_item) { _fillScreenC16(variant_item.get(), color); },
+        },
+        _fb
+    );
+}
+
+void LedFB_GFX::drawPixel(int16_t x, int16_t y, CRGB color) {
+    std::visit( Overload{ [this, &x, &y, &color](const auto& variant_item) { _drawPixelCRGB(variant_item.get(), x,y,color); }, }, _fb);
+}
+
+void LedFB_GFX::fillScreen(CRGB color) {
+    std::visit( Overload{ [this, &color](const auto& variant_item) { _fillScreenCRGB(variant_item.get(), color); }, }, _fb);
+}

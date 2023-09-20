@@ -37,9 +37,12 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 */
 
 #pragma once
-#include "w2812-rmt.hpp"
 #include <vector>
 #include <memory>
+#include <variant>
+#include "w2812-rmt.hpp"
+#include <Adafruit_GFX.h>
+
 
 // Out-of-bound CRGB placeholder - stub pixel that is mapped to either nonexistent buffer access or blackholed CLedController mapping
 static CRGB blackhole;
@@ -54,7 +57,6 @@ class PixelDataBuffer {
 
 protected:
     std::vector<COLOR_TYPE> fb;     // container that holds pixel data
-    // stub pixel that is mapped to either nonexistent buffer access or blackholed CLedController mapping
 
 public:
     PixelDataBuffer(size_t size) : fb(size) {}
@@ -172,7 +174,12 @@ public:
      */
     void clear();
 
+    // stub pixel that is mapped to either nonexistent buffer access or blackholed CLedController mapping
+    static COLOR_TYPE stub_pixel;
 };
+
+// static definition
+template <class COLOR_TYPE> COLOR_TYPE PixelDataBuffer<COLOR_TYPE>::stub_pixel;
 
 /**
  * @brief CledController Data Buffer - class with CRGB data storage (possibly) attached to CLEDController
@@ -271,11 +278,13 @@ public:
 };
 
 
-static size_t map_2d(unsigned w, unsigned h, unsigned x, unsigned y) { return y*w+x; };
-
 
 // coordinate transformation callback prototype
 using transpose_t = std::function<size_t(unsigned w, unsigned h, unsigned x, unsigned y)>;
+
+// a default (x,y) 2D mapper to 1-d vector index
+static size_t map_2d(unsigned w, unsigned h, unsigned x, unsigned y) { return y*w+x; };
+
 
 /**
  * @brief basic 2D buffer
@@ -283,13 +292,14 @@ using transpose_t = std::function<size_t(unsigned w, unsigned h, unsigned x, uns
  * remaps x,y coordinates to linear pixel vector
  * basic class maps a simple row by row 2D buffer
  */
+template <class COLOR_TYPE = CRGB>
 class LedFB {
 
 protected:
     // buffer width, height
     uint16_t _w, _h;
     // pixel buffer storage
-    std::shared_ptr<PixelDataBuffer<CRGB>> buffer;
+    std::shared_ptr<PixelDataBuffer<COLOR_TYPE>> buffer;
     // coordinate to buffer index mapper callback
     transpose_t _xymap;
 
@@ -310,7 +320,7 @@ public:
      * @param h - heigh
      * @param fb - preallocated buffer storage
      */
-    LedFB(uint16_t w, uint16_t h, std::shared_ptr<PixelDataBuffer<CRGB>> fb);
+    LedFB(uint16_t w, uint16_t h, std::shared_ptr<PixelDataBuffer<COLOR_TYPE>> fb);
 
     /**
      * @brief Copy Construct a new LedFB object
@@ -391,7 +401,7 @@ public:
      * @param x coordinate starting from top left corner
      * @param y coordinate starting from top left corner
      */
-    CRGB& at(int16_t x, int16_t y);
+    COLOR_TYPE& at(int16_t x, int16_t y);
 
     /**
      * @brief access pixel at index
@@ -399,18 +409,18 @@ public:
      * @param idx 
      * @return CRGB& 
      */
-    CRGB& at(size_t idx){ return buffer->at(idx); };
+    COLOR_TYPE& at(size_t idx){ return buffer->at(idx); };
 
     // mimic Adafruit's low-level methods
-    virtual void drawPixel(int16_t x, int16_t y, uint16_t color){ at(x, y) = color16toCRGB(color); }
-    virtual void drawPixel(int16_t x, int16_t y, CRGB color){ at(x, y) = color; }
+    //virtual void drawPixel(int16_t x, int16_t y, uint16_t color){ at(x, y) = color16toCRGB(color); }
+    //virtual void drawPixel(int16_t x, int16_t y, CRGB color){ at(x, y) = color; }
 
     /*
         iterators
         TODO: need proper declaration for this
     */
-    inline std::vector<CRGB>::iterator begin(){ return buffer->begin(); };
-    inline std::vector<CRGB>::iterator end(){ return buffer->end(); };
+    typename std::vector<COLOR_TYPE>::iterator begin(){ return buffer->begin(); };
+    typename std::vector<COLOR_TYPE>::iterator end(){ return buffer->end(); };
 
 
     // FastLED buffer-wide color functions (here just a wrappers, but could be overriden in derived classes)
@@ -433,18 +443,13 @@ public:
      * @brief fill the buffer with solid color
      * 
      */
-    void fill(CRGB color){ buffer->fill(color); };
-    void fill(uint16_t color){ buffer->fill(color16toCRGB(color)); };
+    void fill(COLOR_TYPE color){ buffer->fill(color); };
 
     /**
      * @brief clear buffer to black
      * 
      */
     void clear(){ buffer->clear(); };
-
-    // Color conversion
-    static CRGB color16toCRGB(uint16_t c){ return CRGB(c>>11 & 0xf8, c>>5 & 0xfc, c<<3); }
-    static uint16_t colorCRGBto16(CRGB c){ return c.r >> 3 << 11 | c.g >> 2 << 5 | c.b >> 3; }
 
 };
 
@@ -643,6 +648,81 @@ private:
     void _switch_to_bb();
 };
 
+
+// overload pattern and deduction guide. Lambdas provide call operator
+template<class... Ts> struct Overload : Ts... { using Ts::operator()...; };
+template<class... Ts> Overload(Ts...) -> Overload<Ts...>;
+
+/**
+ * @brief GFX class for LedFB
+ * it provides Adafruit API for uderlaying buffer with either CRGB and uint16 color container
+ * 
+ */
+class LedFB_GFX : public Adafruit_GFX {
+
+    void _drawPixelCRGB( LedFB<CRGB> *b, int16_t x, int16_t y, CRGB c){ b->at(x,y) = c; };
+    void _drawPixelCRGB( LedFB<uint16_t> *b, int16_t x, int16_t y, CRGB c){ b->at(x,y) = colorCRGBto16(c); };
+
+    void _drawPixelC16( LedFB<CRGB> *b, int16_t x, int16_t y, uint16_t c){ b->at(x,y) = color16toCRGB(c); };
+    void _drawPixelC16( LedFB<uint16_t> *b, int16_t x, int16_t y, uint16_t c){ b->at(x,y) = c; };
+
+    void _fillScreenCRGB(LedFB<CRGB> *b, CRGB c){ b->fill(c); };
+    void _fillScreenCRGB(LedFB<uint16_t> *b, CRGB c){ b->fill(colorCRGBto16(c)); };
+
+    void _fillScreenC16(LedFB<CRGB> *b, uint16_t c){ b->fill(color16toCRGB(c)); };
+    void _fillScreenC16(LedFB<uint16_t> *b, uint16_t c){ b->fill(c); };
+
+/*
+    template<typename V, typename X, typename Y, typename C>
+    void _visit_drawPixelCRGB(const V& variant, X x, Y y, C color){
+        std::visit( Overload{ [&x, &y, &color](const auto& variant_item) { _drawPixelCRGB(variant_item, x, y, color); }, }, variant);
+    };
+*/
+
+protected:
+    // LedFB container variant
+    std::variant< std::shared_ptr< LedFB<CRGB> >, std::shared_ptr< LedFB<uint16_t> >  > _fb;
+
+public:
+    /**
+     * @brief Construct a new LedFB_GFX object from a LedFB<CRGB> 24 bit color
+     * 
+     * @param buff - a shared pointer to the LedFB object
+     */
+    LedFB_GFX(std::shared_ptr< LedFB<CRGB> > buff) : Adafruit_GFX(buff->w(), buff->h()), _fb(buff) {}
+
+    /**
+     * @brief Construct a new LedFB_GFX object from a LedFB<uint16_t> 16 bit color
+     * 
+     * @param buff - a shared pointer to the LedFB object
+     */
+    LedFB_GFX(std::shared_ptr< LedFB<uint16_t> > buff) : Adafruit_GFX(buff->w(), buff->h()), _fb(buff) {}
+
+    virtual ~LedFB_GFX() = default;
+
+    // Adafruit overrides
+    void drawPixel(int16_t x, int16_t y, uint16_t color) override;
+    void fillScreen(uint16_t color) override;
+
+    // Adafruit-like methods for CRGB
+    void drawPixel(int16_t x, int16_t y, CRGB color);
+    void fillScreen(CRGB color);
+
+    // Color conversion
+    static CRGB color16toCRGB(uint16_t c){ return CRGB(c>>11 & 0xf8, c>>5 & 0xfc, c<<3); }
+    static uint16_t colorCRGBto16(CRGB c){ return c.r >> 3 << 11 | c.g >> 2 << 5 | c.b >> 3; }
+
+
+    // Additional methods
+};
+
+
+
+
+
+
+
+
 //  *** TEMPLATES IMPLEMENTATION FOLLOWS *** //
 
 // copy via assignment
@@ -660,7 +740,7 @@ PixelDataBuffer<COLOR_TYPE>& PixelDataBuffer<COLOR_TYPE>::operator=(PixelDataBuf
 }
 
 template <class COLOR_TYPE>
-COLOR_TYPE& PixelDataBuffer<COLOR_TYPE>::at(size_t i){ return i < fb.size() ? fb.at(i) : blackhole; };      // blackhole is only of type CRGB, need some other specialisations
+COLOR_TYPE& PixelDataBuffer<COLOR_TYPE>::at(size_t i){ return i < fb.size() ? fb.at(i) : stub_pixel; };      // blackhole is only of type CRGB, need some other specialisations
 
 template <class COLOR_TYPE>
 void PixelDataBuffer<COLOR_TYPE>::fill(COLOR_TYPE color){ fb.assign(fb.size(), color); };
@@ -783,3 +863,39 @@ void ESP32RMTOverlayEngine<RGB_ORDER>::_switch_to_bb(){
     backbuff = std::make_unique<CLedCDB>(canvas->size());
     backbuff->rebind(*canvas);    // switch backend binding
 }
+
+
+
+template <class COLOR_TYPE>
+LedFB<COLOR_TYPE>::LedFB(uint16_t w, uint16_t h) : _w(w), _h(h), _xymap(map_2d) {
+    buffer = std::make_shared<PixelDataBuffer<COLOR_TYPE>>(PixelDataBuffer<COLOR_TYPE>(w*h));
+}
+
+template <class COLOR_TYPE>
+LedFB<COLOR_TYPE>::LedFB(uint16_t w, uint16_t h, std::shared_ptr<PixelDataBuffer<COLOR_TYPE>> fb): _w(w), _h(h), buffer(fb), _xymap(map_2d) {
+    // a safety check if supplied buffer and dimentions are matching
+    if (buffer->size() != w*h)   buffer->resize(w*h);
+};
+
+template <class COLOR_TYPE>
+LedFB<COLOR_TYPE>::LedFB(LedFB<COLOR_TYPE> const & rhs) : _w(rhs._w), _h(rhs._h), _xymap(map_2d) {
+    buffer = rhs.buffer;
+    // deep copy
+    //buffer = std::make_shared<PixelDataBuffer>(*rhs.buffer.get());
+}
+
+template <class COLOR_TYPE>
+COLOR_TYPE& LedFB<COLOR_TYPE>::at(int16_t x, int16_t y){
+    return ( buffer->at(_xymap(_w, _h, static_cast<uint16_t>(x), static_cast<uint16_t>(y))) );
+};
+
+template <class COLOR_TYPE>
+bool LedFB<COLOR_TYPE>::resize(uint16_t w, uint16_t h){
+    // safety check
+    if (buffer->resize(w*h) && buffer->size() == w*h){
+        _w=w; _h=h;
+        return true;
+    }
+    return false;
+}
+
