@@ -102,14 +102,14 @@ static const PROGMEM float LUT[102] = {
 //         calls to 'blur' will also result in the light fading,
 //         eventually all the way to black; this is by design so that
 //         it can be used to (slowly) clear the LEDs to black.
-void blur2d( LedFB *leds, fract8 blur_amount)
+void blur2d( LedFB<CRGB> *leds, fract8 blur_amount)
 {
     EffectMath::blurRows(leds, blur_amount);
     EffectMath::blurColumns(leds, blur_amount);
 }
 
 // blurRows: perform a blur1d on every row of a rectangular matrix
-void blurRows( LedFB *leds, fract8 blur_amount)
+void blurRows( LedFB<CRGB> *leds, fract8 blur_amount)
 {
 /*    for( uint8_t row = 0; row < height; ++row) {
         CRGB* rowbase = leds + (row * width);
@@ -135,7 +135,7 @@ void blurRows( LedFB *leds, fract8 blur_amount)
 }
 
 // blurColumns: perform a blur1d on each column of a rectangular matrix
-void blurColumns(LedFB *leds, fract8 blur_amount)
+void blurColumns(LedFB<CRGB> *leds, fract8 blur_amount)
 {
     // blur columns
     uint8_t keep = 255 - blur_amount;
@@ -200,12 +200,12 @@ bool isInteger(float val) {
  */
 
 // Функция создает вспышки в разных местах матрицы, параметр 0-255. Чем меньше, тем чаще.
-void addGlitter(LedFB *leds, uint8_t chanceOfGlitter){
+void addGlitter(LedFB<CRGB> *leds, uint8_t chanceOfGlitter){
   if ( random8() < chanceOfGlitter) leds->at(random16(leds->size())) += CRGB::Gray;
 }
 
 // Функция создает разноцветные конфетти в разных местах матрицы, параметр 0-255. Чем меньше, тем чаще.
-void confetti(LedFB *leds, byte density) {
+void confetti(LedFB<CRGB> *leds, byte density) {
   int i = map(density, 0,255, 1, leds->w() * leds->h() / 2);   // number of pixels, 0=>1 pix, 255=> 50% of all pixels
   for (; i; --i)
     leds->at(random16(leds->size())) = random(32, 16777216);
@@ -231,7 +231,7 @@ void gammaCorrection()
 */
 
 //awesome wu_pixel procedure by reddit u/sutaburosu
-void wu_pixel(uint32_t x, uint32_t y, CRGB col, LedFB *fb) {
+void wu_pixel(uint32_t x, uint32_t y, CRGB col, LedFB<CRGB> *fb) {
   // extract the fractional parts and derive their inverses
   uint8_t xx = x & 0xff, yy = y & 0xff, ix = 255 - xx, iy = 255 - yy;
   // calculate the intensities for each affected pixel
@@ -255,7 +255,7 @@ CRGB colorsmear(const CRGB &col1, const CRGB &col2, byte l) {
   return temp1;
 }
 
-void sDrawPixelXYF(float x, float y, const CRGB &color, LedFB *fb) {
+void sDrawPixelXYF(float x, float y, const CRGB &color, LedFB<CRGB> *fb) {
   byte ax = byte(x);
   byte xsh = (x - byte(x)) * 255;
   byte ay = byte(y);
@@ -272,7 +272,7 @@ void sDrawPixelXYF(float x, float y, const CRGB &color, LedFB *fb) {
   fb->at(ax+1, ay+1) += col4;
 }
 
-void sDrawPixelXYF_X(float x, int16_t y, const CRGB &color, LedFB *fb) {
+void sDrawPixelXYF_X(float x, int16_t y, const CRGB &color, LedFB<CRGB> *fb) {
   byte ax = byte(x);
   byte xsh = (x - byte(x)) * 255;
   CRGB col1 = colorsmear(color, CRGB(0, 0, 0), xsh);
@@ -281,7 +281,7 @@ void sDrawPixelXYF_X(float x, int16_t y, const CRGB &color, LedFB *fb) {
   fb->at(ax + 1, y) += col2;
 }
 
-void sDrawPixelXYF_Y(int16_t x, float y, const CRGB &color, LedFB *fb) {
+void sDrawPixelXYF_Y(int16_t x, float y, const CRGB &color, LedFB<CRGB> *fb) {
   byte ay = byte(y);
   byte ysh = (y - byte(y)) * 255;
   CRGB col1 = colorsmear(color, CRGB(0, 0, 0), ysh);
@@ -290,7 +290,7 @@ void sDrawPixelXYF_Y(int16_t x, float y, const CRGB &color, LedFB *fb) {
   fb->at(x, ay+1) += col2; 
 }
 
-void drawPixelXYF(float x, float y, const CRGB &color, LedFB *fb, uint8_t darklevel)
+void drawPixelXYF(float x, float y, const CRGB &color, LedFB<CRGB> *fb, uint8_t darklevel)
 {
   if (x<-1 || y<-1 || x>fb->w() || y>fb->h()) return; // skip out of canvas drawing, allow 1 px tradeoff
   // extract the fractional parts and derive their inverses
@@ -315,7 +315,7 @@ void drawPixelXYF(float x, float y, const CRGB &color, LedFB *fb, uint8_t darkle
   }
 }
 
-void drawPixelXYF_X(float x, int16_t y, const CRGB &color, LedFB *fb, uint8_t darklevel)
+void drawPixelXYF_X(float x, int16_t y, const CRGB &color, LedFB<CRGB> *fb, uint8_t darklevel)
 {
   if (x<-1.0 || y<-1 || x>fb->w() || y>fb->h()) return;   // skip out of canvas drawing
 
@@ -335,7 +335,7 @@ void drawPixelXYF_X(float x, int16_t y, const CRGB &color, LedFB *fb, uint8_t da
   }
 }
 
-void drawPixelXYF_Y(int16_t x, float y, const CRGB &color, LedFB *fb, uint8_t darklevel)
+void drawPixelXYF_Y(int16_t x, float y, const CRGB &color, LedFB<CRGB> *fb, uint8_t darklevel)
 {
   if (x<-1 || y<-1.0 || x>fb->w() || y>fb->h()) return;
 
@@ -364,7 +364,7 @@ void drawPixelXYF_Y(int16_t x, float y, const CRGB &color, LedFB *fb, uint8_t da
     @param    y1  End point y coordinate
     @param    color CRGB Color to draw with
 */
-void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, const CRGB &color, LedFB *fb) {
+void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, const CRGB &color, LedFB<CRGB> *fb) {
   // discard lines that for sure goes out of canvas,
   // the rest will be caught on pixel access level 
   if (x0<0 && x1<0) return;
@@ -410,7 +410,7 @@ void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, const CRGB &color,
   }
 }
 
-void drawLineF(float x1, float y1, float x2, float y2, const CRGB &color, LedFB *fb){
+void drawLineF(float x1, float y1, float x2, float y2, const CRGB &color, LedFB<CRGB> *fb){
   // discard lines that for sure goes out of canvas,
   // the rest will be caught on pixel access level 
   if (x1<0 && x2<0) return;
@@ -444,14 +444,14 @@ void drawLineF(float x1, float y1, float x2, float y2, const CRGB &color, LedFB 
   }
 }
 
-void drawSquareF(float x, float y, float leg, CRGB color, LedFB *fb) {
+void drawSquareF(float x, float y, float leg, CRGB color, LedFB<CRGB> *fb) {
   drawLineF(x+leg,y+leg,x+leg,y-leg,color, fb);
   drawLineF(x+leg,y-leg,x-leg,y-leg,color, fb);
   drawLineF(x-leg,y-leg,x-leg,y+leg,color, fb);
   drawLineF(x-leg,y+leg,x+leg,y+leg,color, fb);
 }
 
-void drawCircle(int x0, int y0, int radius, const CRGB &color, LedFB *fb){
+void drawCircle(int x0, int y0, int radius, const CRGB &color, LedFB<CRGB> *fb){
   int a = radius, b = 0;
   int radiusError = 1 - a;
 
@@ -480,7 +480,7 @@ void drawCircle(int x0, int y0, int radius, const CRGB &color, LedFB *fb){
   }
 }
 
-void drawCircleF(float x0, float y0, float radius, const CRGB &color, LedFB *fb, float step){
+void drawCircleF(float x0, float y0, float radius, const CRGB &color, LedFB<CRGB> *fb, float step){
   float a = radius, b = 0.;
   float radiusError = step - a;
 
@@ -510,7 +510,7 @@ void drawCircleF(float x0, float y0, float radius, const CRGB &color, LedFB *fb,
   }
 }
 
-void fill_circleF(float cx, float cy, float radius, CRGB col, LedFB *fb) {
+void fill_circleF(float cx, float cy, float radius, CRGB col, LedFB<CRGB> *fb) {
   int8_t rad = radius;
   for (float y = -radius; y < radius; y += (fabs(y) < rad ? 1 : 0.2)) {
     for (float x = -radius; x < radius; x += (fabs(x) < rad ? 1 : 0.2)) {
@@ -522,7 +522,7 @@ void fill_circleF(float cx, float cy, float radius, CRGB col, LedFB *fb) {
 
 //uint16_t RGBweight (CRGB *leds, uint16_t idx) {return (leds[idx].r + leds[idx].g + leds[idx].b);}
 
-void nightMode(LedFB *ledarr){
+void nightMode(LedFB<CRGB> *ledarr){
     for (auto &i : *ledarr){
         i.r = dim8_lin(i.r); //dim8_video
         i.g = dim8_lin(i.g);

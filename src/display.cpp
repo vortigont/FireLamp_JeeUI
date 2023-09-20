@@ -44,7 +44,7 @@ An object file for LED output devices, backends and buffers
 #include "char_const.h"
 
 // compatibility LED buffer object reference
-LedStripe *mx = nullptr;
+LedFB<CRGB> *mx = nullptr;
 
 //template<EOrder RGB_ORDER>
 bool LEDDisplay::start(){
@@ -64,7 +64,10 @@ bool LEDDisplay::start(){
     _h = o[TCONST_height] | 16;
 
     //_set_layout(o[TCONST_snake].as<bool>(), o[TCONST_vertical].as<bool>(), o[TCONST_vflip].as<bool>(), o[TCONST_hflip].as<bool>());
-    _set_layout(o[TCONST_snake], o[TCONST_vertical], o[TCONST_vflip], o[TCONST_hflip]);
+    stripe.snake(o[TCONST_snake]);
+    stripe.vertical(o[TCONST_vertical]);
+    stripe.vmirror(o[TCONST_vflip]);
+    stripe.hmirror(o[TCONST_hflip]);
 
     return _start_rmt();
 }
@@ -89,11 +92,11 @@ bool LEDDisplay::_start_rmt(){
         return false;
 
     // attach buffer to an object that will perform matrix layout trasformation on buffer access
-    if (!_canvas)
-        _canvas = new LedStripe(_w, _h, data_buffer);
-
-    // apply our layout and topology parameters
-    _apply_layout();
+    if (!_canvas){
+        _canvas = new LedFB<CRGB>(_w, _h, data_buffer);
+        auto callback = [this](unsigned w, unsigned h, unsigned x, unsigned y) -> size_t { return this->stripe.transpose(w, h, x, y); };
+        _canvas->setRemapFunction(callback);
+    }
 
     //LOG(printf, "LED cfg: w,h:(%d,%d) snake:%d, vert:%d, vflip:%d, hflip:%d\n", _w, _h, _sn, _vrt, _vm, _hm);
 
@@ -102,18 +105,16 @@ bool LEDDisplay::_start_rmt(){
     return true;
 }
 
-std::shared_ptr<LedStripe> LEDDisplay::getOverlay(){
+std::shared_ptr< LedFB<CRGB> > LEDDisplay::getOverlay(){
     auto instance = _ovr.lock();
 
     if (!instance){
         // no overlay exist at the moment, let's create one
-        instance = std::make_shared<LedStripe>(LedStripe(_w, _h, _oengine->getOverlay()));
+        instance = std::make_shared< LedFB<CRGB> >(LedFB<CRGB>(_w, _h, _oengine->getOverlay()));
 
         // set topology
-        instance->snake(_sn);
-        instance->vertical(_vrt);
-        instance->vmirror(_vm);
-        instance->hmirror(_hm);
+        auto callback = [this](unsigned w, unsigned h, unsigned x, unsigned y) -> size_t { return this->stripe.transpose(w, h, x, y); };
+        instance->setRemapFunction(callback);
 
         // add instance watcher
         _ovr = instance;
@@ -130,34 +131,10 @@ void LEDDisplay::updateTopo(int w, int h, bool snake, bool vert, bool vmirr, boo
         if (instance) instance->resize(w, h);
     }
 
-    _set_layout(snake, vert, vmirr, hmirr);
-    _apply_layout();
-}
-
-void LEDDisplay::_set_layout(bool snake, bool vert, bool vmirr, bool hmirr){
-    _sn = snake;
-    _vrt = vert;
-    _vm = vmirr;
-    _hm = hmirr;
-}
-
-void LEDDisplay::_apply_layout(){
-    // apply our layout parameters
-    if (_canvas){
-        _canvas->snake(_sn);
-        _canvas->vertical(_vrt);
-        _canvas->vmirror(_vm);
-        _canvas->hmirror(_hm);
-    }
-
-    auto instance = _ovr.lock();
-
-    if (instance){
-        instance->snake(_sn);
-        instance->vertical(_vrt);
-        instance->vmirror(_vm);
-        instance->hmirror(_hm);
-    }
+    stripe.snake(snake);
+    stripe.vertical(vert);
+    stripe.vmirror(vmirr);
+    stripe.hmirror(hmirr);
 }
 
 // my display object

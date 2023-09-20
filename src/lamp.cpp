@@ -386,7 +386,7 @@ void LAMP::startNormalMode(bool forceOff)
 typedef enum {FIRSTSYMB=1,LASTSYMB=2} SYMBPOS;
 
 bool LAMP::fillStringManual(const char* text,  const CRGB &letterColor, bool stopText, bool isInverse, int32_t pos, int8_t letSpace, int8_t txtOffset, int8_t letWidth, int8_t letHeight)
-{
+{/*
   static int32_t offset = mx->vmirror() ? 0 : mx->w();
   uint8_t bcount = 0;
 
@@ -435,7 +435,7 @@ bool LAMP::fillStringManual(const char* text,  const CRGB &letterColor, bool sto
     offset = (mx->vmirror() ? 0 : mx->w());
     return true;
   }
-
+*/
   return false;
 }
 
@@ -1258,10 +1258,14 @@ void LAMP::_wipe_screen(){
 }
 */
 void LAMP::_overlay_buffer(bool activate) {
-  if (activate && !_overlay)
+  if (activate && !_overlay){
+    LOG(println, "Create Display overlay");
     _overlay = display.getOverlay();   // obtain overlay buffer
-  else
+  }
+  else{
+    LOG(println, "Release Display overlay");
     _overlay.reset();
+  }
 }
 
 // *********************************

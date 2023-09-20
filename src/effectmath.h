@@ -51,14 +51,14 @@ namespace EffectMath {
     /*    Наложение эффектов на буфер, рисование, работа с цветами     */
 
     // затенение
-    void nightMode(LedFB *ledarr);
+    void nightMode(LedFB<CRGB> *ledarr);
 
     /**
    * @brief добавить пиксель случайного цвета в случайном месте
    * 
    * @param density lesser number -> higher chance
    */
-    void confetti(LedFB *leds, byte density);
+    void confetti(LedFB<CRGB> *leds, byte density);
 
     /**
    * @brief с некоторой вероятностью добавляет вспышку в случайном месте 
@@ -66,29 +66,29 @@ namespace EffectMath {
    * @param leds 
    * @param chanceOfGlitter lesser number -> higher chance
    */
-    void addGlitter(LedFB *leds, uint8_t chanceOfGlitter = 127);
+    void addGlitter(LedFB<CRGB> *leds, uint8_t chanceOfGlitter = 127);
 
     CRGB makeBrighter( const CRGB& color, fract8 howMuchBrighter = 5);
     CRGB makeDarker( const CRGB& color, fract8 howMuchDarker = 5);
 
 
     /**
-     * @brief FastLED's blur2d function over LedFB
+     * @brief FastLED's blur2d function over LedFB<CRGB>
      * 
      * @param leds framebuffer
      * @param blur_amount 
      */
-    void blur2d(LedFB *leds, fract8 blur_amount);
+    void blur2d(LedFB<CRGB> *leds, fract8 blur_amount);
     // blurRows: perform a blur1d on every row of a rectangular matrix
-    void blurRows(LedFB *leds, fract8 blur_amount);
+    void blurRows(LedFB<CRGB> *leds, fract8 blur_amount);
     // blurColumns: perform a blur1d on each column of a rectangular matrix
-    void blurColumns(LedFB *leds, fract8 blur_amount);
+    void blurColumns(LedFB<CRGB> *leds, fract8 blur_amount);
 
     // нарисовать линию в буфере
-    void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, const CRGB &color, LedFB *fb);
+    void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, const CRGB &color, LedFB<CRGB> *fb);
 
     // нарисовать окружность в буфере
-    void drawCircle(int x0, int y0, int radius, const CRGB &color, LedFB *fb);
+    void drawCircle(int x0, int y0, int radius, const CRGB &color, LedFB<CRGB> *fb);
 
     /*
      * AA plotting and drawing
@@ -100,7 +100,7 @@ namespace EffectMath {
     constexpr uint8_t wu_weight(uint8_t a, uint8_t b){return (a*b+a+b)>>8;};
 
     // plot a wu pixel in buffer
-    void wu_pixel(uint32_t x, uint32_t y, CRGB col, LedFB *fb);
+    void wu_pixel(uint32_t x, uint32_t y, CRGB col, LedFB<CRGB> *fb);
 
     /**
      * @brief draw a dot in a framebuffer defined by non integer coordinates
@@ -111,15 +111,15 @@ namespace EffectMath {
      * @param fb 
      * @param darklevel - насколько затемнять картинку
      */
-    void drawPixelXYF(float x, float y, const CRGB &color, LedFB *fb, uint8_t darklevel=25);
+    void drawPixelXYF(float x, float y, const CRGB &color, LedFB<CRGB> *fb, uint8_t darklevel=25);
 
-    void drawPixelXYF_Y(int16_t x, float y, const CRGB &color, LedFB *fb, uint8_t darklevel=50);
-    void drawPixelXYF_X(float x, int16_t y, const CRGB &color, LedFB *fb, uint8_t darklevel=50);
+    void drawPixelXYF_Y(int16_t x, float y, const CRGB &color, LedFB<CRGB> *fb, uint8_t darklevel=50);
+    void drawPixelXYF_X(float x, int16_t y, const CRGB &color, LedFB<CRGB> *fb, uint8_t darklevel=50);
 
     // Вариант субпикселя от @stepko, в некоторых случаях работает лучше, но в некоторых хуже
-    void sDrawPixelXYF(float x, float y, const CRGB &color, LedFB *fb); 
-    void sDrawPixelXYF_Y(int16_t x, float y, const CRGB &color, LedFB *fb);
-    void sDrawPixelXYF_X(float x, int16_t y, const CRGB &color, LedFB *fb);
+    void sDrawPixelXYF(float x, float y, const CRGB &color, LedFB<CRGB> *fb); 
+    void sDrawPixelXYF_Y(int16_t x, float y, const CRGB &color, LedFB<CRGB> *fb);
+    void sDrawPixelXYF_X(float x, int16_t y, const CRGB &color, LedFB<CRGB> *fb);
 
     /**
      * @brief draw a line in a framebuffer defined by non integer coordinates
@@ -130,7 +130,7 @@ namespace EffectMath {
      * @param y2 
      * @param color 
      */
-    void drawLineF(float x1, float y1, float x2, float y2, const CRGB &color, LedFB *fb);
+    void drawLineF(float x1, float y1, float x2, float y2, const CRGB &color, LedFB<CRGB> *fb);
 
     /**
      * @brief draw a circle in a framebuffer defined by non integer coordinates
@@ -142,11 +142,11 @@ namespace EffectMath {
      * @param fb 
      * @param step 
      */
-    void drawCircleF(float x0, float y0, float radius, const CRGB &color, LedFB *fb, float step = 0.25);
+    void drawCircleF(float x0, float y0, float radius, const CRGB &color, LedFB<CRGB> *fb, float step = 0.25);
 
-    void fill_circleF(float cx, float cy, float radius, CRGB col, LedFB *fb);
+    void fill_circleF(float cx, float cy, float radius, CRGB col, LedFB<CRGB> *fb);
 
-    void drawSquareF(float x, float y, float leg, CRGB color, LedFB *fb);
+    void drawSquareF(float x, float y, float leg, CRGB color, LedFB<CRGB> *fb);
 
 
 

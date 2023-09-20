@@ -329,7 +329,7 @@ private:
     bool isMicActive = false; // признак включенного микрофона
     bool isMicOnState() {return _lampstate ? _lampstate->isMicOn : false;}
 protected:
-    LedFB *fb;          // Framebuffer to work on
+    LedFB<CRGB> *fb;          // Framebuffer to work on
     EFF_ENUM effect;        /**< энумератор эффекта */
     bool isDebug() {return _lampstate ? _lampstate->isDebug : false;}
     bool isRandDemo() {return _lampstate ? _lampstate->isRandDemo : false;}
@@ -374,7 +374,7 @@ protected:
     const String &getCtrlVal(unsigned idx);
 
 public:
-    EffectCalc(LedFB *framebuffer) : fb(framebuffer) {}
+    EffectCalc(LedFB<CRGB> *framebuffer) : fb(framebuffer) {}
 
     /**
      * деструктор по-умолчанию

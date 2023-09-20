@@ -2908,7 +2908,7 @@ bool EffectTime::timePrintRoutine()
 }
 
 // ----------- Эффекты "Пикассо" (c) obliterator
-EffectPicasso::EffectPicasso(LedFB *framebuffer) : EffectCalc(framebuffer){
+EffectPicasso::EffectPicasso(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){
   palettes.add(MBVioletColors_gp, 0, 16); // будет заменен генератором
   palettes.add(MBVioletColors_gp, 0, 16);
 
@@ -3213,7 +3213,7 @@ bool EffectLeapers::run(){
 
 
 // ----------- Эффекты "Лавовая лампа" (c) obliterator
-EffectLiquidLamp::EffectLiquidLamp(LedFB *framebuffer) : EffectCalc(framebuffer) {
+EffectLiquidLamp::EffectLiquidLamp(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer) {
   // эта палитра создана под эффект
   palettes.add(MBVioletColors_gp, 0, 16);
   // палитры частично подогнаные под эффект
@@ -3727,7 +3727,7 @@ String EffectFireworks::setDynCtrl(UIControl*_val) {
   return String();
 }
 /*
-CRGB &Dot::piXY(LedFB *leds, byte x, byte y) {
+CRGB &Dot::piXY(LedFB<CRGB> *leds, byte x, byte y) {
   x -= PIXEL_X_OFFSET;
   y -= PIXEL_Y_OFFSET;
   return leds.at(x,y);
@@ -5091,7 +5091,7 @@ bool EffectSnake::run() {
   return true;
 }
 
-void EffectSnake::Snake::draw(std::vector<CRGB> &colors, int snakenb, bool subpix, LedFB *fb, bool isDebug)
+void EffectSnake::Snake::draw(std::vector<CRGB> &colors, int snakenb, bool subpix, LedFB<CRGB> *fb, bool isDebug)
 {
   int len= isDebug ? 1 : pixels.size();
   for (int i = 0; i < len; i++) // (int)snake_len
@@ -5792,7 +5792,7 @@ bool EffectTLand::run() {
   return true;
 }
 
-void EffectTLand::processFrame(LedFB *fb, double t, double x, double y) {
+void EffectTLand::processFrame(LedFB<CRGB> *fb, double t, double x, double y) {
   double i = (y * fb->w()) + x;
   int16_t frame = constrain(code(i, x, y), -1, 1) * 255;
 
@@ -6675,7 +6675,7 @@ void EffectCircles::load() {
   for (auto &i : circles) reset(i);
 }
 
-void EffectCircles::drawCircle(LedFB *fb, Circle &circle) {
+void EffectCircles::drawCircle(LedFB<CRGB> *fb, Circle &circle) {
   int16_t centerX = circle.centerX;
   int16_t centerY = circle.centerY;
   uint8_t hue = circle.hue;
@@ -6897,7 +6897,7 @@ bool EffectBalls::run() {
 }
 
 // ---------- Эффект-игра "Лабиринт"
-EffectMaze::EffectMaze(LedFB *framebuffer) : EffectCalc(framebuffer),
+EffectMaze::EffectMaze(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer),
   _mwidth(fb->w()%2 ? fb->w() : fb->w()-1),
   _mheight(fb->h()%2 ? fb->h() : fb->h()-1),
   maxSolves(_mwidth*_mheight*5),
@@ -8102,13 +8102,13 @@ bool EffectFire2021::run() {
   return true;
 }
 
-void EffectFire2021::Spark::addXY(float nx, float ny, LedFB *fb) {
+void EffectFire2021::Spark::addXY(float nx, float ny, LedFB<CRGB> *fb) {
   EffectMath::drawPixelXYF(x, y, 0, fb);
   x += nx;
   y += ny * speedy;
 }
 
-void EffectFire2021::Spark::reset(LedFB *fb) {
+void EffectFire2021::Spark::reset(LedFB<CRGB> *fb) {
   uint32_t peak = 0;
   speedy = (float)random(5, 30) / 10;
   y = random((fb->h()/4) * 5, (fb->h() /2) * 5) / 5;
@@ -8121,7 +8121,7 @@ void EffectFire2021::Spark::reset(LedFB *fb) {
   color = fb->at(x, y);
 }
 
-void EffectFire2021::Spark::draw(LedFB *fb) {
+void EffectFire2021::Spark::draw(LedFB<CRGB> *fb) {
   color.fadeLightBy(256 / fb->h());
   EffectMath::drawPixelXYF(x, y, color, fb);
 }
@@ -8551,7 +8551,7 @@ void EffectWcolor::Blot::reset(int w, int h) {
     
 }
 
-void EffectWcolor::Blot::drawing(LedFB *fb) {
+void EffectWcolor::Blot::drawing(LedFB<CRGB> *fb) {
     for (uint8_t i = 0; i < y.size(); i++) {
         byte bright = constrain(bri / fb->h() * (y[i] + fb->h() - y0), 32, 255);
         if (y[i] > -0.1)

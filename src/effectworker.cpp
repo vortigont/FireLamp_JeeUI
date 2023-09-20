@@ -242,7 +242,7 @@ EffectWorker::EffectWorker(LAMPSTATE *_lampstate) : lampstate(_lampstate) {
 void EffectWorker::workerset(uint16_t effect){
   LOG(printf_P,PSTR("Wrkr set: %u\n"), effect);
 
-  LedFB *canvas = display.getCanvas();
+  LedFB<CRGB> *canvas = display.getCanvas();
   if (!canvas) { LOG(println, "E: no canvas buffer!"); return; }
 
   // load effect configuration from a saved file

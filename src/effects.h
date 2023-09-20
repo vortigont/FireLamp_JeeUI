@@ -48,7 +48,7 @@ class EffectNone : public EffectCalc {
 private:
     void load() override { fb->clear(); };
 public:
-    EffectNone(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectNone(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     bool run() override { fb->clear(); return false; };
 };
 
@@ -67,7 +67,7 @@ private:
     bool palleteTest();
     void load() override;
 public:
-    EffectTime(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectTime(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     bool run() override;
 };
 
@@ -84,7 +84,7 @@ private:
 	String setDynCtrl(UIControl*_val) override;
     void load() override;
 public:
-    EffectMetaBalls(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectMetaBalls(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     bool run() override;
 };
 
@@ -105,7 +105,7 @@ private:
 	String setDynCtrl(UIControl*_val) override;
 
 public:
-    EffectSinusoid3(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectSinusoid3(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     bool run() override;
 };
 
@@ -137,7 +137,7 @@ class EffectBBalls : public EffectCalc {
     void load() override;
 	String setDynCtrl(UIControl*_val) override;
 public:
-    EffectBBalls(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectBBalls(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     bool run() override;
 };
 
@@ -152,7 +152,7 @@ private:
 	String setDynCtrl(UIControl*_val) override;
 
 public:
-    EffectLightBalls(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectLightBalls(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     bool run() override;
 };
 
@@ -168,7 +168,7 @@ class EffectPulse : public EffectCalc {
     float speedFactor;
     String setDynCtrl(UIControl*_val) override;
 public:
-    EffectPulse(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectPulse(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     bool run() override;
 };
 
@@ -185,7 +185,7 @@ private:
 	String setDynCtrl(UIControl*_val);
 	
 public:
-    EffectBall(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectBall(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     void load() override;
     bool run() override;
 };
@@ -203,7 +203,7 @@ private:
     bool lighterTracersRoutine();
 
 public:
-    EffectLighterTracers(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectLighterTracers(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     void load() override;
     bool run() override;
     String setDynCtrl(UIControl*_val) override;
@@ -219,7 +219,7 @@ private:
     bool rainbowDiagonalRoutine();
 
 public:
-    EffectRainbow(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectRainbow(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     bool run() override;
 };
 
@@ -233,7 +233,7 @@ private:
     //void setscl(const byte _scl) override;
     String setDynCtrl(UIControl*_val) override;
 public:
-    EffectColors(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectColors(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     void load() override;
     bool run() override;
 };
@@ -245,7 +245,7 @@ private:
     bool whiteColorStripeRoutine();
     String setDynCtrl(UIControl*_val) override;
 public:
-    EffectWhiteColorStripe(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectWhiteColorStripe(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     bool run() override;
 };
 
@@ -256,7 +256,7 @@ private:
     bool sparklesRoutine();
 
 public:
-    EffectSparcles(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectSparcles(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     bool run() override;
     String setDynCtrl(UIControl*_val) override;
 };
@@ -268,7 +268,7 @@ private:
     Vector2D<uint8_t> heat{ Vector2D<uint8_t>(fb->w(),fb->h()) };
 
 public:
-    EffectEverythingFall(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectEverythingFall(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     void load() override;
     bool run() override;
 };
@@ -300,7 +300,7 @@ private:
     uint8_t wrapY(int8_t y){ return (y + fb->h()) % fb->h(); }
 
 public:
-    EffectFire2012(LedFB *framebuffer) : EffectCalc(framebuffer), noise(fb->w(), fb->h()) {}
+    EffectFire2012(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer), noise(fb->w(), fb->h()) {}
     void load() override;
     bool run() override;
 };
@@ -324,7 +324,7 @@ struct Lighter {
 private:
     String setDynCtrl(UIControl*_val) override;
 public:
-    EffectLighters(LedFB *framebuffer) : EffectCalc(framebuffer), lighters(std::vector<Lighter>(10)) {}
+    EffectLighters(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer), lighters(std::vector<Lighter>(10)) {}
     void load() override;
     bool run() override;
 };
@@ -342,7 +342,7 @@ private:
     float _speed{1};
     String setDynCtrl(UIControl*_val) override;
 public:
-    EffectMatrix(LedFB *framebuffer) : EffectLighters(framebuffer){}
+    EffectMatrix(LedFB<CRGB> *framebuffer) : EffectLighters(framebuffer){}
     void load() override;
     bool run() override;
 };
@@ -359,7 +359,7 @@ private:
     String setDynCtrl(UIControl*_val) override;
 
 public:
-    EffectStarFall(LedFB *framebuffer) : EffectLighters(framebuffer){}
+    EffectStarFall(LedFB<CRGB> *framebuffer) : EffectLighters(framebuffer){}
     void load() override;
     bool run() override;
 };
@@ -379,7 +379,7 @@ private:
     Vector2D<uint8_t> noise;
 
 public:
-    Effect3DNoise(LedFB *framebuffer) : EffectCalc(framebuffer), noise(2*fb->w(), fb->h()) {}
+    Effect3DNoise(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer), noise(2*fb->w(), fb->h()) {}
     void load() override;
     bool run() override;
     String setDynCtrl(UIControl*_val) override;
@@ -417,7 +417,7 @@ private:
   String setDynCtrl(UIControl*_val) override;
 
 public:
-    EffectSpiro(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectSpiro(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     void load() override;
     bool run() override;
 };
@@ -432,7 +432,7 @@ private:
     
     String setDynCtrl(UIControl*_val) override;
 public:
-    EffectPrismata(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectPrismata(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     void load() override;
     bool run() override;
 };
@@ -453,7 +453,7 @@ private:
   String setDynCtrl(UIControl*_val) override;
   //void setspd(const byte _spd) override;
 public:
-    EffectFlock(LedFB *framebuffer) : EffectCalc(framebuffer),
+    EffectFlock(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer),
         boids( std::vector<Boid>(AVAILABLE_BOID_COUNT) ) {}
     void load() override;
     bool run() override;
@@ -494,7 +494,7 @@ class EffectComet : public EffectCalc {
     String setDynCtrl(UIControl*_val) override;
 
 public:
-    EffectComet(LedFB *framebuffer) :  EffectCalc(framebuffer), noise3d(COMET_NOISE_LAYERS, framebuffer->w(), framebuffer->h()) {}
+    EffectComet(LedFB<CRGB> *framebuffer) :  EffectCalc(framebuffer), noise3d(COMET_NOISE_LAYERS, framebuffer->w(), framebuffer->h()) {}
     void load() override;
     bool run() override;
 };
@@ -507,7 +507,7 @@ private:
     bool swirlRoutine();
 
 public:
-    EffectSwirl(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectSwirl(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     void load() override;
     bool run() override;
 };
@@ -532,7 +532,7 @@ private:
     int height_adj(){ return (fb->h() < fb->w() ? (fb->w() - fb->h()) /2: 0); };
 
 public:
-    EffectDrift(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectDrift(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     void load() override;
     bool run() override;
 };
@@ -543,13 +543,13 @@ class EffectTwinkles : public EffectCalc {
 private:
   uint8_t thue = 0U;
   uint8_t tnum;
-  PixelDataBuffer ledsbuff;
+  PixelDataBuffer<CRGB> ledsbuff;
   float speedFactor;
   bool twinklesRoutine();
   String setDynCtrl(UIControl*_val) override;
   //void setscl(const byte _scl) override;
 public:
-    EffectTwinkles(LedFB *framebuffer) : EffectCalc(framebuffer), ledsbuff(fb->size()) {}
+    EffectTwinkles(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer), ledsbuff(fb->size()) {}
     void load() override;
     void setup();
     bool run() override { return twinklesRoutine(); };
@@ -564,7 +564,7 @@ private:
   bool wavesRoutine();
   String setDynCtrl(UIControl*_val) override;
 public:
-    EffectWaves(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectWaves(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     void load() override;
     bool run() override;
 };
@@ -587,7 +587,7 @@ private:
     String setDynCtrl(UIControl *_val) override;
 
 public:
-    EffectRadar(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectRadar(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     void load() override;
     bool run() override;
 };
@@ -604,7 +604,7 @@ private:
   String setDynCtrl(UIControl*_val) override;
 
 public:
-    EffectFire2018(LedFB *framebuffer) : 
+    EffectFire2018(LedFB<CRGB> *framebuffer) : 
         EffectCalc(framebuffer),
         fire18heat(std::vector<std::vector<uint8_t>>(framebuffer->h(), std::vector<uint8_t>(framebuffer->w()))),
         noise(FIRE_NUM_LAYERS, framebuffer->w(), framebuffer->h()) { fb->clear(); }
@@ -630,7 +630,7 @@ private:
   bool ringsRoutine();
   String setDynCtrl(UIControl*_val) override;
 public:
-    EffectRingsLock(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectRingsLock(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     void load() override;
     bool run() override;
 };
@@ -654,7 +654,7 @@ private:
   uint8_t gX, gY;
   bool seamlessX = true;
 
-  LedFB ledbuff;        // виртуальй холст
+  LedFB<CRGB> ledbuff;        // виртуальй холст
 
   void swapBuff();
   void cubesize();
@@ -665,7 +665,7 @@ private:
   String setDynCtrl(UIControl*_val) override;
 
 public:
-    EffectCube2d(LedFB *framebuffer) : EffectCalc(framebuffer), sizeX(5), sizeY(5), ledbuff(1,1)  { cubesize(); moveItems = std::vector<int8_t>(direction ? cntX : cntY, 0); }
+    EffectCube2d(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer), sizeX(5), sizeY(5), ledbuff(1,1)  { cubesize(); moveItems = std::vector<int8_t>(direction ? cntX : cntY, 0); }
     void load() override;
     bool run() override;
 };
@@ -694,7 +694,7 @@ private:
     bool metaBallsRoutine();
     GradientPaletteList palettes;
 public:
-    EffectPicasso(LedFB *framebuffer);
+    EffectPicasso(LedFB<CRGB> *framebuffer);
     virtual ~EffectPicasso(){}
     bool run() override;
     String setDynCtrl(UIControl*_val) override;
@@ -720,7 +720,7 @@ private:
     void move_leaper(Leaper &l);
 	String setDynCtrl(UIControl*_val) override;
 public:
-    EffectLeapers(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectLeapers(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
 	void load() override;
     bool run() override;
 
@@ -763,7 +763,7 @@ class EffectLiquidLamp : public EffectCalc {
     bool routine();
 
 public:
-    EffectLiquidLamp(LedFB *framebuffer);
+    EffectLiquidLamp(LedFB<CRGB> *framebuffer);
     virtual ~EffectLiquidLamp() { delete buff; delete buff2; };
     void load() override { generate(true); };
     bool run() override {return routine();};
@@ -790,7 +790,7 @@ private:
     bool whirlRoutine();
     String setDynCtrl(UIControl*_val) override;
 public:
-    EffectWhirl(LedFB *framebuffer) : EffectCalc(framebuffer), boids( std::vector<Boid>(AVAILABLE_BOID_COUNT) ) {}
+    EffectWhirl(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer), boids( std::vector<Boid>(AVAILABLE_BOID_COUNT) ) {}
     void load() override;
     bool run() override;
 };
@@ -827,7 +827,7 @@ struct Drop{
     void fillNoiseLED();
 
 public:
-    EffectAquarium(LedFB *framebuffer) : EffectCalc(framebuffer),
+    EffectAquarium(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer),
         noise(framebuffer->w(), framebuffer->h()),
         drops(std::vector<Drop>((fb->h() + fb->w()) / 6)) {}
 
@@ -865,7 +865,7 @@ private:
 	String setDynCtrl(UIControl*_val) override;
 
 public:
-    EffectStar(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectStar(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     void load() override;
     bool run() override;
 };
@@ -928,7 +928,7 @@ class EffectFireworks : public EffectCalc {
     void _screenscale(accum88 a, byte N, byte &screen, byte &screenerr);
 
 public:
-    EffectFireworks(LedFB *framebuffer) : EffectCalc(framebuffer), gDot(std::vector<Dot>(MIN_RCKTS)), gSparks(std::vector<Dot>(NUM_SPARKS)) {}
+    EffectFireworks(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer), gDot(std::vector<Dot>(MIN_RCKTS)), gSparks(std::vector<Dot>(NUM_SPARKS)) {}
     //void load() override;
     bool run() override;
 };
@@ -948,7 +948,7 @@ private:
 	String setDynCtrl(UIControl*_val) override;
 
 public:
-    EffectPacific(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectPacific(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     //void load() override;
     bool run() override;
 };
@@ -971,7 +971,7 @@ private:
     
 
 public:
-    EffectOsc(LedFB *framebuffer) : EffectCalc(framebuffer), oscHV(fb->w()), oscilLimit(fb->h()) {}
+    EffectOsc(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer), oscHV(fb->w()), oscilLimit(fb->h()) {}
     bool run() override;
 };
 #endif
@@ -993,7 +993,7 @@ private:
     bool munchRoutine();
 
 public:
-    EffectMunch(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectMunch(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     void load() override;
     bool run() override;
 };
@@ -1012,7 +1012,7 @@ private:
 	String setDynCtrl(UIControl*_val) override;
 
 public:
-    EffectNoise(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectNoise(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     void load() override;
     bool run() override;
 };
@@ -1041,7 +1041,7 @@ private:
 	String setDynCtrl(UIControl*_val) override;
 
 public:
-    EffectButterfly(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectButterfly(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     void load() override;
     bool run() override;
 };
@@ -1057,7 +1057,7 @@ private:
     String setDynCtrl(UIControl*_val) override;
 
 public:
-    EffectShadows(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectShadows(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     bool run() override;
 };
 
@@ -1077,7 +1077,7 @@ private:
     byte csum = 0;
     byte _bri = 255U;
     std::vector< std::vector<uint8_t> > buff{ std::vector< std::vector<uint8_t> >(PATTERNS_BUFFSIZE, std::vector<uint8_t>(PATTERNS_BUFFSIZE)) };
-    //LedFB buff(PATTERNS_BUFFSIZE, PATTERNS_BUFFSIZE);
+    //LedFB<CRGB> buff(PATTERNS_BUFFSIZE, PATTERNS_BUFFSIZE);
     float xsin, ysin;
     unsigned long lastrun2;
     byte _sc = 0;
@@ -1103,7 +1103,7 @@ private:
     bool patternsRoutine();
 
 public:
-    EffectPatterns(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectPatterns(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     void load() override;
     bool run() override;
 };
@@ -1135,7 +1135,7 @@ private:
 
     String setDynCtrl(UIControl*_val) override;
 public:
-    EffectArrows(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectArrows(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     void load() override;
     bool run() override;
 };
@@ -1156,7 +1156,7 @@ private:
     String setDynCtrl(UIControl*_val) override;
 
 public:
-    EffectNBals(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectNBals(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     bool run() override;
 };
 
@@ -1182,7 +1182,7 @@ private:
     String setDynCtrl(UIControl*_val) override;
 
 public:
-    EffectAttract(LedFB *framebuffer) : EffectCalc(framebuffer) {
+    EffectAttract(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer) {
         boids.assign(fb->h() *2 - fb->w() /2, Boid());
         location = PVector(spirocenterX, spirocenterY);
     }
@@ -1226,14 +1226,14 @@ private:
         void shuffleDown(float speedy, bool subpix);
         void reset();
         void move(float speedy, uint16_t w,  uint16_t h);
-        void draw(std::vector<CRGB> &colors, int snakenb, bool subpix, LedFB *fb, bool isDebug=false);
+        void draw(std::vector<CRGB> &colors, int snakenb, bool subpix, LedFB<CRGB> *fb, bool isDebug=false);
     };
 
     std::vector<Snake> snakes{ std::vector<Snake>(2, Snake(snake_len)) };
     String setDynCtrl(UIControl*_val) override;
     void reset();
 public:
-    EffectSnake(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectSnake(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     void load() override;
     bool run() override;
 };
@@ -1264,7 +1264,7 @@ class EffectNexus: public EffectCalc {
     String setDynCtrl(UIControl*_val) override;
 
   public:
-    EffectNexus(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectNexus(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     bool run() override;
     void load() override;
 };
@@ -1290,7 +1290,7 @@ class EffectSnakeIsland : public EffectCalc {
     void regen();
 
 public:
-    EffectSnakeIsland(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectSnakeIsland(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     void load() override;
     bool run() override;
 };
@@ -1322,7 +1322,7 @@ private:
     //void setscl(const byte _scl) override; // перегрузка для масштаба
 
 public:
-    EffectPopcorn(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectPopcorn(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     void load() override;
     bool run() override;
 };
@@ -1346,7 +1346,7 @@ class EffectSmokeballs: public EffectCalc {
     void regen();
     String setDynCtrl(UIControl*_val) override;
   public:
-    EffectSmokeballs(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectSmokeballs(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     void load() override;
     bool run() override;
 };
@@ -1378,7 +1378,7 @@ class EffectCell: public EffectCalc {
     int height_adj(){ return (fb->h() < fb->w() ? (fb->w() - fb->h()) /2: 0); };
 
   public:
-    EffectCell(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectCell(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     bool run() override;
     String setDynCtrl(UIControl*_val) override;
 };
@@ -1396,11 +1396,11 @@ class EffectTLand: public EffectCalc {
     byte shift = 0;
     byte fine = 1;
     double t;
-    void processFrame(LedFB *fb, double t, double x, double y);
+    void processFrame(LedFB<CRGB> *fb, double t, double x, double y);
     float code(double i, double x, double y);
     String setDynCtrl(UIControl*_val);
   public:
-    EffectTLand(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectTLand(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     bool run() override;
 };
 
@@ -1428,7 +1428,7 @@ class EffectOscilator: public EffectCalc {
     void setCellColors(uint8_t x, uint8_t y);
     //String setDynCtrl(UIControl*_val) override;
   public:
-    EffectOscilator(LedFB *framebuffer) : EffectCalc(framebuffer) {}
+    EffectOscilator(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer) {}
     bool run() override;
     void load() override;
 };
@@ -1468,7 +1468,7 @@ class EffectWrain: public EffectCalc {
     void Clouds(bool flash);
 
   public:
-    EffectWrain(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectWrain(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     bool run() override;
     void load() override;
 };
@@ -1519,7 +1519,7 @@ struct TObject {
     String setDynCtrl(UIControl*_val) override;
 
 public:
-    EffectFairy(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectFairy(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     void load() override;
     bool run() override;
 };
@@ -1557,11 +1557,11 @@ private:
         c.hue = random(0, 255);
     }
 
-    void drawCircle(LedFB *fb, Circle &circle);
+    void drawCircle(LedFB<CRGB> *fb, Circle &circle);
     String setDynCtrl(UIControl*_val) override;
 
 public:
-    EffectCircles(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectCircles(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     void load() override;
     bool run() override;
 
@@ -1595,7 +1595,7 @@ class EffectBengalL : public EffectCalc {
 
 
 public:
-    EffectBengalL(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectBengalL(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     void load() override;
     bool run() override;
 };
@@ -1621,7 +1621,7 @@ private:
     void reset();
 
 public:
-    EffectBalls(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectBalls(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     void load() override;
     bool run() override;
 };
@@ -1663,7 +1663,7 @@ private:
     String setDynCtrl(UIControl*_val) override;
     //void setspd(const byte _spd) override; // перегрузка для скорости
 public:
-    EffectMaze(LedFB *framebuffer);
+    EffectMaze(LedFB<CRGB> *framebuffer);
     bool run() override;
 
 }; 
@@ -1677,7 +1677,7 @@ private:
     //String setDynCtrl(UIControl*_val) override;
 
 public:
-    EffectFrizzles(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectFrizzles(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     //void load() override;
     bool run() override;
 };
@@ -1703,7 +1703,7 @@ private:
     void palettesload() override;
 
 public:
-    EffectPolarL(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectPolarL(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     void load() override;
     bool run() override;
 };
@@ -1734,7 +1734,7 @@ private:
     String setDynCtrl(UIControl*_val) override;
 
 public:
-    EffectRacer(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectRacer(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     void load() override;
     bool run() override;
 };
@@ -1771,7 +1771,7 @@ private:
     String setDynCtrl(UIControl*_val) override;
 
 public:
-    EffectMagma(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectMagma(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     void load() override;
     bool run() override;
 };
@@ -1818,7 +1818,7 @@ private:
     String setDynCtrl(UIControl*_val) override;
 
 public:
-    EffectFlags(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectFlags(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     //void load () override;
     bool run() override;
 };
@@ -1844,7 +1844,7 @@ private:
     String setDynCtrl(UIControl*_val) override;
 
 public:
-    EffectStarShips(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectStarShips(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     bool run() override;
     void load() override;
 };
@@ -1897,7 +1897,7 @@ private:
     void waterfall(uint8_t band, uint8_t barHeight);
 
 public:
-    EffectVU(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectVU(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     ~EffectVU(){ delete mw; }
     bool run() override;
     void load() override;
@@ -1927,13 +1927,13 @@ private:
         float x, y, speedy = 1;
     
     public:
-        void addXY(float nx, float ny, LedFB *fb);
+        void addXY(float nx, float ny, LedFB<CRGB> *fb);
 
         float getY() { return y; }
 
-        void reset(LedFB *fb);
+        void reset(LedFB<CRGB> *fb);
 
-        void draw(LedFB *fb);
+        void draw(LedFB<CRGB> *fb);
     }; 
 
     std::vector<Spark> sparks{std::vector<Spark>(sparksCount, Spark())};
@@ -1942,7 +1942,7 @@ private:
     void palettesload() override;
 
 public:
-    EffectFire2021(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectFire2021(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     void load() override;
     bool run() override;
 };
@@ -1971,7 +1971,7 @@ private:
     String setDynCtrl(UIControl*_val) override;
 
 public:
-    EffectPuzzles(LedFB *framebuffer) : EffectCalc(framebuffer){ regen(); }
+    EffectPuzzles(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){ regen(); }
     void load() override;
     bool run() override;
 };
@@ -1986,7 +1986,7 @@ private:
     String setDynCtrl(UIControl*_val) override;
 
 public:
-    EffectPile(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectPile(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     void load() override;
     bool run() override;
 };
@@ -2008,7 +2008,7 @@ private:
     String setDynCtrl(UIControl*_val) override;
 
 public:
-    EffectDNA(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectDNA(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     //void load() override;
     bool run() override;
 };
@@ -2025,7 +2025,7 @@ private:
     String setDynCtrl(UIControl*_val) override;
 
 public:
-    EffectSmoker(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectSmoker(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
 
     bool run() override;
 };
@@ -2048,7 +2048,7 @@ private:
     void blur();
 
 public:
-    EffectMirage(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectMirage(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     bool run() override;
 };
 
@@ -2080,7 +2080,7 @@ private:
         
         void reset(int w, int h);
         double getY();
-        void drawing(LedFB *fb);
+        void drawing(LedFB<CRGB> *fb);
     };
 
 
@@ -2089,7 +2089,7 @@ private:
     String setDynCtrl(UIControl*_val) override;
 
 public:
-    EffectWcolor(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectWcolor(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     void load() override;
     bool run() override;
 };
@@ -2110,7 +2110,7 @@ private:
     void palettesload() override;
 
 public:
-    EffectRadialFire(LedFB *framebuffer) : EffectCalc(framebuffer) {}
+    EffectRadialFire(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer) {}
     void load() override;
     bool run() override;
 };
@@ -2139,7 +2139,7 @@ private:
     String setDynCtrl(UIControl*_val) override;
 
 public:
-    EffectSplashBals(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectSplashBals(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     void load() override;
     bool run() override;
 };
@@ -2147,7 +2147,7 @@ public:
 /* Настроечная мира */
 class EffectMira : public EffectCalc {
 public:
-    EffectMira(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectMira(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     void load() override;
     bool run() override { return false; };
 };
@@ -2161,6 +2161,6 @@ class EffectFlower : public EffectCalc {
         const float ROWS_HALF = fb->h() * .5;
         int16_t ZVcalcDist(uint8_t x, uint8_t y, float center_x, float center_y);
 	public:
-    EffectFlower(LedFB *framebuffer) : EffectCalc(framebuffer){}
+    EffectFlower(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
         bool run() override;
 };

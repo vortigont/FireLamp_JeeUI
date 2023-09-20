@@ -47,7 +47,7 @@ A header file for LED output devices, backends and buffers
 /* a backward compatible wrappers for accessing LedMatrix obj instance,
 should be removed once other code refactoring is complete
 */
-extern LedStripe *mx;
+extern LedFB<CRGB> *mx;
 
 // My LED engine controller
 //template<EOrder RGB_ORDER = RGB>
@@ -55,20 +55,19 @@ class LEDDisplay {
 
     int _gpio{-1};
     int _w{16}, _h{16};
-    bool _sn, _vrt, _vm, _hm;
+//    bool _sn, _vrt, _vm, _hm;
 
     // An object ref I'll use to access LED device
     ESP32RMTOverlayEngine<COLOR_ORDER> *_oengine = nullptr;
 
     // LED stripe matrix with a desired topology and layout  
-    LedStripe *_canvas = nullptr;
+    LedFB<CRGB> *_canvas = nullptr;
 
-    std::weak_ptr<LedStripe> _ovr;    // overlay buffer
+    std::weak_ptr< LedFB<CRGB> > _ovr;    // overlay buffer
+
+    LedStripe stripe;             // out stripe with a specific layout
 
     bool _start_rmt();
-
-    void _set_layout(bool snake, bool vert, bool vmirr, bool hmirr);
-    void _apply_layout();
 
 public:
     bool start();
@@ -77,7 +76,7 @@ public:
 
     void canvasProtect(bool v){ if (_oengine) _oengine->canvasProtect(v); };
 
-    LedStripe* getCanvas() { return _canvas; }
+    LedFB<CRGB>* getCanvas() { return _canvas; }
 
     /**
      * @brief Get a pointer to Overlay buffer
@@ -85,7 +84,7 @@ public:
      * 
      * @return std::shared_ptr<LedStripe> 
      */
-    std::shared_ptr<LedStripe> getOverlay();
+    std::shared_ptr< LedFB<CRGB> > getOverlay();
 
     // draw data to display
     void show(){ if (_oengine) _oengine->show(); };
