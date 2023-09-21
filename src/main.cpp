@@ -38,7 +38,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "filehelpers.hpp"
 //#include <SPIFFSEditor.h>
 #include "lamp.h"
-#include "ledfb.hpp"
+#include "display.hpp"
 
 #ifdef DS18B20
 #include "DS18B20.h"
@@ -134,7 +134,7 @@ void setup() {
     // configure and init attached devices
     gpio_setup();
     // restore matrix configuration from file and create a proper LED buffer
-    led_fb_setup();
+    display.start();
 /*
 #ifdef ESP8266
   embui.server.addHandler(new SPIFFSEditor("esp8266"),"esp8266"), LittleFS));
@@ -321,12 +321,6 @@ void gpio_setup(){
     embuifs::deserializeFile(doc, TCONST_fcfg_gpio);
     int rxpin, txpin;
 
-    // LED Strip setup
-    if (doc[TCONST_mx_gpio]){
-        // create new led strip object using our configured pin
-        display = new OverlayEngine(doc[TCONST_mx_gpio].as<int>());
-    }
-
 #ifdef MP3PLAYER
     // spawn an instance of mp3player
     rxpin = doc[TCONST_mp3rx] | -1;
@@ -366,25 +360,33 @@ bool http_notfound(AsyncWebServerRequest *request){
     // not our case, no action was made
     return false;
 }
-
+/*
 void led_fb_setup(){
     DynamicJsonDocument doc(256);
     embuifs::deserializeFile(doc, TCONST_fcfg_ledstrip);
     JsonObject o = doc.as<JsonObject>();
 
-    Mtrx_cfg cfg(
-        o[TCONST_width] | 16,   // in case deserialization has failed, I create a default 16x16 buffer 
-        o[TCONST_height] | 16,
-        o[TCONST_snake],
-        o[TCONST_vertical],
-        o[TCONST_vflip],
-        o[TCONST_hflip]
-    );
-    LOG(printf, "LED cfg: w,h:(%d,%d) snake:%d, vert:%d, vflip:%d, hflip:%d\n", cfg.w(), cfg.h(), cfg.snake(), cfg.vertical(), cfg.vmirror(), cfg.hmirror());
+    // in case if deserialization has failed, I create a default 16x16 buffer 
+    int w{o[TCONST_width] | 16}, h{o[TCONST_height] | 16};
 
-    display->makeCanvas(cfg);
+    // create LED data buffer
+    auto data_buffer = std::make_shared<CLedCDB>(CLedCDB(w*h));
 
-    // replace the buffer for lamp object (for compatibility)
-    //myLamp.setLEDbuffer(display->getCanvas());
-    mx = display->getCanvas();
+    // attach buffer to dispplay
+    if (display) { display->attachCanvas(data_buffer); }
+
+    // attach buffer to an object that will perform matrix layout trasformation on buffer access
+    canvas = new LedStripe(w, h, data_buffer);
+
+    // apply our layout and topology parameters
+    stripe_canvas->snake(o[TCONST_snake]);
+    stripe_canvas->vertical(o[TCONST_vertical]);
+    stripe_canvas->vmirror(o[TCONST_vflip]);
+    stripe_canvas->hmirror(o[TCONST_hflip]);
+
+    LOG(printf, "LED cfg: w,h:(%d,%d) snake:%d, vert:%d, vflip:%d, hflip:%d\n", w, h, stripe_canvas->snake(), stripe_canvas->vertical(), stripe_canvas->vmirror(), stripe_canvas->hmirror());
+
+    // compatibility stub
+    mx = stripe_canvas;
 }
+*/

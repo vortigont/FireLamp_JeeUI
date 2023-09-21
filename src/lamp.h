@@ -191,7 +191,7 @@ class LAMP {
     friend class LEDFader;
     friend class ALARMTASK;        // будильник ходит сюда за MOSFET и AUX пином, todo: переписать будильник целиком
 private:
-    std::shared_ptr<LedFB> _overlay;     // буфер для оверлея
+    std::shared_ptr<LedFB<CRGB> > _overlay;     // буфер для оверлея
 #if defined(USE_STREAMING) && defined(EXT_STREAM_BUFFER)
     //std::vector<CRGB> streambuff;  // буфер для трансляции
 #endif
@@ -282,7 +282,7 @@ private:
      * @brief effectiveley wipes LedBuffers and fills LED Strip with Black
      * 
      */
-    void _wipe_screen();
+    //void _wipe_screen();
 
 public:
     // c-tor
@@ -295,7 +295,7 @@ public:
     void lamp_init();       // первичная инициализация Лампы
 
     // wipe all screen buffers to black
-    void reset_led_buffs();
+    //void reset_led_buffs();
 
 
     /**
