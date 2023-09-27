@@ -42,13 +42,20 @@ An object file for LED output devices, backends and buffers
 #include "display.hpp"
 #include "embuifs.hpp"
 #include "char_const.h"
+#include "hub75.h"
+#include "ESP32-HUB75-MatrixPanel-I2S-DMA.h"
 
 // compatibility LED buffer object reference
 LedFB<CRGB> *mx = nullptr;
 
 //template<EOrder RGB_ORDER>
-bool LEDDisplay::start(){
-    if (_oengine) return true;   // RMT already running
+bool LEDDisplay::start(engine_t e){
+    if (_oengine) return true;   // Overlay engine already running
+
+    // a shortcut for hub75 testing
+    if (e == engine_t::hub75){
+        return _start_hub75();
+    }
 
     DynamicJsonDocument doc(512);
     embuifs::deserializeFile(doc, TCONST_fcfg_gpio);
@@ -80,26 +87,50 @@ bool LEDDisplay::_start_rmt(){
     if (_gpio == -1) return false;      // won't run on disabled pin
 
     // create new led strip object using our configured pin
-    _oengine = new ESP32RMTOverlayEngine<COLOR_ORDER>(_gpio);
+    _oengine = new ESP32RMTOverlayEngine<COLOR_ORDER>(_gpio, _w*_h);
 
     // create CLED data buffer
-    auto data_buffer = std::make_shared<CLedCDB>(CLedCDB(_w*_h));
+    //auto data_buffer = std::make_shared<CLedCDB>(CLedCDB(_w*_h));
 
-    // attach buffer to dispplay
+    /* attach buffer to dispplay
     if (_oengine)
         _oengine->attachCanvas(data_buffer);
     else
         return false;
-
+    */
     // attach buffer to an object that will perform matrix layout trasformation on buffer access
     if (!_canvas){
-        _canvas = new LedFB<CRGB>(_w, _h, data_buffer);
+        _canvas = new LedFB<CRGB>(_w, _h, _oengine->getCanvas());
         auto callback = [this](unsigned w, unsigned h, unsigned x, unsigned y) -> size_t { return this->stripe.transpose(w, h, x, y); };
         _canvas->setRemapFunction(callback);
     }
 
     //LOG(printf, "LED cfg: w,h:(%d,%d) snake:%d, vert:%d, vflip:%d, hflip:%d\n", _w, _h, _sn, _vrt, _vm, _hm);
 
+    // compatibility stub
+    mx = _canvas;
+    return true;
+}
+
+bool LEDDisplay::_start_hub75(){
+    _w = 64; _h = 32;
+    HUB75_I2S_CFG::i2s_pins _pins={R1, G1, BL1, R2, G2, BL2, CH_A, CH_B, CH_C, CH_D, CH_E, LAT, OE, CLK};
+    HUB75_I2S_CFG mxconfig(
+                        64,     // width
+                        32,     // height
+                        1,      // chain length
+                        _pins   // pin mapping
+                        //HUB75_I2S_CFG::FM6126A      // driver chip
+    );
+
+    _oengine = new ESP32HUB75_OverlayEngine(mxconfig);
+
+    // attach buffer to an object that will perform matrix layout trasformation on buffer access
+    if (!_canvas){
+        _canvas = new LedFB<CRGB>(_w, _h, _oengine->getCanvas());
+        // this is a simple flat matrix so I use default 2D transformation
+
+    }
     // compatibility stub
     mx = _canvas;
     return true;
@@ -112,9 +143,11 @@ std::shared_ptr< LedFB<CRGB> > LEDDisplay::getOverlay(){
         // no overlay exist at the moment, let's create one
         instance = std::make_shared< LedFB<CRGB> >(LedFB<CRGB>(_w, _h, _oengine->getOverlay()));
 
-        // set topology
-        auto callback = [this](unsigned w, unsigned h, unsigned x, unsigned y) -> size_t { return this->stripe.transpose(w, h, x, y); };
-        instance->setRemapFunction(callback);
+        if (_engine == engine_t::ws2812){
+            // set topology
+            auto callback = [this](unsigned w, unsigned h, unsigned x, unsigned y) -> size_t { return this->stripe.transpose(w, h, x, y); };
+            instance->setRemapFunction(callback);
+        }
 
         // add instance watcher
         _ovr = instance;
@@ -123,6 +156,8 @@ std::shared_ptr< LedFB<CRGB> > LEDDisplay::getOverlay(){
 }
 
 void LEDDisplay::updateTopo(int w, int h, bool snake, bool vert, bool vmirr, bool hmirr){
+    if (_engine == engine_t::hub75) return;   // no resize for HUB75 driver
+
     if (w != _w || _h != h){
         _w = w; _h = h;
         _oengine->clear();

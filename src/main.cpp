@@ -134,7 +134,11 @@ void setup() {
     // configure and init attached devices
     gpio_setup();
     // restore matrix configuration from file and create a proper LED buffer
-    display.start();
+#ifdef EXPERIMENTAL_HUB75
+    display.start(engine_t::hub75);
+#else
+    display.start(engine_t::ws2812);
+#endif
 /*
 #ifdef ESP8266
   embui.server.addHandler(new SPIFFSEditor("esp8266"),"esp8266"), LittleFS));

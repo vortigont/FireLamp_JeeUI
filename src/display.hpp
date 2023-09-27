@@ -49,16 +49,21 @@ should be removed once other code refactoring is complete
 */
 extern LedFB<CRGB> *mx;
 
+enum class engine_t:uint8_t  {
+    ws2812 = 0,
+    hub75
+};
+
 // My LED engine controller
 //template<EOrder RGB_ORDER = RGB>
 class LEDDisplay {
 
+    engine_t _engine; // type of backend to use
     int _gpio{-1};
     int _w{16}, _h{16};
-//    bool _sn, _vrt, _vm, _hm;
 
     // An object ref I'll use to access LED device
-    ESP32RMTOverlayEngine<COLOR_ORDER> *_oengine = nullptr;
+    OverlayEngine *_oengine = nullptr;
 
     // LED stripe matrix with a desired topology and layout  
     LedFB<CRGB> *_canvas = nullptr;
@@ -68,9 +73,10 @@ class LEDDisplay {
     LedStripe stripe;             // out stripe with a specific layout
 
     bool _start_rmt();
+    bool _start_hub75();
 
 public:
-    bool start();
+    bool start(engine_t e);
 
     void updateTopo(int w, int h, bool snake, bool vert, bool vmirr, bool hmirr);
 
