@@ -106,6 +106,7 @@ private:
 
 public:
     EffectSinusoid3(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
+    void load() override { fb->clear(); }; 
     bool run() override;
 };
 
