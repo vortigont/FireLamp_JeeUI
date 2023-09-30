@@ -58,19 +58,22 @@ enum class engine_t:uint8_t  {
 //template<EOrder RGB_ORDER = RGB>
 class LEDDisplay {
 
-    engine_t _engine; // type of backend to use
-    int _gpio{-1};
-    int _w{16}, _h{16};
+    engine_t _etype;        // type of backend to use
+    int _gpio{-1};          // fastled gpio
+    int _w{16}, _h{16};     // display dimensions
+    uint8_t _brt{128};      // backend engine brightness, if supported
 
     // An object ref I'll use to access LED device
-    OverlayEngine *_oengine = nullptr;
+    DisplayEngine *_dengine = nullptr;
 
     // LED stripe matrix with a desired topology and layout  
     LedFB<CRGB> *_canvas = nullptr;
 
-    std::weak_ptr< LedFB<CRGB> > _ovr;    // overlay buffer
+    // overlay buffer
+    std::weak_ptr< LedFB<CRGB> > _ovr;
 
-    LedStripe stripe;             // out stripe with a specific layout
+    // Addresable led strip topology transformation object
+    LedStripe stripe;
 
     bool _start_rmt();
     bool _start_hub75();
@@ -80,7 +83,7 @@ public:
 
     void updateTopo(int w, int h, bool snake, bool vert, bool vmirr, bool hmirr);
 
-    void canvasProtect(bool v){ if (_oengine) _oengine->canvasProtect(v); };
+    void canvasProtect(bool v){ if (_dengine) _dengine->canvasProtect(v); };
 
     LedFB<CRGB>* getCanvas() { return _canvas; }
 
@@ -93,11 +96,16 @@ public:
     std::shared_ptr< LedFB<CRGB> > getOverlay();
 
     // draw data to display
-    void show(){ if (_oengine) _oengine->show(); };
+    void show(){ if (_dengine) _dengine->show(); };
 
     // Wipe all layers and buffers
-    void clear(){ if (_oengine) _oengine->clear(); };
+    void clear(){ if (_dengine) _dengine->clear(); };
 
+    // backend brightness control
+    uint8_t brightness(uint8_t brt);
+
+    // get current backend brightness, if supported by backend, otherwise returns stored brightness
+    uint8_t brightness();
 };
 
 extern LEDDisplay display;

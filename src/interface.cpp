@@ -3423,5 +3423,5 @@ void set_ledstrip(Interface *interf, JsonObject *data){
                         (*data)[TCONST_vflip],
                         (*data)[TCONST_hflip]
                         );
-    LOG(printf, "resize LED buffer to w,h:(%d,%d)\n", mx->w(), mx->h());
+    LOG(printf, "resize LED buffer to w,h:(%d,%d)\n", (*data)[TCONST_width], (*data)[TCONST_height]);
 }

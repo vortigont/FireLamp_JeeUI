@@ -242,13 +242,13 @@ private:
     Task *tmqtt_pub = nullptr;   // динамический планировщик публикации через mqtt
 
     /**
-     * @brief set brightness value to FastLED backend
-     * method uses curve mapping to the aplied value by default
+     * @brief set brightness value to Display backend
+     * method uses curve mapping to the applied value by default
      * 
      * @param _brt - brighntess value
      * @param absolute - if true, than do not apply curve mapping
      */
-    void _brightness(uint8_t brt, bool absolute=false);     // низкоуровневая крутилка глобальной яркостью (для других публичных методов)
+    void _brightness(uint8_t brt, bool absolute=false);
 
     /**
      * @brief get actual matrix led brightness
@@ -427,7 +427,7 @@ public:
     bool getFaderFlag() {return flags.isFaderON;}
     void setClearingFlag(bool flag) {flags.isEffClearing = flag;}
     bool getClearingFlag() {return flags.isEffClearing;}
-    void disableEffectsUntilText() {lampState.isEffectsDisabledUntilText = true; FastLED.clear();}
+    void disableEffectsUntilText() {lampState.isEffectsDisabledUntilText = true; display.clear();}
     void setOffAfterText() {lampState.isOffAfterText = true;}
     void setIsEventsHandled(bool flag) {flags.isEventsHandled = flag;}
     bool IsEventsHandled() {return flags.isEventsHandled;} // LOG(printf_P,PSTR("flags.isEventsHandled=%d\n"), flags.isEventsHandled);
@@ -626,8 +626,8 @@ public:
     void setLamp(LAMP *l){ if(l) lmp = l;}
 
     /**
-     * @brief - Non-blocking light fader, uses scheduler to globaly fade FastLED brighness within specified duration
-     * @param uint8_t _targetbrightness - end value for the brighness to fade to. FastLED dim8 function applied internaly for natural dimming
+     * @brief - Non-blocking light fader, uses scheduler to globaly fade display brightness within specified duration
+     * @param uint8_t _targetbrightness - end value for the brighness to fade to
      * @param uint32_t _duration - fade effect duraion, ms
      * @param callback  -  callback-функция, которая будет выполнена после окончания затухания
      */
