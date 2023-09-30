@@ -97,6 +97,7 @@ bool LEDDisplay::_start_rmt(){
         _canvas->setRemapFunction(callback);
     }
 
+    brightness(_brt);   // reset FastLED brightness level
     LOG(printf, "RMT LED cfg: w,h:(%d,%d) snake:%d, vert:%d, vflip:%d, hflip:%d\n", _w, _h, stripe.snake(), stripe.vertical(), stripe.vmirror(), stripe.hmirror());
 
     // compatibility stub
@@ -123,6 +124,9 @@ bool LEDDisplay::_start_hub75(){
         // this is a simple flat matrix so I use default 2D transformation
 
     }
+
+    brightness(_brt);   // reset brightness level
+
     // compatibility stub
     mx = _canvas;
     return true;

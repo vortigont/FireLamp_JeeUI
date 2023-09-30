@@ -61,7 +61,7 @@ class LEDDisplay {
     engine_t _etype;        // type of backend to use
     int _gpio{-1};          // fastled gpio
     int _w{16}, _h{16};     // display dimensions
-    uint8_t _brt{128};      // backend engine brightness, if supported
+    uint8_t _brt{32};       // backend engine brightness, if supported
 
     // An object ref I'll use to access LED device
     DisplayEngine *_dengine = nullptr;

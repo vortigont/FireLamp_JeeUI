@@ -2437,7 +2437,7 @@ String EffectCube2d::setDynCtrl(UIControl*_val)
 
 void EffectCube2d::load(){
   palettesload();    // подгружаем дефолтные палитры
-  cubesize();
+  //cubesize();
 }
 
 // задаем размерность кубов
@@ -2454,16 +2454,16 @@ void EffectCube2d::cubesize() {
   cntX = fb->w() / (sizeX+1) + !!(fb->w() / (sizeX+1));
 	fieldX = (sizeX + 1U) * cntX;
 
-  ledbuff.resize(fieldX, fieldY);   // создаем виртуальную матрицу, размером кратную размеру кубика+1
+  bool res = ledbuff.resize(fieldX, fieldY);   // создаем виртуальную матрицу, размером кратную размеру кубика+1
 
-  //LOG(printf_P, PSTR("CUBE2D Size: scX=%d, scY=%d, scaleY=%d, cntX=%d, cntY=%d\n"), cubeScaleX, cubeScaleY, scaleY, cntX, cntY);
+  //LOG(printf_P, PSTR("CUBE2D Size: lfb_size:%d sizeX,Y:%d,%d cntX,Y:%d,%d fieldX,Y:%d,%d\n"), ledbuff.size(), sizeX,sizeY, cntX,cntY, fieldX,fieldY );
   uint8_t x=0, y = 0;
   CRGB color;
 
-  for (uint8_t j = 0U; j < cntY; j++)
+  for (uint8_t j = 0U; j < cntY; j++) //cntY
   {
     y = j * (sizeY + 1U);
-    for (uint8_t i = 0U; i < cntX; i++)
+    for (uint8_t i = 0U; i < cntX; i++) //cntX
     {
       x = i * (sizeX + 1U);
       if (scale == FASTLED_PALETTS_COUNT + 1U)
@@ -2476,13 +2476,15 @@ void EffectCube2d::cubesize() {
         }
       }
 
-      for (uint8_t k = 0U; k < sizeY; k++){
-        for (uint8_t m = 0U; m < sizeX; m++){
+      //LOG(printf_P, PSTR("CUBE2D Rect: x,y:%d,%d sX,sY:%d,%d\n"), x,y, sizeX, sizeY);
+      for (uint8_t k = 0U; k < sizeY; ++k){
+        for (uint8_t m = 0U; m < sizeX; ++m){
           ledbuff.at(x+m, y+k) = color;
         }
       }
     }
   }
+
   if (classic) {
     storage.assign(fb->w(), std::vector<uint8_t>(fb->h()) );    // todo: get rid of this
     currentStep = 4U; // текущий шаг сдвига первоначально с перебором (от 0 до shiftSteps-1)
