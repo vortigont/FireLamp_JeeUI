@@ -1057,7 +1057,7 @@ void EffectBBalls::load(){
 // !++ (разобраться отдельно)
 String EffectBBalls::setDynCtrl(UIControl*_val){
   if(_val->getId()==1) _speed = (1550 - EffectCalc::setDynCtrl(_val).toInt() * 3);
-  else if(_val->getId()==3) { _scale = EffectCalc::setDynCtrl(_val).toInt(); load(); }
+  else if(_val->getId()==3) { _scale = EffectCalc::setDynCtrl(_val).toInt(); if (_scale >= fb->w()) _scale = fb->w()-1; load(); }   // number of balls
   else if(_val->getId()==4) { halo = EffectCalc::setDynCtrl(_val).toInt(); load(); /* LOG(printf_P, PSTR("Halo s:%s i:%d h:%u\n"), _val->getVal(), _val->getVal().toInt(), halo) */; }
   else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
   return String();
