@@ -665,7 +665,7 @@ private:
   String setDynCtrl(UIControl*_val) override;
 
 public:
-    EffectCube2d(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer), sizeX(5), sizeY(5), ledbuff(1,1)  { cubesize(); moveItems = std::vector<int8_t>(direction ? cntX : cntY, 0); }
+    EffectCube2d(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer), sizeX(4), sizeY(4), ledbuff(1,1)  { cubesize(); moveItems = std::vector<int8_t>(direction ? cntX : cntY, 0); }
     void load() override;
     bool run() override;
 };
@@ -934,7 +934,6 @@ public:
 };
 
 // ------------ Эффект "Тихий Океан"
-//  "Pacifica" перенос кода kostyamat
 //  Gentle, blue-green ocean waves.
 //  December 2019, Mark Kriegsman and Mary Corey March.
 //  For Dan.
@@ -942,6 +941,10 @@ public:
 class EffectPacific : public EffectCalc {
 private:
 	uint32_t speedFactor = 100;
+
+    uint16_t sCIStart1, sCIStart2, sCIStart3, sCIStart4;    // "color index start" counters
+    uint32_t sLastms = 0;
+
 	void pacifica_one_layer(const TProgmemRGBPalette16& p, uint16_t cistart, uint16_t wavescale, uint8_t bri, uint16_t ioff);
 	void pacifica_deepen_colors();
 	void pacifica_add_whitecaps();

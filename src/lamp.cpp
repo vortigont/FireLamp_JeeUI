@@ -80,7 +80,7 @@ void LAMP::lamp_init()
   _brightnessScale = embui.paramVariant(TCONST_brtScl)  | DEF_BRT_SCALE;
   globalBrightness = embui.paramVariant(TCONST_GlobBRI) | DEF_BRT_SCALE/2;
 
-  _brightness(globalBrightness, true);          // начинаем с полностью потушеной матрицы 0-й яркости
+  _brightness(0, true);          // начинаем с полностью потушеной матрицы 0-й яркости
 
   // initialize fader instance
   LEDFader::getInstance()->setLamp(this);
@@ -609,7 +609,7 @@ void LAMP::sendStringToLamp(const char* text, CRGB letterColor, bool forcePrint,
 #ifdef MP3PLAYER
           String tmpStr = var["s"];
           if(mp3!=nullptr && ((mp3->isOn() && isLampOn()) || isAlarm()) && flags.playTime && tmpStr.indexOf(String("%TM"))>=0)
-            if(FastLED.getBrightness()!=OFF_BRIGHTNESS)
+            if(_get_brightness() != OFF_BRIGHTNESS)
               mp3->playTime(TimeProcessor::getInstance().getHours(), TimeProcessor::getInstance().getMinutes(), (TIME_SOUND_TYPE)flags.playTime);
 #endif
         }
@@ -641,7 +641,7 @@ void LAMP::sendStringToLamp(const char* text, CRGB letterColor, bool forcePrint,
 #ifdef MP3PLAYER
       String tmpStr = text;
       if(mp3!=nullptr && ((mp3->isOn() && isLampOn()) || isAlarm()) && flags.playTime && tmpStr.indexOf(String("%TM"))>=0)
-        if(FastLED.getBrightness()!=OFF_BRIGHTNESS)
+        if(_get_brightness() != OFF_BRIGHTNESS)
           mp3->playTime(TimeProcessor::getInstance().getHours(), TimeProcessor::getInstance().getMinutes(), (TIME_SOUND_TYPE)flags.playTime);
 #endif
     } else { // идет печать, помещаем в очередь
@@ -917,14 +917,13 @@ void LAMP::setBrightness(uint8_t tgtbrt, fade_t fade, bool bypass){
  */
 void LAMP::_brightness(uint8_t brt, bool absolute){
     if (!absolute) brt = luma::curveMap(_curve, brt, MAX_BRIGHTNESS, _brightnessScale);
-    if ( brt == FastLED.getBrightness()) return;  // nothing to change here
+    if ( brt == display.brightness()) return;  // nothing to change here
 
-    FastLED.setBrightness(brt);
-    FastLED.show();
+    display.brightness(brt);
 }
 
 uint8_t LAMP::_get_brightness(bool absolute){
-  return absolute ? FastLED.getBrightness() : luma::curveUnMap(_curve, FastLED.getBrightness(), MAX_BRIGHTNESS, _brightnessScale);
+  return absolute ? display.brightness() : luma::curveUnMap(_curve, display.brightness(), MAX_BRIGHTNESS, _brightnessScale);
 }
 
 void LAMP::setLumaCurve(luma::curve c){
@@ -991,8 +990,6 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
 
   if(flags.isEffClearing || !effects.getCurrent()){ // для EFF_NONE или для случая когда включена опция - чистим матрицу
     display.getCanvas()->clear();
-    //mx->clear();
-    //FastLED.show();
   }
 
   // move to 'selected' only if lamp is On and fader is in effect (i.e. it's a second call after fade),
@@ -1281,7 +1278,7 @@ void LEDFader::fadelight(const uint8_t _targetbrightness, const uint32_t _durati
     return;
   }
 
-  _brt = lmp->_get_brightness(true);        // get current absolute fastled brightness
+  _brt = lmp->_get_brightness(true);        // get current absolute Display brightness
   _tgtbrt = luma::curveMap(lmp->_curve, _targetbrightness, MAX_BRIGHTNESS, lmp->_brightnessScale);
   _cb = callback;
   // calculate required steps
@@ -1304,7 +1301,7 @@ void LEDFader::fadelight(const uint8_t _targetbrightness, const uint32_t _durati
     runner = new Task((unsigned long)FADE_STEPTIME,
       _steps,
       [this](){ _brt += _brtincrement; lmp->_brightness(_brt, true);  // set absolute backend brightness here
-                FastLED.show();
+                display.show();
                 /* LOG(printf_P, PSTR("fd brt %d/%d, glbr:%d, gbr:%d, vid:%d, vid2:%d\n"), _brt, _brtincrement, lmp->getBrightness(), lmp->getBrightness(), brighten8_video(FastLED.getBrightness()), brighten8_video(brighten8_video(FastLED.getBrightness()))  ); */
               },
       &ts, true, nullptr,

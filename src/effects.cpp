@@ -2437,7 +2437,7 @@ String EffectCube2d::setDynCtrl(UIControl*_val)
 
 void EffectCube2d::load(){
   palettesload();    // подгружаем дефолтные палитры
-  cubesize();
+  //cubesize();
 }
 
 // задаем размерность кубов
@@ -2454,16 +2454,16 @@ void EffectCube2d::cubesize() {
   cntX = fb->w() / (sizeX+1) + !!(fb->w() / (sizeX+1));
 	fieldX = (sizeX + 1U) * cntX;
 
-  ledbuff.resize(fieldX, fieldY);   // создаем виртуальную матрицу, размером кратную размеру кубика+1
+  bool res = ledbuff.resize(fieldX, fieldY);   // создаем виртуальную матрицу, размером кратную размеру кубика+1
 
-  //LOG(printf_P, PSTR("CUBE2D Size: scX=%d, scY=%d, scaleY=%d, cntX=%d, cntY=%d\n"), cubeScaleX, cubeScaleY, scaleY, cntX, cntY);
+  //LOG(printf_P, PSTR("CUBE2D Size: lfb_size:%d sizeX,Y:%d,%d cntX,Y:%d,%d fieldX,Y:%d,%d\n"), ledbuff.size(), sizeX,sizeY, cntX,cntY, fieldX,fieldY );
   uint8_t x=0, y = 0;
   CRGB color;
 
-  for (uint8_t j = 0U; j < cntY; j++)
+  for (uint8_t j = 0U; j < cntY; j++) //cntY
   {
     y = j * (sizeY + 1U);
-    for (uint8_t i = 0U; i < cntX; i++)
+    for (uint8_t i = 0U; i < cntX; i++) //cntX
     {
       x = i * (sizeX + 1U);
       if (scale == FASTLED_PALETTS_COUNT + 1U)
@@ -2476,13 +2476,15 @@ void EffectCube2d::cubesize() {
         }
       }
 
-      for (uint8_t k = 0U; k < sizeY; k++){
-        for (uint8_t m = 0U; m < sizeX; m++){
+      //LOG(printf_P, PSTR("CUBE2D Rect: x,y:%d,%d sX,sY:%d,%d\n"), x,y, sizeX, sizeY);
+      for (uint8_t k = 0U; k < sizeY; ++k){
+        for (uint8_t m = 0U; m < sizeX; ++m){
           ledbuff.at(x+m, y+k) = color;
         }
       }
     }
   }
+
   if (classic) {
     storage.assign(fb->w(), std::vector<uint8_t>(fb->h()) );    // todo: get rid of this
     currentStep = 4U; // текущий шаг сдвига первоначально с перебором (от 0 до shiftSteps-1)
@@ -3911,7 +3913,6 @@ void EffectFireworks::_screenscale(accum88 a, byte N, byte &screen, byte &screen
 }
 
 // ------------ Эффект "Тихий Океан"
-//  "Pacifica" перенос кода kostyamat
 //  Gentle, blue-green ocean waves.
 //  December 2019, Mark Kriegsman and Mary Corey March.
 //  For Dan.
@@ -3930,7 +3931,7 @@ void EffectPacific::pacifica_one_layer(const TProgmemRGBPalette16& p, uint16_t c
     ci += cs;
     uint16_t sindex16 = sin16( ci) + 32768;
     uint8_t sindex8 = scale16( sindex16, 240);
-    i = ColorFromPalette( p, sindex8, bri, LINEARBLEND);
+    i += ColorFromPalette( p, sindex8, bri, LINEARBLEND);
   }
 }
 
@@ -3973,8 +3974,6 @@ bool EffectPacific::run()
 {
   // Increment the four "color index start" counters, one for each wave layer.
   // Each is incremented at a different speed, and the speeds vary over time.
-  static uint16_t sCIStart1, sCIStart2, sCIStart3, sCIStart4;
-  static uint32_t sLastms = 0;
   uint32_t ms = millis();
   uint32_t deltams = ms - sLastms;
   sLastms = ms;
@@ -4003,7 +4002,7 @@ bool EffectPacific::run()
   // Deepen the blues and greens a bit
   pacifica_deepen_colors();
 
-  EffectMath::blur2d(fb, 20);
+  //EffectMath::blur2d(fb, 20);
   return true;
 }
 
