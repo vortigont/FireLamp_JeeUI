@@ -3913,7 +3913,6 @@ void EffectFireworks::_screenscale(accum88 a, byte N, byte &screen, byte &screen
 }
 
 // ------------ Эффект "Тихий Океан"
-//  "Pacifica" перенос кода kostyamat
 //  Gentle, blue-green ocean waves.
 //  December 2019, Mark Kriegsman and Mary Corey March.
 //  For Dan.
@@ -3932,7 +3931,7 @@ void EffectPacific::pacifica_one_layer(const TProgmemRGBPalette16& p, uint16_t c
     ci += cs;
     uint16_t sindex16 = sin16( ci) + 32768;
     uint8_t sindex8 = scale16( sindex16, 240);
-    i = ColorFromPalette( p, sindex8, bri, LINEARBLEND);
+    i += ColorFromPalette( p, sindex8, bri, LINEARBLEND);
   }
 }
 
@@ -3975,8 +3974,6 @@ bool EffectPacific::run()
 {
   // Increment the four "color index start" counters, one for each wave layer.
   // Each is incremented at a different speed, and the speeds vary over time.
-  static uint16_t sCIStart1, sCIStart2, sCIStart3, sCIStart4;
-  static uint32_t sLastms = 0;
   uint32_t ms = millis();
   uint32_t deltams = ms - sLastms;
   sLastms = ms;
@@ -4005,7 +4002,7 @@ bool EffectPacific::run()
   // Deepen the blues and greens a bit
   pacifica_deepen_colors();
 
-  EffectMath::blur2d(fb, 20);
+  //EffectMath::blur2d(fb, 20);
   return true;
 }
 
