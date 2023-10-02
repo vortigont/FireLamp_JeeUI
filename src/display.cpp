@@ -93,8 +93,11 @@ bool LEDDisplay::_start_rmt(){
     // attach buffer to an object that will perform matrix layout trasformation on buffer access
     if (!_canvas){
         _canvas = new LedFB<CRGB>(_w, _h, _dengine->getCanvas());
-        auto callback = [this](unsigned w, unsigned h, unsigned x, unsigned y) -> size_t { return this->stripe.transpose(w, h, x, y); };
-        _canvas->setRemapFunction(callback);
+        auto remap = [this](unsigned w, unsigned h, unsigned x, unsigned y) -> size_t { 
+            auto i = this->stripe.transpose(w, h, x, y);
+            //LOG(printf, "l: %d:%d %d\n", x, y, i);
+            return i; };
+        _canvas->setRemapFunction(remap);
     }
 
     brightness(_brt);   // reset FastLED brightness level

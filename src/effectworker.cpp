@@ -56,7 +56,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 #define WRKR_TASK_CORE          CONFIG_ARDUINO_RUNNING_CORE    // task MUST be pinned to the second core to avoid LED glitches (if applicable)
 #define WRKR_TASK_PRIO          tskIDLE_PRIORITY+1    // task priority
-#define WRKR_TASK_STACK         1536                  // effects code should mostly allocate mem on heap
+#define WRKR_TASK_STACK         2048                  // effects code should mostly allocate mem on heap
 #define WRKR_TASK_NAME          "EFF_WRKR"
 
 constexpr int target_fps{50};                     // desired FPS rate for effect runner
@@ -307,7 +307,7 @@ void EffectWorker::workerset(uint16_t effect){
     worker = std::unique_ptr<EffectSparcles>(new EffectSparcles(canvas));
     break;
   case EFF_ENUM::EFF_EVERYTHINGFALL :
-    worker = std::unique_ptr<EffectEverythingFall>(new EffectEverythingFall(canvas));
+    worker = std::unique_ptr<EffectMira>(new EffectMira(canvas));
     break;
   case EFF_ENUM::EFF_FIRE2012 :
     worker = std::unique_ptr<EffectFire2012>(new EffectFire2012(canvas));

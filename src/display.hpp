@@ -73,7 +73,7 @@ class LEDDisplay {
     std::weak_ptr< LedFB<CRGB> > _ovr;
 
     // Addresable led strip topology transformation object
-    LedStripe stripe;
+    LedTiles stripe;
 
     bool _start_rmt();
     bool _start_hub75();

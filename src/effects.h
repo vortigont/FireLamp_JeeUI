@@ -2150,10 +2150,11 @@ public:
 
 /* Настроечная мира */
 class EffectMira : public EffectCalc {
+    unsigned cnt{0}, x{0}, y{0};
 public:
     EffectMira(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     void load() override;
-    bool run() override { return false; };
+    bool run() override;// { return false; };
 };
 
 /* Эффект "Цветение" */
