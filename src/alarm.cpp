@@ -196,7 +196,7 @@ void ALARMTASK::alarmWorker(){
     //}
 
     int cnt{0};
-    for (auto i = mx->begin(); i != mx->end(); ++i) {
+    for (auto i = display.getCanvas()->begin(); i != display.getCanvas()->end(); ++i) {
         *i = ALARMTASK::getInstance()->dawnColorMinus[cnt%(sizeof(dawnColorMinus)/sizeof(CHSV))];
         ++cnt;
     }

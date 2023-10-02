@@ -73,26 +73,26 @@ public:
         gauge_max = max;
         gauge_hue = hue;
 
-        xStep = mx->w() / 4;
+        xStep = display.getCanvas()->w() / 4;
         xCol = 4;
         if(xStep<2) {
-          xStep = mx->w() / 3;
+          xStep = display.getCanvas()->w() / 3;
           xCol = 3;
         } else if(xStep<2) {
-          xStep = mx->w() / 2;
+          xStep = display.getCanvas()->w() / 2;
           xCol = 2;
         } else if(xStep<2) {
           xStep = 1;
           xCol = 1;
         }
 
-        yStep = mx->h() / 4;
+        yStep = display.getCanvas()->h() / 4;
         yCol = 4;
         if(yStep<2) {
-          yStep = mx->h() / 3;
+          yStep = display.getCanvas()->h() / 3;
           yCol = 3;
         } else if(yStep<2) {
-          yStep = mx->h() / 2;
+          yStep = display.getCanvas()->h() / 2;
           yCol = 2;
         } else if(yStep<2) {
           yStep = 1;
@@ -109,9 +109,9 @@ public:
 
         if(type==GAUGETYPE::GT_VERT){
             /*
-            uint8_t ind = (uint8_t)((gauge_val + 1) * mx->h() / (float)gauge_max + 1);
+            uint8_t ind = (uint8_t)((gauge_val + 1) * display.getCanvas()->h() / (float)gauge_max + 1);
             for (uint8_t x = 0; x <= xCol * (xStep - 1); x += xStep) {
-                for (uint8_t y = 0; y < mx->h() ; y++) {
+                for (uint8_t y = 0; y < display.getCanvas()->h() ; y++) {
                 if (ind > y)
                     EffectMath::drawPixelXY(x, y, CHSV(gauge_hue, 255, 255));
                 else
@@ -120,17 +120,17 @@ public:
             }
             */
             for (uint8_t x = 0; x <= xCol * (xStep - 1); x += xStep) {
-                EffectMath::drawLine(x, 0, x, mx->h(), 0, mx);   // todo:  get rid of this hack with external obj
-                EffectMath::drawLineF(x, 0, x, EffectMath::fmap(gauge_val, 0, gauge_max, 0, mx->h()), gauge_hue ? CHSV(gauge_hue, 255, 255) : CRGB(gauge_color), mx);
+                EffectMath::drawLine(x, 0, x, display.getCanvas()->h(), 0, display.getCanvas());   // todo:  get rid of this hack with external obj
+                EffectMath::drawLineF(x, 0, x, EffectMath::fmap(gauge_val, 0, gauge_max, 0, display.getCanvas()->h()), gauge_hue ? CHSV(gauge_hue, 255, 255) : CRGB(gauge_color), display.getCanvas());
             }
         } else {
-            uint8_t ind = (uint8_t)((gauge_val + 1) * mx->w() / (float)gauge_max + 1);
+            uint8_t ind = (uint8_t)((gauge_val + 1) * display.getCanvas()->w() / (float)gauge_max + 1);
             for (uint8_t y = 0; y <= yCol * (yStep - 1) ; y += yStep) {
-                for (uint8_t x = 0; x < mx->w() ; x++) {
+                for (uint8_t x = 0; x < display.getCanvas()->w() ; x++) {
                 if (ind > x)
-                    mx->at((x + y) % mx->w(), y) = CHSV(gauge_hue, 255, 255);
+                    display.getCanvas()->at((x + y) % display.getCanvas()->w(), y) = CHSV(gauge_hue, 255, 255);
                 else
-                    mx->at((x + y) % mx->w(), y) = 0;
+                    display.getCanvas()->at((x + y) % display.getCanvas()->w(), y) = 0;
                 }
             }
         }
