@@ -312,7 +312,7 @@ void EffectWorker::workerset(uint16_t effect){
     worker = std::unique_ptr<EffectSparcles>(new EffectSparcles(canvas));
     break;
   case EFF_ENUM::EFF_EVERYTHINGFALL :
-    worker = std::unique_ptr<EffectEverythingFall>(new EffectEverythingFall(canvas));
+    worker = std::unique_ptr<EffectMira>(new EffectMira(canvas));
     break;
   case EFF_ENUM::EFF_FIRE2012 :
     worker = std::unique_ptr<EffectFire2012>(new EffectFire2012(canvas));

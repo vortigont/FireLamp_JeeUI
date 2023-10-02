@@ -8680,17 +8680,38 @@ float EffectSplashBals::dist(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2) {
 void EffectMira::load(){
     fb->clear();
     // 0,0
-    fb->at(0,0) = fb->at(1,0) = fb->at(2,0) = fb->at(2,0) = fb->at(0,1) = CRGB::Red;
+    fb->at(0,0) = fb->at(1,0) = fb->at(2,0) = fb->at(3,0) = fb->at(0,1) = CRGB::Red;
 
     // w,0
-    fb->at(mx->w()-3,0) = fb->at(mx->w()-2,0) = fb->at(mx->w()-1,0) = fb->at(mx->w()-1,1) = CRGB::Green;
+    fb->at(fb->w()-3,0) = fb->at(fb->w()-2,0) = fb->at(fb->w()-1,0) = fb->at(fb->w()-1,1) = CRGB::Green;
 
     // 0,h
-    fb->at(1,mx->h()-2) = fb->at(1,mx->h()-1) = CRGB::Red;
+    fb->at(1,fb->h()-3) = fb->at(1,fb->h()-2) = fb->at(1,fb->h()-1) = CRGB::Red;
 
     // w,h
-    fb->at(mx->w()-2,mx->h()-2) = fb->at(mx->w()-2,mx->h()-1) = CRGB::Green;
+    fb->at(fb->w()-2,fb->h()-3) = fb->at(fb->w()-2,fb->h()-2) = fb->at(fb->w()-2,fb->h()-1) = CRGB::Green;
 }
+
+bool EffectMira::run(){
+  if (!cnt++) return true;
+  if (cnt < 10*50) return false;  // первые 10 сек показываем настроечные уголки
+
+  if (cnt %10 == 0){
+    //LOG(printf, "%d %d %d %d\n", x, y, fb->w(), fb->h());
+    fb->at(x,y) = CRGB::Red;
+    if (++x == fb->w()){
+      x = 0;
+      ++y;
+      if (y== fb->h()){
+        y = 0;
+        fb->clear();
+      }
+    }
+    return true;
+  }
+  return false;
+}
+
 
 /* Эффект "Цветение" */
 int16_t EffectFlower::ZVcalcDist(uint8_t x, uint8_t y, float center_x, float center_y) {

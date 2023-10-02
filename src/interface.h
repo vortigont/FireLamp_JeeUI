@@ -57,7 +57,7 @@ typedef enum _remote_action {
 
 void remote_action(RA action, ...);
 
-// кастомный обработчик, для поддержки приложения WLED APP ( https://play.google.com/store/apps/details?id=com.aircoookie.WLED )
+
 /**
  * @brief обработчик, для поддержки приложения WLED APP
  * https://play.google.com/store/apps/details?id=com.aircoookie.WLED
@@ -118,3 +118,11 @@ void load_events_config(const char* path = NULL);
     сохраняет настройки LED ленты
 */
 void set_ledstrip(Interface *interf, JsonObject *data);
+
+void block_ledstrip_setup(Interface *interf, JsonObject *data);
+
+/**
+ * @brief Construct WebUI block for hub75 panel setup
+ * 
+ */
+void block_hub75_setup(Interface *interf, JsonObject *data);

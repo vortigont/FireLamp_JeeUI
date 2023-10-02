@@ -46,36 +46,40 @@ An object file for LED output devices, backends and buffers
 #include "hub75.h"
 #include "ESP32-HUB75-MatrixPanel-I2S-DMA.h"
 
-// compatibility LED buffer object reference
-LedFB<CRGB> *mx = nullptr;
 
-//template<EOrder RGB_ORDER>
-bool LEDDisplay::start(engine_t e){
+bool LEDDisplay::start(){
     if (_dengine) return true;   // Overlay engine already running
 
+    DynamicJsonDocument doc(512);
+    // if config can't be loaded, then just quit, 'cause we need at least an engine type to run
+    if (!embuifs::deserializeFile(doc, TCONST_fcfg_display)) return false;
+
     // a shortcut for hub75 testing
-    if (e == engine_t::hub75){
+    if (doc[TCONST_dtype] == static_cast<int>(engine_t::hub75)){
+        tiles.setTileDimensions(64, 32, 1, 1);
         return _start_hub75();
     }
 
-    DynamicJsonDocument doc(512);
-    embuifs::deserializeFile(doc, TCONST_fcfg_gpio);
+    if (!doc.containsKey(TCONST_ws2812)) return false;    // no object with stripe config
+
+    // shortcut
+    JsonVariant o = doc[TCONST_ws2812];
 
     // load gpio value
-    _gpio = doc[TCONST_mx_gpio].as<int>();
+    _gpio = o[TCONST_mx_gpio].as<int>();
 
-    embuifs::deserializeFile(doc, TCONST_fcfg_ledstrip);
-    JsonObject o = doc.as<JsonObject>();
+    // load canvas topology
+    tiles.setTileDimensions(
+        o[TCONST_width],
+        o[TCONST_height],
+        o[TCONST_wcnt],
+        o[TCONST_hcnt]
+    );
 
-    // in case if deserialization has failed, I create a default 16x16 buffer 
-    _w = o[TCONST_width]  | 16;
-    _h = o[TCONST_height] | 16;
-
-    //_set_layout(o[TCONST_snake].as<bool>(), o[TCONST_vertical].as<bool>(), o[TCONST_vflip].as<bool>(), o[TCONST_hflip].as<bool>());
-    stripe.snake(o[TCONST_snake]);
-    stripe.vertical(o[TCONST_vertical]);
-    stripe.vmirror(o[TCONST_vflip]);
-    stripe.hmirror(o[TCONST_hflip]);
+    // matrix layout
+    tiles.setLayout( o[TCONST_snake], o[TCONST_vertical], o[TCONST_vflip], o[TCONST_hflip] );
+    // tiles layout
+    tiles.tileLayout.setLayout(o[TCONST_tsnake], o[TCONST_tvertical], o[TCONST_tvflip], o[TCONST_thflip]);
 
     return _start_rmt();
 }
@@ -88,25 +92,23 @@ bool LEDDisplay::_start_rmt(){
     if (_gpio == -1) return false;      // won't run on disabled pin
 
     // create new led strip object using our configured pin
-    _dengine = new ESP32RMTDisplayEngine<COLOR_ORDER>(_gpio, _w*_h);
+    _dengine = new ESP32RMTDisplayEngine<COLOR_ORDER>(_gpio, tiles.canvas_w() * tiles.canvas_h());
 
     // attach buffer to an object that will perform matrix layout trasformation on buffer access
     if (!_canvas){
-        _canvas = new LedFB<CRGB>(_w, _h, _dengine->getCanvas());
-        auto callback = [this](unsigned w, unsigned h, unsigned x, unsigned y) -> size_t { return this->stripe.transpose(w, h, x, y); };
-        _canvas->setRemapFunction(callback);
+        _canvas = new LedFB<CRGB>(tiles.canvas_w(), tiles.canvas_h(), _dengine->getCanvas());
+        _canvas->setRemapFunction( [this](unsigned w, unsigned h, unsigned x, unsigned y) -> size_t { return this->tiles.transpose(w, h, x, y); } );
     }
 
     brightness(_brt);   // reset FastLED brightness level
-    LOG(printf, "RMT LED cfg: w,h:(%d,%d) snake:%d, vert:%d, vflip:%d, hflip:%d\n", _w, _h, stripe.snake(), stripe.vertical(), stripe.vmirror(), stripe.hmirror());
 
-    // compatibility stub
-    mx = _canvas;
+    print_stripe_cfg();
+
     return true;
 }
 
 bool LEDDisplay::_start_hub75(){
-    _w = 64; _h = 32;
+    // static configuration
     HUB75_I2S_CFG::i2s_pins _pins={R1, G1, BL1, R2, G2, BL2, CH_A, CH_B, CH_C, CH_D, CH_E, LAT, OE, CLK};
     HUB75_I2S_CFG mxconfig(
                         64,     // width
@@ -120,15 +122,13 @@ bool LEDDisplay::_start_hub75(){
 
     // attach buffer to an object that will perform matrix layout trasformation on buffer access
     if (!_canvas){
-        _canvas = new LedFB<CRGB>(_w, _h, _dengine->getCanvas());
+        _canvas = new LedFB<CRGB>(64, 32, _dengine->getCanvas());
         // this is a simple flat matrix so I use default 2D transformation
 
     }
 
     brightness(_brt);   // reset brightness level
 
-    // compatibility stub
-    mx = _canvas;
     return true;
 }
 
@@ -137,12 +137,11 @@ std::shared_ptr< LedFB<CRGB> > LEDDisplay::getOverlay(){
 
     if (!instance){
         // no overlay exist at the moment, let's create one
-        instance = std::make_shared< LedFB<CRGB> >(LedFB<CRGB>(_w, _h, _dengine->getOverlay()));
+        instance = std::make_shared< LedFB<CRGB> >(LedFB<CRGB>(tiles.canvas_w(), tiles.canvas_h(), _dengine->getOverlay()));
 
         if (_etype == engine_t::ws2812){
-            // set topology
-            auto callback = [this](unsigned w, unsigned h, unsigned x, unsigned y) -> size_t { return this->stripe.transpose(w, h, x, y); };
-            instance->setRemapFunction(callback);
+            // set topology mapper
+            instance->setRemapFunction( [this](unsigned w, unsigned h, unsigned x, unsigned y) -> size_t { return this->tiles.transpose(w, h, x, y); } );
         }
 
         // add instance watcher
@@ -151,21 +150,31 @@ std::shared_ptr< LedFB<CRGB> > LEDDisplay::getOverlay(){
     return instance;
 }
 
-void LEDDisplay::updateTopo(int w, int h, bool snake, bool vert, bool vmirr, bool hmirr){
+void LEDDisplay::updateStripeLayout(uint16_t w, uint16_t h, uint16_t wcnt, uint16_t hcnt,
+                            bool snake, bool vert, bool vmirr, bool hmirr,
+                            bool tsnake, bool tvert, bool tvmirr, bool thmirr){
+
     if (_etype == engine_t::hub75) return;   // no resize for HUB75 driver
 
-    if (w != _w || _h != h){
-        _w = w; _h = h;
-        _dengine->clear();
-        _canvas->resize(w, h);
-        auto instance = _ovr.lock();
-        if (instance) instance->resize(w, h);
+    tiles.setLayout(snake, vert, vmirr, hmirr);
+    tiles.tileLayout.setLayout(tsnake, tvert, tvmirr, thmirr);
+
+    // start rmt, if has not been started yet
+    if (!_start_rmt()){
+        LOG(println, "can't start RMT engine");
     }
 
-    stripe.snake(snake);
-    stripe.vertical(vert);
-    stripe.vmirror(vmirr);
-    stripe.hmirror(hmirr);
+    // check if I really need to resize LED buffer
+    if (w != tiles.tile_w() || h != tiles.tile_h() || wcnt != tiles.tile_wcnt() || hcnt != tiles.tile_hcnt()){
+        if (!_dengine) return;  // no engine running
+
+        _dengine->clear();
+        _canvas->resize(w*wcnt, h*hcnt);
+        auto instance = _ovr.lock();
+        if (instance) instance->resize(w*wcnt, h*hcnt);
+        tiles.setTileDimensions(w, h, wcnt, hcnt);
+    }
+    print_stripe_cfg();
 }
 
 uint8_t LEDDisplay::brightness(uint8_t brt){
@@ -178,6 +187,11 @@ uint8_t LEDDisplay::brightness(){
     return _etype == engine_t::hub75 ? _brt : FastLED.getBrightness();
 }
 
+void LEDDisplay::print_stripe_cfg(){
+    LOG(printf, "Stripe layout W=%dx%d, H=%dx%d\n", tiles.tile_w(), tiles.tile_wcnt(), tiles.tile_h(), tiles.tile_hcnt() );
+    LOG(printf, "Matrix: snake:%o, vert:%d, vflip:%d, hflip:%d\n", tiles.snake(), tiles.vertical(), tiles.vmirror(), tiles.hmirror() );
+    LOG(printf, "Tiles: snake:%o, vert:%d, vflip:%d, hflip:%d\n", tiles.tileLayout.snake(), tiles.tileLayout.vertical(), tiles.tileLayout.vmirror(), tiles.tileLayout.hmirror() );
+}
 
 // my display object
 LEDDisplay display;

@@ -218,7 +218,7 @@ static constexpr const char* TINTF_007 = "Refresh effects-list";
 static constexpr const char* TINTF_Save = "Save";
 static constexpr const char* TINTF_009 = "Managing effects-list";
 static constexpr const char* TINTF_00A = DFTINTF_00A;
-static constexpr const char* TINTF_00B = "Exit";
+static constexpr const char* TINTF_exit = "Exit";
 static constexpr const char* TINTF_00C = "Global Brightness";
 static constexpr const char* TINTF_00D = "Brightness";
 static constexpr const char* TINTF_00E = "OFF/ON";
@@ -448,9 +448,12 @@ static constexpr const char* TINTF_0EE = "Disabled";
 static constexpr const char* TINTF_0EF = "Vertical";
 static constexpr const char* TINTF_0F0 = "Horizontal";
 
+static constexpr const char* TINTF_display_setup = "LED-display setup";
+static constexpr const char* TINTF_display_type = "LED matrix type";
+static constexpr const char* TINTF_f_restore_state = "Restore state on power-on";
+static constexpr const char* TINTF_cfg_hub75 = "HUB75 configuration";
 static constexpr const char* TINTF_gpiocfg = "GPIO Configuration";
 static constexpr const char* TINTF_ledstrip = "LED strip layout";
-static constexpr const char* TINTF_f_restore_state = "Restore state on power-on";
 
 static constexpr const char* NY_MDG_STRING1 = "New Year in %d %s";
 static constexpr const char* NY_MDG_STRING2 = "Happy New %d Year!";
