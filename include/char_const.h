@@ -169,6 +169,7 @@ static constexpr const char* TCONST_RSSI = "RSSI";
 static constexpr const char* TCONST_save = "save";
 static constexpr const char* TCONST_scale = "scale";
 static constexpr const char* TCONST_settings = "settings";
+static constexpr const char* TCONST_settings_hub75 = "set_hub75";
 static constexpr const char* TCONST_settings_ledstrip = "set_ledstrip";
 static constexpr const char* TCONST_settings_mic = "settings_mic";
 static constexpr const char* TCONST_settings_mp3 = "settings_mp3";

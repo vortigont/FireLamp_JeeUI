@@ -138,6 +138,8 @@ void section_sys_settings_frame(Interface *interf, JsonObject *data);
 void show_settings_butt(Interface *interf, JsonObject *data);
 // Construct WebUI block for ws2812 LED matrix setup
 void block_ledstrip_setup(Interface *interf, JsonObject *data);
+// set params for hub75
+void set_hub75(Interface *interf, JsonObject *data);
 
 /**
  * @brief rebuild cached json file with effects names list
@@ -2474,7 +2476,7 @@ void set_streaming_universe(Interface *interf, JsonObject *data){
 // Additional buttons on "Settings" page
 void user_settings_frame(Interface *interf, JsonObject *data){
     if (!interf) return;
-    interf->button_value(button_t::generic, TCONST_sh_page, e2int(page::setup_display), TINTF_ledstrip);
+    interf->button_value(button_t::generic, TCONST_sh_page, e2int(page::setup_display), TINTF_display_setup);
 #ifdef MIC_EFFECTS
     interf->button_value(button_t::generic, TCONST_sh_page, e2int(page::mike), TINTF_020);
 #endif
@@ -2794,9 +2796,11 @@ void create_parameters(){
 
     embui.section_handle_add(TCONST_edit_text_config, set_text_config);
 
-    embui.section_handle_add(TCONST_settings_ledstrip, set_ledstrip);           // Set LED strip layout setup
     embui.section_handle_add(TCONST_set_other, set_settings_other);
-    embui.section_handle_add(TCONST_set_gpio, set_gpios);        // Set gpios
+    embui.section_handle_add(TCONST_settings_ledstrip, set_ledstrip);           // Set LED strip layout setup
+    embui.section_handle_add(TCONST_settings_hub75, set_hub75);                 // Set options for HUB75 panel
+    embui.section_handle_add(TCONST_set_gpio, set_gpios);                       // Set gpios
+    embui.section_handle_add(TCONST_dtype, page_display_setup);                // load display setup page depending on selected disp type (action for drop down list)
 
 #ifdef MIC_EFFECTS
     embui.section_handle_add(TCONST_set_mic, set_settings_mic);
@@ -3379,19 +3383,30 @@ void page_display_setup(Interface *interf, JsonObject *data){
     interf->json_frame_interface();
     interf->json_section_main(P_EMPTY, TINTF_display_setup);
 
-    interf->select(TCONST_dtype, e2int(display.get_engine_type()), TINTF_display_type, true);
+    // determine which value we should set drop-down list to
+    int select_val = data && (*data).containsKey(TCONST_dtype) ? (*data)[TCONST_dtype] : e2int(display.get_engine_type());
+
+    interf->select(TCONST_dtype, select_val, TINTF_display_type, true);
         interf->option(0, "ws2812b LED stripe");
         interf->option(1, "HUB75 RGB Panel");
     interf->json_section_end();
 
     interf->spacer();
 
-    if (display.get_engine_type() == engine_t::hub75)
-        // load page block with HUB75 setup
-        block_hub75_setup(interf, data);
-    else
-        // load page block with ledstrip setup
-        block_ledstrip_setup(interf, data);
+    // if parameter for the specific page has been given
+    if (data && (*data).containsKey(TCONST_dtype)){
+        if ((*data)[TCONST_dtype] == e2int(engine_t::hub75))
+            block_hub75_setup(interf, data);
+        else
+            block_ledstrip_setup(interf, data);
+    } else { // check running engine type
+        if ( display.get_engine_type() == engine_t::hub75)
+            // load page block with HUB75 setup
+            block_hub75_setup(interf, data);
+        else
+            // load page block with ledstrip setup
+            block_ledstrip_setup(interf, data);
+    }
 
     interf->json_frame_flush();
 }
@@ -3416,8 +3431,8 @@ void block_ledstrip_setup(Interface *interf, JsonObject *data){
     interf->json_section_end();
 
     interf->json_section_line(); // расположить в одной линии
-        interf->checkbox(TCONST_vertical, display.getLayout().vertical(), TCONST_i_vert, false);
         interf->checkbox(TCONST_snake, display.getLayout().snake(), TCONST_i_zmeika, false);
+        interf->checkbox(TCONST_vertical, display.getLayout().vertical(), TCONST_i_vert, false);
     interf->json_section_end();
     interf->json_section_line(); // расположить в одной линии
         interf->checkbox(TCONST_vflip, display.getLayout().vmirror(), TCONST_i_vflip, false);
@@ -3447,7 +3462,13 @@ void block_ledstrip_setup(Interface *interf, JsonObject *data){
 }
 
 void block_hub75_setup(Interface *interf, JsonObject *data){
-    interf->comment("Not implemented yet");
+    interf->json_section_begin(TCONST_settings_hub75, TINTF_cfg_hub75);
+    interf->comment("Configuration is Not implemented yet, press 'Save' to switch to HUB75 display, MCU will reboot");
+    interf->constant("HUB75: 64x32");
+    interf->hidden(TCONST_dtype, e2int(engine_t::ws2812));        // set hidden value for led type to ws2812
+    interf->button(button_t::submit,  TCONST_settings_hub75, TINTF_Save);      // Save
+    interf->button(button_t::generic, TCONST_settings, TINTF_exit);           // Exit
+    interf->json_section_end();     // close "TCONST_settings_ledstrip" section
 }
 
 /*
@@ -3472,6 +3493,13 @@ void set_ledstrip(Interface *interf, JsonObject *data){
         embuifs::serialize2file(doc, TCONST_fcfg_display);
     }
 
+    // if we are in hub75 mode, than need a reboot to load ws2812 engine
+    if (display.get_engine_type() != engine_t::ws2812){
+        run_action(ra::reboot);         // reboot in 5 sec
+        if (interf) basicui::section_settings_frame(interf, nullptr);
+        return;
+    }
+
     // set gpio
     display.setGPIO((*data)[TCONST_mx_gpio]);
 
@@ -3487,4 +3515,26 @@ void set_ledstrip(Interface *interf, JsonObject *data){
         (*data)[TCONST_tvflip],
         (*data)[TCONST_thflip]
     );
+}
+
+void set_hub75(Interface *interf, JsonObject *data){
+    if (!data) return;
+
+        DynamicJsonDocument doc(512);
+        if (!embuifs::deserializeFile(doc, TCONST_fcfg_display)) doc.clear();
+
+        JsonVariant dst = doc[TCONST_ws2812].isNull() ? doc.createNestedObject(TCONST_ws2812) : doc[TCONST_ws2812];
+
+        for (JsonPair kvp : *data)
+            dst[kvp.key()] = kvp.value();
+
+        doc[TCONST_dtype] = e2int(engine_t::hub75);   // set engine to hub75
+
+        // save new led strip config to file
+        embuifs::serialize2file(doc, TCONST_fcfg_display);
+
+    if (display.get_engine_type() != engine_t::hub75){
+        run_action(ra::reboot);         // reboot in 5 sec
+        if (interf) basicui::section_settings_frame(interf, nullptr);
+    }
 }

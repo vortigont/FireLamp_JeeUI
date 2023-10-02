@@ -461,6 +461,7 @@ static constexpr const char* TINTF_0F0 = "Horizontal";
 static constexpr const char* TINTF_display_setup = "LED-display setup";
 static constexpr const char* TINTF_display_type = "LED matrix type";
 static constexpr const char* TINTF_f_restore_state = "Restore state on power-on";
+static constexpr const char* TINTF_cfg_hub75 = "Конфигурация HUB75 панелей";
 static constexpr const char* TINTF_gpiocfg = "GPIO Configuration";
 static constexpr const char* TINTF_ledstrip = "LED strip layout";
 

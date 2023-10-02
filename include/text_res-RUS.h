@@ -460,7 +460,8 @@ static constexpr const char* TINTF_0F0 = "Горизонтальная";
 static constexpr const char* TINTF_display_setup = "Настройка LED-дисплея";
 static constexpr const char* TINTF_display_type = "Тип LED-матрицы";
 static constexpr const char* TINTF_f_restore_state = "Восстанавливать состояние при включении";
-static constexpr const char* TINTF_gpiocfg = "Конфигурация GPIO";
+static constexpr const char* TINTF_cfg_hub75 = "Конфигурация HUB75 панелей";
+static constexpr const char* TINTF_gpiocfg = "Настройка GPIO";
 static constexpr const char* TINTF_ledstrip = "Топология LED ленты";
 
 static constexpr const char* NY_MDG_STRING1 = "До нового года осталось %d %s";
