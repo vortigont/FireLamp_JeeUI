@@ -54,9 +54,14 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #define ARR_LIST_SIZE   1024
 #endif
 
+
 #define WRKR_TASK_CORE          CONFIG_ARDUINO_RUNNING_CORE    // task MUST be pinned to the second core to avoid LED glitches (if applicable)
 #define WRKR_TASK_PRIO          tskIDLE_PRIORITY+1    // task priority
+#ifdef LAMP_DEBUG
+#define WRKR_TASK_STACK         2048                  // sprintf could take lot's of stack mem for debug messages
+#else
 #define WRKR_TASK_STACK         1536                  // effects code should mostly allocate mem on heap
+#endif
 #define WRKR_TASK_NAME          "EFF_WRKR"
 
 constexpr int target_fps{50};                     // desired FPS rate for effect runner
