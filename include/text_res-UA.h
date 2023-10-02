@@ -218,7 +218,7 @@ static constexpr const char* TINTF_007 = "Оновити перелік ефек
 static constexpr const char* TINTF_Save = "Зберегти";
 static constexpr const char* TINTF_009 = "Керування переліком ефектів";
 static constexpr const char* TINTF_00A = DFTINTF_00A;
-static constexpr const char* TINTF_00B = "Вихід";
+static constexpr const char* TINTF_exit = "Вихід";
 static constexpr const char* TINTF_00C = "Глоб.яскравість";
 static constexpr const char* TINTF_00D = "Яскравість";
 static constexpr const char* TINTF_00E = "Увімкнути";
@@ -457,9 +457,11 @@ static constexpr const char* TINTF_0EE = "Відключено";
 static constexpr const char* TINTF_0EF = "Вертикальна";
 static constexpr const char* TINTF_0F0 = "Горизонтальна";
 
+static constexpr const char* TINTF_display_setup = "LED-display setup";
+static constexpr const char* TINTF_display_type = "LED matrix type";
+static constexpr const char* TINTF_f_restore_state = "Restore state on power-on";
 static constexpr const char* TINTF_gpiocfg = "GPIO Configuration";
 static constexpr const char* TINTF_ledstrip = "LED strip layout";
-static constexpr const char* TINTF_f_restore_state = "Restore state on power-on";
 
 static constexpr const char* NY_MDG_STRING1 = "До нового року залишилось %d %s";
 static constexpr const char* NY_MDG_STRING2 = "З новим %d роком!";

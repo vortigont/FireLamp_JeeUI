@@ -218,7 +218,7 @@ static constexpr const char* TINTF_007 = "Обновить список эффе
 static constexpr const char* TINTF_Save = "Сохранить";
 static constexpr const char* TINTF_009 = "Управление списком эффектов";
 static constexpr const char* TINTF_00A = DFTINTF_00A;
-static constexpr const char* TINTF_00B = "Выход";
+static constexpr const char* TINTF_exit = "Выход";
 static constexpr const char* TINTF_00C = "Глоб. яркость";
 static constexpr const char* TINTF_00D = "Яркость";
 static constexpr const char* TINTF_00E = "Включить";
@@ -457,9 +457,11 @@ static constexpr const char* TINTF_0EE = "Отключена";
 static constexpr const char* TINTF_0EF = "Вертикальная";
 static constexpr const char* TINTF_0F0 = "Горизонтальная";
 
+static constexpr const char* TINTF_display_setup = "Настройка LED-дисплея";
+static constexpr const char* TINTF_display_type = "Тип LED-матрицы";
+static constexpr const char* TINTF_f_restore_state = "Восстанавливать состояние при включении";
 static constexpr const char* TINTF_gpiocfg = "Конфигурация GPIO";
 static constexpr const char* TINTF_ledstrip = "Топология LED ленты";
-static constexpr const char* TINTF_f_restore_state = "Восстанавливать состояние при включении";
 
 static constexpr const char* NY_MDG_STRING1 = "До нового года осталось %d %s";
 static constexpr const char* NY_MDG_STRING2 = "C новым %d годом!";

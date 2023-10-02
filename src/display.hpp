@@ -44,11 +44,6 @@ A header file for LED output devices, backends and buffers
 #include "config.h"
 #include "ledfb.hpp"
 
-/* a backward compatible wrappers for accessing LedMatrix obj instance,
-should be removed once other code refactoring is complete
-*/
-extern LedFB<CRGB> *mx;
-
 enum class engine_t:uint8_t  {
     ws2812 = 0,
     hub75
@@ -60,7 +55,6 @@ class LEDDisplay {
 
     engine_t _etype;        // type of backend to use
     int _gpio{-1};          // fastled gpio
-    int _w{16}, _h{16};     // display dimensions
     uint8_t _brt{32};       // backend engine brightness, if supported
 
     // An object ref I'll use to access LED device
@@ -73,15 +67,31 @@ class LEDDisplay {
     std::weak_ptr< LedFB<CRGB> > _ovr;
 
     // Addresable led strip topology transformation object
-    LedTiles stripe;
+    LedTiles tiles;
 
     bool _start_rmt();
     bool _start_hub75();
 
 public:
-    bool start(engine_t e);
+    bool start();
 
-    void updateTopo(int w, int h, bool snake, bool vert, bool vmirr, bool hmirr);
+    // *** Getters
+
+    // display engine type
+    engine_t get_engine_type() const { return _etype; }
+
+    const LedTiles& getLayout() const { return tiles; } 
+
+    int getGPIO(){ return _gpio; }
+
+    /*** SETTERS ***/
+    void setGPIO(int gpio){ if (gpio <= NUM_OUPUT_PINS) _gpio = gpio; }
+
+    // Update LED stripe topology and sizing
+    void updateStripeLayout(uint16_t w, uint16_t h, uint16_t wcnt, uint16_t hcnt,
+                            bool tsnake, bool tvert, bool tvmirr, bool thmirr,
+                            bool snake, bool vert, bool vmirr, bool hmirr
+    );
 
     void canvasProtect(bool v){ if (_dengine) _dengine->canvasProtect(v); };
 
@@ -106,6 +116,9 @@ public:
 
     // get current backend brightness, if supported by backend, otherwise returns stored brightness
     uint8_t brightness();
+
+    // print stripe configuration in debug mode
+    void print_stripe_cfg();
 };
 
 extern LEDDisplay display;

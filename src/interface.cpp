@@ -80,7 +80,7 @@ enum class page : uint8_t {
     main = 0,
     eff_config,
     mike,
-    setup_ledstrip,
+    setup_display,
     setup_dfplayer,
     setup_bttn,
     setup_encdr,
@@ -130,11 +130,14 @@ void block_effect_params(Interface *interf, JsonObject *data);
 void show_effects_config(Interface *interf, JsonObject *data);
 void show_settings_mp3(Interface *interf, JsonObject *data);
 void show_settings_enc(Interface *interf, JsonObject *data);
+// construct a page with Display setup
+void page_display_setup(Interface *interf, JsonObject *data);
 void page_gpiocfg(Interface *interf, JsonObject *data);
 void page_settings_other(Interface *interf, JsonObject *data);
 void section_sys_settings_frame(Interface *interf, JsonObject *data);
 void show_settings_butt(Interface *interf, JsonObject *data);
-void page_ledstrip_setup(Interface *interf, JsonObject *data);
+// Construct WebUI block for ws2812 LED matrix setup
+void block_ledstrip_setup(Interface *interf, JsonObject *data);
 
 /**
  * @brief rebuild cached json file with effects names list
@@ -245,8 +248,8 @@ void show_page_selector(Interface *interf, JsonObject *data){
             return section_sys_settings_frame(interf, nullptr);
         case page::setup_other :    // страница "настройки"-"другие"
             return page_settings_other(interf, nullptr);
-        case page::setup_ledstrip : // led struip setup
-            return page_ledstrip_setup(interf, nullptr);
+        case page::setup_display : // led struip setup
+            return page_display_setup(interf, nullptr);
 
         default:                    // by default simply show main page
             section_main_frame(interf, nullptr);
@@ -531,7 +534,7 @@ void show_effects_config(Interface *interf, JsonObject *data){
         // generate block with effect settings controls
         block_effect_params(interf, nullptr);
         interf->spacer();
-        interf->button(button_t::generic, TCONST_effects, TINTF_00B);
+        interf->button(button_t::generic, TCONST_effects, TINTF_exit);
         interf->json_frame_flush();
         return;
     }
@@ -897,7 +900,7 @@ void show_main_flags(Interface *interf, JsonObject *data){
     interf->json_frame_interface();
     block_main_flags(interf, data);
     interf->spacer();
-    interf->button(button_t::generic, TCONST_effects, TINTF_00B);
+    interf->button(button_t::generic, TCONST_effects, TINTF_exit);
     interf->json_frame_flush();
 }
 
@@ -1223,7 +1226,7 @@ void block_lamp_textsend(Interface *interf, JsonObject *data){
         interf->json_section_begin(TCONST_edit_text_config);
             interf->spacer(TINTF_001);
                 interf->range(TCONST_txtSpeed, 110-embui.paramVariant(TCONST_txtSpeed).as<int>(), 10, 100, 5, TINTF_044, false);
-                interf->range(TCONST_txtOf, embui.paramVariant(TCONST_txtOf).as<int>(), -1, (int)(mx->h()>6?mx->h():6)-6, 1, TINTF_045);
+                interf->range(TCONST_txtOf, embui.paramVariant(TCONST_txtOf).as<int>(), -1, (int)( display.getLayout().canvas_h() >6 ? display.getLayout().canvas_h() : 6)-6, 1, TINTF_045);
                 interf->range(TCONST_txtBfade, embui.paramVariant(TCONST_txtBfade).as<int>(), 0, 255, 1, TINTF_0CA);
                 
             interf->spacer(TINTF_04E);
@@ -1234,8 +1237,8 @@ void block_lamp_textsend(Interface *interf, JsonObject *data){
                 interf->text(TCONST_ny_unix, datetime.c_str(), TINTF_050);
                 interf->button(button_t::submit, TCONST_edit_text_config, TINTF_Save, P_GRAY);
             interf->spacer();
-                //interf->button(button_t::generic, TCONST_effects, TINTF_00B);
-                interf->button(button_t::generic, TCONST_lamptext, TINTF_00B);
+                //interf->button(button_t::generic, TCONST_effects, TINTF_exit);
+                interf->button(button_t::generic, TCONST_lamptext, TINTF_exit);
         interf->json_section_end();
     interf->json_section_end();
 
@@ -1345,7 +1348,7 @@ void block_settings_mic(Interface *interf, JsonObject *data){
     }
 
     interf->spacer();
-    interf->button(button_t::generic, TCONST_settings, TINTF_00B);
+    interf->button(button_t::generic, TCONST_settings, TINTF_exit);
 
     interf->json_section_end();
 }
@@ -1469,7 +1472,7 @@ void page_settings_other(Interface *interf, JsonObject *data){
     interf->button(button_t::submit, TCONST_set_other, TINTF_Save, P_GRAY);
 
     interf->spacer();
-    interf->button(button_t::generic, TCONST_settings, TINTF_00B);
+    interf->button(button_t::generic, TCONST_settings, TINTF_exit);
 
     interf->json_frame_flush();
 }
@@ -1542,7 +1545,7 @@ void show_settings_time(Interface *interf, JsonObject *data){
     interf->spacer();
 
     // exit button
-    interf->button(button_t::generic, TCONST_SETTINGS, TINTF_00B);
+    interf->button(button_t::generic, TCONST_SETTINGS, TINTF_exit);
 
     // close and send frame
     interf->json_section_end();
@@ -1604,7 +1607,7 @@ void block_settings_event(Interface *interf, JsonObject *data){
     interf->button(button_t::generic, TCONST_event_conf, TINTF_05D);
 
     interf->spacer();
-    interf->button(button_t::generic, TCONST_effects, TINTF_00B);
+    interf->button(button_t::generic, TCONST_effects, TINTF_exit);
 
     interf->json_section_end();
 }
@@ -1891,7 +1894,7 @@ void show_event_conf(Interface *interf, JsonObject *data){
     }
 
     interf->spacer();
-    interf->button(button_t::generic, TCONST_show_event, TINTF_00B);
+    interf->button(button_t::generic, TCONST_show_event, TINTF_exit);
 
     interf->json_section_end();
     interf->json_frame_flush();
@@ -1943,7 +1946,7 @@ void block_settings_butt(Interface *interf, JsonObject *data){
     interf->button(button_t::generic, TCONST_butt_conf, TINTF_05D);
 
     interf->spacer();
-    interf->button(button_t::generic, TCONST_settings, TINTF_00B);
+    interf->button(button_t::generic, TCONST_settings, TINTF_exit);
 
     interf->json_section_end();
 }
@@ -2043,7 +2046,7 @@ void show_butt_conf(Interface *interf, JsonObject *data){
     }
 
     interf->spacer();
-    interf->button_value(button_t::generic, TCONST_sh_page, e2int(page::setup_bttn), TINTF_00B);
+    interf->button_value(button_t::generic, TCONST_sh_page, e2int(page::setup_bttn), TINTF_exit);
 
     interf->json_section_end();
     interf->json_frame_flush();
@@ -2076,7 +2079,7 @@ void block_settings_enc(Interface *interf, JsonObject *data){
     interf->range(TCONST_encTxtDel, 110-getEncTxtDelay(), 10, 100, 5, TINTF_044, false);
     interf->button(button_t::submit, TCONST_set_enc, TINTF_Save, P_GRAY);
     interf->spacer();
-    interf->button(button_t::generic, TCONST_settings, TINTF_00B);
+    interf->button(button_t::generic, TCONST_settings, TINTF_exit);
     interf->json_section_end();
 }
 void show_settings_enc(Interface *interf, JsonObject *data){
@@ -2184,7 +2187,7 @@ void show_settings_mp3(Interface *interf, JsonObject *data){
     interf->json_section_end();
 
     interf->spacer();
-    interf->button(button_t::generic, TCONST_settings, TINTF_00B);
+    interf->button(button_t::generic, TCONST_settings, TINTF_exit);
 
     interf->json_frame_flush();
 }
@@ -2342,8 +2345,8 @@ void page_drawing(Interface *interf, JsonObject *data){
     StaticJsonDocument<256>doc;
     JsonObject param = doc.to<JsonObject>();
 
-    param[TCONST_width] = mx->w();
-    param[TCONST_height] = mx->h();
+    param[TCONST_width] = display.getLayout().canvas_w();
+    param[TCONST_height] = display.getLayout().canvas_h();
     param[TCONST_blabel] = TINTF_0CF;
     param[TCONST_drawClear] = TINTF_0D9;
 
@@ -2370,8 +2373,8 @@ void block_streaming(Interface *interf, JsonObject *data){
         interf->range(TCONST_bright, (String)myLamp.getBrightness(), 0, 255, 1, (String)TINTF_00D, true);
         if (embui.paramVariant(TCONST_stream_type).toInt() == E131){
             interf->range(TCONST_Universe, embui.paramVariant(TCONST_Universe), 1, 255, 1, TINTF_0E8, true);
-            int uni = mx->h() / (512U / (mx->w() * 3)) + !!mx->h()%(512U / (mx->w() * 3));
-            interf->comment( String("Universes:") + uni + ";    X:" + mx->w() + ";    Y:" + (512U / (mx->w() * 3)) );
+            int uni = display.getCanvas()->h() / (512U / (display.getCanvas()->w() * 3)) + !!display.getCanvas()->h()%(512U / (display.getCanvas()->w() * 3));
+            interf->comment( String("Universes:") + uni + ";    X:" + display.getCanvas()->w() + ";    Y:" + (512U / (display.getCanvas()->w() * 3)) );
             interf->comment(String("Как настроить разметку матрицы в Jinx! можно посмотреть <a href=\"https://community.alexgyver.ru/threads/wifi-lampa-budilnik-proshivka-firelamp_jeeui-gpl.2739/page-454#post-103219\">на форуме</a>"));
         }
     interf->json_section_end();
@@ -2471,7 +2474,7 @@ void set_streaming_universe(Interface *interf, JsonObject *data){
 // Additional buttons on "Settings" page
 void user_settings_frame(Interface *interf, JsonObject *data){
     if (!interf) return;
-    interf->button_value(button_t::generic, TCONST_sh_page, e2int(page::setup_ledstrip), TINTF_ledstrip);
+    interf->button_value(button_t::generic, TCONST_sh_page, e2int(page::setup_display), TINTF_ledstrip);
 #ifdef MIC_EFFECTS
     interf->button_value(button_t::generic, TCONST_sh_page, e2int(page::mike), TINTF_020);
 #endif
@@ -2518,7 +2521,7 @@ void section_sys_settings_frame(Interface *interf, JsonObject *data){
         interf->button(button_t::submit, TCONST_sysSettings, TINTF_Save, P_GRAY);
 
         interf->spacer();
-        interf->button(button_t::generic, TCONST_settings, TINTF_00B);
+        interf->button(button_t::generic, TCONST_settings, TINTF_exit);
     interf->json_frame_flush();
 }
 
@@ -2575,14 +2578,6 @@ void page_gpiocfg(Interface *interf, JsonObject *data){
     embuifs::deserializeFile(doc, TCONST_fcfg_gpio);
 
     interf->json_section_begin(TCONST_set_gpio, "");
-    // gpio для подключения LED матрицы
-    interf->json_section_hidden(TCONST_mx_gpio, "Matrix");
-        interf->json_section_line(); // расположить в одной линии
-            interf->number_constrained(TCONST_mx_gpio, doc[TCONST_mx_gpio] | static_cast<int>(GPIO_NUM_NC), "LED Matrix gpio", /*step*/ 1, /*min*/ -1, /*max*/ NUM_OUPUT_PINS);
-        interf->json_section_end();
-        interf->button_value(button_t::submit, TCONST_set_gpio, static_cast<int>(gpio_device::ledstrip), TINTF_Save);
-    interf->json_section_end();
-
 #ifdef MP3PLAYER
     // gpio для подключения DP-плеера
     interf->json_section_hidden(TCONST_playMP3, "DFPlayer");
@@ -3248,7 +3243,7 @@ String httpCallback(const String &param, const String &value, bool isset){
         if (upperParam == CMD_MOVE_RND)  { run_action(ra::eff_rnd);  return result; }
         if (upperParam == CMD_REBOOT) { run_action(ra::reboot); return result; }
         else if (upperParam == CMD_ALARM) { result = myLamp.isAlarm() ; }
-        else if (upperParam == CMD_MATRIX) { char buf[32]; sprintf_P(buf, PSTR("[%d,%d]"), mx->w(), mx->h());  result = buf; }
+        else if (upperParam == CMD_MATRIX) { char buf[32]; sprintf_P(buf, PSTR("[%d,%d]"), display.getCanvas()->w(), display.getCanvas()->h());  result = buf; }
 #ifdef EMBUI_USE_MQTT        
         embui.publish(String(TCONST_embui_pub_) + upperParam, result, true);
 #endif
@@ -3377,51 +3372,119 @@ void load_events_config(const char* path){
 }
 
 /**
- * @brief build a page with LED strip setup
+ * @brief build a page with LED Display setup
  * 
  */
-void page_ledstrip_setup(Interface *interf, JsonObject *data){
-    if (!interf) return;
-
-    DynamicJsonDocument doc(256);
-    embuifs::deserializeFile(doc, TCONST_fcfg_ledstrip);
-
+void page_display_setup(Interface *interf, JsonObject *data){
     interf->json_frame_interface();
-    interf->json_section_main(TCONST_settings_ledstrip, TINTF_ledstrip);
+    interf->json_section_main(P_EMPTY, TINTF_display_setup);
 
-    interf->json_section_line(); // расположить в одной линии
-        interf->number_constrained(TCONST_width,  doc[TCONST_width].as<int>()  ? doc[TCONST_width].as<int>()  : 16, "ширина", 1, 1, 256);
-        interf->number_constrained(TCONST_height, doc[TCONST_height].as<int>() ? doc[TCONST_height].as<int>() : 16, "высота", 1, 1, 256);
+    interf->select(TCONST_dtype, e2int(display.get_engine_type()), TINTF_display_type, true);
+        interf->option(0, "ws2812b LED stripe");
+        interf->option(1, "HUB75 RGB Panel");
     interf->json_section_end();
 
-    interf->json_section_line(); // расположить в одной линии
-        interf->checkbox(TCONST_snake, doc[TCONST_snake], "змейка", false);
-        interf->checkbox(TCONST_vertical, doc[TCONST_vertical], "вертикальная", false);
-        interf->checkbox(TCONST_vflip, doc[TCONST_vflip], "V-отражение", false);
-        interf->checkbox(TCONST_hflip, doc[TCONST_hflip], "H-отражение", false);
-    interf->json_section_end();
+    interf->spacer();
 
-    interf->button(button_t::submit, TCONST_settings_ledstrip, TINTF_Save);  // Save
-    interf->button(button_t::generic, TCONST_settings, TINTF_00B);           // Exit
+    if (display.get_engine_type() == engine_t::hub75)
+        // load page block with HUB75 setup
+        block_hub75_setup(interf, data);
+    else
+        // load page block with ledstrip setup
+        block_ledstrip_setup(interf, data);
+
     interf->json_frame_flush();
 }
 
+/**
+ * @brief build a section with LED-strip setup
+ * it contains a set of controls to setup LedStrip topology
+ */
+void block_ledstrip_setup(Interface *interf, JsonObject *data){
+    // open a section
+    interf->json_section_begin(TCONST_settings_ledstrip, TINTF_ledstrip);
+
+    interf->hidden(TCONST_dtype, e2int(engine_t::ws2812));        // set hidden value for led type to ws2812
+
+    interf->comment("Параметры матрицы (смена gpio требует перезагрузки)");
+
+    interf->json_section_line(); // расположить в одной линии
+        // gpio для подключения LED матрицы
+        interf->number_constrained(TCONST_mx_gpio, display.getGPIO(), "LED Matrix gpio", /*step*/ 1, /*min*/ -1, /*max*/ NUM_OUPUT_PINS);
+        interf->number_constrained(TCONST_width,  (int)display.getLayout().tile_w(), "ширина", 1, 1, 256);
+        interf->number_constrained(TCONST_height, (int)display.getLayout().tile_h(), "высота", 1, 1, 256);
+    interf->json_section_end();
+
+    interf->json_section_line(); // расположить в одной линии
+        interf->checkbox(TCONST_vertical, display.getLayout().vertical(), TCONST_i_vert, false);
+        interf->checkbox(TCONST_snake, display.getLayout().snake(), TCONST_i_zmeika, false);
+    interf->json_section_end();
+    interf->json_section_line(); // расположить в одной линии
+        interf->checkbox(TCONST_vflip, display.getLayout().vmirror(), TCONST_i_vflip, false);
+        interf->checkbox(TCONST_hflip, display.getLayout().hmirror(), TCONST_i_hflip, false);
+    interf->json_section_end();
+
+    interf->spacer();
+
+    interf->comment("Параметры каскада матриц");
+    interf->json_section_line(); // расположить в одной линии
+        interf->number_constrained(TCONST_wcnt,   (int)display.getLayout().tile_wcnt(), "плиток по X", 1, 1, 32);
+        interf->number_constrained(TCONST_hcnt,   (int)display.getLayout().tile_hcnt(), "плиток по Y", 1, 1, 32);
+    interf->json_section_end();
+    interf->json_section_line(); // расположить в одной линии
+        interf->checkbox(TCONST_tsnake, display.getLayout().tileLayout.snake(), TCONST_i_zmeika);
+        interf->checkbox(TCONST_tvertical, display.getLayout().tileLayout.vertical(), TCONST_i_vert);
+    interf->json_section_end();
+    interf->json_section_line(); // расположить в одной линии
+        interf->checkbox(TCONST_tvflip, display.getLayout().tileLayout.vmirror(), TCONST_i_vflip);
+        interf->checkbox(TCONST_thflip, display.getLayout().tileLayout.hmirror(), TCONST_i_hflip);
+    interf->json_section_end();
+
+    interf->button(button_t::submit, TCONST_settings_ledstrip, TINTF_Save);  // Save
+    interf->button(button_t::generic, TCONST_settings, TINTF_exit);           // Exit
+
+    interf->json_section_end();     // close "TCONST_settings_ledstrip" section
+}
+
+void block_hub75_setup(Interface *interf, JsonObject *data){
+    interf->comment("Not implemented yet");
+}
 
 /*
     сохраняет настройки LED ленты
 */
 void set_ledstrip(Interface *interf, JsonObject *data){
     if (!data) return;
-    // save new led strip config
-    embuifs::serialize2file(*data, TCONST_fcfg_ledstrip);
 
-    // update led strip layout
-    display.updateTopo((*data)[TCONST_width],
-                        (*data)[TCONST_height],
-                        (*data)[TCONST_snake],
-                        (*data)[TCONST_vertical],
-                        (*data)[TCONST_vflip],
-                        (*data)[TCONST_hflip]
-                        );
-    LOG(printf, "resize LED buffer to w,h:(%d,%d)\n", (*data)[TCONST_width], (*data)[TCONST_height]);
+    {
+        DynamicJsonDocument doc(512);
+        if (!embuifs::deserializeFile(doc, TCONST_fcfg_display)) doc.clear();
+
+        JsonVariant dst = doc[TCONST_ws2812].isNull() ? doc.createNestedObject(TCONST_ws2812) : doc[TCONST_ws2812];
+
+        for (JsonPair kvp : *data)
+            dst[kvp.key()] = kvp.value();
+
+        doc[TCONST_dtype] = (*data)[TCONST_dtype];   // move led type key to the root of the object
+        dst.remove(TCONST_dtype);
+
+        // save new led strip config to file
+        embuifs::serialize2file(doc, TCONST_fcfg_display);
+    }
+
+    // set gpio
+    display.setGPIO((*data)[TCONST_mx_gpio]);
+
+    display.updateStripeLayout(
+        (*data)[TCONST_width], (*data)[TCONST_height],  // tile w,h
+        (*data)[TCONST_wcnt], (*data)[TCONST_hcnt],     // tile count on w,h
+        (*data)[TCONST_snake],          // single tile configuration
+        (*data)[TCONST_vertical],
+        (*data)[TCONST_vflip],
+        (*data)[TCONST_hflip],
+        (*data)[TCONST_tsnake],         // canvas of tiles
+        (*data)[TCONST_tvertical],
+        (*data)[TCONST_tvflip],
+        (*data)[TCONST_thflip]
+    );
 }

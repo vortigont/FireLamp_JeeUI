@@ -1,5 +1,4 @@
 #pragma once
-#include <string_view>
 
 /** набор служебных текстовых констант (не для локализации)
  */
@@ -49,6 +48,7 @@ static constexpr const char* TCONST_drawing = "drawing";
 static constexpr const char* TCONST_draw_dat = "draw_dat";
 static constexpr const char* TCONST_ds18b20 = "ds18b20";
 static constexpr const char* TCONST_DTimer = "DTimer";
+static constexpr const char* TCONST_dtype = "dtype";                          // LED Display engine type
 static constexpr const char* TCONST_dynCtrl = "dynCtrl";
 static constexpr const char* TCONST_dynCtrl_ = "dynCtrl*";
 //static constexpr const char* TCONST_edit_lamp_config = "edit_lamp_config";
@@ -88,7 +88,7 @@ static constexpr const char* TCONST_event_conf = "event_conf";
 static constexpr const char* TCONST_evList = "evList";
 static constexpr const char* TCONST_f_restore_state = "f_rstt";          // Lamp flag "restore state"
 static constexpr const char* TCONST_fcfg_gpio = "/gpio.json";
-static constexpr const char* TCONST_fcfg_ledstrip = "/ledstrip.json";
+static constexpr const char* TCONST_fcfg_display = "/display.json";
 static constexpr const char* TCONST_fileName2 = "fileName2";
 static constexpr const char* TCONST_fileName = "fileName";
 static constexpr const char* TCONST_fill = "fill";
@@ -97,6 +97,7 @@ static constexpr const char* TCONST_force = "force";
 static constexpr const char* TCONST_gbright = "gbright";
 static constexpr const char* TCONST_GBR = "GBR";
 static constexpr const char* TCONST_GlobBRI = "GlobBRI";
+static constexpr const char* TCONST_hcnt = "hcnt";
 static constexpr const char* TCONST_height = "height";
 static constexpr const char* TCONST_hflip = "hflip";
 static constexpr const char* TCONST_hold = "hold";
@@ -212,6 +213,10 @@ static constexpr const char* TCONST_tmBrightOn = "tmBrightOn";
 static constexpr const char* TCONST_tmBright = "tmBright";
 static constexpr const char* TCONST_tmEvent = "tmEvent";
 static constexpr const char* TCONST_tmZero = "tmZero";
+static constexpr const char* TCONST_thflip = "thflip";
+static constexpr const char* TCONST_tvflip = "tvflip";
+static constexpr const char* TCONST_tsnake = "tsnake";
+static constexpr const char* TCONST_tvertical = "tvertical";
 static constexpr const char* TCONST_txtBfade = "txtBfade";
 static constexpr const char* TCONST_txtColor = "txtColor";
 static constexpr const char* TCONST_txtOf = "txtOf";
@@ -224,7 +229,9 @@ static constexpr const char* TCONST_Version = "Version";
 static constexpr const char* TCONST_vflip = "vflip";
 static constexpr const char* TCONST_wcpass = "wcpass";
 static constexpr const char* TCONST_White = "White";
+static constexpr const char* TCONST_wcnt = "wcnt";
 static constexpr const char* TCONST_width = "width";
+static constexpr const char* TCONST_ws2812 = "ws2812";
 static constexpr const char* TCONST_XLOAD = "xload";
 static constexpr const char* TCONST__5f9ea0 = "#5f9ea0";
 static constexpr const char* TCONST__708090 = "#708090";
@@ -237,6 +244,13 @@ static constexpr const char* TCONST__demo = "demo";
 static constexpr const char* TCONST__ffffff = "#ffffff";
 static constexpr const char* TCONST__tmplist_tmp = "/tmplist.tmp";
 static constexpr const char* TCONST__tmpqlist_tmp = "/tmpqlist.tmp";
+
+// текст элементов интерфейса
+static constexpr const char* TCONST_i_zmeika = "змейка";
+static constexpr const char* TCONST_i_vert = "вертикальная";
+static constexpr const char* TCONST_i_vflip = "зеркальные столбцы";
+static constexpr const char* TCONST_i_hflip = "зеркальные строки";
+
 
 /** набор служебных текстовых констант (HTTP/MQTT запросы) */
 static constexpr const char* CMD_ON = "ON";                    // Без параметров - возвращает 1/0 в зависимости вкл/выкл лампа, принимает параметр - 1/0 (вкл/выкл лампу)
