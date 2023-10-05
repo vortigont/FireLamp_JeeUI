@@ -85,7 +85,6 @@ enum class page : uint8_t {
     setup_bttn,
     setup_encdr,
     setup_other,
-    setup_esp,
     setup_gpio,
     _count,             // not a page but a len marker
     begin = 0,
@@ -246,8 +245,6 @@ void show_page_selector(Interface *interf, JsonObject *data){
     #endif
         case page::setup_gpio :     // страница настроек GPIO
             return page_gpiocfg(interf, nullptr);
-        case page::setup_esp :      // страница настроек ESP
-            return section_sys_settings_frame(interf, nullptr);
         case page::setup_other :    // страница "настройки"-"другие"
             return page_settings_other(interf, nullptr);
         case page::setup_display : // led struip setup
@@ -2492,59 +2489,11 @@ void user_settings_frame(Interface *interf, JsonObject *data){
 #endif
     interf->button_value(button_t::generic, TCONST_sh_page, e2int(page::setup_other), TINTF_082);
 
-    interf->button_value(button_t::generic, TCONST_sh_page, e2int(page::setup_esp), TINTF_08F);
-
     // show gpio setup page button
     interf->button_value(button_t::generic, TCONST_sh_page, e2int(page::setup_gpio), TINTF_gpiocfg);
 
     // obsolete
     //block_lamp_config(interf, data);
-}
-
-// Страница "Настройки ESP"
-void section_sys_settings_frame(Interface *interf, JsonObject *data){
-    if (!interf) return;
-    interf->json_frame_interface(); // TINTF_08F);
-
-    interf->json_section_main(TCONST_sysSettings, TINTF_08F);
-        interf->spacer(TINTF_092); // заголовок
-        interf->json_section_line(TINTF_092); // расположить в одной линии
-#ifdef ESP_USE_BUTTON
-            interf->number_constrained(TCONST_PINB, embui.paramVariant(TCONST_PINB).as<int>(), TINTF_094, 1, 0, NUM_OUPUT_PINS);
-#endif
-        interf->json_section_end(); // конец контейнера
-        interf->spacer();
-
-        // Editor frame
-        //interf->json_section_main(TCONST_edit, "");
-        //interf->iframe(TCONST_edit, TCONST_edit);
-        //interf->json_section_end();
-
-        interf->button(button_t::submit, TCONST_sysSettings, TINTF_Save, P_GRAY);
-
-        interf->spacer();
-        interf->button(button_t::generic, TCONST_settings, TINTF_exit);
-    interf->json_frame_flush();
-}
-
-void set_sys_settings(Interface *interf, JsonObject *data){
-    if(!data) return;
-
-#ifdef ESP_USE_BUTTON
-    {String tmpChk = (*data)[TCONST_PINB]; if(tmpChk.toInt()>16) return;}
-#endif
-
-#ifdef ESP_USE_BUTTON
-    SETPARAM(TCONST_PINB);
-#endif
-
-/*
-    if(!embui.sysData.isWSConnect){ // если последние 5 секунд не было коннекта, защита от зацикливания ребута
-        myLamp.sendString(String(TINTF_096).c_str(), CRGB::Red, true);
-        new Task(TASK_SECOND, TASK_ONCE, nullptr, &ts, true, nullptr, [](){ embui.autosave(true); LOG(println, "Rebooting..."); remote_action(RA::RA_REBOOT, NULL, NULL); });
-    }
-*/
-    section_effects_frame(interf,data);
 }
 
 void set_lamp_flags(Interface *interf, JsonObject *data){
@@ -2744,7 +2693,6 @@ void create_parameters(){
     basicui::add_sections();
 
     embui.section_handle_add(TCONST_sh_page, show_page_selector);
-    embui.section_handle_add(TCONST_sysSettings, set_sys_settings);
 
     embui.section_handle_add(TCONST_syslampFlags, set_lamp_flags);
 
@@ -3429,10 +3377,10 @@ void block_ledstrip_setup(Interface *interf, JsonObject *data){
 
     interf->json_section_line(); // расположить в одной линии
         interf->checkbox(TCONST_snake, display.getLayout().snake(), TCONST_i_zmeika, false);
-        interf->checkbox(TCONST_vertical, display.getLayout().vertical(), TCONST_i_vert, false);
+        interf->checkbox(TCONST_vflip, display.getLayout().vmirror(), TCONST_i_vflip, false);
     interf->json_section_end();
     interf->json_section_line(); // расположить в одной линии
-        interf->checkbox(TCONST_vflip, display.getLayout().vmirror(), TCONST_i_vflip, false);
+        interf->checkbox(TCONST_vertical, display.getLayout().vertical(), TCONST_i_vert, false);
         interf->checkbox(TCONST_hflip, display.getLayout().hmirror(), TCONST_i_hflip, false);
     interf->json_section_end();
 
@@ -3445,10 +3393,10 @@ void block_ledstrip_setup(Interface *interf, JsonObject *data){
     interf->json_section_end();
     interf->json_section_line(); // расположить в одной линии
         interf->checkbox(TCONST_tsnake, display.getLayout().tileLayout.snake(), TCONST_i_zmeika);
-        interf->checkbox(TCONST_tvertical, display.getLayout().tileLayout.vertical(), TCONST_i_vert);
+        interf->checkbox(TCONST_tvflip, display.getLayout().tileLayout.vmirror(), TCONST_i_vflip);
     interf->json_section_end();
     interf->json_section_line(); // расположить в одной линии
-        interf->checkbox(TCONST_tvflip, display.getLayout().tileLayout.vmirror(), TCONST_i_vflip);
+        interf->checkbox(TCONST_tvertical, display.getLayout().tileLayout.vertical(), TCONST_i_vert);
         interf->checkbox(TCONST_thflip, display.getLayout().tileLayout.hmirror(), TCONST_i_hflip);
     interf->json_section_end();
 
