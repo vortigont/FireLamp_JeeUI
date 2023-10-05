@@ -112,8 +112,9 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
   #define MIC_PIN               (GPIO_NUM_34)                 // ESP32 Analog Pin
  #elif defined CONFIG_IDF_TARGET_ESP32C3
   #define MIC_PIN               (GPIO_NUM_2)                  // ESP32c3 Analog Pin
+ #elif defined CONFIG_IDF_TARGET_ESP32S3                                                                                                                      
+  #define MIC_PIN               (GPIO_NUM_34)                 // ESP32-S3 Analog Pin
  #endif
-#define FAST_ADC_READ                                       // использовать полный диапазон звуковых частот, если закомментировано, то будет до 5кГц, но сэкономит память и проще обсчитать...
 #endif
 
 #ifndef MIC_POLLRATE
@@ -124,6 +125,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #define HIGH_MAP_FREQ         (20000U)                      // верхняя граница слышимого диапазона, используется для мапинга, дефолтное и общепринятое значение 20000Гц
 #endif
 
+#define FAST_ADC_READ                                       // использовать полный диапазон звуковых частот, если закомментировано, то будет до 5кГц, но сэкономит память и проще обсчитать...
 #ifdef FAST_ADC_READ
 #ifndef SAMPLING_FREQ
 #define SAMPLING_FREQ         (18000U*2U)
