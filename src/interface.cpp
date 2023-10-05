@@ -1336,8 +1336,8 @@ void block_settings_mic(Interface *interf, JsonObject *data){
 
     interf->json_section_begin(TCONST_set_mic);
     if (!myLamp.isMicCalibration()) {
-        interf->number_constrained(TCONST_micScale, round(myLamp.getLampState().getMicScale() * 100) / 100, TINTF_022, 0.01f, 0.0f, 2.0f);
-        interf->number_constrained(TCONST_micNoise, round(myLamp.getLampState().getMicNoise() * 100) / 100, TINTF_023, 0.01f, 0.0f, 32.0f);
+        interf->number_constrained(TCONST_micScale, round(myLamp.getLampState().getMicScale() * 10) / 10, TINTF_022, 0.1f, 0.1f, 4.0f);
+        interf->number_constrained(TCONST_micNoise, round(myLamp.getLampState().getMicNoise() * 10) / 10, TINTF_023, 0.1f, 0.0f, 32.0f);
         interf->range (TCONST_micnRdcLvl, (int)myLamp.getLampState().getMicNoiseRdcLevel(), 0, 4, 1, TINTF_024, false);
 
         interf->button(button_t::submit, TCONST_set_mic, TINTF_Save, P_GRAY);
@@ -1364,21 +1364,22 @@ void show_settings_mic(Interface *interf, JsonObject *data){
 
 void set_settings_mic(Interface *interf, JsonObject *data){
     if (!data) return;
-    float scale = (*data)[TCONST_micScale]; //atof((*data)[TCONST_micScale].as<String>().c_str());
-    float noise = (*data)[TCONST_micNoise]; //atof((*data)[TCONST_micNoise].as<String>().c_str());
+    float scale = (*data)[TCONST_micScale];
+    float noise = (*data)[TCONST_micNoise];
     mic_noise_reduce_level_t rdl = static_cast<mic_noise_reduce_level_t>((*data)[TCONST_micnRdcLvl].as<unsigned>());
 
-    // LOG(printf_P, PSTR("scale=%2.3f noise=%2.3f rdl=%d\n"),scale,noise,rdl);
-    // String tmpStr;
-    // serializeJson(*data, tmpStr);
-    // LOG(printf_P, PSTR("*data=%s\n"),tmpStr.c_str());
+    LOG(printf_P, PSTR("Set mike: scale=%2.3f noise=%2.3f rdl=%d\n"),scale,noise,rdl);
 
-    SETPARAM(TCONST_micScale, myLamp.getLampState().setMicScale(scale));
-    SETPARAM(TCONST_micNoise, myLamp.getLampState().setMicNoise(noise));
-    SETPARAM(TCONST_micnRdcLvl, myLamp.getLampState().setMicNoiseRdcLevel(rdl));
+    embui.var(TCONST_micScale, scale);
+    embui.var_dropnulls(TCONST_micNoise, noise);
+    embui.var_dropnulls(TCONST_micnRdcLvl, (*data)[TCONST_micnRdcLvl].as<unsigned>());
+
+    // apply to running configuration
+    myLamp.getLampState().setMicScale(scale);
+    myLamp.getLampState().setMicNoise(noise);
+    myLamp.getLampState().setMicNoiseRdcLevel(rdl);
 
     basicui::section_settings_frame(interf, data);
-    //section_settings_frame(interf, data);
 }
 
 void set_micflag(Interface *interf, JsonObject *data){
@@ -3022,9 +3023,9 @@ void sync_parameters(){
     // float noise = atof(embui.param(TCONST_micNoise).c_str());
     // mic_noise_reduce_level_t lvl=(mic_noise_reduce_level_t)embui.param(TCONST_micnRdcLvl).toInt();
 
-    obj[TCONST_micScale] = embui.param(TCONST_micScale); //scale;
-    obj[TCONST_micNoise] = embui.param(TCONST_micNoise); //noise;
-    obj[TCONST_micnRdcLvl] = embui.param(TCONST_micnRdcLvl); //lvl;
+    obj[TCONST_micScale] = embui.paramVariant(TCONST_micScale); //scale;
+    obj[TCONST_micNoise] = embui.paramVariant(TCONST_micNoise); //noise;
+    obj[TCONST_micnRdcLvl] = embui.paramVariant(TCONST_micnRdcLvl); //lvl;
     set_settings_mic(nullptr, &obj);
     doc.clear();
 #endif
