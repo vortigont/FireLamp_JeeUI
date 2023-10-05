@@ -206,7 +206,6 @@ private:
     uint8_t BFade;                      // затенение фона под текстом
 
     uint8_t txtOffset = 0; // смещение текста относительно края матрицы
-    uint16_t curLimit = CURRENT_LIMIT; // ограничение тока
 
     // GPIO's
     uint8_t bPin = BTN_PIN;        // пин кнопки
@@ -324,8 +323,6 @@ public:
 
     void setbPin(uint8_t val) {bPin = val;}
     uint8_t getbPin() {return bPin;}
-    void setcurLimit(uint16_t val) {curLimit = val;}
-    uint16_t getcurLimit() {return curLimit;}
     LAMPSTATE &getLampState() {return lampState;}
     LList<std::shared_ptr<UIControl>>&getEffControls() { return effects.getControls(); }
 

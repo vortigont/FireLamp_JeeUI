@@ -1344,7 +1344,7 @@ void block_settings_mic(Interface *interf, JsonObject *data){
         interf->json_section_end();
 
         interf->spacer();
-        interf->button(button_t::generic, TCONST_mic_cal, TINTF_025, P_RED);
+        interf->button(button_t::generic, TCONST_mic_cal, TINTF_025, P_RED);      // включение калибровки микрофона
     } else {
         interf->button(button_t::generic, TCONST_mic_cal, TINTF_027, P_RED );
     }
@@ -2514,7 +2514,6 @@ void section_sys_settings_frame(Interface *interf, JsonObject *data){
 #endif
         interf->json_section_end(); // конец контейнера
         interf->spacer();
-        interf->number_constrained(TCONST_CLmt, embui.paramVariant(TCONST_CLmt).as<int>(), TINTF_095, /* step */ 100, /* min */ 1000, /* max*/ 16000);    // current limit
 
         // Editor frame
         //interf->json_section_main(TCONST_edit, "");
@@ -2534,16 +2533,11 @@ void set_sys_settings(Interface *interf, JsonObject *data){
 #ifdef ESP_USE_BUTTON
     {String tmpChk = (*data)[TCONST_PINB]; if(tmpChk.toInt()>16) return;}
 #endif
-    {String tmpChk = (*data)[TCONST_CLmt]; if(tmpChk.toInt()>16000) return;}
 
 #ifdef ESP_USE_BUTTON
     SETPARAM(TCONST_PINB);
 #endif
-#ifdef MP3PLAYER
-    SETPARAM(TCONST_mp3rx);
-    SETPARAM(TCONST_mp3tx);
-#endif
-    SETPARAM(TCONST_CLmt);
+
 /*
     if(!embui.sysData.isWSConnect){ // если последние 5 секунд не было коннекта, защита от зацикливания ребута
         myLamp.sendString(String(TINTF_096).c_str(), CRGB::Red, true);
@@ -2732,7 +2726,6 @@ void create_parameters(){
 #ifdef TM1637_CLOCK
     embui.var_create(TCONST_tmBright, 82); // 5<<4+5, старшие и младшие 4 байта содержат 5
 #endif
-    embui.var_create(TCONST_CLmt, CURRENT_LIMIT); // Лимит по току
 #ifdef USE_STREAMING
     embui.var_create(TCONST_stream_type, SOUL_MATE); // Тип трансляции
     embui.var_create(TCONST_Universe, 1); // Universe для E1.31
@@ -3427,6 +3420,9 @@ void block_ledstrip_setup(Interface *interf, JsonObject *data){
     interf->json_section_line(); // расположить в одной линии
         // gpio для подключения LED матрицы
         interf->number_constrained(TCONST_mx_gpio, display.getGPIO(), "LED Matrix gpio", /*step*/ 1, /*min*/ -1, /*max*/ NUM_OUPUT_PINS);
+        interf->number_constrained(TCONST_CLmt, static_cast<int>(display.getCurrentLimit()), TINTF_095, /* step */ 100, /* min */ 1000, /* max*/ 16000);    // FastLED current limit
+    interf->json_section_end();
+    interf->json_section_line(); // расположить в одной линии
         interf->number_constrained(TCONST_width,  (int)display.getLayout().tile_w(), "ширина", 1, 1, 256);
         interf->number_constrained(TCONST_height, (int)display.getLayout().tile_h(), "высота", 1, 1, 256);
     interf->json_section_end();
@@ -3501,8 +3497,10 @@ void set_ledstrip(Interface *interf, JsonObject *data){
         return;
     }
 
-    // set gpio
+    // set FastLED gpio
     display.setGPIO((*data)[TCONST_mx_gpio]);
+    // установка максимального тока FastLED
+    display.setCurrentLimit((*data)[TCONST_CLmt]);
 
     display.updateStripeLayout(
         (*data)[TCONST_width], (*data)[TCONST_height],  // tile w,h

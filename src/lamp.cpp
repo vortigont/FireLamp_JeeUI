@@ -72,10 +72,6 @@ void LAMP::lamp_init()
 {
   //_wipe_screen();
   // restore LED's current limit
-  curLimit = embui.paramVariant(TCONST_CLmt);
-  if (curLimit > 0){
-    FastLED.setMaxPowerInVoltsAndMilliamps(5, curLimit); // установка максимального тока БП
-  }
 
   _brightnessScale = embui.paramVariant(TCONST_brtScl)  | DEF_BRT_SCALE;
   globalBrightness = embui.paramVariant(TCONST_GlobBRI) | DEF_BRT_SCALE/2;
@@ -295,13 +291,6 @@ void LAMP::changePower(bool flag) // флаг включения/выключе�
       &ts, false, nullptr, nullptr, true);
     _t->enableDelayed();
   }
-
-#ifdef DS18B20
-    // восстанавливаем значение тока после включения. Так как значение 0 не работает в ограничителе тока по перегреву, 
-    // то если ограничение тока установлено в 0, устанвливаем вместо него рассчетный максимум в 15.36А на 256 диодов (бред конечно, но нужно же хоть какое-то значение больше 0).
-    setcurLimit(embui.param(TCONST_CLmt).toInt() == 0 ? (display.getCanvas()->size() * 60) : embui.param(TCONST_CLmt).toInt());
-#endif
-    FastLED.setMaxPowerInVoltsAndMilliamps(5, curLimit); // установка максимального тока БП, более чем актуально))). Проверил, без этого куска - ограничение по току не работает :)
 }
 
 #ifdef MP3PLAYER

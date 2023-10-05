@@ -46,6 +46,9 @@ An object file for LED output devices, backends and buffers
 #include "hub75.h"
 #include "ESP32-HUB75-MatrixPanel-I2S-DMA.h"
 
+#define FASTLED_VOLTAGE     5
+
+
 
 bool LEDDisplay::start(){
     if (_dengine) return true;   // Overlay engine already running
@@ -67,6 +70,9 @@ bool LEDDisplay::start(){
 
     // load gpio value
     _gpio = o[TCONST_mx_gpio].as<int>();
+
+    // set current
+    setCurrentLimit(o[TCONST_CLmt]);
 
     // load canvas topology
     tiles.setTileDimensions(
@@ -192,6 +198,12 @@ void LEDDisplay::print_stripe_cfg(){
     LOG(printf, "Matrix: snake:%o, vert:%d, vflip:%d, hflip:%d\n", tiles.snake(), tiles.vertical(), tiles.vmirror(), tiles.hmirror() );
     LOG(printf, "Tiles: snake:%o, vert:%d, vflip:%d, hflip:%d\n", tiles.tileLayout.snake(), tiles.tileLayout.vertical(), tiles.tileLayout.vmirror(), tiles.tileLayout.hmirror() );
 }
+
+void LEDDisplay::setCurrentLimit(uint32_t i){
+    fastled_current_limit = i < FASTLED_MIN_CURRENT ? FASTLED_MIN_CURRENT : i;
+    FastLED.setMaxPowerInVoltsAndMilliamps(FASTLED_VOLTAGE, fastled_current_limit);
+}
+
 
 // my display object
 LEDDisplay display;

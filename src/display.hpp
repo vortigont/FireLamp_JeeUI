@@ -44,6 +44,8 @@ A header file for LED output devices, backends and buffers
 #include "config.h"
 #include "ledfb.hpp"
 
+#define FASTLED_MIN_CURRENT 1000
+
 enum class engine_t:uint8_t  {
     ws2812 = 0,
     hub75
@@ -55,6 +57,7 @@ class LEDDisplay {
 
     engine_t _etype;        // type of backend to use
     int _gpio{-1};          // fastled gpio
+    uint32_t fastled_current_limit = FASTLED_MIN_CURRENT;      // Led strip current limit
     uint8_t _brt{32};       // backend engine brightness, if supported
 
     // An object ref I'll use to access LED device
@@ -82,10 +85,19 @@ public:
 
     const LedTiles& getLayout() const { return tiles; } 
 
+    // get FastLED gpio
     int getGPIO(){ return _gpio; }
 
+    // get FastLED current limit
+    uint32_t getCurrentLimit(){ return fastled_current_limit; }
+
     /*** SETTERS ***/
+
+    // set FastLED gpio
     void setGPIO(int gpio){ if (gpio <= NUM_OUPUT_PINS) _gpio = gpio; }
+
+    // set FastLED current limit
+    void setCurrentLimit(uint32_t i);
 
     // Update LED stripe topology and sizing
     void updateStripeLayout(uint16_t w, uint16_t h, uint16_t wcnt, uint16_t hcnt,
