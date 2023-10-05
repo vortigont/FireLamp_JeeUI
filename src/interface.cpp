@@ -1493,9 +1493,10 @@ void set_settings_other(Interface *interf, JsonObject *data){
         SETPARAM(TCONST_spdcf, myLamp.setSpeedFactor(sf));
 
         // save non-default brightness scale
-        if ( (*data)[TCONST_brtScl] != DEF_BRT_SCALE ){
-            embui.var(TCONST_brtScl, (*data)[TCONST_brtScl], true);
-            myLamp.setBrightnessScale((*data)[TCONST_brtScl]);
+        unsigned b = (*data)[TCONST_brtScl];
+        if ( b && b != DEF_BRT_SCALE ){         // бестолковый вызов sync_parameters() может не передать сюда значение [TCONST_brtScl], проверяем что b!=0
+            embui.var(TCONST_brtScl, b, true);
+            myLamp.setBrightnessScale(b);
         }
 
     #ifdef TM1637_CLOCK
