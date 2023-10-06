@@ -1494,8 +1494,11 @@ void set_settings_other(Interface *interf, JsonObject *data){
 
         // save non-default brightness scale
         unsigned b = (*data)[TCONST_brtScl];
-        if ( b && b != DEF_BRT_SCALE ){         // бестолковый вызов sync_parameters() может не передать сюда значение [TCONST_brtScl], проверяем что b!=0
-            embui.var(TCONST_brtScl, b, true);
+        if (b){         // бестолковый вызов sync_parameters() может не передать сюда значение [TCONST_brtScl], проверяем что b!=0
+            if (b == DEF_BRT_SCALE)
+                embui.var_remove(TCONST_brtScl)
+            else
+                embui.var(TCONST_brtScl, b, true);
             myLamp.setBrightnessScale(b);
         }
 
