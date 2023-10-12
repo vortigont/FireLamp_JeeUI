@@ -985,7 +985,7 @@ void EffectWorker::_load_default_fweff_list(){
       continue;
 
 #ifndef MIC_EFFECTS
-    if(i>EFF_ENUM::EFF_TIME) continue;    // пропускаем эффекты для микрофона, если отключен микрофон
+//    if(i>EFF_ENUM::EFF_TIME) continue;    // пропускаем эффекты для микрофона, если отключен микрофон
 #endif
 
     EffectListElem el(i, SET_ALL_EFFFLAGS);
