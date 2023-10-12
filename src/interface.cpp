@@ -310,7 +310,7 @@ void block_menu(Interface *interf, JsonObject *data){
     interf->json_section_menu();
 
     interf->option(TCONST_effects, TINTF_000);        //  Эффекты
-    interf->option(TCONST_lamptext, TINTF_001);       //  Вывод текста
+    //interf->option(TCONST_lamptext, TINTF_001);       //  Вывод текста
     interf->option(TCONST_drawing, TINTF_0CE);        //  Рисование
 #ifdef USE_STREAMING
     interf->option(TCONST_streaming, TINTF_0E2);      //  Трансляция
@@ -1496,7 +1496,7 @@ void set_settings_other(Interface *interf, JsonObject *data){
         unsigned b = (*data)[TCONST_brtScl];
         if (b){         // бестолковый вызов sync_parameters() может не передать сюда значение [TCONST_brtScl], проверяем что b!=0
             if (b == DEF_BRT_SCALE)
-                embui.var_remove(TCONST_brtScl)
+                embui.var_remove(TCONST_brtScl);
             else
                 embui.var(TCONST_brtScl, b, true);
             myLamp.setBrightnessScale(b);
