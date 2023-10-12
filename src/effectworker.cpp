@@ -257,9 +257,9 @@ void EffectWorker::workerset(uint16_t effect){
 
   switch (static_cast<EFF_ENUM>(effect%256)) // номер может быть больше чем ENUM из-за копирований, находим эффект по модулю
   {
-  case EFF_ENUM::EFF_TIME :
+/*case EFF_ENUM::EFF_TIME :
     worker = std::unique_ptr<EffectTime>(new EffectTime(canvas));
-    break;
+    break;*/
   case EFF_ENUM::EFF_SWIRL :
     worker = std::unique_ptr<EffectSwirl>(new EffectSwirl(canvas));
     break;
