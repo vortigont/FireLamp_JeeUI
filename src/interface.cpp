@@ -3473,12 +3473,14 @@ void set_hub75(Interface *interf, JsonObject *data){
 
         DynamicJsonDocument doc(512);
         if (!embuifs::deserializeFile(doc, TCONST_fcfg_display)) doc.clear();
-
+/*
         JsonVariant dst = doc[TCONST_ws2812].isNull() ? doc.createNestedObject(TCONST_ws2812) : doc[TCONST_ws2812];
 
         for (JsonPair kvp : *data)
             dst[kvp.key()] = kvp.value();
 
+        dst.remove(TCONST_dtype);
+*/
         doc[TCONST_dtype] = e2int(engine_t::hub75);   // set engine to hub75
 
         // save new led strip config to file
