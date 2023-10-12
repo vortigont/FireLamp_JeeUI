@@ -225,9 +225,8 @@ private:
 
 
     uint8_t alarmPT; // время будильника рассвет - старшие 4 бита и свечения после рассвета - младшие 4 бита
-#ifdef TM1637_CLOCK
     uint8_t tmBright; // яркость дисплея при вкл - старшие 4 бита и яркость дисплея при выкл - младшие 4 бита
-#endif
+
     DynamicJsonDocument *docArrMessages = nullptr; // массив сообщений для вывода на лампу
 
     timerMinim tmStringStepTime;    // шаг смещения строки, в мс
@@ -505,7 +504,7 @@ public:
      */
     void showTimeOnScreen(const char *value, bool force=false);
 
-#ifdef TM1637_CLOCK
+    // TM1637_CLOCK
     void settm24 (bool flag) {flags.tm24 = flag;}
     void settmZero (bool flag) {flags.tmZero = flag;}
     bool isTm24() {return flags.tm24;}
@@ -513,7 +512,7 @@ public:
     void setTmBright(uint8_t val) {tmBright = val;}
     uint8_t getBrightOn() { return tmBright>>4; }
     uint8_t getBrightOff() { return tmBright&0x0F; }
-#endif
+
 #ifdef DS18B20
 bool isTempDisp() {return flags.isTempOn;}
 void setTempDisp(bool flag) {flags.isTempOn = flag;}

@@ -72,7 +72,6 @@ https://github.com/vortigont/FireLamp_JeeUI/wiki/%D0%9D%D0%B0%D0%B7%D0%BD%D0%B0%
 #define ESP_USE_BUTTON                                      // если строка не закомментирована, должна быть подключена кнопка (иначе ESP может регистрировать "фантомные" нажатия и некорректно устанавливать яркость)
 //#define MIC_EFFECTS                                         // Включить использование микрофона для эффектов
 //#define MP3PLAYER                                           // Включить использование MP3 плеера (DF Player)
-//#define TM1637_CLOCK                                        // Использовать 7-ми сегментный LED-индикатор TM1637
 //#define DS18B20                                             // Использовать датчик температуры DS18b20 для управления вентилятором охлаждения матрицы
 //#define ENCODER                                             // Использовать Энкодер
 //#define RTC                                                 // Включить использование внешнего модуля RTC
@@ -128,21 +127,13 @@ https://github.com/vortigont/FireLamp_JeeUI/wiki/%D0%9D%D0%B0%D0%B7%D0%BD%D0%B0%
 #define SAMPLING_FREQ         (18000U*2U)
 #endif
 
-#ifdef TM1637_CLOCK
-  #define TM_SHOW_BANNER 0                                  // 1 - показывать IP при загрузке, 0 - нет 
-#endif
 
 #ifdef RTC
   #define RTC_MODULE          (2U)                          // Поддерживаются модули DS1302 = (1U),  DS1307 = (2U), DS3231 = (3U)
   #define RTC_SYNC_PERIOD     (24U)                         // Период синхронизации RTC c ntp (часы)
   #if RTC_MODULE > (1U)                                     // Если выбран модуль с I2C (DS1307 или DS3231)
-    //#ifdef TM1637_CLOCK                                     // Если есть дисплей TM1637, то можем использовать его пины для RTC (но RTC модуль работает не на всех пинах)
-    //  #define pin_SW_SDA        (TM_CLK_PIN)                // Пин SDA RTC модуля подключаем к CLK пину дисплея
-    //  #define pin_SW_SCL        (TM_DIO_PIN)                // Пин SCL RTC модуля подключаем к DIO пину дисплея
-    //#else                                                   // Пины подбирать экспериментальным путем, точно работает на D2 и D4
       #define pin_SW_SDA        (D2)                        // Назначаем вывод для работы в качестве линии SDA программной шины I2C.
       #define pin_SW_SCL        (D4)                        // Назначаем вывод для работы в качестве линии SCL программной шины I2C.
-    //#endif
   #endif
   #if RTC_MODULE == (1U)                                    // Если выбран модуль DS1302.
     #define pin_RST             (D8)                        // Назначаем вывод RST.

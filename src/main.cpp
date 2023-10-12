@@ -52,11 +52,8 @@ Buttons *myButtons;
 MP3PlayerDevice *mp3 = nullptr;
 #endif
 
-#ifdef TM1637_CLOCK
-// TM1637 display
-// https://github.com/AKJ7/TM1637/
+// TM1637 display https://github.com/AKJ7/TM1637/
 TMCLOCK *tm1637 = nullptr;
-#endif
 
 // forward declarations
 
@@ -167,11 +164,10 @@ void loop() {
     rtc.updateRtcTime();
 #endif
 
-#ifdef TM1637_CLOCK
     EVERY_N_SECONDS(1) {
         if (tm1637) tm1637->tm_loop();
     }
-#endif
+
 #ifdef DS18B20
     EVERY_N_MILLIS(1000*DS18B_READ_DELAY + 25) {
         ds_loop();
@@ -330,14 +326,13 @@ void gpio_setup(){
     mp3 = new MP3PlayerDevice(rxpin, txpin, embui.paramVariant(TCONST_mp3volume) | DFPLAYER_DEFAULT_VOL );
 #endif
 
-#ifdef TM1637_CLOCK
+    // create TM1637 display object if it's pins are defined
     rxpin = doc[TCONST_tm_clk] | -1;
     txpin = doc[TCONST_tm_dio] | -1;
     if (rxpin != -1 && txpin != -1){
         tm1637 = new TMCLOCK(rxpin, txpin);
         tm1637->tm_setup();
     }
-#endif 
 }
 
 void wled_announce(WiFiEvent_t cbEvent, WiFiEventInfo_t i){

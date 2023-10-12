@@ -45,9 +45,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "alarm.h"
 #include "templates.hpp"
 
-#ifdef TM1637_CLOCK
-    #include "tm.h"				// Подключаем функции
-#endif
+#include "tm.h"
 #ifdef DS18B20
 #include "DS18B20.h"			// термодатчик даллас
 #endif
@@ -1446,7 +1444,6 @@ void page_settings_other(Interface *interf, JsonObject *data){
     float sf = embui.paramVariant(TCONST_spdcf);
     interf->range(TCONST_spdcf, sf, 0.25f, 4.0f, 0.25f, TINTF_0D3, false);
 
-#ifdef TM1637_CLOCK
     interf->spacer(TINTF_0D4);
     interf->json_section_line();
         interf->checkbox(TCONST_tm24, myLamp.getLampFlagsStuct().tm24, TINTF_0D7, false);
@@ -1461,7 +1458,7 @@ void page_settings_other(Interface *interf, JsonObject *data){
     #ifdef DS18B20
     interf->checkbox(TCONST_ds18b20, myLamp.getLampFlagsStuct().isTempOn, TINTF_0E0, false);
     #endif
-#endif
+
     interf->spacer(TINTF_0BA);
 
     interf->json_section_line();
@@ -1502,7 +1499,6 @@ void set_settings_other(Interface *interf, JsonObject *data){
             myLamp.setBrightnessScale(b);
         }
 
-    #ifdef TM1637_CLOCK
         uint8_t tmBri = ((*data)[TCONST_tmBrightOn]).as<uint8_t>()<<4; // старшие 4 бита
         tmBri = tmBri | ((*data)[TCONST_tmBrightOff]).as<uint8_t>(); // младшие 4 бита
         embui.var(TCONST_tmBright, tmBri); myLamp.setTmBright(tmBri);
@@ -1511,7 +1507,6 @@ void set_settings_other(Interface *interf, JsonObject *data){
         #ifdef DS18B20
         myLamp.setTempDisp((*data)[TCONST_ds18b20]);
         #endif
-    #endif
 
         uint8_t alatmPT = ((*data)[TCONST_alarmP]).as<uint8_t>()<<4; // старшие 4 бита
         alatmPT = alatmPT | ((*data)[TCONST_alarmT]).as<uint8_t>(); // младшие 4 бита
@@ -2296,7 +2291,7 @@ void set_gpios(Interface *interf, JsonObject *data){
             doc[TCONST_aux_ll] = (*data)[TCONST_aux_ll];
             break;
         }
-#ifdef TM1637_CLOCK
+
         // TM1637 gpios
         case gpio_device::tmdisplay : {
             // save pin numbers into config file if present/valid
@@ -2307,7 +2302,7 @@ void set_gpios(Interface *interf, JsonObject *data){
             else doc[TCONST_tm_dio] = (*data)[TCONST_tm_dio];
             break;
         }
-#endif
+
         // WS LED strip gpios
         case gpio_device::ledstrip : {
             if ( (*data)[TCONST_mx_gpio] == static_cast<int>(GPIO_NUM_NC) ) doc.remove(TCONST_mx_gpio);
@@ -2539,7 +2534,6 @@ void page_gpiocfg(Interface *interf, JsonObject *data){
     interf->json_section_end();
 #endif
 
-#ifdef TM1637_CLOCK
     // gpio для подключения 7 сегментного индикатора
     interf->json_section_hidden(TCONST_tm24, "TM1637 Display");
         interf->json_section_line(); // расположить в одной линии
@@ -2548,7 +2542,6 @@ void page_gpiocfg(Interface *interf, JsonObject *data){
         interf->json_section_end();
         interf->button_value(button_t::submit, TCONST_set_gpio, static_cast<int>(gpio_device::tmdisplay), TINTF_Save);
     interf->json_section_end();
-#endif
 
     // gpio для подключения КМОП транзистора
     interf->json_section_hidden(TCONST_mosfet_gpio, "MOSFET");
@@ -2676,9 +2669,9 @@ void create_parameters(){
     embui.var_create(TCONST_mp3volume, 25); // громкость
     embui.var_create(TCONST_mp3count, 255); // кол-во файлов в папке mp3
 #endif
-#ifdef TM1637_CLOCK
+
     embui.var_create(TCONST_tmBright, 82); // 5<<4+5, старшие и младшие 4 байта содержат 5
-#endif
+
 #ifdef USE_STREAMING
     embui.var_create(TCONST_stream_type, SOUL_MATE); // Тип трансляции
     embui.var_create(TCONST_Universe, 1); // Universe для E1.31
@@ -2939,7 +2932,6 @@ void sync_parameters(){
     obj[TCONST_spdcf] = embui.paramVariant(TCONST_spdcf);
     obj[TCONST_f_restore_state] = tmp.restoreState;                             // "restore state" flag
 
-#ifdef TM1637_CLOCK
     uint8_t tmBright = embui.paramVariant(TCONST_tmBright);
     obj[TCONST_tmBrightOn] = tmBright>>4;
     obj[TCONST_tmBrightOff] = tmBright&0x0F;
@@ -2948,7 +2940,6 @@ void sync_parameters(){
     #ifdef DS18B20
     obj[TCONST_ds18b20] = tmp.isTempOn ;
     #endif
-#endif
 
     uint8_t alarmPT = embui.paramVariant(TCONST_alarmPT);
     obj[TCONST_alarmP] = alarmPT>>4;
@@ -3075,9 +3066,7 @@ void remote_action(RA action, ...){
     switch (action) {
         case RA::RA_SEND_IP:
             myLamp.sendString(WiFi.localIP().toString().c_str(), CRGB::White);
-#ifdef TM1637_CLOCK
             if(tm1637) tm1637->showip();
-#endif
             break;
         default:;
     }

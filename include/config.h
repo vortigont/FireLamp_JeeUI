@@ -76,21 +76,12 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
   #define RTC_SYNC_PERIOD     (24U)                         // Период синхронизации RTC c ntp (часы)
   #endif
   #if RTC_MODULE > (1U)                                     // Если выбран модуль с I2C (DS1307 или DS3231)
-    //#ifdef TM1637_CLOCK                                     // Если есть дисплей TM1637, то можем использовать его пины для RTC (но RTC модуль работает не на всех пинах)
-    //  #ifndef pin_SW_SDA
-    //  #define pin_SW_SDA        (TM_CLK_PIN)                // Пин SDA RTC модуля подключаем к CLK пину дисплея
-    //  #endif
-    //  #ifndef pin_SW_SCL
-    //  #define pin_SW_SCL        (TM_DIO_PIN)                // Пин SCL RTC модуля подключаем к DIO пину дисплея
-    //  #endif
-    //#else                                                   // Пины подбирать экспериментальным путем, точно работает на D2 и D4
       #ifndef pin_SW_SDA
       #define pin_SW_SDA        (4)                         // Назначаем вывод для работы в качестве линии SDA программной шины I2C, D2 on wemos
       #endif
       #ifndef pin_SW_SCL
       #define pin_SW_SCL        (2)                         // Назначаем вывод для работы в качестве линии SCL программной шины I2C, D4 on wemos
       #endif
-    //#endif
     #if RTC_MODULE == (1U)                                  // Если выбран модуль DS1302.
       #ifndef pin_RST
       #define pin_RST             (15)                      // Назначаем вывод RST, D8 on wemos
@@ -289,7 +280,4 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 #ifndef TM_BRIGHTNESS
   #define TM_BRIGHTNESS 7U //яркость дисплея, 0..7
-#endif
-#ifndef TM_SHOW_BANNER
-  #define TM_SHOW_BANNER 0
 #endif
