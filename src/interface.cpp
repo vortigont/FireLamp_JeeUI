@@ -263,45 +263,9 @@ void show_page_selector(Interface *interf, JsonObject *data){
  */
 void pubCallback(Interface *interf){
     LOG(println, "pubCallback :");
-    if (!interf) return;
-    interf->json_frame_value();
-    interf->value(TCONST_pTime, TimeProcessor::getInstance().getFormattedShortTime(), true);
-
-#if !defined(ESP32) || !defined(BOARD_HAS_PSRAM)    
-    #ifdef PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED
-        uint32_t iram;
-        uint32_t dram;
-        {
-            HeapSelectIram ephemeral;
-            iram = ESP.getFreeHeap();
-        }
-        {
-            HeapSelectDram ephemeral;
-            dram = ESP.getFreeHeap();
-        }
-        interf->value(TCONST_pMem, String(dram)+" / "+String(iram), true);
-    #else
-        interf->value(TCONST_pMem, myLamp.getLampState().freeHeap, true);
-    #endif
-#else
-    if(psramFound()){
-        interf->value(TCONST_pMem, String(ESP.getFreeHeap())+" / "+String(ESP.getFreePsram()), true);
-        LOG(printf_P, PSTR("Free PSRAM: %d\n"), ESP.getFreePsram());
-    } else {
-        interf->value(TCONST_pMem, myLamp.getLampState().freeHeap, true);
-    }
-#endif
-    char fuptime[16];
-    uint32_t tm = millis()/1000;
-    sprintf_P(fuptime, PSTR("%u.%02u:%02u:%02u"),tm/86400,(tm/3600)%24,(tm/60)%60,tm%60);
-    interf->value(TCONST_pUptime, fuptime, true);
-    interf->value(TCONST_pFS, myLamp.getLampState().fsfreespace, true);
-#ifdef DS18B20
-    interf->value(TCONST_pTemp, String(getTemp())+"°C", true);
-#endif
-    int32_t rssi = myLamp.getLampState().rssi;
-    interf->value(TCONST_pRSSI, String(constrain(map(rssi, -85, -40, 0, 100),0,100)) + "% (" + rssi + "dBm)", true);
-    interf->json_frame_flush();
+    // call basicui method here
+    basicui::embuistatus(interf);
+    // add our data
 }
 
 void block_menu(Interface *interf, JsonObject *data){
@@ -577,8 +541,8 @@ void set_effects_config_list(Interface *interf, JsonObject *data){
 
 #ifdef EMBUI_USE_MQTT
 void mqtt_publish_selected_effect_config_json(){
-  if (!embui.isMQTTconected()) return;
-  embui.publish(String(TCONST_embui_pub_) + TCONST_eff_config, myLamp.effects.getEffCfg().getSerializedEffConfig(), true);
+  if (!embui.mqttAvailable()) return;
+  embui.publish("effect/jsconfig", myLamp.effects.getEffCfg().getSerializedEffConfig().c_str(), true);
 }
 #endif
 
@@ -588,7 +552,7 @@ void mqtt_publish_selected_effect_config_json(){
  */
 void block_effect_controls(Interface *interf, JsonObject *data){
     // if no mqtt or ws clients, just quit
-    if (!embui.isMQTTconected() && !embui.ws.count()) return;
+    if (!embui.mqttAvailable() && !embui.ws.count()) return;
 
     // there could be no ws clients connected
     if(interf) interf->json_section_begin(TCONST_eff_ctrls);
@@ -647,7 +611,7 @@ void block_effect_controls(Interface *interf, JsonObject *data){
                     int value = ctrl->getId() ? ctrl->getVal().toInt() : myLamp.getBrightness();
                     if(interf) interf->range( ctrlId, (long)value, ctrl->getMin().toInt(), ctrl->getMax().toInt(), ctrl->getStep().toInt(), ctrlName, true);
 #ifdef EMBUI_USE_MQTT
-                    embui.publish(String(TCONST_embui_pub_) + ctrlId, String(value), true);
+                    embui.publish(MQT_effect_controls + ctrlId, value, true);
 #endif
                 }
                 break;
@@ -661,9 +625,11 @@ void block_effect_controls(Interface *interf, JsonObject *data){
                     , ctrl->getVal()
                     , ctrlName
                     );
+/*
 #ifdef EMBUI_USE_MQTT
-                    embui.publish(String(TCONST_embui_pub_) + ctrlId, ctrl->getVal(), true);
+                    embui.publish(MQT_effect_controls + ctrlId, ctrl->getVal(), true);
 #endif
+*/
                     break;
                 }
             case CONTROL_TYPE::CHECKBOX :
@@ -677,28 +643,33 @@ void block_effect_controls(Interface *interf, JsonObject *data){
                     , ctrlName
                     , true
                     );
+/*
 #ifdef EMBUI_USE_MQTT
-                    embui.publish(String(TCONST_embui_pub_) + ctrlId, ctrl->getVal(), true);
+                    embui.publish(MQT_effect_controls + ctrlId, ctrl->getVal(), true);
 #endif
-                    break;
+*/                    break;
                 }
             default:
+/*
 #ifdef EMBUI_USE_MQTT
-                embui.publish(String(TCONST_embui_pub_) + ctrlId, ctrl->getVal(), true);
+                embui.publish(MQT_effect_controls + ctrlId, ctrl->getVal(), true);
 #endif
-                break;
+*/                break;
         }
     }
 
     if(interf) interf->json_section_end();
 
+/*
+    // непонятно зачем публиковать номер эффекта при формировании страницы
 #ifdef EMBUI_USE_MQTT
     // publish full effect config via mqtt
     mqtt_publish_selected_effect_config_json();
-    if (embui.isMQTTconected()){
-        embui.publish(String(TCONST_embui_pub_) + CMD_EFFECT, String(myLamp.effects.getEffnum()), true);
+    if (embui.mqttAvailable()){
+        embui.publish(CMD_EFFECT, myLamp.effects.getEffnum(), true);
     }
 #endif
+*/
     LOG(println, "eof block_effect_controls()");
 }
 
@@ -796,14 +767,14 @@ void set_effects_dynCtrl(Interface *interf, JsonObject *data){
 
             LOG(print, "publishing & sending dynctrl: ");
             #ifdef LAMP_DEBUG
-            String tmp; serializeJson(*data,tmp);LOG(println, tmp);
+            { String tmp; serializeJson(*data,tmp); LOG(println, tmp); }
             #endif
 
             direct_set_effects_dynCtrl(data);
 #ifdef EMBUI_USE_MQTT
             mqtt_publish_selected_effect_config_json();
             for (JsonPair kv : *data){
-                embui.publish(String(TCONST_embui_pub_) + kv.key().c_str(), kv.value().as<String>(), true);
+                embui.publish((String(MQT_effect_controls) + kv.key().c_str()).c_str(), kv.value().as<const char*>(), true);
             }
 #endif
             // отправка данных в WebUI
@@ -962,11 +933,26 @@ void set_eff_next(Interface *interf, JsonObject *data){
  */
 void set_onflag(Interface *interf, JsonObject *data){
     if (!data) return;
-    bool newpower = (*data)[TCONST_ONflag];  // TOGLE_STATE((*data)[TCONST_ONflag], myLamp.isLampOn());
-    if (newpower != myLamp.isLampOn()) {
+    bool newpower = (*data)[TCONST_ONflag];
+    if (newpower == myLamp.isLampOn()) return;      // status not changed
+
+    myLamp.changePower(newpower);
+    if (myLamp.getLampFlagsStuct().restoreState){
+        save_lamp_flags();
+    }
+#ifdef MP3PLAYER
+    if(myLamp.getLampFlagsStuct().isOnMP3)
+        mp3->setIsOn(newpower);
+#endif
+#ifdef EMBUI_USE_MQTT
+    String t(TCONST_lamp_);
+    embui.publish(t + TCONST_on, newpower, true);
+#endif
+
+/*
         if (newpower) {
             // включаем через switcheffect, т.к. простого isOn недостаточно чтобы запустить фейдер и поменять яркость (при необходимости)
-            myLamp.switcheffect(SW_SPECIFIC, myLamp.getFaderFlag(), myLamp.effects.getCurrent());
+            //myLamp.switcheffect(SW_SPECIFIC, myLamp.getFaderFlag(), myLamp.effects.getCurrent());
             myLamp.changePower(newpower);
             if (myLamp.getLampFlagsStuct().restoreState){
                 save_lamp_flags();
@@ -984,11 +970,6 @@ void set_onflag(Interface *interf, JsonObject *data){
                 _t->enableDelayed();
             }
 #endif
-#ifdef EMBUI_USE_MQTT
-            embui.publish(String(TCONST_embui_pub_) + TCONST_on, "1", true);
-            embui.publish(String(TCONST_embui_pub_) + TCONST_mode, String(myLamp.getMode()), true);
-            embui.publish(String(TCONST_embui_pub_) + TCONST__demo, String(myLamp.getMode()==LAMPMODE::MODE_DEMO?"1":"0"), true);
-#endif
         } else {
             resetAutoTimers();              // автосохранение конфига будет отсчитываться от этого момента
             myLamp.changePower(false);
@@ -1000,16 +981,11 @@ void set_onflag(Interface *interf, JsonObject *data){
                 if (myLamp.getLampFlagsStuct().restoreState){
                     save_lamp_flags();
                 }
-                #ifdef EMBUI_USE_MQTT
-                                embui.publish(String(TCONST_embui_pub_) + TCONST_on, "0", true);
-                                embui.publish(String(TCONST_embui_pub_) + TCONST_mode, String(myLamp.getMode()), true);
-                                embui.publish(String(TCONST_embui_pub_) + TCONST__demo, String(myLamp.getMode()==LAMPMODE::MODE_DEMO?"1":"0"), true);
-                #endif
                                 },
                                 &ts, false, nullptr, nullptr, true);
             _t->enableDelayed();
         }
-    }
+*/
 }
 
 void set_demoflag(Interface *interf, JsonObject *data){
@@ -1037,8 +1013,8 @@ void set_demoflag(Interface *interf, JsonObject *data){
     }
     myLamp.setDRand(myLamp.getLampFlagsStuct().dRand);
 #ifdef EMBUI_USE_MQTT
-    embui.publish(String(TCONST_embui_pub_) + TCONST_mode, String(myLamp.getMode()), true);
-    embui.publish(String(TCONST_embui_pub_) + TCONST__demo, String(myLamp.getMode()==LAMPMODE::MODE_DEMO? 1:0), true);
+    //embui.publish(String(embui.mqttPrefix()) + TCONST_mode, String(myLamp.getMode()), true);
+    embui.publish(String(TCONST_lamp_) + TCONST_demo, myLamp.getMode()==LAMPMODE::MODE_DEMO? 1:0, true);
 #endif
 }
 
@@ -1401,18 +1377,19 @@ void set_settings_mic_calib(Interface *interf, JsonObject *data){
 }
 #endif
 
+/*
 #ifdef EMBUI_USE_MQTT
 void set_settings_mqtt(Interface *interf, JsonObject *data){
     if (!data) return;
     basicui::set_settings_mqtt(interf,data);
     embui.mqttReconnect();
-    int interval = (*data)[P_m_tupd];
+    int interval = (*data)[P_mqtt_ka];
     LOG(print, "New MQTT interval: "); LOG(println, interval);
     myLamp.setmqtt_int(interval);
     basicui::section_settings_frame(interf, data);
 }
 #endif
-
+*/
 #ifdef EMBUI_USE_FTP
 // настройка ftp
 void set_ftp(Interface *interf, JsonObject *data){
@@ -1496,7 +1473,7 @@ void set_settings_other(Interface *interf, JsonObject *data){
         unsigned b = (*data)[TCONST_brtScl];
         if (b){         // бестолковый вызов sync_parameters() может не передать сюда значение [TCONST_brtScl], проверяем что b!=0
             if (b == DEF_BRT_SCALE)
-                embui.var_remove(TCONST_brtScl)
+                embui.var_remove(TCONST_brtScl);
             else
                 embui.var(TCONST_brtScl, b, true);
             myLamp.setBrightnessScale(b);
@@ -2631,7 +2608,7 @@ void create_parameters(){
     // создаем дефолтные параметры для нашего проекта
     embui.var_create(TCONST_syslampFlags, ulltos(myLamp.getLampFlags())); // Дефолтный набор флагов
     embui.var_create(TCONST_eff_run, 1);
-    embui.var_create(P_m_tupd, DEFAULT_MQTTPUB_INTERVAL); // "m_tupd" интервал отправки данных по MQTT в секундах (параметр в энергонезависимой памяти)
+    //embui.var_create(P_mqtt_ka, DEFAULT_MQTTPUB_INTERVAL); // "m_ka" интервал отправки данных по MQTT в секундах (параметр в энергонезависимой памяти)
 
     //embui.var_create(TCONST_fileName, "cfg1.json"); // "fileName"
 
@@ -2790,7 +2767,7 @@ void sync_parameters(){
     JsonObject obj = doc.to<JsonObject>();
 
 #ifdef EMBUI_USE_MQTT
-    myLamp.setmqtt_int(embui.paramVariant(P_m_tupd));
+    myLamp.setmqtt_int(embui.paramVariant(P_mqtt_ka));
 #endif
 
     String syslampFlags(embui.param(TCONST_syslampFlags));
@@ -3116,19 +3093,16 @@ String httpCallback(const String &param, const String &value, bool isset){
         else if (upperParam == CMD_WARNING)
             { myLamp.showWarning(CRGB::Orange,5000,500); }
         else if (upperParam == CMD_EFF_CONFIG) {
-                String result(myLamp.effects.getEffCfg().getSerializedEffConfig());
-#ifdef EMBUI_USE_MQTT
-                embui.publish(String(TCONST_embui_pub_) + TCONST_eff_config, result, true);
-#endif
-                return result;
+                return myLamp.effects.getEffCfg().getSerializedEffConfig();
             }
-        else if (upperParam == CMD_CONTROL) {
+
+        if (upperParam == CMD_CONTROL) {
             LList<std::shared_ptr<UIControl>>&controls = myLamp.effects.getControls();
             for(unsigned i=0; i<controls.size();i++){
                 if(value == String(controls[i]->getId())){
                     result = String("[") + controls[i]->getId() + ",\"" + (controls[i]->getId()==0 ? String(myLamp.getBrightness()) : controls[i]->getVal()) + "\"]";
 #ifdef EMBUI_USE_MQTT
-                    embui.publish(String(TCONST_embui_pub_) + TCONST_control, result, true);
+                    //embui.publish(String(embui.mqttPrefix()) + TCONST_control, result, true);
 #endif
                     return result;
                 }
@@ -3193,11 +3167,13 @@ String httpCallback(const String &param, const String &value, bool isset){
         if (upperParam == CMD_MOVE_RND)  { run_action(ra::eff_rnd);  return result; }
         if (upperParam == CMD_REBOOT) { run_action(ra::reboot); return result; }
         else if (upperParam == CMD_ALARM) { result = myLamp.isAlarm() ; }
+/*
         else if (upperParam == CMD_MATRIX) { char buf[32]; sprintf_P(buf, PSTR("[%d,%d]"), display.getCanvas()->w(), display.getCanvas()->h());  result = buf; }
-#ifdef EMBUI_USE_MQTT        
-        embui.publish(String(TCONST_embui_pub_) + upperParam, result, true);
+#ifdef EMBUI_USE_MQTT
+        embui.publish(String(embui.mqttPrefix()) + upperParam, result, true);
 #endif
         return result;
+*/
     } else {
         LOG(println, "SET");
         if ( upperParam == CMD_ON || upperParam == CMD_OFF ){ run_action(value.toInt() ? ra::on : ra::off ); return result; }
@@ -3272,7 +3248,7 @@ String httpCallback(const String &param, const String &value, bool isset){
             myLamp.effects.loadeffname(effname, effnum);
             result = String("[")+effnum+String(",\"")+effname+String("\"]");
 #ifdef EMBUI_USE_MQTT
-            embui.publish(String(TCONST_embui_pub_) + upperParam, result, true);
+            //embui.publish(String(embui.mqttPrefix()) + upperParam, result, true);
 #endif
             return result;
         }
@@ -3282,7 +3258,7 @@ String httpCallback(const String &param, const String &value, bool isset){
             effname = T_EFFNAMEID[(uint8_t)effnum];
             result = String("[")+effnum+String(",\"")+effname+String("\"]");
 #ifdef EMBUI_USE_MQTT
-            embui.publish(String(TCONST_embui_pub_) + upperParam, result, true);
+            //embui.publish(String(embui.mqttPrefix()) + upperParam, result, true);
 #endif
             return result;
         }

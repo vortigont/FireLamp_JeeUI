@@ -70,9 +70,6 @@ LAMP::LAMP() : tmStringStepTime(DEFAULT_TEXT_SPEED), tmNewYearMessage(0), effect
 
 void LAMP::lamp_init()
 {
-  //_wipe_screen();
-  // restore LED's current limit
-
   _brightnessScale = embui.paramVariant(TCONST_brtScl)  | DEF_BRT_SCALE;
   globalBrightness = embui.paramVariant(TCONST_GlobBRI) | DEF_BRT_SCALE/2;
 
@@ -1214,7 +1211,7 @@ void LAMP::setmqtt_int(int val) {
     }
 
     extern void sendData();
-    tmqtt_pub = new Task(val * TASK_SECOND, TASK_FOREVER, [this](){ if(embui.isMQTTconected()) sendData(); }, &ts, true);
+    tmqtt_pub = new Task(val * TASK_SECOND, TASK_FOREVER, [this](){ if(embui.mqttAvailable()) sendData(); }, &ts, true);
 }
 #endif
 

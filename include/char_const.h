@@ -71,9 +71,6 @@ static constexpr const char* TCONST_effListConf = "effListConf";
 static constexpr const char* TCONST_eff_run = "effrun";                       // switch running effect to effect_#
 static constexpr const char* TCONST_effname = "effname";
 static constexpr const char* TCONST_effSort = "effSort";
-static constexpr const char* TCONST_embui_get_ = "embui/get/";
-static constexpr const char* TCONST_embui_pub_ = "embui/pub/";
-static constexpr const char* TCONST_embui_ = "embui/";
 static constexpr const char* TCONST_enabled = "enabled";
 static constexpr const char* TCONST_encoder = "encoder";
 static constexpr const char* TCONST_encTxtCol = "encTxtCol";
@@ -241,7 +238,7 @@ static constexpr const char* TCONST__backup_evn_ = "/backup/evn/";
 static constexpr const char* TCONST__backup_glb_ = "/backup/glb/";
 static constexpr const char* TCONST__backup_idx = "/backup/idx";
 static constexpr const char* TCONST__backup_idx_ = "/backup/idx/";
-static constexpr const char* TCONST__demo = "demo";
+static constexpr const char* TCONST_demo = "demo";
 static constexpr const char* TCONST__ffffff = "#ffffff";
 static constexpr const char* TCONST__tmplist_tmp = "/tmplist.tmp";
 static constexpr const char* TCONST__tmpqlist_tmp = "/tmpqlist.tmp";
@@ -254,6 +251,9 @@ static constexpr const char* TCONST_i_hflip = "зеркальные строки
 
 
 /** набор служебных текстовых констант (HTTP/MQTT запросы) */
+static constexpr const char* MQT_effect_controls = "effect/controls/";      // topic suffix
+static constexpr const char* MQT_lamp = "lamp/";
+
 static constexpr const char* CMD_ON = "ON";                    // Без параметров - возвращает 1/0 в зависимости вкл/выкл лампа, принимает параметр - 1/0 (вкл/выкл лампу)
 static constexpr const char* CMD_OFF = "OFF";                  // Без параметров - возвращает 1/0 в зависимости выкл/вкл лампа, принимает параметр - 1/0 (выкл/вкл лампу)
 static constexpr const char* CMD_G_BRIGHT = "G_BRIGHT";        // Без параметров - возвращает 1/0 в зависимости вкл/выкл глобальная яркость, принимает параметр - 1/0 (вкл/выкл глобальная яркость)

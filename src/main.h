@@ -89,7 +89,6 @@ extern MP3PlayerDevice *mp3;
 #endif
 
 #ifdef EMBUI_USE_MQTT
-void mqttCallback(const String &topic, const String &payload);
 void mqttConnect();
 void sendData();
 #endif
