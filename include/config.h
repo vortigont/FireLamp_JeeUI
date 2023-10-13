@@ -167,6 +167,10 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #define PULL_MODE             (HIGH_PULL)                  // пин кнопки "FLASH" NodeMCU, подтяжка должна быть PULL_MODE=HIGH_PULL
 #endif
 #endif
+#ifndef NUMHOLD_TIME
+#define NUMHOLD_TIME          (3000U)                       // время запоминания последней комбинации яркости/скорости/масштаба в мс
+#endif
+
 
 #ifndef DS18B20_PIN
 #define DS18B20_PIN           (13)                        // D7 Пин подключения датчика DS18b20. При использовании энкодара, датчик можно назначить на пин кнопки (SW) энкодера. И поставить резистор подтяжки к +3.3в.
@@ -196,17 +200,8 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #define COLOR_ORDER           (GRB)                         // порядок цветов на ленте. Если цвет отображается некорректно - меняйте. Начать можно с RGB
 #endif
 
-
-#ifndef NUMHOLD_TIME
-#define NUMHOLD_TIME          (3000U)                       // время запоминания последней комбинации яркости/скорости/масштаба в мс
-#endif
-
 #ifndef OFF_BRIGHTNESS
 #define OFF_BRIGHTNESS          (2U)                        // яркость вывода текста в случае выключенной лампы
-#endif
-
-#ifndef CURRENT_LIMIT
-#define CURRENT_LIMIT         (2000U)                       // лимит по току в миллиамперах, автоматически управляет яркостью (пожалей свой блок питания!) 0 - выключить лимит
 #endif
 
 #ifndef FADE_STEPTIME
@@ -223,7 +218,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #endif
 
 #ifndef MAX_FPS
-#define MAX_FPS               (60U)                         // Максимальное число обсчитываемых и выводимых кадров в секунду
+#define MAX_FPS               (50U)                         // Максимальное число обсчитываемых и выводимых кадров в секунду
 #endif
 
 #ifndef SPEED_ADJ

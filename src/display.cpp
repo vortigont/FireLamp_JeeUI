@@ -47,7 +47,7 @@ An object file for LED output devices, backends and buffers
 #include "ESP32-HUB75-MatrixPanel-I2S-DMA.h"
 
 #define FASTLED_VOLTAGE     5
-
+#define FASTLED_MIN_CURRENT 1000
 
 
 bool LEDDisplay::start(){
@@ -200,8 +200,8 @@ void LEDDisplay::print_stripe_cfg(){
 }
 
 void LEDDisplay::setCurrentLimit(uint32_t i){
-    fastled_current_limit = i < FASTLED_MIN_CURRENT ? FASTLED_MIN_CURRENT : i;
-    FastLED.setMaxPowerInVoltsAndMilliamps(FASTLED_VOLTAGE, fastled_current_limit);
+    //fastled_current_limit = i < FASTLED_MIN_CURRENT ? FASTLED_MIN_CURRENT : i;
+    FastLED.setMaxPowerInVoltsAndMilliamps(FASTLED_VOLTAGE, i);
 }
 
 

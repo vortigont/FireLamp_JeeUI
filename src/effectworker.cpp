@@ -64,7 +64,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #endif
 #define WRKR_TASK_NAME          "EFF_WRKR"
 
-constexpr int target_fps{50};                     // desired FPS rate for effect runner
+constexpr int target_fps{MAX_FPS};                     // desired FPS rate for effect runner
 constexpr int interframe_delay_ms = 1000 / target_fps;
 
 

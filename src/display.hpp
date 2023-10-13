@@ -44,7 +44,7 @@ A header file for LED output devices, backends and buffers
 #include "config.h"
 #include "ledfb.hpp"
 
-#define FASTLED_MIN_CURRENT 1000
+#define FASTLED_CURRENT_LIMIT (2000U)                       // лимит по току для адресных лент в миллиамперах, 0 - выключить лимит
 
 enum class engine_t:uint8_t  {
     ws2812 = 0,
@@ -57,7 +57,7 @@ class LEDDisplay {
 
     engine_t _etype;        // type of backend to use
     int _gpio{-1};          // fastled gpio
-    uint32_t fastled_current_limit = FASTLED_MIN_CURRENT;      // Led strip current limit
+    uint32_t fastled_current_limit{FASTLED_CURRENT_LIMIT};      // Led strip current limit
     uint8_t _brt{32};       // backend engine brightness, if supported
 
     // An object ref I'll use to access LED device
