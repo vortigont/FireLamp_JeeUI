@@ -64,7 +64,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #endif
 #define WRKR_TASK_NAME          "EFF_WRKR"
 
-constexpr int target_fps{50};                     // desired FPS rate for effect runner
+constexpr int target_fps{MAX_FPS};                     // desired FPS rate for effect runner
 constexpr int interframe_delay_ms = 1000 / target_fps;
 
 
@@ -257,9 +257,9 @@ void EffectWorker::workerset(uint16_t effect){
 
   switch (static_cast<EFF_ENUM>(effect%256)) // номер может быть больше чем ENUM из-за копирований, находим эффект по модулю
   {
-  case EFF_ENUM::EFF_TIME :
+/*case EFF_ENUM::EFF_TIME :
     worker = std::unique_ptr<EffectTime>(new EffectTime(canvas));
-    break;
+    break;*/
   case EFF_ENUM::EFF_SWIRL :
     worker = std::unique_ptr<EffectSwirl>(new EffectSwirl(canvas));
     break;
@@ -985,7 +985,7 @@ void EffectWorker::_load_default_fweff_list(){
       continue;
 
 #ifndef MIC_EFFECTS
-    if(i>EFF_ENUM::EFF_TIME) continue;    // пропускаем эффекты для микрофона, если отключен микрофон
+//    if(i>EFF_ENUM::EFF_TIME) continue;    // пропускаем эффекты для микрофона, если отключен микрофон
 #endif
 
     EffectListElem el(i, SET_ALL_EFFFLAGS);

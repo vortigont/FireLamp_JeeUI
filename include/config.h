@@ -76,21 +76,12 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
   #define RTC_SYNC_PERIOD     (24U)                         // Период синхронизации RTC c ntp (часы)
   #endif
   #if RTC_MODULE > (1U)                                     // Если выбран модуль с I2C (DS1307 или DS3231)
-    //#ifdef TM1637_CLOCK                                     // Если есть дисплей TM1637, то можем использовать его пины для RTC (но RTC модуль работает не на всех пинах)
-    //  #ifndef pin_SW_SDA
-    //  #define pin_SW_SDA        (TM_CLK_PIN)                // Пин SDA RTC модуля подключаем к CLK пину дисплея
-    //  #endif
-    //  #ifndef pin_SW_SCL
-    //  #define pin_SW_SCL        (TM_DIO_PIN)                // Пин SCL RTC модуля подключаем к DIO пину дисплея
-    //  #endif
-    //#else                                                   // Пины подбирать экспериментальным путем, точно работает на D2 и D4
       #ifndef pin_SW_SDA
       #define pin_SW_SDA        (4)                         // Назначаем вывод для работы в качестве линии SDA программной шины I2C, D2 on wemos
       #endif
       #ifndef pin_SW_SCL
       #define pin_SW_SCL        (2)                         // Назначаем вывод для работы в качестве линии SCL программной шины I2C, D4 on wemos
       #endif
-    //#endif
     #if RTC_MODULE == (1U)                                  // Если выбран модуль DS1302.
       #ifndef pin_RST
       #define pin_RST             (15)                      // Назначаем вывод RST, D8 on wemos
@@ -176,6 +167,10 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #define PULL_MODE             (HIGH_PULL)                  // пин кнопки "FLASH" NodeMCU, подтяжка должна быть PULL_MODE=HIGH_PULL
 #endif
 #endif
+#ifndef NUMHOLD_TIME
+#define NUMHOLD_TIME          (3000U)                       // время запоминания последней комбинации яркости/скорости/масштаба в мс
+#endif
+
 
 #ifndef DS18B20_PIN
 #define DS18B20_PIN           (13)                        // D7 Пин подключения датчика DS18b20. При использовании энкодара, датчик можно назначить на пин кнопки (SW) энкодера. И поставить резистор подтяжки к +3.3в.
@@ -205,17 +200,8 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #define COLOR_ORDER           (GRB)                         // порядок цветов на ленте. Если цвет отображается некорректно - меняйте. Начать можно с RGB
 #endif
 
-
-#ifndef NUMHOLD_TIME
-#define NUMHOLD_TIME          (3000U)                       // время запоминания последней комбинации яркости/скорости/масштаба в мс
-#endif
-
 #ifndef OFF_BRIGHTNESS
 #define OFF_BRIGHTNESS          (2U)                        // яркость вывода текста в случае выключенной лампы
-#endif
-
-#ifndef CURRENT_LIMIT
-#define CURRENT_LIMIT         (2000U)                       // лимит по току в миллиамперах, автоматически управляет яркостью (пожалей свой блок питания!) 0 - выключить лимит
 #endif
 
 #ifndef FADE_STEPTIME
@@ -232,7 +218,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #endif
 
 #ifndef MAX_FPS
-#define MAX_FPS               (60U)                         // Максимальное число обсчитываемых и выводимых кадров в секунду
+#define MAX_FPS               (50U)                         // Максимальное число обсчитываемых и выводимых кадров в секунду
 #endif
 
 #ifndef SPEED_ADJ
@@ -289,7 +275,4 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 #ifndef TM_BRIGHTNESS
   #define TM_BRIGHTNESS 7U //яркость дисплея, 0..7
-#endif
-#ifndef TM_SHOW_BANNER
-  #define TM_SHOW_BANNER 0
 #endif

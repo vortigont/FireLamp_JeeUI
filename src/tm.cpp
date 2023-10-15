@@ -38,11 +38,9 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "tm.h"
 #include "lamp.h"
 
-#if TM_SHOW_BANNER
 // String welcome_banner = "FIRE_START"; // Список букв для вывода A Bb Cc Dd Ee F G Hh Ii J K Ll m Nn Oo P q r S t U v w x Y Z
 /* Указывать можно в любом регистре, разделять лучше нижним подчеркиванием "_", если поставить пробел, то слова разделятся и будут отображаться по очереди, например сначала заскроллится "FIRE",
 дойдет до конца, потухнет и только тогда появится "START"*/
-#endif
 uint8_t& TMCLOCK::getSetDelay() { // для доступа к переменной из других плагинов, достаточно в h-файл плагина добавить #include "tm.h"
   return tmDelayTime;
 };
@@ -50,22 +48,17 @@ uint8_t& TMCLOCK::getSetDelay() { // для доступа к переменно
 void TMCLOCK::tm_setup() {
     begin();
     clearScreen();
-    LOG(printf_P, PSTR("tm1637 was initialized \n"));
+    LOG(println, "tm1637 initialized");
 }
 
 
 void TMCLOCK::tm_loop() {
-// this is so ugly!!!
-#ifdef TM1637_CLOCK
   setBrightness((myLamp.isLampOn()) ? myLamp.getBrightOn() : myLamp.getBrightOff());         // Чекаем статус лампы и меняем яркость
 
-  #if TM_SHOW_BANNER
   if (!bannerShowed) {
     showBanner();          // Выводим стартовый баннер
     return;
   }
-  #endif
-
 
   if (tmDelayTime) { // пропускаем цикл вывода часов, давая возможность успеть увидеть инфу с другиг плагинов
     --tmDelayTime;
@@ -96,12 +89,9 @@ void TMCLOCK::tm_loop() {
 
     myLamp.isTmZero() ? display(String(dispTime)) : ((t->tm_hour < 10 || (!myLamp.isTm24() && t->tm_hour > 12 && t->tm_hour < 22)) ? display(String(dispTime), true, false, 1) : display(String(dispTime)));
     showPoints=!showPoints;
-#endif
 }
 
-#if TM_SHOW_BANNER
 // | FUNC - Показать стартовый баннер
-// |----------
 void TMCLOCK::showBanner(){       
   static uint8_t l = 0;           // Переменная для баннера
   if (l == 21) return;
@@ -114,8 +104,6 @@ void TMCLOCK::showBanner(){
   else if (!(WiFi.getMode() & WIFI_MODE_STA) && l <= 20 && l > 4) display(String("__AP_192_168___4___1"))->scrollLeft(500, 4);  // Если нет подключения, то крутим айпи точки доступа
   if (l == 20) bannerShowed = 1;
 }
-#endif
-
 
 void TMCLOCK::scrollip(){
   if (WiFi.getMode() & WIFI_MODE_STA) {

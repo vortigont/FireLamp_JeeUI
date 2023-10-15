@@ -35,8 +35,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
    <https://www.gnu.org/licenses/>.)
 */
 
-#ifndef _TM_H
-#define _TM_H
+#pragma once
 
 #include "TM1637.h"   //  https://github.com/AKJ7/TM1637
 #include "config.h"
@@ -44,14 +43,9 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #ifndef TM_TIME_DELAY
   #define TM_TIME_DELAY 3U
 #endif
-
 #ifndef TM_BRIGHTNESS
   #define TM_BRIGHTNESS 7U //яркость дисплея, 0..7
 #endif
-#ifndef TM_SHOW_BANNER
-  #define TM_SHOW_BANNER 0
-#endif
-
 #define TM_REPEAT_SHOW_IP   3     // times to repeat IP scrolling
 
 
@@ -68,10 +62,8 @@ private:
   bool showPoints{false};
   uint8_t tmDelayTime{TM_TIME_DELAY};
   uint8_t ipShow{TM_REPEAT_SHOW_IP};
-  #if TM_SHOW_BANNER
   bool bannerShowed{false};
   void showBanner();
-  #endif
   void splitIp(String str, String dlm, String dest[]);  // Функция разделителя по указателю
   String formatIp(String inArr[], String dlm);    // Функция форматирования
   // scroll IP address
@@ -79,4 +71,3 @@ private:
 };
 
 extern TMCLOCK *tm1637;
-#endif

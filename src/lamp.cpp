@@ -562,8 +562,8 @@ String &LAMP::prepareText(String &source){
   sprintf_P(buffer,PSTR("%02d.%02d.%04d"),tm->tm_mday,tm->tm_mon+1,tm->tm_year+ TM_BASE_YEAR);
   source.replace("%DT", buffer);
 #ifdef LAMP_DEBUG  
-  if(!source.isEmpty() && effects.getCurrent()!=EFF_ENUM::EFF_TIME && !isWarning()) // спам эффекта часы и предупреждений убираем костыльным способом :)
-    LOG(println, source.c_str()); // вывести в лог строку, которая после преобразований получилась
+//  if(!source.isEmpty() && effects.getCurrent()!=EFF_ENUM::EFF_TIME && !isWarning()) // спам эффекта часы и предупреждений убираем костыльным способом :)
+//    LOG(println, source.c_str()); // вывести в лог строку, которая после преобразований получилась
 #endif
   return source;  
 }

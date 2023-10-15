@@ -38,9 +38,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "enc.h"
 #ifdef ENCODER
 
-#ifdef TM1637_CLOCK
 #include "tm.h"
-#endif
 #ifdef DS18B20
 #include "DS18B20.h"
 #endif
@@ -111,9 +109,7 @@ void encLoop() {
 
   if (inSettings) { // Время от времени выводим название контрола (в режиме "Настройки эффекта")
     resetTimers();
-#ifdef TM1637_CLOCK
     if (tm1637) tm1637->getSetDelay() = TM_TIME_DELAY;
-#endif
     EVERY_N_SECONDS(10) {
       loops++;
       if (inSettings && loops == ENC_EXIT_TIMEOUT) {  // timeout выхода из режима "Настройки эффекта"
@@ -389,20 +385,16 @@ void myClicks() {
   case 1: // Включение\выключение лампы
     if (myLamp.isLampOn()) {
       run_action(ra::off);
-#ifdef TM1637_CLOCK
       if (tm1637) {
         tm1637->getSetDelay() = 1;
         tm1637->display(String("Off"), true, false, 1);  // Выводим 
       }
-#endif
     } else {
       run_action(ra::on);
-#ifdef TM1637_CLOCK
       if (tm1637) {
         tm1637->getSetDelay() = 1;
         tm1637->display(String("On"), true, false, 2);  // Выводим 
       }
-#endif
     }
     break;
 #ifdef ENC_DEMO_CLICK
@@ -547,31 +539,19 @@ void encSetDynCtrl(int val) {
 
 
 void encDisplay(uint16_t value, String type) {
-#ifdef TM1637_CLOCK
   if (tm1637) {
     tm1637->getSetDelay() = TM_TIME_DELAY;
     tm1637->display(value, true, false, value >= 100 ? 1 : (value >= 10 ? 2 : 3) );  
     tm1637->display(type);
   }
-#endif
 }
-/*
-void encDisplay(float value) {
-#ifdef TM1637_CLOCK
-  tm1637->getSetDelay() = TM_TIME_DELAY;
-  tm1637->clearScreen();
-  tm1637->display(value, false, true); //, true, false, value >= 100 ? 1 : (value >= 10 ? 2 : 3) );  
-#endif
-}
-*/
+
 void encDisplay(String str) {
-#ifdef TM1637_CLOCK
   if (tm1637) {
     tm1637->getSetDelay() = TM_TIME_DELAY;
     tm1637->clearScreen();
     tm1637->display(str);
   }
-#endif
 }
 
 // Ресетим таймера автосохранения конфигов и Демо на время "баловства" с энкодером 
@@ -638,9 +618,7 @@ void sendTime() {
 
 void sendIP() {
   remote_action(RA::RA_SEND_IP, NULL);
-  #ifdef TM1637_CLOCK
   if (tm1637) tm1637->showip();
-  #endif
 }
 
 
