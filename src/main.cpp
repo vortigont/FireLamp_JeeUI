@@ -224,7 +224,7 @@ String ha_autodiscovery()
     JsonArray data = hass_discover.createNestedArray("effect_list");
     data.add(TCONST_Normal);
     data.add(TCONST_Alarm);
-    data.add(TCONST_Demo);
+    data.add(K_demo);
     data.add(TCONST_RGB);
     data.add(TCONST_White);
     data.add(TCONST_Other);
@@ -291,7 +291,7 @@ void sendData(){
             obj[TCONST_Mode] = TCONST_Alarm;
             break;
         case LAMPMODE::MODE_DEMO :
-            obj[TCONST_Mode] = TCONST_Demo;
+            obj[TCONST_Mode] = K_demo;
             break;
         case LAMPMODE::MODE_RGBLAMP :
             obj[TCONST_Mode] = TCONST_RGB;

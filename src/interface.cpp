@@ -815,7 +815,7 @@ void block_main_flags(Interface *interf, JsonObject *data){
     interf->json_section_begin(TCONST_flags);
     interf->json_section_line("");
     interf->checkbox(TCONST_ONflag, myLamp.isLampOn(), TINTF_00E, true);
-    interf->checkbox(TCONST_Demo, myLamp.getMode() == LAMPMODE::MODE_DEMO, TINTF_00F, true);
+    interf->checkbox(K_demo, myLamp.getMode() == LAMPMODE::MODE_DEMO, TINTF_00F, true);
     interf->checkbox(TCONST_Events, myLamp.IsEventsHandled(), TINTF_011, true);
     interf->checkbox(TCONST_drawbuff, myLamp.isDrawOn(), TINTF_0CE, true);
 
@@ -943,8 +943,7 @@ void set_onflag(Interface *interf, JsonObject *data){
         mp3->setIsOn(newpower);
 #endif
 #ifdef EMBUI_USE_MQTT
-    String t(TCONST_lamp_);
-    embui.publish(t + TCONST_on, newpower, true);
+    embui.publish(String (MQT_lamp) + TCONST_on, newpower, true);
 #endif
 
 /*
@@ -990,10 +989,10 @@ void set_demoflag(Interface *interf, JsonObject *data){
     if (!data) return;
     resetAutoTimers();
     // Специально не сохраняем, считаю что демо при старте не должно запускаться
-    bool newdemo = (*data)[TCONST_Demo]; // TOGLE_STATE((*data)[TCONST_Demo], (myLamp.getMode() == LAMPMODE::MODE_DEMO));
+    bool newdemo = (*data)[K_demo];
     // сохраняем состояние демо если настроено сохранение
     if (myLamp.getLampFlagsStuct().restoreState)
-        embui.var_dropnulls(TCONST_Demo, (*data)[TCONST_Demo].as<bool>());
+        embui.var_dropnulls(K_demo, (*data)[K_demo].as<bool>());
 
     switch (myLamp.getMode()) {
         case LAMPMODE::MODE_OTA:
@@ -1012,7 +1011,7 @@ void set_demoflag(Interface *interf, JsonObject *data){
     myLamp.setDRand(myLamp.getLampFlagsStuct().dRand);
 #ifdef EMBUI_USE_MQTT
     //embui.publish(String(embui.mqttPrefix()) + TCONST_mode, String(myLamp.getMode()), true);
-    embui.publish(String(TCONST_lamp_) + TCONST_demo, myLamp.getMode()==LAMPMODE::MODE_DEMO? 1:0, true);
+    embui.publish(String(MQT_lamp) + K_demo, myLamp.getMode()==LAMPMODE::MODE_DEMO? 1:0, true);
 #endif
 }
 
@@ -2685,7 +2684,7 @@ void create_parameters(){
     embui.section_handle_add(TCONST_set_effect, set_effects_config_param);
 
     embui.section_handle_add(TCONST_ONflag, set_onflag);
-    embui.section_handle_add(TCONST_Demo, set_demoflag);
+    embui.section_handle_add(K_demo, set_demoflag);
     embui.section_handle_add(TCONST_GBR, set_gbrflag);                           // Lamp brightness
     embui.section_handle_add(TCONST_lcurve, set_lcurve);                         // luma curve control
     embui.section_handle_add(TCONST_AUX, set_auxflag);
@@ -2713,8 +2712,8 @@ void create_parameters(){
     embui.section_handle_add(TCONST_edit_text_config, set_text_config);
 
     embui.section_handle_add(TCONST_set_other, set_settings_other);
-    embui.section_handle_add(TCONST_settings_ledstrip, set_ledstrip);           // Set LED strip layout setup
-    embui.section_handle_add(TCONST_settings_hub75, set_hub75);                 // Set options for HUB75 panel
+    embui.section_handle_add(K_set_ledstrip, set_ledstrip);           // Set LED strip layout setup
+    embui.section_handle_add(K_set_hub75, set_hub75);                 // Set options for HUB75 panel
     embui.section_handle_add(TCONST_set_gpio, set_gpios);                       // Set gpios
     embui.section_handle_add(TCONST_dtype, page_display_setup);                // load display setup page depending on selected disp type (action for drop down list)
 
@@ -2798,8 +2797,7 @@ void sync_parameters(){
 */
         doc.clear();
         if(myLamp.isLampOn())
-            run_action(ra::demo, embui.paramVariant(TCONST_Demo));
-            //CALL_SETTER(TCONST_Demo, embui.paramVariant(TCONST_Demo), set_demoflag); // Демо через режимы, для него нужнен отдельный флаг :(
+            run_action(ra::demo, embui.paramVariant(K_demo));
     }
 
 #ifdef MP3PLAYER
@@ -3328,7 +3326,7 @@ void page_display_setup(Interface *interf, JsonObject *data){
  */
 void block_ledstrip_setup(Interface *interf, JsonObject *data){
     // open a section
-    interf->json_section_begin(TCONST_settings_ledstrip, TINTF_ledstrip);
+    interf->json_section_begin(K_set_ledstrip, TINTF_ledstrip);
 
     interf->hidden(TCONST_dtype, e2int(engine_t::ws2812));        // set hidden value for led type to ws2812
 
@@ -3345,12 +3343,12 @@ void block_ledstrip_setup(Interface *interf, JsonObject *data){
     interf->json_section_end();
 
     interf->json_section_line(); // расположить в одной линии
-        interf->checkbox(TCONST_snake, display.getLayout().snake(), TCONST_i_zmeika, false);
-        interf->checkbox(TCONST_vflip, display.getLayout().vmirror(), TCONST_i_vflip, false);
+        interf->checkbox(TCONST_snake, display.getLayout().snake(), I_zmeika, false);
+        interf->checkbox(TCONST_vflip, display.getLayout().vmirror(), I_vflip, false);
     interf->json_section_end();
     interf->json_section_line(); // расположить в одной линии
-        interf->checkbox(TCONST_vertical, display.getLayout().vertical(), TCONST_i_vert, false);
-        interf->checkbox(TCONST_hflip, display.getLayout().hmirror(), TCONST_i_hflip, false);
+        interf->checkbox(TCONST_vertical, display.getLayout().vertical(), I_vert, false);
+        interf->checkbox(TCONST_hflip, display.getLayout().hmirror(), I_hflip, false);
     interf->json_section_end();
 
     interf->spacer();
@@ -3361,28 +3359,28 @@ void block_ledstrip_setup(Interface *interf, JsonObject *data){
         interf->number_constrained(TCONST_hcnt,   (int)display.getLayout().tile_hcnt(), "плиток по Y", 1, 1, 32);
     interf->json_section_end();
     interf->json_section_line(); // расположить в одной линии
-        interf->checkbox(TCONST_tsnake, display.getLayout().tileLayout.snake(), TCONST_i_zmeika);
-        interf->checkbox(TCONST_tvflip, display.getLayout().tileLayout.vmirror(), TCONST_i_vflip);
+        interf->checkbox(TCONST_tsnake, display.getLayout().tileLayout.snake(), I_zmeika);
+        interf->checkbox(TCONST_tvflip, display.getLayout().tileLayout.vmirror(), I_vflip);
     interf->json_section_end();
     interf->json_section_line(); // расположить в одной линии
-        interf->checkbox(TCONST_tvertical, display.getLayout().tileLayout.vertical(), TCONST_i_vert);
-        interf->checkbox(TCONST_thflip, display.getLayout().tileLayout.hmirror(), TCONST_i_hflip);
+        interf->checkbox(TCONST_tvertical, display.getLayout().tileLayout.vertical(), I_vert);
+        interf->checkbox(TCONST_thflip, display.getLayout().tileLayout.hmirror(), I_hflip);
     interf->json_section_end();
 
-    interf->button(button_t::submit, TCONST_settings_ledstrip, TINTF_Save);  // Save
+    interf->button(button_t::submit, K_set_ledstrip, TINTF_Save);  // Save
     interf->button(button_t::generic, TCONST_settings, TINTF_exit);           // Exit
 
-    interf->json_section_end();     // close "TCONST_settings_ledstrip" section
+    interf->json_section_end();     // close "K_set_ledstrip" section
 }
 
 void block_hub75_setup(Interface *interf, JsonObject *data){
-    interf->json_section_begin(TCONST_settings_hub75, TINTF_cfg_hub75);
+    interf->json_section_begin(K_set_hub75, TINTF_cfg_hub75);
     interf->comment("Configuration is Not implemented yet, press 'Save' to switch to HUB75 display, MCU will reboot");
     interf->constant("HUB75: 64x32");
     interf->hidden(TCONST_dtype, e2int(engine_t::ws2812));        // set hidden value for led type to ws2812
-    interf->button(button_t::submit,  TCONST_settings_hub75, TINTF_Save);      // Save
+    interf->button(button_t::submit,  K_set_hub75, TINTF_Save);      // Save
     interf->button(button_t::generic, TCONST_settings, TINTF_exit);           // Exit
-    interf->json_section_end();     // close "TCONST_settings_ledstrip" section
+    interf->json_section_end();     // close "K_set_ledstrip" section
 }
 
 /*

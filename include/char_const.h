@@ -39,7 +39,6 @@ static constexpr const char* TCONST_delCfg = "delCfg";
 static constexpr const char* TCONST_delete = "delete";
 static constexpr const char* TCONST_delfromlist = "delfromlist";
 static constexpr const char* TCONST_del_ = "del*";
-static constexpr const char* TCONST_Demo = "Demo";
 static constexpr const char* TCONST_direct = "direct";
 static constexpr const char* TCONST_DRand = "DRand";
 static constexpr const char* TCONST_drawbuff = "drawbuff";
@@ -166,20 +165,15 @@ static constexpr const char* TCONST_RSSI = "RSSI";
 static constexpr const char* TCONST_save = "save";
 static constexpr const char* TCONST_scale = "scale";
 static constexpr const char* TCONST_settings = "settings";
-static constexpr const char* TCONST_settings_hub75 = "set_hub75";
-static constexpr const char* TCONST_settings_ledstrip = "set_ledstrip";
 static constexpr const char* TCONST_settings_mic = "settings_mic";
 static constexpr const char* TCONST_settings_mp3 = "settings_mp3";
 static constexpr const char* TCONST_settings_wifi = "settings_wifi";
 static constexpr const char* TCONST_set_gpio = "s_gpio";                    // set gpio action
-static constexpr const char* TCONST_set_butt = "set_butt";
 static constexpr const char* TCONST_set_effect = "set_effect";
 static constexpr const char* TCONST_set_enc = "set_enc";
 static constexpr const char* TCONST_set_event = "set_event";
 static constexpr const char* TCONST_set_mic = "set_mic";
 static constexpr const char* TCONST_set_mp3 = "set_mp3";
-static constexpr const char* TCONST_set_mqtt = "set_mqtt";
-static constexpr const char* TCONST_set_opt_pass = "set_opt_pass";
 static constexpr const char* TCONST_set_other = "set_other";
 static constexpr const char* TCONST_sh_page = "sh_page";                    // show_page action for webui page selector
 static constexpr const char* TCONST_showName = "showName";
@@ -225,7 +219,6 @@ static constexpr const char* TCONST_value = "value";
 static constexpr const char* TCONST_vertical = "vertical";
 static constexpr const char* TCONST_Version = "Version";
 static constexpr const char* TCONST_vflip = "vflip";
-static constexpr const char* TCONST_wcpass = "wcpass";
 static constexpr const char* TCONST_White = "White";
 static constexpr const char* TCONST_wcnt = "wcnt";
 static constexpr const char* TCONST_width = "width";
@@ -238,16 +231,19 @@ static constexpr const char* TCONST__backup_evn_ = "/backup/evn/";
 static constexpr const char* TCONST__backup_glb_ = "/backup/glb/";
 static constexpr const char* TCONST__backup_idx = "/backup/idx";
 static constexpr const char* TCONST__backup_idx_ = "/backup/idx/";
-static constexpr const char* TCONST_demo = "demo";
 static constexpr const char* TCONST__ffffff = "#ffffff";
 static constexpr const char* TCONST__tmplist_tmp = "/tmplist.tmp";
 static constexpr const char* TCONST__tmpqlist_tmp = "/tmpqlist.tmp";
-
 // текст элементов интерфейса
-static constexpr const char* TCONST_i_zmeika = "змейка";
-static constexpr const char* TCONST_i_vert = "вертикальная";
-static constexpr const char* TCONST_i_vflip = "зеркальные столбцы";
-static constexpr const char* TCONST_i_hflip = "зеркальные строки";
+static constexpr const char* I_zmeika = "змейка";
+static constexpr const char* I_vert = "вертикальная";
+static constexpr const char* I_vflip = "зеркальные столбцы";
+static constexpr const char* I_hflip = "зеркальные строки";
+
+// имена ключей конфигурации / акшены
+static constexpr const char* K_demo = "demo";
+static constexpr const char* K_set_hub75 = "set_hub75";
+static constexpr const char* K_set_ledstrip = "set_ledstrip";
 
 
 /** набор служебных текстовых констант (HTTP/MQTT запросы) */

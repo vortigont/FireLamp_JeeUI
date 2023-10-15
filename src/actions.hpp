@@ -168,8 +168,8 @@ void run_action(ra act, const T& param) {
 
     // demo mode On/Off
     case ra::demo : {
-      obj[P_action] = TCONST_Demo;
-      nested[TCONST_Demo] = param;
+      obj[P_action] = K_demo;
+      nested[K_demo] = param;
       break;
     }
 
