@@ -169,6 +169,7 @@ static constexpr const char* TCONST_settings_mic = "settings_mic";
 static constexpr const char* TCONST_settings_mp3 = "settings_mp3";
 static constexpr const char* TCONST_settings_wifi = "settings_wifi";
 static constexpr const char* TCONST_set_gpio = "s_gpio";                    // set gpio action
+static constexpr const char* TCONST_set_butt = "set_butt";                  // set button
 static constexpr const char* TCONST_set_effect = "set_effect";
 static constexpr const char* TCONST_set_enc = "set_enc";
 static constexpr const char* TCONST_set_event = "set_event";
