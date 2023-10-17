@@ -83,7 +83,9 @@ void load_button_config(const char* path = NULL);
 
 // ---------------------
 
-void section_main_frame(Interface *interf, JsonObject *data, const char* action);
+// register embui action handlers and parameters
+void embui_actions_register();
+
 void section_effects_frame(Interface *interf, JsonObject *data, const char* action);
 void section_text_frame(Interface *interf, JsonObject *data, const char* action);
 // реализация настроек тут своя, отличная от фреймворка
@@ -94,7 +96,6 @@ void save_lamp_flags();
 
 uint8_t uploadProgress(size_t len, size_t total);
 
-void delayedcall_show_effects();
 void show_effects_config_param(Interface *interf, JsonObject *data, const char* action);
 
 /**
