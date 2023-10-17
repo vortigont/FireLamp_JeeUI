@@ -83,28 +83,28 @@ void load_button_config(const char* path = NULL);
 
 // ---------------------
 
-void section_main_frame(Interface *interf, JsonObject *data);
-void section_effects_frame(Interface *interf, JsonObject *data);
-void section_text_frame(Interface *interf, JsonObject *data);
+void section_main_frame(Interface *interf, JsonObject *data, const char* action);
+void section_effects_frame(Interface *interf, JsonObject *data, const char* action);
+void section_text_frame(Interface *interf, JsonObject *data, const char* action);
 // реализация настроек тут своя, отличная от фреймворка
-void section_settings_frame(Interface *interf, JsonObject *data);
+void section_settings_frame(Interface *interf, JsonObject *data, const char* action);
 void pubCallback(Interface *interf);
-void set_onflag(Interface *interf, JsonObject *data);
+void set_onflag(Interface *interf, JsonObject *data, const char* action);
 void save_lamp_flags();
 
 uint8_t uploadProgress(size_t len, size_t total);
 
 void delayedcall_show_effects();
-void show_effects_config_param(Interface *interf, JsonObject *data);
+void show_effects_config_param(Interface *interf, JsonObject *data, const char* action);
 
 /**
  * блок формирования страницы с контролами для настроек параметров эффектов
  * здесь выводится ПОЛНЫЙ сипсок эффектов
  */
-void block_effects_config(Interface *interf, JsonObject *data);
+void block_effects_config(Interface *interf, JsonObject *data, const char* action);
 
 #ifdef MIC_EFFECTS
-void show_settings_mic(Interface *interf, JsonObject *data);
+void show_settings_mic(Interface *interf, JsonObject *data, const char* action);
 #endif
 
 /**
@@ -117,12 +117,12 @@ void load_events_config(const char* path = NULL);
 /*
     сохраняет настройки LED ленты
 */
-void set_ledstrip(Interface *interf, JsonObject *data);
+void set_ledstrip(Interface *interf, JsonObject *data, const char* action);
 
-void block_ledstrip_setup(Interface *interf, JsonObject *data);
+void block_ledstrip_setup(Interface *interf, JsonObject *data, const char* action);
 
 /**
  * @brief Construct WebUI block for hub75 panel setup
  * 
  */
-void block_hub75_setup(Interface *interf, JsonObject *data);
+void block_hub75_setup(Interface *interf, JsonObject *data, const char* action);
