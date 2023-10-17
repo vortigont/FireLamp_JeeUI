@@ -2539,6 +2539,8 @@ void page_gpiocfg(Interface *interf, JsonObject *data){
 
     interf->json_section_end(); // json_section_begin ""
 
+    interf->button(button_t::generic, TCONST_settings, TINTF_exit);
+
     interf->json_frame_flush();
 }
 
