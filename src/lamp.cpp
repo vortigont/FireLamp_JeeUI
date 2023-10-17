@@ -265,6 +265,8 @@ void LAMP::changePower(bool flag) // флаг включения/выключе�
     if(mode == LAMPMODE::MODE_DEMO)
       demoTimer(T_ENABLE);
 
+    // включаем эффект
+    switcheffect(SW_SPECIFIC, getFaderFlag(), effects.getCurrent());
   } else  {
     // POWER OFF
 #ifdef USE_STREAMING
