@@ -3401,8 +3401,6 @@ void set_ledstrip(Interface *interf, JsonObject *data, const char* action){
         return;
     }
 
-    // set FastLED gpio
-    display.setGPIO((*data)[TCONST_mx_gpio]);
     // установка максимального тока FastLED
     display.setCurrentLimit((*data)[TCONST_CLmt]);
 
@@ -3418,13 +3416,22 @@ void set_ledstrip(Interface *interf, JsonObject *data, const char* action){
         (*data)[TCONST_tvflip],
         (*data)[TCONST_thflip]
     );
+
+    // set FastLED gpio
+    if (display.getGPIO() == -1){
+        // it's a cold start, so I can change GPIO on the fly
+        display.setGPIO((*data)[TCONST_mx_gpio]);
+        display.start();
+    } else {
+        // otherwise new pin value could be set after reboot
+        run_action(ra::reboot);         // reboot in 5 sec
+    }
+
+    if (interf) basicui::section_settings_frame(interf, nullptr);
 }
 
 void set_hub75(Interface *interf, JsonObject *data, const char* action){
-    if (!data) return;
-
-        DynamicJsonDocument doc(512);
-        if (!embuifs::deserializeFile(doc, TCONST_fcfg_display)) doc.clear();
+    DynamicJsonDocument doc(512);
 /*
         JsonVariant dst = doc[TCONST_ws2812].isNull() ? doc.createNestedObject(TCONST_ws2812) : doc[TCONST_ws2812];
 
@@ -3433,13 +3440,13 @@ void set_hub75(Interface *interf, JsonObject *data, const char* action){
 
         dst.remove(TCONST_dtype);
 */
-        doc[TCONST_dtype] = e2int(engine_t::hub75);   // set engine to hub75
+    doc[TCONST_dtype] = e2int(engine_t::hub75);   // set engine to hub75
 
-        // save new led strip config to file
-        embuifs::serialize2file(doc, TCONST_fcfg_display);
+    // save new config to file
+    embuifs::serialize2file(doc, TCONST_fcfg_display);
 
     if (display.get_engine_type() != engine_t::hub75){
         run_action(ra::reboot);         // reboot in 5 sec
-        if (interf) basicui::section_settings_frame(interf, nullptr, NULL);
     }
+    if (interf) basicui::section_settings_frame(interf, nullptr);
 }

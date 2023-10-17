@@ -59,6 +59,7 @@ bool LEDDisplay::start(){
 
     // a shortcut for hub75 testing
     if (doc[TCONST_dtype] == static_cast<int>(engine_t::hub75)){
+        _etype = engine_t::hub75;
         tiles.setTileDimensions(64, 32, 1, 1);
         return _start_hub75();
     }
@@ -68,10 +69,10 @@ bool LEDDisplay::start(){
     // shortcut
     JsonVariant o = doc[TCONST_ws2812];
 
-    // load gpio value
-    _gpio = o[TCONST_mx_gpio].as<int>();
+    // load gpio value, if defined
+    setGPIO(o[TCONST_mx_gpio].as<int>());
 
-    // set current
+    // set current, if defined
     setCurrentLimit(o[TCONST_CLmt]);
 
     // load canvas topology
