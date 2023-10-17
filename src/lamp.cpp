@@ -1201,7 +1201,7 @@ void LAMP::writeDrawBuf(CRGB color, uint16_t x, uint16_t y){
 
 #ifdef EMBUI_USE_MQTT
 void LAMP::setmqtt_int(int val) {
-    if (!val && tmqtt_pub){
+    if (val <= 0){
       delete tmqtt_pub;
       tmqtt_pub = nullptr;
       return;
