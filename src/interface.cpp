@@ -2783,7 +2783,7 @@ void show_progress(Interface *interf, JsonObject *data, const char* action){
     interf->json_section_end();
     interf->json_frame_flush();
 }
-
+/*
 uint8_t uploadProgress(size_t len, size_t total){
     DynamicJsonDocument doc(256);
     JsonObject obj = doc.to<JsonObject>();
@@ -2803,7 +2803,7 @@ uint8_t uploadProgress(size_t len, size_t total){
     }
     return progress;
 }
-
+*/
 // Функции обработчики и другие служебные
 #ifdef ESP_USE_BUTTON
 void default_buttons(){

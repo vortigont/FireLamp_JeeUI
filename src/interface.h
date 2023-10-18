@@ -94,7 +94,8 @@ void pubCallback(Interface *interf);
 void set_onflag(Interface *interf, JsonObject *data, const char* action);
 void save_lamp_flags();
 
-uint8_t uploadProgress(size_t len, size_t total);
+// disabled as not handled by external lib
+//uint8_t uploadProgress(size_t len, size_t total);
 
 void show_effects_config_param(Interface *interf, JsonObject *data, const char* action);
 
