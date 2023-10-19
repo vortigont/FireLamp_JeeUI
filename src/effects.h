@@ -2098,16 +2098,15 @@ public:
     bool run() override;
 };
 
+// ----------- Эффект "Неопалимая купина"
+// RadialFire
+// (c) Stepko and Sutaburosu https://editor.soulmatelights.com/gallery/1570-radialfire
+// refactoring, stretching for any dimension Vortigont
 class EffectRadialFire : public EffectCalc {
-private:
-    const int8_t maximum = fb->maxDim();
-    const int8_t centre = fb->maxDim() / 2;
-    const uint8_t X = fb->w() > fb->h() ? 0: (fb->w() - fb->h()) /2; 
-    const uint8_t Y = fb->w() < fb->h() ? 0: (fb->h() - fb->w()) /2;
-    Vector2D<float> xy_angle{ Vector2D<float>(maximum, maximum) };
-    Vector2D<float> xy_radius{ Vector2D<float>(maximum, maximum) };
+    Vector2D<float> xy_angle{ Vector2D<float>(fb->w(), fb->h()) };
+    Vector2D<float> xy_radius{ Vector2D<float>(fb->w(), fb->h()) };
     float t{0};
-    uint8_t _scale;
+    uint8_t _scale{1};
     bool mode = false;
 
     String setDynCtrl(UIControl*_val) override;

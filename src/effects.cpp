@@ -8567,10 +8567,6 @@ double EffectWcolor::Blot::getY() {
 }
 
 // ----------- Эффект "Неопалимая купина"
-//RadialFire
-// (c) Stepko and Sutaburosu https://editor.soulmatelights.com/gallery/1570-radialfire
-//23/12/21
-// !++
 String EffectRadialFire::setDynCtrl(UIControl*_val){
   if(_val->getId()==1) {
     speed = EffectCalc::setDynCtrl(_val).toInt();
@@ -8582,10 +8578,12 @@ String EffectRadialFire::setDynCtrl(UIControl*_val){
 }
 
 void EffectRadialFire::load() {
-  for (int x = -centre; x < centre + (fb->w() % 2); x++) {
-    for (int y = -centre; y < centre + (fb->h() % 2); y++) {
-      xy_angle.at(x + centre, y + centre) = atan2(y, x) * (180. / 2. / PI) * maximum;
-      xy_radius.at(x + centre, y + centre) = hypotf(x, y); // thanks Sutaburosu
+  constexpr float theta = 180 / 2 / PI;
+  int offset_x{-fb->w()/2}, offset_y{-fb->h()/2};
+  for (int y = 0; y < fb->h(); ++y) {
+    for (int x = 0; x < fb->w(); ++x) {
+      xy_angle.at(x, y) = atan2(y+offset_y, x+offset_x) * theta * fb->maxDim();
+      xy_radius.at(x, y) = hypotf(x+offset_x, y+offset_y);
     }
   }
   palettesload();
@@ -8614,14 +8612,14 @@ void EffectRadialFire::palettesload(){
 
 bool EffectRadialFire::run() {
   t += speedfactor;
-  for (uint8_t x = 0; x < maximum; x++) {
-    for (uint8_t y = 0; y < maximum; y++) {
-      uint16_t radius = mode ? maximum - 3 - xy_radius.at(x,y) : xy_radius.at(x,y);
-      int16_t bri = inoise8(xy_angle.at(x,y), radius * _scale - t, x * _scale) - radius * (256 /maximum);
+  for (uint8_t y = 0; y < fb->h(); ++y) {
+    for (uint8_t x = 0; x < fb->w(); ++x) {
+      float radius = mode ? fb->maxDim() - 3 - xy_radius.at(x,y) : xy_radius.at(x,y);
+      int16_t bri = inoise8(xy_angle.at(x,y), radius * _scale - t, x * _scale) - radius * (256 /fb->maxDim());
       byte col = bri;
       if (bri < 0) bri = 0; 
       if(bri) bri = 256 - (bri * 0.2);
-        nblend(fb->at(x+X, y+Y), ColorFromPalette(*curPalette, col, bri), speed);
+        nblend(fb->at(x, y), ColorFromPalette(*curPalette, col, bri), speed);
     }
   }
   return true;

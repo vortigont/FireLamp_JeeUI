@@ -92,20 +92,20 @@ void setup() {
 
     // add WLED mobile app handler
     embui.server.on("/win", HTTP_ANY, [](AsyncWebServerRequest *request){ wled_handle(request); } );
-    // 404 handler for WLED workaround
+    // special 404 handler to workaround WLED bug 
     embui.on_notfound( [](AsyncWebServerRequest *r){ return http_notfound(r);} );
 
-    // EmbUI
-    embui.begin(); // Инициализируем EmbUI фреймворк - загружаем конфиг, запускаем WiFi и все зависимые от него службы
+    //  *** EmbUI ***
+    // Инициализируем EmbUI фреймворк - загружаем конфиг, запускаем WiFi и все зависимые от него службы
+    embui.begin();
 
     // Add mDNS CB handler for WLED app
     embui.wifi->mdns_cb = wled_announce;
 
-#ifdef EMBUI_USE_MQTT
-    //embui.mqtt(embui.param("m_pref")), embui.param("m_host")), embui.param("m_port")).toInt(), embui.param("m_user")), embui.param("m_pass")), mqttCallback, true); // false - никакой автоподписки!!!
-    //embui.mqtt(mqttCallback, true);
-    //embui.mqtt(mqttCallback, mqttConnect, true);
+    // register config params and action callbacks
+    embui_actions_register();
 
+#ifdef EMBUI_USE_MQTT
     // assign our callbacks for mqtt
     if (embui.mqttClient){
         embui.mqttClient->onConnect([](bool session){ ha_autodiscovery(); });        // run HomeAssistant autodiscovery
@@ -116,6 +116,8 @@ void setup() {
     myLamp.effects.setEffSortType((SORT_TYPE)embui.paramVariant(TCONST_effSort).as<int>()); // сортировка должна быть определена до заполнения
     myLamp.effects.initDefault(); // если вызывать из конструктора, то не забыть о том, что нужно инициализировать Serial.begin(115200); иначе ничего не увидеть!
     myLamp.events.loadConfig();
+    myLamp.events.setEventCallback(event_worker);
+    myLamp.lamp_init();
 
 #ifdef RTC
     rtc.init();
@@ -124,9 +126,6 @@ void setup() {
 #ifdef DS18B20
     ds_setup();
 #endif
-
-    // restore matrix current limit from config
-    myLamp.lamp_init();
 
 #ifdef ESP_USE_BUTTON
     myLamp.setbPin(embui.paramVariant(TCONST_PINB));
@@ -137,26 +136,20 @@ void setup() {
     }
 #endif
 
-    myLamp.events.setEventCallback(event_worker);
-
     // configure and init attached devices
     gpio_setup();
     // restore matrix configuration from file and create a proper LED buffer
     display.start();
 
 /*
-#ifdef ESP8266
-  embui.server.addHandler(new SPIFFSEditor("esp8266"),"esp8266"), LittleFS));
-#else
   embui.server.addHandler(new SPIFFSEditor(LittleFS, "esp32", "esp32"));
-#endif
 */
     sync_parameters();
 
     embui.setPubInterval(10);   // change periodic WebUI publish interval from EMBUI_PUB_PERIOD to 10 secs
 
 #ifdef ENCODER
-  enc_setup();
+    enc_setup();
 #endif
 
     LOG(println, "setup() done");

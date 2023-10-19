@@ -475,7 +475,7 @@ void EffectWorker::workerset(uint16_t effect){
   case EFF_ENUM::EFF_WATERCOLORS :
     worker = std::unique_ptr<EffectWcolor>(new EffectWcolor(canvas));
     break;
-  case EFF_ENUM::EFF_FIRE :
+  case EFF_ENUM::EFF_RADIALFIRE :
     worker = std::unique_ptr<EffectRadialFire>(new EffectRadialFire(canvas));
     break;
   case EFF_ENUM::EFF_SPBALS :
