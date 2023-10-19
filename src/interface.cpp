@@ -1918,7 +1918,7 @@ void set_butt_conf(Interface *interf, JsonObject *data, const char* action){
     bool onetime = ((*data)[TCONST_onetime]);
     uint8_t clicks = (*data)[TCONST_clicks];
     String param = (*data)[TCONST_bparam].as<String>();
-    BA action = (BA)(*data)[TCONST_bactList].as<long>();
+    BA btn_action = (BA)(*data)[TCONST_bactList].as<long>();
 
     if (data->containsKey(TCONST_buttList)) {
         int num = (*data)[TCONST_buttList];
@@ -1927,14 +1927,14 @@ void set_butt_conf(Interface *interf, JsonObject *data, const char* action){
         }
     }
     if (btn) {
-        btn->action = action;
+        btn->action = btn_action;
         btn->flags.on = on;
         btn->flags.hold = hold;
         btn->flags.click = clicks;
         btn->flags.onetime = onetime;
         btn->setParam(param);
     } else {
-        myButtons->add(new Button(on, hold, clicks, onetime, action, param));
+        myButtons->add(new Button(on, hold, clicks, onetime, btn_action, param));
     }
 
     myButtons->saveConfig();
