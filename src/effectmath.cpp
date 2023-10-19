@@ -929,7 +929,7 @@ void Noise3dMap::fillNoise(uint8_t smooth){
       for (uint8_t x = 0; x != w; ++x) {
         int32_t xoffset = opt[l].e_scaleX * (x - e_centerX);
         uint8_t data = (inoise16(opt.at(l).e_x + xoffset, opt.at(l).e_y + yoffset, opt.at(l).e_z) + 1) >> 8;
-        lxy(l,y,x) = smooth ? scale8( map.at(l).at(x,y), smooth ) + scale8( data, 255 - smooth ) : data;
+        lxy(l,x,y) = smooth ? scale8( lxy(l,x,y), smooth ) + scale8( data, 255 - smooth ) : data;
       }
     }
   }
