@@ -3240,8 +3240,13 @@ void set_ledstrip(Interface *interf, JsonObject *data, const char* action){
         (*data)[TCONST_thflip]
     );
 
-    // set FastLED gpio
-    if (display.getGPIO() == -1){
+    // go to "settings page"
+    if (interf) basicui::page_system_settings(interf, nullptr, NULL);
+
+    // Check if I need to reset FastLED gpio
+    if (display.getGPIO() == (*data)[TCONST_mx_gpio] || (*data)[TCONST_mx_gpio] == GPIO_NUM_NC) return;       /// gpio not changed or not set, just quit
+
+    if (display.getGPIO() == GPIO_NUM_NC){
         // it's a cold start, so I can change GPIO on the fly
         display.setGPIO((*data)[TCONST_mx_gpio]);
         display.start();
@@ -3250,7 +3255,6 @@ void set_ledstrip(Interface *interf, JsonObject *data, const char* action){
         run_action(ra::reboot);         // reboot in 5 sec
     }
 
-    if (interf) basicui::page_system_settings(interf, nullptr, NULL);
 }
 
 void set_hub75(Interface *interf, JsonObject *data, const char* action){
