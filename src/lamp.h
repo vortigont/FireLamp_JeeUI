@@ -565,7 +565,7 @@ void setTempDisp(bool flag) {flags.isTempOn = flag;}
      * включает/выключает "эффект"-таймер
      * @param SCHEDULER action - enable/disable/reset
      */
-    void effectsTimer(SCHEDULER action, uint32_t _begin = 0);
+    void effectsTimer(SCHEDULER action);
 
 private:
     /**

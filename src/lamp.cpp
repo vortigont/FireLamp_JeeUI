@@ -245,10 +245,11 @@ void LAMP::changePower() {changePower(!flags.ONflag);}
 
 void LAMP::changePower(bool flag) // флаг включения/выключения меняем через один метод
 {
-  ALARMTASK::stopAlarm();            // любая активность в интерфейсе - отключаем будильник
   if (flag == flags.ONflag) return;  // пропускаем холостые вызовы
   LOG(print, "Lamp powering "); LOG(println, flag ? "On": "Off");
   flags.ONflag = flag;
+
+  ALARMTASK::stopAlarm();            // любая активность в интерфейсе - отключаем будильник
 
   if(mode == LAMPMODE::MODE_OTA)
     mode = LAMPMODE::MODE_NORMAL;
@@ -260,13 +261,18 @@ void LAMP::changePower(bool flag) // флаг включения/выключе�
       Led_Stream::newStreamObj((STREAM_TYPE)embui.param(TCONST_stream_type).toInt());
     if(!flags.isDirect || !flags.isStream)
 #endif
-    //effects.reset();
-    effectsTimer(T_ENABLE);
+
+    // переключаемся на текущий эффект, переключение вызовет запуск движка калькулятора эффекта и фейдер (если необходимо)
+    switcheffect(SW_SPECIFIC, getFaderFlag(), effects.getCurrent());
+    // запускаем планировщик движка эффектов
+    effectsTimer(SCHEDULER::T_ENABLE);
+
+    // включаем демотаймер если был режим демо
     if(mode == LAMPMODE::MODE_DEMO)
       demoTimer(T_ENABLE);
 
-    // включаем эффект
-    switcheffect(SW_SPECIFIC, getFaderFlag(), effects.getCurrent());
+    // enable FET for matrix
+    if (fet_gpio > static_cast<int>(GPIO_NUM_NC)) digitalWrite(fet_gpio, (flags.ONflag ? fet_ll : !fet_ll));
   } else  {
     // POWER OFF
 #ifdef USE_STREAMING
@@ -281,15 +287,16 @@ void LAMP::changePower(bool flag) // флаг включения/выключе�
     lampState.isOffAfterText = false;
     lampState.isStringPrinting = false;
     demoTimer(T_DISABLE);     // гасим Демо-таймер
+
+    // установка сигнала в пин, управляющий MOSFET транзистором, соответственно состоянию вкл/выкл матрицы
+    if (fet_gpio > static_cast<int>(GPIO_NUM_NC)){
+      Task *_t = new Task(flags.isFaderON && !flags.ONflag ? 5*TASK_SECOND : 50, TASK_ONCE, // для выключения - отложенное переключение мосфета 5 секунд
+        [this](){ digitalWrite(fet_gpio, (flags.ONflag ? fet_ll : !fet_ll)); },
+        &ts, false, nullptr, nullptr, true);
+      _t->enableDelayed();
+    }
   }
 
-  // установка сигнала в пин, управляющий MOSFET транзистором, соответственно состоянию вкл/выкл матрицы
-  if (fet_gpio > static_cast<int>(GPIO_NUM_NC)){
-    Task *_t = new Task(flags.isFaderON && !flags.ONflag ? 5*TASK_SECOND : 50, TASK_ONCE, // для выключения - отложенное переключение мосфета 5 секунд
-      [this](){ digitalWrite(fet_gpio, (flags.ONflag ? fet_ll : !fet_ll)); },
-      &ts, false, nullptr, nullptr, true);
-    _t->enableDelayed();
-  }
 }
 
 #ifdef MP3PLAYER
@@ -1054,7 +1061,7 @@ void LAMP::demoTimer(SCHEDULER action, uint8_t tmout){
  * включает/выключает таймер обработки эффектов
  * @param SCHEDULER enable/disable/reset - вкл/выкл/сброс
  */
-void LAMP::effectsTimer(SCHEDULER action, uint32_t _begin) {
+void LAMP::effectsTimer(SCHEDULER action) {
   LOG(printf, "effectsTimer: %u\n", (unsigned)action);
   switch (action){
   case SCHEDULER::T_ENABLE :
@@ -1064,39 +1071,6 @@ void LAMP::effectsTimer(SCHEDULER action, uint32_t _begin) {
   default:
     effects.stop();
   }
-/*
-  switch (action)
-  {
-  case SCHEDULER::T_DISABLE :
-    if(effectsTask){
-      delete effectsTask;
-      effectsTask = nullptr;
-    }
-    break;
-  case SCHEDULER::T_ENABLE :
-    if(!effectsTask){
-      effectsTask = new Task(_begin?_begin:EFFECTS_RUN_TIMER, TASK_ONCE, [this](){effectsTick();}, &ts, false);
-    } else {
-      effectsTask->set(_begin?_begin:EFFECTS_RUN_TIMER, TASK_ONCE, [this](){effectsTick();});
-    }
-    effectsTask->restartDelayed();
-    break;
-  case SCHEDULER::T_FRAME_ENABLE :
-    if(!effectsTask){
-      effectsTask = new Task(LED_SHOW_DELAY, TASK_ONCE, [this, _begin](){frameShow(_begin);}, &ts, false);
-    } else {
-      effectsTask->set(LED_SHOW_DELAY, TASK_ONCE, [this, _begin](){frameShow(_begin);});
-    }
-    effectsTask->restartDelayed();
-    break;
-  case SCHEDULER::T_RESET :
-    if (effectsTask)
-      effectsTask->restartDelayed();
-    break;
-  default:
-    return;
-  }
-*/
 }
 
 //-----------------------------
