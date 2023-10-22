@@ -234,11 +234,10 @@ void show_page_selector(Interface *interf, JsonObject *data, const char* action)
             return page_gpiocfg(interf, nullptr, NULL);
         case page::setup_other :    // страница "настройки"-"другие"
             return page_settings_other(interf, nullptr, NULL);
-        case page::setup_display : // led struip setup
+        case page::setup_display :  // led struip setup
             return page_display_setup(interf, nullptr, NULL);
 
-        default:                    // by default simply show main page
-            page_main(interf, nullptr, NULL);
+        default:;                   // by default do nothing
     }
 
 }
@@ -255,7 +254,7 @@ void block_menu(Interface *interf, JsonObject *data, const char* action){
     interf->option(TCONST_streaming, TINTF_0E2);      //  Трансляция
 #endif
     interf->option(TCONST_show_event, TINTF_011);     //  События
-    interf->option(TCONST_settings, TINTF_002);       //  настройки
+    basicui::menuitem_settings(interf);               //  настройки
 
     interf->json_section_end();
 }
@@ -337,7 +336,7 @@ void page_main(Interface *interf, JsonObject *data, const char* action){
     {
         // форсируем выбор вкладки настройки WiFi если контроллер не подключен к внешней AP
         interf->json_frame_interface();
-            basicui::block_settings_netw(interf, data, NULL);
+            basicui::page_settings_netw(interf, nullptr, NULL);
     }
 }
 
@@ -1297,7 +1296,7 @@ void block_settings_mic(Interface *interf, JsonObject *data, const char* action)
     }
 
     interf->spacer();
-    interf->button(button_t::generic, TCONST_settings, TINTF_exit);
+    interf->button(button_t::generic, UI_SETTINGS, TINTF_exit);
 
     interf->json_section_end();
 }
@@ -1422,7 +1421,7 @@ void page_settings_other(Interface *interf, JsonObject *data, const char* action
     interf->button(button_t::submit, TCONST_set_other, TINTF_Save, P_GRAY);
 
     interf->spacer();
-    interf->button(button_t::generic, TCONST_settings, TINTF_exit);
+    interf->button(button_t::generic, UI_SETTINGS, TINTF_exit);
 
     interf->json_frame_flush();
 }
@@ -1472,65 +1471,6 @@ void set_settings_other(Interface *interf, JsonObject *data, const char* action)
     if(interf)
         basicui::page_system_settings(interf, data, NULL);
 }
-/*
-// страницу-форму настроек времени строим методом фреймворка (ломает переводы, возвращено обратно)
-void show_settings_time(Interface *interf, JsonObject *data, const char* action){
-    if (!interf) return;
-    interf->json_frame_interface();
-
-    // Headline
-    interf->json_section_main(TCONST_SET_TIME, TINTF_051);
-
-    interf->comment(TINTF_052);     // комментарий-описание секции
-
-    // сперва рисуем простое поле с текущим значением правил временной зоны из конфига
-    interf->text(P_TZSET, TINTF_053);
-
-    // user-defined NTP server
-    interf->text(P_userntp, TINTF_054);
-    // manual date and time setup
-    interf->comment(TINTF_055);
-    interf->datetime(P_DTIME, "", true);
-    interf->hidden(P_DEVICEDATETIME,""); // скрытое поле для получения времени с устройства
-    interf->button(button_t::submit, TCONST_SET_TIME, TINTF_Save, P_GRAY);
-
-    interf->spacer();
-
-    // exit button
-    interf->button(button_t::generic, TCONST_SETTINGS, TINTF_exit);
-
-    // close and send frame
-    interf->json_section_end();
-    interf->json_frame_flush();
-
-    // формируем и отправляем кадр с запросом подгрузки внешнего ресурса со списком правил временных зон
-    // полученные данные заместят предыдущее поле выпадающим списком с данными о всех временных зонах
-    interf->json_frame_custom(TCONST_XLOAD);
-    interf->json_section_content();
-                    //id            val                         label   direct  skipl URL for external data
-    interf->select(P_TZSET, embui.param(P_TZSET), "",     false,  true, "/js/tz.json");
-    interf->json_section_end();
-    interf->json_frame_flush();
-}
-
-void set_settings_time(Interface *interf, JsonObject *data, const char* action){
-    basicui::set_settings_time(interf, data, NULL);
-    myLamp.sendString(String("%TM").c_str(), CRGB::Green);
-#ifdef RTC
-    rtc.updateRtcTime();
-#endif
-    basicui::page_system_settings(interf, data, NULL);
-}
-
-void block_settings_update(Interface *interf, JsonObject *data, const char* action){
-    if (!interf) return;
-    interf->json_section_hidden(T_DO_OTAUPD, TINTF_056);
-    interf->spacer(TINTF_059);
-    interf->file(T_DO_OTAUPD, T_DO_OTAUPD, TINTF_05A);
-    interf->button(button_t::generic, TCONST_REBOOT, TINTF_096, !data ? P_RED : "");       // кнопка перехода в настройки времени
-    interf->json_section_end();
-}
-*/
 
 void block_settings_event(Interface *interf, JsonObject *data, const char* action){
     if (!interf) return;
@@ -1898,7 +1838,7 @@ void block_settings_butt(Interface *interf, JsonObject *data, const char* action
     interf->button(button_t::generic, TCONST_butt_conf, TINTF_05D);
 
     interf->spacer();
-    interf->button(button_t::generic, TCONST_settings, TINTF_exit);
+    interf->button(button_t::generic, UI_SETTINGS, TINTF_exit);
 
     interf->json_section_end();
 }
@@ -2031,7 +1971,7 @@ void block_settings_enc(Interface *interf, JsonObject *data, const char* action)
     interf->range(TCONST_encTxtDel, 110-getEncTxtDelay(), 10, 100, 5, TINTF_044, false);
     interf->button(button_t::submit, TCONST_set_enc, TINTF_Save, P_GRAY);
     interf->spacer();
-    interf->button(button_t::generic, TCONST_settings, TINTF_exit);
+    interf->button(button_t::generic, UI_SETTINGS, TINTF_exit);
     interf->json_section_end();
 }
 void show_settings_enc(Interface *interf, JsonObject *data, const char* action){
@@ -2139,7 +2079,7 @@ void show_settings_mp3(Interface *interf, JsonObject *data, const char* action){
     interf->json_section_end();
 
     interf->spacer();
-    interf->button(button_t::generic, TCONST_settings, TINTF_exit);
+    interf->button(button_t::generic, UI_SETTINGS, TINTF_exit);
 
     interf->json_frame_flush();
 }
@@ -2512,7 +2452,7 @@ void page_gpiocfg(Interface *interf, JsonObject *data, const char* action){
 
     interf->json_section_end(); // json_section_begin ""
 
-    interf->button(button_t::generic, TCONST_settings, TINTF_exit);
+    interf->button(button_t::generic, UI_SETTINGS, TINTF_exit);
 
     interf->json_frame_flush();
 }
@@ -3182,7 +3122,7 @@ void block_ledstrip_setup(Interface *interf, JsonObject *data, const char* actio
     interf->json_section_end();
 
     interf->button(button_t::submit, K_set_ledstrip, TINTF_Save);  // Save
-    interf->button(button_t::generic, TCONST_settings, TINTF_exit);           // Exit
+    interf->button(button_t::generic, UI_SETTINGS, TINTF_exit);           // Exit
 
     interf->json_section_end();     // close "K_set_ledstrip" section
 }
@@ -3193,7 +3133,7 @@ void block_hub75_setup(Interface *interf, JsonObject *data, const char* action){
     interf->constant("HUB75: 64x32");
     interf->hidden(TCONST_dtype, e2int(engine_t::ws2812));        // set hidden value for led type to ws2812
     interf->button(button_t::submit,  K_set_hub75, TINTF_Save);      // Save
-    interf->button(button_t::generic, TCONST_settings, TINTF_exit);           // Exit
+    interf->button(button_t::generic, UI_SETTINGS, TINTF_exit);           // Exit
     interf->json_section_end();     // close "K_set_ledstrip" section
 }
 
@@ -3327,17 +3267,17 @@ void embui_actions_register(){
     embui.var_create(TCONST_txtColor, TCONST__ffffff);
     embui.var_create(TCONST_txtBfade, FADETOBLACKVALUE);
     embui.var_create(TCONST_txtSpeed, 100);
-    embui.var_create(TCONST_txtOf, 0);
+//    embui.var_create(TCONST_txtOf, 0);
     embui.var_create(TCONST_effSort, 1);
     embui.var_create(TCONST_GlobBRI, 127);
 
-    embui.var_create(TCONST_ny_period, 0);
+//    embui.var_create(TCONST_ny_period, 0);
     embui.var_create(TCONST_ny_unix, TCONST_1609459200);
 
 #ifdef MIC_EFFECTS
     embui.var_create(TCONST_micScale, 1.28);
-    embui.var_create(TCONST_micNoise, 0.0);
-    embui.var_create(TCONST_micnRdcLvl, 0);
+//    embui.var_create(TCONST_micNoise, 0.0);
+//    embui.var_create(TCONST_micnRdcLvl, 0);
 #endif
 
     embui.var_create(TCONST_DTimer, DEFAULT_DEMO_TIMER); // Дефолтное значение, настраивается из UI

@@ -164,18 +164,9 @@ static constexpr const char* TCONST_RGB = "RGB";
 static constexpr const char* TCONST_RSSI = "RSSI";
 static constexpr const char* TCONST_save = "save";
 static constexpr const char* TCONST_scale = "scale";
-static constexpr const char* TCONST_settings = "settings";
 static constexpr const char* TCONST_settings_mic = "settings_mic";
 static constexpr const char* TCONST_settings_mp3 = "settings_mp3";
 static constexpr const char* TCONST_settings_wifi = "settings_wifi";
-static constexpr const char* TCONST_set_gpio = "s_gpio";                    // set gpio action
-static constexpr const char* TCONST_set_butt = "set_butt";                  // set button
-static constexpr const char* TCONST_set_effect = "set_effect";
-static constexpr const char* TCONST_set_enc = "set_enc";
-static constexpr const char* TCONST_set_event = "set_event";
-static constexpr const char* TCONST_set_mic = "set_mic";
-static constexpr const char* TCONST_set_mp3 = "set_mp3";
-static constexpr const char* TCONST_set_other = "set_other";
 static constexpr const char* TCONST_sh_page = "sh_page";                    // show_page action for webui page selector
 static constexpr const char* TCONST_showName = "showName";
 static constexpr const char* TCONST_show_button = "show_button";
@@ -245,6 +236,14 @@ static constexpr const char* I_hflip = "зеркальные строки";
 static constexpr const char* K_demo = "demo";
 static constexpr const char* K_set_hub75 = "set_hub75";
 static constexpr const char* K_set_ledstrip = "set_ledstrip";
+static constexpr const char* TCONST_set_gpio = "s_gpio";                    // set gpio action
+static constexpr const char* TCONST_set_butt = "set_butt";                  // set button
+static constexpr const char* TCONST_set_effect = "set_effect";
+static constexpr const char* TCONST_set_enc = "set_enc";
+static constexpr const char* TCONST_set_event = "set_event";
+static constexpr const char* TCONST_set_mic = "set_mic";
+static constexpr const char* TCONST_set_mp3 = "set_mp3";
+static constexpr const char* TCONST_set_other = "set_other";
 
 
 /** набор служебных текстовых констант (HTTP/MQTT запросы) */
