@@ -202,6 +202,7 @@ void LEDDisplay::print_stripe_cfg(){
 
 void LEDDisplay::setCurrentLimit(uint32_t i){
     //fastled_current_limit = i < FASTLED_MIN_CURRENT ? FASTLED_MIN_CURRENT : i;
+    fastled_current_limit = i;
     FastLED.setMaxPowerInVoltsAndMilliamps(FASTLED_VOLTAGE, i);
 }
 

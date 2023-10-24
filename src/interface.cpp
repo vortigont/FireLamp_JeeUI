@@ -1350,19 +1350,6 @@ void set_settings_mic_calib(Interface *interf, JsonObject *data, const char* act
 }
 #endif
 
-/*
-#ifdef EMBUI_USE_MQTT
-void set_settings_mqtt(Interface *interf, JsonObject *data, const char* action){
-    if (!data) return;
-    basicui::set_settings_mqtt(interf, data, NULL);
-    embui.mqttReconnect();
-    int interval = (*data)[P_mqtt_ka];
-    LOG(print, "New MQTT interval: "); LOG(println, interval);
-    myLamp.setmqtt_int(interval);
-    basicui::page_system_settings(interf, data, NULL);
-}
-#endif
-*/
 #ifdef EMBUI_USE_FTP
 // настройка ftp
 void set_ftp(Interface *interf, JsonObject *data, const char* action){
@@ -1387,14 +1374,19 @@ void page_settings_other(Interface *interf, JsonObject *data, const char* action
     interf->checkbox(TCONST_f_restore_state, myLamp.getLampFlagsStuct().restoreState, TINTF_f_restore_state, false);
     interf->checkbox(TCONST_isFaderON, myLamp.getLampFlagsStuct().isFaderON , TINTF_03D, false);
     interf->checkbox(TCONST_isClearing, myLamp.getLampFlagsStuct().isEffClearing , TINTF_083, false);
-    interf->checkbox(TCONST_DRand, myLamp.getLampFlagsStuct().dRand , TINTF_03E, false);
-    interf->checkbox(TCONST_showName, myLamp.getLampFlagsStuct().showName , TINTF_09A, false);
+    interf->json_section_line();
+        interf->checkbox(TCONST_DRand, myLamp.getLampFlagsStuct().dRand , TINTF_03E, false);
+        interf->checkbox(TCONST_showName, myLamp.getLampFlagsStuct().showName , TINTF_09A, false);
+    interf->json_section_end(); // line
 
     interf->number_constrained(TCONST_brtScl, static_cast<int>(myLamp.getBrightnessScale()), "Brightness Scale", 1, 5, static_cast<int>(MAX_BRIGHTNESS));
 
-    interf->range(TCONST_DTimer, embui.paramVariant(TCONST_DTimer).as<int>(), 30, 600, 15, TINTF_03F);
-    float sf = embui.paramVariant(TCONST_spdcf);
-    interf->range(TCONST_spdcf, sf, 0.25f, 4.0f, 0.25f, TINTF_0D3, false);
+    interf->json_section_line();
+        interf->range(TCONST_DTimer, embui.paramVariant(TCONST_DTimer).as<int>(), 30, 600, 15, TINTF_03F);
+        float sf = embui.paramVariant(TCONST_spdcf);
+        interf->range(TCONST_spdcf, sf, 0.25f, 4.0f, 0.25f, TINTF_0D3, false);
+    interf->json_section_end(); // line
+
 
     interf->spacer(TINTF_0D4);
     interf->json_section_line();
@@ -2513,7 +2505,7 @@ void sync_parameters(){
     JsonObject obj = doc.to<JsonObject>();
 
 #ifdef EMBUI_USE_MQTT
-    myLamp.setmqtt_int(embui.paramVariant(P_mqtt_ka));
+    myLamp.setmqtt_int(embui.paramVariant(V_mqtt_ka));
 #endif
 
     String syslampFlags(embui.param(TCONST_syslampFlags));
