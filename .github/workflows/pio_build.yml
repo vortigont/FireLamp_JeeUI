@@ -7,7 +7,7 @@ name: PlatformIO CI
 on:
   workflow_dispatch:      # Manual start
   push:
-    branches: [ master, feat ]
+#    branches: [ master, feat ]
     paths:
       - '**.c'
       - '**.cpp'
