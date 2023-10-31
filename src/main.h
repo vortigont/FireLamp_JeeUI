@@ -87,11 +87,11 @@ extern MP3PlayerDevice *mp3;
 #endif
 
 #ifdef EMBUI_USE_MQTT
-void mqttConnect();
+//void mqttConnect();
 void sendData();
 #endif
 
-void create_parameters();
-void sync_parameters();
+//void create_parameters();
+//void sync_parameters();
 
 #endif

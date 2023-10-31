@@ -109,7 +109,7 @@ void setup() {
     // assign our callbacks for mqtt
     if (embui.mqttClient){
         embui.mqttClient->onConnect([](bool session){ ha_autodiscovery(); });        // run HomeAssistant autodiscovery
-        embui.mqttClient->onMessage(mqttOnMessageCallback);                          // process incoming messages
+        //embui.mqttClient->onMessage(mqttOnMessageCallback);                          // process incoming messages
     }
 #endif
 
@@ -144,7 +144,7 @@ void setup() {
 /*
   embui.server.addHandler(new SPIFFSEditor(LittleFS, "esp32", "esp32"));
 */
-    sync_parameters();
+    //sync_parameters();
 
     embui.setPubInterval(10);   // change periodic WebUI publish interval from EMBUI_PUB_PERIOD to 10 secs
 

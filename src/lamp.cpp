@@ -860,7 +860,13 @@ void LAMP::micHandler()
       JsonObject obj = doc.to<JsonObject>();
 
       //remote_action(RA::RA_MIC, NULL);
-      CALL_INTF_OBJ(show_settings_mic);
+      //CALL_INTF_OBJ(show_settings_mic);
+      if (embui.ws.count()){
+        Interface interf(&embui.feeders, SMALL_JSON_SIZE);
+        interf.json_frame_value();
+        interf.value(obj);
+        interf.json_frame_flush();
+      }
     }
   }
 }
