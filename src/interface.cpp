@@ -582,7 +582,7 @@ void block_effect_controls(Interface *interf, JsonObject *data, const char* acti
                     int value = ctrl->getId() ? ctrl->getVal().toInt() : myLamp.getBrightness();
                     if(interf) interf->range( ctrlId, (long)value, ctrl->getMin().toInt(), ctrl->getMax().toInt(), ctrl->getStep().toInt(), ctrlName, true);
 #ifdef EMBUI_USE_MQTT
-                    embui.publish(MQT_effect_controls + ctrlId, value, true);
+                    embui.publish((MQT_effect_controls + ctrlId).c_str(), value, true);
 #endif
                 }
                 break;
@@ -923,7 +923,7 @@ void set_onflag(Interface *interf, JsonObject *data, const char* action){
         mp3->setIsOn(newpower);
 #endif
 #ifdef EMBUI_USE_MQTT
-    embui.publish(String (MQT_lamp) + TCONST_on, newpower, true);
+    embui.publish((String (MQT_lamp) + TCONST_on).c_str(), newpower, true);
 #endif
 
 /*
@@ -991,7 +991,7 @@ void set_demoflag(Interface *interf, JsonObject *data, const char* action){
     myLamp.setDRand(myLamp.getLampFlagsStuct().dRand);
 #ifdef EMBUI_USE_MQTT
     //embui.publish(String(embui.mqttPrefix()) + TCONST_mode, String(myLamp.getMode()), true);
-    embui.publish(String(MQT_lamp) + K_demo, myLamp.getMode()==LAMPMODE::MODE_DEMO? 1:0, true);
+    embui.publish((String(MQT_lamp) + K_demo).c_str(), myLamp.getMode()==LAMPMODE::MODE_DEMO? 1:0, true);
 #endif
 }
 
@@ -1307,7 +1307,7 @@ void block_settings_mic(Interface *interf, JsonObject *data, const char* action)
     }
 
     interf->spacer();
-    interf->button(button_t::generic, UI_SETTINGS, TINTF_exit);
+    interf->button(button_t::generic, A_get_ui_page_settings, TINTF_exit);
 
     interf->json_section_end();
 }
@@ -1424,7 +1424,7 @@ void page_settings_other(Interface *interf, JsonObject *data, const char* action
     interf->button(button_t::submit, TCONST_set_other, TINTF_Save, P_GRAY);
 
     interf->spacer();
-    interf->button(button_t::generic, UI_SETTINGS, TINTF_exit);
+    interf->button(button_t::generic, A_get_ui_page_settings, TINTF_exit);
 
     interf->json_frame_flush();
 }
@@ -1844,7 +1844,7 @@ void block_settings_butt(Interface *interf, JsonObject *data, const char* action
     interf->button(button_t::generic, TCONST_butt_conf, TINTF_05D);
 
     interf->spacer();
-    interf->button(button_t::generic, UI_SETTINGS, TINTF_exit);
+    interf->button(button_t::generic, A_get_ui_page_settings, TINTF_exit);
 
     interf->json_section_end();
 }
@@ -1977,7 +1977,7 @@ void block_settings_enc(Interface *interf, JsonObject *data, const char* action)
     interf->range(TCONST_encTxtDel, 110-getEncTxtDelay(), 10, 100, 5, TINTF_044, false);
     interf->button(button_t::submit, TCONST_set_enc, TINTF_Save, P_GRAY);
     interf->spacer();
-    interf->button(button_t::generic, UI_SETTINGS, TINTF_exit);
+    interf->button(button_t::generic, A_get_ui_page_settings, TINTF_exit);
     interf->json_section_end();
 }
 void show_settings_enc(Interface *interf, JsonObject *data, const char* action){
@@ -2001,7 +2001,8 @@ void set_settings_enc(Interface *interf, JsonObject *data, const char* action){
     tmpStr2.replace("#", "0x");
     setEncTxtColor((CRGB)strtol(tmpStr2.c_str(), NULL, 0));
     (*data)[TCONST_encTxtDel]=JsonUInt(110U-(*data)[TCONST_encTxtDel].as<int>());
-    SETPARAM(TCONST_encTxtDel, setEncTxtDelay((*data)[TCONST_encTxtDel]))
+    SETPARAM(TCONST_encTxtDel);
+    setEncTxtDelay((*data)[TCONST_encTxtDel]);
     basicui::page_system_settings(interf, data, NULL);
 }
 #endif  // ENCODER
@@ -2085,7 +2086,7 @@ void show_settings_mp3(Interface *interf, JsonObject *data, const char* action){
     interf->json_section_end();
 
     interf->spacer();
-    interf->button(button_t::generic, UI_SETTINGS, TINTF_exit);
+    interf->button(button_t::generic, A_get_ui_page_settings, TINTF_exit);
 
     interf->json_frame_flush();
 }
@@ -2459,7 +2460,7 @@ void page_gpiocfg(Interface *interf, JsonObject *data, const char* action){
 
     interf->json_section_end(); // json_section_begin ""
 
-    interf->button(button_t::generic, UI_SETTINGS, TINTF_exit);
+    interf->button(button_t::generic, A_get_ui_page_settings, TINTF_exit);
 
     interf->json_frame_flush();
 }
@@ -3120,7 +3121,7 @@ void block_ledstrip_setup(Interface *interf, JsonObject *data, const char* actio
     interf->json_section_end();
 
     interf->button(button_t::submit, K_set_ledstrip, TINTF_Save);  // Save
-    interf->button(button_t::generic, UI_SETTINGS, TINTF_exit);           // Exit
+    interf->button(button_t::generic, A_get_ui_page_settings, TINTF_exit);           // Exit
 
     interf->json_section_end();     // close "K_set_ledstrip" section
 }
@@ -3131,7 +3132,7 @@ void block_hub75_setup(Interface *interf, JsonObject *data, const char* action){
     interf->constant("HUB75: 64x32");
     interf->hidden(TCONST_dtype, e2int(engine_t::ws2812));        // set hidden value for led type to ws2812
     interf->button(button_t::submit,  K_set_hub75, TINTF_Save);      // Save
-    interf->button(button_t::generic, UI_SETTINGS, TINTF_exit);           // Exit
+    interf->button(button_t::generic, A_get_ui_page_settings, TINTF_exit);           // Exit
     interf->json_section_end();     // close "K_set_ledstrip" section
 }
 

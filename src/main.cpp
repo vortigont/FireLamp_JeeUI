@@ -146,7 +146,7 @@ void setup() {
 */
     //sync_parameters();
 
-    embui.setPubInterval(10);   // change periodic WebUI publish interval from EMBUI_PUB_PERIOD to 10 secs
+    embui.setPubInterval(30);   // change periodic WebUI publish interval from EMBUI_PUB_PERIOD to 10 secs
 
 #ifdef ENCODER
     enc_setup();
@@ -311,7 +311,7 @@ void sendData(){
     serializeJson(obj, out);
     //LOG(println, "send MQTT Data :");
     //LOG(println, out);
-    embui.publish(TCONST_state, out, true); // отправляем обратно в MQTT в топик embui/pub/
+    embui.publish(TCONST_state, out.c_str(), true); // отправляем обратно в MQTT в топик embui/pub/
 }
 #endif
 
