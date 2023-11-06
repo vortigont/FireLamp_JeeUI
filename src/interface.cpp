@@ -911,7 +911,7 @@ void set_eff_next(Interface *interf, JsonObject *data, const char* action){
  */
 void set_onflag(Interface *interf, JsonObject *data, const char* action){
     if (!data) return;
-    bool newpower = (*data)[TCONST_ONflag];
+    bool newpower = (*data)[P_value];
     if (newpower == myLamp.isLampOn()) return;      // status not changed
 
     myLamp.changePower(newpower);
