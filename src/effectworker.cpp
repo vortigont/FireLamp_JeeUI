@@ -1140,7 +1140,7 @@ void EffectWorker::_runnerHndlr(){
     if ( xTaskDelayUntil( &xLastWakeTime, pdMS_TO_TICKS(interframe_delay_ms) ) ) taskYIELD();
 
     if (!worker || !_status){
-      worker.release();
+      worker.reset();
       display.clear();
       _runnerTask_h = nullptr;
       vTaskDelete(NULL);    // if there is no Effect instance spawned, there must be something wrong
@@ -1168,7 +1168,7 @@ void EffectWorker::stop(){
   if (!_runnerTask_h){
     // destruct effect object and wipe buffer ONLY if worker is not running
     // otherwise it's not thread safe to mess with running instance 
-    worker.release();
+    worker.reset();
     display.clear();
   }
   // task will self destruct on next iteration
