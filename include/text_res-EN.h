@@ -204,6 +204,7 @@ static constexpr const char* TEFF_255 = "Oscilloscope";
 #define DFTINTF_117 "Direction (0: cyclical)"
 #define DFTINTF_118 "Signal threshold"
 #define DFTINTF_11A "Color (1: cyclical)"
+#define DFTINTF_24hrs "24hr"
 
 /** набор строк с текстовыми константами интерфейса
  */

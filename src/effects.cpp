@@ -38,6 +38,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "lamp.h"
 #include "patterns.h"
 #include "effects.h"
+#include "timeProcessor.h"
 #include "log.h"   // LOG macro
 
 #define CENTER_X_MINOR (fb->w()/2 -  (fb->maxWidthIndex() & 0x01)) // центр матрицы по ИКСУ, сдвинутый в меньшую сторону, если ширина чётная
@@ -8738,4 +8739,101 @@ bool EffectFlower::run() {
     }
   } 
 	return true;
+}
+
+bool TetrisClock::run(){
+  if (redraw){
+    redraw = false;
+    return true;
+  }
+  return false;
+}
+
+void TetrisClock::_clock_animation(){
+  // nothing 2 do
+  if (animation_idle)
+    return;
+
+  screen.fillScreen(CRGB::Black);
+
+  if (hour24){
+    //finishedAnimating = tetris->drawNumbers(2, 26, showColon, true);
+    animation_idle = t_clk.drawNumbers(2, 26, showColon);
+  } else {
+    // Place holders for checking are any of the tetris objects
+    // currently still animating.
+    bool tetris1Done = t_clk.drawNumbers(-6, 26, showColon);
+    bool tetris2Done = t_m.drawText(56, 25);
+    bool tetris3Done;
+
+    // Only draw the top letter once the bottom letter is finished.
+    if (tetris2Done) {
+      tetris3Done = t_ap.drawText(56, 15);
+    }
+
+    animation_idle = tetris1Done && tetris2Done && tetris3Done;
+  }
+  redraw = true;
+}
+
+void TetrisClock::_gettime(){
+  String timeString(TimeProcessor::getInstance().getFormattedShortTime());
+
+  if (hour24){
+    if (lastDisplayedAmPm != TimeProcessor::getInstance().getHours()) {
+      lastDisplayedAmPm = TimeProcessor::getInstance().getHours();
+      // Second character is always "M"
+      t_m.setText("M", forceRefresh);
+      t_ap.setText(TimeProcessor::getInstance().getHours() > 12 ? "P" : "A", forceRefresh);
+    }
+
+  } 
+
+  if (lastDisplayedTime != timeString) {
+    lastDisplayedTime = timeString;
+    t_clk.setTime(timeString, forceRefresh);
+
+    // Must set this to false so animation knows
+    // to start again
+    animation_idle = false;
+    animatic.restart();
+  }
+
+}
+
+void TetrisClock::_handleColonAfterAnimation(){
+  // It will draw the colon every time, but when the colour is black it
+  // should look like its clearing it.
+  uint16_t colour =  showColon ? t_clk.tetrisWHITE : t_clk.tetrisBLACK;
+  // The x position that you draw the tetris animation object
+  int x = hour24 ? 2 : -6;
+  // The y position adjusted for where the blocks will fall from
+  // (this could be better!)
+  int y = 26 - (TETRIS_Y_DROP_DEFAULT * t_clk.scale);
+  t_clk.drawColon(x, y, colour);
+  redraw = true;
+}
+
+void TetrisClock::load(){
+  _gettime();
+  seconds.set(TASK_SECOND, TASK_FOREVER, [this](){_gettime(); showColon = !showColon; if (animation_idle) _handleColonAfterAnimation(); });
+  animatic.set(100, TASK_FOREVER, [this](){_clock_animation(); if (animation_idle) ts.getCurrentTask()->disable(); });
+  ts.addTask(seconds);
+  ts.addTask(animatic);
+  seconds.enableDelayed();
+  animatic.enableDelayed();
+  t_clk.scale = 2;
+}
+
+String TetrisClock::setDynCtrl(UIControl*_val){
+  if(_val->getId()==1) {
+    animatic.setInterval(map(EffectCalc::setDynCtrl(_val).toInt(), 1,255, 1000, 20));
+  } else if(_val->getId()==3) {
+    t_clk.scale = EffectCalc::setDynCtrl(_val).toInt();
+  } else if(_val->getId()==4) {
+    hour24 = EffectCalc::setDynCtrl(_val).toInt();
+  }
+
+  EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
+  return String();
 }
