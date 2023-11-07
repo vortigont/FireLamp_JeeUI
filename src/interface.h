@@ -55,9 +55,6 @@ typedef enum _remote_action {
 //    RA_RGB
 } RA;
 
-void remote_action(RA action, ...);
-
-
 /**
  * @brief обработчик, для поддержки приложения WLED APP
  * https://play.google.com/store/apps/details?id=com.aircoookie.WLED
@@ -69,8 +66,21 @@ void wled_handle(AsyncWebServerRequest *request);
 
 void ws_action_handle(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len);
 
-String httpCallback(const String &param, const String &value, bool isset);
+//String httpCallback(const String &param, const String &value, bool isset);
 
+// ---------------------
+
+// register embui action handlers and parameters
+void embui_actions_register();
+
+/**
+ * @brief save 
+ * 
+ */
+void act_lamp_flags(Interface *interf, JsonObject *data, const char* action);
+
+
+// ==========
 #ifdef ESP_USE_BUTTON
 void default_buttons();
 
@@ -81,10 +91,8 @@ void default_buttons();
 void load_button_config(const char* path = NULL);
 #endif
 
-// ---------------------
-
-// register embui action handlers and parameters
-void embui_actions_register();
+// устаревшая дергалка активностей
+void remote_action(RA action, ...);
 
 void section_effects_frame(Interface *interf, JsonObject *data, const char* action);
 void section_text_frame(Interface *interf, JsonObject *data, const char* action);

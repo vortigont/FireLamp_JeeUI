@@ -113,7 +113,7 @@ void setup() {
     }
 #endif
 
-    myLamp.effects.setEffSortType((SORT_TYPE)embui.paramVariant(TCONST_effSort).as<int>()); // сортировка должна быть определена до заполнения
+    myLamp.effects.setEffSortType((SORT_TYPE)embui.paramVariant(V_effSort).as<int>()); // сортировка должна быть определена до заполнения
     myLamp.effects.initDefault(); // если вызывать из конструктора, то не забыть о том, что нужно инициализировать Serial.begin(115200); иначе ничего не увидеть!
     myLamp.events.loadConfig();
     myLamp.events.setEventCallback(event_worker);

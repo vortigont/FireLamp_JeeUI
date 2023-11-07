@@ -46,20 +46,10 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "templates.hpp"
 
 #include "tm.h"
-#ifdef DS18B20
-#include "DS18B20.h"			// термодатчик даллас
-#endif
 #ifdef ENCODER
     #include "enc.h"
 #endif
-#ifdef RTC
-    #include "rtc.h"
-#endif
 #include LANG_FILE                  //"text_res.h"
-
-#ifdef DS18B20
-#include "DS18B20.h"
-#endif
 
 #include "basicui.h"
 #include "actions.hpp"
@@ -73,9 +63,12 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #define GPIO_NUM_NC -1
 #endif
 
-// numeric indexes for pages
-enum class page : uint8_t {
-    main = 0,
+/**
+ * @brief numeric indexes for pages
+ * it MUST not overlap with basicui::page index
+ */
+enum class page : uint16_t {
+    main = 50,
     eff_config,
     mike,
     setup_display,
@@ -83,10 +76,7 @@ enum class page : uint8_t {
     setup_bttn,
     setup_encdr,
     setup_other,
-    setup_gpio,
-    _count,             // not a page but a len marker
-    begin = 0,
-    end = _count
+    setup_gpio
 };
 
 // enumerator for gpio setup form
@@ -155,35 +145,6 @@ void set_hub75(Interface *interf, JsonObject *data, const char* action);
  */
 void rebuild_effect_list_files(lstfile_t lst);
 
-
-
-
-
-// Функция преобразования для конфига
-uint64_t stoull(const String &str){
-    uint64_t tmp = 0;
-    LOG(printf_P, PSTR("STOULL %s \n"), str.c_str());
-    for (uint8_t i = 0; i < str.length(); i++){
-        if (i)
-            tmp *= 10;
-        tmp += (int)str[i] - 48;
-    }
-    return tmp;
-}
-// Функция преобразования для конфига
-String ulltos(uint64_t longlong){
-    String bfr;
-    while (longlong){
-        int8_t i = longlong % 10;
-        bfr += String(i);
-        longlong /= 10;
-    }
-    String tmp;
-    for (int i = bfr.length()-1; i >= 0; i--)
-        tmp += (String)bfr[i];
-    return tmp;
-}
-
 void resetAutoTimers(bool isEffects=false) // сброс таймера демо и настройка автосохранений
 {
     myLamp.demoTimer(T_RESET);
@@ -201,10 +162,10 @@ void resetAutoTimers(bool isEffects=false) // сброс таймера демо
  * 
  */
 void show_page_selector(Interface *interf, JsonObject *data, const char* action){
-    if (!interf || !data || (*data)[TCONST_sh_page].isNull()) return;  // quit if no section specified
+    if (!interf || !data || (*data)[A_get_ui_page].isNull()) return;  // quit if no section specified
 
     // get a page index
-    page idx = static_cast<page>((*data)[TCONST_sh_page].as<int>());
+    page idx = static_cast<page>((*data)[A_get_ui_page].as<int>());
 
     switch (idx){
         case page::eff_config :   // страница "Управление списком эффектов"
@@ -239,7 +200,6 @@ void show_page_selector(Interface *interf, JsonObject *data, const char* action)
 
         default:;                   // by default do nothing
     }
-
 }
 
 void block_menu(Interface *interf, JsonObject *data, const char* action){
@@ -284,7 +244,7 @@ void block_effect_params(Interface *interf, JsonObject *data, const char* action
     interf->spacer();
 
     // sorting option
-    interf->select(TCONST_effSort, TINTF_040);
+    interf->select(V_effSort, TINTF_040);
         interf->option(SORT_TYPE::ST_BASE, TINTF_041);
         interf->option(SORT_TYPE::ST_END, TINTF_042);
         interf->option(SORT_TYPE::ST_IDX, TINTF_043);
@@ -352,7 +312,7 @@ void set_effects_config_param(Interface *interf, JsonObject *data, const char* a
     bool isEffHasMic = (*data)[TCONST_effHasMic];
     myLamp.setEffHasMic(isEffHasMic);
 #endif
-    SORT_TYPE st = (*data)[TCONST_effSort].as<SORT_TYPE>();
+    SORT_TYPE st = (*data)[V_effSort].as<SORT_TYPE>();
 
     if(myLamp.getLampState().isInitCompleted){
         bool isRecreate = false;
@@ -368,9 +328,9 @@ void set_effects_config_param(Interface *interf, JsonObject *data, const char* a
         }
     }
 
-    embui.var(TCONST_effSort, (*data)[TCONST_effSort]); 
+    embui.var(V_effSort, (*data)[V_effSort]); 
     myLamp.effects.setEffSortType(st);
-    save_lamp_flags();
+    myLamp.save_flags();
     
     String act = (*data)[TCONST_set_effect];
     // action is to "copy" effect
@@ -529,7 +489,7 @@ void block_effect_controls(Interface *interf, JsonObject *data, const char* acti
     if(interf) interf->json_section_begin(TCONST_eff_ctrls);
 
     // brightness control
-    if(interf) interf->range(TCONST_GBR, static_cast<int>(myLamp.getBrightness()), 0, static_cast<int>(myLamp.getBrightnessScale()), 1, "Lamp Brightness", true);
+    if(interf) interf->range(V_scaled_brightness, static_cast<int>(myLamp.getBrightness()), 0, static_cast<int>(myLamp.getBrightnessScale()), 1, "Lamp Brightness", true);
 
     LList<std::shared_ptr<UIControl>> &controls = myLamp.effects.getControls();
     uint8_t ctrlCaseType; // тип контрола, старшие 4 бита соответствуют CONTROL_CASE, младшие 4 - CONTROL_TYPE
@@ -667,7 +627,7 @@ void set_switch_effect(Interface *interf, JsonObject *data, const char* action){
     */
     if (LEDFader::getInstance()->running()) return;
 
-    uint16_t num = (*data)[TCONST_eff_run];
+    uint16_t num = (*data)[V_effect_idx];
     EffectListElem *eff = myLamp.effects.getEffect(num);
     if (!eff) return;                                       // some unknown effect requested, quit
     uint16_t nextEff = myLamp.effects.getSelected();        // get next eff if there is fading in progress
@@ -684,7 +644,7 @@ void set_switch_effect(Interface *interf, JsonObject *data, const char* action){
 
     // save curent active effect number in cfg if lamp in "normal" mode
     if(myLamp.getMode()==LAMPMODE::MODE_NORMAL)
-        embui.var(TCONST_eff_run, (*data)[TCONST_eff_run]);
+        embui.var(V_effect_idx, (*data)[V_effect_idx]);
     resetAutoTimers();
 
     // publish new effect's controls to WebUI and MQTT
@@ -814,15 +774,15 @@ void block_main_flags(Interface *interf, JsonObject *data, const char* action){
 #endif
     // curve selector
     interf->select(TCONST_lcurve, e2int(myLamp.effects.getEffCfg().curve), "Luma curve", true);  // luma curve selector
-    interf->option(0, "binary");
-    interf->option(1, "linear");
-    interf->option(2, "cie1931");
-    interf->option(3, "exponent");
-    interf->option(4, "sine");
-    interf->option(5, "square");
+        interf->option(0, "binary");
+        interf->option(1, "linear");
+        interf->option(2, "cie1931");
+        interf->option(3, "exponent");
+        interf->option(4, "sine");
+        interf->option(5, "square");
     interf->json_section_end();     // select
 
-    interf->json_section_end();
+    interf->json_section_end();     // json_section_line()
 #ifdef MP3PLAYER
     interf->json_section_line("line124"); // спец. имя - разбирается внутри html
     if(mp3->isMP3Mode()){
@@ -832,11 +792,11 @@ void block_main_flags(Interface *interf, JsonObject *data, const char* action){
         interf->button(button_t::generic, TCONST_mp3_n5, TINTF_0C0, P_GRAY);
     }
 
-    interf->json_section_end();
+    interf->json_section_end(); // line
     // регулятор громкости mp3 плеера
     interf->range(TCONST_mp3volume, embui.paramVariant(TCONST_mp3volume).as<int>(), 1, 30, 1, TINTF_09B, true);
 #endif
-    interf->json_section_end();
+    interf->json_section_end();     // json_section_begin(TCONST_flags)
 }
 
 /**
@@ -878,13 +838,13 @@ void block_effects_main(Interface *interf, JsonObject *data, const char* action)
         interf->json_frame(TCONST_XLOAD);
         interf->json_section_content();
         // side load drop-down list from /eff_list.json file
-        interf->select(TCONST_eff_run, myLamp.effects.getEffnum(), TINTF_00A, true, TCONST_eff_list_json);
+        interf->select(V_effect_idx, myLamp.effects.getEffnum(), TINTF_00A, true, TCONST_eff_list_json);
         interf->json_section_end();
 
         // build a block of controls for current effect
         block_effect_controls(interf, data, NULL);
 
-        interf->button_value(button_t::generic, TCONST_sh_page, e2int(page::eff_config), TINTF_009);
+        interf->button_value(button_t::generic, A_get_ui_page, e2int(page::eff_config), TINTF_009);
         interf->json_section_end();
     } else {
         interf->constant("Rebuilding effects list, pls retry in a sec...");
@@ -916,7 +876,7 @@ void set_onflag(Interface *interf, JsonObject *data, const char* action){
 
     myLamp.changePower(newpower);
     if (myLamp.getLampFlagsStuct().restoreState){
-        save_lamp_flags();
+        myLamp.save_flags();
     }
 #ifdef MP3PLAYER
     if(myLamp.getLampFlagsStuct().isOnMP3)
@@ -932,7 +892,7 @@ void set_onflag(Interface *interf, JsonObject *data, const char* action){
             //myLamp.switcheffect(SW_SPECIFIC, myLamp.getFaderFlag(), myLamp.effects.getCurrent());
             myLamp.changePower(newpower);
             if (myLamp.getLampFlagsStuct().restoreState){
-                save_lamp_flags();
+                myLamp.save_flags();
             }
 #ifdef MP3PLAYER
             if(myLamp.getLampFlagsStuct().isOnMP3)
@@ -956,7 +916,7 @@ void set_onflag(Interface *interf, JsonObject *data, const char* action){
                                 mp3->setIsOn(false);
                 #endif
                 if (myLamp.getLampFlagsStuct().restoreState){
-                    save_lamp_flags();
+                    myLamp.save_flags();
                 }
                                 },
                                 &ts, false, nullptr, nullptr, true);
@@ -1009,7 +969,7 @@ void set_auxflag(Interface *interf, JsonObject *data, const char* action){
 
 void set_gbrflag(Interface *interf, JsonObject *data, const char* action){
     // set brightness
-    myLamp.setBrightness((*data)[TCONST_GBR]);
+    myLamp.setBrightness((*data)[V_scaled_brightness]);
 
     // todo:
     // publisg
@@ -1293,9 +1253,9 @@ void block_settings_mic(Interface *interf, JsonObject *data, const char* action)
 
     interf->json_section_begin(TCONST_set_mic);
     if (!myLamp.isMicCalibration()) {
-        interf->number_constrained(TCONST_micScale, round(myLamp.getLampState().getMicScale() * 10) / 10, TINTF_022, 0.1f, 0.1f, 4.0f);
-        interf->number_constrained(TCONST_micNoise, round(myLamp.getLampState().getMicNoise() * 10) / 10, TINTF_023, 0.1f, 0.0f, 32.0f);
-        interf->range (TCONST_micnRdcLvl, (int)myLamp.getLampState().getMicNoiseRdcLevel(), 0, 4, 1, TINTF_024, false);
+        interf->number_constrained(V_micScale, round(myLamp.getLampState().getMicScale() * 10) / 10, TINTF_022, 0.1f, 0.1f, 4.0f);
+        interf->number_constrained(V_micNoise, round(myLamp.getLampState().getMicNoise() * 10) / 10, TINTF_023, 0.1f, 0.0f, 32.0f);
+        interf->range (V_micRdcLvl, (int)myLamp.getLampState().getMicNoiseRdcLevel(), 0, 4, 1, TINTF_024, false);
 
         interf->button(button_t::submit, TCONST_set_mic, TINTF_Save, P_GRAY);
         interf->json_section_end();
@@ -1321,15 +1281,15 @@ void show_settings_mic(Interface *interf, JsonObject *data, const char* action){
 
 void set_settings_mic(Interface *interf, JsonObject *data, const char* action){
     if (!data) return;
-    float scale = (*data)[TCONST_micScale];
-    float noise = (*data)[TCONST_micNoise];
-    mic_noise_reduce_level_t rdl = static_cast<mic_noise_reduce_level_t>((*data)[TCONST_micnRdcLvl].as<unsigned>());
+    float scale = (*data)[V_micScale];
+    float noise = (*data)[V_micNoise];
+    mic_noise_reduce_level_t rdl = static_cast<mic_noise_reduce_level_t>((*data)[V_micRdcLvl].as<unsigned>());
 
     LOG(printf_P, PSTR("Set mike: scale=%2.3f noise=%2.3f rdl=%d\n"),scale,noise,rdl);
 
-    embui.var(TCONST_micScale, scale);
-    embui.var_dropnulls(TCONST_micNoise, noise);
-    embui.var_dropnulls(TCONST_micnRdcLvl, (*data)[TCONST_micnRdcLvl].as<unsigned>());
+    embui.var(V_micScale, scale);
+    embui.var_dropnulls(V_micNoise, noise);
+    embui.var_dropnulls(V_micRdcLvl, (*data)[V_micRdcLvl].as<unsigned>());
 
     // apply to running configuration
     myLamp.getLampState().setMicScale(scale);
@@ -1342,7 +1302,7 @@ void set_settings_mic(Interface *interf, JsonObject *data, const char* action){
 void set_micflag(Interface *interf, JsonObject *data, const char* action){
     if (!data) return;
     myLamp.setMicOnOff((*data)[TCONST_Mic]);
-    save_lamp_flags();
+    myLamp.save_flags();
     show_effect_controls(interf, data, NULL);
 }
 
@@ -1390,7 +1350,7 @@ void page_settings_other(Interface *interf, JsonObject *data, const char* action
         interf->checkbox(TCONST_showName, myLamp.getLampFlagsStuct().showName , TINTF_09A, false);
     interf->json_section_end(); // line
 
-    interf->number_constrained(TCONST_brtScl, static_cast<int>(myLamp.getBrightnessScale()), "Brightness Scale", 1, 5, static_cast<int>(MAX_BRIGHTNESS));
+    interf->number_constrained(V_brtScl, static_cast<int>(myLamp.getBrightnessScale()), "Brightness Scale", 1, 5, static_cast<int>(MAX_BRIGHTNESS));
 
     interf->json_section_line();
         interf->range(TCONST_DTimer, embui.paramVariant(TCONST_DTimer).as<int>(), 30, 600, 15, TINTF_03F);
@@ -1448,12 +1408,13 @@ void set_settings_other(Interface *interf, JsonObject *data, const char* action)
         myLamp.setSpeedFactor(sf);
 
         // save non-default brightness scale
-        unsigned b = (*data)[TCONST_brtScl];
-        if (b){         // бестолковый вызов sync_parameters() может не передать сюда значение [TCONST_brtScl], проверяем что b!=0
+        unsigned b = (*data)[V_brtScl];
+        if (b){         // бестолковый вызов sync_parameters() может не передать сюда значение [V_brtScl], проверяем что b!=0
             if (b == DEF_BRT_SCALE)
-                embui.var_remove(TCONST_brtScl);
+                embui.var_remove(V_brtScl);
             else
-                embui.var(TCONST_brtScl, b, true);
+                embui.var(V_brtScl, b);
+
             myLamp.setBrightnessScale(b);
         }
 
@@ -1472,7 +1433,7 @@ void set_settings_other(Interface *interf, JsonObject *data, const char* action)
         //SETPARAM(TCONST_alarmPT, myLamp.setAlarmPT(alatmPT));
         //LOG(printf_P, PSTR("alatmPT=%d, alatmP=%d, alatmT=%d\n"), alatmPT, myLamp.getAlarmP(), myLamp.getAlarmT());
 
-        save_lamp_flags();
+        myLamp.save_flags();
 
     if(interf)
         basicui::page_system_settings(interf, data, NULL);
@@ -1529,7 +1490,7 @@ void show_settings_event(Interface *interf, JsonObject *data, const char* action
 void set_eventflag(Interface *interf, JsonObject *data, const char* action){
     if (!data) return;
     myLamp.setIsEventsHandled((*data)[TCONST_Events]);
-    save_lamp_flags();
+    myLamp.save_flags();
 }
 
 /**
@@ -1812,7 +1773,7 @@ void set_eventlist(Interface *interf, JsonObject *data, const char* action){
 void set_gaugetype(Interface *interf, JsonObject *data, const char* action){
         if (!data) return;
         myLamp.setGaugeType((*data)[TCONST_EncVG].as<GAUGETYPE>());
-        save_lamp_flags();
+        myLamp.save_flags();
     }
 
 void block_settings_butt(Interface *interf, JsonObject *data, const char* action){
@@ -1944,7 +1905,7 @@ void show_butt_conf(Interface *interf, JsonObject *data, const char* action){
     }
 
     interf->spacer();
-    interf->button_value(button_t::generic, TCONST_sh_page, e2int(page::setup_bttn), TINTF_exit);
+    interf->button_value(button_t::generic, A_get_ui_page, e2int(page::setup_bttn), TINTF_exit);
 
     interf->json_section_end();
     interf->json_frame_flush();
@@ -1956,7 +1917,7 @@ void set_btnflag(Interface *interf, JsonObject *data, const char* action){
     bool isSet = (*data)[TCONST_Btn];
     myButtons->setButtonOn(isSet);
     myLamp.setButton(isSet);
-    save_lamp_flags();
+    myLamp.save_flags();
 }
 #endif  // BUTTON
 
@@ -1990,7 +1951,7 @@ void set_settings_enc(Interface *interf, JsonObject *data, const char* action){
     if (!data) return;
 
     myLamp.setGaugeType((*data)[TCONST_EncVG].as<GAUGETYPE>());
-    save_lamp_flags();
+    myLamp.save_flags();
     SETPARAM(TCONST_EncVGCol);
     String tmpStr = (*data)[TCONST_EncVGCol];
     tmpStr.replace("#", "0x");
@@ -2010,7 +1971,7 @@ void set_settings_enc(Interface *interf, JsonObject *data, const char* action){
 void set_debugflag(Interface *interf, JsonObject *data, const char* action){
     if (!data) return;
     myLamp.setDebug((*data)[TCONST_debug]);
-    save_lamp_flags();
+    myLamp.save_flags();
 }
 
 // enable/disable overlay drawing
@@ -2109,7 +2070,7 @@ void set_settings_mp3(Interface *interf, JsonObject *data, const char* action){
     SETPARAM(TCONST_mp3count);
     mp3->setMP3count((*data)[TCONST_mp3count].as<int>()); // кол-во файлов в папке мп3
 
-    save_lamp_flags();
+    myLamp.save_flags();
     basicui::page_system_settings(interf, data, NULL);
     //page_system_settings(interf, data, NULL);
 }
@@ -2125,13 +2086,13 @@ void set_mp3flag(Interface *interf, JsonObject *data, const char* action){
             if( !data->containsKey(TCONST_force) || (*data)[TCONST_force] ) // при наличие force="1" или без этого ключа
                 mp3->playTime(TimeProcessor::getInstance().getHours(), TimeProcessor::getInstance().getMinutes(), (TIME_SOUND_TYPE)myLamp.getLampFlagsStuct().playTime);
     }
-    save_lamp_flags();
+    myLamp.save_flags();
 }
 
 void set_mp3volume(Interface *interf, JsonObject *data, const char* action){
     if (!data) return;
     int volume = (*data)[TCONST_mp3volume];
-    embui.var(TCONST_mp3volume, volume, true);
+    embui.var(TCONST_mp3volume, volume);
     mp3->setVolume(volume);
 }
 
@@ -2304,7 +2265,7 @@ void set_streaming(Interface *interf, JsonObject *data, const char* action){
     else {
         Led_Stream::clearStreamObj();
     }
-    save_lamp_flags();
+    myLamp.save_flags();
 }
 
 void set_streaming_drirect(Interface *interf, JsonObject *data, const char* action){
@@ -2332,12 +2293,12 @@ void set_streaming_drirect(Interface *interf, JsonObject *data, const char* acti
 #endif
         }
     }
-    save_lamp_flags();
+    myLamp.save_flags();
 }
 void set_streaming_mapping(Interface *interf, JsonObject *data, const char* action){
     if (!data) return;
     myLamp.setMapping((*data)[TCONST_mapping]);
-    save_lamp_flags();
+    myLamp.save_flags();
 }
 void set_streaming_bright(Interface *interf, JsonObject *data, const char* action){
     if (!data) return;
@@ -2373,35 +2334,23 @@ void set_streaming_universe(Interface *interf, JsonObject *data, const char* act
 
 // Create Additional buttons on "Settings" page
 void user_settings_frame(Interface *interf, JsonObject *data, const char* action){
-    interf->button_value(button_t::generic, TCONST_sh_page, e2int(page::setup_display), TINTF_display_setup);
+    interf->button_value(button_t::generic, A_get_ui_page, e2int(page::setup_display), TINTF_display_setup);
 #ifdef MIC_EFFECTS
-    interf->button_value(button_t::generic, TCONST_sh_page, e2int(page::mike), TINTF_020);
+    interf->button_value(button_t::generic, A_get_ui_page, e2int(page::mike), TINTF_020);
 #endif
 #ifdef MP3PLAYER
-    interf->button_value(button_t::generic, TCONST_sh_page, e2int(page::setup_dfplayer), TINTF_099);
+    interf->button_value(button_t::generic, A_get_ui_page, e2int(page::setup_dfplayer), TINTF_099);
 #endif
 #ifdef ESP_USE_BUTTON
-    interf->button_value(button_t::generic, TCONST_sh_page, e2int(page::setup_bttn), TINTF_013);
+    interf->button_value(button_t::generic, A_get_ui_page, e2int(page::setup_bttn), TINTF_013);
 #endif
 #ifdef ENCODER
-    interf->button_value(button_t::generic, TCONST_sh_page, e2int(page::setup_encdr), TINTF_0DC);
+    interf->button_value(button_t::generic, A_get_ui_page, e2int(page::setup_encdr), TINTF_0DC);
 #endif
-    interf->button_value(button_t::generic, TCONST_sh_page, e2int(page::setup_other), TINTF_082);
+    interf->button_value(button_t::generic, A_get_ui_page, e2int(page::setup_other), TINTF_082);
 
     // show gpio setup page button
-    interf->button_value(button_t::generic, TCONST_sh_page, e2int(page::setup_gpio), TINTF_gpiocfg);
-}
-
-void set_lamp_flags(Interface *interf, JsonObject *data, const char* action){
-    if(!data) return;
-    SETPARAM(TCONST_syslampFlags);
-}
-
-void save_lamp_flags(){
-    DynamicJsonDocument doc(160);
-    JsonObject obj = doc.to<JsonObject>();
-    obj[TCONST_syslampFlags] = ulltos(myLamp.getLampFlags());
-    set_lamp_flags(nullptr, &obj, NULL);
+    interf->button_value(button_t::generic, A_get_ui_page, e2int(page::setup_gpio), TINTF_gpiocfg);
 }
 
 /**
@@ -2542,7 +2491,7 @@ void sync_parameters(){
     TimeProcessor::getInstance().attach_callback(std::bind(&LAMP::setIsEventsHandled, &myLamp, myLamp.IsEventsHandled())); // только после синка будет понятно включены ли события
 
     // restore last running effect from config
-    run_action(ra::eff_switch, embui.paramVariant(TCONST_eff_run));
+    run_action(ra::eff_switch, embui.paramVariant(V_effect_idx));
 
     // check "restore state" flag
     if (tmp.restoreState){
@@ -2595,8 +2544,8 @@ void sync_parameters(){
 #ifdef MIC_EFFECTS
     myLamp.setEffHasMic(tmp.effHasMic);
 #endif
-    SORT_TYPE type = (SORT_TYPE)embui.paramVariant(TCONST_effSort);
-    obj[TCONST_effSort] = type;
+    SORT_TYPE type = (SORT_TYPE)embui.paramVariant(V_effSort);
+    obj[V_effSort] = type;
     set_effects_config_param(nullptr, &obj, NULL);
     doc.clear();
 
@@ -2683,18 +2632,18 @@ void sync_parameters(){
     set_micflag(nullptr, &obj, NULL);
     doc.clear();
 
-    // float scale = atof(embui.param(TCONST_micScale).c_str());
-    // float noise = atof(embui.param(TCONST_micNoise).c_str());
-    // mic_noise_reduce_level_t lvl=(mic_noise_reduce_level_t)embui.param(TCONST_micnRdcLvl).toInt();
+    // float scale = atof(embui.param(V_micScale).c_str());
+    // float noise = atof(embui.param(V_micNoise).c_str());
+    // mic_noise_reduce_level_t lvl=(mic_noise_reduce_level_t)embui.param(V_micRdcLvl).toInt();
 
-    obj[TCONST_micScale] = embui.paramVariant(TCONST_micScale); //scale;
-    obj[TCONST_micNoise] = embui.paramVariant(TCONST_micNoise); //noise;
-    obj[TCONST_micnRdcLvl] = embui.paramVariant(TCONST_micnRdcLvl); //lvl;
+    obj[V_micScale] = embui.paramVariant(V_micScale); //scale;
+    obj[V_micNoise] = embui.paramVariant(V_micNoise); //noise;
+    obj[V_micRdcLvl] = embui.paramVariant(V_micRdcLvl); //lvl;
     set_settings_mic(nullptr, &obj, NULL);
     doc.clear();
 #endif
 
-    //save_lamp_flags(); // обновить состояние флагов (закомментированно, окончательно состояние установится через 0.3 секунды, после set_settings_other)
+    //myLamp.save_flags(); // обновить состояние флагов (закомментированно, окончательно состояние установится через 0.3 секунды, после set_settings_other)
 
     //--------------- начальная инициализация состояния
     myLamp.getLampState().freeHeap = ESP.getFreeHeap();
@@ -3258,30 +3207,28 @@ void rebuild_effect_list_files(lstfile_t lst){
  * Набор конфигурационных переменных и callback-обработчиков EmbUI
  */
 void embui_actions_register(){
-    // создаем дефолтные параметры для нашего проекта
-    embui.var_create(TCONST_syslampFlags, ulltos(myLamp.getLampFlags())); // Дефолтный набор флагов
-    embui.var_create(TCONST_eff_run, 1);
-    embui.var_create(TCONST_AUX, false);
-    embui.var_create(TCONST_msg, "");
-    embui.var_create(TCONST_txtColor, TCONST__ffffff);
-    embui.var_create(TCONST_txtBfade, FADETOBLACKVALUE);
-    embui.var_create(TCONST_txtSpeed, 100);
-//    embui.var_create(TCONST_txtOf, 0);
-    embui.var_create(TCONST_effSort, 1);
-    embui.var_create(TCONST_GlobBRI, 127);
+    // создаем конфигурационные параметры и регистрируем обработчики активностей
+//    embui.var_create(V_lampFlags, myLamp.getLampFlags());           // набор флагов лампы
+//    embui.var_create(V_effect_idx, 1);                              // Effect index that currently selected to run
+//    embui.var_create(V_effSort, 1);
+//    embui.var_create(V_scaled_brightness, 127);
 
-//    embui.var_create(TCONST_ny_period, 0);
-    embui.var_create(TCONST_ny_unix, TCONST_1609459200);
+//    embui.var_create(TCONST_AUX, false);
+//    embui.var_create(TCONST_msg, "");
+//    embui.var_create(TCONST_txtColor, TCONST__ffffff);
+//    embui.var_create(TCONST_txtBfade, FADETOBLACKVALUE);
+//    embui.var_create(TCONST_txtSpeed, 100);
+//    embui.var_create(TCONST_txtOf, 0);
+
 
 #ifdef MIC_EFFECTS
-    embui.var_create(TCONST_micScale, 1.28);
-//    embui.var_create(TCONST_micNoise, 0.0);
-//    embui.var_create(TCONST_micnRdcLvl, 0);
+    embui.var_create(V_micScale, 1.28);
+//    embui.var_create(V_micNoise, 0.0);
+//    embui.var_create(V_micRdcLvl, 0);
 #endif
 
     embui.var_create(TCONST_DTimer, DEFAULT_DEMO_TIMER); // Дефолтное значение, настраивается из UI
-    embui.var_create(TCONST_alarmPT, 85); // 5<<4+5, старшие и младшие 4 байта содержат 5
-
+//    embui.var_create(TCONST_alarmPT, 85); // 5<<4+5, старшие и младшие 4 байта содержат 5
     embui.var_create(TCONST_spdcf, 1.0);
 
     // пины и системные настройки
@@ -3297,32 +3244,24 @@ void embui_actions_register(){
 #endif
 
 #ifdef MP3PLAYER
-    embui.var_create(TCONST_mp3rx, MP3_RX_PIN); // Пин RX плеера
-    embui.var_create(TCONST_mp3tx, MP3_TX_PIN); // Пин TX плеера
     embui.var_create(TCONST_mp3volume, 25); // громкость
     embui.var_create(TCONST_mp3count, 255); // кол-во файлов в папке mp3
 #endif
 
     embui.var_create(TCONST_tmBright, 82); // 5<<4+5, старшие и младшие 4 байта содержат 5
 
-#ifdef USE_STREAMING
-    embui.var_create(TCONST_stream_type, SOUL_MATE); // Тип трансляции
-    embui.var_create(TCONST_Universe, 1); // Universe для E1.31
-#endif
 
     // регистрируем обработчики активностей
     embui.action.set_mainpage_cb(page_main);                            // заглавная страница веб-интерфейса
     embui.action.set_settings_cb(user_settings_frame);                  // "settings" page options callback
 
-    embui.action.add(TCONST_sh_page, show_page_selector);
-
-    embui.action.add(TCONST_syslampFlags, set_lamp_flags);
+    embui.action.add(A_get_ui_page, show_page_selector);                // ui page switcher, same as in basicui::
 
     embui.action.add(TCONST_show_flags, show_main_flags);                // нажатие кнопки "еще..." на странице "Эффекты"
 
     embui.action.add(TCONST_effects, section_effects_frame);             // меню: переход на страницу "Эффекты"
     embui.action.add(TCONST_eff_ctrls, show_effect_controls);            // блок контролов текущего эффекта
-    embui.action.add(TCONST_eff_run, set_switch_effect);
+    embui.action.add(V_effect_idx, set_switch_effect);
     embui.action.add(TCONST_dynCtrl_, set_effects_dynCtrl);
 
     embui.action.add(TCONST_eff_prev, set_eff_prev);
@@ -3333,7 +3272,7 @@ void embui_actions_register(){
 
     embui.action.add(TCONST_ONflag, set_onflag);
     embui.action.add(K_demo, set_demoflag);
-    embui.action.add(TCONST_GBR, set_gbrflag);                           // Lamp brightness
+    embui.action.add(V_scaled_brightness, set_gbrflag);                    // Lamp brightness
     embui.action.add(TCONST_lcurve, set_lcurve);                         // luma curve control
     embui.action.add(TCONST_AUX, set_auxflag);
 

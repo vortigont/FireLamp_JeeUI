@@ -2,7 +2,7 @@
 
 /** набор служебных текстовых констант (не для локализации)
  */
-static constexpr const char* TCONST_1609459200 = "1609459200";
+//static constexpr const char* TCONST_1609459200 = "1609459200";
 static constexpr const char* TCONST_act = "act";
 //static constexpr const char* TCONST_add_lamp_config = "add_lamp_config";
 static constexpr const char* TCONST_afS = "afS";
@@ -18,7 +18,6 @@ static constexpr const char* TCONST_bactList = "bactList";
 static constexpr const char* TCONST_blabel = "blabel";
 static constexpr const char* TCONST_bparam = "bparam";
 static constexpr const char* TCONST_bright = "bright";
-static constexpr const char* TCONST_brtScl = "brtScl";                 // brightness scale
 static constexpr const char* TCONST_Btn = "Btn";
 static constexpr const char* TCONST_buttList = "buttList";
 static constexpr const char* TCONST_butt_conf = "butt_conf";
@@ -67,9 +66,7 @@ static constexpr const char* TCONST_effects_config = "effects_config";
 static constexpr const char* TCONST_effects = "effects";
 static constexpr const char* TCONST_effHasMic = "effHasMic";
 static constexpr const char* TCONST_effListConf = "effListConf";
-static constexpr const char* TCONST_eff_run = "effrun";                       // switch running effect to effect_#
 static constexpr const char* TCONST_effname = "effname";
-static constexpr const char* TCONST_effSort = "effSort";
 static constexpr const char* TCONST_enabled = "enabled";
 static constexpr const char* TCONST_encoder = "encoder";
 static constexpr const char* TCONST_encTxtCol = "encTxtCol";
@@ -90,9 +87,6 @@ static constexpr const char* TCONST_fileName = "fileName";
 static constexpr const char* TCONST_fill = "fill";
 static constexpr const char* TCONST_flags = "flags";
 static constexpr const char* TCONST_force = "force";
-static constexpr const char* TCONST_gbright = "gbright";
-static constexpr const char* TCONST_GBR = "GBR";
-static constexpr const char* TCONST_GlobBRI = "GlobBRI";
 static constexpr const char* TCONST_hcnt = "hcnt";
 static constexpr const char* TCONST_height = "height";
 static constexpr const char* TCONST_hflip = "hflip";
@@ -116,9 +110,6 @@ static constexpr const char* TCONST_Mac = "Mac";
 static constexpr const char* TCONST_makeidx = "makeidx";
 static constexpr const char* TCONST_mapping = "mapping";
 static constexpr const char* TCONST_Memory = "Memory";
-static constexpr const char* TCONST_micNoise = "micNoise";
-static constexpr const char* TCONST_micnRdcLvl = "micnRdcLvl";
-static constexpr const char* TCONST_micScale = "micScale";
 static constexpr const char* TCONST_Mic = "Mic";
 static constexpr const char* TCONST_mic_cal = "mic_cal";
 static constexpr const char* TCONST_MIRR_H = "MIRR_H";
@@ -167,7 +158,7 @@ static constexpr const char* TCONST_scale = "scale";
 static constexpr const char* TCONST_settings_mic = "settings_mic";
 static constexpr const char* TCONST_settings_mp3 = "settings_mp3";
 static constexpr const char* TCONST_settings_wifi = "settings_wifi";
-static constexpr const char* TCONST_sh_page = "sh_page";                    // show_page action for webui page selector
+//static constexpr const char* TCONST_sh_page = "sh_page";                    // show_page action for webui page selector
 static constexpr const char* TCONST_showName = "showName";
 static constexpr const char* TCONST_show_button = "show_button";
 static constexpr const char* TCONST_show_butt = "show_butt";
@@ -184,7 +175,6 @@ static constexpr const char* TCONST_stopat = "stopat";
 static constexpr const char* TCONST_streaming = "streaming";
 static constexpr const char* TCONST_stream_type = "stream_type";
 static constexpr const char* TCONST_sT = "sT";
-static constexpr const char* TCONST_syslampFlags = "syslampFlags";
 static constexpr const char* TCONST_sysSettings = "sysSettings";
 static constexpr const char* TCONST_textsend = "textsend";
 static constexpr const char* TCONST_text_config = "text_config";
@@ -231,6 +221,29 @@ static constexpr const char* I_zmeika = "змейка";
 static constexpr const char* I_vert = "вертикальная";
 static constexpr const char* I_vflip = "зеркальные столбцы";
 static constexpr const char* I_hflip = "зеркальные строки";
+
+/* ***  conf variable names *** */
+
+// Lamp class flags packed into uint32_t
+static constexpr const char* V_lampFlags = "lampFlags";
+// Effect index that currently selected to run
+static constexpr const char* V_effect_idx = "eff_idx";
+// Scaled brightness value based on scale 'V_brtScl'
+static constexpr const char* V_scaled_brightness = "scaled_brt";
+// brightness scale value
+static constexpr const char* V_brtScl = "brtScl";
+// Effect list sorting
+static constexpr const char* V_effSort = "effSort";
+// Microphone scale level
+static constexpr const char* V_micScale = "micScale";
+// Microphone noise level
+static constexpr const char* V_micNoise = "micNoise";
+// Microphone Rdc level
+static constexpr const char* V_micRdcLvl = "micnRdcLvl";
+
+
+
+
 
 // имена ключей конфигурации / акшены
 static constexpr const char* K_demo = "demo";

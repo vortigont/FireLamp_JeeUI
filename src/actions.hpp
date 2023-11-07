@@ -161,8 +161,8 @@ void run_action(ra act, const T& param) {
 
     // switch to specified effect number
     case ra::eff_switch : {
-      obj[P_action] = TCONST_eff_run;
-      nested[TCONST_eff_run] = param;
+      obj[P_action] = V_effect_idx;
+      nested[V_effect_idx] = param;
       break;
     }
 
