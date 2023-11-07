@@ -203,6 +203,7 @@ static constexpr const char* TEFF_255 = "Осцилограф";
 #define DFTINTF_117 "Напрямок (0: циклічно)"
 #define DFTINTF_118 "Поріг сигналу"
 #define DFTINTF_11A "Колір (1 = циклічно)"
+#define DFTINTF_24hrs "24hr"
 
 
 /** набор строк с текстовыми константами интерфейса

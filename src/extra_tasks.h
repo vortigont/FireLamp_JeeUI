@@ -120,8 +120,8 @@ public:
             }
             */
             for (uint8_t x = 0; x <= xCol * (xStep - 1); x += xStep) {
-                EffectMath::drawLine(x, 0, x, display.getCanvas()->h(), 0, display.getCanvas());   // todo:  get rid of this hack with external obj
-                EffectMath::drawLineF(x, 0, x, EffectMath::fmap(gauge_val, 0, gauge_max, 0, display.getCanvas()->h()), gauge_hue ? CHSV(gauge_hue, 255, 255) : CRGB(gauge_color), display.getCanvas());
+                EffectMath::drawLine(x, 0, x, display.getCanvas()->h(), 0, display.getCanvas().get());   // todo:  get rid of this hack with external obj
+                EffectMath::drawLineF(x, 0, x, EffectMath::fmap(gauge_val, 0, gauge_max, 0, display.getCanvas()->h()), gauge_hue ? CHSV(gauge_hue, 255, 255) : CRGB(gauge_color), display.getCanvas().get());
             }
         } else {
             uint8_t ind = (uint8_t)((gauge_val + 1) * display.getCanvas()->w() / (float)gauge_max + 1);

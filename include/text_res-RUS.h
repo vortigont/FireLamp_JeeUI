@@ -204,6 +204,7 @@ static constexpr const char* TEFF_255 = "Осциллограф";
 #define DFTINTF_117 "Направление (0 = циклично)"
 #define DFTINTF_118 "Порог сигнала"
 #define DFTINTF_11A "Цвет (1 = циклично)"
+#define DFTINTF_24hrs "24 часа"
 
 /** набор строк с текстовыми константами интерфейса
  */

@@ -247,7 +247,7 @@ EffectWorker::EffectWorker(LAMPSTATE *_lampstate) : lampstate(_lampstate) {
 void EffectWorker::workerset(uint16_t effect){
   LOG(printf_P,PSTR("Wrkr set: %u\n"), effect);
 
-  LedFB<CRGB> *canvas = display.getCanvas();
+  LedFB<CRGB> *canvas = display.getCanvas().get();
   if (!canvas) { LOG(println, "E: no canvas buffer!"); return; }
 
   // load effect configuration from a saved file
@@ -257,9 +257,9 @@ void EffectWorker::workerset(uint16_t effect){
 
   switch (static_cast<EFF_ENUM>(effect%256)) // номер может быть больше чем ENUM из-за копирований, находим эффект по модулю
   {
-/*case EFF_ENUM::EFF_TIME :
-    worker = std::unique_ptr<EffectTime>(new EffectTime(canvas));
-    break;*/
+  case EFF_ENUM::EFF_TIME :
+    worker = std::make_unique<TetrisClock>(display.getCanvas());
+    break;
   case EFF_ENUM::EFF_SWIRL :
     worker = std::unique_ptr<EffectSwirl>(new EffectSwirl(canvas));
     break;

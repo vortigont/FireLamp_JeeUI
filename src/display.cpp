@@ -103,7 +103,7 @@ bool LEDDisplay::_start_rmt(){
 
     // attach buffer to an object that will perform matrix layout trasformation on buffer access
     if (!_canvas){
-        _canvas = new LedFB<CRGB>(tiles.canvas_w(), tiles.canvas_h(), _dengine->getCanvas());
+        _canvas = std::make_shared< LedFB<CRGB> >(tiles.canvas_w(), tiles.canvas_h(), _dengine->getCanvas());
         _canvas->setRemapFunction( [this](unsigned w, unsigned h, unsigned x, unsigned y) -> size_t { return this->tiles.transpose(w, h, x, y); } );
     }
 
@@ -129,7 +129,7 @@ bool LEDDisplay::_start_hub75(){
 
     // attach buffer to an object that will perform matrix layout trasformation on buffer access
     if (!_canvas){
-        _canvas = new LedFB<CRGB>(64, 32, _dengine->getCanvas());
+        _canvas = std::make_shared< LedFB<CRGB> >(64, 32, _dengine->getCanvas());
         // this is a simple flat matrix so I use default 2D transformation
 
     }
