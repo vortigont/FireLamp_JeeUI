@@ -40,6 +40,8 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "color_palette.h"
 #include "effectworker.h"
 #include "effectmath.h"
+#include <TetrisMatrixDraw.h>
+
 #define NUMPALETTES 10
 #define NUM_LAYERS  1       // layers for noice effetcs
 
@@ -2167,4 +2169,39 @@ class EffectFlower : public EffectCalc {
 	public:
     EffectFlower(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
         bool run() override;
+};
+
+/*
+    Effect "Tetsrik clock"
+    based on https://github.com/witnessmenow/WiFi-Tetris-Clock
+*/
+class TetrisClock : public EffectCalc {
+    LedFB_GFX   screen;
+    TetrisMatrixDraw t_clk;     // Main clock
+    TetrisMatrixDraw t_m;       // The "M" of AM/PM
+    TetrisMatrixDraw t_ap;      // The "P" or "A" of AM/PM
+
+    Task seconds;               // seconds pulse
+    Task animatic;              // animation task
+
+    bool animation_idle;        // animation in progress
+    bool hour24{1};             // 12/24 hour mode
+    bool showColon{0};          // hh:mm sepparator
+    bool forceRefresh = true;   // redraw all numbers
+    bool redraw{0};             // flag that triggers screen refresh
+
+    String lastDisplayedTime;
+    uint8_t lastDisplayedAmPm;
+
+
+    void _clock_animation();
+    void _gettime();
+    void _handleColonAfterAnimation();
+    String setDynCtrl(UIControl*_val) override;
+
+	public:
+    TetrisClock(std::shared_ptr< LedFB<CRGB> > framebuffer) : EffectCalc(framebuffer.get()), screen(framebuffer), t_clk(screen), t_m(screen), t_ap(screen) {}
+    ~TetrisClock(){ ts.deleteTask(seconds); }
+    void load() override; 
+    bool run() override;
 };

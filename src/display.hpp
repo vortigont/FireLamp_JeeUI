@@ -64,7 +64,7 @@ class LEDDisplay {
     DisplayEngine *_dengine = nullptr;
 
     // LED stripe matrix with a desired topology and layout  
-    LedFB<CRGB> *_canvas = nullptr;
+    std::shared_ptr< LedFB<CRGB> > _canvas;
 
     // overlay buffer
     std::weak_ptr< LedFB<CRGB> > _ovr;
@@ -107,7 +107,7 @@ public:
 
     void canvasProtect(bool v){ if (_dengine) _dengine->canvasProtect(v); };
 
-    LedFB<CRGB>* getCanvas() { return _canvas; }
+    std::shared_ptr< LedFB<CRGB> > getCanvas() { return _canvas; }
 
     /**
      * @brief Get a pointer to Overlay buffer
