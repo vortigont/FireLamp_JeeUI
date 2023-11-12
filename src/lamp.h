@@ -118,8 +118,8 @@ struct {
     bool restoreState:1;    // restore lamp on/off/demo state on restart
     bool ONflag:1;          // флаг включения/выключения
     bool isFaderON:1;       // признак того, что фейдер используется для эффектов
-    bool tm24:1;   // 24х часовой формат
-    bool tmZero:1;  // ведущий 0
+    bool tm24:1;            // 24х часовой формат
+    bool tmZero:1;          // ведущий 0
     bool limitAlarmVolume:1; // ограничивать громкость будильника
     bool isEventsHandled:1; // глобальный признак обработки событий
     bool isEffClearing:1;   // признак очистки эффектов при переходе с одного на другой
@@ -318,6 +318,7 @@ public:
      * 
      * @param uint8_t tgtbrt - target brigtness level 0-255
      * @param fade_t fade - use/skip or use default fade effect
+     * @param bool bypass - set brightness as-as directly to backend, skipping fader, scaling and do NOT save new value
      */
     void setBrightness(uint8_t tgtbrt, fade_t fade=fade_t::preset, bool bypass = false);
 
@@ -397,22 +398,22 @@ public:
     const LAMPFLAGS &getLampFlagsStuct() const {return flags;}
     // saves flags to EmbUI config
     void save_flags();
-    void setFaderFlag(bool flag) {flags.isFaderON = flag;}
-    bool getFaderFlag() {return flags.isFaderON;}
-    void setClearingFlag(bool flag) {flags.isEffClearing = flag;}
-    bool getClearingFlag() {return flags.isEffClearing;}
-    void disableEffectsUntilText() {lampState.isEffectsDisabledUntilText = true; display.clear();}
-    void setOffAfterText() {lampState.isOffAfterText = true;}
-    void setIsEventsHandled(bool flag) {flags.isEventsHandled = flag;}
+    void setFaderFlag(bool flag) {flags.isFaderON = flag; save_flags(); }
+    bool getFaderFlag() {return flags.isFaderON; save_flags(); }
+    void setClearingFlag(bool flag) {flags.isEffClearing = flag; save_flags(); }
+    bool getClearingFlag() {return flags.isEffClearing; }
+    void disableEffectsUntilText() {lampState.isEffectsDisabledUntilText = true; display.clear(); save_flags(); }
+    void setOffAfterText() {lampState.isOffAfterText = true; save_flags(); }
+    void setIsEventsHandled(bool flag) {flags.isEventsHandled = flag; save_flags(); }
     bool IsEventsHandled() {return flags.isEventsHandled;} // LOG(printf_P,PSTR("flags.isEventsHandled=%d\n"), flags.isEventsHandled);
     bool isLampOn() {return flags.ONflag;}
     bool isDebugOn() {return flags.isDebug;}
     bool isDebug() {return lampState.isDebug;}
-    void setDebug(bool flag) {flags.isDebug=flag; lampState.isDebug=flag;}
-    void setButton(bool flag) {flags.isBtn=flag;}
+    void setDebug(bool flag) {flags.isDebug=flag; lampState.isDebug=flag; save_flags(); }
+    void setButton(bool flag) {flags.isBtn=flag; save_flags(); }
 
     // set/clear "restore on/off/demo" state on boot
-    void setRestoreState(bool flag){flags.restoreState = flag;}
+    void setRestoreState(bool flag){ flags.restoreState = flag; save_flags(); }
 
 
     // Drawing methods
@@ -440,8 +441,6 @@ public:
 
     bool isONMP3() {return flags.isOnMP3;}
     void setONMP3(bool flag) {flags.isOnMP3=flag;}
-    //void setMIRR_V(bool flag) {if (flag!=mx.cfg.vmirror()) { mx.cfg.vmirror(flag); mx.clear();} }
-    //void setMIRR_H(bool flag) {if (flag!=mx.cfg.hmirror()) { mx.cfg.hmirror(flag); mx.clear();} }
     void setTextMovingSpeed(uint8_t val) {tmStringStepTime.setInterval(val);}
     uint32_t getTextMovingSpeed() {return tmStringStepTime.getInterval();}
     void setTextOffset(uint8_t val) { txtOffset=val;}

@@ -139,7 +139,7 @@ bool Effcfg::loadeffconfig(uint16_t nb, const char *folder){
     soundfile.clear();
 
   brt = doc["brt"];
-  curve = doc[TCONST_lcurve] ? static_cast<luma::curve>(doc[TCONST_lcurve].as<int>()) : luma::curve::cie1931;
+  curve = doc[A_dev_lcurve] ? static_cast<luma::curve>(doc[A_dev_lcurve].as<int>()) : luma::curve::cie1931;
 
 
   return _eff_ctrls_load_from_jdoc(doc, controls);
@@ -202,7 +202,7 @@ String Effcfg::getSerializedEffConfig(uint8_t replaceBright) const {
   doc["name"] = effectName;
   doc["ver"] = version;
   if (brt) doc["brt"] = brt;
-  if (curve != luma::curve::cie1931) doc[TCONST_lcurve] = e2int(curve);
+  if (curve != luma::curve::cie1931) doc[A_dev_lcurve] = e2int(curve);
   doc["snd"] = soundfile;
   JsonArray arr = doc.createNestedArray("ctrls");
   for (auto c = controls.cbegin(); c != controls.cend(); ++c){

@@ -61,7 +61,7 @@ bool Button::activate(btnflags& flg, bool reverse){
 				if (myLamp.getGaugeType()!=GAUGETYPE::GT_NONE){
 						GAUGE::GaugeShow(newval, 255, 100);
 				}
-				run_action(String(TCONST_dynCtrl)+1, newval);
+				run_action(String(T_effect_dynCtrl)+1, newval);
 				return true;
 			}
 			case BA_SCALE: {
@@ -77,7 +77,7 @@ bool Button::activate(btnflags& flg, bool reverse){
 				if (myLamp.getGaugeType()!=GAUGETYPE::GT_NONE){
 						GAUGE::GaugeShow(newval, 255, 150);
 				}
-				run_action(String(TCONST_dynCtrl)+2, newval);
+				run_action(String(T_effect_dynCtrl)+2, newval);
 				return true;
 			}
 			default:;
