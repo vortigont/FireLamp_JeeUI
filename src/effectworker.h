@@ -539,6 +539,12 @@ public:
      */
     void reset();
 
+    /**
+     * @brief worker status
+     * 
+     * @return true if workier is running
+     * @return false if worker is idle
+     */
     bool status() const { return _status; };
 
     /**

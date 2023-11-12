@@ -1,0 +1,220 @@
+/*
+Copyright © 2023 Emil Muratov (vortigont)
+Copyright © 2020 Dmytro Korniienko (kDn)
+JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
+
+    This file is part of FireLamp_JeeUI.
+
+    FireLamp_JeeUI is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    FireLamp_JeeUI is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with FireLamp_JeeUI.  If not, see <https://www.gnu.org/licenses/>.
+
+  (Этот файл — часть FireLamp_JeeUI.
+
+   FireLamp_JeeUI - свободная программа: вы можете перераспространять ее и/или
+   изменять ее на условиях Стандартной общественной лицензии GNU в том виде,
+   в каком она была опубликована Фондом свободного программного обеспечения;
+   либо версии 3 лицензии, либо (по вашему выбору) любой более поздней
+   версии.
+
+   FireLamp_JeeUI распространяется в надежде, что она будет полезной,
+   но БЕЗО ВСЯКИХ ГАРАНТИЙ; даже без неявной гарантии ТОВАРНОГО ВИДА
+   или ПРИГОДНОСТИ ДЛЯ ОПРЕДЕЛЕННЫХ ЦЕЛЕЙ. Подробнее см. в Стандартной
+   общественной лицензии GNU.
+
+   Вы должны были получить копию Стандартной общественной лицензии GNU
+   вместе с этой программой. Если это не так, см.
+   <https://www.gnu.org/licenses/>.)
+*/
+
+#include "main.h"
+#include "interface.h"
+#include "effects.h"
+#include "ui.h"
+#include "extra_tasks.h"
+#include "events.h"
+#include "alarm.h"
+#include "templates.hpp"
+#include LANG_FILE                  //"text_res.h"
+
+#include "tm.h"
+#ifdef ENCODER
+    #include "enc.h"
+#endif
+
+#include "basicui.h"
+#include "actions.hpp"
+#include <type_traits>
+
+/**
+ * @brief Set device display brightness
+ * 
+ */
+void set_brightness(Interface *interf, const JsonObject *data, const char* action){
+    if (data && (*data).size()){
+        if ((*data)[TCONST_nofade] == true)
+            myLamp.setBrightness((*data)[A_dev_brightness], fade_t::off);
+        else
+            myLamp.setBrightness((*data)[A_dev_brightness]);
+    }
+
+    // publish new state
+    if(interf){
+        interf->json_frame_value();
+        interf->value(A_dev_brightness, myLamp.getBrightness());
+        interf->value(V_dev_brtscale, myLamp.getBrightnessScale());
+        interf->value(A_dev_lcurve, e2int(myLamp.effects.getEffCfg().curve));
+        interf->json_frame_flush();
+    }
+}
+
+/**
+ * @brief Set luma curve brightness adjustment value
+ * 
+ */
+void set_lcurve(Interface *interf, const JsonObject *data, const char* action){
+    if (data && (*data).size()){
+        auto c = static_cast<luma::curve>((*data)[A_dev_lcurve].as<int>());
+        myLamp.setLumaCurve(c);
+        myLamp.effects.setLumaCurve(c);
+    }
+
+    // just call get_brightness method, it will publish luma related value
+    set_brightness(interf, nullptr, action);
+}
+
+/**
+ * Обработка вкл/выкл лампы
+ */
+void set_pwrswitch(Interface *interf, const JsonObject *data, const char* action){
+    bool newpower;
+    if (data && (*data).size()){
+        newpower = (*data)[A_dev_pwrswitch];
+        if (newpower == myLamp.isLampOn()) return;      // status not changed
+        myLamp.changePower(newpower);
+        if (myLamp.getLampFlagsStuct().restoreState){
+            myLamp.save_flags();
+        }
+
+    #ifdef MP3PLAYER
+        if(myLamp.getLampFlagsStuct().isOnMP3)
+            mp3->setIsOn(newpower);
+    #endif
+    }
+
+    // publish new state
+    if(interf){
+        interf->json_frame_value();
+        interf->value(A_dev_pwrswitch, newpower);
+        interf->json_frame_flush();
+    }
+}
+
+/**
+ * @brief Switch to specific effect
+ * could be triggered via WebUI's selector list or via ra::eff_switch
+ * if switched successfully, than this function calls contorls publishing via MQTT
+ */
+void effect_switch(Interface *interf, const JsonObject *data, const char* action){
+    if (!data) return;
+    LOG(println, "effect_switch()");
+
+    /*
+     if fader is in progress now, than we just skip switching,
+     on one hand it prevents cyclic fast effect switching
+     but not sure if this a good idea or bad, let's see
+    */
+    if (LEDFader::getInstance()->running()) return;
+
+    std::string_view action_view(action);
+
+    // Switch to next effect
+    if (action_view.compare(A_effect_switch_next) == 0)
+        return run_action(ra::eff_next);
+
+    // Switch to prev effect
+    if (action_view.compare(A_effect_switch_prev) == 0)
+        return run_action(ra::eff_prev);
+
+    uint16_t num = (*data)[A_effect_switch_idx];
+    EffectListElem *eff = myLamp.effects.getEffect(num);
+    if (!eff) return;                                       // some unknown effect requested, quit
+
+    // сбросить флаг случайного демо
+    //myLamp.setDRand(myLamp.getLampFlagsStuct().dRand);
+
+    LOG(printf_P, PSTR("UI EFF switch to:%d, LampOn:%d, mode:%d\n"), eff->eff_nb, myLamp.isLampOn(), myLamp.getMode());
+    if (myLamp.isLampOn()) {
+        // switch context to maintain thread-safety
+        auto target_eff_num = eff->eff_nb;
+        Task *_t = new Task( RESCHEDULE_DELAY, TASK_ONCE, [target_eff_num](){ myLamp.switcheffect(SW_SPECIFIC, myLamp.getFaderFlag(), target_eff_num); }, &ts, false, nullptr, nullptr, true);
+        _t->enableDelayed();
+    } else {
+        // переходим прямо на выбранный эффект если лампа "выключена"
+        myLamp.effects.switchEffect(eff->eff_nb);
+    }
+}
+
+void set_eff_prev(Interface *interf, const JsonObject *data, const char* action){
+    // effect switch action call should be made in main loop to maintain thread safety
+    Task *_t = new Task( RESCHEDULE_DELAY, TASK_ONCE, [](){ run_action(ra::eff_prev); }, &ts, false, nullptr, nullptr, true);
+    _t->enableDelayed();
+}
+
+void set_eff_next(Interface *interf, const JsonObject *data, const char* action){
+    // effect switch action call should be made in main loop to maintain thread safety
+    Task *_t = new Task( RESCHEDULE_DELAY, TASK_ONCE, [](){ run_action(ra::eff_next); }, &ts, false, nullptr, nullptr, true);
+    _t->enableDelayed();
+}
+
+void set_effects_dynCtrl(Interface *interf, const JsonObject *data, const char* action){
+
+    LList<std::shared_ptr<UIControl>>&controls = myLamp.effects.getControls();
+
+    if (!data || !(*data).size()){
+        if (!interf && !action) return;     // return if requred arguments are null
+
+        std::string_view a(action);
+        a.remove_prefix(std::string_view(T_effect_dynCtrl).length()); // chop off "dynCtrl"
+        int idx = strtol(a.data(), NULL, 10);
+        
+        for(unsigned i=1; i<controls.size();i++){       // I skip first control here [0] as it's the old 'individual brightness'
+            if (controls[i]->getId() == idx){
+                // found requested control index, let's reply it's value!
+                interf->json_frame_value();
+                interf->value( action, controls[i]->getVal() );
+                interf->json_frame_flush();
+                return;
+            }
+        }
+        return;
+    }
+
+    // else it's a "set" request to set a value
+    String ctrlName;
+    for(unsigned i=1; i<controls.size();i++){       // I skip first control here [0] as it's the old 'individual brightness'
+        ctrlName = String(T_effect_dynCtrl) + controls[i]->getId();
+        if((*data).containsKey(ctrlName)){
+            if ((*data)[ctrlName].is<bool>() ){
+                controls[i]->setVal((*data)[ctrlName] ? "1" : "0");     // больше стрингов во славу Богу стрингов!
+            } else
+                controls[i]->setVal((*data)[ctrlName]); // для всех остальных
+
+            resetAutoTimers(true);
+            myLamp.effects.setDynCtrl(controls[i].get());
+            break;
+        }
+    }
+}
+
+
+

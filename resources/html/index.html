@@ -115,7 +115,7 @@
 		{{/if}}
 		{{#if type == "checkbox"}}
 		    <div class="switch-block">
-			<input type="checkbox" id="{{id}}" name="{{id}}" class="checkbox" {{#if2 value == true || value == 1 || value == "true" || value == "1"}}checked{{/if2}} {{#if2 directly}}{{onevent "click", "on_change", id}}{{/if2}}>
+			<input type="checkbox" id="{{id}}" name="{{id}}" class="checkbox" {{#if2 value == true || value == 1 || value == "true" || value == "1"}}checked{{/if2}} {{#if2 onChange}}{{onevent "click", "on_change", id}}{{/if2}}>
 			<label class="switch" for="{{id}}"><span class="checkbox-label">{{label}}</span></label></input>
 		    </div>
 		{{/if}}
@@ -184,7 +184,7 @@
 				{{#if2 (step || step === 0)}}step="{{step}}"{{/if2}}
 				{{#if2 placeholder}}placeholder="{{placeholder}}"{{/if2}}
 				{{#if2 type == "color"}}style="height: 50px"{{/if2}}
-				{{#if2 directly}}{{onevent "change", "on_change", id}}{{/if2}}
+				{{#if2 onChange}}{{onevent "change", "on_change", id}}{{/if2}}
 				{{onevent "input", "on_input", id}}
 			>
 		{{/if}}
@@ -192,7 +192,7 @@
 			<span>{{label}}</span>
 			{{#if2 editable}}<div class="select-editable">{{/if2}}
 			<select id="{{id}}" name="{{id}}" value="{{value}}" class="pure-u-1"
-				{{#if2 directly}}{{onevent "change", "on_change", id}}{{/if2}}
+				{{#if2 onChange}}{{onevent "change", "on_change", id}}{{/if2}}
 			>
 			{{#block}}
 				<option value="{{value}}" {{#if2 value == _this.value}}selected{{/if2}}>{{label}}</option>
@@ -208,11 +208,8 @@
 		{{/if}}
 
 		{{#if html == "textarea"}}
-			<textarea class="pure-u-1" maxlength="255" id="{{id}}" name="{{id}}"
-				{{#if2 directly}}{{onevent "change", "on_change", id}}{{/if2}}
-			></textarea>
+			<textarea class="pure-u-1" maxlength="255" id="{{id}}" name="{{id}}"></textarea>
 		{{/if}}
-
 
 		{{#if html == "raw_html"}} {{value}} {{/if}}
 

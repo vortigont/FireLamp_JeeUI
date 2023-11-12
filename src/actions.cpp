@@ -76,21 +76,21 @@ void run_action(ra act){
 
     // switch to previous effect
     case ra::eff_rnd : {
-      // pick previous available effect (considering it is enabled)
+      // pick random effect
       run_action(ra::eff_switch, myLamp.effects.getByCnt(random(0, myLamp.effects.getEffectsListSize())) );
       break;
     }
 
     // turn lamp ON
     case ra::on : {
-      run_action(TCONST_ONflag, true);
+      run_action(A_dev_pwrswitch, true);
       break;
     }
 
     // turn lamp OFF
     case ra::off : {
       myLamp.stopRGB(); // выключение RGB-режима
-      run_action(TCONST_ONflag, false);
+      run_action(A_dev_pwrswitch, false);
       break;
     }
 

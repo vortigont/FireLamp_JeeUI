@@ -115,57 +115,41 @@ enum class fade_t {
 typedef union _LAMPFLAGS {
 struct {
     // ВНИМАНИЕ: порядок следования не менять, флаги не исключать, переводить в reserved!!! используется как битовый массив в конфиге!
-    bool restoreState:1;        // restore lamp on/off/demo state on restart
-    bool reserved1:1;
-    bool reserved2:1;       // ex. режим рисования
-    bool ONflag:1; // флаг включения/выключения
-    bool isFaderON:1; // признак того, что фейдер используется для эффектов
-    bool reserved5:1;       // ex. isGlobalBrightness
-    bool tm24:1;   // 24х часовой формат
-    bool tmZero:1;  // ведущий 0
+    bool restoreState:1;    // restore lamp on/off/demo state on restart
+    bool ONflag:1;          // флаг включения/выключения
+    bool isFaderON:1;       // признак того, что фейдер используется для эффектов
+    bool tm24:1;            // 24х часовой формат
+    bool tmZero:1;          // ведущий 0
     bool limitAlarmVolume:1; // ограничивать громкость будильника
     bool isEventsHandled:1; // глобальный признак обработки событий
-    bool isEffClearing:1; // признак очистки эффектов при переходе с одного на другой
-    bool isDebug:1; // признак режима отладки
-    bool numInList:1; // нумерация в списке
-    bool effHasMic:1; // значек микрофона в списке
-    bool dRand:1; // случайный порядок демо
-    bool showName:1; // отображение имени в демо
+    bool isEffClearing:1;   // признак очистки эффектов при переходе с одного на другой
+    bool isDebug:1;         // признак режима отладки
+    bool dRand:1;           // случайный порядок демо
+    bool showName:1;        // отображение имени в демо
+    bool isMicOn:1;         // глобальное включение/выключение микрофона
+    bool effHasMic:1;       // микрофон для эффекта
+    bool isOnMP3:1;         // включен ли плеер?
+    bool isBtn:1;           // включена ли кнопка?
+    bool playName:1;        // воспроизводить имя?
     //--------16 штук граница-------------------
-    // ВНИМАНИЕ: порядок следования не менять, флаги не исключать, переводить в reserved!!! используется как битовый массив в конфиге!
-    bool isMicOn:1; // глобальное включение/выключение микрофона
-    uint8_t MP3eq:3; // вид эквалайзера
-    bool reserved18:1;      // бывшее системное меню
-    bool isOnMP3:1; // включен ли плеер?
-    bool isBtn:1; // включена ли кнопка?
-    bool playName:1; // воспроизводить имя?
-    bool playEffect:1; // воспроизводить эффект?
-    uint8_t alarmSound:3; // звук будильника ALARM_SOUND_TYPE
-    bool playMP3:1; // режим mp3-плеера
-    uint8_t playTime:3; // воспроизводить время?
-    // ВНИМАНИЕ: порядок следования не менять, флаги не исключать, переводить в reserved!!! используется как битовый массив в конфиге!
-    //--------16 штук граница-------------------
-    uint8_t GaugeType:2; // тип индикатора
-    bool isTempOn:1;
-    bool isStream:1;
-    bool isDirect:1;
-    bool isMapping:1;
+    bool playEffect:1;      // воспроизводить эффект?
+    bool playMP3:1;         // режим mp3-плеера
+    uint8_t alarmSound:3;   // звук будильника ALARM_SOUND_TYPE
+    uint8_t playTime:3;     // воспроизводить время?
+    uint8_t GaugeType:2;    // тип индикатора
+    uint8_t MP3eq:3;        // вид эквалайзера
 };
-uint64_t lampflags; // набор битов для конфига
+uint32_t lampflags; // набор битов для конфига
 _LAMPFLAGS(){
     restoreState = false;
-    reserved1 = false;
-    ONflag = false; // флаг включения/выключения
-    isDebug = false; // флаг отладки
-    isFaderON = true; // признак того, что используется фейдер для смены эффектов
-    isEffClearing = false; // нужно ли очищать эффекты при переходах с одного на другой
-    //isGlobalBrightness = true; // признак использования глобальной яркости для всех режимов
-    isEventsHandled = true;
-    isMicOn = true; // глобальное испльзование микрофона
-    numInList = false;
+    ONflag = false;
+    isDebug = false;
+    isFaderON = true;
+    isEffClearing = false;
+    isEventsHandled = false;
+    isMicOn = false;
     effHasMic = false;
     dRand = false;
-    reserved18 = false;
     isOnMP3 = false;
     isBtn = true;
     showName = false;
@@ -179,10 +163,6 @@ _LAMPFLAGS(){
     tm24 = true;
     tmZero = false;
     GaugeType = GAUGETYPE::GT_VERT;
-    isTempOn = true;
-    isStream = false;
-    isDirect = false;
-    isMapping = true;
 }
 } LAMPFLAGS;
 #pragma pack(pop)
@@ -192,9 +172,6 @@ class LAMP {
     friend class ALARMTASK;        // будильник ходит сюда за MOSFET и AUX пином, todo: переписать будильник целиком
 private:
     std::shared_ptr<LedFB<CRGB> > _overlay;     // буфер для оверлея
-#if defined(USE_STREAMING) && defined(EXT_STREAM_BUFFER)
-    //std::vector<CRGB> streambuff;  // буфер для трансляции
-#endif
 
     LAMPFLAGS flags;
     LAMPSTATE lampState;                // текущее состояние лампы, которое передается эффектам
@@ -314,12 +291,6 @@ public:
     EffectWorker effects; // объект реализующий доступ к эффектам
     EVENT_MANAGER events; // Объект реализующий доступ к событиям
 
-    // возвращает упакованные в целое флаги лампы
-    uint64_t getLampFlags() {return flags.lampflags;}
-
-     // возвращает структуру флагов лампы
-    const LAMPFLAGS &getLampFlagsStuct() const {return flags;}
-
     void setbPin(uint8_t val) {bPin = val;}
     uint8_t getbPin() {return bPin;}
     LAMPSTATE &getLampState() {return lampState;}
@@ -347,6 +318,7 @@ public:
      * 
      * @param uint8_t tgtbrt - target brigtness level 0-255
      * @param fade_t fade - use/skip or use default fade effect
+     * @param bool bypass - set brightness as-as directly to backend, skipping fader, scaling and do NOT save new value
      */
     void setBrightness(uint8_t tgtbrt, fade_t fade=fade_t::preset, bool bypass = false);
 
@@ -418,23 +390,30 @@ public:
 
     void handle();          // главная функция обработки эффектов
 
-    // flag get/set methods
-    void setFaderFlag(bool flag) {flags.isFaderON = flag;}
-    bool getFaderFlag() {return flags.isFaderON;}
-    void setClearingFlag(bool flag) {flags.isEffClearing = flag;}
-    bool getClearingFlag() {return flags.isEffClearing;}
-    void disableEffectsUntilText() {lampState.isEffectsDisabledUntilText = true; display.clear();}
-    void setOffAfterText() {lampState.isOffAfterText = true;}
-    void setIsEventsHandled(bool flag) {flags.isEventsHandled = flag;}
+    // === flag get/set methods ===
+
+    // возвращает упакованные в целое флаги лампы
+    uint32_t getLampFlags() {return flags.lampflags;}
+    // возвращает структуру флагов лампы
+    const LAMPFLAGS &getLampFlagsStuct() const {return flags;}
+    // saves flags to EmbUI config
+    void save_flags();
+    void setFaderFlag(bool flag) {flags.isFaderON = flag; save_flags(); }
+    bool getFaderFlag() {return flags.isFaderON; save_flags(); }
+    void setClearingFlag(bool flag) {flags.isEffClearing = flag; save_flags(); }
+    bool getClearingFlag() {return flags.isEffClearing; }
+    void disableEffectsUntilText() {lampState.isEffectsDisabledUntilText = true; display.clear(); save_flags(); }
+    void setOffAfterText() {lampState.isOffAfterText = true; save_flags(); }
+    void setIsEventsHandled(bool flag) {flags.isEventsHandled = flag; save_flags(); }
     bool IsEventsHandled() {return flags.isEventsHandled;} // LOG(printf_P,PSTR("flags.isEventsHandled=%d\n"), flags.isEventsHandled);
     bool isLampOn() {return flags.ONflag;}
     bool isDebugOn() {return flags.isDebug;}
     bool isDebug() {return lampState.isDebug;}
-    void setDebug(bool flag) {flags.isDebug=flag; lampState.isDebug=flag;}
-    void setButton(bool flag) {flags.isBtn=flag;}
+    void setDebug(bool flag) {flags.isDebug=flag; lampState.isDebug=flag; save_flags(); }
+    void setButton(bool flag) {flags.isBtn=flag; save_flags(); }
 
     // set/clear "restore on/off/demo" state on boot
-    void setRestoreState(bool flag){flags.restoreState = flag;}
+    void setRestoreState(bool flag){ flags.restoreState = flag; save_flags(); }
 
 
     // Drawing methods
@@ -460,30 +439,8 @@ public:
      */
     void clearDrawBuf() { CRGB c = CRGB::Black; fillDrawBuf(c); }
 
-#ifdef USE_STREAMING
-    bool isStreamOn() {return flags.isStream;}
-    bool isDirect() {return flags.isDirect;}
-    bool isMapping() {return flags.isMapping;}
-    void setStream(bool flag) {flags.isStream = flag;}
-    void setDirect(bool flag) {flags.isDirect = flag;}
-    void setMapping(bool flag) {flags.isMapping = flag;}
-#ifdef EXT_STREAM_BUFFER
-    /**
-     * @brief creates/destroys buffer for "streaming"
-     * 
-     * @param active - if 'true' creates new buffer, otherwise destory/release buffer mem
-     */
-    void setStreamBuff(bool active);
-    void writeStreamBuff(CRGB &color, uint16_t x, uint16_t y) { if(!streambuff.empty()) { streambuff[getPixelNumber(x,y)]=color; } }
-    void writeStreamBuff(CRGB &color, uint16_t num) { if(!streambuff.empty()) { streambuff[num]=color; } }
-    void fillStreamBuff(CRGB &color) { for(uint16_t i=0; i<streambuff.size(); i++) streambuff[i]=color; }
-    void clearStreamBuff() { fillStreamBuff(CRGB::Black); }
-#endif
-#endif
     bool isONMP3() {return flags.isOnMP3;}
     void setONMP3(bool flag) {flags.isOnMP3=flag;}
-    //void setMIRR_V(bool flag) {if (flag!=mx.cfg.vmirror()) { mx.cfg.vmirror(flag); mx.clear();} }
-    //void setMIRR_H(bool flag) {if (flag!=mx.cfg.hmirror()) { mx.cfg.hmirror(flag); mx.clear();} }
     void setTextMovingSpeed(uint8_t val) {tmStringStepTime.setInterval(val);}
     uint32_t getTextMovingSpeed() {return tmStringStepTime.getInterval();}
     void setTextOffset(uint8_t val) { txtOffset=val;}
@@ -513,10 +470,6 @@ public:
     uint8_t getBrightOn() { return tmBright>>4; }
     uint8_t getBrightOff() { return tmBright&0x0F; }
 
-#ifdef DS18B20
-bool isTempDisp() {return flags.isTempOn;}
-void setTempDisp(bool flag) {flags.isTempOn = flag;}
-#endif
     bool getGaugeType() {return flags.GaugeType;}
     void setGaugeType(GAUGETYPE val) {flags.GaugeType = val;}
     void startRGB(CRGB &val);
@@ -531,7 +484,6 @@ void setTempDisp(bool flag) {flags.isTempOn = flag;}
     uint8_t getBFade(){ return BFade; }
     void setNYMessageTimer(int in){ tmNewYearMessage.setInterval(in*60*1000); tmNewYearMessage.reset(); }
     void setNYUnixTime(time_t tm){ NEWYEAR_UNIXDATETIME = tm; }
-    void setNumInList(bool flag) {flags.numInList = flag;}
     void setEffHasMic(bool flag) {flags.effHasMic = flag;}
     void setDRand(bool flag) {flags.dRand = flag; lampState.isRandDemo = (flag && mode==LAMPMODE::MODE_DEMO); }
     void setShowName(bool flag) {flags.showName = flag;}

@@ -129,47 +129,43 @@ void run_action(ra act, const T& param) {
   LOG(printf_P, PSTR("run_action_p: %d\n"), static_cast<int>(act));
   StaticJsonDocument<ACTION_PARAM_SIZE> jdoc;
   JsonObject obj = jdoc.to<JsonObject>();
-  JsonObject nested = obj.createNestedObject(P_data);
+  JsonObject data = obj.createNestedObject(P_data);
 
   // action specific key:value setup
   switch (act){
     // AUX PIN On/Off
     case ra::aux : {
       obj[P_action] = TCONST_AUX;
-      nested[TCONST_AUX] = param;
+      data[TCONST_AUX] = param;
       break;
     }
 
     case ra::brt_lcurve : {
-      obj[P_action] = TCONST_lcurve;
-      nested[TCONST_lcurve] = param;
+      obj[P_action] = A_dev_lcurve;
+      data[A_dev_lcurve] = param;
       break;
     }
 
     // brightness control
     case ra::brt :
     case ra::brt_nofade : {
-      String ctrl(TCONST_dynCtrl);
-      ctrl += 0;  // append '0' to the control name - 0 is for brightness
-      obj[P_action] = ctrl;
-      nested[ctrl] = param;
-
-      if (act == ra::brt_nofade) nested[TCONST_nofade] = true;     // disable fader
-      nested[TCONST_force] = true;        // какой-то костыль с задержкой обновления WebUI
+      obj[P_action] = A_dev_brightness;
+      data[A_dev_brightness] = param;
+      if (act == ra::brt_nofade) data[TCONST_nofade] = true;     // disable fader
       break;
     }
 
     // switch to specified effect number
     case ra::eff_switch : {
-      obj[P_action] = TCONST_eff_run;
-      nested[TCONST_eff_run] = param;
+      obj[P_action] = A_effect_switch_idx;
+      data[A_effect_switch_idx] = param;
       break;
     }
 
     // demo mode On/Off
     case ra::demo : {
       obj[P_action] = K_demo;
-      nested[K_demo] = param;
+      data[K_demo] = param;
       break;
     }
 
@@ -177,7 +173,7 @@ void run_action(ra act, const T& param) {
     // simple actions with provided key:value
     case ra::miconoff : {
       obj[P_action] = TCONST_Mic;
-      nested[TCONST_Mic] = param;
+      data[TCONST_Mic] = param;
       break;
     }
 #endif  //#ifdef MIC_EFFECTS
@@ -186,13 +182,13 @@ void run_action(ra act, const T& param) {
     //MP3: enable/disable
     case ra::mp3_enable : {
       obj[P_action] = TCONST_Mic;
-      nested[TCONST_Mic] = param;
+      data[TCONST_Mic] = param;
       break;
     }
     //MP3: set volume
     case ra::mp3_vol : {
       obj[P_action] = TCONST_mp3volume;
-      nested[TCONST_mp3volume] = param;
+      data[TCONST_mp3volume] = param;
       break;
     }
 
@@ -223,8 +219,8 @@ void run_action(const String &key, const T& val) {
   StaticJsonDocument<ACTION_PARAM_SIZE> jdoc;
   JsonObject obj = jdoc.to<JsonObject>();
   obj[P_action] = key;
-  JsonObject nested = obj.createNestedObject(P_data);
-  nested[key] = val;
+  JsonObject data = obj.createNestedObject(P_data);
+  data[key] = val;
 
   embui.post(obj, true);                    // inject packet back into EmbUI action selector
 }

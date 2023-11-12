@@ -195,7 +195,7 @@ public:
 };
 
 //-----------------------------------------------
-
+/*
 class CtrlsTask : public Task {
     DynamicJsonDocument *_data = nullptr;
     INLINE DynamicJsonDocument *makeDoc(JsonObject *data) {
@@ -231,7 +231,7 @@ public:
     }
     ~CtrlsTask() {if(_data) delete _data;}
 };
-
+*/
 //-----------------------------------------------
 
 #endif

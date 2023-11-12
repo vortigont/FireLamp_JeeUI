@@ -46,15 +46,6 @@ GAUGE *GAUGE::gauge = nullptr; // объект индикатора
 ALARMTASK *ALARMTASK::alarmTask = nullptr; // объект будильника
 
 LAMP::LAMP() : tmStringStepTime(DEFAULT_TEXT_SPEED), tmNewYearMessage(0), effects(&lampState){
-  /* в лампе везде торчит кадровый буфер, и объект лампы глобальный, создается в меин контексте
-  что требует иметь буфер во время создания объекта лампы.
-  Но! Я создаю буфер динамически во время запуска из сохраненной конфигурации и это происходит позже
-  уже когда экземпляр лампы создан. Поэтому втыкаем в лампу буфер-времянку, который позже заменим на
-  реальный
-  */
-  //mx = new LedFB(2,2);
-
-  lampState.isOptPass = false; // введен ли пароль для опций
   lampState.isInitCompleted = false; // завершилась ли инициализация лампы
   lampState.isStringPrinting = false; // печатается ли прямо сейчас строка?
   lampState.isEffectsDisabledUntilText = false;
@@ -70,8 +61,8 @@ LAMP::LAMP() : tmStringStepTime(DEFAULT_TEXT_SPEED), tmNewYearMessage(0), effect
 
 void LAMP::lamp_init()
 {
-  _brightnessScale = embui.paramVariant(TCONST_brtScl)  | DEF_BRT_SCALE;
-  globalBrightness = embui.paramVariant(TCONST_GlobBRI) | DEF_BRT_SCALE/2;
+  _brightnessScale = embui.paramVariant(V_dev_brtscale)  | DEF_BRT_SCALE;
+  globalBrightness = embui.paramVariant(A_dev_brightness) | DEF_BRT_SCALE/2;
 
   _brightness(0, true);          // начинаем с полностью потушеной матрицы 0-й яркости
 
@@ -96,6 +87,18 @@ void LAMP::lamp_init()
   if (aux_gpio > static_cast<int>(GPIO_NUM_NC)){
     pinMode(aux_gpio, OUTPUT);
     digitalWrite(aux_gpio, !aux_ll);
+  }
+
+  // switch to last running effect
+  run_action(ra::eff_switch, embui.paramVariant(V_effect_idx));
+
+  // restore lamp flags from cfg
+  flags.lampflags = embui.paramVariant(V_lampFlags);
+  if (flags.restoreState && flags.ONflag){
+    flags.ONflag = false;       // reset it first, so that changePower() method will know that we are in off state actually
+    changePower(flags.ONflag);
+  } else {
+    flags.ONflag = false;
   }
 }
 
@@ -144,102 +147,22 @@ void LAMP::handle(){
   // будильник обрабатываем раз в секунду
   //alarmWorker();
 
-  if(lampState.isEffectsDisabledUntilText && !lampState.isStringPrinting) {
-    // не акутально
-    //_wipe_screen(); //setBrightness(0,false,false); // напечатали, можно гасить матрицу :)
-    lampState.isEffectsDisabledUntilText = false;
-  }
+//  if(lampState.isEffectsDisabledUntilText && !lampState.isStringPrinting) {
+//    lampState.isEffectsDisabledUntilText = false;
+//  }
 
   // отложенное включение/выключение
   if(lampState.isOffAfterText && !lampState.isStringPrinting) {
     run_action(ra::off);
   }
 
-  newYearMessageHandle();
+//  newYearMessageHandle();
 
   // обработчик событий (пока не выкину в планировщик)
   if (flags.isEventsHandled) {
     events.events_handle();
   }
 }
-/*    // OBSOLETE
-void LAMP::effectsTick(){
-  uint32_t _begin = millis();
-
-  // проверяем, нужно ли обсчитывать новый кадр, что само по себе тупо, если уж этот метод был вызван
-  if (effects.worker && (flags.ONflag || LEDFader::getInstance()->running()) && !isAlarm() && !isRGB()) {
-    if(!lampState.isEffectsDisabledUntilText){  // если не выводится текст
-      // if  there is a sledsbuff defined, than swap content with current mx buff, 'cause effects runner expect it to be intact from the last run
-      if (sledsbuff)
-        display.getCanvas()->swap(*sledsbuff);
-
-      // посчитать текущий эффект (сохранить кадр в sledsbuff буфер, если был обсчет и до этого не было создано sleds буфера
-      // ппц... копия будет создаваться ВСЕГДА, даже если оверлей не нужен Ж()
-      if(effects.worker->run()) {
-        if(!sledsbuff)
-          sledsbuff = new LedFB(*mx);    // create buffer clone
-        else
-          *sledsbuff = *mx;             // copy mx buffer
-
-      }
-    }
-  }
-#if defined(USE_STREAMING) && defined(EXT_STREAM_BUFFER)
-    if(!streambuff.empty()){
-    uint8_t mi;
-    for(uint16_t i=0; i<streambuff.size() && i<display.getCanvas()->size(); i++){
-      mi = streambuff[i].r > streambuff[i].g ? streambuff[i].r : streambuff[i].g;
-      mi = mi > streambuff[i].b ? mi : streambuff[i].b;
-      if(mi>=5) {
-        display.getCanvas()->at(i) = streambuff[i];
-      } else if(mi && mi<5) {
-        EffectMath::setLedsNscale8(i, map(mi,1,4,128,10)); // 5 градаций прозрачности, где 0 - полностью прозрачный
-      }
-    }
-  }
-#endif
-
-  if(_overlay){
-    uint8_t mi;
-    for(uint16_t i=0; i<display.getCanvas()->size(); i++){
-      mi = _overlay->at(i).r > drawbuff->at(i).g ? drawbuff->at(i).r : drawbuff->at(i).g;
-      mi = mi > drawbuff->at(i).b ? mi : drawbuff->at(i).b;
-      if(mi>=5) {
-        display.getCanvas()->at(i) = drawbuff->at(i);
-      } else if(mi) {
-        display.getCanvas()->at(i).nscale8(map(mi,1,4,128,10)); // 5 градаций прозрачности, где 0 - полностью прозрачный
-      }
-    }
-  }
-
-  if(isRGB()) { // режим заливки цветом
-    display.getCanvas()->fill(rgbColor);
-  }
-
-  if(isWarning()) {
-    warningHelper(); // вывод предупреждения
-  }
-
-  if (isAlarm() || lampState.isStringPrinting) { // isWarning() || 
-    doPrintStringToLamp(); // обработчик печати строки
-  }
-
-  GAUGE::GetGaugeInstance()->GaugeMix((GAUGETYPE)flags.GaugeType);
-
-  // это жесть...
-  if (isRGB() || isWarning() || isAlarm() || lampState.isEffectsDisabledUntilText || LEDFader::getInstance()->running() || (effects.worker ? effects.worker->status() : false) || lampState.isStringPrinting) {
-    // выводим 1 кадр на матрицу только если есть текст или эффект
-    effectsTimer(T_FRAME_ENABLE, _begin);
-  } else if(isLampOn()) {
-    // иначе перезапускаем этот же метод бесконечно
-    effectsTimer(T_ENABLE);
-  } else {
-    // not sure how we ended up here
-    _wipe_screen();
-  }
-
-}
-*/
 
 void LAMP::changePower() {changePower(!flags.ONflag);}
 
@@ -256,11 +179,6 @@ void LAMP::changePower(bool flag) // флаг включения/выключе�
 
   if (flag){
     // POWER ON
-#ifdef USE_STREAMING
-    if (flags.isStream)
-      Led_Stream::newStreamObj((STREAM_TYPE)embui.param(TCONST_stream_type).toInt());
-    if(!flags.isDirect || !flags.isStream)
-#endif
 
     // переключаемся на текущий эффект, переключение вызовет запуск движка калькулятора эффекта и фейдер (если необходимо)
     switcheffect(SW_SPECIFIC, getFaderFlag(), effects.getCurrent());
@@ -275,9 +193,6 @@ void LAMP::changePower(bool flag) // флаг включения/выключе�
     if (fet_gpio > static_cast<int>(GPIO_NUM_NC)) digitalWrite(fet_gpio, (flags.ONflag ? fet_ll : !fet_ll));
   } else  {
     // POWER OFF
-#ifdef USE_STREAMING
-    Led_Stream::clearStreamObj();
-#endif
     if(flags.isFaderON && !lampState.isOffAfterText){
       LEDFader::getInstance()->fadelight(0, FADE_TIME, [this](){ effectsTimer(SCHEDULER::T_DISABLE); } );     // гасим эффект-процессор
     } else {
@@ -297,6 +212,7 @@ void LAMP::changePower(bool flag) // флаг включения/выключе�
     }
   }
 
+  save_flags();
 }
 
 #ifdef MP3PLAYER
@@ -909,7 +825,7 @@ void LAMP::setBrightness(uint8_t tgtbrt, fade_t fade, bool bypass){
     }
     globalBrightness = tgtbrt;            // set configured brightness variable
 
-    embui.var(TCONST_GlobBRI, tgtbrt);    // save brightness variable
+    embui.var(A_dev_brightness, tgtbrt);    // save brightness variable
 }
 
 /*
@@ -972,6 +888,7 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
     default:
         return;
     }
+
     LOG(printf_P, PSTR("switcheffect() act=%d, fade=%d, effnb=%d\n"), action, fade, next_eff_num);
     // тухнем "вниз" только на включенной лампе
     if (fade && flags.ONflag) {
@@ -981,7 +898,7 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
       LEDFader::getInstance()->fadelight( _get_brightness(true) < 3*MAX_BRIGHTNESS/FADE_LOWBRTFRACT/2 ? 0 : _brightnessScale/FADE_LOWBRTFRACT, FADE_TIME, std::bind(&LAMP::switcheffect, this, action, fade, next_eff_num, true));
       return;
     } else {
-      // do direct switch to effect
+      // do direct switch to effect if fading is not required
       effects.switchEffect(next_eff_num);
     }
 
@@ -1025,7 +942,19 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
   }
 */
   setBrightness(globalBrightness);      // need to reapply brightness as effect's curve might have changed
-  LOG(println, "eof switcheffect");
+
+
+  // if lamp is not in Demo mode, then need to save new effect in config
+  if(mode != LAMPMODE::MODE_DEMO){
+    embui.var(V_effect_idx, effnb);
+    //myLamp.effects.autoSaveConfig();
+  } else {
+    myLamp.demoTimer(T_RESET);
+  }
+
+  // publish new effect's control to all awailable feeders
+  publish_effect_controls(nullptr, nullptr, NULL);
+  LOG(println, "eof switcheffect()");
 }
 
 /*
@@ -1176,7 +1105,10 @@ void LAMP::writeDrawBuf(CRGB color, uint16_t x, uint16_t y){
   if (_overlay) { _overlay->at(x,y) = color; }
 }
 
-//void LAMP::writeDrawBuf(CRGB color, uint16_t num) { if(_overlay) { _overlay->at(num)=color; } }
+void LAMP::save_flags(){
+  if (flags.restoreState)
+    embui.var(V_lampFlags, flags.lampflags);
+}
 
 
 #ifdef EMBUI_USE_MQTT
@@ -1197,18 +1129,6 @@ void LAMP::setmqtt_int(int val) {
 }
 #endif
 
-#ifdef EXT_STREAM_BUFFER
-void LAMP::setStreamBuff(bool active) {
-    if(!active){
-        if (!streambuff.empty()) {
-            streambuff.resize(0);
-            streambuff.shrink_to_fit();
-        }
-    } else if(streambuff.empty()){
-        streambuff.resize(display.getCanvas()->size());
-    }
-}
-#endif
 /*
 void LAMP::reset_led_buffs(){
   //display.getCanvas()->clear();

@@ -38,6 +38,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "filehelpers.hpp"
 #include "lamp.h"
 #include "display.hpp"
+#include "actions.hpp"
 #ifdef DS18B20
 #include "DS18B20.h"
 #endif
@@ -113,12 +114,6 @@ void setup() {
     }
 #endif
 
-    myLamp.effects.setEffSortType((SORT_TYPE)embui.paramVariant(TCONST_effSort).as<int>()); // сортировка должна быть определена до заполнения
-    myLamp.effects.initDefault(); // если вызывать из конструктора, то не забыть о том, что нужно инициализировать Serial.begin(115200); иначе ничего не увидеть!
-    myLamp.events.loadConfig();
-    myLamp.events.setEventCallback(event_worker);
-    myLamp.lamp_init();
-
 #ifdef RTC
     rtc.init();
 #endif
@@ -144,13 +139,19 @@ void setup() {
 /*
   embui.server.addHandler(new SPIFFSEditor(LittleFS, "esp32", "esp32"));
 */
-    //sync_parameters();
 
     embui.setPubInterval(30);   // change periodic WebUI publish interval from EMBUI_PUB_PERIOD to 10 secs
 
 #ifdef ENCODER
     enc_setup();
 #endif
+
+    // Lamp object initialization must be done AFTER display.start(), so that display object could create pixel buffer first
+    myLamp.effects.setEffSortType((SORT_TYPE)embui.paramVariant(V_effSort).as<int>()); // сортировка должна быть определена до заполнения
+    myLamp.effects.initDefault(); // если вызывать из конструктора, то не забыть о том, что нужно инициализировать Serial.begin(115200); иначе ничего не увидеть!
+    //myLamp.events.loadConfig();
+    //myLamp.events.setEventCallback(event_worker);
+    myLamp.lamp_init();
 
     LOG(println, "setup() done");
 }   // End setup()
