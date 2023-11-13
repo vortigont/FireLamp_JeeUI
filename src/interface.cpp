@@ -1159,8 +1159,8 @@ void page_settings_other(Interface *interf, const JsonObject *data, const char* 
     interf->checkbox(TCONST_ds18b20, myLamp.getLampFlagsStuct().isTempOn, TINTF_0E0, false);
     #endif
 
-    interf->spacer(TINTF_0BA);
 /*
+    interf->spacer(TINTF_0BA);
     "рассвет" пока неработает
     interf->json_section_line();
         interf->range(TCONST_alarmP, (int)myLamp.getAlarmP(), 1, 15, 1, TINTF_0BB, false);     // рассвет длительность
@@ -1183,7 +1183,7 @@ void set_settings_other(Interface *interf, const JsonObject *data, const char* a
         myLamp.setClearingFlag((*data)[TCONST_isClearing]);
         myLamp.setDRand((*data)[TCONST_DRand]);
         myLamp.setShowName((*data)[TCONST_showName]);
-    myLamp.setRestoreState((*data)[TCONST_f_restore_state]);
+        myLamp.setRestoreState((*data)[TCONST_f_restore_state]);
 
         SETPARAM(TCONST_DTimer);
         if (myLamp.getMode() == LAMPMODE::MODE_DEMO)

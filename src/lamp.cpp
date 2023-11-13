@@ -1106,8 +1106,8 @@ void LAMP::writeDrawBuf(CRGB color, uint16_t x, uint16_t y){
 }
 
 void LAMP::save_flags(){
-  if (flags.restoreState)
-    embui.var(V_lampFlags, flags.lampflags);
+  //if (flags.restoreState)
+  embui.var(V_lampFlags, flags.lampflags);
 }
 
 
