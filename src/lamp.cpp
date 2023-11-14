@@ -96,7 +96,7 @@ void LAMP::lamp_init()
   flags.lampflags = embui.paramVariant(V_lampFlags);
   if (flags.restoreState && flags.ONflag){
     flags.ONflag = false;       // reset it first, so that changePower() method will know that we are in off state actually
-    changePower(flags.ONflag);
+    changePower(true);
   } else {
     flags.ONflag = false;
   }
