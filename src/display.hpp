@@ -43,6 +43,7 @@ A header file for LED output devices, backends and buffers
 #pragma once
 #include "config.h"
 #include "ledfb.hpp"
+#include "ArduinoJson.h"
 
 #define FASTLED_CURRENT_LIMIT (2000U)                       // лимит по току для адресных лент в миллиамперах, 0 - выключить лимит
 
@@ -73,7 +74,7 @@ class LEDDisplay {
     LedTiles tiles;
 
     bool _start_rmt();
-    bool _start_hub75();
+    bool _start_hub75(const DynamicJsonDocument& doc);
 
 public:
     bool start();

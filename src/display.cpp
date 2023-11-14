@@ -42,9 +42,8 @@ An object file for LED output devices, backends and buffers
 #include "display.hpp"
 #include "embuifs.hpp"
 #include "char_const.h"
-#include "log.h"
-#include "hub75.h"
 #include "ESP32-HUB75-MatrixPanel-I2S-DMA.h"
+#include "log.h"
 
 #define FASTLED_VOLTAGE     5
 #define FASTLED_MIN_CURRENT 1000
@@ -53,21 +52,18 @@ An object file for LED output devices, backends and buffers
 bool LEDDisplay::start(){
     if (_dengine) return true;   // Overlay engine already running
 
-    DynamicJsonDocument doc(512);
+    DynamicJsonDocument doc(1024);
     // if config can't be loaded, then just quit, 'cause we need at least an engine type to run
     if (!embuifs::deserializeFile(doc, TCONST_fcfg_display)) return false;
 
     // a shortcut for hub75 testing
-    if (doc[TCONST_dtype] == static_cast<int>(engine_t::hub75)){
-        _etype = engine_t::hub75;
-        tiles.setTileDimensions(64, 32, 1, 1);
-        return _start_hub75();
-    }
+    if (doc[T_display_type] == static_cast<int>(engine_t::hub75))
+        return _start_hub75(doc);
 
-    if (!doc.containsKey(TCONST_ws2812)) return false;    // no object with stripe config
+    if (!doc.containsKey(T_ws2812)) return false;    // no object with stripe config
 
     // shortcut
-    JsonVariant o = doc[TCONST_ws2812];
+    JsonVariant o = doc[T_ws2812];
 
     // load gpio value, if defined
     setGPIO(o[TCONST_mx_gpio].as<int>());
@@ -77,16 +73,16 @@ bool LEDDisplay::start(){
 
     // load canvas topology
     tiles.setTileDimensions(
-        o[TCONST_width],
-        o[TCONST_height],
-        o[TCONST_wcnt],
-        o[TCONST_hcnt]
+        o[T_width],
+        o[T_height],
+        o[T_wcnt],
+        o[T_hcnt]
     );
 
     // matrix layout
-    tiles.setLayout( o[TCONST_snake], o[TCONST_vertical], o[TCONST_vflip], o[TCONST_hflip] );
+    tiles.setLayout( o[T_snake], o[T_vertical], o[T_vflip], o[T_hflip] );
     // tiles layout
-    tiles.tileLayout.setLayout(o[TCONST_tsnake], o[TCONST_tvertical], o[TCONST_tvflip], o[TCONST_thflip]);
+    tiles.tileLayout.setLayout(o[T_tsnake], o[T_tvertical], o[T_tvflip], o[T_thflip]);
 
     return _start_rmt();
 }
@@ -114,24 +110,44 @@ bool LEDDisplay::_start_rmt(){
     return true;
 }
 
-bool LEDDisplay::_start_hub75(){
-    // static configuration
-    HUB75_I2S_CFG::i2s_pins _pins={R1, G1, BL1, R2, G2, BL2, CH_A, CH_B, CH_C, CH_D, CH_E, LAT, OE, CLK};
+bool LEDDisplay::_start_hub75(const DynamicJsonDocument& doc){
+    _etype = engine_t::hub75;
+
+
+    // shortcut to hub75 config object
+    JsonVariantConst o = doc[T_hub75];
+
+    // check if config is empty
+    if (o.isNull() || !o.size())
+        return false;
+
+    tiles.setTileDimensions(o[T_width], o[T_height], 1, 1);
+
+    // HUB75 config struct
+    HUB75_I2S_CFG::i2s_pins _pins={ o[T_R1], o[T_G1], o[T_B1], o[T_R2], o[T_G2], o[T_B2],
+                                    o[T_A], o[T_B], o[T_C], o[T_D], o[T_E],
+                                    o[T_LAT], o[T_OE], o[T_CLK]
+    };
+
     HUB75_I2S_CFG mxconfig(
-                        64,     // width
-                        32,     // height
+                        o[T_width], o[T_height],
                         1,      // chain length
-                        _pins   // pin mapping
-                        //HUB75_I2S_CFG::FM6126A      // driver chip
+                        _pins,   // pin mapping
+                        static_cast<HUB75_I2S_CFG::shift_driver>( o[T_shift_drv] ),     // driver chip
+                        false,              // double buff (we do not need it)
+                        static_cast<HUB75_I2S_CFG::clk_speed>( o[T_clk_rate] ),
+                        o[T_lat_blank],
+                        o[T_clk_phase],
+                        o[T_min_refresh],
+                        o[T_color_depth]
     );
 
     _dengine = new ESP32HUB75_DisplayEngine(mxconfig);
 
     // attach buffer to an object that will perform matrix layout trasformation on buffer access
     if (!_canvas){
-        _canvas = std::make_shared< LedFB<CRGB> >(64, 32, _dengine->getCanvas());
+        _canvas = std::make_shared< LedFB<CRGB> >(o[T_width], o[T_height], _dengine->getCanvas());
         // this is a simple flat matrix so I use default 2D transformation
-
     }
 
     brightness(_brt);   // reset brightness level

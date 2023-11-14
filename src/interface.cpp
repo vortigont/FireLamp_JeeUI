@@ -1985,8 +1985,8 @@ void ui_page_drawing(Interface *interf, const JsonObject *data, const char* acti
     StaticJsonDocument<256>doc;
     JsonObject param = doc.to<JsonObject>();
 
-    param[TCONST_width] = display.getLayout().canvas_w();
-    param[TCONST_height] = display.getLayout().canvas_h();
+    param[T_width] = display.getLayout().canvas_w();
+    param[T_height] = display.getLayout().canvas_h();
     param[TCONST_blabel] = TINTF_0CF;
     param[TCONST_drawClear] = TINTF_0D9;
 
@@ -2774,9 +2774,9 @@ void page_display_setup(Interface *interf, const JsonObject *data, const char* a
     interf->json_section_main(P_EMPTY, TINTF_display_setup);
 
     // determine which value we should set drop-down list to
-    int select_val = data && (*data).containsKey(TCONST_dtype) ? (*data)[TCONST_dtype] : e2int(display.get_engine_type());
+    int select_val = data && (*data).containsKey(T_display_type) ? (*data)[T_display_type] : e2int(display.get_engine_type());
 
-    interf->select(TCONST_dtype, select_val, TINTF_display_type, true);
+    interf->select(T_display_type, select_val, TINTF_display_type, true);
         interf->option(0, "ws2812b LED stripe");
         interf->option(1, "HUB75 RGB Panel");
     interf->json_section_end();
@@ -2784,8 +2784,8 @@ void page_display_setup(Interface *interf, const JsonObject *data, const char* a
     interf->spacer();
 
     // if parameter for the specific page has been given
-    if (data && (*data).containsKey(TCONST_dtype)){
-        if ((*data)[TCONST_dtype] == e2int(engine_t::hub75))
+    if (data && (*data).containsKey(T_display_type)){
+        if ((*data)[T_display_type] == e2int(engine_t::hub75))
             block_hub75_setup(interf, data, NULL);
         else
             block_ledstrip_setup(interf, data, NULL);
@@ -2807,9 +2807,9 @@ void page_display_setup(Interface *interf, const JsonObject *data, const char* a
  */
 void block_ledstrip_setup(Interface *interf, const JsonObject *data, const char* action){
     // open a section
-    interf->json_section_begin(K_set_ledstrip, TINTF_ledstrip);
+    interf->json_section_begin(A_display_ws2812, TINTF_ledstrip);
 
-    interf->hidden(TCONST_dtype, e2int(engine_t::ws2812));        // set hidden value for led type to ws2812
+    interf->hidden(T_display_type, e2int(engine_t::ws2812));        // set hidden value for led type to ws2812
 
     interf->comment("Параметры матрицы (смена gpio требует перезагрузки)");
 
@@ -2819,133 +2819,53 @@ void block_ledstrip_setup(Interface *interf, const JsonObject *data, const char*
         interf->number_constrained(TCONST_CLmt, static_cast<int>(display.getCurrentLimit()), TINTF_095, /* step */ 100, /* min */ 1000, /* max*/ 16000);    // FastLED current limit
     interf->json_section_end();
     interf->json_section_line(); // расположить в одной линии
-        interf->number_constrained(TCONST_width,  (int)display.getLayout().tile_w(), "ширина", 1, 1, 256);
-        interf->number_constrained(TCONST_height, (int)display.getLayout().tile_h(), "высота", 1, 1, 256);
+        interf->number_constrained(T_width,  (int)display.getLayout().tile_w(), "ширина", 1, 1, 256);
+        interf->number_constrained(T_height, (int)display.getLayout().tile_h(), "высота", 1, 1, 256);
     interf->json_section_end();
 
     interf->json_section_line(); // расположить в одной линии
-        interf->checkbox(TCONST_snake, display.getLayout().snake(), I_zmeika, false);
-        interf->checkbox(TCONST_vflip, display.getLayout().vmirror(), I_vflip, false);
+        interf->checkbox(T_snake, display.getLayout().snake(), I_zmeika, false);
+        interf->checkbox(T_vflip, display.getLayout().vmirror(), I_vflip, false);
     interf->json_section_end();
     interf->json_section_line(); // расположить в одной линии
-        interf->checkbox(TCONST_vertical, display.getLayout().vertical(), I_vert, false);
-        interf->checkbox(TCONST_hflip, display.getLayout().hmirror(), I_hflip, false);
+        interf->checkbox(T_vertical, display.getLayout().vertical(), I_vert, false);
+        interf->checkbox(T_hflip, display.getLayout().hmirror(), I_hflip, false);
     interf->json_section_end();
 
     interf->spacer();
 
     interf->comment("Параметры каскада матриц");
     interf->json_section_line(); // расположить в одной линии
-        interf->number_constrained(TCONST_wcnt,   (int)display.getLayout().tile_wcnt(), "плиток по X", 1, 1, 32);
-        interf->number_constrained(TCONST_hcnt,   (int)display.getLayout().tile_hcnt(), "плиток по Y", 1, 1, 32);
+        interf->number_constrained(T_wcnt,   (int)display.getLayout().tile_wcnt(), "плиток по X", 1, 1, 32);
+        interf->number_constrained(T_hcnt,   (int)display.getLayout().tile_hcnt(), "плиток по Y", 1, 1, 32);
     interf->json_section_end();
     interf->json_section_line(); // расположить в одной линии
-        interf->checkbox(TCONST_tsnake, display.getLayout().tileLayout.snake(), I_zmeika);
-        interf->checkbox(TCONST_tvflip, display.getLayout().tileLayout.vmirror(), I_vflip);
+        interf->checkbox(T_tsnake, display.getLayout().tileLayout.snake(), I_zmeika);
+        interf->checkbox(T_tvflip, display.getLayout().tileLayout.vmirror(), I_vflip);
     interf->json_section_end();
     interf->json_section_line(); // расположить в одной линии
-        interf->checkbox(TCONST_tvertical, display.getLayout().tileLayout.vertical(), I_vert);
-        interf->checkbox(TCONST_thflip, display.getLayout().tileLayout.hmirror(), I_hflip);
+        interf->checkbox(T_tvertical, display.getLayout().tileLayout.vertical(), I_vert);
+        interf->checkbox(T_thflip, display.getLayout().tileLayout.hmirror(), I_hflip);
     interf->json_section_end();
 
-    interf->button(button_t::submit, K_set_ledstrip, TINTF_Save);  // Save
+    interf->button(button_t::submit, A_display_ws2812, TINTF_Save);  // Save
     interf->button(button_t::generic, A_ui_page_settings, TINTF_exit);           // Exit
 
     interf->json_section_end();     // close "K_set_ledstrip" section
 }
 
 void block_hub75_setup(Interface *interf, const JsonObject *data, const char* action){
-    interf->json_section_begin(K_set_hub75, TINTF_cfg_hub75);
-    interf->comment("Configuration is Not implemented yet, press 'Save' to switch to HUB75 display, MCU will reboot");
-    interf->constant("HUB75: 64x32");
-    interf->hidden(TCONST_dtype, e2int(engine_t::ws2812));        // set hidden value for led type to ws2812
-    interf->button(button_t::submit,  K_set_hub75, TINTF_Save);      // Save
+    interf->json_section_begin(A_display_hub75, TINTF_cfg_hub75);
+    //interf->comment("press 'Save' to switch to HUB75 display, MCU will reboot");
+    interf->constant("Use API to configure panel");
+    interf->comment((char*)0, "<p>Check <a href=\"https://github.com/vortigont/FireLamp_JeeUI/wiki/%D0%9D%D0%B0%D1%81%D1%82%D1%80%D0%BE%D0%B9%D0%BA%D0%B0-LED-%D0%B4%D0%B8%D1%81%D0%BF%D0%BB%D0%B5%D1%8F\" target=\"_blank\">WiKi page</a> for HUB75 setup information</p>");
+
+    interf->hidden(T_display_type, e2int(engine_t::ws2812));        // set hidden value for led type to ws2812
+    //interf->button(button_t::submit,  A_display_hub75, TINTF_Save);      // Save
     interf->button(button_t::generic, A_ui_page_settings, TINTF_exit);           // Exit
     interf->json_section_end();     // close "K_set_ledstrip" section
 }
 
-/*
-    сохраняет настройки LED ленты
-*/
-void set_ledstrip(Interface *interf, const JsonObject *data, const char* action){
-    if (!data) return;
-
-    {
-        DynamicJsonDocument doc(512);
-        if (!embuifs::deserializeFile(doc, TCONST_fcfg_display)) doc.clear();
-
-        JsonVariant dst = doc[TCONST_ws2812].isNull() ? doc.createNestedObject(TCONST_ws2812) : doc[TCONST_ws2812];
-
-        for (JsonPair kvp : *data)
-            dst[kvp.key()] = kvp.value();
-
-        doc[TCONST_dtype] = (*data)[TCONST_dtype];   // move led type key to the root of the object
-        dst.remove(TCONST_dtype);
-
-        // save new led strip config to file
-        embuifs::serialize2file(doc, TCONST_fcfg_display);
-    }
-
-    // if we are in hub75 mode, than need a reboot to load ws2812 engine
-    if (display.get_engine_type() != engine_t::ws2812){
-        run_action(ra::reboot);         // reboot in 5 sec
-        if (interf) basicui::page_system_settings(interf, nullptr, NULL);
-        return;
-    }
-
-    // установка максимального тока FastLED
-    display.setCurrentLimit((*data)[TCONST_CLmt]);
-
-    display.updateStripeLayout(
-        (*data)[TCONST_width], (*data)[TCONST_height],  // tile w,h
-        (*data)[TCONST_wcnt], (*data)[TCONST_hcnt],     // tile count on w,h
-        (*data)[TCONST_snake],          // single tile configuration
-        (*data)[TCONST_vertical],
-        (*data)[TCONST_vflip],
-        (*data)[TCONST_hflip],
-        (*data)[TCONST_tsnake],         // canvas of tiles
-        (*data)[TCONST_tvertical],
-        (*data)[TCONST_tvflip],
-        (*data)[TCONST_thflip]
-    );
-
-    // go to "settings page"
-    if (interf) basicui::page_system_settings(interf, nullptr, NULL);
-
-    // Check if I need to reset FastLED gpio
-    if (display.getGPIO() == (*data)[TCONST_mx_gpio] || (*data)[TCONST_mx_gpio] == GPIO_NUM_NC) return;       /// gpio not changed or not set, just quit
-
-    if (display.getGPIO() == GPIO_NUM_NC){
-        // it's a cold start, so I can change GPIO on the fly
-        display.setGPIO((*data)[TCONST_mx_gpio]);
-        display.start();
-    } else {
-        // otherwise new pin value could be set after reboot
-        run_action(ra::reboot);         // reboot in 5 sec
-    }
-
-}
-
-void set_hub75(Interface *interf, const JsonObject *data, const char* action){
-    DynamicJsonDocument doc(512);
-/*
-        JsonVariant dst = doc[TCONST_ws2812].isNull() ? doc.createNestedObject(TCONST_ws2812) : doc[TCONST_ws2812];
-
-        for (JsonPair kvp : *data)
-            dst[kvp.key()] = kvp.value();
-
-        dst.remove(TCONST_dtype);
-*/
-    doc[TCONST_dtype] = e2int(engine_t::hub75);   // set engine to hub75
-
-    // save new config to file
-    embuifs::serialize2file(doc, TCONST_fcfg_display);
-
-    if (display.get_engine_type() != engine_t::hub75){
-        run_action(ra::reboot);         // reboot in 5 sec
-    }
-    if (interf) basicui::page_system_settings(interf, nullptr, NULL);
-}
 
 /**
  * @brief rebuild cached json file with effects names list
@@ -3050,6 +2970,9 @@ void embui_actions_register(){
     embui.action.add(A_effect_ctrls, publish_effect_controls);              // сформировать и опубликовать блок контролов текущего эффекта
     embui.action.add(A_effect_dynCtrl, set_effects_dynCtrl);                // Effect controls handler
 
+    // display configurations
+    embui.action.add(A_display_ws2812, set_ledstrip);                       // Set LED strip layout setup
+    embui.action.add(A_display_hub75, set_hub75);                           // Set options for HUB75 panel
 
     // to be refactored
 
@@ -3080,10 +3003,8 @@ void embui_actions_register(){
     embui.action.add(TCONST_edit_text_config, set_text_config);
 
     embui.action.add(TCONST_set_other, set_settings_other);
-    embui.action.add(K_set_ledstrip, set_ledstrip);           // Set LED strip layout setup
-    embui.action.add(K_set_hub75, set_hub75);                 // Set options for HUB75 panel
     embui.action.add(TCONST_set_gpio, set_gpios);                       // Set gpios
-    embui.action.add(TCONST_dtype, page_display_setup);                // load display setup page depending on selected disp type (action for drop down list)
+    embui.action.add(T_display_type, page_display_setup);                // load display setup page depending on selected disp type (action for drop down list)
 
 #ifdef MIC_EFFECTS
     embui.action.add(TCONST_set_mic, set_settings_mic);

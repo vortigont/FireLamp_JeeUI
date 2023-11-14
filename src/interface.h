@@ -118,6 +118,18 @@ void publish_effect_controls(Interface *interf, const JsonObject *data, const ch
  */
 void set_effects_dynCtrl(Interface *interf, const JsonObject *data, const char* action);
 
+/**
+ * @brief Set/get ledstrip configuration values
+ * 
+ */
+void set_ledstrip(Interface *interf, const JsonObject *data, const char* action);
+
+/**
+ * @brief Set/get HUB75 configuration values
+ * 
+ */
+void set_hub75(Interface *interf, const JsonObject *data, const char* action);
+
 
 
 // ==========
@@ -163,11 +175,6 @@ void show_settings_mic(Interface *interf, const JsonObject *data, const char* ac
  * @param path 
  */
 void load_events_config(const char* path = NULL);
-
-/*
-    сохраняет настройки LED ленты
-*/
-void set_ledstrip(Interface *interf, const JsonObject *data, const char* action);
 
 void block_ledstrip_setup(Interface *interf, const JsonObject *data, const char* action);
 

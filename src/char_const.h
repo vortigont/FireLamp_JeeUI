@@ -2,8 +2,50 @@
 
 /** набор служебных текстовых констант (не для локализации)
  */
+static constexpr const char* T_display_type = "dtype";                          // LED Display engine type
 static constexpr const char* T_drawing = "drawing";
 static constexpr const char* T_effect_dynCtrl = "eff_dynCtrl";
+static constexpr const char* T_gpio = "gpio";                                   // gpio key for display configuration
+static constexpr const char* T_ws2812 = "ws2812";                               // ws2812 led stip type
+
+// display dimensions config var names
+static constexpr const char* T_hcnt = "hcnt";
+static constexpr const char* T_height = "height";
+static constexpr const char* T_hflip = "hflip";
+static constexpr const char* T_snake = "snake";
+static constexpr const char* T_thflip = "thflip";
+static constexpr const char* T_tsnake = "tsnake";
+static constexpr const char* T_tvertical = "tvertical";
+static constexpr const char* T_tvflip = "tvflip";
+static constexpr const char* T_vertical = "vertical";
+static constexpr const char* T_vflip = "vflip";
+static constexpr const char* T_wcnt = "wcnt";
+static constexpr const char* T_width = "width";
+
+// HUB75 related
+static constexpr const char* T_hub75 = "hub75";                                 // HUB75 panel
+static constexpr const char* T_R1 = "R1";
+static constexpr const char* T_R2 = "R2";
+static constexpr const char* T_G1 = "G1";
+static constexpr const char* T_G2 = "G2";
+static constexpr const char* T_B1 = "B1";
+static constexpr const char* T_B2 = "B1";
+static constexpr const char* T_A = "A";
+static constexpr const char* T_B = "B";
+static constexpr const char* T_C = "C";
+static constexpr const char* T_D = "D";
+static constexpr const char* T_E = "E";
+static constexpr const char* T_CLK = "CLK";
+static constexpr const char* T_OE = "OE";
+static constexpr const char* T_LAT = "LAT";
+static constexpr const char* T_shift_drv = "driver";
+static constexpr const char* T_clk_rate = "clkrate";
+static constexpr const char* T_lat_blank = "latblank";
+static constexpr const char* T_clk_phase = "clkphase";
+static constexpr const char* T_min_refresh = "minrr";
+static constexpr const char* T_color_depth = "colordpth";
+
+
 
 static constexpr const char* TCONST_act = "act";
 static constexpr const char* TCONST_afS = "afS";
@@ -46,7 +88,6 @@ static constexpr const char* TCONST_drawClear = "drawClear";
 static constexpr const char* TCONST_draw_dat = "draw_dat";
 static constexpr const char* TCONST_ds18b20 = "ds18b20";
 static constexpr const char* TCONST_DTimer = "DTimer";
-static constexpr const char* TCONST_dtype = "dtype";                          // LED Display engine type
 //static constexpr const char* TCONST_edit_lamp_config = "edit_lamp_config";
 static constexpr const char* TCONST_edit_text_config = "edit_text_config";
 static constexpr const char* TCONST_edit = "edit";
@@ -79,9 +120,6 @@ static constexpr const char* TCONST_fileName2 = "fileName2";
 static constexpr const char* TCONST_fileName = "fileName";
 static constexpr const char* TCONST_fill = "fill";
 static constexpr const char* TCONST_force = "force";
-static constexpr const char* TCONST_hcnt = "hcnt";
-static constexpr const char* TCONST_height = "height";
-static constexpr const char* TCONST_hflip = "hflip";
 static constexpr const char* TCONST_hold = "hold";
 static constexpr const char* TCONST_Host = "Host";
 static constexpr const char* TCONST_Ip = "Ip";
@@ -153,7 +191,6 @@ static constexpr const char* TCONST_show_button = "show_button";
 static constexpr const char* TCONST_show_butt = "show_butt";
 static constexpr const char* TCONST_show_event = "show_event";
 static constexpr const char* TCONST_show_mp3 = "show_mp3";
-static constexpr const char* TCONST_snake = "snake";
 static constexpr const char* TCONST_soundfile = "soundfile";
 static constexpr const char* TCONST_spdcf = "spdcf";
 static constexpr const char* TCONST_speed = "speed";
@@ -175,10 +212,6 @@ static constexpr const char* TCONST_tmBrightOn = "tmBrightOn";
 static constexpr const char* TCONST_tmBright = "tmBright";
 static constexpr const char* TCONST_tmEvent = "tmEvent";
 static constexpr const char* TCONST_tmZero = "tmZero";
-static constexpr const char* TCONST_thflip = "thflip";
-static constexpr const char* TCONST_tvflip = "tvflip";
-static constexpr const char* TCONST_tsnake = "tsnake";
-static constexpr const char* TCONST_tvertical = "tvertical";
 static constexpr const char* TCONST_txtBfade = "txtBfade";
 static constexpr const char* TCONST_txtColor = "txtColor";
 static constexpr const char* TCONST_txtOf = "txtOf";
@@ -186,13 +219,8 @@ static constexpr const char* TCONST_txtSpeed = "txtSpeed";
 static constexpr const char* TCONST_Universe = "Universe";
 static constexpr const char* TCONST_Uptime = "Uptime";
 static constexpr const char* TCONST_value = "value";
-static constexpr const char* TCONST_vertical = "vertical";
 static constexpr const char* TCONST_Version = "Version";
-static constexpr const char* TCONST_vflip = "vflip";
 static constexpr const char* TCONST_White = "White";
-static constexpr const char* TCONST_wcnt = "wcnt";
-static constexpr const char* TCONST_width = "width";
-static constexpr const char* TCONST_ws2812 = "ws2812";
 static constexpr const char* TCONST__5f9ea0 = "#5f9ea0";
 static constexpr const char* TCONST__708090 = "#708090";
 static constexpr const char* TCONST__backup_btn_ = "/backup/btn/";
@@ -228,8 +256,6 @@ static constexpr const char* V_micRdcLvl = "micnRdcLvl";
 
 
 
-
-
 // имена ключей конфигурации / акшены
 static constexpr const char* K_demo = "demo";
 static constexpr const char* A_dev_brightness = "dev_brightness";               // Scaled brightness value based on scale
@@ -245,14 +271,13 @@ static constexpr const char* A_effect_switch_prev = "eff_sw_prev";              
 static constexpr const char* A_effect_switch_rnd = "eff_sw_rnd";                // Switch to random effect
 static constexpr const char* A_effect_ctrls = "eff_ctrls";                      // Generate and publish Effect controls (also it is an mqtt suffix for controls publish)
 static constexpr const char* A_effect_dynCtrl = "eff_dynCtrl*";                 // Effect controls handler
-
+static constexpr const char* A_display_hub75 = "display_hub75";                    // HUB75 display configuration
+static constexpr const char* A_display_ws2812 = "display_ws2812";                // ws2812 display configuration
 
 
 static constexpr const char* A_ui_page_effects_config = "effects_config";
 
 
-static constexpr const char* K_set_hub75 = "set_hub75";
-static constexpr const char* K_set_ledstrip = "set_ledstrip";
 static constexpr const char* TCONST_set_gpio = "s_gpio";                    // set gpio action
 static constexpr const char* TCONST_set_butt = "set_butt";                  // set button
 static constexpr const char* TCONST_set_effect = "set_effect";

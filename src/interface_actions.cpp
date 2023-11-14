@@ -216,5 +216,108 @@ void set_effects_dynCtrl(Interface *interf, const JsonObject *data, const char* 
     }
 }
 
+/*
+    сохраняет настройки LED ленты
+*/
+void set_ledstrip(Interface *interf, const JsonObject *data, const char* action){
+    {
+        DynamicJsonDocument doc(1024);
+        if (!embuifs::deserializeFile(doc, TCONST_fcfg_display)) doc.clear();
+
+        // if this is a request with no data, then just provide existing configuration and quit
+        if (!data || !(*data).size()){
+            if (interf){
+                interf->json_frame_value(doc[T_ws2812], true);
+                interf->json_frame_flush();
+            }
+            return;
+        }
+
+        JsonVariant dst = doc.containsKey(T_ws2812) ? doc[T_ws2812] : doc.createNestedObject(T_ws2812);
+
+        for (JsonPair kvp : *data)
+            dst[kvp.key()] = kvp.value();
+
+        doc[T_display_type] = (*data)[T_display_type];   // move led type key to the root of the object
+        dst.remove(T_display_type);
+
+        // save new led strip config to file
+        serializeJson(doc, Serial);
+        embuifs::serialize2file(doc, TCONST_fcfg_display);
+    }
+
+    // if we are in hub75 mode, than need a reboot to load ws2812 engine
+    if (display.get_engine_type() != engine_t::ws2812){
+        run_action(ra::reboot);         // reboot in 5 sec
+        if (interf) basicui::page_system_settings(interf, nullptr, NULL);
+        return;
+    }
+
+    // установка максимального тока FastLED
+    display.setCurrentLimit((*data)[TCONST_CLmt]);
+
+    display.updateStripeLayout(
+        (*data)[T_width], (*data)[T_height],  // tile w,h
+        (*data)[T_wcnt], (*data)[T_hcnt],     // tile count on w,h
+        (*data)[T_snake],          // single tile configuration
+        (*data)[T_vertical],
+        (*data)[T_vflip],
+        (*data)[T_hflip],
+        (*data)[T_tsnake],         // canvas of tiles
+        (*data)[T_tvertical],
+        (*data)[T_tvflip],
+        (*data)[T_thflip]
+    );
+
+    // go to "settings page"
+    if (interf) basicui::page_system_settings(interf, nullptr, NULL);
+
+    // Check if I need to reset FastLED gpio
+    if (display.getGPIO() == (*data)[TCONST_mx_gpio] || (*data)[TCONST_mx_gpio] == GPIO_NUM_NC) return;       /// gpio not changed or not set, just quit
+
+    if (display.getGPIO() == GPIO_NUM_NC){
+        // it's a cold start, so I can change GPIO on the fly
+        display.setGPIO((*data)[TCONST_mx_gpio]);
+        display.start();
+    } else {
+        // otherwise new pin value could be set after reboot
+        run_action(ra::reboot);         // reboot in 5 sec
+    }
+
+}
+
+
+void set_hub75(Interface *interf, const JsonObject *data, const char* action){
+    {
+        DynamicJsonDocument doc(1024);
+        if (!embuifs::deserializeFile(doc, TCONST_fcfg_display)) doc.clear();
+
+        // if this is a request with no data, then just provide existing configuration and quit
+        if (!data || !(*data).size()){
+            if (interf){
+                interf->json_frame_value(doc[T_hub75], true);
+                interf->json_frame_flush();
+            }
+            return;
+        }
+
+        JsonVariant dst = doc[T_hub75].isNull() ? doc.createNestedObject(T_hub75) : doc[T_hub75];
+
+        // copy keys to a destination object
+        for (JsonPair kvp : *data)
+            dst[kvp.key()] = kvp.value();
+
+        //doc[T_display_type] = e2int(engine_t::hub75);   // set engine to hub75
+        doc[T_display_type] = (*data)[T_display_type];    // move display type key to the root of the object
+        dst.remove(T_display_type);
+
+        // save new led strip config to file
+        embuifs::serialize2file(doc, TCONST_fcfg_display);
+    }
+
+    //if (display.get_engine_type() != engine_t::hub75){}
+    if (interf) basicui::page_system_settings(interf, nullptr, NULL);
+    run_action(ra::reboot);         // reboot in 5 sec
+}
 
 
