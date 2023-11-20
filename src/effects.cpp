@@ -404,7 +404,6 @@ String EffectColors::setDynCtrl(UIControl*_val){
 
 bool EffectColors::colorsRoutine()
 {
-  static unsigned int step = 0; // доп. задержка
   unsigned int delay = (speed==1)?4294967294:255-speed+1; // на скорости 1 будет очень долгое ожидание)))
 
   ihue = (speed==1)?scale:ihue;
@@ -926,13 +925,12 @@ void Effect3DNoise::fillNoiseLED()
 {
   uint8_t dataSmoothing = 0;
   if (speed < 50)
-  {
     dataSmoothing = 200 - (speed * 4);
-  }
-  for (uint8_t i = 0; i < noise.h(); i++)
+
+  for (size_t i = 0; i < noise.h(); i++)
   {
     int32_t ioffset = _scale * i;
-    for (uint8_t j = 0; j < noise.w(); j++)
+    for (size_t j = 0; j < noise.w(); j++)
     {
       int32_t joffset = _scale * j;
 
@@ -942,9 +940,7 @@ void Effect3DNoise::fillNoiseLED()
       data = qadd8(data, scale8(data, 39));
 
       if (dataSmoothing)
-      {
         data = scale8( noise.at(j,i), dataSmoothing) + scale8( data, 256 - dataSmoothing);
-      }
 
       noise.at(j,i) = data;
     }
@@ -955,10 +951,10 @@ void Effect3DNoise::fillNoiseLED()
   x += _speed * 0.125; // 1/8
   y -= _speed * 0.0625; // 1/16
 
-  for (uint8_t i = 0; i < fb->h(); i++){
-    for (uint8_t j = 0; j < fb->w(); j++){
-      uint8_t index = noise.at(j%(fb->w()*2), i);  //  [j%(fb->minDim()*2)][i];
-      uint8_t bri =   noise.at(j%(fb->w()*2), i); //noise[i%(fb->minDim()*2)][j];
+  for (uint8_t y = 0; y != fb->h(); y++){
+    for (uint8_t x = 0; x != fb->w(); x++){
+      uint8_t index = noise.at(x%noise.w(), y%noise.h());   //  [j%(fb->minDim()*2)][i];
+      uint8_t bri =   noise.at(y%noise.w(), x%noise.h());   //noise[i%(fb->minDim()*2)][j];
       // if this palette is a 'loop', add a slowly-changing base value
       if ( colorLoop)
         index += ihue;
@@ -972,7 +968,7 @@ void Effect3DNoise::fillNoiseLED()
 
       CRGB color = ColorFromPalette( *curPalette, index, bri);
 
-      fb->at(i, j) = color;
+      fb->at(x, y) = color;
     }
   }
   ihue += 1;
@@ -980,10 +976,10 @@ void Effect3DNoise::fillNoiseLED()
 
 void Effect3DNoise::fillnoise8()
 {
-  for (uint8_t i = 0; i < noise.w(); i++)
+  for (size_t i = 0; i != noise.w(); ++i)
   {
     int32_t ioffset = _scale * i;
-    for (uint8_t j = 0; j < noise.h(); j++)
+    for (size_t j = 0; j != noise.h(); ++j)
     {
       int32_t joffset = _scale * j;
       noise.at(i, j) = inoise8(x + ioffset, y + joffset, z);

@@ -231,6 +231,7 @@ private:
     uint8_t ihue;
     uint8_t mode;
     uint8_t modeColor;
+    unsigned int step = 0; // доп. задержка
 
     bool colorsRoutine();
     //void setscl(const byte _scl) override;
