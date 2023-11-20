@@ -330,7 +330,7 @@ void EffectWorker::workerset(uint16_t effect){
     worker = std::unique_ptr<EffectTLand>(new EffectTLand(canvas));
     break;
   case EFF_ENUM::EFF_OSCIL :
-    worker = std::unique_ptr<EffectOscilator>(new EffectOscilator(canvas));
+    worker = std::unique_ptr<EffectOscillator>(new EffectOscillator(canvas));
     break;
   case EFF_ENUM::EFF_WRAIN : 
     worker = std::unique_ptr<EffectWrain>(new EffectWrain(canvas));
