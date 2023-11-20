@@ -231,6 +231,7 @@ private:
     uint8_t ihue;
     uint8_t mode;
     uint8_t modeColor;
+    unsigned int step = 0; // доп. задержка
 
     bool colorsRoutine();
     //void setscl(const byte _scl) override;
@@ -1410,9 +1411,9 @@ class EffectTLand: public EffectCalc {
     bool run() override;
 };
 
-// ----------- Эффект "Осцилятор"
+// ----------- Эффект "Осциллятор"
 // (c) Сотнег (SottNick)
-class EffectOscilator: public EffectCalc {
+class EffectOscillator: public EffectCalc {
   private:
     uint8_t hue, hue2;                                 // постепенный сдвиг оттенка или какой-нибудь другой цикличный счётчик
     uint8_t deltaHue, deltaHue2;                       // ещё пара таких же, когда нужно много
@@ -1434,7 +1435,7 @@ class EffectOscilator: public EffectCalc {
     void setCellColors(uint8_t x, uint8_t y);
     //String setDynCtrl(UIControl*_val) override;
   public:
-    EffectOscilator(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer) {}
+    EffectOscillator(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer) {}
     bool run() override;
     void load() override;
 };

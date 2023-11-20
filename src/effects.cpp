@@ -404,7 +404,6 @@ String EffectColors::setDynCtrl(UIControl*_val){
 
 bool EffectColors::colorsRoutine()
 {
-  static unsigned int step = 0; // доп. задержка
   unsigned int delay = (speed==1)?4294967294:255-speed+1; // на скорости 1 будет очень долгое ожидание)))
 
   ihue = (speed==1)?scale:ihue;
@@ -926,13 +925,12 @@ void Effect3DNoise::fillNoiseLED()
 {
   uint8_t dataSmoothing = 0;
   if (speed < 50)
-  {
     dataSmoothing = 200 - (speed * 4);
-  }
-  for (uint8_t i = 0; i < noise.h(); i++)
+
+  for (size_t i = 0; i < noise.h(); i++)
   {
     int32_t ioffset = _scale * i;
-    for (uint8_t j = 0; j < noise.w(); j++)
+    for (size_t j = 0; j < noise.w(); j++)
     {
       int32_t joffset = _scale * j;
 
@@ -942,9 +940,7 @@ void Effect3DNoise::fillNoiseLED()
       data = qadd8(data, scale8(data, 39));
 
       if (dataSmoothing)
-      {
         data = scale8( noise.at(j,i), dataSmoothing) + scale8( data, 256 - dataSmoothing);
-      }
 
       noise.at(j,i) = data;
     }
@@ -955,10 +951,10 @@ void Effect3DNoise::fillNoiseLED()
   x += _speed * 0.125; // 1/8
   y -= _speed * 0.0625; // 1/16
 
-  for (uint8_t i = 0; i < fb->h(); i++){
-    for (uint8_t j = 0; j < fb->w(); j++){
-      uint8_t index = noise.at(j%(fb->w()*2), i);  //  [j%(fb->minDim()*2)][i];
-      uint8_t bri =   noise.at(j%(fb->w()*2), i); //noise[i%(fb->minDim()*2)][j];
+  for (uint8_t y = 0; y != fb->h(); y++){
+    for (uint8_t x = 0; x != fb->w(); x++){
+      uint8_t index = noise.at(x%noise.w(), y%noise.h());   //  [j%(fb->minDim()*2)][i];
+      uint8_t bri =   noise.at(y%noise.w(), x%noise.h());   //noise[i%(fb->minDim()*2)][j];
       // if this palette is a 'loop', add a slowly-changing base value
       if ( colorLoop)
         index += ihue;
@@ -972,7 +968,7 @@ void Effect3DNoise::fillNoiseLED()
 
       CRGB color = ColorFromPalette( *curPalette, index, bri);
 
-      fb->at(i, j) = color;
+      fb->at(x, y) = color;
     }
   }
   ihue += 1;
@@ -980,10 +976,10 @@ void Effect3DNoise::fillNoiseLED()
 
 void Effect3DNoise::fillnoise8()
 {
-  for (uint8_t i = 0; i < noise.w(); i++)
+  for (size_t i = 0; i != noise.w(); ++i)
   {
     int32_t ioffset = _scale * i;
-    for (uint8_t j = 0; j < noise.h(); j++)
+    for (size_t j = 0; j != noise.h(); ++j)
     {
       int32_t joffset = _scale * j;
       noise.at(i, j) = inoise8(x + ioffset, y + joffset, z);
@@ -1396,7 +1392,7 @@ void EffectComet::moveFractionalNoise(bool direction, int8_t amplitude, float sh
 
   for (auto &i : noise3d.map)
     for (uint16_t a = 0; a < _side_a; a++) {
-      uint8_t _pixel = direction ? i.at(a,0) : i.at(0,a);
+      uint8_t _pixel = direction ? i.at(0,a) : i.at(a,0); //i.at(a,0) : i.at(0,a);
       int16_t amount = ((int16_t)(_pixel - 128) * 2 * amplitude + shift * 256);
       int8_t delta = ((uint16_t)fabs(amount) >> 8) ;
       int8_t fraction = ((uint16_t)fabs(amount) & 255);
@@ -6047,8 +6043,8 @@ float EffectTLand::code(double i, double x, double y) {
 
 // ----------- Эффект "Осцилятор"
 // (c) Сотнег (SottNick)
-bool EffectOscilator::run() {
-  if (millis() - timer < (unsigned)map(speed, 1U, 255U, 70, 15)) return true;
+bool EffectOscillator::run() {
+  if (millis() - timer < (unsigned)map(speed, 1U, 255U, 70, 15)) return false;
   else timer = millis(); // не могу сообразить, как по другому скоростью управлять
   CRGB currColors[3];
   for (uint8_t c = 0; c < 3; c++)
@@ -6057,7 +6053,8 @@ bool EffectOscilator::run() {
   // расчёт химической реакции и отрисовка мира
   uint16_t colorCount[3] = {0U, 0U, 0U};
   hue++;
-  fb->clear();
+
+  fb->clear();  // т.к. скорость обсчета мала, очистка экрана приводит к сильному мерцанию на хаб75 панели
   for (uint8_t y = 0; y < oscillatingWorld.h(); y++) {
       for (uint8_t x = 0; x < oscillatingWorld.w(); x++) {
           if (oscillatingWorld.at(x,y).red){
@@ -6142,7 +6139,7 @@ bool EffectOscilator::run() {
   return true;
 }
 
-void EffectOscilator::load() {
+void EffectOscillator::load() {
   palettesload();
   step = 0U;
  //случайное заполнение
@@ -6155,7 +6152,7 @@ void EffectOscilator::load() {
   timer = millis();
 }
 
-void EffectOscilator::drawPixelXYFseamless(float x, float y, CRGB color)
+void EffectOscillator::drawPixelXYFseamless(float x, float y, CRGB color)
 {
   uint8_t xx = (x - (int)x) * 255, yy = (y - (int)y) * 255, ix = 255 - xx, iy = 255 - yy;
   // calculate the intensities for each affected pixel
@@ -6173,7 +6170,7 @@ void EffectOscilator::drawPixelXYFseamless(float x, float y, CRGB color)
   }
 }
 
-int EffectOscilator::redNeighbours(uint8_t x, uint8_t y) {
+int EffectOscillator::redNeighbours(uint8_t x, uint8_t y) {
   return (oscillatingWorld.at((x + 1) % oscillatingWorld.w(), y).red) +
          (oscillatingWorld.at(x, (y + 1) % oscillatingWorld.h()).red) +
          (oscillatingWorld.at((x + fb->maxWidthIndex()) % oscillatingWorld.w(), y).red) +
@@ -6184,7 +6181,7 @@ int EffectOscilator::redNeighbours(uint8_t x, uint8_t y) {
          (oscillatingWorld.at((x + 1) % oscillatingWorld.w(), (y + fb->maxHeightIndex()) % oscillatingWorld.h()).red);
     }
 
-int EffectOscilator::blueNeighbours(uint8_t x, uint8_t y) {
+int EffectOscillator::blueNeighbours(uint8_t x, uint8_t y) {
   return (oscillatingWorld.at((x + 1) % oscillatingWorld.w(), y).blue) +
          (oscillatingWorld.at(x, (y + 1) % oscillatingWorld.h()).blue) +
          (oscillatingWorld.at((x + fb->maxWidthIndex()) % oscillatingWorld.w(), y).blue) +
@@ -6195,7 +6192,7 @@ int EffectOscilator::blueNeighbours(uint8_t x, uint8_t y) {
          (oscillatingWorld.at((x + 1) % oscillatingWorld.w(), (y + fb->maxHeightIndex()) % oscillatingWorld.h()).blue);
 }
   
-int EffectOscilator::greenNeighbours(uint8_t x, uint8_t y) {
+int EffectOscillator::greenNeighbours(uint8_t x, uint8_t y) {
   return (oscillatingWorld.at((x + 1) % oscillatingWorld.w(), y).green) +
          (oscillatingWorld.at(x, (y + 1) % oscillatingWorld.h()).green) +
          (oscillatingWorld.at((x + fb->maxWidthIndex()) % oscillatingWorld.w(), y).green) +
@@ -6206,7 +6203,7 @@ int EffectOscilator::greenNeighbours(uint8_t x, uint8_t y) {
          (oscillatingWorld.at((x + 1) % oscillatingWorld.w(), (y + fb->maxHeightIndex()) % oscillatingWorld.h()).green);
 }
 
-void EffectOscilator::setCellColors(uint8_t x, uint8_t y) {
+void EffectOscillator::setCellColors(uint8_t x, uint8_t y) {
   oscillatingWorld.at(x,y).red = (oscillatingWorld.at(x,y).color == 0U);
   oscillatingWorld.at(x,y).green = (oscillatingWorld.at(x,y).color == 1U);
   oscillatingWorld.at(x,y).blue = (oscillatingWorld.at(x,y).color == 2U);

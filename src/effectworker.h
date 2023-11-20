@@ -462,7 +462,7 @@ private:
     LList<EffectListElem> effects;
 
     // указатель на экземпляр класса текущего эффекта
-    std::unique_ptr<EffectCalc> worker = nullptr;
+    std::unique_ptr<EffectCalc> worker;
 
     volatile bool _status = false;    // if worker is in active (enabled and running state)
     TaskHandle_t    _runnerTask_h=nullptr;          // effect calculator task

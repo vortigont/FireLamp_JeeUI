@@ -71,22 +71,23 @@ void LAMP::lamp_init()
 
   // GPIO's
   DynamicJsonDocument doc(512);
-  if (!embuifs::deserializeFile(doc, TCONST_fcfg_gpio)) return;     // GPIO cfg is broken or missing
-  // restore fet gpio
-  fet_gpio = doc[TCONST_mosfet_gpio] | static_cast<int>(GPIO_NUM_NC);
-  fet_ll = doc[TCONST_mosfet_ll];
+  if (embuifs::deserializeFile(doc, TCONST_fcfg_gpio)){
+    // restore fet gpio
+    fet_gpio = doc[TCONST_mosfet_gpio] | static_cast<int>(GPIO_NUM_NC);
+    fet_ll = doc[TCONST_mosfet_ll];
 
-  aux_gpio = doc[TCONST_aux_gpio] | static_cast<int>(GPIO_NUM_NC);
-  aux_ll = doc[TCONST_aux_ll];
-  // gpio that controls FET (for disabling matrix)
-  if (fet_gpio > static_cast<int>(GPIO_NUM_NC)){
-    pinMode(fet_gpio, OUTPUT);
-    digitalWrite(fet_gpio, !fet_ll);
-  }
-  // gpio that controls AUX/Alarm pin
-  if (aux_gpio > static_cast<int>(GPIO_NUM_NC)){
-    pinMode(aux_gpio, OUTPUT);
-    digitalWrite(aux_gpio, !aux_ll);
+    aux_gpio = doc[TCONST_aux_gpio] | static_cast<int>(GPIO_NUM_NC);
+    aux_ll = doc[TCONST_aux_ll];
+    // gpio that controls FET (for disabling matrix)
+    if (fet_gpio > static_cast<int>(GPIO_NUM_NC)){
+      pinMode(fet_gpio, OUTPUT);
+      digitalWrite(fet_gpio, !fet_ll);
+    }
+    // gpio that controls AUX/Alarm pin
+    if (aux_gpio > static_cast<int>(GPIO_NUM_NC)){
+      pinMode(aux_gpio, OUTPUT);
+      digitalWrite(aux_gpio, !aux_ll);
+    }
   }
 
   // switch to last running effect

@@ -106,7 +106,7 @@ EFF_PUZZLES,                                  // Пятнашки
 EFF_T_LEND,                                   // Тикси Ленд
 EFF_SPBALS,                                   // Н.Тесла
 //20
-EFF_OSCIL,                                    // Осцилятор 
+EFF_OSCIL,                                    // Осциллятор 
 EFF_WRAIN,                                    // Шторм 
 EFF_FAIRY,                                    // Фея
 EFF_FOUNT,                                    // Источник
