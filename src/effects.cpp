@@ -1392,7 +1392,7 @@ void EffectComet::moveFractionalNoise(bool direction, int8_t amplitude, float sh
 
   for (auto &i : noise3d.map)
     for (uint16_t a = 0; a < _side_a; a++) {
-      uint8_t _pixel = direction ? i.at(a,0) : i.at(0,a);
+      uint8_t _pixel = direction ? i.at(0,a) : i.at(a,0); //i.at(a,0) : i.at(0,a);
       int16_t amount = ((int16_t)(_pixel - 128) * 2 * amplitude + shift * 256);
       int8_t delta = ((uint16_t)fabs(amount) >> 8) ;
       int8_t fraction = ((uint16_t)fabs(amount) & 255);
