@@ -464,11 +464,11 @@ public:
     // TM1637_CLOCK
     void settm24 (bool flag) {flags.tm24 = flag;}
     void settmZero (bool flag) {flags.tmZero = flag;}
-    bool isTm24() {return flags.tm24;}
-    bool isTmZero() {return flags.tmZero;}
-    void setTmBright(uint8_t val) {tmBright = val;}
-    uint8_t getBrightOn() { return tmBright>>4; }
-    uint8_t getBrightOff() { return tmBright&0x0F; }
+    bool isTm24() const {return flags.tm24;}
+    bool isTmZero() const {return flags.tmZero;}
+    void setTmBright(uint8_t val) {tmBright = val; embui.var(TCONST_tmBright, val); }
+    uint8_t getBrightOn() const { return tmBright>>4; }
+    uint8_t getBrightOff() const { return tmBright&0x0F; }
 
     bool getGaugeType() {return flags.GaugeType;}
     void setGaugeType(GAUGETYPE val) {flags.GaugeType = val;}

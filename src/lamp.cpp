@@ -101,6 +101,9 @@ void LAMP::lamp_init()
   } else {
     flags.ONflag = false;
   }
+
+  // restore tm display brightness values
+  setTmBright(embui.paramVariant(TCONST_tmBright) | 23); // default is 7/1
 }
 
 void LAMP::handle(){

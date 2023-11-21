@@ -1206,7 +1206,7 @@ void set_settings_other(Interface *interf, const JsonObject *data, const char* a
 
         uint8_t tmBri = ((*data)[TCONST_tmBrightOn]).as<uint8_t>()<<4; // старшие 4 бита
         tmBri = tmBri | ((*data)[TCONST_tmBrightOff]).as<uint8_t>(); // младшие 4 бита
-        embui.var(TCONST_tmBright, tmBri); myLamp.setTmBright(tmBri);
+        myLamp.setTmBright(tmBri);
         myLamp.settm24((*data)[TCONST_tm24]);
         myLamp.settmZero((*data)[TCONST_tmZero]);
         #ifdef DS18B20
