@@ -617,22 +617,42 @@ public:
 
 // -------------- Эффект "Кодовый замок"
 // (c) SottNick
+//uint8_t ringColor[fb->h()]; // начальный оттенок каждого кольца (оттенка из палитры) 0-255
+//uint8_t huePos[fb->h()]; // местоположение начального оттенка кольца 0-fb->maxWidthIndex()
+//uint8_t shiftHueDir[fb->h()]; // 4 бита на ringHueShift, 4 на ringHueShift2
+////ringHueShift[ringsCount]; // шаг градиета оттенка внутри кольца -8 - +8 случайное число
+////ringHueShift2[ringsCount]; // обычная скорость переливания оттенка всего кольца -8 - +8 случайное число
+//uint8_t currentRing; // кольцо, которое в настоящий момент нужно провернуть
+//uint8_t stepCount; // оставшееся количество шагов, на которое нужно провернуть активное кольцо - случайное от fb->w()/5 до fb->w()-3
 class EffectRingsLock : public EffectCalc {
 private:
-  uint8_t ringWidth; // максимальне количество пикселей в кольце (толщина кольца) от 1 до height / 2 + 1
-  uint8_t ringNb; // количество колец от 2 до height
-  uint8_t downRingHue, upRingHue; // количество пикселей в нижнем (downRingHue) и верхнем (upRingHue) кольцах
+    struct LockRing {
+        uint8_t color;      // начальный оттенок каждого кольца (оттенка из палитры) 0-255
+        uint8_t huePos;     // местоположение начального оттенка кольца 0-w-1
+        uint8_t shiftHueDir;    // 4 бита на ringHueShift, 4 на ringHueShift2
+    };
 
-  std::vector<uint8_t> ringColor{std::vector<uint8_t>(fb->h())};    // начальный оттенок каждого кольца (оттенка из палитры) 0-255
-  std::vector<uint8_t> huePos{std::vector<uint8_t>(fb->h())};       // местоположение начального оттенка кольца 0-w-1
-  std::vector<uint8_t> shiftHueDir{std::vector<uint8_t>(fb->h())};  // 4 бита на ringHueShift, 4 на ringHueShift2
+    uint8_t ringWidth;      // максимальне количество пикселей в кольце (толщина кольца) от 1 до height / 2 + 1
+    //uint8_t ringNb; // количество колец от 2 до height
+    uint8_t lowerRingWidth, upperRingWidth; // количество пикселей в нижнем (lowerRingWidth) и верхнем (upperRingWidth) кольцах
+    uint8_t currentRing; // кольцо, которое в настоящий момент нужно провернуть
+    uint8_t stepCount; // оставшееся количество шагов, на которое нужно провернуть активное кольцо - случайное от w/5 до w-3
+
+    // набор колец
+    std::vector<LockRing> rings{std::vector<LockRing>(2, LockRing())};
+  //std::vector<uint8_t> ringColor{std::vector<uint8_t>(fb->h())};    // начальный оттенок каждого кольца (оттенка из палитры) 0-255
+  //std::vector<uint8_t> huePos{std::vector<uint8_t>(fb->h())};       // местоположение начального оттенка кольца 0-w-1
+  //std::vector<uint8_t> shiftHueDir{std::vector<uint8_t>(fb->h())};  
+
   ////ringHueShift[ringsCount]; // шаг градиета оттенка внутри кольца -8 - +8 случайное число
   ////ringHueShift2[ringsCount]; // обычная скорость переливания оттенка всего кольца -8 - +8 случайное число
-  uint8_t currentRing; // кольцо, которое в настоящий момент нужно провернуть
-  uint8_t stepCount; // оставшееся количество шагов, на которое нужно провернуть активное кольцо - случайное от w/5 до w-3
+
+
+
   void ringsSet();
   bool ringsRoutine();
   String setDynCtrl(UIControl*_val) override;
+
 public:
     EffectRingsLock(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     void load() override;
