@@ -1826,7 +1826,7 @@ void show_settings_mp3(Interface *interf, const JsonObject *data, const char* ac
         interf->option(DFPLAYER_EQ_BASS, TINTF_0AE);
         interf->json_section_end();
         
-        interf->number(TCONST_mp3count, mp3->getMP3count(), TINTF_0B0);
+        //interf->number(TCONST_mp3count, mp3->getMP3count(), TINTF_0B0);
     interf->json_section_end();
 
     interf->button(button_t::submit, TCONST_set_mp3, TINTF_Save, P_GRAY);
@@ -1853,8 +1853,8 @@ void set_settings_mp3(Interface *interf, const JsonObject *data, const char* act
     myLamp.setPlayMP3((*data)[TCONST_playMP3]); mp3->setPlayMP3(myLamp.getLampFlagsStuct().playMP3);
     myLamp.setLimitAlarmVolume((*data)[TCONST_limitAlarmVolume]);
 
-    SETPARAM(TCONST_mp3count);
-    mp3->setMP3count((*data)[TCONST_mp3count].as<int>()); // кол-во файлов в папке мп3
+    //SETPARAM(TCONST_mp3count);
+    //mp3->setMP3count((*data)[TCONST_mp3count].as<int>()); // кол-во файлов в папке мп3
 
     myLamp.save_flags();
     basicui::page_system_settings(interf, data, NULL);
@@ -2944,7 +2944,7 @@ void embui_actions_register(){
 
 #ifdef MP3PLAYER
     embui.var_create(TCONST_mp3volume, 25); // громкость
-    embui.var_create(TCONST_mp3count, 255); // кол-во файлов в папке mp3
+    //embui.var_create(TCONST_mp3count, 255); // кол-во файлов в папке mp3 (установка убрана, используется значение по-умолчанию равное максимальному числу эффектов)
 #endif
 
     embui.var_create(TCONST_tmBright, 82); // 5<<4+5, старшие и младшие 4 байта содержат 5
