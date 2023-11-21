@@ -6054,7 +6054,7 @@ bool EffectOscillator::run() {
   uint16_t colorCount[3] = {0U, 0U, 0U};
   hue++;
 
-  fb->clear();  // т.к. скорость обсчета мала, очистка экрана приводит к сильному мерцанию на хаб75 панели
+  fb->clear();
   for (uint8_t y = 0; y < oscillatingWorld.h(); y++) {
       for (uint8_t x = 0; x < oscillatingWorld.w(); x++) {
           if (oscillatingWorld.at(x,y).red){
