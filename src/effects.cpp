@@ -2288,16 +2288,6 @@ bool EffectFire2018::run()
 
 // ------------------------------ ЭФФЕКТ КОЛЬЦА / КОДОВЫЙ ЗАМОК ----------------------
 // (c) SottNick
-// из-за повторного использоваия переменных от других эффектов теперь в этом коде невозможно что-то понять.
-// поэтому для понимания придётся сперва заменить названия переменных на человеческие. но всё равно это песец, конечно.
-
-//uint8_t ringColor[fb->h()]; // начальный оттенок каждого кольца (оттенка из палитры) 0-255
-//uint8_t huePos[fb->h()]; // местоположение начального оттенка кольца 0-fb->maxWidthIndex()
-//uint8_t shiftHueDir[fb->h()]; // 4 бита на ringHueShift, 4 на ringHueShift2
-////ringHueShift[ringsCount]; // шаг градиета оттенка внутри кольца -8 - +8 случайное число
-////ringHueShift2[ringsCount]; // обычная скорость переливания оттенка всего кольца -8 - +8 случайное число
-//uint8_t currentRing; // кольцо, которое в настоящий момент нужно провернуть
-//uint8_t stepCount; // оставшееся количество шагов, на которое нужно провернуть активное кольцо - случайное от fb->w()/5 до fb->w()-3
 bool EffectRingsLock::run(){
   if (dryrun(3.0))
     return false;
@@ -2311,31 +2301,31 @@ void EffectRingsLock::load(){
 
 // !++
 String EffectRingsLock::setDynCtrl(UIControl*_val){
-  if(_val->getId()==3) { ringWidth = EffectCalc::setDynCtrl(_val).toInt(); ringsSet(); }
-  else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
+  if(_val->getId()==3) {
+    int w = EffectCalc::setDynCtrl(_val).toInt();
+    ringWidth = w > fb->h() ? fb->h() : w;
+    ringsSet();
+  } else
+    EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
   return String();
 }
 
 // Установка параметров колец
 void EffectRingsLock::ringsSet(){
-  if (curPalette == nullptr) {
-    return;
-  }
-  //fb->clear();
+  if (curPalette == nullptr) return;
 
-  ringNb = (float)fb->h() / ringWidth + ((fb->h() % ringWidth == 0U) ? 0U : 1U)%fb->h(); // количество колец
-  upRingHue = ringWidth - (ringWidth * ringNb - fb->h()) / 2U; // толщина верхнего кольца. может быть меньше нижнего
-  downRingHue = fb->h() - upRingHue - (ringNb - 2U) * ringWidth; // толщина нижнего кольца = всё оставшееся
+  rings.assign(fb->h() / ringWidth + !!(fb->h() / ringWidth), LockRing());  // количество колец
+  upperRingWidth = ringWidth - (ringWidth * rings.size() - fb->h()) / 2U; // толщина верхнего кольца. может быть меньше нижнего
+  lowerRingWidth = fb->h() - upperRingWidth - (rings.size() - 2U) * ringWidth; // толщина нижнего кольца = всё оставшееся
 
-  for (uint8_t i = 0; i < ringNb; i++)
-  {
-    if (!i) ringColor[i] = 0;
-    ringColor[i] = ringColor[i - 1] + 64; // начальный оттенок кольца из палитры 0-255 за минусом длины кольца, делённой пополам
-    shiftHueDir[i] = random8();
-    huePos[i] = random8(); 
-    stepCount = 0U;
-    currentRing = random(ringNb);
+  rings[0].color = 0;
+  for (size_t i = 1; i != rings.size(); i++){
+    rings[i].color = rings[i].color + 64; // начальный оттенок кольца из палитры 0-255 за минусом длины кольца, делённой пополам
+    rings[i].shiftHueDir = random8();
+    rings[i].huePos = random8(); 
   }
+  stepCount = 0U;
+  currentRing = random(rings.size());
 }
 
 bool EffectRingsLock::ringsRoutine()
@@ -2343,20 +2333,19 @@ bool EffectRingsLock::ringsRoutine()
   uint8_t h, x, y;
   fb->clear();
 
-  for (uint8_t i = 0; i < ringNb; i++)
-  {
+  for (size_t i = 0; i != rings.size(); i++){
     if (i != currentRing) // если это не активное кольцо
     {
-       h = shiftHueDir[i] & 0x0F; // сдвигаем оттенок внутри кольца
+       h = rings[i].shiftHueDir & 0x0F; // сдвигаем оттенок внутри кольца
        if (h > 8U)
          //ringColor[i] += (uint8_t)(7U - h); // с такой скоростью сдвиг оттенка от вращения кольца не отличается
-         ringColor[i]--;
+         rings[i].color--;
        else
          //ringColor[i] += h;
-         ringColor[i]++;
+         rings[i].color++;
     } else {
       if (stepCount == 0) { // если сдвиг активного кольца завершён, выбираем следующее
-        currentRing = random(ringNb);
+        currentRing = random(rings.size());
         do {
           stepCount = fb->w() - 3U - random8((fb->w() - 3U) * 2U); // проворот кольца от хз до хз
         } while (stepCount < fb->w() / 5U || stepCount > 255U - fb->w() / 5U);
@@ -2364,34 +2353,34 @@ bool EffectRingsLock::ringsRoutine()
         if (stepCount > 127U)
           {
             stepCount++;
-            huePos[i] = (huePos[i] + 1U) % fb->w();
+            rings[i].huePos = (rings[i].huePos + 1U) % fb->w();
           }
         else
           {
             stepCount--;
-            huePos[i] = (huePos[i] - 1U + fb->w()) % fb->w();
+            rings[i].huePos = (rings[i].huePos - 1U + fb->w()) % fb->w();
           }
       }
     }
 
     // отрисовываем кольца
-    h = (shiftHueDir[i] >> 4) & 0x0F; // берём шаг для градиента вутри кольца
+    h = (rings[i].shiftHueDir >> 4) & 0x0F; // берём шаг для градиента вутри кольца
     if (h > 8U)
       h = 7U - h;
-    for (uint8_t j = 0U; j < ((i == 0U) ? downRingHue : ((i == ringNb - 1U) ? upRingHue : ringWidth)); j++) // от 0 до (толщина кольца - 1)
+    for (uint8_t j = 0U; j < ((i == 0U) ? lowerRingWidth : ((i == rings.size() - 1U) ? upperRingWidth : ringWidth)); j++) // от 0 до (толщина кольца - 1)
     {
-      y = i * ringWidth + j - ((i == 0U) ? 0U : ringWidth - downRingHue);
+      y = i * ringWidth + j - ((i == 0U) ? 0U : ringWidth - lowerRingWidth);
       for (uint8_t k = 0; k < fb->w() / 2U - 1; k++) // полукольцо
         {
-          x = (huePos[i] + k) % fb->w(); // первая половина кольца
-          fb->at(x, y) = ColorFromPalette(*curPalette, ringColor[i]/* + k * h*/);
-          x = (fb->maxWidthIndex() + huePos[i] - k) % fb->w(); // вторая половина кольца (зеркальная первой)
-          fb->at(x, y) = ColorFromPalette(*curPalette, ringColor[i] + k * h);
+          x = (rings[i].huePos + k) % fb->w(); // первая половина кольца
+          fb->at(x, y) = ColorFromPalette(*curPalette, rings[i].color/* + k * h */);
+          x = (fb->maxWidthIndex() + rings[i].huePos - k) % fb->w(); // вторая половина кольца (зеркальная первой)
+          fb->at(x, y) = ColorFromPalette(*curPalette, rings[i].color + k * h);
         }
       if (fb->w() & 0x01) // если число пикселей по ширине матрицы нечётное, тогда не забываем и про среднее значение
       {
-        x = (huePos[i] + fb->w() / 2U) % fb->w();
-        fb->at(x, y) = ColorFromPalette(*curPalette, ringColor[i] + fb->w() / 2U * h);
+        x = (rings[i].huePos + fb->w() / 2U) % fb->w();
+        fb->at(x, y) = ColorFromPalette(*curPalette, rings[i].color + fb->w() / 2U * h);
       }
     }
   }
