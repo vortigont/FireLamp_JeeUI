@@ -334,8 +334,194 @@
         {
           "id":"ui_page_settings",
           "html":"button",
+          "color": "green",
           "type":0,
           "label":"Выход"
+        }
+      ]
+    },
+    "ws2812":{
+      "section": "display_ws2812",
+      "label": "Параметры адресной ленты",
+      "block": [
+        {
+          "id": "dtype",
+          "html": "hidden",
+          "value": 0
+        },
+        {
+          "html": "comment",
+          "label": "Подробнее о параметрах настройки см. <a href=\"https://github.com/vortigont/FireLamp_JeeUI/wiki/%D0%9D%D0%B0%D1%81%D1%82%D1%80%D0%BE%D0%B9%D0%BA%D0%B0-LED-%D0%B4%D0%B8%D1%81%D0%BF%D0%BB%D0%B5%D1%8F\" target=\"_blank\">WiKi</a><br>Смена gpio вызовет перезагрузку."
+        },
+        {
+          "section": "mx_gpio_lim",
+          "line": true,
+          "block": [
+            {
+              "id": "mx_gpio",
+              "html": "input",
+              "value": -1,
+              "type": "number",
+              "label": "GPIO подключения матрицы",
+              "min": -1,
+              "step": 1
+            },
+            {
+              "id": "CLmt",
+              "html": "input",
+              "value": 2500,
+              "type": "number",
+              "label": "Ограничение по току (mA)",
+              "min": 1000,
+              "max": 16000,
+              "step": 100
+            }
+          ]
+        },
+        {
+          "section": "mx_wh",
+          "line": true,
+          "block": [
+            {
+              "id": "width",
+              "html": "input",
+              "value": 16,
+              "type": "number",
+              "label": "ширина",
+              "min": 1,
+              "max": 256,
+              "step": 1
+            },
+            {
+              "id": "height",
+              "html": "input",
+              "value": 16,
+              "type": "number",
+              "label": "высота",
+              "min": 1,
+              "max": 256,
+              "step": 1
+            }
+          ]
+        },
+        {
+          "section": "mx_snvf",
+          "line": true,
+          "block": [
+            {
+              "id": "snake",
+              "html": "input",
+              "value": true,
+              "label": "змейка",
+              "type": "checkbox"
+            },
+            {
+              "id": "vflip",
+              "html": "input",
+              "label": "отзеркалировать столбцы",
+              "type": "checkbox"
+            }
+          ]
+        },
+        {
+          "section": "mx_vhf",
+          "line": true,
+          "block": [
+            {
+              "id": "vertical",
+              "html": "input",
+              "label": "вертикальная лента",
+              "type": "checkbox"
+            },
+            {
+              "id": "hflip",
+              "html": "input",
+              "label": "отзеркалировать строки",
+              "type": "checkbox"
+            }
+          ]
+        },
+        {
+          "html": "spacer"
+        },
+        {
+          "html": "comment",
+          "label": "Параметры каскада матриц"
+        },
+        {
+          "section": "mxt_tile",
+          "line": true,
+          "block": [
+            {
+              "id": "wcnt",
+              "html": "input",
+              "value": 1,
+              "type": "number",
+              "label": "число плиток по X",
+              "min": 1,
+              "max": 32,
+              "step": 1
+            },
+            {
+              "id": "hcnt",
+              "html": "input",
+              "value": 1,
+              "type": "number",
+              "label": "число плиток по Y",
+              "min": 1,
+              "max": 32,
+              "step": 1
+            }
+          ]
+        },
+        {
+          "section": "mxt_snvf",
+          "line": true,
+          "block": [
+            {
+              "id": "tsnake",
+              "html": "input",
+              "label": "змейка",
+              "type": "checkbox"
+            },
+            {
+              "id": "tvflip",
+              "html": "input",
+              "label": "отзеркалировать столбцы",
+              "type": "checkbox"
+            }
+          ]
+        },
+        {
+          "section": "mxt_tvhf",
+          "line": true,
+          "block": [
+            {
+              "id": "tvertical",
+              "html": "input",
+              "label": "вертикальные плитки",
+              "type": "checkbox"
+            },
+            {
+              "id": "thflip",
+              "html": "input",
+              "label": "отзеркалировать строки",
+              "type": "checkbox"
+            }
+          ]
+        },
+        {
+          "id": "display_ws2812",
+          "html": "button",
+          "type": 1,
+          "color": "green",
+          "label": "Сохранить"
+        },
+        {
+          "id": "ui_page_settings",
+          "html": "button",
+          "type": 0,
+          "label": "Выход"
         }
       ]
     }
