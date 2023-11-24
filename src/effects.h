@@ -1365,9 +1365,10 @@ class EffectSmokeballs: public EffectCalc {
         uint8_t maxMin;
         uint8_t waveColors;
     };
+    uint8_t dimming = 240;
     uint8_t _scale = 1;
     float speedFactor = 0.1;
-    std::vector<Wave> waves{std::vector<Wave>(fb->w())};
+    std::vector<Wave> waves{std::vector<Wave>(fb->w()/4)};      // allow max w/4 waves to run simultaneously
 
     void shiftUp();
     void regen();

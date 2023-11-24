@@ -5588,8 +5588,8 @@ void EffectPopcorn::load() {
 String EffectSmokeballs::setDynCtrl(UIControl*_val){
   if(_val->getId()==1) speedFactor = EffectMath::fmap(EffectCalc::setDynCtrl(_val).toInt(), 1., 255., .02, .1)*EffectCalc::speedfactor; // попробовал разные способы управления скоростью. Этот максимально приемлемый, хотя и сильно тупой.
   else if(_val->getId()==3) _scale = EffectCalc::setDynCtrl(_val).toInt();
+  else if(_val->getId()==5) dimming = EffectCalc::setDynCtrl(_val).toInt();   // dimming control
   else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
-  regen();
   return String();
 }
 
@@ -5599,28 +5599,30 @@ void EffectSmokeballs::load(){
 }
 
 void EffectSmokeballs::regen() {
-  randomSeed(millis());
+  //LOG(println, "Regen Wawes");
   for (auto &w : waves){
-    w.pos = w.reg =  random((fb->w() * 10) - ((fb->w() / 3) * 20)); // сумма maxMin + reg не должна выскакивать за макс.Х
+    //w.pos = w.reg =  random((fb->w() * 10) - ((fb->w() / 3) * 20)); // сумма maxMin + reg не должна выскакивать за макс.Х
+    w.pos = w.reg = 10 * random(fb->w()-fb->w()/8); // сумма maxMin + reg не должна выскакивать за макс.Х
     w.sSpeed = EffectMath::randomf(5., (float)(16 * fb->w()));
     w.maxMin = random((fb->w() / 2) * 10, (fb->w() / 3) * 20);
     w.waveColors = random(0, 9) * 28;
+    //LOG(printf, "Wave pos:%u, mm:%u\n", w.pos, w.maxMin);
   }
 }
 
 bool EffectSmokeballs::run(){
-  uint8_t _amount = map(_scale, 1, 16, 2, waves.size());
+  uint8_t _amount = map(_scale, 1, 32, 2, waves.size()-1);
   shiftUp();
-  fb->dim(240);
+  fb->dim(dimming);
   EffectMath::blur2d(fb, 20);
-  for (byte j = 0; j < _amount; j++) {
+  for (size_t j = 0; j != _amount; j++) {
     waves[j].pos = beatsin16((uint8_t)(waves[j].sSpeed * (speedFactor * 5.)), waves[j].reg, waves[j].maxMin + waves[j].reg, waves[j].waveColors*256, waves[j].waveColors*8);
     EffectMath::drawPixelXYF((float)waves[j].pos / 10., 0.05, ColorFromPalette(*curPalette, waves[j].waveColors), fb);
   }
   EVERY_N_SECONDS(20){
-    for (byte j = 0; j < _amount; j++) {
-      waves[j].reg += random(-20,20);
-      waves[j].waveColors += 28;
+    for (auto &w : waves ){
+      w.reg += random(-20,20);
+      w.waveColors += 28;
     }
   }
 
