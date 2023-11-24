@@ -8,7 +8,8 @@ user_*.ini
 .vscode/c_cpp_properties.json
 include/user_config.h
 include/user_cfg*
-resources/embui.zip
 /data/*.json
+/data.*
+resources/embui.zip
 resources/etags.txt
 test/
