@@ -100,6 +100,9 @@ DECLARE_GRADIENT_PALETTE(purple_gp);
 DECLARE_GRADIENT_PALETTE(outrun_gp);
 //DECLARE_GRADIENT_PALETTE(greenblue_gp);
 DECLARE_GRADIENT_PALETTE(redyellow_gp);
+// Эффект "Цветной шум"
+DECLARE_GRADIENT_PALETTE( pit );
+
 
 class GradientPalette{
     CRGBPalette32 pl;

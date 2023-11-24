@@ -567,3 +567,12 @@ DEFINE_GRADIENT_PALETTE( redyellow_gp ) {
 128,   231,   0,    0,   //red
 192,   255, 218,    0,   //yellow
 255,   200, 200,  200 }; //white
+
+// Эффект "Цветной шум"
+DEFINE_GRADIENT_PALETTE( pit ) {
+  0,     3,   3,   3,
+  64,   13,   13, 255,  //blue
+  128,   3,   3,   3,
+  192, 255, 130,   3 ,  //orange
+  255,   3,   3,   3
+};

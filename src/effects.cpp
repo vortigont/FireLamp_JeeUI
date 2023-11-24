@@ -4115,13 +4115,6 @@ bool EffectMunch::munchRoutine() {
 }
 
 // ------ Эффект "Цветной шум" (с) https://gist.github.com/StefanPetrick/c856b6d681ec3122e5551403aabfcc68
-DEFINE_GRADIENT_PALETTE( pit ) {
-  0,     3,   3,   3,
-  64,   13,   13, 255,  //blue
-  128,   3,   3,   3,
-  192, 255, 130,   3 ,  //orange
-  255,   3,   3,   3
-};
 
 // !++
 String EffectNoise::setDynCtrl(UIControl*_val){
@@ -4154,9 +4147,9 @@ bool EffectNoise::run() {
   noise.opt[0].e_scaleY = 8000 + noise.lxy(0,fb->maxWidthIndex(), centreY) * 16;
 
   //calculate the noise data
-  for (uint8_t y = 0; y < noise.h; y++) {
+  for (uint8_t y = 0; y != noise.h; y++) {
     uint32_t yoffset = noise.opt[0].e_scaleY * (y - centreY);
-    for (uint8_t x = 0; x < fb->h(); x++) {
+    for (uint8_t x = 0; x != noise.w; x++) {
       uint32_t xoffset = noise.opt[0].e_scaleX * (x - centreX);
 
       uint16_t data = inoise16(noise.opt[0].e_x + xoffset, noise.opt[0].e_y + yoffset, noise.opt[0].e_z);
@@ -4179,7 +4172,7 @@ bool EffectNoise::run() {
       //it´s basically a rainbow mapping with an inverted brightness mask
       CRGB overlay;
       if (palettepos == 14) overlay = CHSV(160,255 - noise.lxy(0,x,y), noise.lxy(0,fb->maxWidthIndex(),fb->maxHeightIndex()) + noise.lxy(0,x,y));
-      else overlay = CHSV(noise.lxy(0,y,x), 255, noise.lxy(0,x,y));
+      else overlay = CHSV(noise.lxy(0,x,y), 255, noise.lxy(0,x,y));
       //here the actual colormapping happens - note the additional colorshift caused by the down right pixel noise[layer][15][15]
       if (palettepos == 4) EffectMath::drawPixelXYF(x, fb->maxHeightIndex() - y, CHSV(160, 0 , noise.lxy(0,x,y)), fb, 35);
       else fb->at(x, y) = ColorFromPalette(palettepos > 0 ? *curPalette : Pal, noise.lxy(0,fb->maxWidthIndex(),fb->maxHeightIndex()) + noise.lxy(0,x,y)) + overlay;
