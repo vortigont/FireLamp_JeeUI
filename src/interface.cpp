@@ -290,8 +290,12 @@ void ui_page_main(Interface *interf, const JsonObject *data, const char* action)
     if (!interf) return;
 
     interf->json_frame_interface(); //TINTF_080);
-
     interf->json_section_manifest(TINTF_080, embui.macid(), 0, LAMPFW_VERSION_STRING);       // app name/version manifest
+    interf->json_section_end();
+
+    // load uidata objects for the lamp
+    interf->json_section_uidata();
+        interf->uidata_xload("lampui", "js/ui_lamp.json");
     interf->json_section_end();
 
     ui_section_menu(interf, data, action);
@@ -2798,7 +2802,7 @@ void page_display_setup(Interface *interf, const JsonObject *data, const char* a
             block_ledstrip_setup(interf, data, NULL);
     }
 
-    interf->json_frame_flush();
+    // previous blocks MUST flush the interface frame!
 }
 
 /**
@@ -2851,10 +2855,22 @@ void block_ledstrip_setup(Interface *interf, const JsonObject *data, const char*
     interf->button(button_t::submit, A_display_ws2812, TINTF_Save);  // Save
     interf->button(button_t::generic, A_ui_page_settings, TINTF_exit);           // Exit
 
-    interf->json_section_end();     // close "K_set_ledstrip" section
+    interf->json_frame_flush();     // close "K_set_ledstrip" section and flush frame
 }
 
 void block_hub75_setup(Interface *interf, const JsonObject *data, const char* action){
+    interf->json_section_uidata();
+        interf->uidata_pick("lampui.settings.hub75");
+    interf->json_frame_flush();
+
+    DynamicJsonDocument doc(1024);
+    // if config can't be loaded, then just quit
+    if (!embuifs::deserializeFile(doc, TCONST_fcfg_display) || !doc.containsKey(T_hub75)) return;
+
+    interf->json_frame_value(doc[T_hub75], true);
+    interf->json_frame_flush();
+
+/*
     interf->json_section_begin(A_display_hub75, TINTF_cfg_hub75);
     //interf->comment("press 'Save' to switch to HUB75 display, MCU will reboot");
     interf->constant("Use API to configure panel");
@@ -2864,6 +2880,7 @@ void block_hub75_setup(Interface *interf, const JsonObject *data, const char* ac
     //interf->button(button_t::submit,  A_display_hub75, TINTF_Save);      // Save
     interf->button(button_t::generic, A_ui_page_settings, TINTF_exit);           // Exit
     interf->json_section_end();     // close "K_set_ledstrip" section
+*/
 }
 
 

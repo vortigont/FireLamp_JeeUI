@@ -153,7 +153,6 @@ static constexpr const char* TCONST_mp3rx = "mp3rx";
 static constexpr const char* TCONST_mp3tx = "mp3tx";
 static constexpr const char* TCONST_mp3_n5 = "mp3_n5";
 static constexpr const char* TCONST_mp3_p5 = "mp3_p5";
-static constexpr const char* TCONST_MQTTTopic = "MQTTTopic";
 static constexpr const char* TCONST_msg = "msg";
 static constexpr const char* TCONST_mx_gpio = "mx_gpio";
 static constexpr const char* TCONST_nofade = "nofade";

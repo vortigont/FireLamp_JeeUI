@@ -305,7 +305,7 @@ void sendData(){
     obj[TCONST_Mac] = WiFi.macAddress();
     obj[TCONST_Host] = String("http://")+embui.hostname();
     //obj[TCONST_Version] = embui.getEmbUIver();
-    obj[TCONST_MQTTTopic] = embui.mqttPrefix();     // embui.param(P_m_pref) + "/embui/")
+    obj[P_MQTTTopic] = embui.mqttPrefix();     // embui.param(P_m_pref) + "/embui/")
     //String sendtopic=TCONST_embui_pub_;
     //sendtopic+=TCONST_state;
     String out;
