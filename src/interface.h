@@ -131,7 +131,6 @@ void set_ledstrip(Interface *interf, const JsonObject *data, const char* action)
 void set_hub75(Interface *interf, const JsonObject *data, const char* action);
 
 
-
 // ==========
 #ifdef ESP_USE_BUTTON
 void default_buttons();
@@ -175,11 +174,3 @@ void show_settings_mic(Interface *interf, const JsonObject *data, const char* ac
  * @param path 
  */
 void load_events_config(const char* path = NULL);
-
-void block_ledstrip_setup(Interface *interf, const JsonObject *data, const char* action);
-
-/**
- * @brief Construct WebUI block for hub75 panel setup
- * 
- */
-void block_hub75_setup(Interface *interf, const JsonObject *data, const char* action);

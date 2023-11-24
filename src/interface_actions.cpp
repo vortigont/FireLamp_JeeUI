@@ -254,7 +254,7 @@ void set_ledstrip(Interface *interf, const JsonObject *data, const char* action)
     }
 
     // установка максимального тока FastLED
-    display.setCurrentLimit((*data)[TCONST_CLmt]);
+    display.setCurrentLimit((*data)[T_CLmt]);
 
     display.updateStripeLayout(
         (*data)[T_width], (*data)[T_height],  // tile w,h
@@ -273,11 +273,11 @@ void set_ledstrip(Interface *interf, const JsonObject *data, const char* action)
     if (interf) basicui::page_system_settings(interf, nullptr, NULL);
 
     // Check if I need to reset FastLED gpio
-    if (display.getGPIO() == (*data)[TCONST_mx_gpio] || (*data)[TCONST_mx_gpio] == GPIO_NUM_NC) return;       /// gpio not changed or not set, just quit
+    if (display.getGPIO() == (*data)[T_mx_gpio] || (*data)[T_mx_gpio] == GPIO_NUM_NC) return;       /// gpio not changed or not set, just quit
 
     if (display.getGPIO() == GPIO_NUM_NC){
         // it's a cold start, so I can change GPIO on the fly
-        display.setGPIO((*data)[TCONST_mx_gpio]);
+        display.setGPIO((*data)[T_mx_gpio]);
         display.start();
     } else {
         // otherwise new pin value could be set after reboot

@@ -131,11 +131,14 @@ void page_settings_other(Interface *interf, const JsonObject *data, const char* 
 void section_sys_settings_frame(Interface *interf, const JsonObject *data, const char* action);
 void show_settings_butt(Interface *interf, const JsonObject *data, const char* action);
 
-// Construct WebUI block for ws2812 LED matrix setup
-void block_ledstrip_setup(Interface *interf, const JsonObject *data, const char* action);
 
-// set params for hub75
-void set_hub75(Interface *interf, const JsonObject *data, const char* action);
+/**
+ * @brief function renders display configuration pages to the WebUI
+ * 
+ * @param engine_t e - an engine type to show controls for
+ * 
+ */
+void block_display_setup(Interface *interf, engine_t e);
 
 /**
  * @brief rebuild cached json file with effects names list
@@ -1955,12 +1958,6 @@ void set_gpios(Interface *interf, const JsonObject *data, const char* action){
             break;
         }
 
-        // WS LED strip gpios
-        case gpio_device::ledstrip : {
-            if ( (*data)[TCONST_mx_gpio] == static_cast<int>(GPIO_NUM_NC) ) doc.remove(TCONST_mx_gpio);
-            else doc[TCONST_mx_gpio] = (*data)[TCONST_mx_gpio];
-            break;
-        }
         default :
             return;     // for any uknown action - just quit
     }
@@ -2790,16 +2787,16 @@ void page_display_setup(Interface *interf, const JsonObject *data, const char* a
     // if parameter for the specific page has been given
     if (data && (*data).containsKey(T_display_type)){
         if ((*data)[T_display_type] == e2int(engine_t::hub75))
-            block_hub75_setup(interf, data, NULL);
+            block_display_setup(interf, engine_t::hub75);
         else
-            block_ledstrip_setup(interf, data, NULL);
+            block_display_setup(interf, engine_t::ws2812);
     } else { // check running engine type
         if ( display.get_engine_type() == engine_t::hub75)
             // load page block with HUB75 setup
-            block_hub75_setup(interf, data, NULL);
+            block_display_setup(interf, engine_t::hub75);
         else
             // load page block with ledstrip setup
-            block_ledstrip_setup(interf, data, NULL);
+            block_display_setup(interf, engine_t::ws2812);
     }
 
     // previous blocks MUST flush the interface frame!
@@ -2809,7 +2806,21 @@ void page_display_setup(Interface *interf, const JsonObject *data, const char* a
  * @brief build a section with LED-strip setup
  * it contains a set of controls to setup LedStrip topology
  */
-void block_ledstrip_setup(Interface *interf, const JsonObject *data, const char* action){
+void block_display_setup(Interface *interf, engine_t e){
+    interf->json_section_uidata();
+        interf->uidata_pick( e == engine_t::hub75 ? "lampui.settings.hub75" : "lampui.settings.ws2812");
+    interf->json_frame_flush();
+
+    DynamicJsonDocument doc(1024);
+    // if config can't be loaded, then just quit
+    if (!embuifs::deserializeFile(doc, TCONST_fcfg_display) || !doc.containsKey( e == engine_t::hub75 ? T_hub75 : T_ws2812)) return;
+
+    interf->json_frame_value(doc[e == engine_t::hub75 ? T_hub75 : T_ws2812], true);
+    interf->json_frame_flush();
+
+/*
+    // this code is obsolete, left for reference only
+
     // open a section
     interf->json_section_begin(A_display_ws2812, TINTF_ledstrip);
 
@@ -2819,8 +2830,8 @@ void block_ledstrip_setup(Interface *interf, const JsonObject *data, const char*
 
     interf->json_section_line(); // расположить в одной линии
         // gpio для подключения LED матрицы
-        interf->number_constrained(TCONST_mx_gpio, display.getGPIO(), "LED Matrix gpio", /*step*/ 1, /*min*/ -1, /*max*/ NUM_OUPUT_PINS);
-        interf->number_constrained(TCONST_CLmt, static_cast<int>(display.getCurrentLimit()), TINTF_095, /* step */ 100, /* min */ 1000, /* max*/ 16000);    // FastLED current limit
+        interf->number_constrained(T_mx_gpio, display.getGPIO(), "LED Matrix gpio", 1, -1, NUM_OUPUT_PINS);
+        interf->number_constrained(T_CLmt, static_cast<int>(display.getCurrentLimit()), TINTF_095, 100, 1000, 16000);    // FastLED current limit
     interf->json_section_end();
     interf->json_section_line(); // расположить в одной линии
         interf->number_constrained(T_width,  (int)display.getLayout().tile_w(), "ширина", 1, 1, 256);
@@ -2856,33 +2867,8 @@ void block_ledstrip_setup(Interface *interf, const JsonObject *data, const char*
     interf->button(button_t::generic, A_ui_page_settings, TINTF_exit);           // Exit
 
     interf->json_frame_flush();     // close "K_set_ledstrip" section and flush frame
-}
-
-void block_hub75_setup(Interface *interf, const JsonObject *data, const char* action){
-    interf->json_section_uidata();
-        interf->uidata_pick("lampui.settings.hub75");
-    interf->json_frame_flush();
-
-    DynamicJsonDocument doc(1024);
-    // if config can't be loaded, then just quit
-    if (!embuifs::deserializeFile(doc, TCONST_fcfg_display) || !doc.containsKey(T_hub75)) return;
-
-    interf->json_frame_value(doc[T_hub75], true);
-    interf->json_frame_flush();
-
-/*
-    interf->json_section_begin(A_display_hub75, TINTF_cfg_hub75);
-    //interf->comment("press 'Save' to switch to HUB75 display, MCU will reboot");
-    interf->constant("Use API to configure panel");
-    interf->comment((char*)0, "<p>Check <a href=\"https://github.com/vortigont/FireLamp_JeeUI/wiki/%D0%9D%D0%B0%D1%81%D1%82%D1%80%D0%BE%D0%B9%D0%BA%D0%B0-LED-%D0%B4%D0%B8%D1%81%D0%BF%D0%BB%D0%B5%D1%8F\" target=\"_blank\">WiKi page</a> for HUB75 setup information</p>");
-
-    interf->hidden(T_display_type, e2int(engine_t::ws2812));        // set hidden value for led type to ws2812
-    //interf->button(button_t::submit,  A_display_hub75, TINTF_Save);      // Save
-    interf->button(button_t::generic, A_ui_page_settings, TINTF_exit);           // Exit
-    interf->json_section_end();     // close "K_set_ledstrip" section
 */
 }
-
 
 /**
  * @brief rebuild cached json file with effects names list

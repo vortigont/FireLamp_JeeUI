@@ -66,10 +66,10 @@ bool LEDDisplay::start(){
     JsonVariant o = doc[T_ws2812];
 
     // load gpio value, if defined
-    setGPIO(o[TCONST_mx_gpio].as<int>());
+    setGPIO(o[T_mx_gpio].as<int>());
 
     // set current, if defined
-    setCurrentLimit(o[TCONST_CLmt]);
+    setCurrentLimit(o[T_CLmt]);
 
     // load canvas topology
     tiles.setTileDimensions(

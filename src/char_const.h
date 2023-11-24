@@ -8,7 +8,9 @@ static constexpr const char* T_effect_dynCtrl = "eff_dynCtrl";
 static constexpr const char* T_gpio = "gpio";                                   // gpio key for display configuration
 static constexpr const char* T_ws2812 = "ws2812";                               // ws2812 led stip type
 
-// display dimensions config var names
+// ws2812 config var names
+static constexpr const char* T_mx_gpio = "mx_gpio";
+static constexpr const char* T_CLmt = "CLmt";                                   // лимит тока
 static constexpr const char* T_hcnt = "hcnt";
 static constexpr const char* T_height = "height";
 static constexpr const char* T_hflip = "hflip";
@@ -65,7 +67,6 @@ static constexpr const char* TCONST_Btn = "Btn";
 static constexpr const char* TCONST_buttList = "buttList";
 static constexpr const char* TCONST_butt_conf = "butt_conf";
 static constexpr const char* TCONST_clicks = "clicks";
-static constexpr const char* TCONST_CLmt = "CLmt"; // лимит тока
 static constexpr const char* TCONST_control = "control";
 static constexpr const char* TCONST_copy = "copy";
 static constexpr const char* TCONST_d1 = "d1";
@@ -154,7 +155,6 @@ static constexpr const char* TCONST_mp3tx = "mp3tx";
 static constexpr const char* TCONST_mp3_n5 = "mp3_n5";
 static constexpr const char* TCONST_mp3_p5 = "mp3_p5";
 static constexpr const char* TCONST_msg = "msg";
-static constexpr const char* TCONST_mx_gpio = "mx_gpio";
 static constexpr const char* TCONST_nofade = "nofade";
 static constexpr const char* TCONST_Normal = "Normal";
 static constexpr const char* TCONST_numInList = "numInList";
@@ -231,10 +231,10 @@ static constexpr const char* TCONST__ffffff = "#ffffff";
 static constexpr const char* TCONST__tmplist_tmp = "/tmplist.tmp";
 static constexpr const char* TCONST__tmpqlist_tmp = "/tmpqlist.tmp";
 // текст элементов интерфейса
-static constexpr const char* I_zmeika = "змейка";
-static constexpr const char* I_vert = "вертикальная";
-static constexpr const char* I_vflip = "зеркальные столбцы";
-static constexpr const char* I_hflip = "зеркальные строки";
+//static constexpr const char* I_zmeika = "змейка";
+//static constexpr const char* I_vert = "вертикальная";
+//static constexpr const char* I_vflip = "зеркальные столбцы";
+//static constexpr const char* I_hflip = "зеркальные строки";
 
 /* ***  conf variable names *** */
 
