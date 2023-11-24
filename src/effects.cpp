@@ -7066,7 +7066,7 @@ void EffectMaze::GenerateMaze() {
 
   // вход и выход
   maze.at(1,0) = 0;
-  maze.at(maze.w()-2, maze.w()-1) = 0;
+  maze.at(maze.w()-2, maze.h()-1) = 0;
 
   track = random8(0,2);
   color = CHSV(hue += 8, random8(192, 255), 192);
