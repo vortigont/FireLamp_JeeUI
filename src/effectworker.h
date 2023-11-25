@@ -38,6 +38,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #pragma once
 
 #include "freertos/FreeRTOS.h"
+#include <mutex>
 #include "filehelpers.hpp"
 #include "LList.h"
 #include "effects_types.h"
@@ -464,7 +465,10 @@ private:
     // указатель на экземпляр класса текущего эффекта
     std::unique_ptr<EffectCalc> worker;
 
-    volatile bool _status = false;    // if worker is in active (enabled and running state)
+    // effect instance mutex
+    std::mutex _mtx;
+
+    volatile bool _status = false;                  // if worker is in active (enabled and running state)
     TaskHandle_t    _runnerTask_h=nullptr;          // effect calculator task
 
     /**

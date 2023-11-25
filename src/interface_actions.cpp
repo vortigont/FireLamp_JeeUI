@@ -153,27 +153,15 @@ void effect_switch(Interface *interf, const JsonObject *data, const char* action
     //myLamp.setDRand(myLamp.getLampFlagsStuct().dRand);
 
     LOG(printf_P, PSTR("UI EFF switch to:%d, LampOn:%d, mode:%d\n"), eff->eff_nb, myLamp.isLampOn(), myLamp.getMode());
-    if (myLamp.isLampOn()) {
-        // switch context to maintain thread-safety
-        auto target_eff_num = eff->eff_nb;
-        Task *_t = new Task( RESCHEDULE_DELAY, TASK_ONCE, [target_eff_num](){ myLamp.switcheffect(SW_SPECIFIC, myLamp.getFaderFlag(), target_eff_num); }, &ts, false, nullptr, nullptr, true);
-        _t->enableDelayed();
-    } else {
-        // переходим прямо на выбранный эффект если лампа "выключена"
-        myLamp.effects.switchEffect(eff->eff_nb);
-    }
+    myLamp.effects.switchEffect(eff->eff_nb);
 }
 
 void set_eff_prev(Interface *interf, const JsonObject *data, const char* action){
-    // effect switch action call should be made in main loop to maintain thread safety
-    Task *_t = new Task( RESCHEDULE_DELAY, TASK_ONCE, [](){ run_action(ra::eff_prev); }, &ts, false, nullptr, nullptr, true);
-    _t->enableDelayed();
+    run_action(ra::eff_prev);
 }
 
 void set_eff_next(Interface *interf, const JsonObject *data, const char* action){
-    // effect switch action call should be made in main loop to maintain thread safety
-    Task *_t = new Task( RESCHEDULE_DELAY, TASK_ONCE, [](){ run_action(ra::eff_next); }, &ts, false, nullptr, nullptr, true);
-    _t->enableDelayed();
+    run_action(ra::eff_next);
 }
 
 void set_effects_dynCtrl(Interface *interf, const JsonObject *data, const char* action){
