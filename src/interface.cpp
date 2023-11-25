@@ -55,13 +55,12 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "basicui.h"
 #include "actions.hpp"
 #include <type_traits>
+
+// версия ресурсов в стороннем джейсон файле
+#define UIDATA_VERSION  2
 // задержка вывода ip адреса при включении лампы после перезагрузки
 #define SHOWIP_DELAY    5
 
-#ifdef ESP8266
-#define NUM_OUPUT_PINS  16
-#define GPIO_NUM_NC -1
-#endif
 
 /**
  * @brief numeric indexes for pages
@@ -298,7 +297,7 @@ void ui_page_main(Interface *interf, const JsonObject *data, const char* action)
 
     // load uidata objects for the lamp
     interf->json_section_uidata();
-        interf->uidata_xload("lampui", "js/ui_lamp.json");
+        interf->uidata_xload("lampui", "js/ui_lamp.json", false, UIDATA_VERSION);
     interf->json_section_end();
 
     ui_section_menu(interf, data, action);

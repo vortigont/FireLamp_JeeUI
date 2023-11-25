@@ -1,6 +1,6 @@
 {
   "type":"interface",
-  "version":1,
+  "version":2,
   "descr":"FireLamp UI objects",
   "settings":{
     "hub75":{
