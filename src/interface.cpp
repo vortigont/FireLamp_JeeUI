@@ -622,6 +622,11 @@ void publish_effect_controls(Interface *interf, const JsonObject *data, const ch
     interf->json_frame_interface();
     block_effect_controls(interf, data, action);
     interf->json_frame_flush();
+
+    // publish also current effect index (for drop-down selector)
+    interf->json_frame_value();
+    interf->value(A_effect_switch_idx, myLamp.effects.getEffnum());
+    interf->json_frame_flush();
     if (remove_iface) delete interf;
 }
 

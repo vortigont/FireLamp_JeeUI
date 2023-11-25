@@ -853,6 +853,13 @@ void LAMP::setLumaCurve(luma::curve c){
   setBrightness(getBrightness(), fade_t::off);    // switch to the adjusted brightness level
 };
 
+void LAMP::switcheffect(EFFSWITCH action, uint16_t effnb){
+  if (isLampOn())
+    switcheffect(action, getFaderFlag(), effnb);
+  else
+    switcheffect(action, false, effnb);
+}
+
 /*
  * переключатель эффектов для других методов,
  * может использовать фейдер, выбирать случайный эффект для демо
@@ -899,7 +906,10 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
       effects.switchEffect(next_eff_num, true);       // preload controls for next effect
       // запускаем фейдер и уходим на второй круг переключения
       // если текущая абсолютная яркость больше чем 2*FADE_MINCHANGEBRT, то затухаем не полностью, а только до значения FADE_MINCHANGEBRTб в противном случае гаснем полностью
-      LEDFader::getInstance()->fadelight( _get_brightness(true) < 3*MAX_BRIGHTNESS/FADE_LOWBRTFRACT/2 ? 0 : _brightnessScale/FADE_LOWBRTFRACT, FADE_TIME, std::bind(&LAMP::switcheffect, this, action, fade, next_eff_num, true));
+      LEDFader::getInstance()->fadelight( _get_brightness(true) < 3*MAX_BRIGHTNESS/FADE_LOWBRTFRACT/2 ? 0 : _brightnessScale/FADE_LOWBRTFRACT,
+                                          FADE_TIME,
+                                          [this, action, fade, next_eff_num](){ switcheffect(action, fade, next_eff_num, true); }
+                                        );
       return;
     } else {
       // do direct switch to effect if fading is not required

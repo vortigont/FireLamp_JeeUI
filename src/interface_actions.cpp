@@ -153,7 +153,7 @@ void effect_switch(Interface *interf, const JsonObject *data, const char* action
     //myLamp.setDRand(myLamp.getLampFlagsStuct().dRand);
 
     LOG(printf_P, PSTR("UI EFF switch to:%d, LampOn:%d, mode:%d\n"), eff->eff_nb, myLamp.isLampOn(), myLamp.getMode());
-    myLamp.effects.switchEffect(eff->eff_nb);
+    myLamp.switcheffect(SW_SPECIFIC, eff->eff_nb);
 }
 
 void set_eff_prev(Interface *interf, const JsonObject *data, const char* action){

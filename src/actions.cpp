@@ -52,32 +52,35 @@ void run_action(ra act){
     // demo next effect
     case ra::demo_next : {
       if (myLamp.getLampFlagsStuct().dRand)
-        myLamp.switcheffect(SW_RND, myLamp.getFaderFlag());
+        myLamp.switcheffect(SW_RND);
       else
-        myLamp.switcheffect(SW_NEXT_DEMO, myLamp.getFaderFlag());
+        myLamp.switcheffect(SW_NEXT_DEMO);
 
-      run_action(ra::eff_switch, myLamp.effects.getEffnum() );     // call switch effect as in GUI/main page
+      //run_action(ra::eff_switch, myLamp.effects.getEffnum() );     // call switch effect as in GUI/main page
       break;
     }
 
     // switch to next effect
     case ra::eff_next : {
       // pick next available effect (considering it is enabled)
-      run_action(ra::eff_switch, myLamp.effects.getNext());
+      myLamp.switcheffect(EFFSWITCH::SW_NEXT);
+      //run_action(ra::eff_switch, myLamp.effects.getNext());
       break;
     }
 
     // switch to previous effect
     case ra::eff_prev : {
       // pick previous available effect (considering it is enabled)
-      run_action(ra::eff_switch, myLamp.effects.getPrev());
+      myLamp.switcheffect(EFFSWITCH::SW_PREV);
+      //run_action(ra::eff_switch, myLamp.effects.getPrev());
       break;
     }
 
     // switch to previous effect
     case ra::eff_rnd : {
       // pick random effect
-      run_action(ra::eff_switch, myLamp.effects.getByCnt(random(0, myLamp.effects.getEffectsListSize())) );
+      myLamp.switcheffect(EFFSWITCH::SW_RND);
+      //run_action(ra::eff_switch, myLamp.effects.getByCnt(random(0, myLamp.effects.getEffectsListSize())) );
       break;
     }
 
