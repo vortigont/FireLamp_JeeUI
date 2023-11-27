@@ -921,7 +921,8 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
   }
 
   if(flags.isEffClearing || !effects.getCurrent()){ // для EFF_NONE или для случая когда включена опция - чистим матрицу
-    display.getCanvas()->clear();
+    if (display.getCanvas())
+      display.getCanvas()->clear();
   }
 
   // move to 'selected' only if lamp is On and fader is in effect (i.e. it's a second call after fade),
@@ -1143,19 +1144,6 @@ void LAMP::setmqtt_int(int val) {
 }
 #endif
 
-/*
-void LAMP::reset_led_buffs(){
-  //display.getCanvas()->clear();
-  display->clear();
-  //delete sledsbuff; sledsbuff = nullptr;  // drop sleds buffer, it will be recreated on next run
-  _overlay_buffer(false); // drop overlay buffer
-}
-
-void LAMP::_wipe_screen(){
-  LOG(println, "Wipe Screen");
-  display->clear();
-}
-*/
 void LAMP::_overlay_buffer(bool activate) {
   if (activate && !_overlay){
     LOG(println, "Create Display overlay");

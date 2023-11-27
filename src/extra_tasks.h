@@ -66,6 +66,7 @@ private:
 public:
     GAUGE(unsigned val, unsigned max, uint8_t hue = 0)
     : Task(3*TASK_SECOND, TASK_ONCE, []() {gauge = nullptr;}, &ts, false, nullptr, nullptr, true){
+        if (!display.getCanvas()) return;
         GAUGE::gauge = this;
 
         gauge_time = millis();
@@ -104,21 +105,10 @@ public:
     ~GAUGE() {GAUGE::gauge = nullptr;}
 
     void GaugeMix(GAUGETYPE type = GAUGETYPE::GT_NONE) {
-        if(GAUGE::gauge==nullptr) return;
+        if(GAUGE::gauge==nullptr || !display.getCanvas()) return;
         if (gauge_time + 3000 < millis() || millis()<5000) return; // в первые 5 секунд после перезагрузки не показываем :)
 
         if(type==GAUGETYPE::GT_VERT){
-            /*
-            uint8_t ind = (uint8_t)((gauge_val + 1) * display.getCanvas()->h() / (float)gauge_max + 1);
-            for (uint8_t x = 0; x <= xCol * (xStep - 1); x += xStep) {
-                for (uint8_t y = 0; y < display.getCanvas()->h() ; y++) {
-                if (ind > y)
-                    EffectMath::drawPixelXY(x, y, CHSV(gauge_hue, 255, 255));
-                else
-                    EffectMath::drawPixelXY(x, y,  0);
-                }
-            }
-            */
             for (uint8_t x = 0; x <= xCol * (xStep - 1); x += xStep) {
                 EffectMath::drawLine(x, 0, x, display.getCanvas()->h(), 0, display.getCanvas().get());   // todo:  get rid of this hack with external obj
                 EffectMath::drawLineF(x, 0, x, EffectMath::fmap(gauge_val, 0, gauge_max, 0, display.getCanvas()->h()), gauge_hue ? CHSV(gauge_hue, 255, 255) : CRGB(gauge_color), display.getCanvas().get());
