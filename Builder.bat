@@ -23,7 +23,7 @@ Echo  ║  (English)      COMMANDS                 ║  (Russian)      КОМА�
 Echo  ╠══════════════════════════════════════════╩══════════════════════════════════════════╣
 Echo  ║             ♦ GIT commands ♦             │             ♦ Работа с GIT ♦             ║
 Echo  ║  Switch/update - MASTER branch      ► 1  │  Переключить/обновить - ветка MASTER     ║
-:Echo  ║  Switch/update - DEV branch         ► 2  │  Переключить/обновить - ветка DEV        ║
+Echo  ║  Switch/update - Last release  v3.3 ► 2  │  Переключить/обновить - выпуск v 3.3     ║
 :Echo  ║  Switch/update - FEAT branch        ► 2b │  Переключить/обновить - ветка FEAT       ║
 Echo  ╠═════════════════════════════════════════════════════════════════════════════════════╣
 Echo  ║  Reset changes in local repo!       ► 3  │  Сбросить изменения в локальном репо!    ║
@@ -43,7 +43,7 @@ Echo  ╠═══════════════════════�
 :Echo  ║             ♦ File System ♦              │           ♦ Файловая Система ♦           ║
 :Echo  ║  Update FS data from framework      ► u  │  Обновить файлы ФС из фреймворка         ║
 :Echo  ╠═════════════════════════════════════════════════════════════════════════════════════╣
-Echo  ║            ♦ FS for ESP32 ♦              │              ♦ Для ESP32 ♦               ║
+Echo  ║            ♦ FS for ESP32 ♦              │            ♦ ФС Для ESP32 ♦               ║
 Echo  ║  Build File System image            ► b  │  Собрать образ Файловой Системы          ║
 Echo  ║  Build and upload File System       ► f  │  Собрать и прошить Файловую Систему      ║
 Echo  ╠═════════════════════════════════════════════════════════════════════════════════════╣
