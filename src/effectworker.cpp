@@ -1140,8 +1140,6 @@ void EffectWorker::_runnerHndlr(){
     // if task has been delayed, than we can't keep up with desired frame rate, let's give other tasks time to run anyway
     if ( xTaskDelayUntil( &xLastWakeTime, pdMS_TO_TICKS(interframe_delay_ms) ) ) taskYIELD();
 
-    // aquire mutex
-    std::unique_lock<std::mutex> lock(_mtx);
     if (!worker || !_status){
       worker.reset();
       display.clear();
@@ -1150,6 +1148,8 @@ void EffectWorker::_runnerHndlr(){
       return;
     }
 
+    // aquire mutex
+    std::unique_lock<std::mutex> lock(_mtx);
     if (worker->run()){
       // effect has rendered a data in buffer, need to call the engine draw it
       display.show();
