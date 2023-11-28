@@ -3323,12 +3323,8 @@ String EffectLiquidLamp::setDynCtrl(UIControl*_val) {
     CRGBPalette32 pal;    pal.loadDynamicGradientPalette(dynpal);
     palettes.add(0, pal, 0, 16);
   }
-  else if(_val->getId()==5) { // enable filtering
-    filter = EffectCalc::setDynCtrl(_val).toInt();
-    if (filter < 2) { delete buff; buff = nullptr; delete buff2; buff2 = nullptr; return String(); }
-    if (!buff) buff = new Vector2D<uint8_t>(fb->w(), fb->h());
-    if (!buff2) buff2 = new Vector2D<float>(fb->w(), fb->h());
-  } else if(_val->getId()==6) physic_on = EffectCalc::setDynCtrl(_val).toInt();
+  else if(_val->getId()==5) { filter = EffectCalc::setDynCtrl(_val).toInt(); } // enable filtering }
+  else if(_val->getId()==6) physic_on = EffectCalc::setDynCtrl(_val).toInt();
   else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
   return String();
 }
@@ -3338,8 +3334,18 @@ bool EffectLiquidLamp::routine(){
   position();
   if (physic_on) physic();
 
-  for (unsigned x = 0; x < fb->w(); x++) {
-    for (unsigned y = 0; y < fb->h(); y++) {
+  uint8_t f = filter; // local scope copy to provide thread-safety
+
+  if (f < 2 && (buff || buff2)) {
+    buff.reset();
+    buff2.reset();
+  } else {
+    if (!buff) buff = std::make_unique< Vector2D<uint8_t> >(fb->w(), fb->h());
+    if (!buff2) buff2 = std::make_unique< Vector2D<float> >(fb->w(), fb->h());
+  }
+
+  for (unsigned x = 0; x != fb->maxWidthIndex(); x++) {
+    for (unsigned y = 0; y != fb->maxHeightIndex(); y++) {
       float sum = 0;
       for (auto &p1 : particles){
         if ((unsigned)abs(x - p1.position_x) > p1.tr || (unsigned)abs(y - p1.position_y) > p1.tr) continue;
@@ -3352,7 +3358,7 @@ bool EffectLiquidLamp::routine(){
         if (sum > 255) { sum = 255; break; }
       }
 
-      if (filter < 2) {
+      if (f < 2) {
         fb->at(x, y) = palettes[pidx].GetColor(sum, filter? sum : 255);
       } else {
         buff->at(x,y) = sum;
@@ -3360,7 +3366,7 @@ bool EffectLiquidLamp::routine(){
     }
   }
 
-  if (filter < 2) return true;
+  if (f < 2) return true;
 
   // use Scharr's filter
     static constexpr std::array<int, 9> dh_scharr = {3, 10, 3,  0, 0,   0, -3, -10, -3};
@@ -3383,11 +3389,11 @@ bool EffectLiquidLamp::routine(){
       }
     }
 
-    for (unsigned x = 0; x < (unsigned)fb->maxWidthIndex(); x++) {
-      for (unsigned y = 0; y < (unsigned)fb->maxHeightIndex(); y++) {
+    for (uint16_t x = 0; x != fb->maxWidthIndex(); x++) {
+      for (uint16_t y = 0; y != fb->maxHeightIndex(); y++) {
         float val = buff2->at(x,y);
         val = 1 - (val - min) / (max - min);
-        unsigned step = filter - 1;
+        unsigned step = f - 1;
         while (step) { val *= val; --step; } // почему-то это быстрее чем pow
         fb->at(x, y) = palettes[pidx].GetColor(buff->at(x,y), val * 255);
       }

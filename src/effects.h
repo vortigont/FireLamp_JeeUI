@@ -773,13 +773,13 @@ class EffectLiquidLamp : public EffectCalc {
 
     uint8_t pidx = 0;
     bool physic_on = 1;
-    unsigned filter = 0;
+    uint8_t filter = 0;
 	float speedFactor = 1.0;
     GradientPaletteList palettes;
 
     std::vector<Particle> particles{std::vector<Particle>(LIQLAMP_MIN_PARTICLES, Particle())};
-    Vector2D<uint8_t> *buff = nullptr;
-    Vector2D<float> *buff2 = nullptr;
+    std::unique_ptr< Vector2D<uint8_t> > buff;
+    std::unique_ptr< Vector2D<float> > buff2;
 
     void generate(bool reset = false);
     void position();
@@ -788,7 +788,6 @@ class EffectLiquidLamp : public EffectCalc {
 
 public:
     EffectLiquidLamp(LedFB<CRGB> *framebuffer);
-    virtual ~EffectLiquidLamp() { delete buff; delete buff2; };
     void load() override { generate(true); };
     bool run() override {return routine();};
     String setDynCtrl(UIControl*_val) override;
