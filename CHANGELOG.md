@@ -1,5 +1,63 @@
 # Change Log
 
+## 3.4.0 Draft
+- Update Builder scripts
+- refactoring MQTT/HTTP API
+   - make API for MQTT/HTTP compatible with WebSocket data messages format.
+   - Integrate message exchange between APIs.
+   - Removed obsolete code, i.e. sync_parameters(), http callback actions etc...
+- refactoring code related to EmbUI API changes
+   - deprecate old-style weak functions, replaced with assignable action handlers
+   - sting literals refactoring to match EmbUI api change
+   - major refactoring for interface function names, const literals, etc...
+- avoid reboot on led stripe reconfig, when saving matrix config if gpio has not changed then avoid useless reboot
+- external devices
+   - removed TM1637_CLOCK define from config files, tm1637 suport is built-in by default, module is enabled if it's pins are defined through webui config
+- WebUI
+   - implement WebUI configuration page for HUB75 parameters setup
+   - add tiled configuration setup for ws2812 matrixes
+   - run-time switch between ws2812 and HUB75 panel output
+   - hide obsolete functionality "Text", "Events"
+   - removed "Кол-во файлов в папке MP3" setting from UI
++ HUB75 panels output
+   - implement HUB75 backend engine for HUB75 panels via HUB75-I2S-DMA lib
+   - hub75 configuration via API
+   - add NO_CIE1931 option for HUB75 I2S lib
++ LedFB libarary
+   -  implement LEDDisplay class
+      output device access is now hidden behind LEDDisplay class,
+      which provides methods to access canvas/overlay as memory-backed buffers.
+      Output device specific implementation and overlay mixing is of no dependency on other components.
+   - OverlayEngine class that manages canvas buffer binding to end device and overlay operations such as allocation, blending, back-buffering
+   - introduce 'persistence' flag for effect indicating that it uses canvas buffer as pixel data storage and it should persist on ovelay operations (using back-buffer for this)
+   - add support for LedTiles transformations.
+      - Led matrixes or stripes of same topology could be combined into tiles
+      - same kind of topology transformations supported for tiles as for Led stripe
+- reworkied "Drawing" feature using OverlayEngine, simplified packet data structures for pixel data
+- segregate effect calculation into sepparate Taks
+   - a Task is created on-demand to run effect calculations and render result via OverlayEngine
+- Effects fixes
+   - Noise3dMap::fillNoise was using wrong x,y mapping
+   - refactoring for EffectRadialFire, make it dimension agnostic
+   - removed old "Clock Effect"
+   - EffectPacific removed static vars, fixed color application
+   - EffectSinusoid3 clear buffer on load
+   - EffectBBalls limit num of balls to panel width
+   - 3DNoise effect running on non-square panels
+   - EffectComet runnning on non sq pane
+   - EffectRingsLock - fix crashing when running on panel, some internal restructuring
+   - EffectNoise crash on non rectangular canvas
+   - EffectMaze was crashing on non-rect canvas
+   - EffectBBalls changing number of balls could crash some times
+   - refine EffectSmokeballs
+     - максимальное число огней оганиченно ширина/4
+     - огни бегают по всей ширине широкоформатной матрицы
+     - добавлен контрол высоты огней
+     - мелкие оптимизации
+   - EffectLiquidLamp fix sporadic crashes on filter change
+- platformio.ini - update libs definitions, set SemVers for known external libs
+
+
 ## 3.3.0 (2023-08-24)
 - removed lamp configurations editor
 - adjust UI related code to match EmbUI BAPI changes
@@ -156,3 +214,4 @@ last release branch with esp8266 support
     - EffectPuzzles
     - EffectRadialFire
     - EffectWcolor
+    - new Effect - Tetris Clock
