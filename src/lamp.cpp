@@ -818,7 +818,7 @@ void LAMP::setMicOnOff(bool val) {
 #endif  // MIC_EFFECTS
 
 void LAMP::setBrightness(uint8_t tgtbrt, fade_t fade, bool bypass){
-    LOG(printf, "setBrightness(%u,%u,%u)\n", tgtbrt, static_cast<uint8_t>(fade), bypass);
+    LOG(printf, "LAMP::setBrightness(%u,%u,%u)\n", tgtbrt, static_cast<uint8_t>(fade), bypass);
     if (bypass)
       return _brightness(tgtbrt, true);
 
@@ -900,7 +900,7 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
         return;
     }
 
-    LOG(printf_P, PSTR("switcheffect() act=%d, fade=%d, effnb=%d\n"), action, fade, next_eff_num);
+    LOG(printf, "LAMP::switcheffect() action=%d, fade=%d, effnb=%d\n", action, fade, next_eff_num);
     // тухнем "вниз" только на включенной лампе
     if (fade && flags.ONflag) {
       effects.switchEffect(next_eff_num, true);       // preload controls for next effect
@@ -917,7 +917,7 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
     }
 
   } else {
-    LOG(printf_P, PSTR("switcheffect() postfade act=%d, fade=%d, effnb=%d\n"), action, fade, effnb ? effnb : effects.getSelected());
+    LOG(printf, "LAMP::switcheffect() postfade act=%d, fade=%d, effnb=%d\n", action, fade, effnb ? effnb : effects.getSelected());
   }
 
   if(flags.isEffClearing || !effects.getCurrent()){ // для EFF_NONE или для случая когда включена опция - чистим матрицу
@@ -947,17 +947,8 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
 #ifdef MP3PLAYER
   playEffect(isPlayName, action); // воспроизведение звука, с проверкой текущего состояния
 #endif
-/*
-  if(effects.status() && flags.ONflag && !lampState.isEffectsDisabledUntilText){
-    if(!sledsbuff){ // todo: WHY we need this clone here???
-      sledsbuff = new LedFB(*mx);  // clone existing frambuffer
-    } else {
-      *sledsbuff = *mx;           // copy buffer content
-    }
-  }
-*/
-  setBrightness(globalBrightness);      // need to reapply brightness as effect's curve might have changed
 
+  setBrightness(globalBrightness);      // need to reapply brightness as effect's curve might have changed
 
   // if lamp is not in Demo mode, then need to save new effect in config
   if(mode != LAMPMODE::MODE_DEMO){
@@ -1160,7 +1151,7 @@ void LAMP::_overlay_buffer(bool activate) {
 
 void LEDFader::fadelight(const uint8_t _targetbrightness, const uint32_t _duration, std::function<void()> callback){
   if (!lmp) return;
-  LOG(printf, "Fader: tgt:%u, lamp:%u/%u, _br/_br(abs):%u/%u\n", _targetbrightness, lmp->getBrightness(), lmp->getBrightnessScale(), lmp->_get_brightness(), lmp->_get_brightness(true));
+  LOG(printf, "Fader: tgt:%u, lamp:%u/%u, _br_scaled/_br_abs:%u/%u\n", _targetbrightness, lmp->getBrightness(), lmp->getBrightnessScale(), lmp->_get_brightness(), lmp->_get_brightness(true));
 
   if (lmp->_get_brightness() == _targetbrightness) {
     // no need to fade, already at this brightness
@@ -1174,7 +1165,7 @@ void LEDFader::fadelight(const uint8_t _targetbrightness, const uint32_t _durati
   // calculate required steps
   int _steps = (abs(_tgtbrt - _brt) > FADE_MININCREMENT * _duration / FADE_STEPTIME) ? _duration / FADE_STEPTIME : abs(_tgtbrt - _brt)/FADE_MININCREMENT;
   if (_steps < 3) {   // no need to fade for such small difference
-    LOG(printf_P, PSTR("Fast fade to %d->%d\n"), _brt, _tgtbrt);
+    LOG(printf_P, PSTR("Fast fade %d->%d\n"), _brt, _tgtbrt);
     lmp->_brightness(_tgtbrt, true);
     if (runner) abort();
     if (callback) callback();

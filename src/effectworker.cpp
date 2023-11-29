@@ -843,7 +843,7 @@ uint16_t EffectWorker::getNext()
 }
 
 void EffectWorker::switchEffect(uint16_t effnb, bool twostage){
-  LOG(print, "switchEffect() ");
+  LOG(println, "EffectWorker::switchEffect() ");
   // NOTE: if call has been made to the SAME effect number as the current one, than it MUST be force-switched anyway to recreate EffectCalc object
   // (it's required for a cases like new LedFB has been provided, etc)
   if (effnb == curEff.num) return reset();

@@ -2199,7 +2199,7 @@ void page_gpiocfg(Interface *interf, const JsonObject *data, const char* action)
 }
 
 
-
+/*
 // кастомный обработчик, для реализации особой обработки событий сокетов
 void ws_action_handle(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len)
 {
@@ -2224,7 +2224,7 @@ void ws_action_handle(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsE
             break;
     }
 }
-
+*/
 // обработчик, для поддержки приложения WLED APP
 void wled_handle(AsyncWebServerRequest *request){
     if(request->hasParam("T")){
