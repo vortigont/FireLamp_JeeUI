@@ -23,7 +23,7 @@ Echo  ║  (English)      COMMANDS                 ║  (Russian)      КОМА�
 Echo  ╠══════════════════════════════════════════╩══════════════════════════════════════════╣
 Echo  ║             ♦ GIT commands ♦             │             ♦ Работа с GIT ♦             ║
 Echo  ║  Switch/update - MASTER branch      ► 1  │  Переключить/обновить - ветка MASTER     ║
-Echo  ║  Switch/update - Last release  v3.3 ► 2  │  Переключить/обновить - выпуск v 3.3     ║
+Echo  ║  Switch/update - Last release  v3.4 ► 2  │  Переключить/обновить - выпуск v 3.4     ║
 :Echo  ║  Switch/update - FEAT branch        ► 2b │  Переключить/обновить - ветка FEAT       ║
 Echo  ╠═════════════════════════════════════════════════════════════════════════════════════╣
 Echo  ║  Reset changes in local repo!       ► 3  │  Сбросить изменения в локальном репо!    ║

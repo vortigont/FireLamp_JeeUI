@@ -1,6 +1,7 @@
 # Change Log
 
-## 3.4.0 Draft
+## 3.4.0 (2023-12-01)
+- Update EmbUI resources
 - Update Builder scripts
 - refactoring MQTT/HTTP API
    - make API for MQTT/HTTP compatible with WebSocket data messages format.
