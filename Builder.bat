@@ -7,16 +7,16 @@ if exist "%USERPROFILE%\Python\python.exe" (
 	set PYTHONPATH=%USERPROFILE%\Python
 )
 PATH=%PATH%;%workdir%;%USERPROFILE%\.platformio\penv\Scripts;%PYTHONPATH%;
-
 REM set the code page to UTF8
 chcp 65001 >nul
 rem @chcp 1251>nul
-
 mode con: cols=88
 cls
-
+Echo.
 if not exist "%workdir%\out_bin" (mkdir %workdir%\out_bin)
-
+for /F "tokens=8" %%i in ('"%ProgramFiles%\Git\bin\git" checkout') do set "branch=%%i"
+set "branch=%branch:~0,-1%"
+echo   [33mЗагруженная версия:[m [92m[31m%workdir% %branch%[m [92m
 :m1
 Echo  ╔══════════════════════════════════════════╦══════════════════════════════════════════╗
 Echo  ║  (English)      COMMANDS                 ║  (Russian)      КОМАНДЫ                  ║
@@ -43,7 +43,7 @@ Echo  ╠═══════════════════════�
 :Echo  ║             ♦ File System ♦              │           ♦ Файловая Система ♦           ║
 :Echo  ║  Update FS data from framework      ► u  │  Обновить файлы ФС из фреймворка         ║
 :Echo  ╠═════════════════════════════════════════════════════════════════════════════════════╣
-Echo  ║            ♦ FS for ESP32 ♦              │            ♦ ФС Для ESP32 ♦               ║
+Echo  ║            ♦ FS for ESP32 ♦              │            ♦ ФС Для ESP32 ♦              ║
 Echo  ║  Build File System image            ► b  │  Собрать образ Файловой Системы          ║
 Echo  ║  Build and upload File System       ► f  │  Собрать и прошить Файловую Систему      ║
 Echo  ╠═════════════════════════════════════════════════════════════════════════════════════╣
@@ -58,7 +58,6 @@ Echo  ║  Remove Platformio installation     ► R  │  Полностью у�
 Echo  ╚═════════════════════════════════════════════════════════════════════════════════════╝
 Echo.
 Set /p choice="Your choice [Ваш выбор]: ► " 
-
 
 if "%choice%"=="1" (
 	call update-DEV-from-Git.cmd 1
@@ -84,7 +83,6 @@ if "%choice%"=="4D" (
 	mkdir %workdir%\out_bin
 	copy /z %workdir%\.pio\build\esp32debug\firmware.bin %workdir%\out_bin
 )
-
 if "%choice%"=="5" ("%USERPROFILE%\.platformio\penv\Scripts\pio.exe" run --target upload --environment esp32)
 if "%choice%"=="5D" ("%USERPROFILE%\.platformio\penv\Scripts\pio.exe" run --target upload --environment esp32debug)
 if "%choice%"=="D" (start %workdir%\SerialMonitor.cmd)
@@ -93,7 +91,6 @@ if "%choice%"=="u" (
 	start respack.cmd
 	cd %workdir%
 )
-
 if "%choice%"=="b" (
 	"%USERPROFILE%\.platformio\penv\Scripts\pio.exe" run --target buildfs --environment esp32
 	mkdir %workdir%\out_bin
@@ -121,6 +118,5 @@ pause
 del %workdir%\resources\.wget-hsts
 cls
 goto m1
-
 
 exit
