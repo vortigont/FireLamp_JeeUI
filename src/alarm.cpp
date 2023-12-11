@@ -75,7 +75,7 @@ void ALARMTASK::initAlarm(const char *value){
     }
 }
 
-void ALARMTASK::startAlarm(LAMP *_lamp, const char *value){
+void ALARMTASK::startAlarm(Lamp *_lamp, const char *value){
     if(ALARMTASK::getInstance()){
         ALARMTASK::getInstance()->stopAlarm();      // отменяем предыдущий будильник
     }
@@ -84,7 +84,7 @@ void ALARMTASK::startAlarm(LAMP *_lamp, const char *value){
 
 void ALARMTASK::stopAlarm(){
     if(!ALARMTASK::getInstance()) return;
-    LAMP *lamp = ALARMTASK::getInstance()->lamp;
+    Lamp *lamp = ALARMTASK::getInstance()->lamp;
 
     lamp->getLampState().dawnFlag = false;
     if (lamp->getMode() != LAMPMODE::MODE_ALARMCLOCK) return;
@@ -123,7 +123,7 @@ void ALARMTASK::stopAlarm(){
 
 void ALARMTASK::alarmWorker(){
     if(!ALARMTASK::getInstance()) return;
-    LAMP *lamp = ALARMTASK::getInstance()->lamp;
+    Lamp *lamp = ALARMTASK::getInstance()->lamp;
 
     if (lamp->getMode() != LAMPMODE::MODE_ALARMCLOCK){
         lamp->getLampState().dawnFlag = false;

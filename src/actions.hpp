@@ -50,6 +50,7 @@ those could be called either internaly or as a callbacks from WebUI/MQTT/HTTP
 
 #define ACTION_PARAM_SIZE   256     // Static json document size to pass the parameters to actions
 
+
 /**
  * @brief enumeration of the availbale named actions
  * 

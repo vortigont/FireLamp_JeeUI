@@ -167,7 +167,7 @@ _LAMPFLAGS(){
 } LAMPFLAGS;
 #pragma pack(pop)
 
-class LAMP {
+class Lamp {
     friend class LEDFader;
     friend class ALARMTASK;        // будильник ходит сюда за MOSFET и AUX пином, todo: переписать будильник целиком
 private:
@@ -261,11 +261,11 @@ private:
 
 public:
     // c-tor
-    LAMP();
+    Lamp();
 
     // noncopyable
-    LAMP (const LAMP&) = delete;
-    LAMP& operator= (const LAMP&) = delete;
+    Lamp (const Lamp&) = delete;
+    Lamp& operator= (const Lamp&) = delete;
 
     void lamp_init();       // первичная инициализация Лампы
 
@@ -543,7 +543,7 @@ private:
  * 
  */
 class LEDFader {
-    LAMP *lmp = nullptr;
+    Lamp *lmp = nullptr;
     uint8_t _brt;                               // transient brightness
     uint8_t  _tgtbrt{0};                        // target brightness
     int8_t _brtincrement;                       // change step
@@ -579,7 +579,7 @@ public:
      * todo: get rid of this rudiment
      * @param l ptr to lamp
      */
-    void setLamp(LAMP *l){ if(l) lmp = l;}
+    void setLamp(Lamp *l){ if(l) lmp = l;}
 
     /**
      * @brief - Non-blocking light fader, uses scheduler to globaly fade display brightness within specified duration
@@ -599,4 +599,4 @@ public:
 };
 
 //-----------------------------------------------
-extern LAMP myLamp; // Объект лампы
+extern Lamp myLamp; // Объект лампы

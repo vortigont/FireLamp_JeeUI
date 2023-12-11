@@ -36,8 +36,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 */
 
 #pragma once
-#ifndef __MAIN_H_
-#define __MAIN_H_
 
 #if __cplusplus >= 201703L
 #define register // keyword 'register' is banned with c++17
@@ -84,14 +82,4 @@ extern Buttons *myButtons;
 #ifdef MP3PLAYER
 #include "mp3player.h"
 extern MP3PlayerDevice *mp3;
-#endif
-
-#ifdef EMBUI_USE_MQTT
-//void mqttConnect();
-void sendData();
-#endif
-
-//void create_parameters();
-//void sync_parameters();
-
 #endif

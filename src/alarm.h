@@ -63,14 +63,14 @@ private:
     } ALARM_DATA;
     
     ALARM_DATA curAlarm;
-    LAMP *lamp;             // куда же без лампы, блин 8-0
+    Lamp *lamp;             // куда же без лампы, блин 8-0
     static ALARMTASK *alarmTask;
     ALARMTASK() = delete;
 
     void initAlarm(const char *value = nullptr);
 
 public:
-    ALARMTASK(Scheduler* aS, LAMP *_l, const char *value = nullptr)
+    ALARMTASK(Scheduler* aS, Lamp *_l, const char *value = nullptr)
         : Task(TASK_SECOND, TASK_FOREVER, [](){ ALARMTASK::alarmWorker(); }, aS, false, nullptr,[](){ alarmTask = nullptr;}, true)
     {
         lamp = _l;
@@ -80,7 +80,7 @@ public:
     }
 
     static inline ALARMTASK *getInstance() {return alarmTask;}
-    static void startAlarm(LAMP *_lamp, const char *value = nullptr);
+    static void startAlarm(Lamp *_lamp, const char *value = nullptr);
 
     static void stopAlarm();
 

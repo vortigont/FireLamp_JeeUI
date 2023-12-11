@@ -45,7 +45,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 GAUGE *GAUGE::gauge = nullptr; // объект индикатора
 ALARMTASK *ALARMTASK::alarmTask = nullptr; // объект будильника
 
-LAMP::LAMP() : tmStringStepTime(DEFAULT_TEXT_SPEED), tmNewYearMessage(0), effects(&lampState){
+Lamp::Lamp() : tmStringStepTime(DEFAULT_TEXT_SPEED), tmNewYearMessage(0), effects(&lampState){
   lampState.isInitCompleted = false; // завершилась ли инициализация лампы
   lampState.isStringPrinting = false; // печатается ли прямо сейчас строка?
   lampState.isEffectsDisabledUntilText = false;
@@ -59,7 +59,7 @@ LAMP::LAMP() : tmStringStepTime(DEFAULT_TEXT_SPEED), tmNewYearMessage(0), effect
   lampState.speedfactor = 1.0; // дефолтное значение
 }
 
-void LAMP::lamp_init()
+void Lamp::lamp_init()
 {
   _brightnessScale = embui.paramVariant(V_dev_brtscale)  | DEF_BRT_SCALE;
   globalBrightness = embui.paramVariant(A_dev_brightness) | DEF_BRT_SCALE/2;
@@ -106,7 +106,7 @@ void LAMP::lamp_init()
   setTmBright(embui.paramVariant(TCONST_tmBright) | 23); // default is 7/1
 }
 
-void LAMP::handle(){
+void Lamp::handle(){
 #ifdef MIC_EFFECTS
   static unsigned long mic_check = 0; // = 40000; // пропускаю первые 40 секунд
   if(effects.status() && flags.isMicOn && (flags.ONflag || isMicCalibration()) && !isAlarm() && mic_check + MIC_POLLRATE < millis()){
@@ -168,9 +168,9 @@ void LAMP::handle(){
   }
 }
 
-void LAMP::changePower() {changePower(!flags.ONflag);}
+void Lamp::changePower() {changePower(!flags.ONflag);}
 
-void LAMP::changePower(bool flag) // флаг включения/выключения меняем через один метод
+void Lamp::changePower(bool flag) // флаг включения/выключения меняем через один метод
 {
   if (flag == flags.ONflag) return;  // пропускаем холостые вызовы
   LOG(print, "Lamp powering "); LOG(println, flag ? "On": "Off");
@@ -220,7 +220,7 @@ void LAMP::changePower(bool flag) // флаг включения/выключе�
 }
 
 #ifdef MP3PLAYER
-void LAMP::playEffect(bool isPlayName, EFFSWITCH action){
+void Lamp::playEffect(bool isPlayName, EFFSWITCH action){
   if(mp3!=nullptr && mp3->isOn() && effects.getCurrent()>0 && (flags.playEffect || ((isLampOn() || millis()>5000) && flags.playMP3 && action!=EFFSWITCH::SW_NEXT_DEMO && action!=EFFSWITCH::SW_RND))){
     LOG(printf_P, PSTR("playEffect soundfile:%s, effect:%d, delayed:%d\n"), effects.getSoundfile().c_str(), effects.getCurrent(), (flags.playName && !flags.playMP3));
     if(!flags.playMP3 || (flags.playEffect && action!=EFFSWITCH::SW_NEXT_DEMO && action!=EFFSWITCH::SW_RND)) // для mp3-плеера есть отдельное управление
@@ -231,7 +231,7 @@ void LAMP::playEffect(bool isPlayName, EFFSWITCH action){
 }
 #endif  // MP3PLAYER
 
-void LAMP::startRGB(CRGB &val){
+void Lamp::startRGB(CRGB &val){
   rgbColor = val;
   storedMode = ((mode == LAMPMODE::MODE_RGBLAMP) ? storedMode: mode);
   mode = LAMPMODE::MODE_RGBLAMP;
@@ -239,7 +239,7 @@ void LAMP::startRGB(CRGB &val){
   effectsTimer(T_ENABLE);
 }
 
-void LAMP::stopRGB(){
+void Lamp::stopRGB(){
   if (mode != LAMPMODE::MODE_RGBLAMP) return;
 
   mode = (storedMode != LAMPMODE::MODE_RGBLAMP ? storedMode : LAMPMODE::MODE_NORMAL); // возвращаем предыдущий режим
@@ -253,7 +253,7 @@ void LAMP::stopRGB(){
 /*
  * запускаем режим "ДЕМО"
  */
-void LAMP::startDemoMode(uint8_t tmout)
+void Lamp::startDemoMode(uint8_t tmout)
 {
   LOG(println,"Demo mode");
   if(!isLampOn()) run_action(ra::on);       // "включаем" лампу
@@ -265,7 +265,7 @@ void LAMP::startDemoMode(uint8_t tmout)
   sendString(String("- Demo ON -").c_str(), CRGB::Green, false);
 }
 
-void LAMP::storeEffect()
+void Lamp::storeEffect()
 {
   storedEffect = ((static_cast<EFF_ENUM>(effects.getCurrent()%256) == EFF_ENUM::EFF_WHITE_COLOR) ? storedEffect : effects.getCurrent()); // сохраняем предыдущий эффект, если только это не белая лампа
   storedBright = getBrightness();
@@ -273,7 +273,7 @@ void LAMP::storeEffect()
   LOG(printf_P, PSTR("storeEffect() %d,%d\n"),storedEffect,storedBright);
 }
 
-void LAMP::restoreStored()
+void Lamp::restoreStored()
 {
   LOG(printf_P, PSTR("restoreStored() %d,%d\n"),storedEffect,storedBright);
   if(storedBright)
@@ -288,7 +288,7 @@ void LAMP::restoreStored()
   }
 }
 
-void LAMP::startNormalMode(bool forceOff)
+void Lamp::startNormalMode(bool forceOff)
 {
   LOG(println,"Normal mode");
   if(forceOff)
@@ -300,7 +300,7 @@ void LAMP::startNormalMode(bool forceOff)
 
 typedef enum {FIRSTSYMB=1,LASTSYMB=2} SYMBPOS;
 
-bool LAMP::fillStringManual(const char* text,  const CRGB &letterColor, bool stopText, bool isInverse, int32_t pos, int8_t letSpace, int8_t txtOffset, int8_t letWidth, int8_t letHeight)
+bool Lamp::fillStringManual(const char* text,  const CRGB &letterColor, bool stopText, bool isInverse, int32_t pos, int8_t letSpace, int8_t txtOffset, int8_t letWidth, int8_t letHeight)
 {/*
   static int32_t offset = display.getCanvas()->vmirror() ? 0 : display.getCanvas()->w();
   uint8_t bcount = 0;
@@ -354,7 +354,7 @@ bool LAMP::fillStringManual(const char* text,  const CRGB &letterColor, bool sto
   return false;
 }
 
-void LAMP::drawLetter(uint8_t bcount, uint16_t letter, int16_t offset,  const CRGB &letterColor, uint8_t letSpace, int8_t txtOffset, bool isInverse, int8_t letWidth, int8_t letHeight, uint8_t flSymb)
+void Lamp::drawLetter(uint8_t bcount, uint16_t letter, int16_t offset,  const CRGB &letterColor, uint8_t letSpace, int8_t txtOffset, bool isInverse, int8_t letWidth, int8_t letHeight, uint8_t flSymb)
 {
   int16_t start_pos = 0, finish_pos = letWidth + letSpace;
 
@@ -417,7 +417,7 @@ void LAMP::drawLetter(uint8_t bcount, uint16_t letter, int16_t offset,  const CR
   }
 }
 
-uint8_t LAMP::getFont(uint8_t bcount, uint8_t asciiCode, uint8_t row)       // интерпретатор кода символа в массиве fontHEX (для Arduino IDE 1.8.* и выше)
+uint8_t Lamp::getFont(uint8_t bcount, uint8_t asciiCode, uint8_t row)       // интерпретатор кода символа в массиве fontHEX (для Arduino IDE 1.8.* и выше)
 {
   asciiCode = asciiCode - '0' + 16;                         // перевод код символа из таблицы ASCII в номер согласно нумерации массива
 
@@ -463,14 +463,14 @@ uint8_t LAMP::getFont(uint8_t bcount, uint8_t asciiCode, uint8_t row)       // �
   return 0;
 }
 
-void LAMP::sendString(const char* text){
+void Lamp::sendString(const char* text){
   String tmpStr = embui.param(TCONST_txtColor);
   tmpStr.replace("#","0x");
   CRGB::HTMLColorCode color = (CRGB::HTMLColorCode)strtol(tmpStr.c_str(), NULL, 0);
   sendString(text, color);
 }
 
-void LAMP::sendString(const char* text, CRGB letterColor, bool forcePrint, bool clearQueue){
+void Lamp::sendString(const char* text, CRGB letterColor, bool forcePrint, bool clearQueue){
   if (!isLampOn() && forcePrint){
       disableEffectsUntilText(); // будем выводить текст, при выкюченной матрице
       setOffAfterText();
@@ -482,7 +482,7 @@ void LAMP::sendString(const char* text, CRGB letterColor, bool forcePrint, bool 
   }
 }
 
-String &LAMP::prepareText(String &source){
+String &Lamp::prepareText(String &source){
   source.replace("%TM", TimeProcessor::getInstance().getFormattedShortTime());
   source.replace("%IP", WiFi.localIP().toString());
   source.replace("%EN", effects.getEffectName());
@@ -497,14 +497,14 @@ String &LAMP::prepareText(String &source){
   return source;  
 }
 
-void LAMP::sendStringToLampDirect(const char* text, CRGB letterColor, bool forcePrint, bool clearQueue, int8_t textOffset, int16_t fixedPos)
+void Lamp::sendStringToLampDirect(const char* text, CRGB letterColor, bool forcePrint, bool clearQueue, int8_t textOffset, int16_t fixedPos)
 {
     String storage = text;
     prepareText(storage);
     doPrintStringToLamp(storage.c_str(), letterColor, textOffset, fixedPos); // отправляем
 }
 
-void LAMP::sendStringToLamp(const char* text, CRGB letterColor, bool forcePrint, bool clearQueue, int8_t textOffset, int16_t fixedPos)
+void Lamp::sendStringToLamp(const char* text, CRGB letterColor, bool forcePrint, bool clearQueue, int8_t textOffset, int16_t fixedPos)
 {
   if((!flags.ONflag && !forcePrint) || (isAlarm() && !forcePrint)) return; // если выключена, или если будильник, но не задан принудительный вывод - то на выход
   if(textOffset==-128) textOffset=this->txtOffset;
@@ -598,7 +598,7 @@ void LAMP::sendStringToLamp(const char* text, CRGB letterColor, bool forcePrint,
   }
 }
 
-void LAMP::doPrintStringToLamp(const char* text,  CRGB letterColor, const int8_t textOffset, const int16_t fixedPos)
+void Lamp::doPrintStringToLamp(const char* text,  CRGB letterColor, const int8_t textOffset, const int16_t fixedPos)
 {
   static String toPrint;
   static CRGB _letterColor;
@@ -638,7 +638,7 @@ void LAMP::doPrintStringToLamp(const char* text,  CRGB letterColor, const int8_t
   }
 }
 
-void LAMP::newYearMessageHandle()
+void Lamp::newYearMessageHandle()
 {
     if(!tmNewYearMessage.isReady()) return;
 
@@ -693,7 +693,7 @@ void LAMP::newYearMessageHandle()
 }
 
 // при вызове - вывозит на лампу текущее время
-void LAMP::showTimeOnScreen(const char *value, bool force)
+void Lamp::showTimeOnScreen(const char *value, bool force)
 {
   DynamicJsonDocument doc(512);
   String buf(value);
@@ -729,7 +729,7 @@ void LAMP::showTimeOnScreen(const char *value, bool force)
 }
 
 #ifdef MIC_EFFECTS
-void LAMP::micHandler()
+void Lamp::micHandler()
 {
   static uint8_t counter=0;
   if(effects.getCurrent()==EFF_ENUM::EFF_NONE)
@@ -791,7 +791,7 @@ void LAMP::micHandler()
   }
 }
 
-void LAMP::setMicOnOff(bool val) {
+void Lamp::setMicOnOff(bool val) {
     flags.isMicOn = val;
     lampState.isMicOn = val;
     if(effects.getCurrent()==EFF_NONE || !effects.status()) return;
@@ -817,8 +817,8 @@ void LAMP::setMicOnOff(bool val) {
 }
 #endif  // MIC_EFFECTS
 
-void LAMP::setBrightness(uint8_t tgtbrt, fade_t fade, bool bypass){
-    LOG(printf, "LAMP::setBrightness(%u,%u,%u)\n", tgtbrt, static_cast<uint8_t>(fade), bypass);
+void Lamp::setBrightness(uint8_t tgtbrt, fade_t fade, bool bypass){
+    LOG(printf, "Lamp::setBrightness(%u,%u,%u)\n", tgtbrt, static_cast<uint8_t>(fade), bypass);
     if (bypass)
       return _brightness(tgtbrt, true);
 
@@ -836,24 +836,24 @@ void LAMP::setBrightness(uint8_t tgtbrt, fade_t fade, bool bypass){
  * Set global brightness
  * @param bool natural
  */
-void LAMP::_brightness(uint8_t brt, bool absolute){
+void Lamp::_brightness(uint8_t brt, bool absolute){
     if (!absolute) brt = luma::curveMap(_curve, brt, MAX_BRIGHTNESS, _brightnessScale);
     if ( brt == display.brightness()) return;  // nothing to change here
 
     display.brightness(brt);
 }
 
-uint8_t LAMP::_get_brightness(bool absolute){
+uint8_t Lamp::_get_brightness(bool absolute){
   return absolute ? display.brightness() : luma::curveUnMap(_curve, display.brightness(), MAX_BRIGHTNESS, _brightnessScale);
 }
 
-void LAMP::setLumaCurve(luma::curve c){
+void Lamp::setLumaCurve(luma::curve c){
   if (c == _curve) return;
   _curve = c;
   setBrightness(getBrightness(), fade_t::off);    // switch to the adjusted brightness level
 };
 
-void LAMP::switcheffect(EFFSWITCH action, uint16_t effnb){
+void Lamp::switcheffect(EFFSWITCH action, uint16_t effnb){
   if (isLampOn())
     switcheffect(action, getFaderFlag(), effnb);
   else
@@ -866,7 +866,7 @@ void LAMP::switcheffect(EFFSWITCH action, uint16_t effnb){
  * @param EFFSWITCH action - вид переключения (пред, след, случ.)
  * @param fade - переключаться через фейдер или сразу
  */
-void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) {
+void Lamp::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) {
 #ifdef MIC_EFFECTS
     lampState.setMicAnalyseDivider(1); // восстановить делитель, при любой активности (поскольку эффекты могут его перенастраивать под себя)
 #endif
@@ -900,7 +900,7 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
         return;
     }
 
-    LOG(printf, "LAMP::switcheffect() action=%d, fade=%d, effnb=%d\n", action, fade, next_eff_num);
+    LOG(printf, "Lamp::switcheffect() action=%d, fade=%d, effnb=%d\n", action, fade, next_eff_num);
     // тухнем "вниз" только на включенной лампе
     if (fade && flags.ONflag) {
       effects.switchEffect(next_eff_num, true);       // preload controls for next effect
@@ -917,7 +917,7 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
     }
 
   } else {
-    LOG(printf, "LAMP::switcheffect() postfade act=%d, fade=%d, effnb=%d\n", action, fade, effnb ? effnb : effects.getSelected());
+    LOG(printf, "Lamp::switcheffect() postfade act=%d, fade=%d, effnb=%d\n", action, fade, effnb ? effnb : effects.getSelected());
   }
 
   if(flags.isEffClearing || !effects.getCurrent()){ // для EFF_NONE или для случая когда включена опция - чистим матрицу
@@ -967,7 +967,7 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
  * включает/выключает режим "демо"
  * @param SCHEDULER enable/disable/reset - вкл/выкл/сброс
  */
-void LAMP::demoTimer(SCHEDULER action, uint8_t tmout){
+void Lamp::demoTimer(SCHEDULER action, uint8_t tmout){
   switch (action)
   {
   case SCHEDULER::T_DISABLE :
@@ -1002,7 +1002,7 @@ void LAMP::demoTimer(SCHEDULER action, uint8_t tmout){
  * включает/выключает таймер обработки эффектов
  * @param SCHEDULER enable/disable/reset - вкл/выкл/сброс
  */
-void LAMP::effectsTimer(SCHEDULER action) {
+void Lamp::effectsTimer(SCHEDULER action) {
   LOG(printf, "effectsTimer: %u\n", (unsigned)action);
   switch (action){
   case SCHEDULER::T_ENABLE :
@@ -1017,7 +1017,7 @@ void LAMP::effectsTimer(SCHEDULER action) {
 //-----------------------------
 
 // ------------- мигающий цвет (не эффект! используется для отображения краткосрочного предупреждения; неблокирующий код, рисует поверх эффекта!) -------------
-void LAMP::warningHelper(){
+void Lamp::warningHelper(){
   if(lampState.isWarning) {
     if(!warningTask)
       return;
@@ -1051,7 +1051,7 @@ void LAMP::warningHelper(){
   }
 }
 
-void LAMP::showWarning(
+void Lamp::showWarning(
   const CRGB &color,                                        /* цвет вспышки                                                 */
   uint32_t duration,                                        /* продолжительность отображения предупреждения (общее время)   */
   uint16_t blinkHalfPeriod,                                 /* продолжительность одной вспышки в миллисекундах (полупериод) */
@@ -1103,22 +1103,22 @@ void LAMP::showWarning(
   }
 }
 
-void LAMP::fillDrawBuf(CRGB color) {
+void Lamp::fillDrawBuf(CRGB color) {
   if(_overlay) _overlay->fill(color);
 }
 
-void LAMP::writeDrawBuf(CRGB color, uint16_t x, uint16_t y){
+void Lamp::writeDrawBuf(CRGB color, uint16_t x, uint16_t y){
   if (_overlay) { _overlay->at(x,y) = color; }
 }
 
-void LAMP::save_flags(){
+void Lamp::save_flags(){
   //if (flags.restoreState)
   embui.var(V_lampFlags, flags.lampflags);
 }
 
 
 #ifdef EMBUI_USE_MQTT
-void LAMP::setmqtt_int(int val) {
+void Lamp::setmqtt_int(int val) {
     if (val <= 0){
       delete tmqtt_pub;
       tmqtt_pub = nullptr;
@@ -1135,7 +1135,7 @@ void LAMP::setmqtt_int(int val) {
 }
 #endif
 
-void LAMP::_overlay_buffer(bool activate) {
+void Lamp::_overlay_buffer(bool activate) {
   if (activate && !_overlay){
     LOG(println, "Create Display overlay");
     _overlay = display.getOverlay();   // obtain overlay buffer
@@ -1211,4 +1211,4 @@ void LEDFader::abort(){
 
 // ============
 // объект лампы
-LAMP myLamp;
+Lamp myLamp;
