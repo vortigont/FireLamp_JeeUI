@@ -39,6 +39,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "lamp.h"
 #include "display.hpp"
 #include "actions.hpp"
+#include "evtloop.h"
 #ifdef DS18B20
 #include "DS18B20.h"
 #endif
@@ -85,7 +86,13 @@ void mqttOnMessageCallback(char* topic, char* payload, AsyncMqttClientMessagePro
 void setup() {
     Serial.begin(115200);
 
-    LOG(printf_P, PSTR("\n\nsetup: free heap: %d, PSRAM:%d\n"), ESP.getFreeHeap(), ESP.getFreePsram());
+    LOG(printf, "\n\nloop ptr: %u\n", evt::hndlr);
+
+    // Start event loop task
+    evt::start();
+#ifdef LAMP_DEBUG
+    evt::debug();
+#endif
 
 #ifdef EMBUI_USE_UDP
     embui.udp(); // Ответ на UDP запрс. в качестве аргумента - переменная, содержащая macid (по умолчанию)
@@ -153,7 +160,7 @@ void setup() {
     //myLamp.events.setEventCallback(event_worker);
     myLamp.lamp_init();
 
-    LOG(println, "setup() done");
+    LOG(printf, "\n\nsetup complete: free heap: %uk, PSRAM:%uk\n\n", ESP.getFreeHeap()/1024, ESP.getFreePsram()/1024);
 }   // End setup()
 
 

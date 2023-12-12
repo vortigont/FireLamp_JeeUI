@@ -245,7 +245,7 @@ EffectWorker::EffectWorker(LAMPSTATE *_lampstate) : lampstate(_lampstate) {
  * Создаем экземпляр класса калькулятора в зависимости от требуемого эффекта
  */
 void EffectWorker::workerset(uint16_t effect){
-  LOG(printf_P,PSTR("Wrkr set: %u\n"), effect);
+  LOG(print, "Wrkr set:"); LOG(println, effect);
 
   LedFB<CRGB> *canvas = display.getCanvas().get();
   if (!canvas) { LOG(println, "E: no canvas buffer!"); return; }

@@ -262,16 +262,16 @@ private:
 public:
     // c-tor
     Lamp();
+    // d-tor
+    ~Lamp();
+
 
     // noncopyable
     Lamp (const Lamp&) = delete;
     Lamp& operator= (const Lamp&) = delete;
 
-    void lamp_init();       // первичная инициализация Лампы
-
-    // wipe all screen buffers to black
-    //void reset_led_buffs();
-
+    // инициализация Лампы
+    void lamp_init();
 
     /**
      * @brief show a warning message on a matrix
@@ -494,8 +494,24 @@ public:
 
     // ---------- служебные функции -------------
 
-    void changePower(); // плавное включение/выключение
-    void changePower(bool);
+    /**
+     * @brief вкл./выкл лампу
+     * логическое включение/выключение лампы
+     * generates events:
+     *  lampEvtId_t::pwron
+     *  lampEvtId_t::pwroff
+     * 
+     */
+    void power(bool);
+
+    /**
+     * @brief toggle logical power state for the lamp
+     * generates events:
+     *  lampEvtId_t::pwron
+     *  lampEvtId_t::pwroff
+     * 
+     */
+    void power();
 
     /**
      * @brief общий переключатель эффектов лампы
@@ -527,6 +543,17 @@ public:
      */
     void effectsTimer(SCHEDULER action);
 
+    /**
+     * @brief static event handler
+     * wraps class members access for event loop
+     * 
+     * @param handler_args 
+     * @param base 
+     * @param id 
+     * @param event_data 
+     */
+    static void event_hndlr(void* handler_args, esp_event_base_t base, int32_t id, void* event_data);
+
 private:
     /**
      * @brief creates/destroys buffer for "drawing, etc..."
@@ -534,6 +561,34 @@ private:
      * @param active - if 'true' creates new buffer, otherwise destory/release buffer
      */
     void _overlay_buffer(bool activate);
+
+
+    // *** Event bus members    ***
+
+    // instance that holds lamp command events handler
+    esp_event_handler_instance_t _events_lamp_cmd;
+
+    /**
+     * @brief subscribe lamp objects to interesting events
+     * 
+     */
+    void _events_subsribe();
+
+    /**
+     * @brief unregister from event loop
+     * 
+     */
+    void events_unsubsribe();
+
+    /**
+     * @brief event picker method, processes incoming events from a event_hndlr wrapper
+     * 
+     * @param base 
+     * @param id 
+     * @param event_data 
+     */
+    void _event_picker(esp_event_base_t base, int32_t id, void* data);
+
 
 
 };

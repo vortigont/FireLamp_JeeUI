@@ -41,6 +41,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "actions.hpp"
 #include "alarm.h"
 #include "ledfb.hpp"
+#include "evtloop.h"
 
 GAUGE *GAUGE::gauge = nullptr; // объект индикатора
 ALARMTASK *ALARMTASK::alarmTask = nullptr; // объект будильника
@@ -59,8 +60,15 @@ Lamp::Lamp() : tmStringStepTime(DEFAULT_TEXT_SPEED), tmNewYearMessage(0), effect
   lampState.speedfactor = 1.0; // дефолтное значение
 }
 
+Lamp::~Lamp(){
+  events_unsubsribe();
+}
+
 void Lamp::lamp_init()
 {
+  // subscribe to CMD events
+  _events_subsribe();
+
   _brightnessScale = embui.paramVariant(V_dev_brtscale)  | DEF_BRT_SCALE;
   globalBrightness = embui.paramVariant(A_dev_brightness) | DEF_BRT_SCALE/2;
 
@@ -96,8 +104,8 @@ void Lamp::lamp_init()
   // restore lamp flags from cfg
   flags.lampflags = embui.paramVariant(V_lampFlags);
   if (flags.restoreState && flags.ONflag){
-    flags.ONflag = false;       // reset it first, so that changePower() method will know that we are in off state actually
-    changePower(true);
+    flags.ONflag = false;       // reset it first, so that power() method will know that we are in off state actually
+    power(true);
   } else {
     flags.ONflag = false;
   }
@@ -168,9 +176,9 @@ void Lamp::handle(){
   }
 }
 
-void Lamp::changePower() {changePower(!flags.ONflag);}
+void Lamp::power() {power(!flags.ONflag);}
 
-void Lamp::changePower(bool flag) // флаг включения/выключения меняем через один метод
+void Lamp::power(bool flag) // флаг включения/выключения меняем через один метод
 {
   if (flag == flags.ONflag) return;  // пропускаем холостые вызовы
   LOG(print, "Lamp powering "); LOG(println, flag ? "On": "Off");
@@ -195,16 +203,19 @@ void Lamp::changePower(bool flag) // флаг включения/выключе�
 
     // enable FET for matrix
     if (fet_gpio > static_cast<int>(GPIO_NUM_NC)) digitalWrite(fet_gpio, (flags.ONflag ? fet_ll : !fet_ll));
+    // generate change state event 
+    EVT_POST(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::pwron));
   } else  {
     // POWER OFF
-    if(flags.isFaderON && !lampState.isOffAfterText){
+    if(flags.isFaderON){
+      // need to fade
       LEDFader::getInstance()->fadelight(0, FADE_TIME, [this](){ effectsTimer(SCHEDULER::T_DISABLE); } );     // гасим эффект-процессор
     } else {
+      // no need to fade
+      EVT_POST(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::pwroff));
       effectsTimer(SCHEDULER::T_DISABLE);
-      //_wipe_screen();  // forse wipe the screen to black
     }
-    lampState.isOffAfterText = false;
-    lampState.isStringPrinting = false;
+
     demoTimer(T_DISABLE);     // гасим Демо-таймер
 
     // установка сигнала в пин, управляющий MOSFET транзистором, соответственно состоянию вкл/выкл матрицы
@@ -474,7 +485,7 @@ void Lamp::sendString(const char* text, CRGB letterColor, bool forcePrint, bool 
   if (!isLampOn() && forcePrint){
       disableEffectsUntilText(); // будем выводить текст, при выкюченной матрице
       setOffAfterText();
-      changePower(true);
+      power(true);
       setBrightness(OFF_BRIGHTNESS, fade_t::off, true); // выводить будем минимальной яркостью в OFF_BRIGHTNESS пункта
       sendStringToLamp(text, letterColor, forcePrint, clearQueue);
   } else {
@@ -876,9 +887,6 @@ void Lamp::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
 #endif
 
   if (!skip) {
-    if(isRGB()){ // выход из этого режима, при любой попытки перехода по эффектам
-      stopRGB();
-    }
     uint16_t next_eff_num = effnb;
     switch (action) {
     case EFFSWITCH::SW_NEXT :
@@ -1146,6 +1154,63 @@ void Lamp::_overlay_buffer(bool activate) {
   }
 }
 
+void Lamp::_events_subsribe(){
+  ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CMD_EVENTS, ESP_EVENT_ANY_ID, Lamp::event_hndlr, this, &_events_lamp_cmd));
+}
+
+void Lamp::event_hndlr(void* handler_args, esp_event_base_t base, int32_t id, void* event_data){
+  reinterpret_cast<Lamp*>(handler_args)->_event_picker(base, id, event_data);
+}
+
+void Lamp::events_unsubsribe(){
+  esp_event_handler_instance_unregister_with(evt::get_hndlr(), LAMP_CMD_EVENTS, ESP_EVENT_ANY_ID, _events_lamp_cmd);
+}
+
+void Lamp::_event_picker(esp_event_base_t base, int32_t id, void* data){
+  LOG(printf, "Lamp::_event_picker %s:%d\n", base, id);
+
+  if (base == LAMP_CMD_EVENTS){
+
+    switch (static_cast<evt::lamp_t>(id)){
+      case evt::lamp_t::pwron :
+        power(true);
+        break;
+      case evt::lamp_t::pwroff :
+        power(false);
+        break;
+      case evt::lamp_t::pwrtoggle :
+        power();
+        break;
+
+
+    // Get Commands
+      case evt::lamp_t::getpwr :
+        EVT_POST(LAMP_STATE_EVENTS, flags.ONflag ? e2int(evt::lamp_t::pwron) : e2int(evt::lamp_t::pwroff));
+        //esp_event_post_to(evt::hndlr, LAMP_STATE_EVENTS, flags.ONflag ? e2int(evt::lamp_t::pwron) : e2int(evt::lamp_t::pwroff), NULL, 0, portMAX_DELAY);
+        break;
+
+
+      default:
+        return;
+    }
+
+  }
+
+  if (base == LAMP_CHANGE_EVENTS){
+    switch (static_cast<evt::lamp_t>(id)){
+      case evt::lamp_t::fadeEnd :
+        // check if lamp is in "PowerOff" state, then we've just complete fade-out, need to send event
+        if (flags.ONflag)
+          EVT_POST(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::pwroff));
+        break;
+
+      default:
+        return;
+    }
+  }
+
+}
+
 // *********************************
 /*  LEDFader class implementation */
 
@@ -1153,21 +1218,22 @@ void LEDFader::fadelight(const uint8_t _targetbrightness, const uint32_t _durati
   if (!lmp) return;
   LOG(printf, "Fader: tgt:%u, lamp:%u/%u, _br_scaled/_br_abs:%u/%u\n", _targetbrightness, lmp->getBrightness(), lmp->getBrightnessScale(), lmp->_get_brightness(), lmp->_get_brightness(true));
 
-  if (lmp->_get_brightness() == _targetbrightness) {
+  _brt = lmp->_get_brightness(true);        // get current absolute Display brightness
+  _tgtbrt = luma::curveMap(lmp->_curve, _targetbrightness, MAX_BRIGHTNESS, lmp->_brightnessScale);
+
+  if (_brt == _tgtbrt){
     // no need to fade, already at this brightness
     if (callback) callback();
     return;
   }
 
-  _brt = lmp->_get_brightness(true);        // get current absolute Display brightness
-  _tgtbrt = luma::curveMap(lmp->_curve, _targetbrightness, MAX_BRIGHTNESS, lmp->_brightnessScale);
   _cb = callback;
   // calculate required steps
   int _steps = (abs(_tgtbrt - _brt) > FADE_MININCREMENT * _duration / FADE_STEPTIME) ? _duration / FADE_STEPTIME : abs(_tgtbrt - _brt)/FADE_MININCREMENT;
   if (_steps < 3) {   // no need to fade for such small difference
-    LOG(printf_P, PSTR("Fast fade %d->%d\n"), _brt, _tgtbrt);
+    LOG(printf, "Fast fade %d->%d\n", _brt, _tgtbrt);
     lmp->_brightness(_tgtbrt, true);
-    if (runner) abort();
+    abort();
     if (callback) callback();
     return;
   }
@@ -1182,7 +1248,6 @@ void LEDFader::fadelight(const uint8_t _targetbrightness, const uint32_t _durati
     runner = new Task((unsigned long)FADE_STEPTIME,
       _steps,
       [this](){ _brt += _brtincrement; lmp->_brightness(_brt, true);  // set absolute backend brightness here
-                display.show();
                 /* LOG(printf_P, PSTR("fd brt %d/%d, glbr:%d, gbr:%d, vid:%d, vid2:%d\n"), _brt, _brtincrement, lmp->getBrightness(), lmp->getBrightness(), brighten8_video(FastLED.getBrightness()), brighten8_video(brighten8_video(FastLED.getBrightness()))  ); */
               },
       &ts, true, nullptr,
@@ -1198,7 +1263,9 @@ void LEDFader::fadelight(const uint8_t _targetbrightness, const uint32_t _durati
     );
   }
 
-  LOG(printf_P, PSTR("Fading lamp/fled:%d/%d->%d/%u, steps/inc %d/%d\n"), lmp->getBrightness(), lmp->_get_brightness(true), _targetbrightness, _tgtbrt, _steps, _brtincrement);
+  LOG(printf, "Fading lamp/fled:%d/%d->%d/%u, steps/inc %d/%d\n", lmp->getBrightness(), lmp->_get_brightness(true), _targetbrightness, _tgtbrt, _steps, _brtincrement);
+  // send fader event
+  EVT_POST(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::fadeStart));
 }
 
 void LEDFader::abort(){

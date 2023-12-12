@@ -54,6 +54,8 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "basicui.h"
 #include "actions.hpp"
 #include <type_traits>
+#include "traits.hpp"               // embui traits
+#include "evtloop.h"
 
 /**
  * @brief Set device display brightness
@@ -96,27 +98,12 @@ void set_lcurve(Interface *interf, const JsonObject *data, const char* action){
  * Обработка вкл/выкл лампы
  */
 void set_pwrswitch(Interface *interf, const JsonObject *data, const char* action){
-    bool newpower;
-    if (data && (*data).size()){
-        newpower = (*data)[A_dev_pwrswitch];
-        if (newpower == myLamp.isLampOn()) return;      // status not changed
-        myLamp.changePower(newpower);
-        if (myLamp.getLampFlagsStuct().restoreState){
-            myLamp.save_flags();
-        }
+    EVT_POST(LAMP_CMD_EVENTS, (*data)[A_dev_pwrswitch] ? e2int(evt::lamp_t::pwron) : e2int(evt::lamp_t::pwroff));
 
     #ifdef MP3PLAYER
         if(myLamp.getLampFlagsStuct().isOnMP3)
-            mp3->setIsOn(newpower);
+            mp3->setIsOn((*data)[A_dev_pwrswitch]);
     #endif
-    }
-
-    // publish new state
-    if(interf){
-        interf->json_frame_value();
-        interf->value(A_dev_pwrswitch, newpower);
-        interf->json_frame_flush();
-    }
 }
 
 /**
