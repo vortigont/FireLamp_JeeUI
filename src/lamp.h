@@ -168,7 +168,6 @@ _LAMPFLAGS(){
 
 class Lamp {
     friend class LEDFader;
-    friend class ALARMTASK;        // будильник ходит сюда за MOSFET и AUX пином, todo: переписать будильник целиком
 private:
     std::shared_ptr<LedFB<CRGB> > _overlay;     // буфер для оверлея
 
@@ -180,8 +179,6 @@ private:
     uint8_t globalBrightness = 127;     // глобальная яркость
     uint8_t storedBright;               // "запасное" значение яркости
     uint8_t BFade;                      // затенение фона под текстом
-
-    uint8_t txtOffset = 0; // смещение текста относительно края матрицы
 
     // GPIO's
     uint8_t bPin = BTN_PIN;        // пин кнопки
@@ -199,21 +196,8 @@ private:
     void micHandler();
 #endif
 
-
-    uint8_t alarmPT; // время будильника рассвет - старшие 4 бита и свечения после рассвета - младшие 4 бита
     uint8_t tmBright; // яркость дисплея при вкл - старшие 4 бита и яркость дисплея при выкл - младшие 4 бита
-
-    DynamicJsonDocument *docArrMessages = nullptr; // массив сообщений для вывода на лампу
-
-    timerMinim tmStringStepTime;    // шаг смещения строки, в мс
-    timerMinim tmNewYearMessage;    // период вывода новогоднего сообщения
-
-    time_t NEWYEAR_UNIXDATETIME=1609459200U;    // дата/время в UNIX формате, см. https://www.cy-pr.com/tools/time/ , 1609459200 => Fri, 01 Jan 2021 00:00:00 GMT
-
     Task *demoTask = nullptr;    // динамический планировщик Смены эффектов в ДЕМО
-    Task *effectsTask= nullptr;  // динамический планировщик обработки эффектов
-    WarningTask *warningTask = nullptr; // динамический планировщик переключалки флага lampState.isWarning
-    Task *tmqtt_pub = nullptr;   // динамический планировщик публикации через mqtt
 
     /**
      * @brief set brightness value to Display backend
@@ -231,22 +215,6 @@ private:
      * @return uint8_t - brightness value
      */
     uint8_t _get_brightness(bool absolute=false);
-
-    void effectsTick(); // обработчик эффектов
-
-    String &prepareText(String &source);
-    void doPrintStringToLamp(const char* text = nullptr, CRGB letterColor = CRGB::Black, const int8_t textOffset = -128, const int16_t fixedPos = 0);
-    bool fillStringManual(const char* text,  const CRGB &letterColor, bool stopText = false, bool isInverse = false, int32_t pos = 0, int8_t letSpace = LET_SPACE, int8_t txtOffset = TEXT_OFFSET, int8_t letWidth = LET_WIDTH, int8_t letHeight = LET_HEIGHT); // -2147483648
-    void drawLetter(uint8_t bcount, uint16_t letter, int16_t offset,  const CRGB &letterColor, uint8_t letSpace, int8_t txtOffset, bool isInverse, int8_t letWidth, int8_t letHeight, uint8_t flSymb=0);
-    uint8_t getFont(uint8_t bcount, uint8_t asciiCode, uint8_t row);
-
-    //void alarmWorker();
-
-    /*
-     * вывод готового кадра на матрицу,
-     * и перезапуск эффект-процессора
-     */
-    void frameShow(const uint32_t ticktime);
 
 #ifdef MP3PLAYER
     void playEffect(bool isPlayName = false, EFFSWITCH action = EFFSWITCH::SW_NEXT);
@@ -439,16 +407,12 @@ public:
 
     bool isONMP3() {return flags.isOnMP3;}
     void setONMP3(bool flag) {flags.isOnMP3=flag;}
-    void setTextMovingSpeed(uint8_t val) {tmStringStepTime.setInterval(val);}
-    uint32_t getTextMovingSpeed() {return tmStringStepTime.getInterval();}
-    void setTextOffset(uint8_t val) { txtOffset=val;}
 
     void setPlayTime(uint8_t val) {flags.playTime = val;}
     void setPlayName(bool flag) {flags.playName = flag;}
     void setPlayEffect(bool flag) {flags.playEffect = flag;}
     void setPlayMP3(bool flag) {flags.playMP3 = flag;}
     void setLimitAlarmVolume(bool flag) {flags.limitAlarmVolume = flag;}
-    void setAlatmSound(ALARM_SOUND_TYPE val) {flags.alarmSound = val;}
     void setEqType(uint8_t val) {flags.MP3eq = val;}
 
     /**
@@ -477,18 +441,12 @@ public:
     void startNormalMode(bool forceOff=false);
     void restoreStored();
     void storeEffect();
-    void newYearMessageHandle();
     void setBFade(uint8_t val){ BFade = val; }
     uint8_t getBFade(){ return BFade; }
-    void setNYMessageTimer(int in){ tmNewYearMessage.setInterval(in*60*1000); tmNewYearMessage.reset(); }
-    void setNYUnixTime(time_t tm){ NEWYEAR_UNIXDATETIME = tm; }
     void setEffHasMic(bool flag) {flags.effHasMic = flag;}
     void setDRand(bool flag) {flags.dRand = flag; lampState.isRandDemo = (flag && mode==LAMPMODE::MODE_DEMO); }
     void setShowName(bool flag) {flags.showName = flag;}
 
-    void setAlarmPT(uint8_t val) {alarmPT = val;}
-    uint8_t getAlarmP() { return alarmPT>>4; }
-    uint8_t getAlarmT() { return alarmPT&0x0F; }
 
     // ---------- служебные функции -------------
 

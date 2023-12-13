@@ -43,7 +43,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "evtloop.h"
 
 
-Lamp::Lamp() : tmStringStepTime(DEFAULT_TEXT_SPEED), tmNewYearMessage(0), effects(&lampState){
+Lamp::Lamp() : effects(&lampState){
   lampState.isInitCompleted = false; // завершилась ли инициализация лампы
   lampState.isStringPrinting = false; // печатается ли прямо сейчас строка?
   lampState.isEffectsDisabledUntilText = false;
@@ -286,169 +286,6 @@ void Lamp::startNormalMode(bool forceOff)
 }
 
 typedef enum {FIRSTSYMB=1,LASTSYMB=2} SYMBPOS;
-
-bool Lamp::fillStringManual(const char* text,  const CRGB &letterColor, bool stopText, bool isInverse, int32_t pos, int8_t letSpace, int8_t txtOffset, int8_t letWidth, int8_t letHeight)
-{/*
-  static int32_t offset = display.getCanvas()->vmirror() ? 0 : display.getCanvas()->w();
-  uint8_t bcount = 0;
-
-  if(pos)
-    offset = (display.getCanvas()->vmirror() ? 0 + pos : display.getCanvas()->w() - pos);
-
-  if (!text || !strlen(text))
-  {
-    offset = (display.getCanvas()->vmirror() ? 0 : display.getCanvas()->w());
-    return true;
-  }
-
-  uint16_t i = 0, j = 0;
-  uint8_t flSymb = SYMBPOS::FIRSTSYMB; // маркер первого символа строки
-  while (text[i] != '\0')
-  {
-    if(text[i+1] == '\0')
-      flSymb|=SYMBPOS::LASTSYMB; // маркер последнего символа строки
-    if ((uint8_t)text[i] > 191)  // работаем с UTF8 после префикса
-    {
-      bcount = (uint8_t)text[i]; // кол-во октетов для UTF-8
-      i++;
-    }
-    else
-    {
-      if(!display.getCanvas()->vmirror())
-        drawLetter(bcount, text[i], offset + (int16_t)j * (letWidth + letSpace), letterColor, letSpace, txtOffset, isInverse, letWidth, letHeight, flSymb);
-      else
-        drawLetter(bcount, text[i], offset - (int16_t)j * (letWidth + letSpace), letterColor, letSpace, txtOffset, isInverse, letWidth, letHeight, flSymb);
-      i++;
-      j++;
-      bcount = 0;
-      flSymb &= (0xFF^SYMBPOS::FIRSTSYMB); // сбросить маркер первого символа строки
-    }
-  }
-
-  if(!stopText)
-    (display.getCanvas()->vmirror() ? offset++ : offset--);
-  if ((!display.getCanvas()->vmirror() && offset < (int32_t)(-j * (letWidth + letSpace))) || (display.getCanvas()->vmirror() && offset > (int32_t)(j * (letWidth + letSpace))+(signed)display.getCanvas()->w()))       // строка убежала
-  {
-    offset = (display.getCanvas()->vmirror() ? 0 : display.getCanvas()->w());
-    return true;
-  }
-  if(pos) // если задана позиция, то считаем что уже отобразили
-  {
-    offset = (display.getCanvas()->vmirror() ? 0 : display.getCanvas()->w());
-    return true;
-  }
-*/
-  return false;
-}
-
-void Lamp::drawLetter(uint8_t bcount, uint16_t letter, int16_t offset,  const CRGB &letterColor, uint8_t letSpace, int8_t txtOffset, bool isInverse, int8_t letWidth, int8_t letHeight, uint8_t flSymb)
-{
-  int16_t start_pos = 0, finish_pos = letWidth + letSpace;
-
-  if (offset < (int16_t)-letWidth || offset > (int16_t)display.getCanvas()->w())
-  {
-    return;
-  }
-  if (offset < 0)
-  {
-    start_pos = (uint16_t)-offset;
-  }
-  if (offset > (int16_t)(display.getCanvas()->w() - letWidth))
-  {
-    finish_pos = (uint16_t)(display.getCanvas()->w() - offset);
-  }
-
-  if(flSymb){
-      if(flSymb&SYMBPOS::FIRSTSYMB){ // битовое &
-        start_pos--; // c 0 для самого первого символа
-      }
-      if(flSymb&SYMBPOS::LASTSYMB && !letSpace){ // битовое &
-        finish_pos++; // доп. ряд погашенных символов для последнего символа
-      }
-  }
-
-  //LOG(printf_P, PSTR("%d %d\n"), start_pos, finish_pos);
-
-  for (int16_t i = start_pos; i < finish_pos; i++)
-  {
-    uint8_t thisByte;
-
-    if((i<0) || (finish_pos - i <= letSpace) || ((letWidth - 1 - i)<0))
-      thisByte = 0x00;
-    else
-    {
-      thisByte = getFont(bcount, letter, i);
-    }
-
-    for (uint16_t j = 0; j < letHeight + 1; j++) // +1 доп. пиксель сверху
-    {
-      bool thisBit = thisByte & (1 << (letHeight - 1 - j));
-
-      // рисуем столбец (i - горизонтальная позиция, j - вертикальная)
-      if (offset + i >= 0 && offset + i < (int)display.getCanvas()->w() && txtOffset + j >= 0 && txtOffset + j < (int)display.getCanvas()->h()) {
-        if (thisBit) {
-          if(!isInverse)
-            display.getCanvas()->at(offset + i, txtOffset + j) = letterColor;
-          else
-            //EffectMath::setLedsfadeToBlackBy(getPixelNumber(offset + i, txtOffset + j), (isWarning() && lampState.warnType==2) ? 0 : (isWarning() && lampState.warnType==1) ? 255 : getBFade());
-            display.getCanvas()->at(offset + i, txtOffset + j).fadeToBlackBy((isWarning() && lampState.warnType==2) ? 0 : (isWarning() && lampState.warnType==1) ? 255 : getBFade());
-        } else {
-          if(isInverse)
-            display.getCanvas()->at(offset + i, txtOffset + j) = letterColor;
-          else
-            //EffectMath::setLedsfadeToBlackBy(getPixelNumber(offset + i, txtOffset + j), (isWarning() && lampState.warnType==2) ? 0 : (isWarning() && lampState.warnType==1) ? 255 : getBFade());
-            display.getCanvas()->at(offset + i, txtOffset + j).fadeToBlackBy((isWarning() && lampState.warnType==2) ? 0 : (isWarning() && lampState.warnType==1) ? 255 : getBFade());
-        }
-      }
-    }
-  }
-}
-
-uint8_t Lamp::getFont(uint8_t bcount, uint8_t asciiCode, uint8_t row)       // интерпретатор кода символа в массиве fontHEX (для Arduino IDE 1.8.* и выше)
-{
-  asciiCode = asciiCode - '0' + 16;                         // перевод код символа из таблицы ASCII в номер согласно нумерации массива
-
-  // if (asciiCode <= 90)                                      // печатаемые символы и английские буквы
-  // {
-  //   return pgm_read_byte(&fontHEX[asciiCode][row]);
-  // }
-  // else if (asciiCode >= 112 && asciiCode <= 159)
-  // {
-  //   return pgm_read_byte(&fontHEX[asciiCode - 17][row]);
-  // }
-  // else if (asciiCode >= 96 && asciiCode <= 111)
-  // {
-  //   return pgm_read_byte(&fontHEX[asciiCode + 47][row]);
-  // }
-
-  if (asciiCode <= 94) {
-    return pgm_read_byte(&(fontHEX[asciiCode][row]));     // для английских букв и символов
-  } else if ((bcount == 209) && asciiCode == 116) {         // є
-    return pgm_read_byte(&(fontHEX[162][row])); 
-  } else if ((bcount == 209) && asciiCode == 118) {        // і
-    return pgm_read_byte(&(fontHEX[73][row])); 
-  } else if ((bcount == 209) && asciiCode == 119) {         // ї
-    return pgm_read_byte(&(fontHEX[163][row])); 
-  } else if ((bcount == 208) && asciiCode == 100) {        // Є
-    return pgm_read_byte(&(fontHEX[160][row])); 
-  } else if ((bcount == 208) && asciiCode == 102) {         // І
-    return pgm_read_byte(&(fontHEX[41][row])); 
-  } else if ((bcount == 208) && asciiCode == 103) {        // Ї
-    return pgm_read_byte(&(fontHEX[161][row])); 
-  } else if ((bcount == 208) && asciiCode == 97) {         // Ё
-    return pgm_read_byte(&(fontHEX[100][row])); 
-  } else if ((bcount == 209) && asciiCode == 113) {        // ё
-    return pgm_read_byte(&(fontHEX[132][row])); 
-  } else if ((bcount == 208 || bcount == 209) && asciiCode >= 112 && asciiCode <= 159) {      // русские символы
-    return pgm_read_byte(&(fontHEX[asciiCode - 17][row]));
-  } else if ((bcount == 208 || bcount == 209) && asciiCode >= 96 && asciiCode <= 111) {
-    return pgm_read_byte(&(fontHEX[asciiCode + 47][row]));
-  } else if ((bcount == 194) && asciiCode == 144) {                                          // Знак градуса '°'
-    return pgm_read_byte(&(fontHEX[159][row]));
-  }
-
-  return 0;
-}
 
 #ifdef MIC_EFFECTS
 void Lamp::micHandler()
@@ -744,25 +581,6 @@ void Lamp::save_flags(){
   //if (flags.restoreState)
   embui.var(V_lampFlags, flags.lampflags);
 }
-
-
-#ifdef EMBUI_USE_MQTT
-void Lamp::setmqtt_int(int val) {
-    if (val <= 0){
-      delete tmqtt_pub;
-      tmqtt_pub = nullptr;
-      return;
-    }
-
-    if(tmqtt_pub){
-        tmqtt_pub->setInterval(val);
-        return;
-    }
-
-    extern void sendData();
-    tmqtt_pub = new Task(val * TASK_SECOND, TASK_FOREVER, [this](){ if(embui.mqttAvailable()) sendData(); }, &ts, true);
-}
-#endif
 
 void Lamp::_overlay_buffer(bool activate) {
   if (activate && !_overlay){

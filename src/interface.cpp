@@ -61,6 +61,10 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 // задержка вывода ip адреса при включении лампы после перезагрузки
 #define SHOWIP_DELAY    5
 
+// placeholder for effect list rebuilder task
+Task *delayedOptionTask = nullptr;
+// эффект, который сейчас конфигурируется на странице "Управление списком эффектов"
+EffectListElem *confEff = nullptr;
 
 /**
  * @brief numeric indexes for pages
@@ -87,17 +91,6 @@ enum class gpio_device:uint8_t {
     tmdisplay
 };
 
-namespace INTERFACE {
-// ------------- глобальные переменные построения интерфейса
-// планировщик заполнения списка
-Task *optionsTask = nullptr;        // задача для отложенной генерации списка
-Task *delayedOptionTask = nullptr;  // текущая отложенная задача, для сброса при повторных входах
-//CtrlsTask *ctrlsTask = nullptr;       // планировщик контролов
-
-static EffectListElem *confEff = nullptr; // эффект, который сейчас конфигурируется на странице "Управление списком эффектов"
-// ------------- глобальные переменные построения интерфейса
-} // namespace INTERFACE
-using namespace INTERFACE;
 
 /**
  * @brief enumerator with a files of effect lists for webui 
@@ -234,15 +227,11 @@ void ui_section_menu(Interface *interf, const JsonObject *data, const char* acti
 void ui_section_effects_list_configuration(Interface *interf, const JsonObject *data, const char* action){
     if (!interf) return;
 
-    String tmpSoundfile;    // tmpName,
-    //myLamp.effects.loadeffname(tmpName,confEff->eff_nb);
-    myLamp.effects.loadsoundfile(tmpSoundfile,confEff->eff_nb);
-
     interf->json_section_begin(TCONST_set_effect);
 
     interf->text(TCONST_effname, "", TINTF_effrename);       // поле под новое имя оставляем пустым
 #ifdef MP3PLAYER
-    interf->text(TCONST_soundfile, tmpSoundfile, TINTF_0B2);
+    //interf->text(TCONST_soundfile, tmpSoundfile, TINTF_0B2);
 #endif
     interf->json_section_line();
         interf->checkbox(TCONST_eff_sel, confEff->canBeSelected(), TINTF_in_sel_lst);      // доступен для выбора в выпадающем списке на главной странице
@@ -772,82 +761,7 @@ void set_auxflag(Interface *interf, const JsonObject *data, const char* action){
         digitalWrite(pin, !state);
     }
 }
-/*
-void block_lamp_textsend(Interface *interf, const JsonObject *data, const char* action){
-    if (!interf) return;
-    interf->json_section_begin(TCONST_textsend);
 
-    interf->spacer(TINTF_01C);
-    interf->text(TCONST_msg, P_EMPTY, TINTF_01D);
-    interf->color(TCONST_txtColor, embui.paramVariant(TCONST_txtColor), TINTF_01E);
-    interf->button(button_t::submit, TCONST_textsend, TINTF_01F, P_GRAY);
-
-    interf->json_section_hidden(TCONST_text_config, TINTF_002);
-        interf->json_section_begin(TCONST_edit_text_config);
-            interf->spacer(TINTF_001);
-                interf->range(TCONST_txtSpeed, 110-embui.paramVariant(TCONST_txtSpeed).as<int>(), 10, 100, 5, TINTF_044, false);
-                interf->range(TCONST_txtOf, embui.paramVariant(TCONST_txtOf).as<int>(), -1, (int)( display.getLayout().canvas_h() >6 ? display.getLayout().canvas_h() : 6)-6, 1, TINTF_045);
-                interf->range(TCONST_txtBfade, embui.paramVariant(TCONST_txtBfade).as<int>(), 0, 255, 1, TINTF_0CA);
-                
-            interf->spacer(TINTF_04E);
-                interf->number(TCONST_ny_period, embui.paramVariant(TCONST_ny_period).as<int>(), TINTF_04F);
-                //interf->number(TCONST_ny_unix, TINTF_050);
-                String datetime;
-                TimeProcessor::getDateTimeString(datetime, embui.paramVariant(TCONST_ny_unix));
-                interf->text(TCONST_ny_unix, datetime.c_str(), TINTF_050);
-                interf->button(button_t::submit, TCONST_edit_text_config, TINTF_Save, P_GRAY);
-            interf->spacer();
-                interf->button(button_t::generic, TCONST_lamptext, TINTF_exit);
-        interf->json_section_end();
-    interf->json_section_end();
-
-    interf->json_section_end();
-}
-
-void block_lamptext(Interface *interf, const JsonObject *data, const char* action){
-    //Страница "Вывод текста"
-    if (!interf) return;
-    interf->json_section_main(TCONST_lamptext, TINTF_001);
-
-    block_lamp_textsend(interf, data, NULL);
-
-    interf->json_section_end();
-}
-
-void set_text_config(Interface *interf, const JsonObject *data, const char* action){
-    if (!data) return;
-    (*data)[TCONST_txtSpeed] = 110 -(*data)[TCONST_txtSpeed].as<int>();
-    SETPARAM(TCONST_txtSpeed);
-    myLamp.setTextMovingSpeed((*data)[TCONST_txtSpeed].as<int>());
-    SETPARAM(TCONST_txtOf);
-    myLamp.setTextOffset((*data)[TCONST_txtOf]);
-    SETPARAM(TCONST_ny_period);
-    myLamp.setNYMessageTimer((*data)[TCONST_ny_period]);
-    SETPARAM(TCONST_txtBfade);
-    myLamp.setBFade((*data)[TCONST_txtBfade]);
-
-    String newYearTime = (*data)[TCONST_ny_unix]; // Дата/время наструпления нового года с интерфейса
-    struct tm t;
-    tm *tm=&t;
-    localtime_r(TimeProcessor::now(), tm);  // reset struct to local now()
-
-    // set desired date
-    tm->tm_year = newYearTime.substring(0,4).toInt()-TM_BASE_YEAR;
-    tm->tm_mon  = newYearTime.substring(5,7).toInt()-1;
-    tm->tm_mday = newYearTime.substring(8,10).toInt();
-    tm->tm_hour = newYearTime.substring(11,13).toInt();
-    tm->tm_min  = newYearTime.substring(14,16).toInt();
-    tm->tm_sec  = 0;
-
-    time_t ny_unixtime = mktime(tm);
-    LOG(printf_P, PSTR("Set New Year at %d %d %d %d %d (%ld)\n"), tm->tm_year, tm->tm_mon, tm->tm_mday, tm->tm_hour, tm->tm_min, ny_unixtime);
-
-    embui.var(TCONST_ny_unix, ny_unixtime); myLamp.setNYUnixTime(ny_unixtime);
-
-    if (interf)
-        section_text_frame(interf, data, NULL);
-}
-*/
 /**
  * @brief UI Draw on screen function
  * 
@@ -1047,217 +961,12 @@ void set_settings_other(Interface *interf, const JsonObject *data, const char* a
         myLamp.setTempDisp((*data)[TCONST_ds18b20]);
         #endif
 
-        uint8_t alatmPT = ((*data)[TCONST_alarmP]).as<uint8_t>()<<4; // старшие 4 бита
-        alatmPT = alatmPT | ((*data)[TCONST_alarmT]).as<uint8_t>(); // младшие 4 бита
-        embui.var(TCONST_alarmPT, alatmPT); myLamp.setAlarmPT(alatmPT);
-        //SETPARAM(TCONST_alarmPT, myLamp.setAlarmPT(alatmPT));
-        //LOG(printf_P, PSTR("alatmPT=%d, alatmP=%d, alatmT=%d\n"), alatmPT, myLamp.getAlarmP(), myLamp.getAlarmT());
-
         myLamp.save_flags();
 
     if(interf)
         basicui::page_system_settings(interf, data, NULL);
 }
-/*
-#ifdef ESP_USE_BUTTON
-void set_gaugetype(Interface *interf, const JsonObject *data, const char* action){
-        if (!data) return;
-        myLamp.setGaugeType((*data)[TCONST_EncVG].as<GAUGETYPE>());
-        myLamp.save_flags();
-    }
 
-void block_settings_butt(Interface *interf, const JsonObject *data, const char* action){
-    if (!interf) return;
-    interf->json_section_main(TCONST_show_button, TINTF_013);
-
-    interf->checkbox(TCONST_Btn, myButtons->isButtonOn(), TINTF_07B, true);
-    interf->select(TCONST_EncVG, myLamp.getLampFlagsStuct().GaugeType, TINTF_0DD, true);
-        interf->option(GAUGETYPE::GT_NONE, TINTF_0EE);
-        interf->option(GAUGETYPE::GT_VERT, TINTF_0EF);
-        interf->option(GAUGETYPE::GT_HORIZ, TINTF_0F0);
-    interf->json_section_end();
-    interf->spacer();
-
-    interf->json_section_begin(TCONST_butt_conf);
-    interf->select(TCONST_buttList, 0, TINTF_07A);
-    for (int i = 0; i < myButtons->size(); i++) {
-        interf->option(i, (*myButtons)[i]->getName());
-    }
-    interf->json_section_end();
-
-    interf->json_section_line();
-    interf->button_value(button_t::submit, TCONST_butt_conf, TCONST_edit, TINTF_05C, P_GREEN);
-    interf->button_value(button_t::submit, TCONST_butt_conf, TCONST_delete, TINTF_006, P_RED);
-    interf->json_section_end();
-
-    interf->json_section_end();
-
-    interf->button(button_t::generic, TCONST_butt_conf, TINTF_05D);
-
-    interf->spacer();
-    interf->button(button_t::generic, A_ui_page_settings, TINTF_exit);
-
-    interf->json_section_end();
-}
-
-void show_settings_butt(Interface *interf, const JsonObject *data, const char* action){
-    if (!interf) return;
-    interf->json_frame_interface();
-    block_settings_butt(interf, data, NULL);
-    interf->json_frame_flush();
-}
-
-void set_butt_conf(Interface *interf, const JsonObject *data, const char* action){
-    if (!data) return;
-    Button *btn = nullptr;
-    bool on = ((*data)[TCONST_on]);
-    bool hold = ((*data)[TCONST_hold]);
-    bool onetime = ((*data)[TCONST_onetime]);
-    uint8_t clicks = (*data)[TCONST_clicks];
-    String param = (*data)[TCONST_bparam].as<String>();
-    BA btn_action = (BA)(*data)[TCONST_bactList].as<long>();
-
-    if (data->containsKey(TCONST_buttList)) {
-        int num = (*data)[TCONST_buttList];
-        if (num < myButtons->size()) {
-            btn = (*myButtons)[num];
-        }
-    }
-    if (btn) {
-        btn->action = btn_action;
-        btn->flags.on = on;
-        btn->flags.hold = hold;
-        btn->flags.click = clicks;
-        btn->flags.onetime = onetime;
-        btn->setParam(param);
-    } else {
-        myButtons->add(new Button(on, hold, clicks, onetime, btn_action, param));
-    }
-
-    myButtons->saveConfig();
-    show_settings_butt(interf, data, NULL);
-}
-
-void show_butt_conf(Interface *interf, const JsonObject *data, const char* action){
-    if (!interf || !data) return;
-
-    Button *btn = nullptr;
-    String act;
-    int num = 0;
-
-    if (data->containsKey(TCONST_buttList)) {
-        num = (*data)[TCONST_buttList];
-        if (num < myButtons->size()) {
-            act = (*data)[TCONST_butt_conf].as<String>();
-            btn = (*myButtons)[num];
-        }
-    }
-
-    if (act == TCONST_delete) {
-        myButtons->remove(num);
-        myButtons->saveConfig();
-        show_settings_butt(interf, data, NULL);
-        return;
-    } else
-    if (data->containsKey(TCONST_save)) {
-        set_butt_conf(interf, data, NULL);
-        return;
-    }
-
-
-    interf->json_frame_interface();
-
-    if (btn) {
-        interf->json_section_main(TCONST_set_butt, TINTF_05C);
-        interf->constant(TCONST_buttList, num, btn->getName());
-    } else {
-        interf->json_section_main(TCONST_set_butt, TINTF_05D);
-    }
-
-    interf->select(TCONST_bactList, btn? btn->action : 0, TINTF_07A, false);
-    for (int i = 1; i < BA::BA_END; i++) {
-        interf->option(i, btn_get_desc((BA)i));
-    }
-    interf->json_section_end();
-
-    interf->text(TCONST_bparam, btn? btn->getParam() : String(), TINTF_0B9);
-
-    interf->checkbox(TCONST_on, btn? btn->flags.on : 0, TINTF_07C, false);
-    interf->checkbox(TCONST_hold, btn? btn->flags.hold : 0, TINTF_07D, false);
-    interf->number_constrained(TCONST_clicks, btn? btn->flags.click : 0, TINTF_07E, 1, 0, 7);
-    interf->checkbox(TCONST_onetime, btn? btn->flags.onetime&1 : 0, TINTF_07F, false);
-
-    if (btn) {
-        interf->hidden(TCONST_save, true);
-        interf->button(button_t::submit, TCONST_set_butt, TINTF_079);
-    } else {
-        interf->button(button_t::submit, TCONST_set_butt, TINTF_05D, P_GREEN);
-    }
-
-    interf->spacer();
-    interf->button_value(button_t::generic, A_ui_page, e2int(page::setup_bttn), TINTF_exit);
-
-    interf->json_section_end();
-    interf->json_frame_flush();
-}
-
-void set_btnflag(Interface *interf, const JsonObject *data, const char* action){
-    if (!data) return;
-    //SETPARAM(TCONST_Btn, myButtons->setButtonOn((*data)[TCONST_Btn] == "1"));
-    bool isSet = (*data)[TCONST_Btn];
-    myButtons->setButtonOn(isSet);
-    myLamp.setButton(isSet);
-    myLamp.save_flags();
-}
-#endif  // BUTTON
-
-#ifdef ENCODER
-void block_settings_enc(Interface *interf, const JsonObject *data, const char* action){
-    if (!interf) return;
-    interf->json_section_main(TCONST_set_enc, TINTF_0DC);
-
-    interf->select(TCONST_EncVG, myLamp.getLampFlagsStuct().GaugeType, TINTF_0DD, true);
-        interf->option(GAUGETYPE::GT_NONE, TINTF_0EE);
-        interf->option(GAUGETYPE::GT_VERT, TINTF_0EF);
-        interf->option(GAUGETYPE::GT_HORIZ, TINTF_0F0);
-    interf->json_section_end();
-    interf->color(TCONST_EncVGCol, embui.paramVariant(TCONST_EncVGCol), TINTF_0DE);
-    interf->spacer();
-
-    interf->color(TCONST_encTxtCol, embui.paramVariant(TCONST_encTxtCol), TINTF_0DF);
-    interf->range(TCONST_encTxtDel, 110-getEncTxtDelay(), 10, 100, 5, TINTF_044, false);
-    interf->button(button_t::submit, TCONST_set_enc, TINTF_Save, P_GRAY);
-    interf->spacer();
-    interf->button(button_t::generic, A_ui_page_settings, TINTF_exit);
-    interf->json_section_end();
-}
-void show_settings_enc(Interface *interf, const JsonObject *data, const char* action){
-    if (!interf) return;
-    interf->json_frame_interface();
-    block_settings_enc(interf, data, NULL);
-    interf->json_frame_flush();
-}
-void set_settings_enc(Interface *interf, const JsonObject *data, const char* action){
-    if (!data) return;
-
-    myLamp.setGaugeType((*data)[TCONST_EncVG].as<GAUGETYPE>());
-    myLamp.save_flags();
-    SETPARAM(TCONST_EncVGCol);
-    String tmpStr = (*data)[TCONST_EncVGCol];
-    tmpStr.replace("#", "0x");
-    GAUGE::GetGaugeInstance()->setGaugeTypeColor((CRGB)strtol(tmpStr.c_str(), NULL, 0));
-
-    SETPARAM(TCONST_encTxtCol);
-    String tmpStr2 = (*data)[TCONST_encTxtCol];
-    tmpStr2.replace("#", "0x");
-    setEncTxtColor((CRGB)strtol(tmpStr2.c_str(), NULL, 0));
-    (*data)[TCONST_encTxtDel]=JsonUInt(110U-(*data)[TCONST_encTxtDel].as<int>());
-    SETPARAM(TCONST_encTxtDel);
-    setEncTxtDelay((*data)[TCONST_encTxtDel]);
-    basicui::page_system_settings(interf, data, NULL);
-}
-#endif  // ENCODER
-*/
 void set_debugflag(Interface *interf, const JsonObject *data, const char* action){
     if (!data) return;
     myLamp.setDebug((*data)[TCONST_debug]);
@@ -1353,9 +1062,9 @@ void set_settings_mp3(Interface *interf, const JsonObject *data, const char* act
     myLamp.setPlayTime((*data)[TCONST_playTime].as<int>());
     myLamp.setPlayName((*data)[TCONST_playName]);
     myLamp.setPlayEffect((*data)[TCONST_playEffect]); mp3->setPlayEffect(myLamp.getLampFlagsStuct().playEffect);
-    myLamp.setAlatmSound((ALARM_SOUND_TYPE)(*data)[TCONST_alarmSound].as<int>());
+    //myLamp.setAlatmSound((ALARM_SOUND_TYPE)(*data)[TCONST_alarmSound].as<int>());
     myLamp.setPlayMP3((*data)[TCONST_playMP3]); mp3->setPlayMP3(myLamp.getLampFlagsStuct().playMP3);
-    myLamp.setLimitAlarmVolume((*data)[TCONST_limitAlarmVolume]);
+    //myLamp.setLimitAlarmVolume((*data)[TCONST_limitAlarmVolume]);
 
     //SETPARAM(TCONST_mp3count);
     //mp3->setMP3count((*data)[TCONST_mp3count].as<int>()); // кол-во файлов в папке мп3
@@ -1466,14 +1175,6 @@ void set_gpios(Interface *interf, const JsonObject *data, const char* action){
     basicui::page_system_settings(interf, nullptr, NULL);
 }
 
-/*
-void section_text_frame(Interface *interf, const JsonObject *data, const char* action){
-    if (!interf) return;
-    interf->json_frame_interface(); //TINTF_080);
-    block_lamptext(interf, data, NULL);
-    interf->json_frame_flush();
-}
-*/
 //Страница "Рисование"
 void ui_page_drawing(Interface *interf, const JsonObject *data, const char* action){
     if (!interf) return;
@@ -2132,18 +1833,6 @@ void rebuild_effect_list_files(lstfile_t lst){
  */
 void embui_actions_register(){
     // создаем конфигурационные параметры и регистрируем обработчики активностей
-//    embui.var_create(V_lampFlags, myLamp.getLampFlags());           // набор флагов лампы
-//    embui.var_create(V_effect_idx, 1);                              // Effect index that currently selected to run
-//    embui.var_create(V_effSort, 1);
-//    embui.var_create(V_dev_brtscale, 127);
-
-//    embui.var_create(TCONST_AUX, false);
-//    embui.var_create(TCONST_msg, "");
-//    embui.var_create(TCONST_txtColor, TCONST__ffffff);
-//    embui.var_create(TCONST_txtBfade, FADETOBLACKVALUE);
-//    embui.var_create(TCONST_txtSpeed, 100);
-//    embui.var_create(TCONST_txtOf, 0);
-
 
 #ifdef MIC_EFFECTS
     embui.var_create(V_micScale, 1.28);
@@ -2161,10 +1850,10 @@ void embui_actions_register(){
     embui.var_create(TCONST_EncVG, static_cast<int>(GAUGETYPE::GT_VERT) );         // Тип шкалы
 #endif
 #ifdef ENCODER
-    embui.var_create(TCONST_encTxtCol, "#FFA500");  // Дефолтный цвет текста (Orange)
-    embui.var_create(TCONST_encTxtDel, 40);        // Задержка прокрутки текста
-    embui.var_create(TCONST_EncVG, (int)GAUGETYPE::GT_VERT);  // Тип шкалы
-    embui.var_create(TCONST_EncVGCol, "#FF2A00");  // Дефолтный цвет шкалы
+    //embui.var_create(TCONST_encTxtCol, "#FFA500");  // Дефолтный цвет текста (Orange)
+    //embui.var_create(TCONST_encTxtDel, 40);        // Задержка прокрутки текста
+    //embui.var_create(TCONST_EncVG, (int)GAUGETYPE::GT_VERT);  // Тип шкалы
+    //embui.var_create(TCONST_EncVGCol, "#FF2A00");  // Дефолтный цвет шкалы
 #endif
 
 #ifdef MP3PLAYER
