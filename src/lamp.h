@@ -39,7 +39,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 #include "config.h" // подключаем эффекты, там же их настройки
 #include "effectworker.h"
-#include "events.h"
 #include "LList.h"
 #include "interface.h"
 #include "extra_tasks.h"
@@ -289,7 +288,6 @@ public:
     void warningHelper();
 
     EffectWorker effects; // объект реализующий доступ к эффектам
-    EVENT_MANAGER events; // Объект реализующий доступ к событиям
 
     void setbPin(uint8_t val) {bPin = val;}
     uint8_t getbPin() {return bPin;}

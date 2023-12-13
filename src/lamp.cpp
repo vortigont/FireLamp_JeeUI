@@ -35,16 +35,13 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
    <https://www.gnu.org/licenses/>.)
 */
 
-#include "main.h"
+#include "lamp.h"
 #include "effectmath.h"
 #include "fontHEX.h"
 #include "actions.hpp"
-#include "alarm.h"
 #include "ledfb.hpp"
 #include "evtloop.h"
 
-GAUGE *GAUGE::gauge = nullptr; // объект индикатора
-ALARMTASK *ALARMTASK::alarmTask = nullptr; // объект будильника
 
 Lamp::Lamp() : tmStringStepTime(DEFAULT_TEXT_SPEED), tmNewYearMessage(0), effects(&lampState){
   lampState.isInitCompleted = false; // завершилась ли инициализация лампы
@@ -155,25 +152,6 @@ void Lamp::handle(){
 #endif
   }
 
-
-  // будильник обрабатываем раз в секунду
-  //alarmWorker();
-
-//  if(lampState.isEffectsDisabledUntilText && !lampState.isStringPrinting) {
-//    lampState.isEffectsDisabledUntilText = false;
-//  }
-
-  // отложенное включение/выключение
-  if(lampState.isOffAfterText && !lampState.isStringPrinting) {
-    run_action(ra::off);
-  }
-
-//  newYearMessageHandle();
-
-  // обработчик событий (пока не выкину в планировщик)
-  if (flags.isEventsHandled) {
-    events.events_handle();
-  }
 }
 
 void Lamp::power() {power(!flags.ONflag);}
@@ -183,8 +161,6 @@ void Lamp::power(bool flag) // флаг включения/выключения 
   if (flag == flags.ONflag) return;  // пропускаем холостые вызовы
   LOG(print, "Lamp powering "); LOG(println, flag ? "On": "Off");
   flags.ONflag = flag;
-
-  ALARMTASK::stopAlarm();            // любая активность в интерфейсе - отключаем будильник
 
   if(mode == LAMPMODE::MODE_OTA)
     mode = LAMPMODE::MODE_NORMAL;
@@ -266,14 +242,14 @@ void Lamp::stopRGB(){
  */
 void Lamp::startDemoMode(uint8_t tmout)
 {
-  LOG(println,"Demo mode");
-  if(!isLampOn()) run_action(ra::on);       // "включаем" лампу
+  LOG(println,"Start Demo mode");
+  power(true);  // "включаем" лампу
+
   if(mode == LAMPMODE::MODE_DEMO) return;   // уже и так в "демо" режиме, выходим
   
   storedEffect = ((static_cast<EFF_ENUM>(effects.getCurrent()%256) == EFF_ENUM::EFF_WHITE_COLOR) ? storedEffect : effects.getCurrent()); // сохраняем предыдущий эффект, если только это не белая лампа
   mode = LAMPMODE::MODE_DEMO;
   demoTimer(T_ENABLE, tmout);
-  sendString(String("- Demo ON -").c_str(), CRGB::Green, false);
 }
 
 void Lamp::storeEffect()
@@ -472,271 +448,6 @@ uint8_t Lamp::getFont(uint8_t bcount, uint8_t asciiCode, uint8_t row)       // �
   }
 
   return 0;
-}
-
-void Lamp::sendString(const char* text){
-  String tmpStr = embui.param(TCONST_txtColor);
-  tmpStr.replace("#","0x");
-  CRGB::HTMLColorCode color = (CRGB::HTMLColorCode)strtol(tmpStr.c_str(), NULL, 0);
-  sendString(text, color);
-}
-
-void Lamp::sendString(const char* text, CRGB letterColor, bool forcePrint, bool clearQueue){
-  if (!isLampOn() && forcePrint){
-      disableEffectsUntilText(); // будем выводить текст, при выкюченной матрице
-      setOffAfterText();
-      power(true);
-      setBrightness(OFF_BRIGHTNESS, fade_t::off, true); // выводить будем минимальной яркостью в OFF_BRIGHTNESS пункта
-      sendStringToLamp(text, letterColor, forcePrint, clearQueue);
-  } else {
-      sendStringToLamp(text, letterColor, forcePrint, clearQueue);
-  }
-}
-
-String &Lamp::prepareText(String &source){
-  source.replace("%TM", TimeProcessor::getInstance().getFormattedShortTime());
-  source.replace("%IP", WiFi.localIP().toString());
-  source.replace("%EN", effects.getEffectName());
-  const tm *tm = localtime(TimeProcessor::getInstance().now());
-  char buffer[11]; //"xx.xx.xxxx"
-  sprintf_P(buffer,PSTR("%02d.%02d.%04d"),tm->tm_mday,tm->tm_mon+1,tm->tm_year+ TM_BASE_YEAR);
-  source.replace("%DT", buffer);
-#ifdef LAMP_DEBUG  
-//  if(!source.isEmpty() && effects.getCurrent()!=EFF_ENUM::EFF_TIME && !isWarning()) // спам эффекта часы и предупреждений убираем костыльным способом :)
-//    LOG(println, source.c_str()); // вывести в лог строку, которая после преобразований получилась
-#endif
-  return source;  
-}
-
-void Lamp::sendStringToLampDirect(const char* text, CRGB letterColor, bool forcePrint, bool clearQueue, int8_t textOffset, int16_t fixedPos)
-{
-    String storage = text;
-    prepareText(storage);
-    doPrintStringToLamp(storage.c_str(), letterColor, textOffset, fixedPos); // отправляем
-}
-
-void Lamp::sendStringToLamp(const char* text, CRGB letterColor, bool forcePrint, bool clearQueue, int8_t textOffset, int16_t fixedPos)
-{
-  if((!flags.ONflag && !forcePrint) || (isAlarm() && !forcePrint)) return; // если выключена, или если будильник, но не задан принудительный вывод - то на выход
-  if(textOffset==-128) textOffset=this->txtOffset;
-
-  if(text==nullptr){ // текст пустой
-    if(!lampState.isStringPrinting){ // ничего сейчас не печатается
-      if(!docArrMessages){ // массив пустой
-        return; // на выход
-      }
-      else { // есть что печатать
-        JsonArray arr = (*docArrMessages).as<JsonArray>(); // используем имеющийся
-        JsonObject var=arr[0]; // извлекаем очередной
-        if(!var.isNull()){
-          String storage = var["s"];
-          prepareText(storage);
-          doPrintStringToLamp(storage.c_str(), (var["c"].as<unsigned long>()), (var["o"].as<int>()), (var["f"].as<int>())); // отправляем
-#ifdef MP3PLAYER
-          String tmpStr = var["s"];
-          if(mp3!=nullptr && ((mp3->isOn() && isLampOn()) || isAlarm()) && flags.playTime && tmpStr.indexOf(String("%TM"))>=0)
-            if(_get_brightness() != OFF_BRIGHTNESS)
-              mp3->playTime(TimeProcessor::getInstance().getHours(), TimeProcessor::getInstance().getMinutes(), (TIME_SOUND_TYPE)flags.playTime);
-#endif
-        }
-        if(arr.size()>0)
-          arr.remove(0); // удаляем отправленный
-        if(!arr.size()){ // очередь опустела, освобождаем массив
-          delete docArrMessages;
-          docArrMessages = nullptr;
-        }
-      }
-    } else {
-        // текст на входе пустой, идет печать
-        return; // на выход
-    }
-  } else { // текст не пустой
-    if(clearQueue){
-      LOG(println, "Clear message queue");
-      if(docArrMessages){ // очистить очередь, освободить память
-          delete docArrMessages;
-          docArrMessages = nullptr;
-      }
-      lampState.isStringPrinting = false; // сбросить текущий вывод строки
-    }
-
-    if(!lampState.isStringPrinting){ // ничего сейчас не печатается
-      String storage = text;
-      prepareText(storage);
-      doPrintStringToLamp(storage.c_str(), letterColor, textOffset, fixedPos); // отправляем
-#ifdef MP3PLAYER
-      String tmpStr = text;
-      if(mp3!=nullptr && ((mp3->isOn() && isLampOn()) || isAlarm()) && flags.playTime && tmpStr.indexOf(String("%TM"))>=0)
-        if(_get_brightness() != OFF_BRIGHTNESS)
-          mp3->playTime(TimeProcessor::getInstance().getHours(), TimeProcessor::getInstance().getMinutes(), (TIME_SOUND_TYPE)flags.playTime);
-#endif
-    } else { // идет печать, помещаем в очередь
-      JsonArray arr; // добавляем в очередь
-
-      if(docArrMessages){
-        arr = (*docArrMessages).as<JsonArray>(); // используем имеющийся
-      } else {
-        docArrMessages = new DynamicJsonDocument(512);
-        arr = (*docArrMessages).to<JsonArray>(); // создаем новый
-      }
-
-      for (size_t i = 0; i < arr.size(); i++)
-      {
-        if((arr[i])["s"]==text
-          && (arr[i])["c"]==((unsigned long)letterColor.r<<16)+((unsigned long)letterColor.g<<8)+(unsigned long)letterColor.b
-          && (arr[i])["o"]==textOffset
-          && (arr[i])["f"]==fixedPos
-        ){
-          LOG(println, "Duplicate string skipped");
-          //LOG(println, (*docArrMessages).as<String>());
-          return;
-        }
-      }
-
-      JsonObject var = arr.createNestedObject();
-      var["s"]=text;
-      var["c"]=((unsigned long)letterColor.r<<16)+((unsigned long)letterColor.g<<8)+(unsigned long)letterColor.b;
-      var["o"]=textOffset;
-      var["f"]=fixedPos;
-
-      String tmp; // Тут шаманство, чтобы не ломало JSON
-      serializeJson((*docArrMessages), tmp);
-      deserializeJson((*docArrMessages), tmp);
-
-      LOG(print, "Array: ");
-      LOG(println, (*docArrMessages).as<String>());
-    }
-  }
-}
-
-void Lamp::doPrintStringToLamp(const char* text,  CRGB letterColor, const int8_t textOffset, const int16_t fixedPos)
-{
-  static String toPrint;
-  static CRGB _letterColor;
-
-  if(!lampState.isStringPrinting){
-    toPrint.clear();
-    fillStringManual(nullptr, CRGB::Black);
-  }
-
-  lampState.isStringPrinting = true;
-  int8_t offs=(textOffset==-128?txtOffset:textOffset);
-
-  if(text!=nullptr && text[0]!='\0'){
-    toPrint.concat(text);
-    _letterColor = letterColor;
-  }
-
-  if(toPrint.length()==0) {
-    lampState.isStringPrinting = false;
-    return; // нечего печатать
-  } else {
-    lampState.isStringPrinting = true;
-  }
-
-  if(tmStringStepTime.isReadyManual()){
-    if(!fillStringManual(toPrint.c_str(), _letterColor, false, isAlarm() || (isWarning() && lampState.warnType<2), fixedPos, (fixedPos? 0 : LET_SPACE), offs) && (!isWarning() || (isWarning() && fixedPos))){ // смещаем
-      tmStringStepTime.reset();
-    }
-    else {
-      lampState.isStringPrinting = false;
-      toPrint.clear(); // все напечатали
-      sendStringToLamp(); // получаем новую порцию
-    }
-  } else {
-    if((!isWarning() || (isWarning() && fixedPos)))
-      fillStringManual(toPrint.c_str(), _letterColor, true, isAlarm() || (isWarning() && lampState.warnType<2), fixedPos, (fixedPos? 0 : LET_SPACE), offs);
-  }
-}
-
-void Lamp::newYearMessageHandle()
-{
-    if(!tmNewYearMessage.isReady()) return;
-
-    char strMessage[256]; // буфер
-    time_t calc = NEWYEAR_UNIXDATETIME - TimeProcessor::getInstance().getUnixTime();
-
-    if(calc<0) {
-      sprintf_P(strMessage, NY_MDG_STRING2, localtime(TimeProcessor::getInstance().now())->tm_year+ TM_BASE_YEAR);
-    } else if(calc<300){
-      sprintf_P(strMessage, NY_MDG_STRING1, (int)calc, String(TINTF_0C1).c_str());
-    } else if(calc/60<60){
-      uint16_t calcT=calc/(60*60); // минуты
-      uint8_t calcN=calcT%10; // остаток от деления на 10
-      String str;
-      if(calcN>=2 && calcN<=4) {
-        str = TINTF_0CC; // минуты
-      } else if(calcN==1) {
-        str = TINTF_0CD; // минута
-      } else {
-        str = TINTF_0C2; // минут
-      }
-      sprintf_P(strMessage, NY_MDG_STRING1, calcT, str.c_str());
-    } else if(calc/(60*60)<60){
-	    uint16_t calcT=calc/(60*60); // часы
-      uint8_t calcN=calcT%10; // остаток от деления на 10
-      String str;
-      if(calcN>=2 && calcN<=4) {
-        str = TINTF_0C7; // часа
-      } else if(calcN==1) {
-        str = TINTF_0C8; // час
-      } else {
-        str = TINTF_0C3; // часов
-      }
-      sprintf_P(strMessage, NY_MDG_STRING1, calcT, str.c_str());
-    } else {
-      uint16_t calcT=calc/(60*60*24); // дни
-      uint8_t calcN=calcT%10; // остаток от деления на 10
-      String str;
-      if(calcT>=11 && calcT<=20)
-        str = TINTF_0C4;
-      else if(calcN>=2 && calcN<=4)
-        str = TINTF_0C5;
-      else if(calc!=11 && calcN==1)
-        str = TINTF_0C6;
-      else
-        str = TINTF_0C4;
-      sprintf_P(strMessage, NY_MDG_STRING1, calcT, str.c_str());
-    }
-
-    LOG(printf_P, PSTR("Prepared message: %s\n"), strMessage);
-    sendStringToLamp(strMessage, LETTER_COLOR);
-}
-
-// при вызове - вывозит на лампу текущее время
-void Lamp::showTimeOnScreen(const char *value, bool force)
-{
-  DynamicJsonDocument doc(512);
-  String buf(value);
-  buf.replace("'","\"");
-  deserializeJson(doc,buf);
-  bool isShowOff = doc[TCONST_isShowOff];
-  bool isPlayTime = doc[TCONST_isPlayTime];
-
-  const tm* t = localtime(TimeProcessor::getInstance().now());
-  if(t->tm_sec && !force)
-    return;
-
-  LOG(printf_P, PSTR("showTime: %02d:%02d, evenWhenOff=%d, PlayTime=%d\n"), t->tm_hour,t->tm_min, isShowOff, isPlayTime);
-
-  time_t tm = t->tm_hour * 60 + t->tm_min;
-  String time = isPlayTime ? String("%TM") : TimeProcessor::getInstance().getFormattedShortTime();
-
-  CRGB color;
-  if(!(tm%60)){
-    color = CRGB::Red;
-  } else if(!(tm%30)){
-    color = CRGB::Green;
-  } else {
-    color =  CRGB::Blue;
-  }
-#ifdef MP3PLAYER
-  if(!isLampOn() && isPlayTime && mp3){ // произносить время
-    mp3->setIsOn(true, false);
-    mp3->playTime(TimeProcessor::getInstance().getHours(), TimeProcessor::getInstance().getMinutes(), (TIME_SOUND_TYPE)flags.playTime);
-  }
-#endif
-  sendString(time.c_str(), color, isShowOff);  // выводить ли время при выключенной лампе
 }
 
 #ifdef MIC_EFFECTS
@@ -945,7 +656,6 @@ void Lamp::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
 
   // show effects's name on screen and play name over speaker (if set)
   if(isShowName){
-    sendStringToLamp(String("%EN").c_str(), CRGB::Green);
 #ifdef MP3PLAYER
     if(isPlayName && mp3!=nullptr && mp3->isOn()) // воспроизведение 
       mp3->playName(effects.getCurrent());
@@ -996,8 +706,6 @@ void Lamp::demoTimer(SCHEDULER action, uint8_t tmout){
     demoTask->enableDelayed();
     break;
   case SCHEDULER::T_RESET :
-    if (isAlarm())
-      ALARMTASK::stopAlarm(); // тут же сбросим и будильник
     if (mode==LAMPMODE::MODE_DEMO && demoTask)
       demoTask->restartDelayed();
     break;
@@ -1023,93 +731,6 @@ void Lamp::effectsTimer(SCHEDULER action) {
 }
 
 //-----------------------------
-
-// ------------- мигающий цвет (не эффект! используется для отображения краткосрочного предупреждения; неблокирующий код, рисует поверх эффекта!) -------------
-void Lamp::warningHelper(){
-  if(lampState.isWarning) {
-    if(!warningTask)
-      return;
-    String msg = warningTask->getData();
-
-    uint16_t cnt = warningTask->getWarn_duration()/(warningTask->getWarn_blinkHalfPeriod()*2);
-    uint8_t xPos = (display.getCanvas()->w()+LET_WIDTH*(cnt>99?3:cnt>9?2:1))/2;    
-    switch(lampState.warnType){
-      case 0: display.getCanvas()->fill(warningTask->getWarn_color());
-        break;
-      case 1: {
-        display.getCanvas()->fill(warningTask->getWarn_color());
-        if (!isPrintingNow())
-          sendStringToLamp(msg.isEmpty() ? String(cnt).c_str() : msg.c_str(), warningTask->getWarn_color(), true, false, -128, xPos);
-        break;
-      }
-      case 2: {
-        display.getCanvas()->fill(warningTask->getWarn_color());
-        if (!isPrintingNow())
-          sendStringToLamp(msg.isEmpty() ? String(cnt).c_str() : msg.c_str(), -warningTask->getWarn_color(), true, false, -128, xPos);
-        break;
-      }
-      case 3: {
-        if (!isPrintingNow())
-          //sendStringToLamp(String(cnt).c_str(), cnt%2?warn_color:-warn_color, true, false, -128, xPos);
-          sendStringToLamp(msg.isEmpty() ? String(cnt).c_str() : msg.c_str(), warningTask->getWarn_color(), true, false, -128, xPos);
-        break;
-      }
-      default: break;
-    }
-  }
-}
-
-void Lamp::showWarning(
-  const CRGB &color,                                        /* цвет вспышки                                                 */
-  uint32_t duration,                                        /* продолжительность отображения предупреждения (общее время)   */
-  uint16_t blinkHalfPeriod,                                 /* продолжительность одной вспышки в миллисекундах (полупериод) */
-  uint8_t warnType,                                         /* тип предупреждения 0...3                                     */
-  bool forcerestart,                                        /* перезапускать, если пришло повторное событие предупреждения  */
-  const String &msg)                                        /* сообщение для вывода на матрицу                              */
-{
-  CRGB warn_color = CRGB::Black;
-  uint32_t warn_duration = 1000;
-  uint16_t warn_blinkHalfPeriod = 500;
-
-  if(warningTask && !forcerestart){ // вытянуть данные из предыдущего таска, если таск существует и не перезапуск
-    warn_color = warningTask->getWarn_color();
-    warn_duration = warningTask->getWarn_duration();
-    warn_blinkHalfPeriod = warningTask->getWarn_blinkHalfPeriod();
-  }
-
-  if(forcerestart || !warningTask){ // перезапуск или таск не существует - инициализация из параметров
-    warn_color = color;
-    warn_duration = duration;
-    warn_blinkHalfPeriod = blinkHalfPeriod;
-    lampState.isWarning = true;
-    lampState.warnType = warnType;
-  }
-
-  if(!forcerestart && warnType<2)
-    lampState.isWarning=!lampState.isWarning;
-  if(warn_duration>warn_blinkHalfPeriod)
-    warn_duration-=warn_blinkHalfPeriod;
-  else
-    warn_duration=0;
-  if(warn_duration){
-    if(warningTask){
-      warningTask->cancel();
-    }
-
-    warningTask = new WarningTask(warn_color, warn_duration, warn_blinkHalfPeriod, msg.c_str(), blinkHalfPeriod, TASK_ONCE,
-      [this](){
-        WarningTask *cur = (WarningTask *)ts.getCurrentTask();
-        showWarning(cur->getWarn_color(),cur->getWarn_duration(),cur->getWarn_blinkHalfPeriod(),(uint8_t)lampState.warnType, !lampState.isWarning, cur->getData());
-      },
-      &ts, false, nullptr, nullptr, true);
-    warningTask->enableDelayed();
-  } else {
-    lampState.isWarning = false;
-    if(warningTask)
-      warningTask->cancel();
-    warningTask = nullptr;
-  }
-}
 
 void Lamp::fillDrawBuf(CRGB color) {
   if(_overlay) _overlay->fill(color);

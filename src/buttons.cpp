@@ -1,7 +1,7 @@
-#include "main.h"
+#include "lamp.h"
 #include "buttons.h"
 #include "actions.hpp"
-#include "alarm.h"
+#include "evtloop.h"
 
 const char *btn_get_desc(BA action){
 	switch (action) {
@@ -43,9 +43,9 @@ bool Button::activate(btnflags& flg, bool reverse){
 							);
 					tReverseTimeout->enableDelayed();
 				} 
-				if (myLamp.getGaugeType()!=GAUGETYPE::GT_NONE){
-						GAUGE::GaugeShow(newval, 255, 10);
-				}
+				// if (myLamp.getGaugeType()!=GAUGETYPE::GT_NONE){
+				// 		GAUGE::GaugeShow(newval, 255, 10);
+				// }
 				run_action(ra::brt_nofade, newval);		// change brightness without fade effect
 				return true;
 			case BA_SPEED: {
@@ -58,9 +58,9 @@ bool Button::activate(btnflags& flg, bool reverse){
 							);
 					tReverseTimeout->enableDelayed();
 				}
-				if (myLamp.getGaugeType()!=GAUGETYPE::GT_NONE){
+			/*	if (myLamp.getGaugeType()!=GAUGETYPE::GT_NONE){
 						GAUGE::GaugeShow(newval, 255, 100);
-				}
+				}*/
 				run_action(String(T_effect_dynCtrl)+1, newval);
 				return true;
 			}
@@ -74,9 +74,9 @@ bool Button::activate(btnflags& flg, bool reverse){
 							);
 					tReverseTimeout->enableDelayed();
 				}
-				if (myLamp.getGaugeType()!=GAUGETYPE::GT_NONE){
+			/*	if (myLamp.getGaugeType()!=GAUGETYPE::GT_NONE){
 						GAUGE::GaugeShow(newval, 255, 150);
-				}
+				}*/
 				run_action(String(T_effect_dynCtrl)+2, newval);
 				return true;
 			}
@@ -87,8 +87,12 @@ bool Button::activate(btnflags& flg, bool reverse){
 
 		// проверяем дальше
 		switch (action) {
-			case BA_ON: run_action(ra::on); return ret;
-			case BA_OFF: run_action(ra::off); return ret;
+			case BA_ON:
+				EVT_POST(LAMP_CMD_EVENTS, e2int(evt::lamp_t::pwron));
+				return ret;
+			case BA_OFF:
+				EVT_POST(LAMP_CMD_EVENTS, e2int(evt::lamp_t::pwron));
+				return ret;
 			case BA_DEMO: run_action(ra::demo, !param.isEmpty()); return ret;
 			case BA_AUX_TOGLE: run_action(ra::aux_flip); return ret;			// set AUX pin
 			case BA_EFF_NEXT: run_action(ra::eff_next); return ret;
@@ -202,7 +206,7 @@ void Buttons::buttonTick(){
 	
 	if (myLamp.isAlarm()) {
 		// нажатие во время будильника
-		ALARMTASK::stopAlarm();
+		// ALARMTASK::stopAlarm();
 		return;
 	}
 

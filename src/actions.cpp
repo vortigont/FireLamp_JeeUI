@@ -84,25 +84,8 @@ void run_action(ra act){
       break;
     }
 
-    // turn lamp ON
-    case ra::on : {
-      run_action(A_dev_pwrswitch, true);
-      break;
-    }
-
-    // turn lamp OFF
-    case ra::off : {
-      myLamp.stopRGB(); // выключение RGB-режима
-      run_action(A_dev_pwrswitch, false);
-      break;
-    }
-
     case ra::reboot : {
       // make warning signaling
-      StaticJsonDocument<128> warn;
-      deserializeJson(warn, "{\"event\":[\"#ec21ee\",3000,500,true,\"Reboot...\"]}");
-      JsonObject j = warn.as<JsonObject>();
-      run_action(ra::warn, &j);
       Task *t = new Task(5 * TASK_SECOND, TASK_ONCE, nullptr, &ts, false, nullptr, [](){ ESP.restart(); });
       t->enableDelayed();
       break;
@@ -125,26 +108,6 @@ void run_action(ra act, JsonObject *data){
       // usually this action is called with key:value pair for a specific control
       (*data)[P_data][TCONST_force] = true;        // какой-то костыль с задержкой обновления WebUI
       break;
-    }
-
-    // show warning on a lamp
-    case ra::warn : {
-      if ( !(*data).containsKey(TCONST_event) ) return;   // invalid object
-      // here we receive JsonArray with alert params
-      JsonArray arr = (*data)[TCONST_event];
-      if (arr.size() < 3 ) return;    // some malformed warning config
-
-      // color
-      String tmpStr(arr[0].as<const char*>());
-      tmpStr.replace("#", "0x");
-      uint32_t col = strtol(tmpStr.c_str(), NULL, 0);
-      myLamp.showWarning(col, // color
-             arr[1],          // duration
-             arr[2],          // period
-             arr[3],          // type
-             arr[4],          // overwrite
-             arr[5]);         // text message
-      return;   // nothig to inject
     }
 
     default:
