@@ -29,7 +29,7 @@ const char *btn_get_desc(BA action){
 Task *tReverseTimeout = nullptr; // задержка переключения направления
 bool Button::activate(btnflags& flg, bool reverse){
 		uint8_t newval;
-		RA ract = RA_UNKNOWN;
+		//RA ract = RA_UNKNOWN;
 		ra act = ra::end;		// for transition period, let's make it a new var
 		bool ret = false;
 		if (reverse) flags.direction = !flags.direction;
@@ -97,20 +97,21 @@ bool Button::activate(btnflags& flg, bool reverse){
 			case BA_AUX_TOGLE: run_action(ra::aux_flip); return ret;			// set AUX pin
 			case BA_EFF_NEXT: run_action(ra::eff_next); return ret;
 			case BA_EFF_PREV: run_action(ra::eff_prev); return ret;
-			case BA_SEND_TIME: myLamp.showTimeOnScreen(NULL); return ret;		// show time on screen
-			case BA_SEND_IP: ract = RA_SEND_IP; break;
-			case BA_WIFI_REC: ract = RA_WIFI_REC; break;
+			//case BA_SEND_TIME: myLamp.showTimeOnScreen(NULL); return ret;		// show time on screen
+			//case BA_SEND_IP: ract = RA_SEND_IP; break;
+			//case BA_WIFI_REC: ract = RA_WIFI_REC; break;
 			case BA_EFFECT: { run_action(ra::eff_switch, param.toInt()); return ret; }
 			default:;
 		}
 
-		LOG(printf_P,PSTR("Button send action: %d\n"), act != ra::end ? static_cast<int>(act) : static_cast<int>(ract));
+		//LOG(printf_P,PSTR("Button send action: %d\n"), act != ra::end ? static_cast<int>(act) : static_cast<int>(ract));
 		if (act != ra::end)	return ret;	// уже отработали, выходим
-
+/*
 		if(param.isEmpty())
 			remote_action(ract, NULL);
 		else
 			remote_action(ract, param.c_str(), NULL);
+*/
 		return ret;
 }
 

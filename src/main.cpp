@@ -160,6 +160,9 @@ void setup() {
     //myLamp.events.setEventCallback(event_worker);
     myLamp.lamp_init();
 
+    // Hookup IPC event publisher callback
+    ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, event_publisher, NULL, NULL));
+
     LOG(printf, "\n\nsetup complete: free heap: %uk, PSRAM:%uk\n\n", ESP.getFreeHeap()/1024, ESP.getFreePsram()/1024);
 }   // End setup()
 

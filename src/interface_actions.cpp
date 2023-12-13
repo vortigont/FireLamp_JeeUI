@@ -293,4 +293,24 @@ void set_hub75(Interface *interf, const JsonObject *data, const char* action){
     run_action(ra::reboot);         // reboot in 5 sec
 }
 
+// a call-back handler that listens for status change events and publish it to EmbUI feeders
+void event_publisher(void* handler_args, esp_event_base_t base, int32_t id, void* event_data){
+    // quit if there are no feeders to notify
+    if (!embui.feeders.available()) return;
 
+    // create an interface obj, since we will mostly send value frames, then no need to create large object
+    Interface interf(&embui.feeders, 512);
+
+    switch (static_cast<evt::lamp_t>(id)){
+        // Lamp Power change state
+        case evt::lamp_t::pwron : [[fallthrough]]
+        case evt::lamp_t::pwroff :
+            interf.json_frame_value();
+            interf.value(A_dev_pwrswitch, myLamp.isLampOn());
+            break;
+
+        default:;
+    }
+
+    interf.json_frame_flush();
+}

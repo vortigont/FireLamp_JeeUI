@@ -772,7 +772,7 @@ void set_auxflag(Interface *interf, const JsonObject *data, const char* action){
         digitalWrite(pin, !state);
     }
 }
-
+/*
 void block_lamp_textsend(Interface *interf, const JsonObject *data, const char* action){
     if (!interf) return;
     interf->json_section_begin(TCONST_textsend);
@@ -802,30 +802,6 @@ void block_lamp_textsend(Interface *interf, const JsonObject *data, const char* 
     interf->json_section_end();
 
     interf->json_section_end();
-}
-
-/**
- * @brief UI Draw on screen function
- * 
- */
-void set_drawing(Interface *interf, const JsonObject *data, const char* action){
-    // draw pixel
-    if ((*data)[P_color]){
-        CRGB c = strtol((*data)[P_color].as<const char*>(), NULL, 0);
-        myLamp.writeDrawBuf(c, (*data)["col"], (*data)["row"]);
-        return;
-    }
-    // screen solid fill
-    if ((*data)[TCONST_fill]){
-        CRGB val = strtol((*data)[TCONST_fill].as<const char*>(), NULL, 0);
-        myLamp.fillDrawBuf(val);
-    }
-}
-
-// clear draw buffer to solid balck
-void set_clear(Interface *interf, const JsonObject *data, const char* action){
-        CRGB color=CRGB::Black;
-        myLamp.fillDrawBuf(color);
 }
 
 void block_lamptext(Interface *interf, const JsonObject *data, const char* action){
@@ -868,17 +844,34 @@ void set_text_config(Interface *interf, const JsonObject *data, const char* acti
 
     embui.var(TCONST_ny_unix, ny_unixtime); myLamp.setNYUnixTime(ny_unixtime);
 
-/*
-    if(!interf){
-        interf = embui.ws.count()? new Interface(&embui, &embui.ws, 1024) : nullptr;
-        //section_text_frame(interf, data, NULL);
-        ui_page_main(interf, nullptr, NULL); // вернемся на главный экран (то же самое при начальном запуске)
-        delete interf;
-    } else
-*/
     if (interf)
         section_text_frame(interf, data, NULL);
 }
+*/
+/**
+ * @brief UI Draw on screen function
+ * 
+ */
+void set_drawing(Interface *interf, const JsonObject *data, const char* action){
+    // draw pixel
+    if ((*data)[P_color]){
+        CRGB c = strtol((*data)[P_color].as<const char*>(), NULL, 0);
+        myLamp.writeDrawBuf(c, (*data)["col"], (*data)["row"]);
+        return;
+    }
+    // screen solid fill
+    if ((*data)[TCONST_fill]){
+        CRGB val = strtol((*data)[TCONST_fill].as<const char*>(), NULL, 0);
+        myLamp.fillDrawBuf(val);
+    }
+}
+
+// clear draw buffer to solid balck
+void set_clear(Interface *interf, const JsonObject *data, const char* action){
+        CRGB color=CRGB::Black;
+        myLamp.fillDrawBuf(color);
+}
+
 
 #ifdef MIC_EFFECTS
 void block_settings_mic(Interface *interf, const JsonObject *data, const char* action){
@@ -954,16 +947,6 @@ void set_settings_mic_calib(Interface *interf, const JsonObject *data, const cha
     }
 
     show_settings_mic(interf, data, NULL);
-}
-#endif
-
-#ifdef EMBUI_USE_FTP
-// настройка ftp
-void set_ftp(Interface *interf, const JsonObject *data, const char* action){
-    if (!data) return;
-
-    basicui::set_ftp(interf, data, NULL);
-    basicui::page_system_settings(interf, data, NULL);
 }
 #endif
 
@@ -1483,14 +1466,14 @@ void set_gpios(Interface *interf, const JsonObject *data, const char* action){
     basicui::page_system_settings(interf, nullptr, NULL);
 }
 
-
+/*
 void section_text_frame(Interface *interf, const JsonObject *data, const char* action){
     if (!interf) return;
     interf->json_frame_interface(); //TINTF_080);
     block_lamptext(interf, data, NULL);
     interf->json_frame_flush();
 }
-
+*/
 //Страница "Рисование"
 void ui_page_drawing(Interface *interf, const JsonObject *data, const char* action){
     if (!interf) return;
@@ -2236,7 +2219,7 @@ void embui_actions_register(){
     embui.action.add(TCONST_Universe, set_streaming_universe);
     embui.action.add(TCONST_bright, set_streaming_bright);
 #endif
-    embui.action.add(TCONST_edit_text_config, set_text_config);
+    //embui.action.add(TCONST_edit_text_config, set_text_config);
 
     embui.action.add(TCONST_set_other, set_settings_other);
     embui.action.add(TCONST_set_gpio, set_gpios);                       // Set gpios

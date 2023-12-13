@@ -188,8 +188,8 @@ void Lamp::power(bool flag) // флаг включения/выключения 
       LEDFader::getInstance()->fadelight(0, FADE_TIME, [this](){ effectsTimer(SCHEDULER::T_DISABLE); } );     // гасим эффект-процессор
     } else {
       // no need to fade
-      EVT_POST(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::pwroff));
       effectsTimer(SCHEDULER::T_DISABLE);
+      EVT_POST(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::pwroff));
     }
 
     demoTimer(T_DISABLE);     // гасим Демо-таймер
@@ -804,7 +804,7 @@ void Lamp::_event_picker(esp_event_base_t base, int32_t id, void* data){
         break;
 
 
-    // Get Commands
+    // Get State Commands
       case evt::lamp_t::getpwr :
         EVT_POST(LAMP_STATE_EVENTS, flags.ONflag ? e2int(evt::lamp_t::pwron) : e2int(evt::lamp_t::pwroff));
         //esp_event_post_to(evt::hndlr, LAMP_STATE_EVENTS, flags.ONflag ? e2int(evt::lamp_t::pwron) : e2int(evt::lamp_t::pwroff), NULL, 0, portMAX_DELAY);
@@ -817,6 +817,7 @@ void Lamp::_event_picker(esp_event_base_t base, int32_t id, void* data){
 
   }
 
+  // listen for change state events end execute corresponding actions
   if (base == LAMP_CHANGE_EVENTS){
     switch (static_cast<evt::lamp_t>(id)){
       case evt::lamp_t::fadeEnd :

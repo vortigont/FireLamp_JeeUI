@@ -4,58 +4,6 @@
 
 #define RESCHEDULE_DELAY    50         // async callback delay
 
-typedef enum _remote_action {
-    RA_UNKNOWN,
-//    RA_ON,
-//    RA_OFF,
-//    RA_DEMO,
-//    RA_DEMO_NEXT,       // trigger effect change in Demo mode
-//    RA_ALARM,
-//    RA_ALARM_OFF,
-//    RA_LAMP_CONFIG,     // load another config for embui
-//    RA_EFF_CONFIG,
-//#ifdef ESP_USE_BUTTON
-//    RA_BUTTONS_CONFIG,
-//#endif
-//    RA_EVENTS_CONFIG,
-/*
-#ifdef AUX_PIN
-    RA_AUX_ON,
-    RA_AUX_OFF,
-    RA_AUX_TOGLE,
-#endif
-*/
-//    RA_REBOOT,
-//    RA_EFF_NEXT,
-//    RA_EFF_PREV,
-//    RA_EFF_RAND,
-//    RA_BRIGHT_NF,
-//    RA_CONTROL,
-//#ifdef MP3PLAYER
-//    RA_MP3_PREV,
-//    RA_MP3_NEXT,
-//    RA_MP3_SOUND,
-//    RA_PLAYERONOFF,
-//    RA_MP3_VOL,
-//#endif
-#ifdef MIC_EFFECTS
-//    RA_MIC,
-//    RA_MICONOFF,
-#endif
-//    RA_EFFECT,          // called on effect change events
-//    RA_SEND_TEXT,
-//    RA_SEND_TIME,
-    RA_SEND_IP,
-    RA_WHITE_HI,
-    RA_WHITE_LO,
-    RA_WIFI_REC,
-//    RA_GLOBAL_BRIGHT,
-//    RA_BRIGHT_PCT,      // get/set brightness in percents
-//    RA_WARNING,
-//    RA_DRAW,
-//    RA_FILLMATRIX,
-//    RA_RGB
-} RA;
 
 /**
  * @brief обработчик, для поддержки приложения WLED APP
@@ -131,6 +79,18 @@ void set_ledstrip(Interface *interf, const JsonObject *data, const char* action)
 void set_hub75(Interface *interf, const JsonObject *data, const char* action);
 
 
+/**
+ * @brief a call-back handler that listens for status change events and publish it to EmbUI feeders
+ * i.e. it's used to propagade IPC events into WebSocket/MQTT updates
+ * 
+ * @param handler_args 
+ * @param base 
+ * @param id 
+ * @param event_data 
+ */
+void event_publisher(void* handler_args, esp_event_base_t base, int32_t id, void* event_data);
+
+
 // ==========
 #ifdef ESP_USE_BUTTON
 void default_buttons();
@@ -142,9 +102,6 @@ void default_buttons();
 void load_button_config(const char* path = NULL);
 #endif
 
-
-// устаревшая дергалка активностей
-void remote_action(RA action, ...);
 
 void section_effects_frame(Interface *interf, const JsonObject *data, const char* action);
 void section_text_frame(Interface *interf, const JsonObject *data, const char* action);
