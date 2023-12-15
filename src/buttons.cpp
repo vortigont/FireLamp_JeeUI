@@ -49,7 +49,7 @@ bool Button::activate(btnflags& flg, bool reverse){
 				run_action(ra::brt_nofade, newval);		// change brightness without fade effect
 				return true;
 			case BA_SPEED: {
-				byte speed = (myLamp.effects.getControls()[1]->getVal()).toInt();
+				byte speed = (myLamp.effwrkr.getControls()[1]->getVal()).toInt();
 				newval = constrain( speed + (speed / 25 + 1) * (flags.direction * 2 - 1), 1 , 255);
 				if ((newval == 1 || newval == 255) && tReverseTimeout==nullptr){
 					tReverseTimeout = new Task(2 * TASK_SECOND, TASK_ONCE,
@@ -65,7 +65,7 @@ bool Button::activate(btnflags& flg, bool reverse){
 				return true;
 			}
 			case BA_SCALE: {
-				byte scale = (myLamp.effects.getControls()[2]->getVal()).toInt();
+				byte scale = (myLamp.effwrkr.getControls()[2]->getVal()).toInt();
 				newval = constrain(scale + (scale / 25 + 1) * (flags.direction * 2 - 1), 1 , 255);
 				if ((newval == 1 || newval == 255) && tReverseTimeout==nullptr){
 					tReverseTimeout = new Task(2 * TASK_SECOND, TASK_ONCE,

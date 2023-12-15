@@ -154,8 +154,8 @@ void setup() {
 #endif
 
     // Lamp object initialization must be done AFTER display.start(), so that display object could create pixel buffer first
-    myLamp.effects.setEffSortType((SORT_TYPE)embui.paramVariant(V_effSort).as<int>()); // сортировка должна быть определена до заполнения
-    myLamp.effects.initDefault(); // если вызывать из конструктора, то не забыть о том, что нужно инициализировать Serial.begin(115200); иначе ничего не увидеть!
+    myLamp.effwrkr.setEffSortType((SORT_TYPE)embui.paramVariant(V_effSort).as<int>()); // сортировка должна быть определена до заполнения
+    myLamp.effwrkr.initDefault(); // если вызывать из конструктора, то не забыть о том, что нужно инициализировать Serial.begin(115200); иначе ничего не увидеть!
     //myLamp.events.loadConfig();
     //myLamp.events.setEventCallback(event_worker);
     myLamp.lamp_init();

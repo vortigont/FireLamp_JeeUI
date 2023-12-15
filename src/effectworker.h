@@ -552,12 +552,6 @@ public:
     bool status() const { return _status; };
 
     /**
-     * @brief set a new ledbuffer for worker
-     * it will pass it further on effects creation, etc...
-     */
-   //void setLEDbuffer(LedFB *buff);
-
-    /**
      * @brief Set the Luma Curve value for the current effect configuration
      * 
      * @param c luma curve enum

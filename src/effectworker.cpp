@@ -620,7 +620,6 @@ void EffectWorker::loadsoundfile(String& _soundfile, const uint16_t nb, const ch
   }
 }
 
-
 void EffectWorker::removeLists(){
   LittleFS.remove(TCONST_eff_list_json);
   LittleFS.remove(TCONST_eff_fulllist_json);

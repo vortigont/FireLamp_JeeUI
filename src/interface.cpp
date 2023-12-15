@@ -148,7 +148,7 @@ void rebuild_effect_list_files(lstfile_t lst);
 void resetAutoTimers(bool isEffects=false){
     myLamp.demoTimer(T_RESET);
     if(isEffects)
-        myLamp.effects.autoSaveConfig();
+        myLamp.effwrkr.autoSaveConfig();
 }
 
 
@@ -318,23 +318,23 @@ void set_effects_config_param(Interface *interf, const JsonObject *data, const c
 #ifdef MIC_EFFECTS
         //isRecreate = (myLamp.getLampFlagsStuct().effHasMic!=isEffHasMic) || isRecreate;
 #endif
-        isRecreate = (myLamp.effects.getEffSortType()!=st) || isRecreate;
+        isRecreate = (myLamp.effwrkr.getEffSortType()!=st) || isRecreate;
 
         if(isRecreate){
-            myLamp.effects.setEffSortType(st);
+            myLamp.effwrkr.setEffSortType(st);
             LOG(println, PSTR("Sort type changed, rebuilding eff list"));
             rebuild_effect_list_files(lstfile_t::all);
         }
     }
 
     embui.var(V_effSort, (*data)[V_effSort]); 
-    myLamp.effects.setEffSortType(st);
+    myLamp.effwrkr.setEffSortType(st);
     myLamp.save_flags();
     
     String act = (*data)[TCONST_set_effect];
     // action is to "copy" effect
     if (act == TCONST_copy) {
-        myLamp.effects.copyEffect(effect); // копируем текущий, это вызовет перестроение индекса
+        myLamp.effwrkr.copyEffect(effect); // копируем текущий, это вызовет перестроение индекса
         LOG(println, PSTR("Effect copy, rebuild list"));
         rebuild_effect_list_files(lstfile_t::all);
         return;
@@ -346,20 +346,20 @@ void set_effects_config_param(Interface *interf, const JsonObject *data, const c
         LOG(printf_P,PSTR("delete effect->eff_nb=%d\n"), tmpEffnb);
         bool isCfgRemove = (act == TCONST_delall);
 
-        if(tmpEffnb==myLamp.effects.getCurrent()){
-            myLamp.effects.switchEffect(EFF_ENUM::EFF_NONE);
+        if(tmpEffnb==myLamp.effwrkr.getCurrent()){
+            myLamp.effwrkr.switchEffect(EFF_ENUM::EFF_NONE);
             run_action(ra::eff_next);
         }
 
-        confEff = myLamp.effects.getEffect(EFF_ENUM::EFF_NONE);
+        confEff = myLamp.effwrkr.getEffect(EFF_ENUM::EFF_NONE);
         if(isCfgRemove){
-            myLamp.effects.deleteEffect(effect, true);  // удаляем эффект вместе с конфигом на ФС
-            myLamp.effects.makeIndexFileFromList();     // создаем индекс по текущему списку и на выход
-            //myLamp.effects.makeIndexFileFromFS();       // создаем индекс по файлам ФС и на выход
+            myLamp.effwrkr.deleteEffect(effect, true);  // удаляем эффект вместе с конфигом на ФС
+            myLamp.effwrkr.makeIndexFileFromList();     // создаем индекс по текущему списку и на выход
+            //myLamp.effwrkr.makeIndexFileFromFS();       // создаем индекс по файлам ФС и на выход
             rebuild_effect_list_files(lstfile_t::all);
         } else {
-            myLamp.effects.deleteEffect(effect, false); // удаляем эффект только из активного списка
-            myLamp.effects.makeIndexFileFromList();     // создаем индекс по текущему списку и на выход
+            myLamp.effwrkr.deleteEffect(effect, false); // удаляем эффект только из активного списка
+            myLamp.effwrkr.makeIndexFileFromList();     // создаем индекс по текущему списку и на выход
             rebuild_effect_list_files(lstfile_t::selected);
         }
         return;
@@ -367,8 +367,8 @@ void set_effects_config_param(Interface *interf, const JsonObject *data, const c
 
     // action is "rebuild effects index"
     if (act == TCONST_makeidx) {
-        myLamp.effects.removeLists();
-        myLamp.effects.initDefault();
+        myLamp.effwrkr.removeLists();
+        myLamp.effwrkr.initDefault();
         LOG(println, PSTR("Force rebuild index"));
         rebuild_effect_list_files(lstfile_t::all);
         return;
@@ -384,19 +384,19 @@ void set_effects_config_param(Interface *interf, const JsonObject *data, const c
     effect->isFavorite((*data)[TCONST_eff_fav]);
 
     // set sound file, if any defined
-    if ( !(*data)[TCONST_soundfile].isNull() ) myLamp.effects.setSoundfile((*data)[TCONST_soundfile], effect);
+    if ( !(*data)[TCONST_soundfile].isNull() ) myLamp.effwrkr.setSoundfile((*data)[TCONST_soundfile], effect);
 
     // check if effect has been renamed
     if (!(*data)[TCONST_effname].isNull()){
         LOG(println, PSTR("Effect rename, rebuild list"));
-        myLamp.effects.setEffectName((*data)[TCONST_effname], effect);
+        myLamp.effwrkr.setEffectName((*data)[TCONST_effname], effect);
         // effect has been renamed, need to update BOTH dropdown list jsons
-        myLamp.effects.makeIndexFileFromList(NULL, true);
+        myLamp.effwrkr.makeIndexFileFromList(NULL, true);
         return show_effects_config(interf, nullptr, NULL);       // force reload setup page
     }
 
     resetAutoTimers();
-    myLamp.effects.makeIndexFileFromList(); // обновить индексный файл после возможных изменений
+    myLamp.effwrkr.makeIndexFileFromList(); // обновить индексный файл после возможных изменений
     //ui_page_main(interf, nullptr, NULL);
 }
 
@@ -409,7 +409,7 @@ void show_effects_config(Interface *interf, const JsonObject *data, const char* 
 
     interf->json_frame_interface();
     interf->json_section_main(A_ui_page_effects_config, TINTF_009);
-    confEff = myLamp.effects.getSelectedListElement();
+    confEff = myLamp.effwrkr.getSelectedListElement();
 
     if(LittleFS.exists(TCONST_eff_fulllist_json)){
         // формируем и отправляем кадр с запросом подгрузки внешнего ресурса
@@ -449,7 +449,7 @@ void set_effects_config_list(Interface *interf, const JsonObject *data, const ch
         LOG(printf_P, PSTR("eff_sel: %d eff_fav : %d, new eff:%d\n"), (*data)[TCONST_eff_sel].as<bool>(),(*data)[TCONST_eff_fav].as<bool>(), num);
     }
 
-    confEff = myLamp.effects.getEffect(num);
+    confEff = myLamp.effwrkr.getEffect(num);
 
     //resetAutoTimers();
 
@@ -458,7 +458,7 @@ void set_effects_config_list(Interface *interf, const JsonObject *data, const ch
 
 #ifdef MP3PLAYER
     String tmpSoundfile;
-    myLamp.effects.loadsoundfile(tmpSoundfile,confEff->eff_nb);
+    myLamp.effwrkr.loadsoundfile(tmpSoundfile,confEff->eff_nb);
     interf->value(TCONST_soundfile, tmpSoundfile, false);
 #endif
     interf->value(TCONST_eff_sel, confEff->canBeSelected(), false);          // доступен для выбора в выпадающем списке на главной странице
@@ -470,7 +470,7 @@ void set_effects_config_list(Interface *interf, const JsonObject *data, const ch
 #ifdef EMBUI_USE_MQTT
 void mqtt_publish_selected_effect_config_json(){
   if (!embui.mqttAvailable()) return;
-  embui.publish("effect/jsconfig", myLamp.effects.getEffCfg().getSerializedEffConfig().c_str(), true);
+  embui.publish("effect/jsconfig", myLamp.effwrkr.getEffCfg().getSerializedEffConfig().c_str(), true);
 }
 #endif
 
@@ -481,7 +481,7 @@ void mqtt_publish_selected_effect_config_json(){
 void block_effect_controls(Interface *interf, const JsonObject *data, const char* action){
 
     JsonArrayConst sect = interf->json_section_begin(A_effect_ctrls);
-    LList<std::shared_ptr<UIControl>> &controls = myLamp.effects.getControls();
+    LList<std::shared_ptr<UIControl>> &controls = myLamp.effwrkr.getControls();
     uint8_t ctrlCaseType; // тип контрола, старшие 4 бита соответствуют CONTROL_CASE, младшие 4 - CONTROL_TYPE
 #ifdef MIC_EFFECTS
     bool isMicOn = myLamp.isMicOnOff();
@@ -611,7 +611,7 @@ void publish_effect_controls(Interface *interf, const JsonObject *data, const ch
 
     // publish also current effect index (for drop-down selector)
     interf->json_frame_value();
-    interf->value(A_effect_switch_idx, myLamp.effects.getEffnum());
+    interf->value(A_effect_switch_idx, myLamp.effwrkr.getEffnum());
     interf->json_frame_flush();
     if (remove_iface) delete interf;
 }
@@ -646,7 +646,7 @@ void ui_block_mainpage_switches(Interface *interf, const JsonObject *data, const
     interf->checkbox(TCONST_debug, myLamp.isDebugOn(), TINTF_08E, true);
 #endif
     // curve selector
-    interf->select(A_dev_lcurve, e2int(myLamp.effects.getEffCfg().curve), "Luma curve", true);  // luma curve selector
+    interf->select(A_dev_lcurve, e2int(myLamp.effwrkr.getEffCfg().curve), "Luma curve", true);  // luma curve selector
         interf->option(0, "binary");
         interf->option(1, "linear");
         interf->option(2, "cie1931");
@@ -697,7 +697,7 @@ void ui_page_effects(Interface *interf, const JsonObject *data, const char* acti
 
         interf->json_section_xload();
             // side load drop-down list from /eff_list.json file
-            interf->select(A_effect_switch_idx, myLamp.effects.getEffnum(), TINTF_00A, true, TCONST_eff_list_json);
+            interf->select(A_effect_switch_idx, myLamp.effwrkr.getEffnum(), TINTF_00A, true, TCONST_eff_list_json);
         interf->json_section_end(); // close xload section
 
         // 'next', 'prev' effect buttons << >>
@@ -1417,208 +1417,6 @@ void wled_handle(AsyncWebServerRequest *request){
     request->send(200, PGmimexml, result);
 }
 
-/*
-void sync_parameters(){
-    DynamicJsonDocument doc(1024);
-    JsonObject obj = doc.to<JsonObject>();
-
-#ifdef EMBUI_USE_MQTT
-    myLamp.setmqtt_int(embui.paramVariant(V_mqtt_ka));
-#endif
-
-    String syslampFlags(embui.param(TCONST_syslampFlags));
-    LAMPFLAGS tmp;
-    tmp.lampflags = stoull(syslampFlags); //atol(embui.param(TCONST_syslampFlags).c_str());
-    LOG(printf_P, PSTR("tmp.lampflags=%llu\n"), tmp.lampflags);
-
-#ifdef LAMP_DEBUG
-    obj[TCONST_debug] = tmp.isDebug ;
-    set_debugflag(nullptr, &obj, NULL);
-    doc.clear();
-#endif
-
-    // disable events for now
-    //obj[TCONST_Events] = tmp.isEventsHandled;
-    //CALL_INTF_OBJ(set_eventflag);
-    doc.clear();
-    TimeProcessor::getInstance().attach_callback(std::bind(&LAMP::setIsEventsHandled, &myLamp, myLamp.IsEventsHandled())); // только после синка будет понятно включены ли события
-
-    // restore last running effect from config
-    run_action(ra::eff_switch, embui.paramVariant(V_effect_idx));
-
-    // check "restore state" flag
-    if (tmp.restoreState){
-        tmp.ONflag ? run_action(ra::on) : run_action(ra::off);
-
-        doc.clear();
-        if(myLamp.isLampOn())
-            run_action(ra::demo, embui.paramVariant(K_demo));
-    }
-
-#ifdef MP3PLAYER
-    // т.к. sync_parameters запускается при перезапуске лампы, установку мп3 нужно отложить до момента инициализации плеера
-    Task *t = new Task(DFPLAYER_START_DELAY+250, TASK_ONCE, nullptr, &ts, false, nullptr, [tmp](){
-    if(!mp3->isReady()){
-        LOG(println, "DFPlayer not ready yet...");
-        if(millis()<10000){
-            ts.getCurrentTask()->restartDelayed(TASK_SECOND*2);
-            return;
-        }
-    }
-    
-    DynamicJsonDocument doc(1024);
-    JsonObject obj = doc.to<JsonObject>();
-
-    obj[TCONST_playTime] = tmp.playTime;
-    obj[TCONST_playName] = tmp.playName ;
-    obj[TCONST_playEffect] = tmp.playEffect ;
-    obj[TCONST_alarmSound] = tmp.alarmSound;
-    obj[TCONST_eqSetings] = tmp.MP3eq; // пишет в плеер!
-    obj[TCONST_playMP3] = tmp.playMP3 ;
-    obj[TCONST_mp3count] = embui.paramVariant(TCONST_mp3count);
-    obj[TCONST_mp3volume] = embui.paramVariant(TCONST_mp3volume);
-    obj[TCONST_limitAlarmVolume] = tmp.limitAlarmVolume;
-
-    set_settings_mp3(nullptr, &obj, NULL);
-    doc.clear();
-
-    mp3->setupplayer(myLamp.effects.getCurrent(), myLamp.effects.getSoundfile()); // установить начальные значения звука
-    obj[TCONST_isOnMP3] = tmp.isOnMP3 ;
-    set_mp3flag(nullptr, &obj, NULL);
-    }, true);
-    t->enableDelayed();
-#endif
-
-    // not sure if reapply for AUX is required here
-    //CALL_SETTER(TCONST_AUX, embui.paramVariant(TCONST_AUX), set_auxflag);
-
-    myLamp.setClearingFlag(tmp.isEffClearing);
-
-#ifdef MIC_EFFECTS
-    myLamp.setEffHasMic(tmp.effHasMic);
-#endif
-    SORT_TYPE type = (SORT_TYPE)embui.paramVariant(V_effSort);
-    obj[V_effSort] = type;
-    set_effects_config_param(nullptr, &obj, NULL);
-    doc.clear();
-
-#ifdef ESP_USE_BUTTON
-    obj[TCONST_Btn] = tmp.isBtn;
-    CALL_INTF_OBJ(set_btnflag);
-    obj[TCONST_EncVG] = tmp.GaugeType;
-    CALL_INTF_OBJ(set_gaugetype);
-    doc.clear();
-#endif
-#ifdef ENCODER
-    obj[TCONST_encTxtCol] = embui.param(TCONST_encTxtCol);
-    obj[TCONST_encTxtDel] = 110 - embui.paramVariant(TCONST_encTxtDel).as<int>();
-    obj[TCONST_EncVG] = tmp.GaugeType ;;
-    obj[TCONST_EncVGCol] = embui.param(TCONST_EncVGCol);
-    set_settings_enc(nullptr, &obj, NULL);
-    doc.clear();
-#endif
-
-    obj[TCONST_txtSpeed] = 110 - embui.paramVariant(TCONST_txtSpeed).as<int>();
-    obj[TCONST_txtOf] = embui.param(TCONST_txtOf);
-    obj[TCONST_ny_period] = embui.param(TCONST_ny_period);
-    obj[TCONST_txtBfade] = embui.param(TCONST_txtBfade);
-
-    String datetime;
-    TimeProcessor::getDateTimeString(datetime, embui.paramVariant(TCONST_ny_unix));
-    obj[TCONST_ny_unix] = datetime;
-    
-    set_text_config(nullptr, &obj, NULL);
-    doc.clear();
-
-#ifdef USE_STREAMING
-    obj[TCONST_isStreamOn] = tmp.isStream ;
-    set_streaming(nullptr, &obj, NULL);
-    doc.clear();
-
-    obj[TCONST_direct] = tmp.isDirect ;
-    set_streaming_drirect(nullptr, &obj, NULL);
-    doc.clear();
-
-    obj[TCONST_mapping] = tmp.isMapping ;
-    set_streaming_mapping(nullptr, &obj, NULL);
-    doc.clear();
-
-    obj[TCONST_stream_type] = embui.param(TCONST_stream_type);
-    set_streaming_type(nullptr, &obj, NULL);
-    doc.clear();
-
-    obj[TCONST_Universe] = embui.param(TCONST_Universe);
-    set_streaming_universe(nullptr, &obj, NULL);
-    doc.clear();
-#endif
-
-    // собираем конфигурацию для объекта лампы из сохраненного конфига и текущего же состояния лампы (масло масляное)
-    // имеет смысл при первом запуске. todo: часть можно выкинуть ибо переписывание в самих себя
-    obj[TCONST_isFaderON] = tmp.isFaderON ;
-    obj[TCONST_isClearing] = tmp.isEffClearing ;
-    obj[TCONST_DRand] = tmp.dRand ;
-    obj[TCONST_showName] = tmp.showName ;
-    obj[TCONST_DTimer] = embui.paramVariant(TCONST_DTimer);
-    obj[TCONST_spdcf] = embui.paramVariant(TCONST_spdcf);
-    obj[TCONST_f_restore_state] = tmp.restoreState;                             // "restore state" flag
-
-    uint8_t tmBright = embui.paramVariant(TCONST_tmBright);
-    obj[TCONST_tmBrightOn] = tmBright>>4;
-    obj[TCONST_tmBrightOff] = tmBright&0x0F;
-    obj[TCONST_tm24] = tmp.tm24 ;
-    obj[TCONST_tmZero] = tmp.tmZero ;
-    #ifdef DS18B20
-    obj[TCONST_ds18b20] = tmp.isTempOn ;
-    #endif
-
-    uint8_t alarmPT = embui.paramVariant(TCONST_alarmPT);
-    obj[TCONST_alarmP] = alarmPT>>4;
-    obj[TCONST_alarmT] = alarmPT&0x0F;
-
-    // выполняется метод, который обрабатывает форму вебморды "настройки" - "другие"
-    set_settings_other(nullptr, &obj, NULL);
-    doc.clear();
-
-#ifdef MIC_EFFECTS
-    obj[TCONST_Mic] = tmp.isMicOn ;
-    myLamp.getLampState().setMicAnalyseDivider(0);
-    set_micflag(nullptr, &obj, NULL);
-    doc.clear();
-
-    // float scale = atof(embui.param(V_micScale).c_str());
-    // float noise = atof(embui.param(V_micNoise).c_str());
-    // mic_noise_reduce_level_t lvl=(mic_noise_reduce_level_t)embui.param(V_micRdcLvl).toInt();
-
-    obj[V_micScale] = embui.paramVariant(V_micScale); //scale;
-    obj[V_micNoise] = embui.paramVariant(V_micNoise); //noise;
-    obj[V_micRdcLvl] = embui.paramVariant(V_micRdcLvl); //lvl;
-    set_settings_mic(nullptr, &obj, NULL);
-    doc.clear();
-#endif
-
-    //myLamp.save_flags(); // обновить состояние флагов (закомментированно, окончательно состояние установится через 0.3 секунды, после set_settings_other)
-
-    //--------------- начальная инициализация состояния
-    myLamp.getLampState().freeHeap = ESP.getFreeHeap();
-#ifdef ESP8266
-    FSInfo fs_info;
-    LittleFS.info(fs_info);
-    myLamp.getLampState().fsfreespace = fs_info.totalBytes-fs_info.usedBytes;
-    myLamp.getLampState().HeapFragmentation = ESP.getHeapFragmentation();
-#endif
-#ifdef ESP32
-    myLamp.getLampState().fsfreespace = LittleFS.totalBytes() - LittleFS.usedBytes();
-    myLamp.getLampState().HeapFragmentation = 0;
-#endif
-    //--------------- начальная инициализация состояния
-
-    Task *_t = new Task(TASK_SECOND, TASK_ONCE, [](){ // откладыаем задачу на 1 секунду, т.к. выше есть тоже отложенные инициализации, см. set_settings_other()
-        myLamp.getLampState().isInitCompleted = true; // ставим признак того, что инициализация уже завершилась, больше его не менять и должен быть в самом конце sync_parameters() !!!
-    }, &ts, false, nullptr, nullptr, true);
-    _t->enableDelayed();
-    LOG(println, "sync_parameters() done");
-}
-*/
 void show_progress(Interface *interf, const JsonObject *data, const char* action){
     if (!interf) return;
     interf->json_frame_interface();
@@ -1807,17 +1605,17 @@ void rebuild_effect_list_files(lstfile_t lst){
         [lst](){
             switch (lst){
                 case lstfile_t::full :
-                    build_eff_names_list_file(myLamp.effects, true);
+                    build_eff_names_list_file(myLamp.effwrkr, true);
                     if (embui.feeders.available()){  // refresh UI page with a regenerated list
                         Interface interf(&embui.feeders, MEDIUM_JSON_SIZE);
                         show_effects_config(&interf, nullptr, NULL);
                     }
                     break;
                 case lstfile_t::all :
-                    build_eff_names_list_file(myLamp.effects, true);
+                    build_eff_names_list_file(myLamp.effwrkr, true);
                     // intentionally fall-trough this to default
                 default :
-                    build_eff_names_list_file(myLamp.effects);
+                    build_eff_names_list_file(myLamp.effwrkr);
                     if (embui.feeders.available()){  // refresh UI page with a regenerated list
                         Interface interf(&embui.feeders, MEDIUM_JSON_SIZE);
                         ui_page_main(&interf, nullptr, NULL);

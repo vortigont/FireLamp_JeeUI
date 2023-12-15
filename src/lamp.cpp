@@ -43,7 +43,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "evtloop.h"
 
 
-Lamp::Lamp() : effects(&lampState){
+Lamp::Lamp() : effwrkr(&lampState){
   lampState.isInitCompleted = false; // завершилась ли инициализация лампы
   lampState.isStringPrinting = false; // печатается ли прямо сейчас строка?
   lampState.isEffectsDisabledUntilText = false;
@@ -114,8 +114,8 @@ void Lamp::lamp_init()
 void Lamp::handle(){
 #ifdef MIC_EFFECTS
   static unsigned long mic_check = 0; // = 40000; // пропускаю первые 40 секунд
-  if(effects.status() && flags.isMicOn && (flags.ONflag || isMicCalibration()) && !isAlarm() && mic_check + MIC_POLLRATE < millis()){
-    if(effects.isMicOn() || isMicCalibration())
+  if(effwrkr.status() && flags.isMicOn && (flags.ONflag || isMicCalibration()) && !isAlarm() && mic_check + MIC_POLLRATE < millis()){
+    if(effwrkr.isMicOn() || isMicCalibration())
       micHandler();
     mic_check = millis();
   } else {
@@ -141,7 +141,7 @@ void Lamp::handle(){
 
 #ifdef LAMP_DEBUG
     // fps counter
-    LOG(printf_P, PSTR("Eff:%d, FastLED FPS: %u\n"), effects.getCurrent(), FastLED.getFPS());
+    LOG(printf_P, PSTR("Eff:%d, FastLED FPS: %u\n"), effwrkr.getCurrent(), FastLED.getFPS());
 #ifdef ESP8266
 
     LOG(printf_P, PSTR("MEM stat: %d, HF: %d, Time: %s\n"), lampState.freeHeap, lampState.HeapFragmentation, TimeProcessor::getInstance().getFormattedShortTime().c_str());
@@ -169,7 +169,7 @@ void Lamp::power(bool flag) // флаг включения/выключения 
     // POWER ON
 
     // переключаемся на текущий эффект, переключение вызовет запуск движка калькулятора эффекта и фейдер (если необходимо)
-    switcheffect(SW_SPECIFIC, getFaderFlag(), effects.getCurrent());
+    _switcheffect(effswitch_t::num, getFaderFlag(), effwrkr.getCurrent());
     // запускаем планировщик движка эффектов
     effectsTimer(SCHEDULER::T_ENABLE);
 
@@ -207,15 +207,18 @@ void Lamp::power(bool flag) // флаг включения/выключения 
 }
 
 #ifdef MP3PLAYER
+/*
+temporary disable
 void Lamp::playEffect(bool isPlayName, EFFSWITCH action){
-  if(mp3!=nullptr && mp3->isOn() && effects.getCurrent()>0 && (flags.playEffect || ((isLampOn() || millis()>5000) && flags.playMP3 && action!=EFFSWITCH::SW_NEXT_DEMO && action!=EFFSWITCH::SW_RND))){
-    LOG(printf_P, PSTR("playEffect soundfile:%s, effect:%d, delayed:%d\n"), effects.getSoundfile().c_str(), effects.getCurrent(), (flags.playName && !flags.playMP3));
+  if(mp3!=nullptr && mp3->isOn() && effwrkr.getCurrent()>0 && (flags.playEffect || ((isLampOn() || millis()>5000) && flags.playMP3 && action!=EFFSWITCH::SW_NEXT_DEMO && action!=EFFSWITCH::SW_RND))){
+    LOG(printf_P, PSTR("playEffect soundfile:%s, effect:%d, delayed:%d\n"), effwrkr.getSoundfile().c_str(), effwrkr.getCurrent(), (flags.playName && !flags.playMP3));
     if(!flags.playMP3 || (flags.playEffect && action!=EFFSWITCH::SW_NEXT_DEMO && action!=EFFSWITCH::SW_RND)) // для mp3-плеера есть отдельное управление
-      mp3->playEffect(effects.getCurrent(), effects.getSoundfile(), (isPlayName && mp3!=nullptr && mp3->isOn() && !flags.playMP3)); // влияние на отложенное воспроизведение, но не для MP3-плеера
+      mp3->playEffect(effwrkr.getCurrent(), effwrkr.getSoundfile(), (isPlayName && mp3!=nullptr && mp3->isOn() && !flags.playMP3)); // влияние на отложенное воспроизведение, но не для MP3-плеера
   } else {
-    mp3->setCurEffect(effects.getCurrent());
+    mp3->setCurEffect(effwrkr.getCurrent());
   }
 }
+*/
 #endif  // MP3PLAYER
 
 void Lamp::startRGB(CRGB &val){
@@ -247,14 +250,14 @@ void Lamp::startDemoMode(uint8_t tmout)
 
   if(mode == LAMPMODE::MODE_DEMO) return;   // уже и так в "демо" режиме, выходим
   
-  storedEffect = ((static_cast<EFF_ENUM>(effects.getCurrent()%256) == EFF_ENUM::EFF_WHITE_COLOR) ? storedEffect : effects.getCurrent()); // сохраняем предыдущий эффект, если только это не белая лампа
+  storedEffect = ((static_cast<EFF_ENUM>(effwrkr.getCurrent()%256) == EFF_ENUM::EFF_WHITE_COLOR) ? storedEffect : effwrkr.getCurrent()); // сохраняем предыдущий эффект, если только это не белая лампа
   mode = LAMPMODE::MODE_DEMO;
   demoTimer(T_ENABLE, tmout);
 }
 
 void Lamp::storeEffect()
 {
-  storedEffect = ((static_cast<EFF_ENUM>(effects.getCurrent()%256) == EFF_ENUM::EFF_WHITE_COLOR) ? storedEffect : effects.getCurrent()); // сохраняем предыдущий эффект, если только это не белая лампа
+  storedEffect = ((static_cast<EFF_ENUM>(effwrkr.getCurrent()%256) == EFF_ENUM::EFF_WHITE_COLOR) ? storedEffect : effwrkr.getCurrent()); // сохраняем предыдущий эффект, если только это не белая лампа
   storedBright = getBrightness();
   lampState.isMicOn = false;
   LOG(printf_P, PSTR("storeEffect() %d,%d\n"),storedEffect,storedBright);
@@ -269,7 +272,7 @@ void Lamp::restoreStored()
   if (static_cast<EFF_ENUM>(storedEffect) != EFF_NONE) {    // ничего не должно происходить, включаемся на текущем :), текущий всегда определен...
     Task *_t = new Task(3 * TASK_SECOND, TASK_ONCE, [this](){ run_action( ra::eff_switch, storedEffect); }, &ts, false, nullptr, nullptr, true);
     _t->enableDelayed();
-  } else if(static_cast<EFF_ENUM>(effects.getCurrent()%256) == EFF_NONE) { // если по каким-то причинам текущий пустой, то выбираем рандомный
+  } else if(static_cast<EFF_ENUM>(effwrkr.getCurrent()%256) == EFF_NONE) { // если по каким-то причинам текущий пустой, то выбираем рандомный
     Task *_t = new Task(3 * TASK_SECOND, TASK_ONCE, [this](){ run_action(ra::eff_rnd); }, &ts, false, nullptr, nullptr, true);
     _t->enableDelayed();
   }
@@ -291,7 +294,7 @@ typedef enum {FIRSTSYMB=1,LASTSYMB=2} SYMBPOS;
 void Lamp::micHandler()
 {
   static uint8_t counter=0;
-  if(effects.getCurrent()==EFF_ENUM::EFF_NONE)
+  if(effwrkr.getCurrent()==EFF_ENUM::EFF_NONE)
     return;
   if(!mw && !lampState.isCalibrationRequest && lampState.micAnalyseDivider){ // обычный режим
     //mw = new(std::nothrow) MicWorker(lampState.mic_scale,lampState.mic_noise,!counter);
@@ -353,14 +356,14 @@ void Lamp::micHandler()
 void Lamp::setMicOnOff(bool val) {
     flags.isMicOn = val;
     lampState.isMicOn = val;
-    if(effects.getCurrent()==EFF_NONE || !effects.status()) return;
+    if(effwrkr.getCurrent()==EFF_NONE || !effwrkr.status()) return;
 
     unsigned foundc7 = 0;
-    LList<std::shared_ptr<UIControl>>&controls = effects.getControls();
+    LList<std::shared_ptr<UIControl>>&controls = effwrkr.getControls();
     if(val){
         for(unsigned i=3; i<controls.size(); i++) {
             if(controls[i]->getId()==7 && controls[i]->getName().startsWith(TINTF_020)==1){
-                effects.setDynCtrl(controls[i].get());
+                effwrkr.setDynCtrl(controls[i].get());
                 return;
             } else if(controls[i]->getId()==7) {
                 foundc7 = i;
@@ -369,9 +372,9 @@ void Lamp::setMicOnOff(bool val) {
     }
 
     UIControl ctrl(7,(CONTROL_TYPE)18,String(TINTF_020), val ? "1" : "0", "0", "1", "1");
-    effects.setDynCtrl(&ctrl);
+    effwrkr.setDynCtrl(&ctrl);
     if(foundc7){ // был найден 7 контрол, но не микрофон
-        effects.setDynCtrl(controls[foundc7].get());
+        effwrkr.setDynCtrl(controls[foundc7].get());
     }
 }
 #endif  // MIC_EFFECTS
@@ -417,20 +420,20 @@ void Lamp::setLumaCurve(luma::curve c){
   setBrightness(getBrightness(), fade_t::off);    // switch to the adjusted brightness level
 };
 
-void Lamp::switcheffect(EFFSWITCH action, uint16_t effnb){
+void Lamp::switcheffect(effswitch_t action, uint16_t effnb){
   if (isLampOn())
-    switcheffect(action, getFaderFlag(), effnb);
+    _switcheffect(action, getFaderFlag(), effnb);
   else
-    switcheffect(action, false, effnb);
+    _switcheffect(action, false, effnb);
 }
 
 /*
  * переключатель эффектов для других методов,
  * может использовать фейдер, выбирать случайный эффект для демо
- * @param EFFSWITCH action - вид переключения (пред, след, случ.)
+ * @param effswitch_t action - вид переключения (пред, след, случ.)
  * @param fade - переключаться через фейдер или сразу
  */
-void Lamp::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) {
+void Lamp::_switcheffect(effswitch_t action, bool fade, uint16_t effnb, bool skip) {
 #ifdef MIC_EFFECTS
     lampState.setMicAnalyseDivider(1); // восстановить делитель, при любой активности (поскольку эффекты могут его перенастраивать под себя)
 #endif
@@ -442,20 +445,17 @@ void Lamp::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
   if (!skip) {
     uint16_t next_eff_num = effnb;
     switch (action) {
-    case EFFSWITCH::SW_NEXT :
-        next_eff_num = effects.getNext();
+    case effswitch_t::next :
+        next_eff_num = effwrkr.getNext();
         break;
-    case EFFSWITCH::SW_NEXT_DEMO :
-        next_eff_num = effects.getByCnt(1);
+    case effswitch_t::prev :
+        next_eff_num = effwrkr.getPrev();
         break;
-    case EFFSWITCH::SW_PREV :
-        next_eff_num = effects.getPrev();
-        break;
-    case EFFSWITCH::SW_SPECIFIC :
+    case effswitch_t::num :
         next_eff_num = effnb;
         break;
-    case EFFSWITCH::SW_RND :
-        next_eff_num = effects.getByCnt(random(0, effects.getEffectsListSize()));
+    case effswitch_t::rnd :
+        next_eff_num = effwrkr.getByCnt(random(0, effwrkr.getEffectsListSize()));
         break;
     default:
         return;
@@ -464,24 +464,24 @@ void Lamp::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
     LOG(printf, "Lamp::switcheffect() action=%d, fade=%d, effnb=%d\n", action, fade, next_eff_num);
     // тухнем "вниз" только на включенной лампе
     if (fade && flags.ONflag) {
-      effects.switchEffect(next_eff_num, true);       // preload controls for next effect
+      effwrkr.switchEffect(next_eff_num, true);       // preload controls for next effect
       // запускаем фейдер и уходим на второй круг переключения
       // если текущая абсолютная яркость больше чем 2*FADE_MINCHANGEBRT, то затухаем не полностью, а только до значения FADE_MINCHANGEBRTб в противном случае гаснем полностью
       LEDFader::getInstance()->fadelight( _get_brightness(true) < 3*MAX_BRIGHTNESS/FADE_LOWBRTFRACT/2 ? 0 : _brightnessScale/FADE_LOWBRTFRACT,
                                           FADE_TIME,
-                                          [this, action, fade, next_eff_num](){ switcheffect(action, fade, next_eff_num, true); }
+                                          [this, action, fade, next_eff_num](){ _switcheffect(action, fade, next_eff_num, true); }
                                         );
       return;
     } else {
       // do direct switch to effect if fading is not required
-      effects.switchEffect(next_eff_num);
+      effwrkr.switchEffect(next_eff_num);
     }
 
   } else {
-    LOG(printf, "Lamp::switcheffect() postfade act=%d, fade=%d, effnb=%d\n", action, fade, effnb ? effnb : effects.getSelected());
+    LOG(printf, "Lamp::switcheffect() postfade act=%d, fade=%d, effnb=%d\n", action, fade, effnb ? effnb : effwrkr.getSelected());
   }
 
-  if(flags.isEffClearing || !effects.getCurrent()){ // для EFF_NONE или для случая когда включена опция - чистим матрицу
+  if(flags.isEffClearing || !effwrkr.getCurrent()){ // для EFF_NONE или для случая когда включена опция - чистим матрицу
     if (display.getCanvas())
       display.getCanvas()->clear();
   }
@@ -489,18 +489,18 @@ void Lamp::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
   // move to 'selected' only if lamp is On and fader is in effect (i.e. it's a second call after fade),
   // otherwise it's been switched already
   if (fade && flags.ONflag)
-    effects.switchEffect(effnb, true);
+    effwrkr.switchEffect(effnb, true);
 
   bool isShowName = (mode==LAMPMODE::MODE_DEMO && flags.showName);
 #ifdef MP3PLAYER
-  bool isPlayName = (isShowName && flags.playName && !flags.playMP3 && effects.getCurrent()>0);
+  bool isPlayName = (isShowName && flags.playName && !flags.playMP3 && effwrkr.getCurrent()>0);
 #endif
 
   // show effects's name on screen and play name over speaker (if set)
   if(isShowName){
 #ifdef MP3PLAYER
     if(isPlayName && mp3!=nullptr && mp3->isOn()) // воспроизведение 
-      mp3->playName(effects.getCurrent());
+      mp3->playName(effwrkr.getCurrent());
 #endif
   }
 
@@ -513,7 +513,7 @@ void Lamp::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
   // if lamp is not in Demo mode, then need to save new effect in config
   if(mode != LAMPMODE::MODE_DEMO){
     embui.var(V_effect_idx, effnb);
-    //myLamp.effects.autoSaveConfig();
+    //myLamp.effwrkr.autoSaveConfig();
   } else {
     myLamp.demoTimer(T_RESET);
   }
@@ -565,10 +565,10 @@ void Lamp::effectsTimer(SCHEDULER action) {
   switch (action){
   case SCHEDULER::T_ENABLE :
   case SCHEDULER::T_RESET :
-    effects.start();
+    effwrkr.start();
     break;
   default:
-    effects.stop();
+    effwrkr.stop();
   }
 }
 

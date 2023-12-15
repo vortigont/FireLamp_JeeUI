@@ -59,11 +59,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #define MAX_BRIGHTNESS            (255U)                    // максимальная яркость LED
 #define DEF_BRT_SCALE               20                      // шкала регулировки яркости по-умолчанию
 
-// a stub for 8266
-#ifndef GPIO_NUM_NC
-#define GPIO_NUM_NC   -1
-#endif
-
 typedef enum _LAMPMODE {
   MODE_NORMAL = 0,
   MODE_DEMO,
@@ -73,15 +68,13 @@ typedef enum _LAMPMODE {
 } LAMPMODE;
 
 // смена эффекта
-typedef enum _EFFSWITCH {
-    SW_NONE = 0,    // пустой
-    SW_NEXT,        // следующий
-    SW_PREV,        // предыдущий
-    SW_RND,         // случайный
-    SW_DELAY,       // сохраненный (для фейдера)
-    SW_SPECIFIC,    // переход на конкретный эффект по индексу/имени
-    SW_NEXT_DEMO,    // следующий для ДЕМО, исключая отключенные
-} EFFSWITCH;
+enum class effswitch_t : uint8_t {
+    none = 0,   // переключить на пустой эффект, он же темнота
+    next,       // следующий
+    prev,       // предыдущий
+    rnd,        // случайный
+    num        // переход на конкретный эффект по индексу
+};  // ex EFFSWITCH;
 
 // управление Тикером
 typedef enum _SCHEDULER {
@@ -217,7 +210,8 @@ private:
     uint8_t _get_brightness(bool absolute=false);
 
 #ifdef MP3PLAYER
-    void playEffect(bool isPlayName = false, EFFSWITCH action = EFFSWITCH::SW_NEXT);
+    // temp disable
+    void playEffect(bool isPlayName = false, EFFSWITCH action = EFFSWITCH::SW_NEXT){};
 #endif
 
     /**
@@ -237,7 +231,7 @@ public:
     Lamp (const Lamp&) = delete;
     Lamp& operator= (const Lamp&) = delete;
 
-    EffectWorker effects; // объект реализующий доступ к эффектам
+    EffectWorker effwrkr; // объект реализующий доступ к эффектам
 
     // инициализация Лампы
     void lamp_init();
@@ -245,7 +239,7 @@ public:
     void setbPin(uint8_t val) {bPin = val;}
     uint8_t getbPin() {return bPin;}
     LAMPSTATE &getLampState() {return lampState;}
-    LList<std::shared_ptr<UIControl>>&getEffControls() { return effects.getControls(); }
+    LList<std::shared_ptr<UIControl>>&getEffControls() { return effwrkr.getControls(); }
 
 #ifdef MIC_EFFECTS
     void setMicCalibration() {lampState.isCalibrationRequest = true;}
@@ -258,7 +252,7 @@ public:
 
     void setSpeedFactor(float val) {
         lampState.speedfactor = val;
-        if(effects.getControls().exist(1)) effects.setDynCtrl(effects.getControls()[1].get());
+        if(effwrkr.getControls().exist(1)) effwrkr.setDynCtrl(effwrkr.getControls()[1].get());
     }
 
     // Lamp brightness control
@@ -460,17 +454,7 @@ public:
      * @param action - тип переключения на эффект, предыдущий, следующий, конкретный и т.п.
      * @param effnb - опциональный параметр номер переключаемого эффекта
      */
-    void switcheffect(EFFSWITCH action, uint16_t effnb = EFF_ENUM::EFF_NONE);
-
-    /**
-     * @brief - переключатель эффектов для других методов,
-     * может использовать фейдер, выбирать случайный эффект для демо
-     * @param EFFSWITCH action - вид переключения (пред, след, случ.)
-     * @param fade - переключаться через фейдер или сразу
-     * @param effnb - номер эффекта
-     * @param skip - системное поле - пропуск фейдера
-     */
-    void switcheffect(EFFSWITCH action, bool fade, uint16_t effnb = EFF_ENUM::EFF_NONE, bool skip = false);
+    void switcheffect(effswitch_t action, uint16_t effnb = EFF_ENUM::EFF_NONE);
 
     /*
      * включает/выключает "демо"-таймер
@@ -496,6 +480,16 @@ public:
     static void event_hndlr(void* handler_args, esp_event_base_t base, int32_t id, void* event_data);
 
 private:
+    /**
+     * @brief - переключатель эффектов для других методов,
+     * может использовать фейдер, выбирать случайный эффект для демо
+     * @param effswitch_t action - вид переключения (пред, след, случ.)
+     * @param fade - переключаться через фейдер или сразу
+     * @param effnb - номер эффекта
+     * @param skip - системное поле - пропуск фейдера
+     */
+    void _switcheffect(effswitch_t action, bool fade, uint16_t effnb = EFF_ENUM::EFF_NONE, bool skip = false);
+
     /**
      * @brief creates/destroys buffer for "drawing, etc..."
      * 

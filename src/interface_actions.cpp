@@ -72,7 +72,7 @@ void set_brightness(Interface *interf, const JsonObject *data, const char* actio
         interf->json_frame_value();
         interf->value(A_dev_brightness, myLamp.getBrightness());
         interf->value(V_dev_brtscale, myLamp.getBrightnessScale());
-        interf->value(A_dev_lcurve, e2int(myLamp.effects.getEffCfg().curve));
+        interf->value(A_dev_lcurve, e2int(myLamp.effwrkr.getEffCfg().curve));
         interf->json_frame_flush();
     }
 }
@@ -85,7 +85,7 @@ void set_lcurve(Interface *interf, const JsonObject *data, const char* action){
     if (data && (*data).size()){
         auto c = static_cast<luma::curve>((*data)[A_dev_lcurve].as<int>());
         myLamp.setLumaCurve(c);
-        myLamp.effects.setLumaCurve(c);
+        myLamp.effwrkr.setLumaCurve(c);
     }
     // publishing will be taken care by event listening fuction and set_brightness
 }
@@ -130,14 +130,14 @@ void effect_switch(Interface *interf, const JsonObject *data, const char* action
         return run_action(ra::eff_prev);
 
     uint16_t num = (*data)[A_effect_switch_idx];
-    EffectListElem *eff = myLamp.effects.getEffect(num);
+    EffectListElem *eff = myLamp.effwrkr.getEffect(num);
     if (!eff) return;                                       // some unknown effect requested, quit
 
     // сбросить флаг случайного демо
     //myLamp.setDRand(myLamp.getLampFlagsStuct().dRand);
 
     LOG(printf_P, PSTR("UI EFF switch to:%d, LampOn:%d, mode:%d\n"), eff->eff_nb, myLamp.isLampOn(), myLamp.getMode());
-    myLamp.switcheffect(SW_SPECIFIC, eff->eff_nb);
+    myLamp.switcheffect(effswitch_t::num, eff->eff_nb);
 }
 
 void set_eff_prev(Interface *interf, const JsonObject *data, const char* action){
@@ -150,7 +150,7 @@ void set_eff_next(Interface *interf, const JsonObject *data, const char* action)
 
 void set_effects_dynCtrl(Interface *interf, const JsonObject *data, const char* action){
 
-    LList<std::shared_ptr<UIControl>>&controls = myLamp.effects.getControls();
+    LList<std::shared_ptr<UIControl>>&controls = myLamp.effwrkr.getControls();
 
     if (!data || !(*data).size()){
         if (!interf && !action) return;     // return if requred arguments are null
@@ -182,7 +182,7 @@ void set_effects_dynCtrl(Interface *interf, const JsonObject *data, const char* 
                 controls[i]->setVal((*data)[ctrlName]); // для всех остальных
 
             resetAutoTimers(true);
-            myLamp.effects.setDynCtrl(controls[i].get());
+            myLamp.effwrkr.setDynCtrl(controls[i].get());
             break;
         }
     }
@@ -245,7 +245,7 @@ void set_ledstrip(Interface *interf, const JsonObject *data, const char* action)
     if (interf) basicui::page_system_settings(interf, nullptr, NULL);
 
     // Check if I need to reset FastLED gpio
-    if (display.getGPIO() == (*data)[T_mx_gpio] || (*data)[T_mx_gpio] == GPIO_NUM_NC) return;       /// gpio not changed or not set, just quit
+    if (display.getGPIO() == (*data)[T_mx_gpio] || (*data)[T_mx_gpio] == static_cast<int>(GPIO_NUM_NC)) return;       /// gpio not changed or not set, just quit
 
     if (display.getGPIO() == GPIO_NUM_NC){
         // it's a cold start, so I can change GPIO on the fly

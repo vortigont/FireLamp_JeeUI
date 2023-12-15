@@ -169,7 +169,7 @@ void encLoop() {
       resetTimers();
       LOG(printf_P, PSTR("Enc: New effect number: %d\n"), currEffNum);
       myLamp.switcheffect(SW_SPECIFIC, myLamp.getFaderFlag(), currEffNum);
-      run_action(ra::eff_switch, myLamp.effects.getSelected());
+      run_action(ra::eff_switch, myLamp.effwrkr.getSelected());
       //encSendString(String(TINTF_00A) + ": " + (currEffNum <= 255 ? String(currEffNum) : (String((byte)(currEffNum & 0xFF)) + "." + String((byte)(currEffNum >> 8) - 1U))), txtColor, true, txtDelay);
       done = true;
       currAction = 0;
@@ -333,7 +333,7 @@ void isHolded() {
     loops = 0;
 #ifdef DS18B20
     canDisplayTemp() = false; // в режиме "Настройки Эффекта" запрещаем выводить температуру, в функции exitSettings() снова разрешим
-    currEffNum = myLamp.effects.getCurrent();
+    currEffNum = myLamp.effwrkr.getCurrent();
     LOG(printf_P, PSTR("Enc: Effect number: %d controls amount %d\n"), currEffNum, myLamp.getEffControls().size());
 #endif
     //encSendString(String(TINTF_01A), CRGB::Green, true, txtDelay);
@@ -357,7 +357,7 @@ void exitSettings() {
   inSettings = false;
   encDisplay(String("done"));
   //encSendString(String(TINTF_exit), CRGB::Red, true, txtDelay);
-  myLamp.effects.autoSaveConfig();
+  myLamp.effwrkr.autoSaveConfig();
 #ifdef DS18B20
   canDisplayTemp() = true;
 #endif
@@ -478,7 +478,7 @@ void encSetEffect(int val) {
   }
 
   if (done or currAction !=2) { // если сеттер отработал или предыдущий мод не отвечает текущему, перечитаем значение, и взведем сеттер
-    anyValue = myLamp.effects.effIndexByList(myLamp.effects.getCurrent());
+    anyValue = myLamp.effwrkr.effIndexByList(myLamp.effwrkr.getCurrent());
     done = false;
     encDisplay(anyValue, "");
   }
@@ -489,20 +489,20 @@ void encSetEffect(int val) {
   
   while (1)  // в цикле проверим может быть текущий накрученный выбранным
   {
-    if (myLamp.effects.effCanBeSelected(anyValue)) break;
+    if (myLamp.effwrkr.effCanBeSelected(anyValue)) break;
 
     if (val > 0) { // если курутили вперед по списку - скипим в том же направлении, если назад - в обратном
       anyValue++; 
-      if(anyValue >= myLamp.effects.getEffectsListSize()) // если ничего не нашли, - снова начинаем сначала
+      if(anyValue >= myLamp.effwrkr.getEffectsListSize()) // если ничего не нашли, - снова начинаем сначала
         anyValue = 0;
     }
     else {
       anyValue--;
       if (anyValue == 0) // если ничего не нашли, - снова начинаем с конца
-        anyValue = myLamp.effects.getEffectsListSize()-1;
+        anyValue = myLamp.effwrkr.getEffectsListSize()-1;
     }
   }
-  currEffNum = myLamp.effects.realEffNumdByList(anyValue);
+  currEffNum = myLamp.effwrkr.realEffNumdByList(anyValue);
   encDisplay(currEffNum <= 255 ? String(currEffNum) : (String((byte)(currEffNum & 0xFF)) + "." + String((byte)(currEffNum >> 8) - 1U)));  
   interrupt();
 }
@@ -553,7 +553,7 @@ void encDisplay(String str) {
 // Ресетим таймера автосохранения конфигов и Демо на время "баловства" с энкодером 
 void resetTimers() {
   myLamp.demoTimer(T_RESET);
-  myLamp.effects.autoSaveConfig();
+  myLamp.effwrkr.autoSaveConfig();
   embui.autosave();
 }
 /*
