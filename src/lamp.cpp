@@ -464,7 +464,6 @@ void Lamp::_switcheffect(effswitch_t action, bool fade, uint16_t effnb, bool ski
     LOG(printf, "Lamp::switcheffect() action=%d, fade=%d, effnb=%d\n", action, fade, next_eff_num);
     // тухнем "вниз" только на включенной лампе
     if (fade && flags.ONflag) {
-      effwrkr.switchEffect(next_eff_num, true);       // preload controls for next effect
       // запускаем фейдер и уходим на второй круг переключения
       // если текущая абсолютная яркость больше чем 2*FADE_MINCHANGEBRT, то затухаем не полностью, а только до значения FADE_MINCHANGEBRTб в противном случае гаснем полностью
       LEDFader::getInstance()->fadelight( _get_brightness(true) < 3*MAX_BRIGHTNESS/FADE_LOWBRTFRACT/2 ? 0 : _brightnessScale/FADE_LOWBRTFRACT,
@@ -478,7 +477,7 @@ void Lamp::_switcheffect(effswitch_t action, bool fade, uint16_t effnb, bool ski
     }
 
   } else {
-    LOG(printf, "Lamp::switcheffect() postfade act=%d, fade=%d, effnb=%d\n", action, fade, effnb ? effnb : effwrkr.getSelected());
+    LOG(printf, "Lamp::switcheffect() postfade act=%d, fade=%d, effnb=%d\n", action, fade, effnb);
   }
 
   if(flags.isEffClearing || !effwrkr.getCurrent()){ // для EFF_NONE или для случая когда включена опция - чистим матрицу

@@ -211,7 +211,7 @@ private:
 
 #ifdef MP3PLAYER
     // temp disable
-    void playEffect(bool isPlayName = false, EFFSWITCH action = EFFSWITCH::SW_NEXT){};
+    void playEffect(bool isPlayName = false, effswitch_t action = effswitch_t::next){};
 #endif
 
     /**

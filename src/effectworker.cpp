@@ -708,7 +708,7 @@ void EffectWorker::copyEffect(const EffectListElem *base)
 EffectListElem *EffectWorker::getSelectedListElement()
 {
   for(unsigned i=0; i<effects.size(); i++){
-    if(effects[i].eff_nb==pendingEff.num)
+    if(effects[i].eff_nb == curEff.num)
       return &effects[i];
   }
   return nullptr;
@@ -792,11 +792,7 @@ uint16_t EffectWorker::getByCnt(byte cnt)
 }
 
 // предыдущий эффект, кроме canBeSelected==false
-uint16_t EffectWorker::getPrev()
-{
-  if(isEffSwPending()) return pendingEff.num; // если эффект в процессе смены, то возвращаем pendingEffNum
-
-  // все индексы списка и их синхронизация - фигня ИМХО, исходим только от curEff
+uint16_t EffectWorker::getPrev(){
   uint16_t firstfound = curEff.num;
   bool found = false;
   for(unsigned i=0; i<effects.size(); i++){
@@ -817,11 +813,7 @@ uint16_t EffectWorker::getPrev()
 }
 
 // следующий эффект, кроме canBeSelected==false
-uint16_t EffectWorker::getNext()
-{
-  if(isEffSwPending()) return pendingEff.num; // если эффект в процессе смены, то возвращаем pendingEffNum
-
-  // все индексы списка и их синхронизация - фигня ИМХО, исходим только от curEff
+uint16_t EffectWorker::getNext(){
   uint16_t firstfound = curEff.num;
   bool found = false;
   for(unsigned i=0; i<effects.size(); i++){
@@ -847,27 +839,10 @@ void EffectWorker::switchEffect(uint16_t effnb, bool twostage){
   // (it's required for a cases like new LedFB has been provided, etc)
   if (effnb == curEff.num) return reset();
 
-  // if it's a first call for two-stage switch, than we just preload coontrols and quit
-  if (twostage && effnb != pendingEff.num){
-    LOG(printf_P,PSTR("preloading controls for eff: %u, current eff:%u\n"), effnb, curEff.num);
-    pendingEff.loadeffconfig(effnb);
-    return;
-  }
-
   curEff.flushcfg();  // сохраняем конфигурацию предыдущего эффекта если были несохраненные изменения
 
-  // if it's a second of a two-stage call, than switch to pending
-  if (twostage && isEffSwPending()){
-    LOG(printf_P,PSTR("to pending %d\n"), pendingEff.num);
-    workerset(pendingEff.num);      // first we change the effect
-  } else {
-    // other way, consider it as a direct switch to specified effect
-    LOG(printf_P,PSTR("direct switch EffWorker to %d\n"), effnb);
-    pendingEff.num = effnb;
-    workerset(effnb);
-  }
-
-  pendingEff.controls.clear();        // no longer needed
+  LOG(printf, "switch EffWorker to "); LOG(println, effnb);
+  workerset(effnb);
 }
 
 void EffectWorker::fsinforenew(){
