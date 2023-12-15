@@ -378,21 +378,26 @@ void Lamp::setMicOnOff(bool val) {
 
 void Lamp::setBrightness(uint8_t tgtbrt, fade_t fade, bool bypass){
     LOG(printf, "Lamp::setBrightness(%u,%u,%u)\n", tgtbrt, static_cast<uint8_t>(fade), bypass);
+    // if bypass flag is given, than this is a low level request with unscaled brightness that should not be saved or published anywhere
     if (bypass)
       return _brightness(tgtbrt, true);
-
+      
     if ( fade == fade_t::on || ( (fade == fade_t::preset) && flags.isFaderON) ) {
-        LEDFader::getInstance()->fadelight(tgtbrt);
+      // fader will publish event once it will finish brightness scaling
+      LEDFader::getInstance()->fadelight(tgtbrt);
     } else {
-        _brightness(tgtbrt);
+      _brightness(tgtbrt);
+      int b = tgtbrt;
+      EVT_POST_DATA(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::brightness), &b, sizeof(int));
     }
-    globalBrightness = tgtbrt;            // set configured brightness variable
 
+    globalBrightness = tgtbrt;              // set configured brightness variable
     embui.var(A_dev_brightness, tgtbrt);    // save brightness variable
 }
 
 /*
- * Set global brightness
+ * Set display brightness
+ * note: this method is called by fader also
  * @param bool natural
  */
 void Lamp::_brightness(uint8_t brt, bool absolute){
@@ -594,23 +599,28 @@ void Lamp::_overlay_buffer(bool activate) {
 }
 
 void Lamp::_events_subsribe(){
-  ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CMD_EVENTS, ESP_EVENT_ANY_ID, Lamp::event_hndlr, this, &_events_lamp_cmd));
+  ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), ESP_EVENT_ANY_BASE, ESP_EVENT_ANY_ID, Lamp::event_hndlr, this, &_events_lamp_cmd));
 }
 
 void Lamp::event_hndlr(void* handler_args, esp_event_base_t base, int32_t id, void* event_data){
-  reinterpret_cast<Lamp*>(handler_args)->_event_picker(base, id, event_data);
+  LOG(printf, "Lamp::event_hndlr %s:%d\n", base, id);
+  if (base == LAMP_SET_EVENTS || base == LAMP_GET_EVENTS )
+    return reinterpret_cast<Lamp*>(handler_args)->_event_picker_cmd(base, id, event_data);
+
+  if (base == LAMP_SET_EVENTS || base == LAMP_GET_EVENTS )
+    return reinterpret_cast<Lamp*>(handler_args)->_event_picker_state(base, id, event_data);
+
 }
 
 void Lamp::events_unsubsribe(){
-  esp_event_handler_instance_unregister_with(evt::get_hndlr(), LAMP_CMD_EVENTS, ESP_EVENT_ANY_ID, _events_lamp_cmd);
+  esp_event_handler_instance_unregister_with(evt::get_hndlr(), ESP_EVENT_ANY_BASE, ESP_EVENT_ANY_ID, _events_lamp_cmd);
 }
 
-void Lamp::_event_picker(esp_event_base_t base, int32_t id, void* data){
-  LOG(printf, "Lamp::_event_picker %s:%d\n", base, id);
+void Lamp::_event_picker_cmd(esp_event_base_t base, int32_t id, void* data){
 
-  if (base == LAMP_CMD_EVENTS){
 
     switch (static_cast<evt::lamp_t>(id)){
+    // Power control
       case evt::lamp_t::pwron :
         power(true);
         break;
@@ -621,32 +631,37 @@ void Lamp::_event_picker(esp_event_base_t base, int32_t id, void* data){
         power();
         break;
 
+    // Brightness control
+      case evt::lamp_t::brightness :
+        setBrightness(*((int*) data));
+        break;
+      case evt::lamp_t::brightness_nofade :
+        setBrightness(*((int*) data), fade_t::off);
+        break;
+      case evt::lamp_t::brightness_lcurve :
+        setLumaCurve(*( (luma::curve*)data) );
+        break;
+        
 
     // Get State Commands
-      case evt::lamp_t::getpwr :
+      case evt::lamp_t::pwr :
         EVT_POST(LAMP_STATE_EVENTS, flags.ONflag ? e2int(evt::lamp_t::pwron) : e2int(evt::lamp_t::pwroff));
-        //esp_event_post_to(evt::hndlr, LAMP_STATE_EVENTS, flags.ONflag ? e2int(evt::lamp_t::pwron) : e2int(evt::lamp_t::pwroff), NULL, 0, portMAX_DELAY);
         break;
 
-
-      default:
-        return;
+      default:;
     }
 
-  }
+}
 
-  // listen for change state events end execute corresponding actions
-  if (base == LAMP_CHANGE_EVENTS){
-    switch (static_cast<evt::lamp_t>(id)){
-      case evt::lamp_t::fadeEnd :
-        // check if lamp is in "PowerOff" state, then we've just complete fade-out, need to send event
-        if (flags.ONflag)
-          EVT_POST(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::pwroff));
-        break;
+void Lamp::_event_picker_state(esp_event_base_t base, int32_t id, void* data){
+  switch (static_cast<evt::lamp_t>(id)){
+    case evt::lamp_t::fadeEnd :
+      // check if lamp is in "PowerOff" state, then we've just complete fade-out, need to send event
+      if (flags.ONflag)
+        EVT_POST(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::pwroff));
+      break;
 
-      default:
-        return;
-    }
+    default:;
   }
 
 }
@@ -674,6 +689,8 @@ void LEDFader::fadelight(const uint8_t _targetbrightness, const uint32_t _durati
     LOG(printf, "Fast fade %d->%d\n", _brt, _tgtbrt);
     lmp->_brightness(_tgtbrt, true);
     abort();
+    int b = _targetbrightness;
+    EVT_POST_DATA(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::brightness), &b, sizeof(int));
     if (callback) callback();
     return;
   }
@@ -692,14 +709,16 @@ void LEDFader::fadelight(const uint8_t _targetbrightness, const uint32_t _durati
               },
       &ts, true, nullptr,
       // onDisable
-      [this](){
+      [this, _targetbrightness](){
           lmp->_brightness(_tgtbrt, true);  // set exact target brightness value
           LOG(printf, "Fading to %d done\n", _tgtbrt);
+          int b = _targetbrightness;
+          EVT_POST_DATA(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::brightness), &b, sizeof(int));
           // use new task for callback, 'cause effect switching will immidiatetly respawn new fader from callback, so I need to release a Task instance
           if(_cb) { new Task(FADE_STEPTIME, TASK_ONCE, [this](){ if (_cb) { _cb(); _cb = nullptr; } }, &ts, true, nullptr, nullptr, true ); }
           runner = nullptr;
       },
-      true
+      true  // self-destruct
     );
   }
 

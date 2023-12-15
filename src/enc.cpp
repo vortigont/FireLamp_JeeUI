@@ -379,13 +379,13 @@ void myClicks() {
   {
   case 1: // Включение\выключение лампы
     if (myLamp.isLampOn()) {
-      EVT_POST(LAMP_CMD_EVENTS, e2int(evt::lamp_t::pwroff));
+      EVT_POST(LAMP_SET_EVENTS, e2int(evt::lamp_t::pwroff));
       if (tm1637) {
         tm1637->getSetDelay() = 1;
         tm1637->display(String("Off"), true, false, 1);  // Выводим 
       }
     } else {
-      EVT_POST(LAMP_CMD_EVENTS, e2int(evt::lamp_t::pwron));
+      EVT_POST(LAMP_SET_EVENTS, e2int(evt::lamp_t::pwron));
       if (tm1637) {
         tm1637->getSetDelay() = 1;
         tm1637->display(String("On"), true, false, 2);  // Выводим 

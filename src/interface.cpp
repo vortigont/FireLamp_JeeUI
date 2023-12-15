@@ -1397,9 +1397,9 @@ void wled_handle(AsyncWebServerRequest *request){
     if(request->hasParam("T")){
         int pwr = request->getParam("T")->value().toInt();
         if (pwr == 2)
-            EVT_POST(LAMP_CMD_EVENTS, e2int(evt::lamp_t::pwrtoggle));   // '2' is for toggle
+            EVT_POST(LAMP_SET_EVENTS, e2int(evt::lamp_t::pwrtoggle));   // '2' is for toggle
         else
-            EVT_POST(LAMP_CMD_EVENTS, pwr ? e2int(evt::lamp_t::pwron) : e2int(evt::lamp_t::pwroff));
+            EVT_POST(LAMP_SET_EVENTS, pwr ? e2int(evt::lamp_t::pwron) : e2int(evt::lamp_t::pwroff));
     }
     uint8_t bright = myLamp.isLampOn() ? myLamp.getBrightness() : 0;
 

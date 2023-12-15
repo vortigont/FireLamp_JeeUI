@@ -88,10 +88,10 @@ bool Button::activate(btnflags& flg, bool reverse){
 		// проверяем дальше
 		switch (action) {
 			case BA_ON:
-				EVT_POST(LAMP_CMD_EVENTS, e2int(evt::lamp_t::pwron));
+				EVT_POST(LAMP_SET_EVENTS, e2int(evt::lamp_t::pwron));
 				return ret;
 			case BA_OFF:
-				EVT_POST(LAMP_CMD_EVENTS, e2int(evt::lamp_t::pwron));
+				EVT_POST(LAMP_SET_EVENTS, e2int(evt::lamp_t::pwron));
 				return ret;
 			case BA_DEMO: run_action(ra::demo, !param.isEmpty()); return ret;
 			case BA_AUX_TOGLE: run_action(ra::aux_flip); return ret;			// set AUX pin

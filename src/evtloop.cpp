@@ -48,7 +48,8 @@
 
 static const char* TAG = "evt";
 
-ESP_EVENT_DEFINE_BASE(LAMP_CMD_EVENTS);        // declaration of Lamp Command events base
+ESP_EVENT_DEFINE_BASE(LAMP_SET_EVENTS);        // declaration of Lamp Command events base
+ESP_EVENT_DEFINE_BASE(LAMP_GET_EVENTS);
 ESP_EVENT_DEFINE_BASE(LAMP_STATE_EVENTS);      // declaration of Lamp State publishing events base
 ESP_EVENT_DEFINE_BASE(LAMP_CHANGE_EVENTS);     // declaration of Lamp State change notification events base
 

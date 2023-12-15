@@ -67,8 +67,8 @@ void set_brightness(Interface *interf, const JsonObject *data, const char* actio
             myLamp.setBrightness((*data)[A_dev_brightness]);
     }
 
-    // publish new state
-    if(interf){
+    // publish only on empty data (i.e. GET req or from evt queue)
+    if(interf && !data){
         interf->json_frame_value();
         interf->value(A_dev_brightness, myLamp.getBrightness());
         interf->value(V_dev_brtscale, myLamp.getBrightnessScale());
@@ -87,16 +87,15 @@ void set_lcurve(Interface *interf, const JsonObject *data, const char* action){
         myLamp.setLumaCurve(c);
         myLamp.effects.setLumaCurve(c);
     }
-
-    // just call get_brightness method, it will publish luma related value
-    set_brightness(interf, nullptr, action);
+    // publishing will be taken care by event listening fuction and set_brightness
 }
 
 /**
  * Обработка вкл/выкл лампы
  */
 void set_pwrswitch(Interface *interf, const JsonObject *data, const char* action){
-    EVT_POST(LAMP_CMD_EVENTS, (*data)[A_dev_pwrswitch] ? e2int(evt::lamp_t::pwron) : e2int(evt::lamp_t::pwroff));
+    myLamp.power((*data)[action]);
+    //EVT_POST(LAMP_SET_EVENTS, (*data)[A_dev_pwrswitch] ? e2int(evt::lamp_t::pwron) : e2int(evt::lamp_t::pwroff));
 
     #ifdef MP3PLAYER
         if(myLamp.getLampFlagsStuct().isOnMP3)
@@ -307,6 +306,14 @@ void event_publisher(void* handler_args, esp_event_base_t base, int32_t id, void
         case evt::lamp_t::pwroff :
             interf.json_frame_value();
             interf.value(A_dev_pwrswitch, myLamp.isLampOn());
+            break;
+
+        // brightness related change notifications
+        case evt::lamp_t::brightness : [[fallthrough]]
+        case evt::lamp_t::brightness_lcurve : [[fallthrough]]
+        case evt::lamp_t::brightness_scale :
+            // call set_brightness function with empty data, it will do feeders publishing
+            set_brightness(&interf, nullptr, NULL);
             break;
 
         default:;

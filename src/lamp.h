@@ -237,25 +237,10 @@ public:
     Lamp (const Lamp&) = delete;
     Lamp& operator= (const Lamp&) = delete;
 
+    EffectWorker effects; // объект реализующий доступ к эффектам
+
     // инициализация Лампы
     void lamp_init();
-
-    /**
-     * @brief show a warning message on a matrix
-     * display blinks with specific color
-     * and scrolls a text message
-     * 
-     * @param color - цвет вспышки
-     * @param duration - продолжительность отображения предупреждения (общее время)
-     * @param blinkHalfPeriod - продолжительность одной вспышки в миллисекундах (полупериод)
-     * @param warnType - тип предупреждения 0...3; 0 - цвет, 1 - цвет + счетчик,  1 - цвет + счетчик обратным цветом,  3 - счетчик цветом
-     * @param forcerestart - перезапускать, если пришло повторное событие предупреждения
-     * @param msg - сообщение для вывода на матрицу
-     */
-    void showWarning(const CRGB &color, uint32_t duration, uint16_t blinkHalfPeriod, uint8_t warnType=0, bool forcerestart=true, const String &msg = String()); // Неблокирующая мигалка
-    void warningHelper();
-
-    EffectWorker effects; // объект реализующий доступ к эффектам
 
     void setbPin(uint8_t val) {bPin = val;}
     uint8_t getbPin() {return bPin;}
@@ -537,14 +522,22 @@ private:
     void events_unsubsribe();
 
     /**
-     * @brief event picker method, processes incoming events from a event_hndlr wrapper
+     * @brief event picker method, processes incoming command events from a event_hndlr wrapper
      * 
      * @param base 
      * @param id 
      * @param event_data 
      */
-    void _event_picker(esp_event_base_t base, int32_t id, void* data);
+    void _event_picker_cmd(esp_event_base_t base, int32_t id, void* data);
 
+    /**
+     * @brief event picker method, processes incoming notification events from a event_hndlr wrapper
+     * 
+     * @param base 
+     * @param id 
+     * @param event_data 
+     */
+    void _event_picker_state(esp_event_base_t base, int32_t id, void* data);
 
 
 };

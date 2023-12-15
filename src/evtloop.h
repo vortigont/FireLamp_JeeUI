@@ -44,9 +44,10 @@
 #define EVT_POST_DATA(event_base, event_id, event_data, data_size) esp_event_post_to(evt::get_hndlr(), event_base, event_id, event_data, data_size, portMAX_DELAY)
 
 // ESP32 event loop defines
-ESP_EVENT_DECLARE_BASE(LAMP_CMD_EVENTS);        // declaration of Lamp Command events base
-ESP_EVENT_DECLARE_BASE(LAMP_STATE_EVENTS);      // declaration of Lamp State publishing events base
-ESP_EVENT_DECLARE_BASE(LAMP_CHANGE_EVENTS);     // declaration of Lamp State change notification events base
+ESP_EVENT_DECLARE_BASE(LAMP_SET_EVENTS);        // declaration of Lamp setter Command events base (in reply to this command, an LAMP_CHANGE_EVENTS could be generated)
+ESP_EVENT_DECLARE_BASE(LAMP_GET_EVENTS);        // declaration of Lamp getter Command events base (in reply to this command, an LAMP_STATE_EVENTS could be generated)
+ESP_EVENT_DECLARE_BASE(LAMP_STATE_EVENTS);      // declaration of Lamp State publishing events base (those events are published on request, not on change)
+ESP_EVENT_DECLARE_BASE(LAMP_CHANGE_EVENTS);     // declaration of Lamp State change notification events base (those events are published when state changes or in reply to "cmd set" events)
 
 // Lamp's Event Loop
 namespace evt {
@@ -55,22 +56,25 @@ namespace evt {
 // Lamp events
 enum class lamp_t:int32_t {
   noop = 0,               // NoOp command
-  // 0-15 are reserved for something extraordinary
+  // 0-9 are reserved for something extraordinary
 
+  // **** Set/get state command events ****
 
   // lamp power and mode of operation
-  pwron = 16,              // switch power
-  pwroff,
-  pwrtoggle,
+  pwr = 10,                 // get/set current power state, (optional) param int p: 0 - poweroff, 1 - poweron, 2 - pwrtoggle, 
+  pwron,                    // switch power on
+  pwroff,                   // switch power off
+  pwrtoggle,                // power toggle
 
-  // brightness control
-  brightness,
-  brightnessScale,
-  fadeStart,
+  // brightness control, parameter value - int
+  brightness = 20,               // set brightness according to current scale
+  brightness_nofade,        // set brightness according to current scale and w/o fade effect
+  brightness_lcurve,        // set brightness luma curve
+  brightness_scale,         // set brightness scale
+
+  // **** state change / notification events ****
+  fadeStart = 1000,
   fadeEnd,
-
-  // get state commands
-  getpwr = 1024,
 
 
   noop_end                // NoOp
