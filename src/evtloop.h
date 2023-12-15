@@ -67,10 +67,17 @@ enum class lamp_t:int32_t {
   pwrtoggle,                // power toggle
 
   // brightness control, parameter value - int
-  brightness = 20,               // set brightness according to current scale
+  brightness = 20,          // set brightness according to current scale
   brightness_nofade,        // set brightness according to current scale and w/o fade effect
   brightness_lcurve,        // set brightness luma curve
   brightness_scale,         // set brightness scale
+
+  // effects switching
+  effSwitchTo = 30,         // switch to specific effect num, param: unsigned n
+  effSwitchNext,
+  effSwitchPrev,
+  effSwitchRnd,
+
 
   // **** state change / notification events ****
   fadeStart = 1000,

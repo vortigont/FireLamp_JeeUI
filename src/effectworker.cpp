@@ -42,6 +42,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "embuifs.hpp"
 #include "templates.hpp"
 #include "actions.hpp"
+#include "evtloop.h"
 #include "display.hpp"
 #include "log.h"
 
@@ -512,6 +513,9 @@ void EffectWorker::workerset(uint16_t effect){
     run_action(ra::brt_lcurve, e2int(curEff.curve));
     display.canvasProtect(eff_persistent_buff[effect%256]);     // set 'persistent' frambuffer flag if effect's manifest demands it
     _start_runner();  // start calculator task IF we are marked as active
+    // send event
+    unsigned n = effect;
+    EVT_POST_DATA(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::effSwitchTo), &n, sizeof(unsigned));
   }
 }
 
