@@ -53,7 +53,7 @@ MP3PlayerDevice *mp3 = nullptr;
 #endif
 
 // TM1637 display https://github.com/AKJ7/TM1637/
-TMCLOCK *tm1637 = nullptr;
+TMDisplay *tm1637 = nullptr;
 
 
 // Forward declarations
@@ -178,10 +178,6 @@ void loop() {
 #ifdef RTC
     rtc.updateRtcTime();
 #endif
-
-    EVERY_N_SECONDS(1) {
-        if (tm1637) tm1637->tm_loop();
-    }
 
 #ifdef DS18B20
     EVERY_N_MILLIS(1000*DS18B_READ_DELAY + 25) {
@@ -343,8 +339,8 @@ void gpio_setup(){
     rxpin = doc[TCONST_tm_clk] | -1;
     txpin = doc[TCONST_tm_dio] | -1;
     if (rxpin != -1 && txpin != -1){
-        tm1637 = new TMCLOCK(rxpin, txpin);
-        tm1637->tm_setup();
+        tm1637 = new TMDisplay(rxpin, txpin);
+        tm1637->init();
     }
 }
 

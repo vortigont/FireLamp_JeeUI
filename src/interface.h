@@ -36,7 +36,7 @@ void set_pwrswitch(Interface *interf, const JsonObject *data, const char* action
  * @brief Set device display brightness
  * 
  */
-void set_brightness(Interface *interf, const JsonObject *data, const char* action);
+void getset_brightness(Interface *interf, const JsonObject *data, const char* action);
 
 /**
  * @brief Set luma curve brightness adjustment value

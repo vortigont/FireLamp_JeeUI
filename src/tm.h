@@ -37,37 +37,83 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 #pragma once
 
-#include "TM1637.h"   //  https://github.com/AKJ7/TM1637
-#include "config.h"
+// original lib is https://github.com/AKJ7/TM1637
+// current mod is from https://github.com/vortigont/TM1637
+#include "TM1637.h"
+#include "evtloop.h"
+#include "ts.h"
+#include <WiFi.h>
 
-#ifndef TM_TIME_DELAY
-  #define TM_TIME_DELAY 3U
-#endif
 #ifndef TM_BRIGHTNESS
   #define TM_BRIGHTNESS 7U //яркость дисплея, 0..7
 #endif
-#define TM_REPEAT_SHOW_IP   3     // times to repeat IP scrolling
 
 
-class TMCLOCK : public TM1637 {
+class TMDisplay : private TM1637 {
 public:
-  TMCLOCK(uint8_t clkPin, uint8_t dataPin) : TM1637 (clkPin, dataPin) {};
-  uint8_t& getSetDelay();  // Задержка, для отображения с других плагинов
-  void tm_setup();
-  void tm_loop();
-  uint8_t getIpShow() {return ipShow;}
-  void showip()  {ipShow = TM_REPEAT_SHOW_IP;}
+  TMDisplay(uint8_t clkPin, uint8_t dataPin) : TM1637 (clkPin, dataPin) {};
+  ~TMDisplay();
+
+  // initialize display and attach to event bus
+  void init();
+
+  /**
+   * @brief static event handler
+   * wraps class members access for event loop
+   * 
+   * @param handler_args 
+   * @param base 
+   * @param id 
+   * @param event_data 
+   */
+  static void event_hndlr(void* handler_args, esp_event_base_t base, int32_t id, void* event_data);
+
+  /**
+   * @brief loop call that is triggered by scheduler
+   * 
+   */
+  void _loop();
+
 private:
-  String splittedIp[5] = {};
-  bool showPoints{false};
-  uint8_t tmDelayTime{TM_TIME_DELAY};
-  uint8_t ipShow{TM_REPEAT_SHOW_IP};
-  bool bannerShowed{false};
-  void showBanner();
-  void splitIp(String str, String dlm, String dest[]);  // Функция разделителя по указателю
-  String formatIp(String inArr[], String dlm);    // Функция форматирования
-  // scroll IP address
-  void scrollip();
+
+  // scheduler worker
+  Task _wrkr;
+
+  // WiFi events callback handler
+  void _onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info);
+  wifi_event_id_t eid;
+
+  // mesasge display timeout
+  unsigned timer{0};
+  // how may times to repeat message
+  unsigned repeat{0};
+
+  bool showColon{false};
+
+  // display clock
+  void _showClock();
+
+  // scroll something
+  void _scrool();
+
+  // starts or appends new scroll text
+  void _addscroll(const char* t, int rpt = 0);
+
+  // *** Event bus members    ***
+
+  // instance that holds tm's command events handlers
+  esp_event_handler_instance_t _evt_ch_hndlr;
+  esp_event_handler_instance_t _evt_set_hndlr;
+
+  /**
+   * @brief event picker method, processes incoming command events from a event_hndlr wrapper
+   * 
+   * @param base 
+   * @param id 
+   * @param event_data 
+   */
+  void _event_picker(esp_event_base_t base, int32_t id, void* data);
+
 };
 
-extern TMCLOCK *tm1637;
+extern TMDisplay *tm1637;

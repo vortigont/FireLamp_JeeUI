@@ -1614,6 +1614,7 @@ void rebuild_effect_list_files(lstfile_t lst){
                 case lstfile_t::all :
                     build_eff_names_list_file(myLamp.effwrkr, true);
                     // intentionally fall-trough this to default
+                    [[fallthrough]];
                 default :
                     build_eff_names_list_file(myLamp.effwrkr);
                     if (embui.feeders.available()){  // refresh UI page with a regenerated list
@@ -1672,7 +1673,7 @@ void embui_actions_register(){
 
     // led controls
     embui.action.add(A_dev_pwrswitch, set_pwrswitch);                       // lamp's powerswitch action
-    embui.action.add(A_dev_brightness, set_brightness);                     // Lamp brightness
+    embui.action.add(A_dev_brightness, getset_brightness);                  // Lamp brightness
     embui.action.add(A_dev_lcurve, set_lcurve);                             // luma curve control
 
     // Effects control

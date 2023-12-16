@@ -59,12 +59,11 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
  * @brief Set device display brightness
  * 
  */
-void set_brightness(Interface *interf, const JsonObject *data, const char* action){
+void getset_brightness(Interface *interf, const JsonObject *data, const char* action){
     if (data && (*data).size()){
-        if ((*data)[TCONST_nofade] == true)
-            myLamp.setBrightness((*data)[A_dev_brightness], fade_t::off);
-        else
-            myLamp.setBrightness((*data)[A_dev_brightness]);
+        unsigned b = (*data)[A_dev_brightness];
+        int evt = e2int( (*data)[TCONST_nofade] == true ? evt::lamp_t::brightness_nofade : evt::lamp_t::brightness);
+        EVT_POST_DATA(LAMP_SET_EVENTS, evt, &b, sizeof(unsigned));
     }
 
     // publish only on empty data (i.e. GET req or from evt queue)
@@ -87,7 +86,7 @@ void set_lcurve(Interface *interf, const JsonObject *data, const char* action){
         myLamp.setLumaCurve(c);
         myLamp.effwrkr.setLumaCurve(c);
     }
-    // publishing will be taken care by event listening fuction and set_brightness
+    // publishing will be taken care by event listening fuction and getset_brightness
 }
 
 /**
@@ -302,18 +301,18 @@ void event_publisher(void* handler_args, esp_event_base_t base, int32_t id, void
 
     switch (static_cast<evt::lamp_t>(id)){
         // Lamp Power change state
-        case evt::lamp_t::pwron : [[fallthrough]]
+        case evt::lamp_t::pwron :
         case evt::lamp_t::pwroff :
             interf.json_frame_value();
             interf.value(A_dev_pwrswitch, myLamp.isLampOn());
             break;
 
         // brightness related change notifications
-        case evt::lamp_t::brightness : [[fallthrough]]
-        case evt::lamp_t::brightness_lcurve : [[fallthrough]]
+        case evt::lamp_t::brightness :
+        case evt::lamp_t::brightness_lcurve :
         case evt::lamp_t::brightness_scale :
-            // call set_brightness function with empty data, it will do feeders publishing
-            set_brightness(&interf, nullptr, NULL);
+            // call getset_brightness function with empty data, it will do feeders publishing
+            getset_brightness(&interf, nullptr, NULL);
             break;
 
         default:;

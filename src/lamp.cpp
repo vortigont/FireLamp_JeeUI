@@ -160,7 +160,6 @@ void Lamp::power(bool flag) // флаг включения/выключения 
 {
   if (flag == flags.ONflag) return;  // пропускаем холостые вызовы
   LOG(print, "Lamp powering "); LOG(println, flag ? "On": "Off");
-  flags.ONflag = flag;
 
   if(mode == LAMPMODE::MODE_OTA)
     mode = LAMPMODE::MODE_NORMAL;
@@ -179,7 +178,7 @@ void Lamp::power(bool flag) // флаг включения/выключения 
 
     // enable FET for matrix
     if (fet_gpio > static_cast<int>(GPIO_NUM_NC)) digitalWrite(fet_gpio, (flags.ONflag ? fet_ll : !fet_ll));
-    // generate change state event 
+    // generate pwr change state event 
     EVT_POST(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::pwron));
   } else  {
     // POWER OFF
@@ -201,8 +200,11 @@ void Lamp::power(bool flag) // флаг включения/выключения 
         &ts, false, nullptr, nullptr, true);
       _t->enableDelayed();
     }
+    // событие о выключении будет сгенерированно в ответ на событие от фейдера когда его работа завершится
   }
 
+  // update flag on last step to let other call understand in which state they were called
+  flags.ONflag = flag;
   save_flags();
 }
 
@@ -384,14 +386,18 @@ void Lamp::setBrightness(uint8_t tgtbrt, fade_t fade, bool bypass){
     // if bypass flag is given, than this is a low level request with unscaled brightness that should not be saved or published anywhere
     if (bypass)
       return _brightness(tgtbrt, true);
-      
+
+    // when lamp in 'PowerOff' state, just change brightness w/o any notifications or saves
+    if (!isLampOn())
+      return _brightness(tgtbrt);
+
     if ( fade == fade_t::on || ( (fade == fade_t::preset) && flags.isFaderON) ) {
       // fader will publish event once it will finish brightness scaling
       LEDFader::getInstance()->fadelight(tgtbrt);
     } else {
       _brightness(tgtbrt);
-      int b = tgtbrt;
-      EVT_POST_DATA(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::brightness), &b, sizeof(int));
+      unsigned b = tgtbrt;
+      EVT_POST_DATA(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::brightness), &b, sizeof(unsigned));
     }
 
     globalBrightness = tgtbrt;              // set configured brightness variable
@@ -606,7 +612,7 @@ void Lamp::event_hndlr(void* handler_args, esp_event_base_t base, int32_t id, vo
   if (base == LAMP_SET_EVENTS || base == LAMP_GET_EVENTS )
     return reinterpret_cast<Lamp*>(handler_args)->_event_picker_cmd(base, id, event_data);
 
-  if (base == LAMP_SET_EVENTS || base == LAMP_GET_EVENTS )
+  if (base == LAMP_CHANGE_EVENTS || base == LAMP_STATE_EVENTS )
     return reinterpret_cast<Lamp*>(handler_args)->_event_picker_state(base, id, event_data);
 
 }
@@ -656,7 +662,7 @@ void Lamp::_event_picker_state(esp_event_base_t base, int32_t id, void* data){
   switch (static_cast<evt::lamp_t>(id)){
     case evt::lamp_t::fadeEnd :
       // check if lamp is in "PowerOff" state, then we've just complete fade-out, need to send event
-      if (flags.ONflag)
+      if (!flags.ONflag)
         EVT_POST(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::pwroff));
       break;
 
@@ -671,6 +677,9 @@ void Lamp::_event_picker_state(esp_event_base_t base, int32_t id, void* data){
 void LEDFader::fadelight(const uint8_t _targetbrightness, const uint32_t _duration, std::function<void()> callback){
   if (!lmp) return;
   LOG(printf, "Fader: tgt:%u, lamp:%u/%u, _br_scaled/_br_abs:%u/%u\n", _targetbrightness, lmp->getBrightness(), lmp->getBrightnessScale(), lmp->_get_brightness(), lmp->_get_brightness(true));
+
+  int b = _targetbrightness;
+  EVT_POST_DATA(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::brightness), &b, sizeof(int));
 
   _brt = lmp->_get_brightness(true);        // get current absolute Display brightness
   _tgtbrt = luma::curveMap(lmp->_curve, _targetbrightness, MAX_BRIGHTNESS, lmp->_brightnessScale);
@@ -711,8 +720,7 @@ void LEDFader::fadelight(const uint8_t _targetbrightness, const uint32_t _durati
       [this, _targetbrightness](){
           lmp->_brightness(_tgtbrt, true);  // set exact target brightness value
           LOG(printf, "Fading to %d done\n", _tgtbrt);
-          int b = _targetbrightness;
-          EVT_POST_DATA(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::brightness), &b, sizeof(int));
+          EVT_POST(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::fadeEnd));
           // use new task for callback, 'cause effect switching will immidiatetly respawn new fader from callback, so I need to release a Task instance
           if(_cb) { new Task(FADE_STEPTIME, TASK_ONCE, [this](){ if (_cb) { _cb(); _cb = nullptr; } }, &ts, true, nullptr, nullptr, true ); }
           runner = nullptr;

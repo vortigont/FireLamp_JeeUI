@@ -37,123 +37,158 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 #include "tm.h"
 #include "lamp.h"
+//#include "char_const.h"
+//#include "log.h"
 
 // String welcome_banner = "FIRE_START"; // Список букв для вывода A Bb Cc Dd Ee F G Hh Ii J K Ll m Nn Oo P q r S t U v w x Y Z
-/* Указывать можно в любом регистре, разделять лучше нижним подчеркиванием "_", если поставить пробел, то слова разделятся и будут отображаться по очереди, например сначала заскроллится "FIRE",
+/* Указывать можно в любом регистре, разделять лучше нижним подчеркиванием "_", если поставить пробел,
+то слова разделятся и будут отображаться по очереди, например сначала заскроллится "FIRE",
 дойдет до конца, потухнет и только тогда появится "START"*/
-uint8_t& TMCLOCK::getSetDelay() { // для доступа к переменной из других плагинов, достаточно в h-файл плагина добавить #include "tm.h"
-  return tmDelayTime;
+
+#define SCROOL_DELAY  200
+
+
+TMDisplay::~TMDisplay(){
+  esp_event_handler_instance_unregister_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, _evt_ch_hndlr);
+  esp_event_handler_instance_unregister_with(evt::get_hndlr(), LAMP_SET_EVENTS, ESP_EVENT_ANY_ID, _evt_set_hndlr);
+  WiFi.removeEvent(eid);
 };
 
-void TMCLOCK::tm_setup() {
-    begin();
-    clearScreen();
-    LOG(println, "tm1637 initialized");
+void TMDisplay::init() {
+  begin();
+  clearScreen();
+
+  _wrkr.set(TASK_SECOND, TASK_FOREVER, [this](){ _loop(); });
+  ts.addTask(_wrkr);
+  _wrkr.enable();
+
+  // Set WiFi event handlers
+  eid = WiFi.onEvent( [this](WiFiEvent_t event, WiFiEventInfo_t info){ _onWiFiEvent(event, info); } );
+
+  ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, TMDisplay::event_hndlr, this, &_evt_ch_hndlr));
+  ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_SET_EVENTS, ESP_EVENT_ANY_ID, TMDisplay::event_hndlr, this, &_evt_set_hndlr));
+
+  LOG(println, "tm1637 initialized");
 }
 
-
-void TMCLOCK::tm_loop() {
-  setBrightness((myLamp.isLampOn()) ? myLamp.getBrightOn() : myLamp.getBrightOff());         // Чекаем статус лампы и меняем яркость
-
-  if (!bannerShowed) {
-    showBanner();          // Выводим стартовый баннер
+void TMDisplay::_loop(){
+  if (timer){
+    // we are displaying something, wait for timeout
+    --timer;
     return;
   }
 
-  if (tmDelayTime) { // пропускаем цикл вывода часов, давая возможность успеть увидеть инфу с другиг плагинов
-    --tmDelayTime;
-    return;
-  }
+  // just run the clock
+  _showClock();
+}
 
-  if(ipShow) {      // Пропускаем все, если выводится IP
-    scrollip();
-    return;
-  }
+void TMDisplay::_scrool(){
+  //LOG(print, "TM _scrl:"); LOG(println, (unsigned)getAnimation());
 
+  if (getAnimation() == Animation::SCROLL_LEFT){
+    getAnimator()->scrollLeft(SCROOL_DELAY, 1);
+  } else {
+    if (repeat){
+      // repeat scroll text
+      --repeat;
+      getAnimator()->scrollLeft(SCROOL_DELAY, 1);
+      return;
+    } else {
+      // end of scrolling, switch to _loop
+      _wrkr.setCallback([this](){ _loop(); });
+      _wrkr.setInterval(TASK_SECOND);
+    }
+  }
+}
+
+void TMDisplay::_showClock(){
 /*
 // todo fix this missing method
   if(TimeProcessor::getInstance().isDirtyTime()) {      // Светим --:--, если не подтянулось время с инета или не было настроено вручную
-    auto d =  (showPoints) ? DisplayDigit().setG().setDot() : DisplayDigit().setG();
+    auto d =  (showColon) ? DisplayDigit().setG().setDot() : DisplayDigit().setG();
     const uint8_t rawBuffer[4] = {d, d, d, d};
     displayRawBytes(rawBuffer, 4);
   } else {
 */
-    const tm* t = localtime(TimeProcessor::getInstance().now());  // Определяем для вывода времени 
-    char dispTime[6];            // Массив для сбора времени
+  const tm* t = localtime(TimeProcessor::now());
+  char dispTime[6];            // Массив для сбора времени
+  sprintf (dispTime,
+            myLamp.isTmZero() ? "%02d%s%02d" : "%d%s%02d",
+            myLamp.isTm24() ? t->tm_hour : t->tm_hour % 12,
+            showColon ? "." : "",
+            t->tm_min);
 
-    sprintf (dispTime,
-              myLamp.isTmZero() ? "%02d%s%02d" : "%d%s%02d",
-              myLamp.isTm24() ? t->tm_hour : t->tm_hour % 12,
-              showPoints ? "." : "",
-              t->tm_min);
-
-    myLamp.isTmZero() ? display(String(dispTime)) : ((t->tm_hour < 10 || (!myLamp.isTm24() && t->tm_hour > 12 && t->tm_hour < 22)) ? display(String(dispTime), true, false, 1) : display(String(dispTime)));
-    showPoints=!showPoints;
+  myLamp.isTmZero() ? display(dispTime) : ((t->tm_hour < 10 || (!myLamp.isTm24() && t->tm_hour > 12 && t->tm_hour < 22)) ? display(dispTime, true, false, 1) : display(dispTime));
+  showColon=!showColon;
 }
 
-// | FUNC - Показать стартовый баннер
-void TMCLOCK::showBanner(){       
-  static uint8_t l = 0;           // Переменная для баннера
-  if (l == 21) return;
-  l++;   // Добавляем счетчик и ограничиваем, чтобы не гонял по кругу
-  if (WiFi.getMode() & WIFI_MODE_STA && l <= 20 && l > 4) {
-    String ip("IP."); ip += WiFi.localIP().toString();
-    splitIp(ip, ".", splittedIp);
-    display(formatIp(splittedIp, ""))->scrollLeft(500, 4); // Запуск баннера (хоть и задержка указана 500, по факту она 1 сек), индекс 4 (выводит 4 цифры за раз)
+void TMDisplay::event_hndlr(void* handler_args, esp_event_base_t base, int32_t id, void* event_data){
+  //LOG(printf, "TMDisplay::event_hndlr %s:%d\n", base, id);
+  reinterpret_cast<TMDisplay*>(handler_args)->_event_picker(base, id, event_data);
+}
+
+void TMDisplay::_event_picker(esp_event_base_t base, int32_t id, void* data){
+  switch (static_cast<evt::lamp_t>(id)){
+  // Power control
+    case evt::lamp_t::pwron :
+      setBrightness(myLamp.getBrightOn());
+      _addscroll(T_On);
+      //display(T_On, true, true);
+      //timer = 2;
+      break;
+    case evt::lamp_t::pwroff :
+      setBrightness(myLamp.getBrightOff());
+      _addscroll(T_Off);
+      //display(T_Off, true, true);
+      //timer = 2;
+      break;
+
+    default:;
   }
-  else if (!(WiFi.getMode() & WIFI_MODE_STA) && l <= 20 && l > 4) display(String("__AP_192_168___4___1"))->scrollLeft(500, 4);  // Если нет подключения, то крутим айпи точки доступа
-  if (l == 20) bannerShowed = 1;
-}
 
-void TMCLOCK::scrollip(){
-  if (WiFi.getMode() & WIFI_MODE_STA) {
-    String ip("IP.");
-    ip += WiFi.localIP().toString();
-    splitIp(ip, ".", splittedIp);
-    display(formatIp(splittedIp, ""))->scrollLeft(500, 4); // Запуск баннера (хоть и задержка указана 500, по факту она 1 сек), индекс 4 (выводит 4 цифры за раз)
-  }
-  else if (!(WiFi.getMode() & WIFI_MODE_STA)) display(String("__AP_192_168___4___1"))->scrollLeft(500, 4);  // Если нет подключения, то крутим айпи точки доступа
-  ipShow--;
-}
+  // pick only SET events
+  if (base == LAMP_SET_EVENTS){
+    switch (static_cast<evt::lamp_t>(id)){
+    // Brightness control
+      case evt::lamp_t::brightness_nofade :
+      case evt::lamp_t::brightness : {
+        String s("Br.");
+        unsigned b = *((unsigned*) data);
+        if (b<10) s.concat((char)0x20); // append space
+        s += b;
+        display(s);
+        timer = 2;
+        break;
+      }
 
-
-// | FUNC - Split IP
-// |----------
-void TMCLOCK::splitIp(String str, String dlm, String dest[])
-{
-  int nextPos      = str.indexOf(dlm);
-
-  for(short i=0; i<5; i++)
-  {
-    dest[i] = str.substring(0, nextPos);
-
-    str     = str.substring(nextPos+1);
-    nextPos = str.indexOf(dlm);
-  }
-}
-
-
-// | FUNC - Format IP
-// |----------
-String TMCLOCK::formatIp(String inArr[], String dlm)
-{
-  String tmp("____");
-  String output;
-
-  for(uint8_t i=0; i<5; i++){
-    String crnt = inArr[i];
-
-    for(uint8_t j=0; j<crnt.length(); j++){
-      tmp.setCharAt(tmp.length()-j-1, crnt.charAt(crnt.length()-j-1));
+      default:;
     }
-
-    output += tmp;
-    if(i<3){
-      output += dlm;
-    }
-
-    tmp    = "____";
   }
 
-  return output;
+}
+
+void TMDisplay::_onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info){
+    switch (event){
+      case SYSTEM_EVENT_STA_GOT_IP: {
+        String ip("IP Addr ");
+        ip.concat(WiFi.localIP().toString());
+        ip.replace( (char)0x2e, (char)0x6f ); // replace '.' with 'o'
+        _addscroll(ip.c_str(), 1);
+        break;
+      }
+      default:;
+    }
+}
+
+void TMDisplay::_addscroll(const char* t, int rpt){
+  if (getAnimation() == Animation::SCROLL_LEFT){
+    getAnimator()->concat(" ");  // add space sepparator
+    getAnimator()->concat(t);
+  } else {
+    clearScreen();
+    display(t)->scrollLeft(SCROOL_DELAY, 1);
+    repeat = rpt;
+    _wrkr.setInterval(SCROOL_DELAY);
+    _wrkr.setCallback([this](){ _scrool(); });
+  }
 }
