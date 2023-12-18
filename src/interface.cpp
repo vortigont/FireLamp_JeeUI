@@ -1732,9 +1732,9 @@ void embui_actions_register(){
 #endif
 
 #ifdef ESP_USE_BUTTON
-    embui.action.add(TCONST_butt_conf, show_butt_conf);
-    embui.action.add(TCONST_set_butt, set_butt_conf);
-    embui.action.add(TCONST_Btn, set_btnflag);
+//    embui.action.add(TCONST_butt_conf, show_butt_conf);
+//    embui.action.add(TCONST_set_butt, set_butt_conf);
+//    embui.action.add(TCONST_Btn, set_btnflag);
     //embui.action.add(TCONST_EncVG, set_gaugetype);
 #endif
 
