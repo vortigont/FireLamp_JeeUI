@@ -38,7 +38,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "enc.h"
 #ifdef ENCODER
 
-#include "tm.h"
+#include "tm1637display.hpp"
 #ifdef DS18B20
 #include "DS18B20.h"
 #endif
@@ -109,7 +109,7 @@ void encLoop() {
 
   if (inSettings) { // Время от времени выводим название контрола (в режиме "Настройки эффекта")
     resetTimers();
-    if (tm1637) tm1637->getSetDelay() = TM_TIME_DELAY;
+    //if (tm1637) tm1637->getSetDelay() = TM_TIME_DELAY;
     EVERY_N_SECONDS(10) {
       loops++;
       if (inSettings && loops == ENC_EXIT_TIMEOUT) {  // timeout выхода из режима "Настройки эффекта"
@@ -168,8 +168,8 @@ void encLoop() {
     if (!done && digitalRead(ENC_SW)) { // если эффект еще не меняли и кнопка уже отпущена - переключаем эффект
       resetTimers();
       LOG(printf_P, PSTR("Enc: New effect number: %d\n"), currEffNum);
-      myLamp.switcheffect(SW_SPECIFIC, myLamp.getFaderFlag(), currEffNum);
-      run_action(ra::eff_switch, myLamp.effwrkr.getSelected());
+      myLamp.switcheffect(effswitch_t::num, currEffNum);
+      //run_action(ra::eff_switch, myLamp.effwrkr.getSelected());
       //encSendString(String(TINTF_00A) + ": " + (currEffNum <= 255 ? String(currEffNum) : (String((byte)(currEffNum & 0xFF)) + "." + String((byte)(currEffNum >> 8) - 1U))), txtColor, true, txtDelay);
       done = true;
       currAction = 0;
@@ -264,6 +264,7 @@ void isTurn() {
 void isClick() {
   //noInterrupt();
   resetTimers();
+/*
   if (!inSettings) encDisplay(enc.clicks, String("CL."));
   else {
     enc.clicks = 0;
@@ -279,9 +280,10 @@ void isClick() {
 
       if (validControl(myLamp.getEffControls()[currDynCtrl]->getType())) break;
     }
-    encDisplay(myLamp.getEffControls()[currDynCtrl]->getVal().toInt(), String(myLamp.getEffControls()[currDynCtrl]->getId()) + ".");
+    //encDisplay(myLamp.getEffControls()[currDynCtrl]->getVal().toInt(), String(myLamp.getEffControls()[currDynCtrl]->getId()) + ".");
     //encSendString(myLamp.getEffControls()[currDynCtrl]->getName(), txtColor, true, txtDelay);  
   }
+*/
   //interrupt();
 }
 
@@ -337,7 +339,7 @@ void isHolded() {
     LOG(printf_P, PSTR("Enc: Effect number: %d controls amount %d\n"), currEffNum, myLamp.getEffControls().size());
 #endif
     //encSendString(String(TINTF_01A), CRGB::Green, true, txtDelay);
-    encDisplay(myLamp.getEffControls()[currDynCtrl]->getVal().toInt(), String(currDynCtrl) + String("."));
+    //encDisplay(myLamp.getEffControls()[currDynCtrl]->getVal().toInt(), String(currDynCtrl) + String("."));
     //encSendString(myLamp.getEffControls()[currDynCtrl]->getName(), txtColor, false, txtDelay);
   } else {
       exitSettings();
@@ -355,7 +357,7 @@ void exitSettings() {
   currAction = 0;
   anyValue = 0;
   inSettings = false;
-  encDisplay(String("done"));
+  //encDisplay(String("done"));
   //encSendString(String(TINTF_exit), CRGB::Red, true, txtDelay);
   myLamp.effwrkr.autoSaveConfig();
 #ifdef DS18B20
@@ -380,16 +382,8 @@ void myClicks() {
   case 1: // Включение\выключение лампы
     if (myLamp.isLampOn()) {
       EVT_POST(LAMP_SET_EVENTS, e2int(evt::lamp_t::pwroff));
-      if (tm1637) {
-        tm1637->getSetDelay() = 1;
-        tm1637->display(String("Off"), true, false, 1);  // Выводим 
-      }
     } else {
       EVT_POST(LAMP_SET_EVENTS, e2int(evt::lamp_t::pwron));
-      if (tm1637) {
-        tm1637->getSetDelay() = 1;
-        tm1637->display(String("On"), true, false, 2);  // Выводим 
-      }
     }
     break;
 #ifdef ENC_DEMO_CLICK
@@ -465,7 +459,7 @@ void encSetBri(int val) {
 /*   if (myLamp.getGaugeType()!=GAUGETYPE::GT_NONE){
       GAUGE::GaugeShow(anyValue, 255);
   }
- */  encDisplay(anyValue, String("b."));
+ */  //encDisplay(anyValue, String("b."));
 }
 
 // Функция смены эффекта зажатым энкодером
@@ -480,7 +474,7 @@ void encSetEffect(int val) {
   if (done or currAction !=2) { // если сеттер отработал или предыдущий мод не отвечает текущему, перечитаем значение, и взведем сеттер
     anyValue = myLamp.effwrkr.effIndexByList(myLamp.effwrkr.getCurrent());
     done = false;
-    encDisplay(anyValue, "");
+    //encDisplay(anyValue, "");
   }
 
   currAction = 2;
@@ -503,7 +497,7 @@ void encSetEffect(int val) {
     }
   }
   currEffNum = myLamp.effwrkr.realEffNumdByList(anyValue);
-  encDisplay(currEffNum <= 255 ? String(currEffNum) : (String((byte)(currEffNum & 0xFF)) + "." + String((byte)(currEffNum >> 8) - 1U)));  
+  //encDisplay(currEffNum <= 255 ? String(currEffNum) : (String((byte)(currEffNum & 0xFF)) + "." + String((byte)(currEffNum >> 8) - 1U)));  
   interrupt();
 }
 
@@ -529,27 +523,28 @@ void encSetDynCtrl(int val) {
       GAUGE::GaugeShow(myLamp.getEffControls()[currDynCtrl]->getVal().toInt(), myLamp.getEffControls()[currDynCtrl]->getMax().toInt());
   }
 */
-  encDisplay(myLamp.getEffControls()[currDynCtrl]->getVal().toInt(), String(myLamp.getEffControls()[currDynCtrl]->getId()) + String("."));
+  //encDisplay(myLamp.getEffControls()[currDynCtrl]->getVal().toInt(), String(myLamp.getEffControls()[currDynCtrl]->getId()) + String("."));
   interrupt();
 }
 
-
+/*
 void encDisplay(uint16_t value, String type) {
   if (tm1637) {
     tm1637->getSetDelay() = TM_TIME_DELAY;
-    tm1637->display(value, true, false, value >= 100 ? 1 : (value >= 10 ? 2 : 3) );  
+    tm1637->display(value, true, false, value >= 100 ? 1 : (value >= 10 ? 2 : 3) );
     tm1637->display(type);
   }
+
 }
 
 void encDisplay(String str) {
   if (tm1637) {
-    tm1637->getSetDelay() = TM_TIME_DELAY;
+    //tm1637->getSetDelay() = TM_TIME_DELAY;
     tm1637->clearScreen();
     tm1637->display(str);
   }
 }
-
+*/
 // Ресетим таймера автосохранения конфигов и Демо на время "баловства" с энкодером 
 void resetTimers() {
   myLamp.demoTimer(T_RESET);
@@ -611,12 +606,12 @@ void toggleAUX() {
 void sendTime() {
   myLamp.showTimeOnScreen(NULL);
 }
-
+/*
 void sendIP() {
   remote_action(RA::RA_SEND_IP, NULL);
   if (tm1637) tm1637->showip();
 }
-
+*/
 
 uint8_t getEncTxtDelay(){ return txtDelay;}
 void setEncTxtDelay(const uint8_t speed){ txtDelay = speed;}
