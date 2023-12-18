@@ -39,14 +39,10 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 #include "config.h" // подключаем эффекты, там же их настройки
 #include "effectworker.h"
-#include "events.h"
-#include "LList.h"
-#include "interface.h"
+#include "EmbUI.h"
 #include "extra_tasks.h"
-#include "timerminim.hpp"
 #include "char_const.h"
 #include "mp3player.h"
-#include "log.h"
 #include "luma_curves.hpp"
 
 #ifdef MIC_EFFECTS
@@ -60,11 +56,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #define MAX_BRIGHTNESS            (255U)                    // максимальная яркость LED
 #define DEF_BRT_SCALE               20                      // шкала регулировки яркости по-умолчанию
 
-// a stub for 8266
-#ifndef GPIO_NUM_NC
-#define GPIO_NUM_NC   -1
-#endif
-
 typedef enum _LAMPMODE {
   MODE_NORMAL = 0,
   MODE_DEMO,
@@ -74,15 +65,13 @@ typedef enum _LAMPMODE {
 } LAMPMODE;
 
 // смена эффекта
-typedef enum _EFFSWITCH {
-    SW_NONE = 0,    // пустой
-    SW_NEXT,        // следующий
-    SW_PREV,        // предыдущий
-    SW_RND,         // случайный
-    SW_DELAY,       // сохраненный (для фейдера)
-    SW_SPECIFIC,    // переход на конкретный эффект по индексу/имени
-    SW_NEXT_DEMO,    // следующий для ДЕМО, исключая отключенные
-} EFFSWITCH;
+enum class effswitch_t : uint8_t {
+    none = 0,   // переключить на пустой эффект, он же темнота
+    next,       // следующий
+    prev,       // предыдущий
+    rnd,        // случайный
+    num        // переход на конкретный эффект по индексу
+};  // ex EFFSWITCH;
 
 // управление Тикером
 typedef enum _SCHEDULER {
@@ -118,8 +107,8 @@ struct {
     bool restoreState:1;    // restore lamp on/off/demo state on restart
     bool ONflag:1;          // флаг включения/выключения
     bool isFaderON:1;       // признак того, что фейдер используется для эффектов
-    bool tm24:1;            // 24х часовой формат
-    bool tmZero:1;          // ведущий 0
+    bool reserved3:1;
+    bool reserved4:1;
     bool limitAlarmVolume:1; // ограничивать громкость будильника
     bool isEventsHandled:1; // глобальный признак обработки событий
     bool isEffClearing:1;   // признак очистки эффектов при переходе с одного на другой
@@ -160,16 +149,13 @@ _LAMPFLAGS(){
     MP3eq = 0;
     playMP3 = false;
     limitAlarmVolume = false;
-    tm24 = true;
-    tmZero = false;
     GaugeType = GAUGETYPE::GT_VERT;
 }
 } LAMPFLAGS;
 #pragma pack(pop)
 
-class LAMP {
+class Lamp {
     friend class LEDFader;
-    friend class ALARMTASK;        // будильник ходит сюда за MOSFET и AUX пином, todo: переписать будильник целиком
 private:
     std::shared_ptr<LedFB<CRGB> > _overlay;     // буфер для оверлея
 
@@ -181,8 +167,6 @@ private:
     uint8_t globalBrightness = 127;     // глобальная яркость
     uint8_t storedBright;               // "запасное" значение яркости
     uint8_t BFade;                      // затенение фона под текстом
-
-    uint8_t txtOffset = 0; // смещение текста относительно края матрицы
 
     // GPIO's
     uint8_t bPin = BTN_PIN;        // пин кнопки
@@ -200,21 +184,7 @@ private:
     void micHandler();
 #endif
 
-
-    uint8_t alarmPT; // время будильника рассвет - старшие 4 бита и свечения после рассвета - младшие 4 бита
-    uint8_t tmBright; // яркость дисплея при вкл - старшие 4 бита и яркость дисплея при выкл - младшие 4 бита
-
-    DynamicJsonDocument *docArrMessages = nullptr; // массив сообщений для вывода на лампу
-
-    timerMinim tmStringStepTime;    // шаг смещения строки, в мс
-    timerMinim tmNewYearMessage;    // период вывода новогоднего сообщения
-
-    time_t NEWYEAR_UNIXDATETIME=1609459200U;    // дата/время в UNIX формате, см. https://www.cy-pr.com/tools/time/ , 1609459200 => Fri, 01 Jan 2021 00:00:00 GMT
-
     Task *demoTask = nullptr;    // динамический планировщик Смены эффектов в ДЕМО
-    Task *effectsTask= nullptr;  // динамический планировщик обработки эффектов
-    WarningTask *warningTask = nullptr; // динамический планировщик переключалки флага lampState.isWarning
-    Task *tmqtt_pub = nullptr;   // динамический планировщик публикации через mqtt
 
     /**
      * @brief set brightness value to Display backend
@@ -233,24 +203,9 @@ private:
      */
     uint8_t _get_brightness(bool absolute=false);
 
-    void effectsTick(); // обработчик эффектов
-
-    String &prepareText(String &source);
-    void doPrintStringToLamp(const char* text = nullptr, CRGB letterColor = CRGB::Black, const int8_t textOffset = -128, const int16_t fixedPos = 0);
-    bool fillStringManual(const char* text,  const CRGB &letterColor, bool stopText = false, bool isInverse = false, int32_t pos = 0, int8_t letSpace = LET_SPACE, int8_t txtOffset = TEXT_OFFSET, int8_t letWidth = LET_WIDTH, int8_t letHeight = LET_HEIGHT); // -2147483648
-    void drawLetter(uint8_t bcount, uint16_t letter, int16_t offset,  const CRGB &letterColor, uint8_t letSpace, int8_t txtOffset, bool isInverse, int8_t letWidth, int8_t letHeight, uint8_t flSymb=0);
-    uint8_t getFont(uint8_t bcount, uint8_t asciiCode, uint8_t row);
-
-    //void alarmWorker();
-
-    /*
-     * вывод готового кадра на матрицу,
-     * и перезапуск эффект-процессора
-     */
-    void frameShow(const uint32_t ticktime);
-
 #ifdef MP3PLAYER
-    void playEffect(bool isPlayName = false, EFFSWITCH action = EFFSWITCH::SW_NEXT);
+    // temp disable
+    void playEffect(bool isPlayName = false, effswitch_t action = effswitch_t::next){};
 #endif
 
     /**
@@ -261,40 +216,24 @@ private:
 
 public:
     // c-tor
-    LAMP();
+    Lamp();
+    // d-tor
+    ~Lamp();
+
 
     // noncopyable
-    LAMP (const LAMP&) = delete;
-    LAMP& operator= (const LAMP&) = delete;
+    Lamp (const Lamp&) = delete;
+    Lamp& operator= (const Lamp&) = delete;
 
-    void lamp_init();       // первичная инициализация Лампы
+    EffectWorker effwrkr; // объект реализующий доступ к эффектам
 
-    // wipe all screen buffers to black
-    //void reset_led_buffs();
-
-
-    /**
-     * @brief show a warning message on a matrix
-     * display blinks with specific color
-     * and scrolls a text message
-     * 
-     * @param color - цвет вспышки
-     * @param duration - продолжительность отображения предупреждения (общее время)
-     * @param blinkHalfPeriod - продолжительность одной вспышки в миллисекундах (полупериод)
-     * @param warnType - тип предупреждения 0...3; 0 - цвет, 1 - цвет + счетчик,  1 - цвет + счетчик обратным цветом,  3 - счетчик цветом
-     * @param forcerestart - перезапускать, если пришло повторное событие предупреждения
-     * @param msg - сообщение для вывода на матрицу
-     */
-    void showWarning(const CRGB &color, uint32_t duration, uint16_t blinkHalfPeriod, uint8_t warnType=0, bool forcerestart=true, const String &msg = String()); // Неблокирующая мигалка
-    void warningHelper();
-
-    EffectWorker effects; // объект реализующий доступ к эффектам
-    EVENT_MANAGER events; // Объект реализующий доступ к событиям
+    // инициализация Лампы
+    void lamp_init();
 
     void setbPin(uint8_t val) {bPin = val;}
     uint8_t getbPin() {return bPin;}
     LAMPSTATE &getLampState() {return lampState;}
-    LList<std::shared_ptr<UIControl>>&getEffControls() { return effects.getControls(); }
+    LList<std::shared_ptr<UIControl>>&getEffControls() { return effwrkr.getControls(); }
 
 #ifdef MIC_EFFECTS
     void setMicCalibration() {lampState.isCalibrationRequest = true;}
@@ -307,7 +246,7 @@ public:
 
     void setSpeedFactor(float val) {
         lampState.speedfactor = val;
-        if(effects.getControls().exist(1)) effects.setDynCtrl(effects.getControls()[1].get());
+        if(effwrkr.getControls().exist(1)) effwrkr.setDynCtrl(effwrkr.getControls()[1].get());
     }
 
     // Lamp brightness control
@@ -441,16 +380,12 @@ public:
 
     bool isONMP3() {return flags.isOnMP3;}
     void setONMP3(bool flag) {flags.isOnMP3=flag;}
-    void setTextMovingSpeed(uint8_t val) {tmStringStepTime.setInterval(val);}
-    uint32_t getTextMovingSpeed() {return tmStringStepTime.getInterval();}
-    void setTextOffset(uint8_t val) { txtOffset=val;}
 
     void setPlayTime(uint8_t val) {flags.playTime = val;}
     void setPlayName(bool flag) {flags.playName = flag;}
     void setPlayEffect(bool flag) {flags.playEffect = flag;}
     void setPlayMP3(bool flag) {flags.playMP3 = flag;}
     void setLimitAlarmVolume(bool flag) {flags.limitAlarmVolume = flag;}
-    void setAlatmSound(ALARM_SOUND_TYPE val) {flags.alarmSound = val;}
     void setEqType(uint8_t val) {flags.MP3eq = val;}
 
     /**
@@ -461,15 +396,6 @@ public:
      */
     void showTimeOnScreen(const char *value, bool force=false);
 
-    // TM1637_CLOCK
-    void settm24 (bool flag) {flags.tm24 = flag;}
-    void settmZero (bool flag) {flags.tmZero = flag;}
-    bool isTm24() const {return flags.tm24;}
-    bool isTmZero() const {return flags.tmZero;}
-    void setTmBright(uint8_t val) {tmBright = val; embui.var(TCONST_tmBright, val); }
-    uint8_t getBrightOn() const { return tmBright>>4; }
-    uint8_t getBrightOff() const { return tmBright&0x0F; }
-
     bool getGaugeType() {return flags.GaugeType;}
     void setGaugeType(GAUGETYPE val) {flags.GaugeType = val;}
     void startRGB(CRGB &val);
@@ -479,23 +405,33 @@ public:
     void startNormalMode(bool forceOff=false);
     void restoreStored();
     void storeEffect();
-    void newYearMessageHandle();
     void setBFade(uint8_t val){ BFade = val; }
     uint8_t getBFade(){ return BFade; }
-    void setNYMessageTimer(int in){ tmNewYearMessage.setInterval(in*60*1000); tmNewYearMessage.reset(); }
-    void setNYUnixTime(time_t tm){ NEWYEAR_UNIXDATETIME = tm; }
     void setEffHasMic(bool flag) {flags.effHasMic = flag;}
     void setDRand(bool flag) {flags.dRand = flag; lampState.isRandDemo = (flag && mode==LAMPMODE::MODE_DEMO); }
     void setShowName(bool flag) {flags.showName = flag;}
 
-    void setAlarmPT(uint8_t val) {alarmPT = val;}
-    uint8_t getAlarmP() { return alarmPT>>4; }
-    uint8_t getAlarmT() { return alarmPT&0x0F; }
 
     // ---------- служебные функции -------------
 
-    void changePower(); // плавное включение/выключение
-    void changePower(bool);
+    /**
+     * @brief вкл./выкл лампу
+     * логическое включение/выключение лампы
+     * generates events:
+     *  lampEvtId_t::pwron
+     *  lampEvtId_t::pwroff
+     * 
+     */
+    void power(bool);
+
+    /**
+     * @brief toggle logical power state for the lamp
+     * generates events:
+     *  lampEvtId_t::pwron
+     *  lampEvtId_t::pwroff
+     * 
+     */
+    void power();
 
     /**
      * @brief общий переключатель эффектов лампы
@@ -503,17 +439,7 @@ public:
      * @param action - тип переключения на эффект, предыдущий, следующий, конкретный и т.п.
      * @param effnb - опциональный параметр номер переключаемого эффекта
      */
-    void switcheffect(EFFSWITCH action, uint16_t effnb = EFF_ENUM::EFF_NONE);
-
-    /**
-     * @brief - переключатель эффектов для других методов,
-     * может использовать фейдер, выбирать случайный эффект для демо
-     * @param EFFSWITCH action - вид переключения (пред, след, случ.)
-     * @param fade - переключаться через фейдер или сразу
-     * @param effnb - номер эффекта
-     * @param skip - системное поле - пропуск фейдера
-     */
-    void switcheffect(EFFSWITCH action, bool fade, uint16_t effnb = EFF_ENUM::EFF_NONE, bool skip = false);
+    void switcheffect(effswitch_t action, uint16_t effnb = EFF_ENUM::EFF_NONE);
 
     /*
      * включает/выключает "демо"-таймер
@@ -527,13 +453,70 @@ public:
      */
     void effectsTimer(SCHEDULER action);
 
+    /**
+     * @brief static event handler
+     * wraps class members access for event loop
+     * 
+     * @param handler_args 
+     * @param base 
+     * @param id 
+     * @param event_data 
+     */
+    static void event_hndlr(void* handler_args, esp_event_base_t base, int32_t id, void* event_data);
+
 private:
+    /**
+     * @brief - переключатель эффектов для других методов,
+     * может использовать фейдер, выбирать случайный эффект для демо
+     * @param effswitch_t action - вид переключения (пред, след, случ.)
+     * @param fade - переключаться через фейдер или сразу
+     * @param effnb - номер эффекта
+     * @param skip - системное поле - пропуск фейдера
+     */
+    void _switcheffect(effswitch_t action, bool fade, uint16_t effnb = EFF_ENUM::EFF_NONE, bool skip = false);
+
     /**
      * @brief creates/destroys buffer for "drawing, etc..."
      * 
      * @param active - if 'true' creates new buffer, otherwise destory/release buffer
      */
     void _overlay_buffer(bool activate);
+
+
+    // *** Event bus members    ***
+
+    // instance that holds lamp command events handler
+    esp_event_handler_instance_t _events_lamp_cmd;
+
+    /**
+     * @brief subscribe lamp objects to interesting events
+     * 
+     */
+    void _events_subsribe();
+
+    /**
+     * @brief unregister from event loop
+     * 
+     */
+    void events_unsubsribe();
+
+    /**
+     * @brief event picker method, processes incoming command events from a event_hndlr wrapper
+     * 
+     * @param base 
+     * @param id 
+     * @param event_data 
+     */
+    void _event_picker_cmd(esp_event_base_t base, int32_t id, void* data);
+
+    /**
+     * @brief event picker method, processes incoming notification events from a event_hndlr wrapper
+     * 
+     * @param base 
+     * @param id 
+     * @param event_data 
+     */
+    void _event_picker_state(esp_event_base_t base, int32_t id, void* data);
 
 
 };
@@ -543,7 +526,7 @@ private:
  * 
  */
 class LEDFader {
-    LAMP *lmp = nullptr;
+    Lamp *lmp = nullptr;
     uint8_t _brt;                               // transient brightness
     uint8_t  _tgtbrt{0};                        // target brightness
     int8_t _brtincrement;                       // change step
@@ -579,7 +562,7 @@ public:
      * todo: get rid of this rudiment
      * @param l ptr to lamp
      */
-    void setLamp(LAMP *l){ if(l) lmp = l;}
+    void setLamp(Lamp *l){ if(l) lmp = l;}
 
     /**
      * @brief - Non-blocking light fader, uses scheduler to globaly fade display brightness within specified duration
@@ -599,4 +582,4 @@ public:
 };
 
 //-----------------------------------------------
-extern LAMP myLamp; // Объект лампы
+extern Lamp myLamp; // Объект лампы

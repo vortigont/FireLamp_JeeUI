@@ -296,7 +296,6 @@ static constexpr const char* TINTF_053 = "Zona horaria";
 static constexpr const char* TINTF_054 = "Servidor NTP de emergancia (Opcional)";
 static constexpr const char* TINTF_055 = "Fecha/Hora en formato YYYY-MM-DDThh:mm:ss (si no hay conexion)";
 static constexpr const char* TINTF_056 = "Actualizacion";
-static constexpr const char* TINTF_057 = "Actualizacion ОТА-PIO";
 static constexpr const char* TINTF_058 = "Empezar";
 static constexpr const char* TINTF_059 = "Fichero FirmWare";
 static constexpr const char* TINTF_05A = "Subida";
@@ -338,15 +337,6 @@ static constexpr const char* TINTF_07D = "Retener";
 static constexpr const char* TINTF_07E = "Presionar"; 
 static constexpr const char* TINTF_07F = "Una vez"; 
 static constexpr const char* TINTF_080 = "Lampara de Fuego"; 
-#if defined(EMBUI_USE_FTP) && defined(EMBUI_USE_MQTT)
-static constexpr const char* TINTF_081 = "WiFi, MQTT & FTP";
-#elif defined(EMBUI_USE_MQTT)
-static constexpr const char* TINTF_081 = "WiFi & MQTT";
-#elif defined(EMBUI_USE_FTP)
-static constexpr const char* TINTF_081 = "WiFi & FTP";
-#else
-static constexpr const char* TINTF_081 = "WiFi";
-#endif
 static constexpr const char* TINTF_082 = "Otros";
 static constexpr const char* TINTF_083 = "Cambiando, no superponer efectos";
 static constexpr const char* TINTF_084 = DFTINTF_084;
@@ -430,10 +420,10 @@ static constexpr const char* TINTF_0D1 = "Sonido primero";
 static constexpr const char* TINTF_0D2 = "Limita el volumen";
 static constexpr const char* TINTF_0D3 = "Coef. velocidad (1.0 por defecto)";
 static constexpr const char* TINTF_0D4 = "Configuraciones de pantalla";
-static constexpr const char* TINTF_0D5 = "Brillo (0 - OFF)";
-static constexpr const char* TINTF_0D6 = "Brillo con OFF lámpara (0 - OFF)";
-static constexpr const char* TINTF_0D7 = "Formato de 24 horas";
-static constexpr const char* TINTF_0D8 = "Líder 0";
+//static constexpr const char* TINTF_0D5 = "Brillo (0 - OFF)";
+//static constexpr const char* TINTF_0D6 = "Brillo con OFF lámpara (0 - OFF)";
+//static constexpr const char* TINTF_0D7 = "Formato de 24 horas";
+//static constexpr const char* TINTF_0D8 = "Líder 0";
 static constexpr const char* TINTF_0D9 = "Claro";
 static constexpr const char* TINTF_0DA = "Escanear";
 static constexpr const char* TINTF_0DB = "FTP";
@@ -465,6 +455,7 @@ static constexpr const char* TINTF_f_restore_state = "Restore state on power-on"
 static constexpr const char* TINTF_cfg_hub75 = "Конфигурация HUB75 панелей";
 static constexpr const char* TINTF_gpiocfg = "GPIO Configuration";
 static constexpr const char* TINTF_ledstrip = "LED strip layout";
+static constexpr const char* TINTF_setup_tm1637 = "TM1637 Display";
 
 static constexpr const char* NY_MDG_STRING1 = "Hasta que se quede el año nuevo %d %s";
 static constexpr const char* NY_MDG_STRING2 = "Feliz año nuevo %d!";

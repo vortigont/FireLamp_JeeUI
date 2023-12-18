@@ -1,7 +1,7 @@
-#include "main.h"
+#include "lamp.h"
 #include "buttons.h"
 #include "actions.hpp"
-#include "alarm.h"
+#include "evtloop.h"
 
 const char *btn_get_desc(BA action){
 	switch (action) {
@@ -29,7 +29,7 @@ const char *btn_get_desc(BA action){
 Task *tReverseTimeout = nullptr; // задержка переключения направления
 bool Button::activate(btnflags& flg, bool reverse){
 		uint8_t newval;
-		RA ract = RA_UNKNOWN;
+		//RA ract = RA_UNKNOWN;
 		ra act = ra::end;		// for transition period, let's make it a new var
 		bool ret = false;
 		if (reverse) flags.direction = !flags.direction;
@@ -43,13 +43,13 @@ bool Button::activate(btnflags& flg, bool reverse){
 							);
 					tReverseTimeout->enableDelayed();
 				} 
-				if (myLamp.getGaugeType()!=GAUGETYPE::GT_NONE){
-						GAUGE::GaugeShow(newval, 255, 10);
-				}
+				// if (myLamp.getGaugeType()!=GAUGETYPE::GT_NONE){
+				// 		GAUGE::GaugeShow(newval, 255, 10);
+				// }
 				run_action(ra::brt_nofade, newval);		// change brightness without fade effect
 				return true;
 			case BA_SPEED: {
-				byte speed = (myLamp.effects.getControls()[1]->getVal()).toInt();
+				byte speed = (myLamp.effwrkr.getControls()[1]->getVal()).toInt();
 				newval = constrain( speed + (speed / 25 + 1) * (flags.direction * 2 - 1), 1 , 255);
 				if ((newval == 1 || newval == 255) && tReverseTimeout==nullptr){
 					tReverseTimeout = new Task(2 * TASK_SECOND, TASK_ONCE,
@@ -58,14 +58,14 @@ bool Button::activate(btnflags& flg, bool reverse){
 							);
 					tReverseTimeout->enableDelayed();
 				}
-				if (myLamp.getGaugeType()!=GAUGETYPE::GT_NONE){
+			/*	if (myLamp.getGaugeType()!=GAUGETYPE::GT_NONE){
 						GAUGE::GaugeShow(newval, 255, 100);
-				}
+				}*/
 				run_action(String(T_effect_dynCtrl)+1, newval);
 				return true;
 			}
 			case BA_SCALE: {
-				byte scale = (myLamp.effects.getControls()[2]->getVal()).toInt();
+				byte scale = (myLamp.effwrkr.getControls()[2]->getVal()).toInt();
 				newval = constrain(scale + (scale / 25 + 1) * (flags.direction * 2 - 1), 1 , 255);
 				if ((newval == 1 || newval == 255) && tReverseTimeout==nullptr){
 					tReverseTimeout = new Task(2 * TASK_SECOND, TASK_ONCE,
@@ -74,9 +74,9 @@ bool Button::activate(btnflags& flg, bool reverse){
 							);
 					tReverseTimeout->enableDelayed();
 				}
-				if (myLamp.getGaugeType()!=GAUGETYPE::GT_NONE){
+			/*	if (myLamp.getGaugeType()!=GAUGETYPE::GT_NONE){
 						GAUGE::GaugeShow(newval, 255, 150);
-				}
+				}*/
 				run_action(String(T_effect_dynCtrl)+2, newval);
 				return true;
 			}
@@ -87,26 +87,31 @@ bool Button::activate(btnflags& flg, bool reverse){
 
 		// проверяем дальше
 		switch (action) {
-			case BA_ON: run_action(ra::on); return ret;
-			case BA_OFF: run_action(ra::off); return ret;
+			case BA_ON:
+				EVT_POST(LAMP_SET_EVENTS, e2int(evt::lamp_t::pwron));
+				return ret;
+			case BA_OFF:
+				EVT_POST(LAMP_SET_EVENTS, e2int(evt::lamp_t::pwron));
+				return ret;
 			case BA_DEMO: run_action(ra::demo, !param.isEmpty()); return ret;
 			case BA_AUX_TOGLE: run_action(ra::aux_flip); return ret;			// set AUX pin
 			case BA_EFF_NEXT: run_action(ra::eff_next); return ret;
 			case BA_EFF_PREV: run_action(ra::eff_prev); return ret;
-			case BA_SEND_TIME: myLamp.showTimeOnScreen(NULL); return ret;		// show time on screen
-			case BA_SEND_IP: ract = RA_SEND_IP; break;
-			case BA_WIFI_REC: ract = RA_WIFI_REC; break;
+			//case BA_SEND_TIME: myLamp.showTimeOnScreen(NULL); return ret;		// show time on screen
+			//case BA_SEND_IP: ract = RA_SEND_IP; break;
+			//case BA_WIFI_REC: ract = RA_WIFI_REC; break;
 			case BA_EFFECT: { run_action(ra::eff_switch, param.toInt()); return ret; }
 			default:;
 		}
 
-		LOG(printf_P,PSTR("Button send action: %d\n"), act != ra::end ? static_cast<int>(act) : static_cast<int>(ract));
+		//LOG(printf_P,PSTR("Button send action: %d\n"), act != ra::end ? static_cast<int>(act) : static_cast<int>(ract));
 		if (act != ra::end)	return ret;	// уже отработали, выходим
-
+/*
 		if(param.isEmpty())
 			remote_action(ract, NULL);
 		else
 			remote_action(ract, param.c_str(), NULL);
+*/
 		return ret;
 }
 
@@ -202,7 +207,7 @@ void Buttons::buttonTick(){
 	
 	if (myLamp.isAlarm()) {
 		// нажатие во время будильника
-		ALARMTASK::stopAlarm();
+		// ALARMTASK::stopAlarm();
 		return;
 	}
 

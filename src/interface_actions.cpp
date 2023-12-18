@@ -36,17 +36,14 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
    <https://www.gnu.org/licenses/>.)
 */
 
-#include "main.h"
 #include "interface.h"
+#include "lamp.h"
 #include "effects.h"
-#include "ui.h"
 #include "extra_tasks.h"
-#include "events.h"
-#include "alarm.h"
 #include "templates.hpp"
 #include LANG_FILE                  //"text_res.h"
 
-#include "tm.h"
+#include "devices.h"
 #ifdef ENCODER
     #include "enc.h"
 #endif
@@ -54,25 +51,26 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "basicui.h"
 #include "actions.hpp"
 #include <type_traits>
+#include "traits.hpp"               // embui traits
+#include "evtloop.h"
 
 /**
  * @brief Set device display brightness
  * 
  */
-void set_brightness(Interface *interf, const JsonObject *data, const char* action){
+void getset_brightness(Interface *interf, const JsonObject *data, const char* action){
     if (data && (*data).size()){
-        if ((*data)[TCONST_nofade] == true)
-            myLamp.setBrightness((*data)[A_dev_brightness], fade_t::off);
-        else
-            myLamp.setBrightness((*data)[A_dev_brightness]);
+        unsigned b = (*data)[A_dev_brightness];
+        int evt = e2int( (*data)[TCONST_nofade] == true ? evt::lamp_t::brightness_nofade : evt::lamp_t::brightness);
+        EVT_POST_DATA(LAMP_SET_EVENTS, evt, &b, sizeof(unsigned));
     }
 
-    // publish new state
-    if(interf){
+    // publish only on empty data (i.e. GET req or from evt queue)
+    if(interf && !data){
         interf->json_frame_value();
         interf->value(A_dev_brightness, myLamp.getBrightness());
         interf->value(V_dev_brtscale, myLamp.getBrightnessScale());
-        interf->value(A_dev_lcurve, e2int(myLamp.effects.getEffCfg().curve));
+        interf->value(A_dev_lcurve, e2int(myLamp.effwrkr.getEffCfg().curve));
         interf->json_frame_flush();
     }
 }
@@ -85,38 +83,22 @@ void set_lcurve(Interface *interf, const JsonObject *data, const char* action){
     if (data && (*data).size()){
         auto c = static_cast<luma::curve>((*data)[A_dev_lcurve].as<int>());
         myLamp.setLumaCurve(c);
-        myLamp.effects.setLumaCurve(c);
+        myLamp.effwrkr.setLumaCurve(c);
     }
-
-    // just call get_brightness method, it will publish luma related value
-    set_brightness(interf, nullptr, action);
+    // publishing will be taken care by event listening fuction and getset_brightness
 }
 
 /**
  * Обработка вкл/выкл лампы
  */
 void set_pwrswitch(Interface *interf, const JsonObject *data, const char* action){
-    bool newpower;
-    if (data && (*data).size()){
-        newpower = (*data)[A_dev_pwrswitch];
-        if (newpower == myLamp.isLampOn()) return;      // status not changed
-        myLamp.changePower(newpower);
-        if (myLamp.getLampFlagsStuct().restoreState){
-            myLamp.save_flags();
-        }
+    myLamp.power((*data)[action]);
+    //EVT_POST(LAMP_SET_EVENTS, (*data)[A_dev_pwrswitch] ? e2int(evt::lamp_t::pwron) : e2int(evt::lamp_t::pwroff));
 
     #ifdef MP3PLAYER
         if(myLamp.getLampFlagsStuct().isOnMP3)
-            mp3->setIsOn(newpower);
+            mp3->setIsOn((*data)[A_dev_pwrswitch]);
     #endif
-    }
-
-    // publish new state
-    if(interf){
-        interf->json_frame_value();
-        interf->value(A_dev_pwrswitch, newpower);
-        interf->json_frame_flush();
-    }
 }
 
 /**
@@ -146,14 +128,14 @@ void effect_switch(Interface *interf, const JsonObject *data, const char* action
         return run_action(ra::eff_prev);
 
     uint16_t num = (*data)[A_effect_switch_idx];
-    EffectListElem *eff = myLamp.effects.getEffect(num);
+    EffectListElem *eff = myLamp.effwrkr.getEffect(num);
     if (!eff) return;                                       // some unknown effect requested, quit
 
     // сбросить флаг случайного демо
     //myLamp.setDRand(myLamp.getLampFlagsStuct().dRand);
 
     LOG(printf_P, PSTR("UI EFF switch to:%d, LampOn:%d, mode:%d\n"), eff->eff_nb, myLamp.isLampOn(), myLamp.getMode());
-    myLamp.switcheffect(SW_SPECIFIC, eff->eff_nb);
+    myLamp.switcheffect(effswitch_t::num, eff->eff_nb);
 }
 
 void set_eff_prev(Interface *interf, const JsonObject *data, const char* action){
@@ -166,7 +148,7 @@ void set_eff_next(Interface *interf, const JsonObject *data, const char* action)
 
 void set_effects_dynCtrl(Interface *interf, const JsonObject *data, const char* action){
 
-    LList<std::shared_ptr<UIControl>>&controls = myLamp.effects.getControls();
+    LList<std::shared_ptr<UIControl>>&controls = myLamp.effwrkr.getControls();
 
     if (!data || !(*data).size()){
         if (!interf && !action) return;     // return if requred arguments are null
@@ -198,7 +180,7 @@ void set_effects_dynCtrl(Interface *interf, const JsonObject *data, const char* 
                 controls[i]->setVal((*data)[ctrlName]); // для всех остальных
 
             resetAutoTimers(true);
-            myLamp.effects.setDynCtrl(controls[i].get());
+            myLamp.effwrkr.setDynCtrl(controls[i].get());
             break;
         }
     }
@@ -209,7 +191,7 @@ void set_effects_dynCtrl(Interface *interf, const JsonObject *data, const char* 
 */
 void set_ledstrip(Interface *interf, const JsonObject *data, const char* action){
     {
-        DynamicJsonDocument doc(1024);
+        DynamicJsonDocument doc(DISPLAY_JSIZE);
         if (!embuifs::deserializeFile(doc, TCONST_fcfg_display)) doc.clear();
 
         // if this is a request with no data, then just provide existing configuration and quit
@@ -261,7 +243,7 @@ void set_ledstrip(Interface *interf, const JsonObject *data, const char* action)
     if (interf) basicui::page_system_settings(interf, nullptr, NULL);
 
     // Check if I need to reset FastLED gpio
-    if (display.getGPIO() == (*data)[T_mx_gpio] || (*data)[T_mx_gpio] == GPIO_NUM_NC) return;       /// gpio not changed or not set, just quit
+    if (display.getGPIO() == (*data)[T_mx_gpio] || (*data)[T_mx_gpio] == static_cast<int>(GPIO_NUM_NC)) return;       /// gpio not changed or not set, just quit
 
     if (display.getGPIO() == GPIO_NUM_NC){
         // it's a cold start, so I can change GPIO on the fly
@@ -277,7 +259,7 @@ void set_ledstrip(Interface *interf, const JsonObject *data, const char* action)
 
 void set_hub75(Interface *interf, const JsonObject *data, const char* action){
     {
-        DynamicJsonDocument doc(1024);
+        DynamicJsonDocument doc(DISPLAY_JSIZE);
         if (!embuifs::deserializeFile(doc, TCONST_fcfg_display)) doc.clear();
 
         // if this is a request with no data, then just provide existing configuration and quit
@@ -308,4 +290,62 @@ void set_hub75(Interface *interf, const JsonObject *data, const char* action){
     run_action(ra::reboot);         // reboot in 5 sec
 }
 
+void getset_tm1637(Interface *interf, const JsonObject *data, const char* action){
+    {
+        DynamicJsonDocument doc(DISPLAY_CFG_JSIZE);
+        if (!embuifs::deserializeFile(doc, TCONST_fcfg_display)) doc.clear();
 
+        // if this is a request with no data, then just provide existing configuration and quit
+        if (!data || !(*data).size()){
+            if (interf && doc.containsKey(T_tm1637)){
+                interf->json_frame_value(doc[T_tm1637], true);
+                interf->json_frame_flush();
+            }
+            return;
+        }
+
+        JsonVariant dst = doc[T_tm1637].isNull() ? doc.createNestedObject(T_tm1637) : doc[T_tm1637];
+
+        // copy keys to a destination object
+        for (JsonPair kvp : *data)
+            dst[kvp.key()] = kvp.value();
+
+        embuifs::serialize2file(doc, TCONST_fcfg_display);
+
+        JsonVariantConst cfg(dst);
+        // reconfig the display
+        tm1637_configure(cfg);
+    }
+
+    if (interf) ui_page_setup_devices(interf, nullptr, NULL);
+}
+
+// a call-back handler that listens for status change events and publish it to EmbUI feeders
+void event_publisher(void* handler_args, esp_event_base_t base, int32_t id, void* event_data){
+    // quit if there are no feeders to notify
+    if (!embui.feeders.available()) return;
+
+    // create an interface obj, since we will mostly send value frames, then no need to create large object
+    Interface interf(&embui.feeders, 512);
+
+    switch (static_cast<evt::lamp_t>(id)){
+        // Lamp Power change state
+        case evt::lamp_t::pwron :
+        case evt::lamp_t::pwroff :
+            interf.json_frame_value();
+            interf.value(A_dev_pwrswitch, myLamp.isLampOn());
+            break;
+
+        // brightness related change notifications
+        case evt::lamp_t::brightness :
+        case evt::lamp_t::brightness_lcurve :
+        case evt::lamp_t::brightness_scale :
+            // call getset_brightness function with empty data, it will do feeders publishing
+            getset_brightness(&interf, nullptr, NULL);
+            break;
+
+        default:;
+    }
+
+    interf.json_frame_flush();
+}

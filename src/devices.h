@@ -1,4 +1,5 @@
 /*
+Copyright © 2023 Emil Muratov (vortigont)
 Copyright © 2020 Dmytro Korniienko (kDn)
 JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
@@ -35,39 +36,28 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
    <https://www.gnu.org/licenses/>.)
 */
 
+
+/*
+
+    this file holds definitions for functions used to set and configure various periferal devices
+
+*/
+
 #pragma once
+#include "ArduinoJson.h"
 
-#include "TM1637.h"   //  https://github.com/AKJ7/TM1637
-#include "config.h"
-
-#ifndef TM_TIME_DELAY
-  #define TM_TIME_DELAY 3U
-#endif
-#ifndef TM_BRIGHTNESS
-  #define TM_BRIGHTNESS 7U //яркость дисплея, 0..7
-#endif
-#define TM_REPEAT_SHOW_IP   3     // times to repeat IP scrolling
+#define DISPLAY_CFG_JSIZE   1500
 
 
-class TMCLOCK : public TM1637 {
-public:
-  TMCLOCK(uint8_t clkPin, uint8_t dataPin) : TM1637 (clkPin, dataPin) {};
-  uint8_t& getSetDelay();  // Задержка, для отображения с других плагинов
-  void tm_setup();
-  void tm_loop();
-  uint8_t getIpShow() {return ipShow;}
-  void showip()  {ipShow = TM_REPEAT_SHOW_IP;}
-private:
-  String splittedIp[5] = {};
-  bool showPoints{false};
-  uint8_t tmDelayTime{TM_TIME_DELAY};
-  uint8_t ipShow{TM_REPEAT_SHOW_IP};
-  bool bannerShowed{false};
-  void showBanner();
-  void splitIp(String str, String dlm, String dest[]);  // Функция разделителя по указателю
-  String formatIp(String inArr[], String dlm);    // Функция форматирования
-  // scroll IP address
-  void scrollip();
-};
+/**
+ * @brief Read configuration and setup TM1637 Display if required
+ * 
+ */
+void tm1637_setup();
 
-extern TMCLOCK *tm1637;
+/**
+ * @brief (re)configure TM1637 with supplied config object
+ * 
+ * @param tm JsonObject with configuration params
+ */
+void tm1637_configure(JsonVariantConst& tm);

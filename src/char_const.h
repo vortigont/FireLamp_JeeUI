@@ -47,7 +47,14 @@ static constexpr const char* T_clk_phase = "clkphase";
 static constexpr const char* T_min_refresh = "minrr";
 static constexpr const char* T_color_depth = "colordpth";
 
-
+// For TM1637
+static constexpr const char* T_On = "-On-";
+static constexpr const char* T_Off = "Off";
+static constexpr const char* T_tm1637 = "tm1637";
+static constexpr const char* T_tm_12h = "clk12h";
+static constexpr const char* T_tm_lzero = "lzero";
+static constexpr const char* T_tm_brt_on = "brtOn";
+static constexpr const char* T_tm_brt_off = "brtOff";
 
 static constexpr const char* TCONST_act = "act";
 static constexpr const char* TCONST_afS = "afS";
@@ -161,9 +168,6 @@ static constexpr const char* TCONST_numInList = "numInList";
 static constexpr const char* TCONST_ny_period = "ny_period";
 static constexpr const char* TCONST_ny_unix = "ny_unix";
 static constexpr const char* TCONST_onetime = "onetime";
-static constexpr const char* TCONST_on = "on";
-static constexpr const char* TCONST_opt_pass = "opt_pass";
-static constexpr const char* TCONST_OTA = "OTA";
 static constexpr const char* TCONST_Other = "Other";
 static constexpr const char* TCONST_pFS = "pFS";
 static constexpr const char* TCONST_PINB = "PINB"; // пин кнопки
@@ -203,9 +207,6 @@ static constexpr const char* TCONST_sysSettings = "sysSettings";
 static constexpr const char* TCONST_textsend = "textsend";
 static constexpr const char* TCONST_text_config = "text_config";
 static constexpr const char* TCONST_Time = "Time";
-static constexpr const char* TCONST_tm24 = "tm24";
-static constexpr const char* TCONST_tm_clk = "tmclk";
-static constexpr const char* TCONST_tm_dio = "tmdio";
 static constexpr const char* TCONST_tmBrightOff = "tmBrightOff";
 static constexpr const char* TCONST_tmBrightOn = "tmBrightOn";
 static constexpr const char* TCONST_tmBright = "tmBright";
@@ -263,6 +264,7 @@ static constexpr const char* A_dev_pwrswitch = "dev_pwrswitch";                 
 static constexpr const char* A_ui_page_effects = "ui_page_effects";             // Contstruct UI page - main Effects Control
 static constexpr const char* A_ui_page_drawing = "ui_page_drawing";             // Contstruct UI page - drawing panel
 static constexpr const char* A_ui_block_switches = "ui_block_switches";         // Contstruct UI block - show extended switches at effects page
+static constexpr const char* A_ui_page_setupdevs = "ui_page_setupdevs";         // periferal devices setup menu page
 static constexpr const char* A_effect_switch = "eff_sw_*";                      // Wildcard Effect switcher action
 static constexpr const char* A_effect_switch_idx = "eff_sw_idx";                // Switch Effect to specified index
 static constexpr const char* A_effect_switch_next = "eff_sw_next";              // Switch to next effect
@@ -270,8 +272,10 @@ static constexpr const char* A_effect_switch_prev = "eff_sw_prev";              
 static constexpr const char* A_effect_switch_rnd = "eff_sw_rnd";                // Switch to random effect
 static constexpr const char* A_effect_ctrls = "eff_ctrls";                      // Generate and publish Effect controls (also it is an mqtt suffix for controls publish)
 static constexpr const char* A_effect_dynCtrl = "eff_dynCtrl*";                 // Effect controls handler
-static constexpr const char* A_display_hub75 = "display_hub75";                    // HUB75 display configuration
-static constexpr const char* A_display_ws2812 = "display_ws2812";                // ws2812 display configuration
+static constexpr const char* A_display_hub75 = "display_hub75";                 // HUB75 display configuration
+static constexpr const char* A_display_ws2812 = "display_ws2812";               // ws2812 display configuration
+static constexpr const char* A_display_tm1637 = "*et_display_tm1637";           // get/set tm1637 display configuration
+
 
 
 static constexpr const char* A_ui_page_effects_config = "effects_config";
@@ -294,40 +298,5 @@ static constexpr const char* T_switches = "switches";
 static constexpr const char* MQT_effect_controls = "effect/controls/";      // topic suffix
 static constexpr const char* MQT_lamp = "lamp/";
 
-static constexpr const char* CMD_ON = "ON";                    // Без параметров - возвращает 1/0 в зависимости вкл/выкл лампа, принимает параметр - 1/0 (вкл/выкл лампу)
-static constexpr const char* CMD_OFF = "OFF";                  // Без параметров - возвращает 1/0 в зависимости выкл/вкл лампа, принимает параметр - 1/0 (выкл/вкл лампу)
-static constexpr const char* CMD_G_BRIGHT = "G_BRIGHT";        // Без параметров - возвращает 1/0 в зависимости вкл/выкл глобальная яркость, принимает параметр - 1/0 (вкл/выкл глобальная яркость)
-static constexpr const char* CMD_G_BRTPCT = "G_BRTPCT";        // Без параметров - возвращает общую яркость в процентах, принимает параметр - 0-100 выставить общую яркость в процентах
-static constexpr const char* CMD_DEMO = "DEMO";                // Без параметров - возвращает 1/0 в зависимости вкл/выкл глобальная яркость, принимает параметр - 1/0 (вкл/выкл глобальная яркость)
-static constexpr const char* CMD_PLAYER = "PLAYER";            // Без параметров - возвращает 1/0 в зависимости вкл/выкл плеер, принимает параметр - 1/0 (вкл/выкл плеер)
-static constexpr const char* CMD_MP3_SOUND = "MP3_SOUND";      // Без параметров - возвращает 1/0 в зависимости вкл/выкл проигрывание MP3, принимает параметр - 1/0 (вкл/выкл проигрывание MP3)
 static constexpr const char* CMD_MP3_PREV = "MP3_PREV";        // Без параметров - переключает трек на 1 назад, принимает числовой параметр, на сколько треков вернуть назад
 static constexpr const char* CMD_MP3_NEXT = "MP3_NEXT";        // Без параметров - переключает трек на 1 назад, принимает числовой параметр, на сколько треков вернуть назад
-static constexpr const char* CMD_MP3_VOLUME = "MP3_VOL";       // принимает числовой параметр - установить громкость mp3 плеера
-static constexpr const char* CMD_MIC = "MIC";                  // Без параметров - возвращает 1/0 в зависимости вкл/выкл микрофон, принимает параметр - 1/0 (вкл/выкл микрофон)
-static constexpr const char* CMD_EFFECT = "EFFECT";            // Без параметров - возвращает номер текущего эффекта, принимает числовой параметр - включить заданный эффект
-static constexpr const char* CMD_WARNING = "WARNING";          // Без параметров - мигает желтым 5 раз (1 раз в сек), принимает параметры /cmd?warning=[16777215,5000,500,1] - неблокирующий вывод мигалки поверх эффекта (выдача предупреждений), первое число - цвет, второе - полный период, третье - полупериод мигания, четвертое - тип уведомления (0 - цвет, 1-2 - цвет и счетчик, 3 - счетчик)
-static constexpr const char* CMD_EFF_CONFIG = "EFF_CONFIG";    // Без параметров - возвращает ВСЕ настройки текущего эффекта, с параметрами - не реализовано пока
-static constexpr const char* CMD_CONTROL = "CONTROL";          // Только с параметрами - принимает числовой параметр (номер контрола) и возвращает его текущие настройки, также принимает массив /cmd?control=[N,val] где - N - номер контрола, val - нужное значение
-static constexpr const char* CMD_RGB = "RGB";                  // RGB = r,g,b т.е. к примеру для красного 255,0,0
-static constexpr const char* CMD_LIST = "LIST";                // Без параметров - возвращает полный список эффектов (их номера)
-static constexpr const char* CMD_SHOWLIST = "SHOWLIST";        // Без параметров - возвращает список отображаемых эффектов (их номера)
-static constexpr const char* CMD_DEMOLIST = "DEMOLIST";        // Без параметров - возвращает список отображаемых эффектов (их номера) в DEMO режиме
-static constexpr const char* CMD_EFF_NAME = "EFF_NAME";        // Без параметров - возвращает из конфига имя текущего эффекта, принимает числовой параметр (номер эффекта) и возвращает имя этого эффекта
-static constexpr const char* CMD_EFF_ONAME = "EFF_ONAME";      // Без параметров - возвращает из внутренней памяти имя текущего эффекта, принимает числовой параметр (номер эффекта) и возвращает имя этого эффекта
-static constexpr const char* CMD_MOVE_NEXT = "MOVE_NEXT";      // Без параметров - переключает на следующий эффект
-static constexpr const char* CMD_MOVE_PREV = "MOVE_PREV";      // Без параметров - переключает на предыдущий эффект
-static constexpr const char* CMD_MOVE_RND = "MOVE_RND";        // Без параметров - переключает на рандомный эффект
-static constexpr const char* CMD_REBOOT = "REBOOT";            // Без параметров - перезагружает лампу
-static constexpr const char* CMD_ALARM = "ALARM";              // Без параметров - возвращает 1/0 в зависимости включен ли сейчас будильник рассвет, принимает параметры "cmd?alarm={alarmP=N,alarmT=N,msg="Message",lV=N, afS=N, sT=N}", где alarmP длительность рассвета, alarmT - светить после рассвета, msg - сообщение, lV - уровень громкости будильника, afS - стандартная ли мелодия будильника, sT - мелодия будильника (от 0 до 7), все комманды указывать не обязательно
-static constexpr const char* CMD_MATRIX = "MATRIX";            // Возвращает размер матрицы в формате [X, Y]
-static constexpr const char* CMD_MSG = "MSG";                  // Только с параметрами - выводит сообщение на лампу
-static constexpr const char* CMD_DRAW = "DRAW";                // Только с параметрами =[цвет,X,Y] - закрашивает пиксель указанным цветом (если включено рисование)
-static constexpr const char* CMD_INC_CONTROL = "INC_CONTROL";  // Только с параметрами =[N,val] - увеличивает\уменьшает контрол N на значение val
-static constexpr const char* CMD_FILL_MATRIX = "FILL_MATRIX";  // Только с параметрами - закрашивает матрицу указанным цветом (если включено рисование)
-static constexpr const char* CMD_AUX_ON = "AUX_ON";            // Включает AUX пин
-static constexpr const char* CMD_AUX_OFF = "AUX_OFF";          // Выключает AUX пин
-static constexpr const char* CMD_AUX_TOGGLE = "AUX_TOGGLE";    // Переключает AUX пин
-static constexpr const char* CMD_DRAWING = "DRAWING";          // Без параметров - возвращает 1/0 в зависимости вкл/выкл рисование, принимает параметр - 1/0 (вкл/выкл рисование)
-
-

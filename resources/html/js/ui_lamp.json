@@ -1,6 +1,6 @@
 {
   "type":"interface",
-  "version":2,
+  "version":3,
   "descr":"FireLamp UI objects",
   "settings":{
     "hub75":{
@@ -512,6 +512,92 @@
         },
         {
           "id": "display_ws2812",
+          "html": "button",
+          "type": 1,
+          "color": "green",
+          "label": "Сохранить"
+        },
+        {
+          "id": "ui_page_settings",
+          "html": "button",
+          "type": 0,
+          "label": "Выход"
+        }
+      ]
+    },
+    "tm1637":{
+      "section":"set_display_tm1637",
+      "main": true,
+      "label":"Параметры дисплея TM1637",
+      "block":[
+        {
+          "id":"enabled",
+          "html":"input",
+          "label":"Активировать дисплей TM1637",
+          "type":"checkbox"
+        },
+        {
+          "section": "gpio",
+          "line": true,
+          "block": [
+            {
+              "id": "CLK",
+              "html": "input",
+              "value": -1,
+              "type": "number",
+              "label": "Clk gpio",
+              "min": -1,
+              "step": 1
+            },
+            {
+              "id": "data",
+              "html": "input",
+              "value": -1,
+              "type": "number",
+              "label": "DIO gpio",
+              "min": -1,
+              "step": 1
+            }
+          ]
+        },
+        {
+          "id": "brtOn",
+          "html": "input",
+          "type": "range",
+          "min": 1,
+          "max": 7,
+          "step": 1,
+          "label": "Яркость"
+        },
+        {
+          "id": "brtOff",
+          "html": "input",
+          "type": "range",
+          "min": 0,
+          "max": 7,
+          "step": 1,
+          "label": "Яркость при выключенной лампе (0 - погасить)"
+        },
+        {
+          "section": "opts",
+          "line": true,
+          "block": [
+            {
+              "id":"clk12h",
+              "html":"input",
+              "label":"12-часовой формат отображения",
+              "type":"checkbox"
+            },
+            {
+              "id":"lzero",
+              "html":"input",
+              "label":"Отображать ведущий 0 в часах",
+              "type":"checkbox"
+            }
+          ]
+        },
+        {
+          "id": "set_display_tm1637",
           "html": "button",
           "type": 1,
           "color": "green",

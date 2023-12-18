@@ -50,13 +50,14 @@ those could be called either internaly or as a callbacks from WebUI/MQTT/HTTP
 
 #define ACTION_PARAM_SIZE   256     // Static json document size to pass the parameters to actions
 
+
 /**
  * @brief enumeration of the availbale named actions
  * 
  */
 enum class ra:uint8_t {
-  off = 0,            // switch lamp Off
-  on,                 // switch lamp On
+  noop = 0,            // switch lamp Off
+//  on,                 // switch lamp On
   aux,                // aux pin control
   aux_flip,           // flip AUX pin
   brt,                // brightness control, param int
@@ -76,7 +77,6 @@ enum class ra:uint8_t {
   mp3_vol,            // MP3: set volume
   reboot,             // reboot MCU
 //  sendtext,           // send text to lamp
-  warn,               // show warning 
   end                 // not an action actually
 };
 

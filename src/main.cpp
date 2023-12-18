@@ -37,8 +37,11 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "main.h"
 #include "filehelpers.hpp"
 #include "lamp.h"
+#include "interface.h"
 #include "display.hpp"
 #include "actions.hpp"
+#include "evtloop.h"
+#include "devices.h"
 #ifdef DS18B20
 #include "DS18B20.h"
 #endif
@@ -50,9 +53,6 @@ Buttons *myButtons;
 #ifdef MP3PLAYER
 MP3PlayerDevice *mp3 = nullptr;
 #endif
-
-// TM1637 display https://github.com/AKJ7/TM1637/
-TMCLOCK *tm1637 = nullptr;
 
 
 // Forward declarations
@@ -85,7 +85,13 @@ void mqttOnMessageCallback(char* topic, char* payload, AsyncMqttClientMessagePro
 void setup() {
     Serial.begin(115200);
 
-    LOG(printf_P, PSTR("\n\nsetup: free heap: %d, PSRAM:%d\n"), ESP.getFreeHeap(), ESP.getFreePsram());
+    LOG(printf, "\n\nloop ptr: %u\n", evt::hndlr);
+
+    // Start event loop task
+    evt::start();
+#ifdef LAMP_DEBUG
+    evt::debug();
+#endif
 
 #ifdef EMBUI_USE_UDP
     embui.udp(); // Ответ на UDP запрс. в качестве аргумента - переменная, содержащая macid (по умолчанию)
@@ -135,10 +141,8 @@ void setup() {
     gpio_setup();
     // restore matrix configuration from file and create a proper LED buffer
     display.start();
-
-/*
-  embui.server.addHandler(new SPIFFSEditor(LittleFS, "esp32", "esp32"));
-*/
+    // start tm1637
+    tm1637_setup();
 
     embui.setPubInterval(30);   // change periodic WebUI publish interval from EMBUI_PUB_PERIOD to 10 secs
 
@@ -147,13 +151,16 @@ void setup() {
 #endif
 
     // Lamp object initialization must be done AFTER display.start(), so that display object could create pixel buffer first
-    myLamp.effects.setEffSortType((SORT_TYPE)embui.paramVariant(V_effSort).as<int>()); // сортировка должна быть определена до заполнения
-    myLamp.effects.initDefault(); // если вызывать из конструктора, то не забыть о том, что нужно инициализировать Serial.begin(115200); иначе ничего не увидеть!
+    myLamp.effwrkr.setEffSortType((SORT_TYPE)embui.paramVariant(V_effSort).as<int>()); // сортировка должна быть определена до заполнения
+    myLamp.effwrkr.initDefault(); // если вызывать из конструктора, то не забыть о том, что нужно инициализировать Serial.begin(115200); иначе ничего не увидеть!
     //myLamp.events.loadConfig();
     //myLamp.events.setEventCallback(event_worker);
     myLamp.lamp_init();
 
-    LOG(println, "setup() done");
+    // Hookup IPC event publisher callback
+    ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, event_publisher, NULL, NULL));
+
+    LOG(printf, "\n\nsetup complete: free heap: %uk, PSRAM:%uk\n\n", ESP.getFreeHeap()/1024, ESP.getFreePsram()/1024);
 }   // End setup()
 
 
@@ -168,10 +175,6 @@ void loop() {
 #ifdef RTC
     rtc.updateRtcTime();
 #endif
-
-    EVERY_N_SECONDS(1) {
-        if (tm1637) tm1637->tm_loop();
-    }
 
 #ifdef DS18B20
     EVERY_N_MILLIS(1000*DS18B_READ_DELAY + 25) {
@@ -329,13 +332,6 @@ void gpio_setup(){
     mp3 = new MP3PlayerDevice(rxpin, txpin, embui.paramVariant(TCONST_mp3volume) | DFPLAYER_DEFAULT_VOL );
 #endif
 
-    // create TM1637 display object if it's pins are defined
-    rxpin = doc[TCONST_tm_clk] | -1;
-    txpin = doc[TCONST_tm_dio] | -1;
-    if (rxpin != -1 && txpin != -1){
-        tm1637 = new TMCLOCK(rxpin, txpin);
-        tm1637->tm_setup();
-    }
 }
 
 void wled_announce(){
@@ -355,33 +351,3 @@ bool http_notfound(AsyncWebServerRequest *request){
     // not our case, no action was made
     return false;
 }
-/*
-void led_fb_setup(){
-    DynamicJsonDocument doc(256);
-    embuifs::deserializeFile(doc, TCONST_fcfg_ledstrip);
-    JsonObject o = doc.as<JsonObject>();
-
-    // in case if deserialization has failed, I create a default 16x16 buffer 
-    int w{o[TCONST_width] | 16}, h{o[TCONST_height] | 16};
-
-    // create LED data buffer
-    auto data_buffer = std::make_shared<CLedCDB>(CLedCDB(w*h));
-
-    // attach buffer to dispplay
-    if (display) { display->attachCanvas(data_buffer); }
-
-    // attach buffer to an object that will perform matrix layout trasformation on buffer access
-    canvas = new LedStripe(w, h, data_buffer);
-
-    // apply our layout and topology parameters
-    stripe_canvas->snake(o[TCONST_snake]);
-    stripe_canvas->vertical(o[TCONST_vertical]);
-    stripe_canvas->vmirror(o[TCONST_vflip]);
-    stripe_canvas->hmirror(o[TCONST_hflip]);
-
-    LOG(printf, "LED cfg: w,h:(%d,%d) snake:%d, vert:%d, vflip:%d, hflip:%d\n", w, h, stripe_canvas->snake(), stripe_canvas->vertical(), stripe_canvas->vmirror(), stripe_canvas->hmirror());
-
-    // compatibility stub
-    mx = stripe_canvas;
-}
-*/

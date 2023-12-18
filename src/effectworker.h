@@ -63,8 +63,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 // Вывод номеров эффектов в списке, в WebUI
 #define EFF_NUMBER(N)   N <= 255 ? (String(N) + ". ") : (String((byte)(N & 0xFF)) + "." + String((byte)(N >> 8) - 1U) + " ")
-// depend on option to disable numbers in list names 
-//#define EFF_NUMBER   (numList ? (eff->eff_nb <= 255 ? (String(eff->eff_nb) + ". ") : (String((byte)(eff->eff_nb & 0xFF)) + "." + String((byte)(eff->eff_nb >> 8) - 1U) + ". ")) : "")
 
 
 
@@ -457,7 +455,6 @@ private:
     SORT_TYPE effSort;      // порядок сортировки в UI
 
     Effcfg curEff;          // конфигурация текущего эффекта, имя/версия и т.п.
-    Effcfg pendingEff;      // конфигурация эффекта следующего на очереди переключения (на время работы затухания)
     
     // список эффектов с флагами из индекса
     LList<EffectListElem> effects;
@@ -552,12 +549,6 @@ public:
     bool status() const { return _status; };
 
     /**
-     * @brief set a new ledbuffer for worker
-     * it will pass it further on effects creation, etc...
-     */
-   //void setLEDbuffer(LedFB *buff);
-
-    /**
      * @brief Set the Luma Curve value for the current effect configuration
      * 
      * @param c luma curve enum
@@ -575,7 +566,7 @@ public:
      */
     LList<EffectListElem> const &getEffectsList() const { return effects; };
 
-    LList<std::shared_ptr<UIControl>>&getControls() { return isEffSwPending() ? pendingEff.controls : curEff.controls; }
+    LList<std::shared_ptr<UIControl>>&getControls() { return curEff.controls; }
 
     // тип сортировки
     void setEffSortType(SORT_TYPE type) {if(effSort != type) { effectsReSort(type); } effSort = type;}
@@ -656,15 +647,16 @@ public:
     EffectListElem *getEffect(uint16_t select);
     // вернуть номер текущего эффекта
     uint16_t getCurrent() const {return curEff.num; }
-    // вернуть номер следущиего эффекта отложенного переключения (на время работы затухания)
-    uint16_t getSelected() const { return pendingEff.num; }
+
     /**
      * @brief  вернуть актуальный номер эффекта
      * в случае если работает затухание, возвращает номер эффекта на очереди
      */
-    uint16_t getEffnum() const { return isEffSwPending() ? pendingEff.num : curEff.num; }
+    uint16_t getEffnum() const { return curEff.num; }
+
     // вернуть текущий элемент списка
     EffectListElem *getCurrentListElement();
+
     // вернуть выбранный элемент списка
     EffectListElem *getSelectedListElement();
 
@@ -674,15 +666,10 @@ public:
     Effcfg const &getCurrEffCfg() const { return curEff; }
 
     /**
-     * @brief return pending effect config object
-     */
-    Effcfg const &getPendingEffCfg() const { return pendingEff; }
-
-    /**
      * @brief return a ref to effect config depending on if switching in pending or not
      * if fade is progress, than a ref to pending config will be returned
      */
-    Effcfg const &getEffCfg() const { return isEffSwPending() ? pendingEff : curEff; }
+    Effcfg const &getEffCfg() const { return curEff; }
 
     /**
      * @brief autosave current effect configuration to json file
@@ -699,11 +686,6 @@ public:
      * @param twostate - use two staged switching
      */
     void switchEffect(uint16_t effnb, bool twostate = false);
-
-    /**
-     * @brief returns true if effect switching is pending for fader
-     */
-    bool isEffSwPending() const { return (curEff.num != pendingEff.num); }
 
     // копирование эффекта
     void copyEffect(const EffectListElem *base);
