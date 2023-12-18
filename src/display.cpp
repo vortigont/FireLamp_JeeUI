@@ -39,7 +39,9 @@
 
 An object file for LED output devices, backends and buffers
 */
+#include "config.h"
 #include "display.hpp"
+#include "devices.h"
 #include "embuifs.hpp"
 #include "char_const.h"
 #include "ESP32-HUB75-MatrixPanel-I2S-DMA.h"
@@ -48,11 +50,10 @@ An object file for LED output devices, backends and buffers
 #define FASTLED_VOLTAGE     5
 #define FASTLED_MIN_CURRENT 1000
 
-
 bool LEDDisplay::start(){
     if (_dengine) return true;   // Overlay engine already running
 
-    DynamicJsonDocument doc(1024);
+    DynamicJsonDocument doc(DISPLAY_CFG_JSIZE);
     // if config can't be loaded, then just quit, 'cause we need at least an engine type to run
     if (!embuifs::deserializeFile(doc, TCONST_fcfg_display)) return false;
 

@@ -36,30 +36,26 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
    <https://www.gnu.org/licenses/>.)
 */
 
+#include "config.h"
 #include "interface.h"
 #include "lamp.h"
+#include "devices.h"
 #include "effects.h"
-#include "ui.h"
 #include "extra_tasks.h"
 #include "templates.hpp"
 
-#include "tm.h"
 #ifdef ENCODER
     #include "enc.h"
 #endif
 #include LANG_FILE                  //"text_res.h"
 
-#include "ui.h"
 #include "basicui.h"
 #include "actions.hpp"
 #include <type_traits>
 #include "evtloop.h"
-#include "extra_tasks.h"
 
 // версия ресурсов в стороннем джейсон файле
-#define UIDATA_VERSION  2
-// задержка вывода ip адреса при включении лампы после перезагрузки
-#define SHOWIP_DELAY    5
+#define UIDATA_VERSION  3
 
 // placeholder for effect list rebuilder task
 Task *delayedOptionTask = nullptr;
@@ -79,7 +75,9 @@ enum class page : uint16_t {
     setup_bttn,
     setup_encdr,
     setup_other,
-    setup_gpio
+    setup_gpio,
+    setup_tm1637,
+    setup_devices      // page with configuration links to external devices
 };
 
 // enumerator for gpio setup form
@@ -110,6 +108,7 @@ void ui_page_main(Interface *interf, const JsonObject *data, const char* action)
 void user_settings_frame(Interface *interf, const JsonObject *data, const char* action);
 
 void ui_page_effects(Interface *interf, const JsonObject *data, const char* action);
+void ui_page_setup_devices(Interface *interf, const JsonObject *data, const char* action);
 void ui_section_effects_list_configuration(Interface *interf, const JsonObject *data, const char* action);
 void show_effects_config(Interface *interf, const JsonObject *data, const char* action);
 void show_settings_mp3(Interface *interf, const JsonObject *data, const char* action);
@@ -117,6 +116,8 @@ void show_settings_mp3(Interface *interf, const JsonObject *data, const char* ac
 
 // construct a page with Display setup
 void page_display_setup(Interface *interf, const JsonObject *data, const char* action);
+// construct a page with TM1637 setup
+void ui_page_tm1637_setup(Interface *interf, const JsonObject *data, const char* action);
 void page_gpiocfg(Interface *interf, const JsonObject *data, const char* action);
 void page_settings_other(Interface *interf, const JsonObject *data, const char* action);
 void section_sys_settings_frame(Interface *interf, const JsonObject *data, const char* action);
@@ -196,8 +197,12 @@ void ui_page_selector(Interface *interf, const JsonObject *data, const char* act
             return page_gpiocfg(interf, nullptr, NULL);
         case page::setup_other :    // страница "настройки"-"другие"
             return page_settings_other(interf, nullptr, NULL);
-        case page::setup_display :  // led struip setup
+        case page::setup_display :  // led display setup (strip/hub75)
             return page_display_setup(interf, nullptr, NULL);
+        case page::setup_devices :  // periferal devices setup selector page
+            return ui_page_setup_devices(interf, nullptr, NULL);
+        case page::setup_tm1637 :   // tm1637 display setup
+            return ui_page_tm1637_setup(interf, nullptr, NULL);
 
         default:;                   // by default do nothing
     }
@@ -300,6 +305,39 @@ void ui_page_main(Interface *interf, const JsonObject *data, const char* action)
 }
 
 /**
+ * @brief page with buttons leading to configuration of various external devices
+ * 
+ */
+void ui_page_setup_devices(Interface *interf, const JsonObject *data, const char* action){
+    interf->json_frame_interface();
+    interf->json_section_main(A_ui_page_setupdevs, "Конфигурация периферийных устройств");
+
+    // display setup
+    interf->button_value(button_t::generic, A_ui_page, e2int(page::setup_display), TINTF_display_setup);
+    // tm1637
+    interf->button_value(button_t::generic, A_ui_page, e2int(page::setup_tm1637), TINTF_setup_tm1637);
+#ifdef MP3PLAYER
+    interf->button_value(button_t::generic, A_ui_page, e2int(page::setup_dfplayer), TINTF_099);
+#endif
+
+    interf->json_frame_flush();
+}
+
+/**
+ * @brief build a page with tm1637 configuration
+ * it contains a set of controls and options
+ */
+void ui_page_tm1637_setup(Interface *interf, const JsonObject *data, const char* action){
+    interf->json_frame_interface();
+    interf->json_section_uidata();
+        interf->uidata_pick( "lampui.settings.tm1637" );
+    interf->json_frame_flush();
+
+    // call setter with no data, it will publish existing config values if any
+    getset_tm1637(interf, nullptr, NULL);
+}
+
+/**
  * обработчик установок эффекта
  */
 void set_effects_config_param(Interface *interf, const JsonObject *data, const char* action){
@@ -335,7 +373,7 @@ void set_effects_config_param(Interface *interf, const JsonObject *data, const c
     // action is to "copy" effect
     if (act == TCONST_copy) {
         myLamp.effwrkr.copyEffect(effect); // копируем текущий, это вызовет перестроение индекса
-        LOG(println, PSTR("Effect copy, rebuild list"));
+        LOG(println, "Effect copy, rebuild list");
         rebuild_effect_list_files(lstfile_t::all);
         return;
     }
@@ -343,7 +381,7 @@ void set_effects_config_param(Interface *interf, const JsonObject *data, const c
     // action is to "delete" effect
     if (act == TCONST_delfromlist || act == TCONST_delall) {
         uint16_t tmpEffnb = effect->eff_nb;
-        LOG(printf_P,PSTR("delete effect->eff_nb=%d\n"), tmpEffnb);
+        LOG(printf, "delete effect->eff_nb=%d\n", tmpEffnb);
         bool isCfgRemove = (act == TCONST_delall);
 
         if(tmpEffnb==myLamp.effwrkr.getCurrent()){
@@ -891,18 +929,6 @@ void page_settings_other(Interface *interf, const JsonObject *data, const char* 
         interf->range(TCONST_spdcf, sf, 0.25f, 4.0f, 0.25f, TINTF_0D3, false);
     interf->json_section_end(); // line
 
-
-    interf->spacer(TINTF_0D4);
-    interf->json_section_line();
-        interf->checkbox(TCONST_tm24, myLamp.getLampFlagsStuct().tm24, TINTF_0D7, false);
-        interf->checkbox(TCONST_tmZero, myLamp.getLampFlagsStuct().tmZero, TINTF_0D8, false);
-    interf->json_section_end(); // line
-
-    interf->json_section_line();
-        interf->range(TCONST_tmBrightOn,  (int)myLamp.getBrightOn(),  0, 7, 1, TINTF_0D5, false);
-        interf->range(TCONST_tmBrightOff, (int)myLamp.getBrightOff(), 0, 7, 1, TINTF_0D6, false);
-    interf->json_section_end(); // line
-
     #ifdef DS18B20
     interf->checkbox(TCONST_ds18b20, myLamp.getLampFlagsStuct().isTempOn, TINTF_0E0, false);
     #endif
@@ -952,11 +978,6 @@ void set_settings_other(Interface *interf, const JsonObject *data, const char* a
             myLamp.setBrightnessScale(b);
         }
 
-        uint8_t tmBri = ((*data)[TCONST_tmBrightOn]).as<uint8_t>()<<4; // старшие 4 бита
-        tmBri = tmBri | ((*data)[TCONST_tmBrightOff]).as<uint8_t>(); // младшие 4 бита
-        myLamp.setTmBright(tmBri);
-        myLamp.settm24((*data)[TCONST_tm24]);
-        myLamp.settmZero((*data)[TCONST_tmZero]);
         #ifdef DS18B20
         myLamp.setTempDisp((*data)[TCONST_ds18b20]);
         #endif
@@ -1153,17 +1174,6 @@ void set_gpios(Interface *interf, const JsonObject *data, const char* action){
             break;
         }
 
-        // TM1637 gpios
-        case gpio_device::tmdisplay : {
-            // save pin numbers into config file if present/valid
-            if ( (*data)[TCONST_tm_clk] == static_cast<int>(GPIO_NUM_NC) ) doc.remove(TCONST_tm_clk);
-            else doc[TCONST_tm_clk] = (*data)[TCONST_tm_clk];
-
-            if ( (*data)[TCONST_tm_dio] == static_cast<int>(GPIO_NUM_NC) ) doc.remove(TCONST_tm_dio);
-            else doc[TCONST_tm_dio] = (*data)[TCONST_tm_dio];
-            break;
-        }
-
         default :
             return;     // for any uknown action - just quit
     }
@@ -1312,12 +1322,10 @@ void set_streaming_universe(Interface *interf, const JsonObject *data, const cha
 
 // Create Additional buttons on "Settings" page
 void user_settings_frame(Interface *interf, const JsonObject *data, const char* action){
-    interf->button_value(button_t::generic, A_ui_page, e2int(page::setup_display), TINTF_display_setup);
+    // other
+    interf->button_value(button_t::generic, A_ui_page, e2int(page::setup_devices), "Внешние устройства");
 #ifdef MIC_EFFECTS
     interf->button_value(button_t::generic, A_ui_page, e2int(page::mike), TINTF_020);
-#endif
-#ifdef MP3PLAYER
-    interf->button_value(button_t::generic, A_ui_page, e2int(page::setup_dfplayer), TINTF_099);
 #endif
 #ifdef ESP_USE_BUTTON
     interf->button_value(button_t::generic, A_ui_page, e2int(page::setup_bttn), TINTF_013);
@@ -1325,6 +1333,7 @@ void user_settings_frame(Interface *interf, const JsonObject *data, const char* 
 #ifdef ENCODER
     interf->button_value(button_t::generic, A_ui_page, e2int(page::setup_encdr), TINTF_0DC);
 #endif
+    // other
     interf->button_value(button_t::generic, A_ui_page, e2int(page::setup_other), TINTF_082);
 
     // show gpio setup page button
@@ -1358,6 +1367,7 @@ void page_gpiocfg(Interface *interf, const JsonObject *data, const char* action)
     interf->json_section_end();
 #endif
 
+#if DISABLED_CODE
     // gpio для подключения 7 сегментного индикатора
     interf->json_section_hidden(TCONST_tm24, "TM1637 Display");
         interf->json_section_line(); // расположить в одной линии
@@ -1366,6 +1376,7 @@ void page_gpiocfg(Interface *interf, const JsonObject *data, const char* action)
         interf->json_section_end();
         interf->button_value(button_t::submit, TCONST_set_gpio, static_cast<int>(gpio_device::tmdisplay), TINTF_Save);
     interf->json_section_end();
+#endif //DISABLED_CODE
 
     // gpio для подключения КМОП транзистора
     interf->json_section_hidden(TCONST_mosfet_gpio, "MOSFET");
@@ -1532,7 +1543,7 @@ void block_display_setup(Interface *interf, engine_t e){
         interf->uidata_pick( e == engine_t::hub75 ? "lampui.settings.hub75" : "lampui.settings.ws2812");
     interf->json_frame_flush();
 
-    DynamicJsonDocument doc(1024);
+    DynamicJsonDocument doc(DISPLAY_JSIZE);
     // if config can't be loaded, then just quit
     if (!embuifs::deserializeFile(doc, TCONST_fcfg_display) || !doc.containsKey( e == engine_t::hub75 ? T_hub75 : T_ws2812)) return;
 
@@ -1686,6 +1697,7 @@ void embui_actions_register(){
     // display configurations
     embui.action.add(A_display_ws2812, set_ledstrip);                       // Set LED strip layout setup
     embui.action.add(A_display_hub75, set_hub75);                           // Set options for HUB75 panel
+    embui.action.add(A_display_tm1637, getset_tm1637);                      // get/set tm1637 display configuration
 
     // to be refactored
 

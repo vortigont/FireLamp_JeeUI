@@ -39,13 +39,10 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 #include "config.h" // подключаем эффекты, там же их настройки
 #include "effectworker.h"
-#include "LList.h"
-#include "interface.h"
+#include "EmbUI.h"
 #include "extra_tasks.h"
-#include "timerminim.hpp"
 #include "char_const.h"
 #include "mp3player.h"
-#include "log.h"
 #include "luma_curves.hpp"
 
 #ifdef MIC_EFFECTS
@@ -110,8 +107,8 @@ struct {
     bool restoreState:1;    // restore lamp on/off/demo state on restart
     bool ONflag:1;          // флаг включения/выключения
     bool isFaderON:1;       // признак того, что фейдер используется для эффектов
-    bool tm24:1;            // 24х часовой формат
-    bool tmZero:1;          // ведущий 0
+    bool reserved3:1;
+    bool reserved4:1;
     bool limitAlarmVolume:1; // ограничивать громкость будильника
     bool isEventsHandled:1; // глобальный признак обработки событий
     bool isEffClearing:1;   // признак очистки эффектов при переходе с одного на другой
@@ -152,8 +149,6 @@ _LAMPFLAGS(){
     MP3eq = 0;
     playMP3 = false;
     limitAlarmVolume = false;
-    tm24 = true;
-    tmZero = false;
     GaugeType = GAUGETYPE::GT_VERT;
 }
 } LAMPFLAGS;
@@ -189,7 +184,6 @@ private:
     void micHandler();
 #endif
 
-    uint8_t tmBright; // яркость дисплея при вкл - старшие 4 бита и яркость дисплея при выкл - младшие 4 бита
     Task *demoTask = nullptr;    // динамический планировщик Смены эффектов в ДЕМО
 
     /**
@@ -401,15 +395,6 @@ public:
      * @param force - print even if lamp is off
      */
     void showTimeOnScreen(const char *value, bool force=false);
-
-    // TM1637_CLOCK
-    void settm24 (bool flag) {flags.tm24 = flag;}
-    void settmZero (bool flag) {flags.tmZero = flag;}
-    bool isTm24() const {return flags.tm24;}
-    bool isTmZero() const {return flags.tmZero;}
-    void setTmBright(uint8_t val) {tmBright = val; embui.var(TCONST_tmBright, val); }
-    uint8_t getBrightOn() const { return tmBright>>4; }
-    uint8_t getBrightOff() const { return tmBright&0x0F; }
 
     bool getGaugeType() {return flags.GaugeType;}
     void setGaugeType(GAUGETYPE val) {flags.GaugeType = val;}

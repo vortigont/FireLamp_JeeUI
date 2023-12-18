@@ -35,10 +35,10 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
    <https://www.gnu.org/licenses/>.)
 */
 
-#include "tm.h"
-#include "lamp.h"
-//#include "char_const.h"
-//#include "log.h"
+#include "tm1637display.hpp"
+#include "char_const.h"
+#include "timeProcessor.h"
+#include "log.h"
 
 // String welcome_banner = "FIRE_START"; // Список букв для вывода A Bb Cc Dd Ee F G Hh Ii J K Ll m Nn Oo P q r S t U v w x Y Z
 /* Указывать можно в любом регистре, разделять лучше нижним подчеркиванием "_", если поставить пробел,
@@ -113,12 +113,12 @@ void TMDisplay::_showClock(){
   const tm* t = localtime(TimeProcessor::now());
   char dispTime[6];            // Массив для сбора времени
   sprintf (dispTime,
-            myLamp.isTmZero() ? "%02d%s%02d" : "%d%s%02d",
-            myLamp.isTm24() ? t->tm_hour : t->tm_hour % 12,
+            clk_lzero ? "%02u%s%02u" : "%u%s%02u",
+            clk_12h ? t->tm_hour % 12 : t->tm_hour,
             showColon ? "." : "",
             t->tm_min);
 
-  myLamp.isTmZero() ? display(dispTime) : ((t->tm_hour < 10 || (!myLamp.isTm24() && t->tm_hour > 12 && t->tm_hour < 22)) ? display(dispTime, true, false, 1) : display(dispTime));
+  clk_lzero ? display(dispTime) : (( (clk_12h ? t->tm_hour%12 : t->tm_hour) < 10) ? display(dispTime, true, false, 1) : display(dispTime));
   showColon=!showColon;
 }
 
@@ -131,13 +131,13 @@ void TMDisplay::_event_picker(esp_event_base_t base, int32_t id, void* data){
   switch (static_cast<evt::lamp_t>(id)){
   // Power control
     case evt::lamp_t::pwron :
-      setBrightness(myLamp.getBrightOn());
+      setBrightness(brtOn);
       _addscroll(T_On);
       //display(T_On, true, true);
       //timer = 2;
       break;
     case evt::lamp_t::pwroff :
-      setBrightness(myLamp.getBrightOff());
+      setBrightness(brtOff);
       _addscroll(T_Off);
       //display(T_Off, true, true);
       //timer = 2;
@@ -191,4 +191,11 @@ void TMDisplay::_addscroll(const char* t, int rpt){
     _wrkr.setInterval(SCROOL_DELAY);
     _wrkr.setCallback([this](){ _scrool(); });
   }
+}
+
+void TMDisplay::brightness(uint8_t b, bool lampon){
+  if (b > TM_BRIGHTNESS_MAX) b = TM_BRIGHTNESS_MAX;
+  if (b == 0 && lampon) b = 1;      // make sure brightness will never be 0 for "On" mode
+  lampon ? brtOn = b : brtOff = b;
+  setBrightness(b);
 }

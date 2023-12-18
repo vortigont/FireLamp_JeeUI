@@ -1,4 +1,5 @@
 /*
+Copyright © 2023 Emil Muratov (Vortigont)
 Copyright © 2020 Dmytro Korniienko (kDn)
 JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
@@ -44,18 +45,31 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "ts.h"
 #include <WiFi.h>
 
-#ifndef TM_BRIGHTNESS
-  #define TM_BRIGHTNESS 7U //яркость дисплея, 0..7
-#endif
-
+#define TM_BRIGHTNESS_MAX 7U //яркость дисплея, 0..7
+#define TM_BRIGHTNESS_ON  5
+#define TM_BRIGHTNESS_OFF 1
 
 class TMDisplay : private TM1637 {
 public:
   TMDisplay(uint8_t clkPin, uint8_t dataPin) : TM1637 (clkPin, dataPin) {};
   ~TMDisplay();
 
+  // use 12hr mode for clock display
+  bool clk_12h = false;
+
+  // display leading zero for clock if current hours is <10
+  bool clk_lzero = false;
+
   // initialize display and attach to event bus
   void init();
+
+  /**
+   * @brief set display brightness
+   * 
+   * @param b - 0-7
+   * @param lampon - flag if lamp is on or off
+   */
+  void brightness(uint8_t b, bool lampon = true);
 
   /**
    * @brief static event handler
@@ -68,13 +82,12 @@ public:
    */
   static void event_hndlr(void* handler_args, esp_event_base_t base, int32_t id, void* event_data);
 
-  /**
-   * @brief loop call that is triggered by scheduler
-   * 
-   */
-  void _loop();
-
 private:
+
+  // brightness when lamp is on
+  uint8_t brtOn = TM_BRIGHTNESS_ON;
+  // brightness when lamp is off
+  uint8_t brtOff = TM_BRIGHTNESS_OFF;
 
   // scheduler worker
   Task _wrkr;
@@ -85,7 +98,7 @@ private:
 
   // mesasge display timeout
   unsigned timer{0};
-  // how may times to repeat message
+  // how may times to repeat message scroll
   unsigned repeat{0};
 
   bool showColon{false};
@@ -114,6 +127,11 @@ private:
    */
   void _event_picker(esp_event_base_t base, int32_t id, void* data);
 
+  /**
+   * @brief loop call that is triggered by scheduler
+   * 
+   */
+  void _loop();
 };
 
 extern TMDisplay *tm1637;

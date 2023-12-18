@@ -41,7 +41,6 @@ A header file for LED output devices, backends and buffers
 */
 
 #pragma once
-#include "config.h"
 #include "ledfb.hpp"
 #include "ArduinoJson.h"
 

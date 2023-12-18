@@ -295,7 +295,6 @@ static constexpr const char* TINTF_053 = "Часовая зона";
 static constexpr const char* TINTF_054 = "Резервный NTP-сервер (не обязательно)";
 static constexpr const char* TINTF_055 = "Дата/время в формате YYYY-MM-DDThh:mm:ss (без интернета, если пусто - время с устройства)";
 static constexpr const char* TINTF_056 = "Обновление";
-static constexpr const char* TINTF_057 = "Обновление по ОТА-PIO";
 static constexpr const char* TINTF_058 = "Начать";
 static constexpr const char* TINTF_059 = "Загрузка прошивки";
 static constexpr const char* TINTF_05A = "Upload";
@@ -337,15 +336,6 @@ static constexpr const char* TINTF_07D = "Удержание";
 static constexpr const char* TINTF_07E = "Нажатия";
 static constexpr const char* TINTF_07F = "Однократно";
 static constexpr const char* TINTF_080 = "Огненная лампа";
-#if defined(EMBUI_USE_FTP) && defined(EMBUI_USE_MQTT)
-static constexpr const char* TINTF_081 = "WiFi, MQTT & FTP";
-#elif defined(EMBUI_USE_MQTT)
-static constexpr const char* TINTF_081 = "WiFi & MQTT";
-#elif defined(EMBUI_USE_FTP)
-static constexpr const char* TINTF_081 = "WiFi & FTP";
-#else
-static constexpr const char* TINTF_081 = "WiFi";
-#endif
 static constexpr const char* TINTF_082 = "Другие";
 static constexpr const char* TINTF_083 = "Очищать лампу при смене эффектов";
 static constexpr const char* TINTF_084 = DFTINTF_084;
@@ -429,10 +419,10 @@ static constexpr const char* TINTF_0D1 = "Звук вначале";
 static constexpr const char* TINTF_0D2 = "Ограничить громкость";
 static constexpr const char* TINTF_0D3 = "Коэф. скорости (1.0 по умолчанию)";
 static constexpr const char* TINTF_0D4 = "Настройки дисплея";
-static constexpr const char* TINTF_0D5 = "Яркость (0 - выключить)";
-static constexpr const char* TINTF_0D6 = "Яркость с выкл. лампой (0 - выключить)";
-static constexpr const char* TINTF_0D7 = "24х часовой формат";
-static constexpr const char* TINTF_0D8 = "Ведущий 0";
+//static constexpr const char* TINTF_0D5 = "Яркость (0 - выключить)";
+//static constexpr const char* TINTF_0D6 = "Яркость с выкл. лампой (0 - выключить)";
+//static constexpr const char* TINTF_0D7 = "24х часовой формат";
+//static constexpr const char* TINTF_0D8 = "Ведущий 0";
 static constexpr const char* TINTF_0D9 = "Очистить";
 static constexpr const char* TINTF_0DA = "Сканировать";
 static constexpr const char* TINTF_0DB = "FTP";
@@ -464,6 +454,7 @@ static constexpr const char* TINTF_f_restore_state = "Восстанавлива
 static constexpr const char* TINTF_cfg_hub75 = "Конфигурация HUB75 панелей";
 static constexpr const char* TINTF_gpiocfg = "Настройка GPIO";
 static constexpr const char* TINTF_ledstrip = "Топология LED ленты";
+static constexpr const char* TINTF_setup_tm1637 = "Дисплей TM1637";
 
 static constexpr const char* NY_MDG_STRING1 = "До нового года осталось %d %s";
 static constexpr const char* NY_MDG_STRING2 = "C новым %d годом!";

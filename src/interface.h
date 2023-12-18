@@ -1,8 +1,9 @@
 #pragma once
-#include "EmbUI.h"
-#include "log.h"
+#include "ui.h"
 
 #define RESCHEDULE_DELAY    50         // async callback delay
+// размер документа для конфигурации дисплеев
+#define DISPLAY_JSIZE   1500
 
 
 /**
@@ -78,6 +79,21 @@ void set_ledstrip(Interface *interf, const JsonObject *data, const char* action)
  */
 void set_hub75(Interface *interf, const JsonObject *data, const char* action);
 
+/**
+ * @brief Set/get tm1637 configuration values
+ * 
+ */
+void getset_tm1637(Interface *interf, const JsonObject *data, const char* action);
+
+/**
+ * @brief show page with buttons leading to confgigiration of additional devices attached
+ * i.e. tm1637, mp3player, etc...
+ * 
+ * @param interf 
+ * @param data 
+ * @param action 
+ */
+void ui_page_setup_devices(Interface *interf, const JsonObject *data, const char* action);
 
 /**
  * @brief a call-back handler that listens for status change events and publish it to EmbUI feeders

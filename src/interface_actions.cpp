@@ -36,15 +36,14 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
    <https://www.gnu.org/licenses/>.)
 */
 
-#include "lamp.h"
 #include "interface.h"
+#include "lamp.h"
 #include "effects.h"
-#include "ui.h"
 #include "extra_tasks.h"
 #include "templates.hpp"
 #include LANG_FILE                  //"text_res.h"
 
-#include "tm.h"
+#include "devices.h"
 #ifdef ENCODER
     #include "enc.h"
 #endif
@@ -192,7 +191,7 @@ void set_effects_dynCtrl(Interface *interf, const JsonObject *data, const char* 
 */
 void set_ledstrip(Interface *interf, const JsonObject *data, const char* action){
     {
-        DynamicJsonDocument doc(1024);
+        DynamicJsonDocument doc(DISPLAY_JSIZE);
         if (!embuifs::deserializeFile(doc, TCONST_fcfg_display)) doc.clear();
 
         // if this is a request with no data, then just provide existing configuration and quit
@@ -260,7 +259,7 @@ void set_ledstrip(Interface *interf, const JsonObject *data, const char* action)
 
 void set_hub75(Interface *interf, const JsonObject *data, const char* action){
     {
-        DynamicJsonDocument doc(1024);
+        DynamicJsonDocument doc(DISPLAY_JSIZE);
         if (!embuifs::deserializeFile(doc, TCONST_fcfg_display)) doc.clear();
 
         // if this is a request with no data, then just provide existing configuration and quit
@@ -289,6 +288,36 @@ void set_hub75(Interface *interf, const JsonObject *data, const char* action){
     //if (display.get_engine_type() != engine_t::hub75){}
     if (interf) basicui::page_system_settings(interf, nullptr, NULL);
     run_action(ra::reboot);         // reboot in 5 sec
+}
+
+void getset_tm1637(Interface *interf, const JsonObject *data, const char* action){
+    {
+        DynamicJsonDocument doc(DISPLAY_CFG_JSIZE);
+        if (!embuifs::deserializeFile(doc, TCONST_fcfg_display)) doc.clear();
+
+        // if this is a request with no data, then just provide existing configuration and quit
+        if (!data || !(*data).size()){
+            if (interf && doc.containsKey(T_tm1637)){
+                interf->json_frame_value(doc[T_tm1637], true);
+                interf->json_frame_flush();
+            }
+            return;
+        }
+
+        JsonVariant dst = doc[T_tm1637].isNull() ? doc.createNestedObject(T_tm1637) : doc[T_tm1637];
+
+        // copy keys to a destination object
+        for (JsonPair kvp : *data)
+            dst[kvp.key()] = kvp.value();
+
+        embuifs::serialize2file(doc, TCONST_fcfg_display);
+
+        JsonVariantConst cfg(dst);
+        // reconfig the display
+        tm1637_configure(cfg);
+    }
+
+    if (interf) ui_page_setup_devices(interf, nullptr, NULL);
 }
 
 // a call-back handler that listens for status change events and publish it to EmbUI feeders

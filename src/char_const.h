@@ -50,6 +50,11 @@ static constexpr const char* T_color_depth = "colordpth";
 // For TM1637
 static constexpr const char* T_On = "-On-";
 static constexpr const char* T_Off = "Off";
+static constexpr const char* T_tm1637 = "tm1637";
+static constexpr const char* T_tm_12h = "clk12h";
+static constexpr const char* T_tm_lzero = "lzero";
+static constexpr const char* T_tm_brt_on = "brtOn";
+static constexpr const char* T_tm_brt_off = "brtOff";
 
 static constexpr const char* TCONST_act = "act";
 static constexpr const char* TCONST_afS = "afS";
@@ -202,9 +207,6 @@ static constexpr const char* TCONST_sysSettings = "sysSettings";
 static constexpr const char* TCONST_textsend = "textsend";
 static constexpr const char* TCONST_text_config = "text_config";
 static constexpr const char* TCONST_Time = "Time";
-static constexpr const char* TCONST_tm24 = "tm24";
-static constexpr const char* TCONST_tm_clk = "tmclk";
-static constexpr const char* TCONST_tm_dio = "tmdio";
 static constexpr const char* TCONST_tmBrightOff = "tmBrightOff";
 static constexpr const char* TCONST_tmBrightOn = "tmBrightOn";
 static constexpr const char* TCONST_tmBright = "tmBright";
@@ -262,6 +264,7 @@ static constexpr const char* A_dev_pwrswitch = "dev_pwrswitch";                 
 static constexpr const char* A_ui_page_effects = "ui_page_effects";             // Contstruct UI page - main Effects Control
 static constexpr const char* A_ui_page_drawing = "ui_page_drawing";             // Contstruct UI page - drawing panel
 static constexpr const char* A_ui_block_switches = "ui_block_switches";         // Contstruct UI block - show extended switches at effects page
+static constexpr const char* A_ui_page_setupdevs = "ui_page_setupdevs";         // periferal devices setup menu page
 static constexpr const char* A_effect_switch = "eff_sw_*";                      // Wildcard Effect switcher action
 static constexpr const char* A_effect_switch_idx = "eff_sw_idx";                // Switch Effect to specified index
 static constexpr const char* A_effect_switch_next = "eff_sw_next";              // Switch to next effect
@@ -269,8 +272,10 @@ static constexpr const char* A_effect_switch_prev = "eff_sw_prev";              
 static constexpr const char* A_effect_switch_rnd = "eff_sw_rnd";                // Switch to random effect
 static constexpr const char* A_effect_ctrls = "eff_ctrls";                      // Generate and publish Effect controls (also it is an mqtt suffix for controls publish)
 static constexpr const char* A_effect_dynCtrl = "eff_dynCtrl*";                 // Effect controls handler
-static constexpr const char* A_display_hub75 = "display_hub75";                    // HUB75 display configuration
-static constexpr const char* A_display_ws2812 = "display_ws2812";                // ws2812 display configuration
+static constexpr const char* A_display_hub75 = "display_hub75";                 // HUB75 display configuration
+static constexpr const char* A_display_ws2812 = "display_ws2812";               // ws2812 display configuration
+static constexpr const char* A_display_tm1637 = "*et_display_tm1637";           // get/set tm1637 display configuration
+
 
 
 static constexpr const char* A_ui_page_effects_config = "effects_config";

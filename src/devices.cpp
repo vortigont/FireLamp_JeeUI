@@ -1,4 +1,5 @@
 /*
+Copyright © 2023 Emil Muratov (vortigont)
 Copyright © 2020 Dmytro Korniienko (kDn)
 JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
@@ -35,48 +36,55 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
    <https://www.gnu.org/licenses/>.)
 */
 
-#pragma once
+#include "devices.h"
+#include "char_const.h"
+#include "constants.h"    // EmbUI char constants
+#include "embuifs.hpp"
+#include "log.h"
 
-#if __cplusplus >= 201703L
-#define register // keyword 'register' is banned with c++17
-#endif
-
-#include "config.h"
-
-#ifdef ESP_USE_BUTTON
-#include "buttons.h"
-#endif
-#ifdef ENCODER
-  #include "enc.h"
-#endif
-
-#ifdef RTC
-  #include "rtc.h"
-#endif
-
-#ifdef USE_STREAMING
-  #include "ledStream.h"
-#endif
-
-#define LAMPFW_VERSION_MAJOR     3
-#define LAMPFW_VERSION_MINOR     4
-#define LAMPFW_VERSION_REVISION  0
-
-#define LAMPFW_VERSION_VALUE     (MAJ, MIN, REV) ((MAJ) << 16 | (MIN) << 8 | (REV))
-
-/* make version as integer for comparison */
-#define LAMPFW_VERSION           LAMPFW_VERSION_VALUE(LAMPFW_VERSION_MAJOR, LAMPFW_VERSION_MINOR, LAMPFW_VERSION_REVISION)
-
-/* make version as string, i.e. "2.6.1" */
-#define LAMPFW_VERSION_STRING    TOSTRING(LAMPFW_VERSION_MAJOR) "." TOSTRING(LAMPFW_VERSION_MINOR) "." TOSTRING(LAMPFW_VERSION_REVISION)
+// TM1637 disaplay class
+#include "tm1637display.hpp"
 
 
-// глобальные переменные для работы с ними в программе
+// Device object placesholders
 
-#ifdef ESP_USE_BUTTON
-extern Buttons *myButtons;
-#endif
-#ifdef MP3PLAYER
-#include "mp3player.h"
-extern MP3PlayerDevice *mp3;
-#endif
+// TM1637 display https://github.com/vortigont/TM1637/
+TMDisplay *tm1637 = nullptr;
+
+
+void tm1637_setup(){
+  DynamicJsonDocument doc(DISPLAY_CFG_JSIZE);
+  if (!embuifs::deserializeFile(doc, TCONST_fcfg_display) || !doc.containsKey(T_tm1637)) return;      // config is missing, bad or has no TM1637 data
+
+  JsonVariantConst cfg( doc[T_tm1637] );
+  tm1637_configure(cfg);
+}
+
+void tm1637_configure(JsonVariantConst& tm){
+  if (!tm[TCONST_enabled]){
+     // TM module disabled or config is invalid
+    if (tm1637){
+      delete tm1637;
+      tm1637 = nullptr;
+    }
+    return;
+  }
+
+  if (!tm1637){
+    // create TM1637 display object if it's pins are defined
+    unsigned clk = tm[T_CLK] | -1;
+    unsigned dio = tm[P_data] | -1;
+    if (clk != -1 && dio != -1){
+      //LOG(printf, "tm1637 using pins rx:%d, tx:%d\n", clk, dio);
+      tm1637 = new TMDisplay(clk, dio);
+      if (!tm1637) return;
+    }
+  }
+
+  tm1637->brightness(tm[T_tm_brt_on], true);
+  tm1637->brightness(tm[T_tm_brt_off], false);
+  tm1637->clk_12h = tm[T_tm_12h];
+  tm1637->clk_lzero = tm[T_tm_lzero];
+  tm1637->init();
+
+}

@@ -1,4 +1,5 @@
 /*
+Copyright © 2023 Emil Muratov (vortigont)
 Copyright © 2020 Dmytro Korniienko (kDn)
 JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
@@ -35,48 +36,28 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
    <https://www.gnu.org/licenses/>.)
 */
 
+
+/*
+
+    this file holds definitions for functions used to set and configure various periferal devices
+
+*/
+
 #pragma once
+#include "ArduinoJson.h"
 
-#if __cplusplus >= 201703L
-#define register // keyword 'register' is banned with c++17
-#endif
-
-#include "config.h"
-
-#ifdef ESP_USE_BUTTON
-#include "buttons.h"
-#endif
-#ifdef ENCODER
-  #include "enc.h"
-#endif
-
-#ifdef RTC
-  #include "rtc.h"
-#endif
-
-#ifdef USE_STREAMING
-  #include "ledStream.h"
-#endif
-
-#define LAMPFW_VERSION_MAJOR     3
-#define LAMPFW_VERSION_MINOR     4
-#define LAMPFW_VERSION_REVISION  0
-
-#define LAMPFW_VERSION_VALUE     (MAJ, MIN, REV) ((MAJ) << 16 | (MIN) << 8 | (REV))
-
-/* make version as integer for comparison */
-#define LAMPFW_VERSION           LAMPFW_VERSION_VALUE(LAMPFW_VERSION_MAJOR, LAMPFW_VERSION_MINOR, LAMPFW_VERSION_REVISION)
-
-/* make version as string, i.e. "2.6.1" */
-#define LAMPFW_VERSION_STRING    TOSTRING(LAMPFW_VERSION_MAJOR) "." TOSTRING(LAMPFW_VERSION_MINOR) "." TOSTRING(LAMPFW_VERSION_REVISION)
+#define DISPLAY_CFG_JSIZE   1500
 
 
-// глобальные переменные для работы с ними в программе
+/**
+ * @brief Read configuration and setup TM1637 Display if required
+ * 
+ */
+void tm1637_setup();
 
-#ifdef ESP_USE_BUTTON
-extern Buttons *myButtons;
-#endif
-#ifdef MP3PLAYER
-#include "mp3player.h"
-extern MP3PlayerDevice *mp3;
-#endif
+/**
+ * @brief (re)configure TM1637 with supplied config object
+ * 
+ * @param tm JsonObject with configuration params
+ */
+void tm1637_configure(JsonVariantConst& tm);

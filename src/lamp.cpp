@@ -37,7 +37,8 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 #include "lamp.h"
 #include "effectmath.h"
-#include "fontHEX.h"
+#include "interface.h"
+//#include "fontHEX.h"
 #include "actions.hpp"
 #include "ledfb.hpp"
 #include "evtloop.h"
@@ -106,9 +107,6 @@ void Lamp::lamp_init()
   } else {
     flags.ONflag = false;
   }
-
-  // restore tm display brightness values
-  setTmBright(embui.paramVariant(TCONST_tmBright) | 23); // default is 7/1
 }
 
 void Lamp::handle(){
