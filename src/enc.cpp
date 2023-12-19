@@ -401,11 +401,13 @@ void myClicks() {
     toggleMic();
     break;
 #endif
+/*
 #ifdef ENC_IP_CLICK
   case ENC_IP_CLICK:
     sendIP();
     break;
 #endif
+*/
 #ifdef ENC_TIME_CLICK
   case ENC_TIME_CLICK:
     sendTime();
