@@ -2191,7 +2191,7 @@ class EffectFlower : public EffectCalc {
     EffectFlower(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
         bool run() override;
 };
-
+#include "log.h"
 /*
     Effect "Tetsrik clock"
     based on https://github.com/witnessmenow/WiFi-Tetris-Clock
@@ -2221,7 +2221,9 @@ class TetrisClock : public EffectCalc {
     String setDynCtrl(UIControl*_val) override;
 
 	public:
-    TetrisClock(std::shared_ptr< LedFB<CRGB> > framebuffer) : EffectCalc(framebuffer.get()), screen(framebuffer), t_clk(screen), t_m(screen), t_ap(screen) {}
+    TetrisClock(std::shared_ptr< LedFB<CRGB> > framebuffer) : EffectCalc(framebuffer.get()), screen(framebuffer), t_clk(screen), t_m(screen), t_ap(screen) {
+        screen.setRotation(2);
+    }
     ~TetrisClock(){ ts.deleteTask(seconds); }
     void load() override; 
     bool run() override;
