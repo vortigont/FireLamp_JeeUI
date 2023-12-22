@@ -1091,6 +1091,7 @@ public:
 // (c) kostyamat (Kostyantyn Matviyevskyy) 2020
 // переделано kDn
 // идея отсюда https://github.com/vvip-68/GyverPanelWiFi/
+#define PATTERNS_BUFFSIZE   10
 class EffectPatterns : public EffectCalc {
 private:
     int8_t patternIdx = -1;

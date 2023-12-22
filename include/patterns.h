@@ -1,8 +1,6 @@
 #pragma once
 
 // наборы для эффекта "Узоры"
-
-#define PATTERNS_BUFFSIZE   10
 #define MAX_PATTERN 38
 
 typedef uint8_t Pattern[10][10];
