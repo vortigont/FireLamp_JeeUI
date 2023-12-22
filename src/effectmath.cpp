@@ -156,9 +156,10 @@ void blurColumns(LedFB<CRGB> *leds, fract8 blur_amount)
 } 
 
 // ******** общие мат. функции переиспользуются в другом эффекте
-uint8_t mapsincos8(bool map, uint8_t theta, uint8_t lowest, uint8_t highest) {
-  uint8_t beat = map ? sin8(theta) : cos8(theta);
+uint16_t mapsincos8(bool map, uint8_t theta, uint16_t lowest, uint16_t highest) {
+  uint16_t beat = map ? sin8(theta) : cos8(theta);
   return lowest + scale8(beat, highest - lowest);
+  //return lowest + scale16(beat, highest - lowest);
 }
 
 uint8_t ceil8(uint8_t a, uint8_t b){ return a/b + !!(a%b); }
@@ -294,10 +295,10 @@ void drawPixelXYF(float x, float y, const CRGB &color, LedFB<CRGB> *fb, uint8_t 
 {
   if (x<-1 || y<-1 || x>fb->w() || y>fb->h()) return; // skip out of canvas drawing, allow 1 px tradeoff
   // extract the fractional parts and derive their inverses
-  uint8_t xx = (x - static_cast<int32_t>(x)) * 255;
-  uint8_t yy = (y - static_cast<int32_t>(y)) * 255;
-  uint8_t ix = 255 - xx;
-  uint8_t iy = 255 - yy;
+  uint32_t xx = (x - static_cast<int32_t>(x)) * 256;
+  uint32_t yy = (y - static_cast<int32_t>(y)) * 256;
+  uint32_t ix = 256 - xx;
+  uint32_t iy = 256 - yy;
   // calculate the intensities for each affected pixel
   uint8_t wu[4] = {wu_weight(ix, iy), wu_weight(xx, iy),
                   wu_weight(ix, yy), wu_weight(xx, yy)};

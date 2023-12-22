@@ -154,7 +154,7 @@ namespace EffectMath {
     // ***  Математические     ***
     // ***************************
 
-    uint8_t mapsincos8(bool map, uint8_t theta, uint8_t lowest = 0, uint8_t highest = 255);
+    uint16_t mapsincos8(bool map, uint8_t theta, uint16_t lowest = 0, uint16_t highest = 65535);
 
     /**
      * Возвращает частное от а,б округленное до большего целого
