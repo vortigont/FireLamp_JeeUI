@@ -4460,7 +4460,7 @@ void EffectPatterns::drawPicture_XY() {
   fb->dim(127);
 
   for (int16_t y = -1; y < fb->h(); y++){
-    for (int16_t x = -1; x < fb->h(); x++){
+    for (int16_t x = -1; x < fb->w(); x++){
 
       auto &in = buff[abs((int)(ysin + y)) % PATTERNS_BUFFSIZE] [abs((int)(xsin + x)) % PATTERNS_BUFFSIZE];
       CHSV color2 = colorMR[in]; // CHSV(HUE_BLUE, 255, 255);
@@ -4487,7 +4487,6 @@ void EffectPatterns::load() {
   colorMR[6] = CHSV(random8(), 255U, 255U);
   colorMR[7].hue = colorMR[6].hue + 96; //(beatsin8(1, 0, 255, 0, 127), 255U, 255U);
 
-  // this is ugly, could use 4 times less buffer for sprite
   for (byte y = 0; y < PATTERNS_BUFFSIZE; y++){
     for (byte x = 0; x < PATTERNS_BUFFSIZE; x++){
       buff[y][x] = pgm_read_byte(&patterns[patternIdx][y % 10U][x % 10U]);
