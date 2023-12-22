@@ -3814,8 +3814,8 @@ void Dot::Move(DotsStore &store, bool flashing){
 
 void EffectFireworks::draw(Dot &d){
     if( !d.show) return;
-    byte ix, xe, xc;
-    byte iy, ye, yc;
+    uint16_t ix, xe, xc;
+    uint16_t iy, ye, yc;
     _screenscale( d.x, _model_w(), ix, xe);
     _screenscale( d.y, _model_h(), iy, ye);
     yc = 255 - ye;
@@ -3900,11 +3900,14 @@ bool EffectFireworks::fireworksRoutine()
     return true;
 }
 
-void EffectFireworks::_screenscale(accum88 a, byte N, byte &screen, byte &screenerr){
-  byte ia = a >> 8;
-  screen = scale8(ia, N);
-  byte m = screen * (256 / N);
-  screenerr = (ia - m) * scale8(255, N);
+void EffectFireworks::_screenscale(accum88 a, uint16_t N, uint16_t &screen, uint16_t &screenerr){
+  //byte ia = a >> 8;
+  //screen = scale8(ia, N);
+  screen = scale16(a, N);
+  //byte m = screen * (256 / N);
+  uint16_t m = screen * (65536 / N);
+  //screenerr = (ia - m) * scale8(255, N);
+  screenerr = (a - m) * scale16(65536, N);
 }
 
 // ------------ Эффект "Тихий Океан"

@@ -948,7 +948,7 @@ class EffectFireworks : public EffectCalc {
     int16_t _model_h(){ return 2*(fb->h() - 4) + fb->h(); };
     int16_t _x_offset(){ return (_model_w()-fb->w())/2; };
     int16_t _y_offset(){ return (_model_h()-fb->h())/2; };
-    void _screenscale(accum88 a, byte N, byte &screen, byte &screenerr);
+    void _screenscale(accum88 a, uint16_t N, uint16_t &screen, uint16_t &screenerr);
 
 public:
     EffectFireworks(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer), gDot(std::vector<Dot>(MIN_RCKTS)), gSparks(std::vector<Dot>(NUM_SPARKS)) {}
