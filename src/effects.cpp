@@ -2052,8 +2052,8 @@ bool EffectRadar::radarRoutine()
     fb->fade(5 + 20 * (float)speed / 255);
     for (float offset = 0.0f; offset < (float)fb->maxDim() /2; offset +=0.25)
     {
-      float x = EffectMath::mapsincos16(false, eff_theta, offset * 4, fb->maxDim() * 4 - offset * 4) / 4.  - width_adj_f;
-      float y = EffectMath::mapsincos16(true,  eff_theta, offset * 4, fb->maxDim() * 4 - offset * 4) / 4.  - height_adj_f;
+      float x = EffectMath::mapsincos8(false, eff_theta, offset * 4, fb->maxDim() * 4 - offset * 4) / 4.  - width_adj_f;
+      float y = EffectMath::mapsincos8(true,  eff_theta, offset * 4, fb->maxDim() * 4 - offset * 4) / 4.  - height_adj_f;
       CRGB color = ColorFromPalette(*curPalette, hue, 255 / random8(1, 12));
       EffectMath::drawPixelXYF(x, y, color, fb);
     }
