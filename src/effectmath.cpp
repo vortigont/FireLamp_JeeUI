@@ -295,10 +295,10 @@ void drawPixelXYF(float x, float y, const CRGB &color, LedFB<CRGB> *fb, uint8_t 
 {
   if (x<-1 || y<-1 || x>fb->w() || y>fb->h()) return; // skip out of canvas drawing, allow 1 px tradeoff
   // extract the fractional parts and derive their inverses
-  uint32_t xx = (x - static_cast<int32_t>(x)) * 256;
-  uint32_t yy = (y - static_cast<int32_t>(y)) * 256;
-  uint32_t ix = 256 - xx;
-  uint32_t iy = 256 - yy;
+  uint32_t xx = (x - static_cast<int32_t>(x)) * 255;
+  uint32_t yy = (y - static_cast<int32_t>(y)) * 255;
+  uint32_t ix = 255 - xx;
+  uint32_t iy = 255 - yy;
   // calculate the intensities for each affected pixel
   uint8_t wu[4] = {wu_weight(ix, iy), wu_weight(xx, iy),
                   wu_weight(ix, yy), wu_weight(xx, yy)};
