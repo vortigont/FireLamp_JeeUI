@@ -10,8 +10,8 @@ mode con: cols=88
 
 rem VARIABLES
 set "lamprepo=https://github.com/vortigont/FireLamp_JeeUI.git"
-set "pythondistro=https://www.python.org/ftp/python/3.10.11/python-3.10.11.exe"
-set "pythondistro64=https://www.python.org/ftp/python/3.10.11/python-3.10.11-amd64.exe"
+set "pythondistro=https://www.python.org/ftp/python/3.11.7/python-3.11.7.exe"
+set "pythondistro64=https://www.python.org/ftp/python/3.11.7/python-3.11.7-amd64.exe"
 set "gitdistro=https://github.com/git-for-windows/git/releases/download/v2.43.0.windows.1/Git-2.43.0-32-bit.exe"
 set "gitdistro64=https://github.com/git-for-windows/git/releases/download/v2.43.0.windows.1/Git-2.43.0-64-bit.exe"
 set "repodstdir=FireLamp.vortigont"
