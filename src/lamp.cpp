@@ -159,9 +159,6 @@ void Lamp::power(bool flag) // флаг включения/выключения 
   if (flag == flags.ONflag) return;  // пропускаем холостые вызовы
   LOG(print, "Lamp powering "); LOG(println, flag ? "On": "Off");
 
-  if(mode == LAMPMODE::MODE_OTA)
-    mode = LAMPMODE::MODE_NORMAL;
-
   if (flag){
     // POWER ON
 
@@ -174,8 +171,6 @@ void Lamp::power(bool flag) // флаг включения/выключения 
     if(mode == LAMPMODE::MODE_DEMO)
       demoTimer(T_ENABLE);
 
-    // enable FET for matrix
-    if (fet_gpio > static_cast<int>(GPIO_NUM_NC)) digitalWrite(fet_gpio, (flags.ONflag ? fet_ll : !fet_ll));
     // generate pwr change state event 
     EVT_POST(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::pwron));
   } else  {
@@ -191,13 +186,6 @@ void Lamp::power(bool flag) // флаг включения/выключения 
 
     demoTimer(T_DISABLE);     // гасим Демо-таймер
 
-    // установка сигнала в пин, управляющий MOSFET транзистором, соответственно состоянию вкл/выкл матрицы
-    if (fet_gpio > static_cast<int>(GPIO_NUM_NC)){
-      Task *_t = new Task(flags.isFaderON && !flags.ONflag ? 5*TASK_SECOND : 50, TASK_ONCE, // для выключения - отложенное переключение мосфета 5 секунд
-        [this](){ digitalWrite(fet_gpio, (flags.ONflag ? fet_ll : !fet_ll)); },
-        &ts, false, nullptr, nullptr, true);
-      _t->enableDelayed();
-    }
     // событие о выключении будет сгенерированно в ответ на событие от фейдера когда его работа завершится
   }
 
@@ -658,6 +646,14 @@ void Lamp::_event_picker_cmd(esp_event_base_t base, int32_t id, void* data){
 
 void Lamp::_event_picker_state(esp_event_base_t base, int32_t id, void* data){
   switch (static_cast<evt::lamp_t>(id)){
+    case evt::lamp_t::pwron :
+      // enable MOSFET
+      if (fet_gpio > static_cast<int>(GPIO_NUM_NC)) digitalWrite(fet_gpio,  fet_ll);
+      break;
+    case evt::lamp_t::pwroff :
+      // disable MOSFET
+      if (fet_gpio > static_cast<int>(GPIO_NUM_NC)) digitalWrite(fet_gpio,  !fet_ll);
+      break;
     case evt::lamp_t::fadeEnd :
       // check if lamp is in "PowerOff" state, then we've just complete fade-out, need to send event
       if (!flags.ONflag)
