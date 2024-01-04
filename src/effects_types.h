@@ -207,7 +207,7 @@ static constexpr uint8_t T_EFFVER[] = {
   0, 6, 6, 4, 4, 1, 3, 3, 3, 5, 3, 6, 5, 3, 5, 10, // 0-15
   1, 1, 3, 1, 3, 7, 5, 2, 1, 5, 5, 7, 7, 2, 1, 5, // 16-31
   5, 5, 5, 3, 7, 3, 4, 3, 3, 1, 4, 5, 7, 1, 1, 3, // 32 - 47
-  1, 6, 6, 6, 4, 7, 5, 4, 1, 5, 6, 3, 1, 5, 7, 6, // 48 - 63
+  3, 6, 6, 6, 4, 7, 5, 4, 1, 5, 6, 3, 1, 5, 7, 6, // 48 - 63
   5, 1, 1, 5, 4, 1,11, 1, 3, 1, 1, 1, 1, 0, 0, 0, // 64 - 79
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 80 - 95
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 96 - 111
@@ -261,10 +261,9 @@ typedef enum : uint8_t {RANGE=0,EDIT,CHECKBOX} CONTROL_TYPE; // младшие 4
  * Полный формат для пользовательского (id=0...7) параметра имеет вид: {"id":0,"type":0,"name":"Параметр","val":"127","min":"1","max":"255","step":"1"}
  * если какой-то из параметров стандартный из этого списка, то его можно опустить и не указывать
  * @nb@ - будет заменен на реальный номер эффекта, @name@ - на дефолтное имя эффекта, @ver@ - версия
- * https://community.alexgyver.ru/threads/wifi-lampa-budilnik-proshivka-firelamp_jeeui-gpl.2739/post-48813
- * https://community.alexgyver.ru/threads/wifi-lampa-budilnik-proshivka-firelamp_jeeui-gpl.2739/post-48848
+ * 
+ * P.S. этот безумный бред нужно убрать
  */
-
 #define COTNROLS_PREFIX "\"nb\":@nb@,\"name\":\"@name@\",\"ver\":@ver@,\"flags\":"
 
 // Дефолтные контролы
@@ -302,7 +301,7 @@ static constexpr const char* E_DRIFT     = "{" COTNROLS_PREFIX SF(SET_ALL_EFFFLA
 static constexpr const char* E_F2012_MIC = "{" COTNROLS_PREFIX SF(SET_ALL_EFFFLAGS) ",\"ctrls\":[{\"id\":2,\"type\":48},  {\"id\":3,\"val\":64,\"max\":128,\"name\":\"" DFTINTF_088 "\"},  {\"id\":4,\"val\":6,\"max\":10,\"name\":\"" DFTINTF_084 "\"},  {\"id\":7,\"type\":18,\"val\":1,\"name\":\"" DFTINTF_020 "\"}]}";
 static constexpr const char* E_F2018     = "{" COTNROLS_PREFIX SF(SET_ALL_EFFFLAGS) ",\"ctrls\":[{\"id\":2,\"name\":\"" DFTINTF_0D7 "\"},  {\"id\":3,\"type\":2,\"val\":1,\"name\":\"" DFTINTF_0E4 "\"},  {\"id\":7,\"type\":18,\"val\":1,\"name\":\"" DFTINTF_020 "\"}]}";
 static constexpr const char* E_FAIRY     = "{" COTNROLS_PREFIX SF(SET_ALL_EFFFLAGS) ",\"ctrls\":[{\"id\":3,\"type\":2,\"val\":1,\"name\":\"" DFTINTF_0F9 "\"}]}";
-static constexpr const char* E_FLAGS     = "{" COTNROLS_PREFIX SF(SET_ALL_EFFFLAGS) ",\"ctrls\":[{\"id\":2,\"type\":48}, {\"id\":3,\"min\":0,\"val\":0,\"max\":10,\"name\":\"" DFTINTF_00A "\"}]}";
+static constexpr const char* E_FLAGS     = "{" COTNROLS_PREFIX SF(SET_ALL_EFFFLAGS) ",\"ctrls\":[{\"id\":2,\"type\":48}, {\"id\":3,\"min\":0,\"val\":0,\"max\":9,\"name\":\"" DFTINTF_00A "\"}, {\"id\":4,\"type\":2,\"val\":0,\"name\":\"" DFTINTF_0E5 "\"} ]}";
 static constexpr const char* E_FLOCK     = "{" COTNROLS_PREFIX SF(SET_ALL_EFFFLAGS) ",\"ctrls\":[{\"id\":2,\"type\":48},  {\"id\":3,\"max\":" SF(FASTLED_PALETTS_COUNT) ",\"name\":\"" DFTINTF_084 "\"},  {\"id\":4,\"type\":2,\"val\":1,\"name\":\"" DFTINTF_0E8 "\"}]}";
 static constexpr const char* E_FLYING    = "{" COTNROLS_PREFIX SF(SET_ALL_EFFFLAGS) ",\"ctrls\":[{\"id\":2,\"type\":48},  {\"id\":3,\"max\":128,\"name\":\"" DFTINTF_0DE "\"},  {\"id\":4,\"val\":7,\"max\":" SF(FASTLED_PALETTS_COUNT) ",\"name\":\"" DFTINTF_084 "\"},  {\"id\":5,\"type\":2,\"val\":1,\"name\":\"" DFTINTF_107 "\"}]}";
 static constexpr const char* E_FOUNT     = "{" COTNROLS_PREFIX SF(SET_ALL_EFFFLAGS) ",\"ctrls\":[{\"id\":3,\"type\":2,\"val\":1,\"name\":\"" DFTINTF_0FA "\"}, {\"id\":4,\"val\":0,\"min\":0,\"max\":10,\"name\":\"" DFTINTF_103 "\"}, {\"id\":5,\"type\":16,\"val\":127,\"min\":0,\"max\":255,\"name\":\"" DFTINTF_0DB "\"},  {\"id\":7,\"type\":18,\"val\":1,\"name\":\"" DFTINTF_020 "\"}]}";

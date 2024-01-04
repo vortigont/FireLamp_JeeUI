@@ -139,7 +139,7 @@ bool Effcfg::loadeffconfig(uint16_t nb, const char *folder){
   else
     soundfile.clear();
 
-  brt = doc["brt"];
+  //brt = doc["brt"];
   curve = doc[A_dev_lcurve] ? static_cast<luma::curve>(doc[A_dev_lcurve].as<int>()) : luma::curve::cie1931;
 
 
@@ -166,9 +166,8 @@ void Effcfg::create_eff_default_cfg_file(uint16_t nb, String &filename){
 void Effcfg::_savecfg(char *folder){
   File configFile;
   String filename = fshlpr::getEffectCfgPath(num, folder);
-  LOG(printf_P,PSTR("Writing eff #%d cfg: %s\n"), num, filename.c_str());
-  configFile = LittleFS.open(filename, "w"); // PSTR("w") использовать нельзя, будет исключение!
-  //configFile.w
+  LOG(printf, "Writing eff #%d cfg: %s\n", num, filename.c_str());
+  configFile = LittleFS.open(filename, "w");
   configFile.print(getSerializedEffConfig());
   configFile.close();
 }
@@ -202,7 +201,7 @@ String Effcfg::getSerializedEffConfig(uint8_t replaceBright) const {
   doc["flags"] = flags.mask;
   doc["name"] = effectName;
   doc["ver"] = version;
-  if (brt) doc["brt"] = brt;
+  //if (brt) doc["brt"] = brt;
   if (curve != luma::curve::cie1931) doc[A_dev_lcurve] = e2int(curve);
   doc["snd"] = soundfile;
   JsonArray arr = doc.createNestedArray("ctrls");
@@ -905,14 +904,14 @@ uint16_t EffectWorker::effIndexByList(uint16_t val) {
 }
 
 bool Effcfg::_eff_ctrls_load_from_jdoc(DynamicJsonDocument &effcfg, LList<std::shared_ptr<UIControl>> &ctrls){
-  LOG(print, PSTR("_eff_ctrls_load_from_jdoc(), "));
+  LOG(print, "_eff_ctrls_load_from_jdoc(), ");
   //LOG(printf_P, PSTR("Load MEM: %s - CFG: %s - DEF: %s\n"), effectName.c_str(), doc["name"].as<String>().c_str(), worker->getName().c_str());
   // вычитываею список контроллов
   // повторные - скипаем, нехватающие - создаем
   // обязательные контролы 0, 1, 2 - яркость, скорость, масштаб, остальные пользовательские
   JsonArray arr = effcfg["ctrls"].as<JsonArray>();
   if (!arr) return false;
-  LOG(printf_P, PSTR("got arr of %u controls\n"), arr.size());
+  LOG(printf, "got arr of %u controls\n", arr.size());
 
   ctrls.clear();
   uint8_t id_tst = 0x0; // пустой
@@ -942,12 +941,12 @@ bool Effcfg::_eff_ctrls_load_from_jdoc(DynamicJsonDocument &effcfg, LList<std::s
   }
 
   // тест стандартных контроллов
-  for(int8_t id=0;id<3;id++){
+  for(int8_t id=1;id<3;id++){   // 0-й пропускаем, это бывшая "индивидуальная яркость"
       if(!((id_tst>>id)&1)){ // не найден контрол, нужно создать
         auto c = std::make_shared<UIControl>(
               id,                                     // id
               CONTROL_TYPE::RANGE,                    // type
-              id==0 ? TINTF_00D : id==1 ? TINTF_087 : TINTF_088,           // name
+              /*id==0 ? TINTF_00D :*/ id==1 ? TINTF_087 : TINTF_088,           // name
               "127",                            // value
               "1",                              // min
               "255",                            // max

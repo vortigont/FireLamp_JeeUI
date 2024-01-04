@@ -1809,16 +1809,18 @@ public:
 // https://editor.soulmatelights.com/gallery/739-flags
 class EffectFlags: public EffectCalc {
 private:
+    const int total_flags = 10;
     const float DEVIATOR = 512. / fb->w();
     float counter;
-    uint8_t flag = 0;
-    uint8_t _flag;
+    uint8_t flag = 0;               // which flag is currently running
     uint8_t count;
     uint8_t _speed; // 1 - 16
-    const uint8_t CHANGE_FLAG = 30; // >= 10 Autochange
+    const uint8_t CHANGE_FLAG_TIME = 30;
 
     uint8_t thisVal;
     uint8_t thisMax;
+
+    Task switcher;                  // flag changer
 
     //Germany
     void germany(uint8_t i);
@@ -1845,7 +1847,8 @@ private:
     String setDynCtrl(UIControl*_val) override;
 
 public:
-    EffectFlags(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
+    EffectFlags(LedFB<CRGB> *framebuffer);
+    ~EffectFlags();
     //void load () override;
     bool run() override;
 };
@@ -2193,7 +2196,7 @@ class EffectFlower : public EffectCalc {
 };
 #include "log.h"
 /*
-    Effect "Tetsrik clock"
+    Effect "Tetris clock"
     based on https://github.com/witnessmenow/WiFi-Tetris-Clock
 */
 class TetrisClock : public EffectCalc {

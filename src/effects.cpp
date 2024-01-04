@@ -7555,16 +7555,25 @@ void EffectStarShips::draw(float x, float y, CRGB color) {
 // (c) Stepko + kostyamat
 // 17.03.21
 // https://editor.soulmatelights.com/gallery/739-flags
+EffectFlags::EffectFlags(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){
+  switcher.set(CHANGE_FLAG_TIME * TASK_SECOND, TASK_FOREVER, [this](){ flag = random(total_flags); });
+  ts.addTask(switcher);
+}
+
 String EffectFlags::setDynCtrl(UIControl*_val){
   if (_val->getId()==1)
     _speed = map(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 1, 16);
-  else if (_val->getId()==3) _flag = EffectCalc::setDynCtrl(_val).toInt();
+  else if (_val->getId()==3) flag = EffectCalc::setDynCtrl(_val).toInt();
+  else if (_val->getId()==4) EffectCalc::setDynCtrl(_val).toInt() == 1 ? switcher.enableDelayed() : switcher.disable();     // random flag switch
   else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
   return String();
 }
 
+EffectFlags::~EffectFlags(){
+  ts.deleteTask(switcher);
+}
+
 bool EffectFlags::run() {
-  changeFlags();
   fb->fade(32);
   for (uint8_t i = 0; i < fb->w(); i++) {
     thisVal = inoise8((float) i * DEVIATOR, counter, (int)count/*(float)i * SPEED_ADJ/2*/);
@@ -7603,24 +7612,13 @@ bool EffectFlags::run() {
       break;
     
     default:
-      break;
+      russia(i);
     }
 
   }
   EffectMath::blur2d(fb, 32);
   counter += (float)_speed * SPEED_ADJ;
   return true;
-}
-
-void EffectFlags::changeFlags() {
-  if (!_flag) {
-    EVERY_N_SECONDS(CHANGE_FLAG) {
-      count++;
-      flag = count % 10;
-    }
-  }
-  else
-    flag = _flag - 1;
 }
 
 #ifdef MIC_EFFECTS
