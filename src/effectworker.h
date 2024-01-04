@@ -187,7 +187,7 @@ class Effcfg {
     /**
      * получить версию эффекта из "прошивки" по его ENUM
      */
-    inline static uint8_t geteffcodeversion(uint8_t id) { return pgm_read_byte(T_EFFVER + id); };
+    static uint8_t geteffcodeversion(uint8_t id) { return *(T_EFFVER + id); };
 
     /**
      * @brief deserialise effect configuration from a file based on eff number
@@ -223,7 +223,7 @@ public:
     uint16_t num = 0;       // номер эффекта
     uint8_t version = 0;    // версия эффекта
     EFFFLAGS flags;         // effect flags
-    uint8_t brt{0};         // effect's private brightness
+    //uint8_t brt{0};         // effect's private brightness
     luma::curve curve{luma::curve::cie1931};
     String effectName;      // имя эффекта (предварительно заданное или из конфига)
     String soundfile;       // имя/путь к звуковому файлу (DF Player Mini)
