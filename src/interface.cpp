@@ -841,8 +841,8 @@ void block_settings_mic(Interface *interf, const JsonObject *data, const char* a
         interf->button(button_t::submit, TCONST_set_mic, TINTF_Save, P_GRAY);
         interf->json_section_end();
 
-        interf->spacer();
-        interf->button(button_t::generic, TCONST_mic_cal, TINTF_025, P_RED);      // включение калибровки микрофона
+        //interf->spacer();
+        //interf->button(button_t::generic, TCONST_mic_cal, TINTF_025, P_RED);      // включение калибровки микрофона
     } else {
         interf->button(button_t::generic, TCONST_mic_cal, TINTF_027, P_RED );
     }
