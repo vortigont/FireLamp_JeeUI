@@ -66,23 +66,19 @@ String EffectSparcles::setDynCtrl(UIControl*_val){
 bool EffectSparcles::sparklesRoutine()
 {
 
-#ifdef MIC_EFFECTS
   uint8_t mic = getMicMapMaxPeak();
   uint8_t mic_f = map(getMicMapFreq(), LOW_FREQ_MAP_VAL, HI_FREQ_MAP_VAL, 0, 255);
   if (isMicOn() && eff > 5)
     fb->fade(255 - mic);
 
   fb->fade(isMicOn() ? map(scale, 1, 255, 100, 1) : map(scale, 1, 255, 50, 1));
-#else
-  fb->fade(map(scale, 1, 255, 1, 50));
-#endif
 
   CHSV currentHSV;
 
   for (uint8_t i = 0; i < (uint8_t)round(2.5 * (speed / 255.0) + 1); i++) {
     uint8_t x = random8(0U, fb->w());
     uint8_t y = random8(0U, fb->h());
-#ifdef MIC_EFFECTS
+
     switch (eff)
   {
   case 1 :
@@ -107,17 +103,13 @@ bool EffectSparcles::sparklesRoutine()
     break;
   }
 
-#endif
+
     if (!fb->at(x, y)) {
-#ifdef MIC_EFFECTS
       if (isMicOn()) {
         currentHSV = CHSV(mic_f, 255U - getMicMapMaxPeak()/3, constrain(mic * 1.25f, 48, 255));
       }
       else
         currentHSV = CHSV(random8(1U, 255U), random8(192U, 255U), random8(192U, 255U));
-#else
-        currentHSV = CHSV(random8(1U, 255U), random8(192U, 255U), random8(192U, 255U));
-#endif
       fb->at(x, y) = currentHSV;
     }
   }
@@ -141,13 +133,9 @@ bool EffectWhiteColorStripe::whiteColorStripeRoutine()
 {
   fb->clear();
 
-#ifdef MIC_EFFECTS
   byte _scale = isMicOn() ? (256.0/getMicMapMaxPeak()+0.3)*scale : scale;
   byte _speed = isMicOn() ? (256.0/getMicMapFreq()+0.3)*speed : speed;
-#else
-  byte _scale = scale;
-  byte _speed = speed;
-#endif
+
     if(_scale < 126){
         uint8_t centerY = fb->maxHeightIndex() / 2U;
         for (int16_t y = centerY; y >= 0; y--)
@@ -267,13 +255,9 @@ bool EffectPulse::run() {
 
   palette = RainbowColors_p;
   uint8_t _scale = scale;
-#ifdef MIC_EFFECTS
+
   #define FADE 255U - (isMicOn() ? getMicMapMaxPeak()*2 : 248U) // (isMicOn() ? 300U - getMicMapMaxPeak() : 5U)
   #define BLUR (isMicOn() ? getMicMapMaxPeak()/3 : 10U) //(isMicOn() ? map(getMicMapMaxPeak(), 1, 255, 1, 30) : 10U)
-#else
-  #define FADE 1U
-  #define BLUR 10U
-#endif
 
   //fb->fade(FADE);
   if (pulse_step <= currentRadius) {
@@ -336,14 +320,11 @@ bool EffectPulse::run() {
 bool EffectRainbow::run(){
   // коэф. влияния замаплен на скорость, 4 ползунок нафиг не нужен
   hue += (6.0 * (speed / 255.0) + 0.05 ); // скорость смещения цвета зависит от кривизны наклна линии, коэф. 6.0 и 0.05
-#ifdef MIC_EFFECTS
+
     micCoef = (getMicMapMaxPeak() > map(speed, 1, 255, 100, 10) and isMicOn() ? getMicMapMaxPeak() : 100.0)/100.0;
     twirlFactor = EffectMath::fmap((float)scale, 85, 170, 8.3, 24);      // на сколько оборотов будет закручена матрица, [0..3]
     twirlFactor *= getMicMapMaxPeak() > map(speed, 1, 255, 80, 10) and isMicOn() ? 1.5f * ((float)getMicMapFreq() / 255.0f) : 1.0f;
-#else
-    twirlFactor = EffectMath::fmap((float)scale, 85, 170, 8.3, 24);      // на сколько оборотов будет закручена матрица, [0..3]
-    micCoef = 1.0;
-#endif
+
   if(scale<85){
     return rainbowHorVertRoutine(false);
   } else if (scale>170){
@@ -411,15 +392,15 @@ bool EffectColors::colorsRoutine()
 
   if(step!=delay) {
 
-#ifdef MIC_EFFECTS
   uint16_t mmf = getMicMapFreq();
   uint16_t mmp = getMicMapMaxPeak();
-
-#if defined(LAMP_DEBUG) && defined(MIC_EFFECTS)
+/*
+#if defined(LAMP_DEBUG)
 EVERY_N_SECONDS(1){
   LOG(printf_P,PSTR("MF: %5.2f MMF: %d MMP: %d scale %d speed: %d\n"), getMicFreq(), mmf, mmp, scale, speed);
 }
 #endif
+*/
   if(isMicOn()){
     // включен микрофон
     if(scale>=127){
@@ -468,9 +449,7 @@ EVERY_N_SECONDS(1){
         fb->fill(CHSV(ihue, 255U, 255U));      
     }
   }
-#else
-  fb->fill(CHSV(ihue, 255U, 255U));
-#endif
+
   } else {
     ihue += scale; // смещаемся на следущий
   }
@@ -1004,15 +983,10 @@ String Effect3DNoise::setDynCtrl(UIControl*_val) {
 }
 
 bool Effect3DNoise::run(){
-  #ifdef MIC_EFFECTS
     uint8_t mmf = isMicOn() ? getMicMapFreq() : 0;
     uint8_t mmp = isMicOn() ? getMicMapMaxPeak() : 0;
     _scale = (NOISE_SCALE_AMP*(float)scale/255.0+NOISE_SCALE_ADD)*(mmf>0?(1.5*mmf/255.0):1);
     _speed = NOISE_SCALE_AMP*(float)speed/512.0*(mmf<LOW_FREQ_MAP_VAL && mmp>MIN_PEAK_LEVEL?10:2.5*mmp/255.0+1);
-  #else
-    _scale = NOISE_SCALE_AMP*scale/255.0+NOISE_SCALE_ADD;
-    _speed = NOISE_SCALE_AMP*speed/512.0;
-  #endif
 
   fillNoiseLED();
   return true;
@@ -2190,9 +2164,7 @@ bool EffectFire2012::run() {
   }
   if (dryrun(4.0))
     return false;
-#ifdef MIC_EFFECTS
   cooling = isMicOn() ? 255 - getMicMapMaxPeak() : 130;
-#endif
   return fire2012Routine();
 }
 
@@ -2244,12 +2216,8 @@ bool EffectFire2018::run()
   uint16_t ctrl = ((ctrl1 + ctrl2) / 2);
 
   // parameters for the heatmap
-#ifndef MIC_EFFECTS
-  uint16_t _speed = isLinSpeed ? speed : beatsin88(map(speed, 1, 255, 80, 200), 5, map(speed, 1, 255, 10, 255));     // speed пересекается с переменной в родительском классе
-#else
   byte mic_p = getMicMapMaxPeak();
   uint16_t _speed = isMicOn() ? (mic_p > map(speed, 1, 255, 225, 20) ? mic_p : 20) : (isLinSpeed ? map(speed, 1, 255, 20, 100) : beatsin88(map(speed, 1, 255, 80, 200), 5, map(speed, 1, 255, 10, 255)));     // speed пересекается с переменной в родительском классе
-#endif
 
   // shift error values
   for (auto &i : noise.opt){
@@ -3101,15 +3069,10 @@ void EffectLeapers::load() {
 
 void EffectLeapers::restart_leaper(Leaper &l) {
   // leap up and to the side with some random component
-#ifdef MIC_EFFECTS
   uint8_t mic = getMicMaxPeak();
   uint8_t rand = random(5, 50 + _rv * 4);
   l.xd = static_cast<float>(isMicOn() ? 25 + mic : rand) / 100.0;
   l.yd = static_cast<float>(isMicOn() ? 25 + mic : rand) / 50.0;
-#else
-  l.xd = static_cast<float>(random8(5, 50 + _rv * 4)) / 100;
-  l.yd = static_cast<float>(random8(5, 100 + _rv * 3)) / 50;
-#endif
 
   // for variety, sometimes go 20% faster
   if (random8() < 12) {
@@ -3429,9 +3392,7 @@ String EffectWhirl::setDynCtrl(UIControl*_val){
 }
 
 bool EffectWhirl::whirlRoutine() {
-#ifdef MIC_EFFECTS
   micPick = isMicOn() ? getMicMaxPeak() : 0;
-#endif
   fb->fade(15. * speedFactor);
 
   for (auto &boid : boids){
@@ -3443,15 +3404,12 @@ bool EffectWhirl::whirlRoutine() {
     boid.velocity.x = ((float)sin8(angle) * 0.0078125 - speedFactor);
     boid.velocity.y = -((float)cos8(angle) * 0.0078125 - speedFactor);
     boid.update();
-#ifdef MIC_EFFECTS
+
     if (!isMicOn())
       EffectMath::drawPixelXYF(boid.location.x, boid.location.y, ColorFromPalette(*curPalette, angle + (uint8_t)hue), fb); // + hue постепенно сдвигает палитру по кругу
     else
       EffectMath::drawPixelXYF(boid.location.x, boid.location.y, CHSV(getMicMapFreq(), 255-micPick, constrain(micPick * EffectMath::fmap(scale, 1.0f, 255.0f, 1.25f, 5.0f), 48, 255)), fb); // + hue постепенно сдвигает палитру по кругу
 
-#else
-    EffectMath::drawPixelXYF(boid.location.x, boid.location.y, ColorFromPalette(*curPalette, angle + (uint8_t)hue), fb); // + hue постепенно сдвигает палитру по кругу
-#endif
     if (boid.location.x < 0 || boid.location.x >= fb->w() || boid.location.y < 0 || boid.location.y >= fb->h()) {
       boid.location.x = EffectMath::randomf(0, fb->w());
       boid.location.y = 0;
@@ -3546,11 +3504,8 @@ void EffectAquarium::fillNoiseLED() {
 }
 
 bool EffectAquarium::run() {
-#ifdef MIC_EFFECTS
   byte _video = isMicOn() ? constrain(getMicMaxPeak() * EffectMath::fmap(scale, 1.0f, 255.0f, 1.25f, 5.0f), 48U, 255U) : 255;
-#else
-  byte _video = 255;
-#endif
+
   switch (glare) { //
   case 2:
     nGlare(_video);
@@ -3559,24 +3514,6 @@ bool EffectAquarium::run() {
     nDrops(_video);
   }
 
-/*  абсолютно непонятная одноцветная заливка
-  if (!glare) {// если блики выключены
-    for (byte x = 0; x < fb->w(); x++)
-    for (byte y = 0U; y < fb->h(); y++)
-    {
-#ifdef MIC_EFFECTS
-      if (isMicOn()) {
-        hue = getMicMapFreq();
-        EffectMath::drawPixelXY(x, y, CHSV((uint8_t)hue, satur, _video));
-      }
-      else
-        EffectMath::drawPixelXY(x, y, CHSV((uint8_t)hue, satur, 255U));
-#else
-      EffectMath::drawPixelXY(x, y, CHSV((uint8_t)hue, satur, 255U));
-#endif
-    }
-  }
-*/
   if (speed == 1) {
     hue = scale;
   }
@@ -3633,7 +3570,6 @@ void EffectStar::drawStar(float xlocl, float ylocl, float biggy, float little, i
                           ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128));
 */
 // TODO: have no idea why all calculations were done using floats, but drawing is done with ints, looks like Kostyamat's implementation
-#ifdef MIC_EFFECTS
     EffectMath::drawLine( static_cast<int16_t>(xlocl + ((little * (sin8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128)),
                           static_cast<int16_t>(ylocl + ((little * (cos8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128)),
                           static_cast<int16_t>(xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128)),
@@ -3646,31 +3582,13 @@ void EffectStar::drawStar(float xlocl, float ylocl, float biggy, float little, i
                           static_cast<int16_t>(ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128)),
                           isMicOn() ? CHSV(koler+getMicMapFreq(), 255-micPick, constrain(micPick * EffectMath::fmap(scale, 1.0f, 255.0f, 1.25f, 5.0f), 48, 255)) : ColorFromPalette(*curPalette, koler),
                           fb);
-#else
-    EffectMath::drawLine( static_cast<int16_t>(xlocl + ((little * (sin8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128)),
-                          static_cast<int16_t>(ylocl + ((little * (cos8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128)),
-                          static_cast<int16_t>(xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128)),
-                          static_cast<int16_t>(ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128)),
-                          ColorFromPalette(*curPalette, koler),
-                          fb);
-    EffectMath::drawLine( static_cast<int16_t>(xlocl + ((little * (sin8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128)),
-                          static_cast<int16_t>(ylocl + ((little * (cos8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128)),
-                          static_cast<int16_t>(xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128)),
-                          static_cast<int16_t>(ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128)),
-                          ColorFromPalette(*curPalette, koler),
-                          fb);
-#endif
   }
 }
 
 bool EffectStar::run() {
 
-#ifdef MIC_EFFECTS
   micPick = getMicMaxPeak();
   fb->fade(255U - (isMicOn() ? micPick*2 : 90)); // работает быстрее чем dimAll
-#else
-  fb->fade(165);
-#endif
 
   _speedFactor = ((float)speed/380.0+0.05);
 
@@ -3701,11 +3619,9 @@ bool EffectStar::run() {
         s.cntdelay = counter + (stars.size() << 1) + 1U; // задержка следующего пуска звезды
     }
   }
-#ifdef MIC_EFFECTS
+
   EffectMath::blur2d(fb, isMicOn() ? micPick/2 : 30U); //fadeToBlackBy() сам блурит, уменьшил блур под микрофон
-#else
-  EffectMath::blur2d(fb, 30U);
-#endif
+
   return true;
 }
 
@@ -4004,15 +3920,11 @@ bool EffectPacific::run()
   return true;
 }
 
-#ifdef MIC_EFFECTS
 //----- Эффект "Осциллограф" (c) kostyamat
 // !++
 String EffectOsc::setDynCtrl(UIControl*_val) {
-#ifdef ESP32
   pointer = 4096/(getMicScale()*2);
-#else
-  pointer = 1024/(getMicScale()*2);
-#endif
+
   if(_val->getId()==1) {
     speed = EffectCalc::setDynCtrl(_val).toInt();
     if (speed <= 127) {
@@ -4068,7 +3980,6 @@ bool EffectOsc::run() {
 
 return true;
 }
-#endif
 
 // ------ Эффект "Вышиванка" (с) проект Aurora "Munch"
 void EffectMunch::load() {
@@ -4118,11 +4029,8 @@ bool EffectMunch::munchRoutine() {
   }
 
   generation++;
-#ifdef MIC_EFFECTS
   mic[1] = isMicOn() ? map(getMicMapMaxPeak(), 0, 255, 0, minDimLocal) : minDimLocal;
-#else
-  mic[1] = minDimLocal;
-#endif
+
   return true;
 }
 
@@ -4403,13 +4311,10 @@ bool EffectShadows::run() {
   uint8_t sat8 = beatsin88( 87, 220, 250);
   uint8_t brightdepth = beatsin88( 341, 96, 224);
   uint16_t brightnessthetainc16 = beatsin88( 203, (25 * 225), (40 * 256));
-#ifdef MIC_EFFECTS
+
   uint8_t msmultiplier = isMicOn() ? getMicMapMaxPeak() : linear? beatsin88(map(speed, 1, 255, 100, 255), 32, map(speed, 1, 255, 60, 255)) : speed; // beatsin88(147, 32, 60);
   byte effectBrightness = isMicOn() ? getMicMapMaxPeak() * 1.5f : scale;
-#else
-  uint8_t msmultiplier = linear ? beatsin88(map(speed, 1, 255, 100, 255), 32, map(speed, 1, 255, 60, 255)) : speed; // beatsin88(147, 32, 60);
-  byte effectBrightness = scale;
-#endif
+
   uint16_t hue16 = sHue16;//gHue * 256;
   uint16_t hueinc16 = beatsin88(113, 1, 3000);
 
@@ -5042,11 +4947,9 @@ String EffectSnake::setDynCtrl(UIControl*_val) {
 
 bool EffectSnake::run() {
   fb->fade(speed<25 ? 5 : speed/2 ); // длина хвоста будет зависеть от скорости
-#ifdef MIC_EFFECTS
+
   hue+=(speedFactor/snakes.size()+(isMicOn() ? getMicMapFreq()/127.0 : 0));
-#else
-  hue+=speedFactor/snakes.size();
-#endif
+
   hue = hue>255? hue-255 : hue;
 
   int i = 0;
@@ -5061,17 +4964,11 @@ bool EffectSnake::run() {
     }
     snake.shuffleDown(speedFactor, subPix);
 
-#ifdef MIC_EFFECTS
     if(getMicMapMaxPeak()>speed/3.0+75.0 && isMicOn()) {
       snake.newDirection();
     } else if (random((speed<25)?speed*50:speed*10) < speed && !isMicOn()) {// как часто будут повороты :), логика загадочная, но на малой скорости лучше змейкам круги не наматывать :)
       snake.newDirection();
     }
-#else
-    if (random((speed<25)?speed*50:speed*10) < speed){ // как часто будут повороты :), логика загадочная, но на малой скорости лучше змейкам круги не наматывать :)
-      snake.newDirection();
-    }
-#endif
 
     snake.move(speedFactor, fb->w(), fb->h());
     snake.draw(colors, i, subPix, fb, false /*isDebug()*/);
@@ -6440,17 +6337,11 @@ void EffectFairy::fountEmit(TObject &i) {
   if(random8(2U)) i.speedY=-i.speedY;
 
   i.state = EffectMath::randomf(50, 250); 
-#ifdef MIC_EFFECTS
   if (type)
     i.hue = isMicOn() ? getMicMapFreq() : hue2;
   else 
     i.hue = random8(getMicMapFreq(), 255);
-#else
-  if (type)
-    i.hue = hue2;
-  else 
-    i.hue = random8(255);
-#endif
+
   i.isShift = true; 
 }
 
@@ -6587,9 +6478,7 @@ bool EffectFairy::fairy() {
 }
 
 bool EffectFairy::run() {
-#ifdef MIC_EFFECTS
-   _video = isMicOn() ? constrain(getMicMaxPeak() * EffectMath::fmap(gain, 1.0f, 255.0f, 1.25f, 5.0f), 48U, 255U) : 255;
-#endif
+  _video = isMicOn() ? constrain(getMicMaxPeak() * EffectMath::fmap(gain, 1.0f, 255.0f, 1.25f, 5.0f), 48U, 255U) : 255;
 
   switch (effect)
   {
@@ -6698,19 +6587,15 @@ void EffectCircles::drawCircle(LedFB<CRGB> *fb, Circle &circle) {
 }
 
 bool EffectCircles::run() {
-#ifdef MIC_EFFECTS
   _video = isMicOn() ? constrain(getMicMaxPeak() * EffectMath::fmap(gain, 1.0f, 255.0f, 1.25f, 5.0f), 48U, 255U) : 255;
-#endif
+
   randomSeed(millis());
   fb->clear();
   for (auto &i : circles){
     i.bpm += speedFactor;
     if (i.radius() < 0.001) {
-#ifdef MIC_EFFECTS
       i.hue = isMicOn() ? getMicMapFreq() : random(0, fb->w()) * 255 / circles.size();
-#else
-      i.hue = random(0, fb->w()) * 255 / circles.size();
-#endif
+
       move(i);
     }
     drawCircle(fb, i);
@@ -7621,7 +7506,6 @@ bool EffectFlags::run() {
   return true;
 }
 
-#ifdef MIC_EFFECTS
 /* -------------- эффект "VU-Meter"
     (c) G6EJD, https://www.youtube.com/watch?v=OStljy_sUVg&t=0s
     reworked by s-marley https://github.com/s-marley/ESP32_FFT_VU
@@ -7655,10 +7539,9 @@ String EffectVU::setDynCtrl(UIControl*_val){
 }
 
 void EffectVU::load() {
-#ifdef MIC_EFFECTS
   setMicAnalyseDivider(0); // отключить авто-работу микрофона, т.к. тут все анализируется отдельно, т.е. не нужно выполнять одну и ту же работу дважды
   mw = new MicWorker(getMicScale(),getMicNoise(), true);
-#endif
+
     bands = effId & 01 ? (fb->w()/2 + (fb->w() & 01 ? 1:0)) : fb->w();
     bar_width =  (fb->w()  / (bands - 1));
 
@@ -7670,14 +7553,8 @@ void EffectVU::load() {
 }
 
 bool EffectVU::run() {
-//#ifdef MIC_EFFECTS
-    // уже отключили в load()
-//  setMicAnalyseDivider(0); // отключить авто-работу микрофона, т.к. тут все анализируется отдельно, т.е. не нужно выполнять одну и ту же работу дважды
-//#endif
-  // Оставлю себе напоминалку как все это работает https://community.alexgyver.ru/threads/wifi-lampa-budilnik-proshivka-firelamp_jeeui-gpl.2739/post-85649
-  //bool ready = false;
   tickCounter++;
-#ifdef MIC_EFFECTS
+
   if(isMicOn()){ // вот этот блок медленный, особенно нагружающим будет вызов заполенния массива
     //EVERY_N_MILLIS(100){ // обсчет тяжелый, так что желательно не дергать его чаще 10 раз в секунду, лучеш реже
     if (!(tickCounter%3)) {
@@ -7700,9 +7577,7 @@ bool EffectVU::run() {
       }
     }
     if (!(tickCounter%3)) return false; // не будем заставлять бедный контроллер еще и выводить инфу в том же цикле, что и рассчеты. Это режет ФПС. Но без новых рассчетов - ФПС просто спам.
-  } else 
-  #endif
-  {
+  } else {
     //EVERY_N_MILLIS(random(50,300)) {
     if (!(tickCounter%random(2,11))) {
       last_max_peak=random(0,fb->h());
@@ -7715,15 +7590,7 @@ bool EffectVU::run() {
   }
 
   float _scale = (maxVal==0? 0 : last_max_peak/maxVal) * amplitude;
-/*
-#ifdef LAMP_DEBUG
- EVERY_N_SECONDS(1){
-  for(uint16_t i=0; i<(sizeof(bandValues)/sizeof(float));i++)
-    LOG(printf_P,PSTR("%7.2f"),bandValues[i]*_scale);
-    LOG(printf_P,PSTR(" F: %8.2f SC: %5.2f\n"),last_freq, _scale);
-  }
-#endif
-*/
+
   fb->clear();
 
   // Process the FFT data into bar heights
@@ -7918,7 +7785,8 @@ void EffectVU::waterfall(uint8_t band, uint8_t barHeight) {
     }
   }
 }
-#endif
+
+
 void EffectFlags::germany(uint8_t i){
   for (uint8_t j = 0; j < fb->h(); j++){
     fb->at(i, j) += 

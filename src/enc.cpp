@@ -290,11 +290,9 @@ void isClick() {
 // Функция проверяет может ли контрол быть использоваан (проверка на скрытость, на скрытость по микрофону и т.п.)
 bool validControl(const CONTROL_TYPE ctrlCaseType) {
   bool isOk = false;
-#ifdef MIC_EFFECTS
   bool isMicOn = myLamp.isMicOnOff();
   if (myLamp.getEffControls()[myLamp.getEffControls().size()-1]->getName().startsWith(TINTF_020))
     isMicOn = isMicOn && myLamp.getEffControls()[myLamp.getEffControls().size()-1]->getVal().toInt();
-#endif
 
   switch (ctrlCaseType & 0x0F) {
     case CONTROL_TYPE::RANGE:     // мы меняем только ползунки или чекбоксы
@@ -311,14 +309,11 @@ bool validControl(const CONTROL_TYPE ctrlCaseType) {
     case CONTROL_CASE::HIDE: // Если спрятанный контрол, возвращаем ложь.
       return false;
       break;
-#ifdef MIC_EFFECTS
     case CONTROL_CASE::ISMICON: // проверка "спрятан по микрофону"
       if (!isMicOn && (!myLamp.isMicOnOff() || !(myLamp.getEffControls()[currDynCtrl]->getId() == 7 && myLamp.getEffControls()[currDynCtrl]->getName().startsWith(TINTF_020) == 1)))
         isOk = false;
       break;
-#endif
-    default:
-      break;
+    default:;
     }
     
   return isOk;
@@ -391,23 +386,6 @@ void myClicks() {
     toggleDemo();
     break;
 #endif
-#ifdef ENC_GBRI_CLICK
-  case ENC_GBRI_CLICK:
-    toggleGBright();
-    break;
-#endif
-#if defined(MIC_EFFECTS) && defined(ENC_MIC_CLICK)
-  case ENC_MIC_CLICK:
-    toggleMic();
-    break;
-#endif
-/*
-#ifdef ENC_IP_CLICK
-  case ENC_IP_CLICK:
-    sendIP();
-    break;
-#endif
-*/
 #ifdef ENC_TIME_CLICK
   case ENC_TIME_CLICK:
     sendTime();
@@ -586,17 +564,9 @@ void toggleDemo() {
   else 
     run_action(ra::demo, true);
 }
-/*
-void toggleGBright() {
-  run_action(ra::brt_global, myLamp.IsGlobalBrightness());
-  encSendString(String(TINTF_00C) + myLamp.IsGlobalBrightness() ? ": ON" : ": OFF", txtColor, true, txtDelay);
-}
-*/
+
 void toggleMic() {
-#ifdef MIC_EFFECTS
   run_action(ra::miconoff, myLamp.isMicOnOff());
-  //encSendString(String(TINTF_021) + String(myLamp.isMicOnOff() ? ": ON" : ": OFF"), txtColor, true, txtDelay);
-#endif
 }
 
 void toggleAUX() {

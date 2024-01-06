@@ -169,14 +169,12 @@ void run_action(ra act, const T& param) {
       break;
     }
 
-#ifdef MIC_EFFECTS
     // simple actions with provided key:value
     case ra::miconoff : {
       obj[P_action] = TCONST_Mic;
       data[TCONST_Mic] = param;
       break;
     }
-#endif  //#ifdef MIC_EFFECTS
 
 #ifdef MP3PLAYER
     //MP3: enable/disable

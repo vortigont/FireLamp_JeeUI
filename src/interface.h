@@ -137,9 +137,7 @@ void show_effects_config_param(Interface *interf, const JsonObject *data, const 
  */
 void block_effects_config(Interface *interf, const JsonObject *data, const char* action);
 
-#ifdef MIC_EFFECTS
 void show_settings_mic(Interface *interf, const JsonObject *data, const char* action);
-#endif
 
 /**
  * @brief load events configuarion from file

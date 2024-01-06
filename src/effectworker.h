@@ -44,22 +44,13 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "effects_types.h"
 #include "ledfb.hpp"
 #include "luma_curves.hpp"
-
-#ifdef MIC_EFFECTS
 #include "micFFT.h"
-#endif
-
 #include "ts.h"
 
 // Вывод значка микрофона в списке эффектов
-#ifdef MIC_EFFECTS
-    #define MIC_SYMBOL(N) (pgm_read_byte(T_EFFVER + (uint8_t)N) % 2 ? "" : " \U0001F399")
+#define MIC_SYMBOL(N) (pgm_read_byte(T_EFFVER + (uint8_t)N) % 2 ? "" : " \U0001F399")
     //#define MIC_SYMBOL (micSymb ? (pgm_read_byte(T_EFFVER + (uint8_t)eff->eff_nb) % 2 == 0 ? " \U0001F399" : "") : "")
     //#define MIC_SYMB bool micSymb = myLamp.getLampSettings().effHasMic
-#else
-    #define MIC_SYMBOL(N) ""
-    //#define MIC_SYMB
-#endif
 
 // Вывод номеров эффектов в списке, в WebUI
 #define EFF_NUMBER(N)   N <= 255 ? (String(N) + ". ") : (String((byte)(N & 0xFF)) + "." + String((byte)(N >> 8) - 1U) + " ")
@@ -89,7 +80,7 @@ typedef struct {
     float speedfactor;
     //uint8_t brightness;
 
-#ifdef MIC_EFFECTS
+    // Mike related
     float mic_noise = 0.0; // уровень шума в ед.
     float mic_scale = 1.0; // коэф. смещения
     float last_freq = 0.0; // последняя измеренная часота
@@ -115,7 +106,6 @@ typedef struct {
         float scale = 255.0 / (log((float)HIGH_MAP_FREQ) - minFreq); 
         return (uint8_t)(isMicOn?(log(last_freq)-minFreq)*scale:0);
     }
-#endif
 
     uint32_t freeHeap;
     uint8_t HeapFragmentation;
@@ -335,7 +325,6 @@ protected:
     float getSpeedFactor() {return _lampstate ? _lampstate->speedfactor : 1.0;}
     //float getBrightness() {return _lampstate ? _lampstate->brightness : 127;}
 
-#ifdef MIC_EFFECTS
     void setMicAnalyseDivider(uint8_t val) {if(_lampstate) _lampstate->micAnalyseDivider = val&3;}
     uint8_t getMicMapMaxPeak() {return _lampstate ? _lampstate->getMicMapMaxPeak() : 0;}
     uint8_t getMicMapFreq() {return _lampstate ? _lampstate->getMicMapFreq() : 0;}
@@ -347,7 +336,6 @@ protected:
     float getMicNoise() {return _lampstate ? _lampstate->getMicNoise() : 0;}
     mic_noise_reduce_level_t getMicNoiseRdcLevel() {return _lampstate ? _lampstate->getMicNoiseRdcLevel() : mic_noise_reduce_level_t::NR_NONE;}
     
-#endif
     bool isActive() {return active;}
     void setActive(bool flag) {active=flag;}
     uint32_t lastrun=0;     /**< счетчик времени для эффектов с "задержкой" */

@@ -487,15 +487,12 @@ void EffectWorker::workerset(uint16_t effect){
   case EFF_ENUM::EFF_FLOWER :
     worker = std::unique_ptr<EffectFlower>(new EffectFlower(canvas));
     break;
-#ifdef MIC_EFFECTS
   case EFF_ENUM::EFF_VU :
     worker = std::unique_ptr<EffectVU>(new EffectVU(canvas));
     break;
   case EFF_ENUM::EFF_OSC :
     worker = std::unique_ptr<EffectOsc>(new EffectOsc(canvas));
     break;
-
-#endif
 
   default:
     worker = std::unique_ptr<EffectNone>(new EffectNone(canvas)); // std::unique_ptr<EffectCalc>(new EffectCalc());
@@ -574,11 +571,9 @@ void EffectWorker::effectsReSort(SORT_TYPE _effSort)
     case SORT_TYPE::ST_AB :
       effects.sort([](EffectListElem &a, EffectListElem &b){ return std::string_view(T_EFFNAMEID[(uint8_t)a.eff_nb]).compare(T_EFFNAMEID[(uint8_t)b.eff_nb]); });
       break;
-#ifdef MIC_EFFECTS
     case SORT_TYPE::ST_MIC :
       effects.sort([](EffectListElem &a, EffectListElem &b){ return ((int)(pgm_read_byte(T_EFFVER + (a.eff_nb&0xFF))&0x01) - (int)(pgm_read_byte(T_EFFVER + (b.eff_nb&0xFF))&0x01)); });
       break;
-#endif
     default:
       break;
   }
@@ -967,10 +962,6 @@ void EffectWorker::_load_default_fweff_list(){
     if (!strlen(T_EFFNAMEID[i]) && i)   // пропускаем индексы-"пустышки" без названия, кроме 0 "EFF_NONE"
       continue;
 
-#ifndef MIC_EFFECTS
-//    if(i>EFF_ENUM::EFF_TIME) continue;    // пропускаем эффекты для микрофона, если отключен микрофон
-#endif
-
     EffectListElem el(i, SET_ALL_EFFFLAGS);
     effects.add(el);
   }
@@ -1233,10 +1224,10 @@ String EffectCalc::setDynCtrl(UIControl*_val){
 
   if(_val->getId()==7 && _val->getName().startsWith(TINTF_020)==1){ // Начинается с микрофон и имеет 7 id
     isMicActive = (ret_val.toInt() && isMicOnState()) ? true : false;
-#ifdef MIC_EFFECTS
+
     if(_lampstate)
       _lampstate->setMicAnalyseDivider(isMicActive);
-#endif
+
   } else {
     if(isRandDemo()){ // для режима рандомного ДЕМО, если это не микрофон - то вернуть рандомное значение в пределах диапазона значений
       ret_val = String(random(_val->getMin().toInt(), _val->getMax().toInt()+1));

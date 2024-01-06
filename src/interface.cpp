@@ -173,11 +173,9 @@ void ui_page_selector(Interface *interf, const JsonObject *data, const char* act
         case page::eff_config :   // страница "Управление списком эффектов"
             show_effects_config(interf, nullptr, NULL);
             return;
-    #ifdef MIC_EFFECTS
         case page::mike :         // страница настроек микрофона
             show_settings_mic(interf, nullptr, NULL);
             return;
-    #endif
     #ifdef MP3PLAYER
         case page::setup_dfplayer :    // страница настроек dfplayer
             show_settings_mp3(interf, nullptr, NULL);
@@ -252,14 +250,8 @@ void ui_section_effects_list_configuration(Interface *interf, const JsonObject *
         interf->option(SORT_TYPE::ST_IDX, TINTF_043);
         interf->option(SORT_TYPE::ST_AB, TINTF_085);
         interf->option(SORT_TYPE::ST_AB2, TINTF_08A);
-#ifdef MIC_EFFECTS
         interf->option(SORT_TYPE::ST_MIC, TINTF_08D);  // эффекты с микрофоном
-#endif
     interf->json_section_end();
-    //interf->checkbox(TCONST_numInList, myLamp.getLampFlagsStuct().numInList , TINTF_090, false); // нумерация в списке эффектов
-#ifdef MIC_EFFECTS
-    //interf->checkbox(TCONST_effHasMic, myLamp.getLampFlagsStuct().effHasMic , TINTF_091, false); // значек микрофона в списке эффектов
-#endif
 
     interf->button(button_t::submit, TCONST_set_effect, TINTF_Save, P_GRAY);            // Save btn
     interf->button_value(button_t::submit, TCONST_set_effect, TCONST_copy, TINTF_005);  // Copy button
@@ -345,17 +337,14 @@ void set_effects_config_param(Interface *interf, const JsonObject *data, const c
     EffectListElem *effect = confEff;
     
     //bool isNumInList =  (*data)[TCONST_numInList] == "1";
-#ifdef MIC_EFFECTS
+
     bool isEffHasMic = (*data)[TCONST_effHasMic];
     myLamp.setEffHasMic(isEffHasMic);
-#endif
+
     SORT_TYPE st = (*data)[V_effSort].as<SORT_TYPE>();
 
     if(myLamp.getLampState().isInitCompleted){
         bool isRecreate = false;
-#ifdef MIC_EFFECTS
-        //isRecreate = (myLamp.getLampFlagsStuct().effHasMic!=isEffHasMic) || isRecreate;
-#endif
         isRecreate = (myLamp.effwrkr.getEffSortType()!=st) || isRecreate;
 
         if(isRecreate){
@@ -521,13 +510,12 @@ void block_effect_controls(Interface *interf, const JsonObject *data, const char
     JsonArrayConst sect = interf->json_section_begin(A_effect_ctrls);
     LList<std::shared_ptr<UIControl>> &controls = myLamp.effwrkr.getControls();
     uint8_t ctrlCaseType; // тип контрола, старшие 4 бита соответствуют CONTROL_CASE, младшие 4 - CONTROL_TYPE
-#ifdef MIC_EFFECTS
+
     bool isMicOn = myLamp.isMicOnOff();
     LOG(printf_P,PSTR("Make UI for %d controls\n"), controls.size());
     for(unsigned i=0; i<controls.size();i++)
         if(controls[i]->getId()==7 && controls[i]->getName().startsWith(TINTF_020))
             isMicOn = isMicOn && controls[i]->getVal().toInt();
-#endif
 
     LOG(printf_P, PSTR("block_effect_controls() got %u ctrls\n"), controls.size());
     for (const auto &ctrl : controls){
@@ -539,20 +527,10 @@ void block_effect_controls(Interface *interf, const JsonObject *data, const char
                 continue;
                 break;
             case CONTROL_CASE::ISMICON :
-#ifdef MIC_EFFECTS
-                //if(!myLamp.isMicOnOff()) continue;
                 if(!isMicOn && (!myLamp.isMicOnOff() || !(ctrl->getId()==7 && ctrl->getName().startsWith(TINTF_020)==1) )) continue;
-#else
-                continue;
-#endif          
                 break;
             case CONTROL_CASE::ISMICOFF :
-#ifdef MIC_EFFECTS
-                //if(myLamp.isMicOnOff()) continue;
                 if(isMicOn && (myLamp.isMicOnOff() || !(ctrl->getId()==7 && ctrl->getName().startsWith(TINTF_020)==1) )) continue;
-#else
-                continue;
-#endif   
                 break;
             default: break;
         }
@@ -669,10 +647,7 @@ void ui_block_mainpage_switches(Interface *interf, const JsonObject *data, const
     interf->checkbox(K_demo, myLamp.getMode() == LAMPMODE::MODE_DEMO, TINTF_00F, true);
     interf->checkbox(TCONST_Events, myLamp.IsEventsHandled(), TINTF_011, true);
     interf->checkbox(TCONST_drawbuff, myLamp.isDrawOn(), TINTF_0CE, true);
-
-#ifdef MIC_EFFECTS
     interf->checkbox(TCONST_Mic, myLamp.isMicOnOff(), TINTF_012, true);
-#endif
     interf->checkbox(TCONST_AUX, embui.paramVariant(TCONST_AUX), TCONST_AUX, true);
 #ifdef ESP_USE_BUTTON
     interf->checkbox(TCONST_Btn, myButtons->isButtonOn(), TINTF_013, true);
@@ -824,39 +799,23 @@ void set_clear(Interface *interf, const JsonObject *data, const char* action){
         myLamp.fillDrawBuf(color);
 }
 
-
-#ifdef MIC_EFFECTS
-void block_settings_mic(Interface *interf, const JsonObject *data, const char* action){
+void show_settings_mic(Interface *interf, const JsonObject *data, const char* action){
     if (!interf) return;
+    interf->json_frame_interface();
     interf->json_section_main(TCONST_settings_mic, TINTF_020);
 
     interf->checkbox(TCONST_Mic, myLamp.isMicOnOff(), TINTF_012, true);
 
     interf->json_section_begin(TCONST_set_mic);
-    if (!myLamp.isMicCalibration()) {
         interf->number_constrained(V_micScale, round(myLamp.getLampState().getMicScale() * 10) / 10, TINTF_022, 0.1f, 0.1f, 4.0f);
         interf->number_constrained(V_micNoise, round(myLamp.getLampState().getMicNoise() * 10) / 10, TINTF_023, 0.1f, 0.0f, 32.0f);
         interf->range (V_micRdcLvl, (int)myLamp.getLampState().getMicNoiseRdcLevel(), 0, 4, 1, TINTF_024, false);
-
         interf->button(button_t::submit, TCONST_set_mic, TINTF_Save, P_GRAY);
-        interf->json_section_end();
-
-        //interf->spacer();
-        //interf->button(button_t::generic, TCONST_mic_cal, TINTF_025, P_RED);      // включение калибровки микрофона
-    } else {
-        interf->button(button_t::generic, TCONST_mic_cal, TINTF_027, P_RED );
-    }
+    interf->json_section_end();
 
     interf->spacer();
     interf->button(button_t::generic, A_ui_page_settings, TINTF_exit);
 
-    interf->json_section_end();
-}
-
-void show_settings_mic(Interface *interf, const JsonObject *data, const char* action){
-    if (!interf) return;
-    interf->json_frame_interface();
-    block_settings_mic(interf, data, NULL);
     interf->json_frame_flush();
 }
 
@@ -883,24 +842,7 @@ void set_settings_mic(Interface *interf, const JsonObject *data, const char* act
 void set_micflag(Interface *interf, const JsonObject *data, const char* action){
     if (!data) return;
     myLamp.setMicOnOff((*data)[TCONST_Mic]);
-    myLamp.save_flags();
-    //publish_effect_controls(interf, data, NULL);
 }
-
-void set_settings_mic_calib(Interface *interf, const JsonObject *data, const char* action){
-    //if (!data) return;
-    if (!myLamp.isMicOnOff()) {
-        //myLamp.sendString(String(TINTF_026).c_str(), CRGB::Red);
-    } else if(!myLamp.isMicCalibration()) {
-        //myLamp.sendString(String(TINTF_025).c_str(), CRGB::Red);
-        myLamp.setMicCalibration();
-    } else {
-        //myLamp.sendString(String(TINTF_027).c_str(), CRGB::Red);
-    }
-
-    show_settings_mic(interf, data, NULL);
-}
-#endif
 
 /**
  * @brief WebUI страница "Настройки" - "другие"
@@ -1324,9 +1266,7 @@ void set_streaming_universe(Interface *interf, const JsonObject *data, const cha
 void user_settings_frame(Interface *interf, const JsonObject *data, const char* action){
     // other
     interf->button_value(button_t::generic, A_ui_page, e2int(page::setup_devices), "Внешние устройства");
-#ifdef MIC_EFFECTS
     interf->button_value(button_t::generic, A_ui_page, e2int(page::mike), TINTF_020);
-#endif
 #ifdef ESP_USE_BUTTON
     interf->button_value(button_t::generic, A_ui_page, e2int(page::setup_bttn), TINTF_013);
 #endif
@@ -1644,11 +1584,9 @@ void rebuild_effect_list_files(lstfile_t lst){
 void embui_actions_register(){
     // создаем конфигурационные параметры и регистрируем обработчики активностей
 
-#ifdef MIC_EFFECTS
     embui.var_create(V_micScale, 1.28);
 //    embui.var_create(V_micNoise, 0.0);
 //    embui.var_create(V_micRdcLvl, 0);
-#endif
 
     embui.var_create(TCONST_DTimer, DEFAULT_DEMO_TIMER); // Дефолтное значение, настраивается из UI
 //    embui.var_create(TCONST_alarmPT, 85); // 5<<4+5, старшие и младшие 4 байта содержат 5
@@ -1725,11 +1663,9 @@ void embui_actions_register(){
     embui.action.add(TCONST_set_gpio, set_gpios);                       // Set gpios
     embui.action.add(T_display_type, page_display_setup);                // load display setup page depending on selected disp type (action for drop down list)
 
-#ifdef MIC_EFFECTS
     embui.action.add(TCONST_set_mic, set_settings_mic);
     embui.action.add(TCONST_Mic, set_micflag);
-    embui.action.add(TCONST_mic_cal, set_settings_mic_calib);
-#endif
+    //embui.action.add(TCONST_mic_cal, set_settings_mic_calib);
 
 #ifdef ESP_USE_BUTTON
 //    embui.action.add(TCONST_butt_conf, show_butt_conf);
