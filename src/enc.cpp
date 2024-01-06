@@ -386,14 +386,6 @@ void myClicks() {
     toggleDemo();
     break;
 #endif
-#ifdef ENC_GBRI_CLICK
-  case ENC_GBRI_CLICK:
-    toggleGBright();
-    break;
-#endif
-  case ENC_MIC_CLICK:
-    toggleMic();
-    break;
 #ifdef ENC_TIME_CLICK
   case ENC_TIME_CLICK:
     sendTime();
