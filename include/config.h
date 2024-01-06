@@ -60,8 +60,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 //-----------------------------------
 //#define ESP_USE_BUTTON                                      // если строка не закомментирована, должна быть подключена кнопка (иначе ESP может регистрировать "фантомные" нажатия и некорректно устанавливать яркость)
 //#define LAMP_DEBUG                                          // режим отладки, можно также включать в platformio.ini
-//#define DEBUG_TELNET_OUTPUT  (true)                         // true - отладочные сообщения будут выводиться в telnet вместо Serial порта (для удалённой отладки без подключения usb кабелем) // Deprecated
-//#define MIC_EFFECTS                                         // Включить использование микрофона для эффектов
 //#define MP3PLAYER                                           // Включить использование MP3 плеера (DF Player)
 //-----------------------------------
 #ifndef LANG_FILE

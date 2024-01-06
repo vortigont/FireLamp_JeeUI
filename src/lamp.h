@@ -44,10 +44,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "char_const.h"
 #include "mp3player.h"
 #include "luma_curves.hpp"
-
-#ifdef MIC_EFFECTS
 #include "micFFT.h"
-#endif
 
 #ifndef DEFAULT_MQTTPUB_INTERVAL
     #define DEFAULT_MQTTPUB_INTERVAL 30
@@ -179,10 +176,9 @@ private:
     uint16_t storedEffect = (uint16_t)EFF_ENUM::EFF_NONE;
     CRGB rgbColor = CRGB::White; // дефолтный цвет для RGB-режима
 
-#ifdef MIC_EFFECTS
+    // Microphone
     MicWorker *mw = nullptr;
     void micHandler();
-#endif
 
     Task *demoTask = nullptr;    // динамический планировщик Смены эффектов в ДЕМО
 
@@ -235,14 +231,10 @@ public:
     LAMPSTATE &getLampState() {return lampState;}
     LList<std::shared_ptr<UIControl>>&getEffControls() { return effwrkr.getControls(); }
 
-#ifdef MIC_EFFECTS
-    void setMicCalibration() {lampState.isCalibrationRequest = true;}
-    bool isMicCalibration() const {return lampState.isCalibrationRequest;}
-
+    //void setMicCalibration() {lampState.isCalibrationRequest = true;}
+    //bool isMicCalibration() const {return lampState.isCalibrationRequest;}
     void setMicOnOff(bool val);
-    
     bool isMicOnOff() const {return flags.isMicOn;}
-#endif
 
     void setSpeedFactor(float val) {
         lampState.speedfactor = val;

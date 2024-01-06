@@ -50,10 +50,7 @@ Lamp::Lamp() : effwrkr(&lampState){
   lampState.isEffectsDisabledUntilText = false;
   lampState.isOffAfterText = false;
   lampState.dawnFlag = false; // флаг устанавливается будильником "рассвет"
-//#ifdef MIC_EFFECTS
-  lampState.isCalibrationRequest = false; // находимся ли в режиме калибровки микрофона
   lampState.micAnalyseDivider = 1; // анализ каждый раз
-//#endif
   lampState.flags = 0; // сборосить все флаги состояния
   lampState.speedfactor = 1.0; // дефолтное значение
 }
@@ -113,17 +110,15 @@ void Lamp::lamp_init()
 }
 
 void Lamp::handle(){
-#ifdef MIC_EFFECTS
   static unsigned long mic_check = 0; // = 40000; // пропускаю первые 40 секунд
-  if(effwrkr.status() && flags.isMicOn && (flags.ONflag || isMicCalibration()) && !isAlarm() && mic_check + MIC_POLLRATE < millis()){
-    if(effwrkr.isMicOn() || isMicCalibration())
+  if(effwrkr.status() && flags.isMicOn && (flags.ONflag) && !isAlarm() && mic_check + MIC_POLLRATE < millis()){
+    if(effwrkr.isMicOn())
       micHandler();
     mic_check = millis();
   } else {
     // если микрофон не нужен, удаляем объект
     if (mw){ delete mw; mw = nullptr; }
   }
-#endif
 
   // все что ниже, будет выполняться раз в 0.999 секундy
   static unsigned long wait_handlers;
@@ -281,7 +276,6 @@ void Lamp::startNormalMode(bool forceOff)
 
 typedef enum {FIRSTSYMB=1,LASTSYMB=2} SYMBPOS;
 
-#ifdef MIC_EFFECTS
 void Lamp::micHandler()
 {
   static uint8_t counter=0;
@@ -369,7 +363,6 @@ void Lamp::setMicOnOff(bool val) {
     }
     save_flags();
 }
-#endif  // MIC_EFFECTS
 
 void Lamp::setBrightness(uint8_t tgtbrt, fade_t fade, bool bypass){
     LOG(printf, "Lamp::setBrightness(%u,%u,%u)\n", tgtbrt, static_cast<uint8_t>(fade), bypass);
@@ -430,12 +423,10 @@ void Lamp::switcheffect(effswitch_t action, uint16_t effnb){
  * @param fade - переключаться через фейдер или сразу
  */
 void Lamp::_switcheffect(effswitch_t action, bool fade, uint16_t effnb, bool skip) {
-#ifdef MIC_EFFECTS
-    lampState.setMicAnalyseDivider(1); // восстановить делитель, при любой активности (поскольку эффекты могут его перенастраивать под себя)
-#endif
+  lampState.setMicAnalyseDivider(1); // восстановить делитель, при любой активности (поскольку эффекты могут его перенастраивать под себя)
 
 #ifdef ENCODER
- exitSettings();
+  exitSettings();
 #endif
 
   if (!skip) {

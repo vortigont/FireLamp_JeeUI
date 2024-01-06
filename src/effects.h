@@ -979,7 +979,6 @@ public:
     bool run() override;
 };
 
-#ifdef MIC_EFFECTS
 //----- Эффект "Осциллограф" 
 // (c) kostyamat
 class EffectOsc : public EffectCalc {
@@ -1000,7 +999,6 @@ public:
     EffectOsc(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer), oscHV(fb->w()), oscilLimit(fb->h()) {}
     bool run() override;
 };
-#endif
 
 // ------ Эффект "Вышиванка" 
 // (с) проект Aurora "Munch"
@@ -1878,7 +1876,7 @@ public:
     bool run() override;
     void load() override;
 };
-#ifdef MIC_EFFECTS
+
 /* -------------- эффект "VU-meter"
     (c) G6EJD, https://www.youtube.com/watch?v=OStljy_sUVg&t=0s
     reworked by s-marley https://github.com/s-marley/ESP32_FFT_VU
@@ -1932,7 +1930,6 @@ public:
     bool run() override;
     void load() override;
 };
-#endif
 
 // ----------- Эффект "Огненная лампа"
 // https://editor.soulmatelights.com/gallery/546-fire
