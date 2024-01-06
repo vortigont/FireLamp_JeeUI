@@ -107,6 +107,9 @@ void Lamp::lamp_init()
   } else {
     flags.ONflag = false;
   }
+
+  // restore mike on/off state
+  setMicOnOff(flags.isMicOn);
 }
 
 void Lamp::handle(){
@@ -364,6 +367,7 @@ void Lamp::setMicOnOff(bool val) {
     if(foundc7){ // был найден 7 контрол, но не микрофон
         effwrkr.setDynCtrl(controls[foundc7].get());
     }
+    save_flags();
 }
 #endif  // MIC_EFFECTS
 

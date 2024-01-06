@@ -883,8 +883,6 @@ void set_settings_mic(Interface *interf, const JsonObject *data, const char* act
 void set_micflag(Interface *interf, const JsonObject *data, const char* action){
     if (!data) return;
     myLamp.setMicOnOff((*data)[TCONST_Mic]);
-    myLamp.save_flags();
-    //publish_effect_controls(interf, data, NULL);
 }
 
 void set_settings_mic_calib(Interface *interf, const JsonObject *data, const char* action){
