@@ -12,11 +12,14 @@ __[CHANGELOG](/CHANGELOG.md)__ | [![PlatformIO CI](https://github.com/vortigont/
 
 Обсуждение и поддержка данной прошивки идет [на форуме](https://community.alexgyver.ru/threads/wifi-lampa-budilnik-obsuzhdenie-proshivki-firelamp_embui.7257/)
 
+Канал в Telegram для общения пользователей прошивки - [LampDevs](https://t.me/LampDevs)
 
 ## Содержание
-- [WiKi проекта](#WiKi-проекта)
-- [Концепт](#Концепт)
-- [ESP8266 vs ESP32](#esp8266-vs-esp32)
+- [Огненная лампа FireLamp\_EmbUI](#огненная-лампа-firelamp_embui)
+- [Содержание](#содержание)
+  - [WiKi проекта](#wiki-проекта)
+  - [Концепт](#концепт)
+  - [ESP8266 vs ESP32](#esp8266-vs-esp32)
 
 ### WiKi проекта
 Актуальную документацию по проекту можно найти в [WiKi](https://github.com/vortigont/EmbUI/wiki)
