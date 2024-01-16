@@ -176,16 +176,15 @@ void ui_page_selector(Interface *interf, const JsonObject *data, const char* act
         case page::mike :         // страница настроек микрофона
             show_settings_mic(interf, nullptr, NULL);
             return;
-    #ifdef MP3PLAYER
+
         case page::setup_dfplayer :    // страница настроек dfplayer
             show_settings_mp3(interf, nullptr, NULL);
             return;
-    #endif  // #ifdef MP3PLAYER
-/*     #ifdef ESP_USE_BUTTON
+
         case page::setup_bttn :    // страница настроек кнопки
-            show_settings_butt(interf, nullptr, NULL);
-            return;
-    #endif
+            return page_button_setup(interf, nullptr, NULL);
+            
+/*
     #ifdef ENCODER
         case page::setup_encdr :    // страница настроек кнопки
             show_settings_enc(interf, nullptr, NULL);
@@ -306,11 +305,15 @@ void ui_page_setup_devices(Interface *interf, const JsonObject *data, const char
 
     // display setup
     interf->button_value(button_t::generic, A_ui_page, e2int(page::setup_display), TINTF_display_setup);
+
+    // Button configuration
+    interf->button_value(button_t::generic, A_ui_page, e2int(page::setup_bttn), TINTF_013);
+
     // tm1637
     interf->button_value(button_t::generic, A_ui_page, e2int(page::setup_tm1637), TINTF_setup_tm1637);
-#ifdef MP3PLAYER
+
+    // MP# player
     interf->button_value(button_t::generic, A_ui_page, e2int(page::setup_dfplayer), TINTF_099);
-#endif
 
     interf->json_frame_flush();
 }
@@ -327,6 +330,134 @@ void ui_page_tm1637_setup(Interface *interf, const JsonObject *data, const char*
 
     // call setter with no data, it will publish existing config values if any
     getset_tm1637(interf, nullptr, NULL);
+}
+
+/**
+ * @brief build a page with Button configuration
+ * it contains a set of controls and options
+ */
+void page_button_setup(Interface *interf, const JsonObject *data, const char* action){
+    interf->json_frame_interface();
+    interf->json_section_uidata();
+        interf->uidata_pick( "lampui.settings.button" );
+    interf->json_frame_flush();
+
+    // call setter with no data, it will publish existing config values if any
+    getset_button_gpio(interf, nullptr, NULL);
+
+    DynamicJsonDocument doc(4096);
+    if (!embuifs::deserializeFile(doc, T_benc_cfg)) return;      // config is missing, bad
+    JsonArray bevents( doc[T_btn_events] );
+
+    interf->json_frame_interface();
+    interf->json_section_begin("button_events_list");
+
+    int cnt = 0;
+    for (JsonVariant value : bevents) {
+        JsonObject obj = value.as<JsonObject>();
+        interf->json_section_begin(String("sec") + cnt, (const char*)0, false, false, true );
+        interf->checkbox(P_EMPTY, obj[T_enabled], "Active");
+        interf->checkbox(P_EMPTY, obj[T_pwr], "Pwr On/Off");
+
+        String s;
+        switch (obj[T_btn_event].as<int>()){
+            case 2:
+                s = "Click";
+                break;
+            case 3:
+                s = "Long Press";
+                break;
+            case 5:
+                s = "Hold repeat";
+                break;
+            case 6:
+                s = "MultiClick:";
+                s += obj[T_clicks].as<int>();
+                break;
+            default:
+                s = "Unknown";
+        }
+
+        interf->constant(s);
+
+        switch (obj[T_lamp_event].as<int>()){
+            case 11:
+                s = "PwrOn";
+                break;
+            case 12:
+                s = "PwrOff";
+                break;
+            case 13:
+                s = "Pwr Toggle";
+                break;
+            case 20:
+                s = "Brightness:";
+                s += obj[T_arg].as<int>();
+                break;
+            case 30:
+                s = "Sw Effect to:";
+                s += obj[T_arg].as<int>();
+                break;
+            case 31:
+                s = "Sw Effect next";
+                break;
+            case 32:
+                s = "Sw Effect prev";
+                break;
+            case 33:
+                s = "Sw Effect random";
+                break;
+            default:
+                s = "Unknown";
+        }
+
+        interf->constant(s);
+        interf->button_value(button_t::generic, A_button_evt_edit, cnt , T_edit);
+
+        interf->json_section_end();
+        ++cnt;
+    }
+
+    interf->json_frame_flush();
+}
+
+void page_button_evtedit(Interface *interf, const JsonObject *data, const char* action){
+    DynamicJsonDocument doc(4096);
+    if (!embuifs::deserializeFile(doc, T_benc_cfg)) return;
+    JsonArray bevents( doc[T_btn_events] );
+    int idx = (*data)[A_button_evt_edit];
+    JsonObject obj = bevents[idx];
+
+    interf->json_frame_interface();
+    interf->json_section_begin("button_events_edit", "Button Event Editor", true);
+        // side-load button configuration form
+        interf->json_section_uidata();
+            interf->uidata_pick( "lampui.sections.button_event" );
+        interf->json_section_end();
+    interf->json_frame_flush();
+
+    // fill the form with values
+    interf->json_frame_value(obj, true);
+    interf->value(T_idx, idx);
+    interf->json_frame_flush();
+}
+
+void page_button_evt_save(Interface *interf, const JsonObject *data, const char* action){
+    DynamicJsonDocument doc(4096);
+    if (!embuifs::deserializeFile(doc, T_benc_cfg)) doc.clear();
+    JsonArray bevents( doc[T_btn_events] );
+    int idx = (*data)[T_idx];
+    JsonObject obj = idx < bevents.size() ? bevents[idx] : bevents.createNestedObject();
+
+    // copy keys from post'ed object
+    for (JsonPair kvp : *data)
+        obj[kvp.key()] = kvp.value();
+
+    embuifs::serialize2file(doc, T_benc_cfg);
+
+    button_configure_events(doc[T_btn_events]);
+
+    if (interf) page_button_setup(interf, nullptr, NULL);
 }
 
 /**
@@ -1267,9 +1398,7 @@ void user_settings_frame(Interface *interf, const JsonObject *data, const char* 
     // other
     interf->button_value(button_t::generic, A_ui_page, e2int(page::setup_devices), "Внешние устройства");
     interf->button_value(button_t::generic, A_ui_page, e2int(page::mike), TINTF_020);
-#ifdef ESP_USE_BUTTON
-    interf->button_value(button_t::generic, A_ui_page, e2int(page::setup_bttn), TINTF_013);
-#endif
+
 #ifdef ENCODER
     interf->button_value(button_t::generic, A_ui_page, e2int(page::setup_encdr), TINTF_0DC);
 #endif
@@ -1419,9 +1548,7 @@ void default_buttons(){
     myButtons->add(new Button(true, true, 1, false, BA::BA_SPEED)); // удержание + 1 клик скорость
     myButtons->add(new Button(true, true, 2, false, BA::BA_SCALE)); // удержание + 2 клика масштаб
 }
-#endif
 
-#ifdef ESP_USE_BUTTON
 void load_button_config(const char* path){
     if (path){
         String filename(TCONST__backup_btn_);
@@ -1636,6 +1763,11 @@ void embui_actions_register(){
     embui.action.add(A_display_ws2812, set_ledstrip);                       // Set LED strip layout setup
     embui.action.add(A_display_hub75, set_hub75);                           // Set options for HUB75 panel
     embui.action.add(A_display_tm1637, getset_tm1637);                      // get/set tm1637 display configuration
+
+    embui.action.add(A_button_gpio, getset_button_gpio);                    // button setup
+    embui.action.add(A_button_evt_edit, page_button_evtedit);               // button event edit form
+    embui.action.add(A_button_evt_save, page_button_evt_save);              // button save/apply event
+
 
     // to be refactored
 

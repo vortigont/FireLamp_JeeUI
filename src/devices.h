@@ -1,7 +1,5 @@
 /*
 Copyright © 2023 Emil Muratov (vortigont)
-Copyright © 2020 Dmytro Korniienko (kDn)
-JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
     This file is part of FireLamp_JeeUI.
 
@@ -61,3 +59,9 @@ void tm1637_setup();
  * @param tm JsonObject with configuration params
  */
 void tm1637_configure(JsonVariantConst& tm);
+
+void button_cfg_load();
+
+void button_configure_gpio(JsonVariantConst btn_cfg);
+
+void button_configure_events(JsonVariantConst btn_cfg);

@@ -106,17 +106,19 @@ void ui_page_setup_devices(Interface *interf, const JsonObject *data, const char
  */
 void event_publisher(void* handler_args, esp_event_base_t base, int32_t id, void* event_data);
 
+/**
+ * @brief webui page with button configuration
+ * 
+ * @param interf 
+ * @param data 
+ * @param action 
+ */
+void page_button_setup(Interface *interf, const JsonObject *data, const char* action);
+
+void getset_button_gpio(Interface *interf, const JsonObject *data, const char* action);
+
 
 // ==========
-#ifdef ESP_USE_BUTTON
-void default_buttons();
-
-/**
- * @brief подгрузить конфигурацию кнопки из стороннего файла
- * path should be relative to TCONST__backup_btn_
- */
-void load_button_config(const char* path = NULL);
-#endif
 
 
 void section_effects_frame(Interface *interf, const JsonObject *data, const char* action);

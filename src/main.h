@@ -43,9 +43,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 #include "config.h"
 
-#ifdef ESP_USE_BUTTON
-#include "buttons.h"
-#endif
 #ifdef ENCODER
   #include "enc.h"
 #endif
@@ -72,10 +69,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 
 // глобальные переменные для работы с ними в программе
-
-#ifdef ESP_USE_BUTTON
-extern Buttons *myButtons;
-#endif
 #ifdef MP3PLAYER
 #include "mp3player.h"
 extern MP3PlayerDevice *mp3;

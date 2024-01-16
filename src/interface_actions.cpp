@@ -53,6 +53,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include <type_traits>
 #include "traits.hpp"               // embui traits
 #include "evtloop.h"
+#include "bencoder.hpp"
 
 /**
  * @brief Set device display brightness
@@ -319,6 +320,37 @@ void getset_tm1637(Interface *interf, const JsonObject *data, const char* action
 
     if (interf) ui_page_setup_devices(interf, nullptr, NULL);
 }
+
+void getset_button_gpio(Interface *interf, const JsonObject *data, const char* action){
+    {
+        DynamicJsonDocument doc(BTN_EVENTS_CFG_JSIZE);
+        if (!embuifs::deserializeFile(doc, T_benc_cfg)) doc.clear();
+
+        // if this is a request with no data, then just provide existing configuration and quit
+        if (!data || !(*data).size()){
+            if (interf && doc.containsKey(T_btn_cfg)){
+                interf->json_frame_value(doc[T_btn_cfg], true);
+                interf->json_frame_flush();
+            }
+            return;
+        }
+
+        JsonVariant dst = doc[T_btn_cfg].isNull() ? doc.createNestedObject(T_btn_cfg) : doc[T_btn_cfg];
+
+        // copy keys to a destination object
+        for (JsonPair kvp : *data)
+            dst[kvp.key()] = kvp.value();
+
+        embuifs::serialize2file(doc, T_benc_cfg);
+
+        JsonVariantConst cfg(dst);
+        // reconfig button
+        button_configure_gpio(cfg);
+    }
+
+    if (interf) ui_page_setup_devices(interf, nullptr, NULL);
+}
+
 
 // a call-back handler that listens for status change events and publish it to EmbUI feeders
 void event_publisher(void* handler_args, esp_event_base_t base, int32_t id, void* event_data){

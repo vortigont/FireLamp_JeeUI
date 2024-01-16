@@ -90,7 +90,7 @@ void setup() {
     // Start event loop task
     evt::start();
 #ifdef LAMP_DEBUG
-    evt::debug();
+    //evt::debug();
 #endif
 
 #ifdef EMBUI_USE_UDP
@@ -143,6 +143,8 @@ void setup() {
     display.start();
     // start tm1637
     tm1637_setup();
+    // button setup
+    button_cfg_load();
 
     embui.setPubInterval(30);   // change periodic WebUI publish interval from EMBUI_PUB_PERIOD to 10 secs
 

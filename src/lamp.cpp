@@ -627,6 +627,9 @@ void Lamp::_event_picker_cmd(esp_event_base_t base, int32_t id, void* data){
       case evt::lamp_t::brightness_lcurve :
         setLumaCurve(*( (luma::curve*)data) );
         break;
+      case evt::lamp_t::brightness_step :
+        setBrightness(getBrightness() + *((int*) data), fade_t::off);
+        break;
         
 
     // Get State Commands

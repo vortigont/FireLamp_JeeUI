@@ -1,7 +1,5 @@
 /*
 Copyright © 2023 Emil Muratov (vortigont)
-Copyright © 2020 Dmytro Korniienko (kDn)
-JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
     This file is part of FireLamp_JeeUI.
 
@@ -44,6 +42,9 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 // TM1637 disaplay class
 #include "tm1637display.hpp"
+// ESPAsyncButton
+#include "bencoder.hpp"
+
 
 
 // Device object placesholders
@@ -51,6 +52,9 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 // TM1637 display https://github.com/vortigont/TM1637/
 TMDisplay *tm1637 = nullptr;
 
+// GPIO button
+GPIOButton<ESPEventPolicy> *button = nullptr;
+ButtonEventHandler *button_handler = nullptr;
 
 void tm1637_setup(){
   DynamicJsonDocument doc(DISPLAY_CFG_JSIZE);
@@ -61,7 +65,7 @@ void tm1637_setup(){
 }
 
 void tm1637_configure(JsonVariantConst& tm){
-  if (!tm[TCONST_enabled]){
+  if (!tm[T_enabled]){
      // TM module disabled or config is invalid
     if (tm1637){
       delete tm1637;
@@ -88,3 +92,78 @@ void tm1637_configure(JsonVariantConst& tm){
   tm1637->init();
 
 }
+
+void button_cfg_load(){
+  DynamicJsonDocument doc(BTN_EVENTS_CFG_JSIZE);
+  if (!embuifs::deserializeFile(doc, T_benc_cfg)) return;      // config is missing, bad
+
+  JsonVariantConst _cfg( doc[T_btn_cfg] );
+  button_configure_gpio(_cfg);
+
+  _cfg = doc[T_btn_events];
+  button_configure_events(_cfg);
+}
+
+void button_configure_gpio(JsonVariantConst btn_cfg){
+
+  if (!btn_cfg[T_enabled]){
+     // button disabled or config is invalid
+    if (button){
+      delete button;
+      button = nullptr;
+    }
+    if (button_handler){
+      delete button_handler;
+      button_handler = nullptr;
+    }
+    return;
+  }
+
+  int32_t gpio = btn_cfg[T_gpio] | -1;
+  if (gpio == -1) return;                 // pin disabled
+  bool debn = btn_cfg[T_debounce];
+
+  // create GPIOButton object
+  if (!button){
+    button = new GPIOButton<ESPEventPolicy> (static_cast<gpio_num_t>(gpio), btn_cfg[T_logicL]);
+    if (!button) return;
+    button->setDebounce(debn);
+  } else {
+    if ( gpio != button->getGPIO() ){
+      button->setGPIO(static_cast<gpio_num_t>(gpio), btn_cfg[T_logicL]);
+      button->setDebounce(debn);
+    }
+    // button obj already exist, so no need to configure it further
+    return;
+  }
+
+  button->enableEvent(ESPButton::event_t::press, false);
+  button->enableEvent(ESPButton::event_t::release, false);
+
+  button->enableEvent(ESPButton::event_t::longPress);
+  button->enableEvent(ESPButton::event_t::longRelease);
+  button->enableEvent(ESPButton::event_t::autoRepeat);
+  button->enableEvent(ESPButton::event_t::multiClick);
+
+  // set event loop to post events to
+  ESPButton::set_event_loop_hndlr(evt::get_hndlr());
+
+  button->enable();
+  Serial.print("Button enabled\n");
+}
+
+void button_configure_events(JsonVariantConst btn_cfg){
+  if (!button_handler){
+    button_handler = new ButtonEventHandler();
+    if (!button_handler) return;
+    // subscribe only once, when object is newly created
+    button_handler->subscribe(evt::get_hndlr());
+  }
+
+  button_handler->load(btn_cfg);     // load config
+}
+
+
+
+
+
