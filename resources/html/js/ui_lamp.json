@@ -1,6 +1,6 @@
 {
   "type":"interface",
-  "version":3,
+  "version":4,
   "descr":"FireLamp UI objects",
   "settings":{
     "hub75":{
@@ -610,6 +610,207 @@
           "html": "button",
           "type": 0,
           "label": "Выход"
+        }
+      ]
+    },
+    "button":{
+      "section":"set_button",
+      "main": true,
+      "label":"Параметры кнопки",
+      "block":[
+        {
+          "section": "set_button_block",
+          "label": "Button GPIO",
+          "hidden": true,
+          "block":[
+            {
+              "section": "set_button_gpio",
+              "block": [
+                {
+                  "section": "enagpio",
+                  "line": true,
+                  "block": [
+                    {
+                      "id":"enabled",
+                      "html":"input",
+                      "label":"Enable button",
+                      "type":"checkbox"
+                    },
+                    {
+                      "id": "gpio",
+                      "html": "input",
+                      "value": -1,
+                      "type": "number",
+                      "label": "GPIO pin",
+                      "min": -1,
+                      "step": 1
+                    }
+                  ]
+                },
+                {
+                  "section": "enagpio",
+                  "line": true,
+                  "block": [
+                    {
+                      "id":"logicL",
+                      "html":"input",
+                      "label":"HIGH logic level",
+                      "type":"checkbox"
+                    },
+                    {
+                      "id":"debounce",
+                      "html":"input",
+                      "label":"Debounce",
+                      "type":"checkbox"
+                    }
+                  ]
+                },
+                {
+                  "id": "set_button_gpio",
+                  "html": "button",
+                  "type": 1,
+                  "color": "green",
+                  "label": "Сохранить"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "section": "set_button_block2",
+          "label": "Button Events",
+          "hidden": true,
+          "block":[
+            {
+              "section":"button_events_list",
+              "block":[]
+            }
+          ]
+        },
+        {
+          "id": "ui_page_settings",
+          "html": "button",
+          "type": 0,
+          "label": "Выход"
+        }
+      ]
+    }
+  },
+  "sections":{
+    "button_event":{
+      "section":"button_evt_save",
+      "block":[
+        {
+          "id":"idx",
+          "html":"hidden",
+          "value":-1
+        },
+        {
+          "id":"enabled",
+          "html":"input",
+          "label":"Active",
+          "type":"checkbox"
+        },
+        {
+          "id":"lamppwr",
+          "html":"input",
+          "label":"Device On/Off",
+          "type":"checkbox"
+        },
+        {
+          "id":"btn_event",
+          "html":"select",
+          "value":0,
+          "label":"Button action",
+          "section":"options",
+          "block":[
+            {
+              "value":2,
+              "label":"Click"
+            },
+            {
+              "value":3,
+              "label":"Long press"
+            },
+            {
+              "value":5,
+              "label":"Hold repeat"
+            },
+            {
+              "value":6,
+              "label":"Multi Click"
+            }
+          ]
+        },
+        {
+          "id":"clicks",
+          "html":"input",
+          "type":"number",
+          "label":"MultiClicks",
+          "min":2,
+          "step":1
+        },
+        {
+          "id":"lamp_event",
+          "html":"select",
+          "value":0,
+          "label":"Lamp action",
+          "section":"options",
+          "block":[
+            {
+              "value":11,
+              "label":"Power On"
+            },
+            {
+              "value":12,
+              "label":"Power Off"
+            },
+            {
+              "value":13,
+              "label":"Power Toggle"
+            },
+            {
+              "value":24,
+              "label":"Brightness step:"
+            },
+            {
+              "value":30,
+              "label":"Sw Effect to:"
+            },
+            {
+              "value":31,
+              "label":"Sw Next Effect"
+            },
+            {
+              "value":32,
+              "label":"Sw Prev Effect"
+            },
+            {
+              "value":33,
+              "label":"Sw Random Effect"
+            }
+          ]
+        },
+        {
+          "id":"arg",
+          "html":"input",
+          "type":"number",
+          "label":"Argument",
+          "step":1
+        },
+        {
+          "id": "button_evt_save",
+          "html": "button",
+          "type": 1,
+          "color": "green",
+          "label": "Save"
+        },
+        {
+          "id": "ui_page",
+          "html": "button",
+          "type": 0,
+          "value": 55,
+          "label": "Exit"
         }
       ]
     }

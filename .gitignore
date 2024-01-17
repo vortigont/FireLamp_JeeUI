@@ -8,6 +8,7 @@ user_*.ini
 .vscode/c_cpp_properties.json
 include/user_config.h
 include/user_cfg*
+!/data/benc.json
 /data/*.json
 /data.*
 resources/embui.zip
