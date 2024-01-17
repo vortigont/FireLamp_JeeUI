@@ -46,13 +46,8 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "DS18B20.h"
 #endif
 
-#ifdef ESP_USE_BUTTON
-Buttons *myButtons;
-#endif
 
-#ifdef MP3PLAYER
 MP3PlayerDevice *mp3 = nullptr;
-#endif
 
 
 // Forward declarations
@@ -90,7 +85,7 @@ void setup() {
     // Start event loop task
     evt::start();
 #ifdef LAMP_DEBUG
-    evt::debug();
+    //evt::debug();
 #endif
 
 #ifdef EMBUI_USE_UDP
@@ -128,14 +123,6 @@ void setup() {
     ds_setup();
 #endif
 
-#ifdef ESP_USE_BUTTON
-    myLamp.setbPin(embui.paramVariant(TCONST_PINB));
-    myButtons = new Buttons(myLamp.getbPin(), PULL_MODE, NORM_OPEN);
-    if (!myButtons->loadConfig()) {
-      default_buttons();
-      myButtons->saveConfig();
-    }
-#endif
 
     // configure and init attached devices
     gpio_setup();
@@ -143,6 +130,8 @@ void setup() {
     display.start();
     // start tm1637
     tm1637_setup();
+    // button setup
+    button_cfg_load();
 
     embui.setPubInterval(30);   // change periodic WebUI publish interval from EMBUI_PUB_PERIOD to 10 secs
 
@@ -324,13 +313,11 @@ void gpio_setup(){
     embuifs::deserializeFile(doc, TCONST_fcfg_gpio);
     int rxpin, txpin;
 
-#ifdef MP3PLAYER
     // spawn an instance of mp3player
     rxpin = doc[TCONST_mp3rx] | -1;
     txpin = doc[TCONST_mp3tx] | -1;
     LOG(printf_P, PSTR("DFPlayer: rx:%d tx:%d\n"), rxpin, txpin);
     mp3 = new MP3PlayerDevice(rxpin, txpin, embui.paramVariant(TCONST_mp3volume) | DFPLAYER_DEFAULT_VOL );
-#endif
 
 }
 

@@ -35,7 +35,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
    <https://www.gnu.org/licenses/>.)
 */
 #include "config.h"
-#ifdef MP3PLAYER
 #include "mp3player.h"
 #include "log.h"
 
@@ -424,5 +423,3 @@ void MP3PlayerDevice::setIsOn(bool val, bool forcePlay) {
     tPeriodic = new Task(1.21 * TASK_SECOND, TASK_FOREVER, std::bind(&MP3PlayerDevice::handle,this), &ts, false, nullptr, nullptr, true); // "ленивый" опрос - раз в 1.21 сек (стараюсь избежать пересеченией с произнесением времени)
     tPeriodic->enableDelayed();
 }
-
-#endif

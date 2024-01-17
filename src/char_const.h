@@ -2,13 +2,17 @@
 
 /** набор служебных текстовых констант (не для локализации)
  */
-static constexpr const char* T_display_type = "dtype";                          // LED Display engine type
 static constexpr const char* T_drawing = "drawing";
 static constexpr const char* T_effect_dynCtrl = "eff_dynCtrl";
 static constexpr const char* T_gpio = "gpio";                                   // gpio key for display configuration
-static constexpr const char* T_ws2812 = "ws2812";                               // ws2812 led stip type
+static constexpr const char* T_logicL= "logicL";                                // logic level for button
+
+// Display
+static constexpr const char* TCONST_fcfg_display = "/display.json";
+static constexpr const char* T_display_type = "dtype";                          // LED Display engine type
 
 // ws2812 config var names
+static constexpr const char* T_ws2812 = "ws2812";                               // ws2812 led stip type
 static constexpr const char* T_mx_gpio = "mx_gpio";
 static constexpr const char* T_CLmt = "CLmt";                                   // лимит тока
 static constexpr const char* T_hcnt = "hcnt";
@@ -56,6 +60,26 @@ static constexpr const char* T_tm_lzero = "lzero";
 static constexpr const char* T_tm_brt_on = "brtOn";
 static constexpr const char* T_tm_brt_off = "brtOff";
 
+// Button events
+static constexpr const char* T_benc_cfg = "/benc.json";
+static constexpr const char* T_btn_cfg = "btn_cfg";
+static constexpr const char* T_btn_event = "btn_event";
+static constexpr const char* T_btn_events = "btn_events";
+static constexpr const char* T_debounce = "debounce";
+static constexpr const char* T_lamp_event = "lamp_event";
+static constexpr const char* T_lamppwr = "lamppwr";
+
+// Other
+static constexpr const char* T_Active = "Active";
+static constexpr const char* T_arg = "arg";
+static constexpr const char* T_clicks = "clicks";
+static constexpr const char* T_edit = "edit";
+static constexpr const char* T_Enable = "Enable";
+static constexpr const char* T_enabled = "enabled";
+static constexpr const char* T_idx = "idx";
+static constexpr const char* T_pwr = "pwr";
+
+
 static constexpr const char* TCONST_act = "act";
 static constexpr const char* TCONST_afS = "afS";
 static constexpr const char* TCONST_alarmPT = "alarmPT";
@@ -73,16 +97,8 @@ static constexpr const char* TCONST_bright = "bright";
 static constexpr const char* TCONST_Btn = "Btn";
 static constexpr const char* TCONST_buttList = "buttList";
 static constexpr const char* TCONST_butt_conf = "butt_conf";
-static constexpr const char* TCONST_clicks = "clicks";
 static constexpr const char* TCONST_control = "control";
 static constexpr const char* TCONST_copy = "copy";
-static constexpr const char* TCONST_d1 = "d1";
-static constexpr const char* TCONST_d2 = "d2";
-static constexpr const char* TCONST_d3 = "d3";
-static constexpr const char* TCONST_d4 = "d4";
-static constexpr const char* TCONST_d5 = "d5";
-static constexpr const char* TCONST_d6 = "d6";
-static constexpr const char* TCONST_d7 = "d7";
 static constexpr const char* TCONST_debug = "debug";
 static constexpr const char* TCONST_delall = "delall";
 static constexpr const char* TCONST_delCfg = "delCfg";
@@ -98,7 +114,6 @@ static constexpr const char* TCONST_ds18b20 = "ds18b20";
 static constexpr const char* TCONST_DTimer = "DTimer";
 //static constexpr const char* TCONST_edit_lamp_config = "edit_lamp_config";
 static constexpr const char* TCONST_edit_text_config = "edit_text_config";
-static constexpr const char* TCONST_edit = "edit";
 static constexpr const char* TCONST_eff_config = "eff_config";
 static constexpr const char* TCONST_eff_fav = "eff_fav";
 static constexpr const char* TCONST_eff_fulllist_json = "/eff_fulllist.json"; // a json serialized full list of effects and it's names for WebUI drop-down list on effects management page
@@ -109,7 +124,6 @@ static constexpr const char* TCONST_eff_sel = "eff_sel";
 static constexpr const char* TCONST_effHasMic = "effHasMic";
 static constexpr const char* TCONST_effListConf = "effListConf";
 static constexpr const char* TCONST_effname = "effname";
-static constexpr const char* TCONST_enabled = "enabled";
 static constexpr const char* TCONST_encoder = "encoder";
 static constexpr const char* TCONST_encTxtCol = "encTxtCol";
 static constexpr const char* TCONST_encTxtDel = "encTxtDel";
@@ -123,7 +137,6 @@ static constexpr const char* TCONST_event_conf = "event_conf";
 static constexpr const char* TCONST_evList = "evList";
 static constexpr const char* TCONST_f_restore_state = "f_rstt";          // Lamp flag "restore state"
 static constexpr const char* TCONST_fcfg_gpio = "/gpio.json";
-static constexpr const char* TCONST_fcfg_display = "/display.json";
 static constexpr const char* TCONST_fileName2 = "fileName2";
 static constexpr const char* TCONST_fileName = "fileName";
 static constexpr const char* TCONST_fill = "fill";
@@ -141,7 +154,6 @@ static constexpr const char* TCONST_lamptext = "lamptext";
 static constexpr const char* TCONST_lamp_config = "lamp_config";
 static constexpr const char* TCONST_limitAlarmVolume = "limitAlarmVolume";
 static constexpr const char* TCONST_load = "load";
-static constexpr const char* TCONST_lV = "lV";
 static constexpr const char* TCONST_Mac = "Mac";
 //static constexpr const char* TCONST_main = "main";
 static constexpr const char* TCONST_makeidx = "makeidx";
@@ -275,8 +287,9 @@ static constexpr const char* A_effect_dynCtrl = "eff_dynCtrl*";                 
 static constexpr const char* A_display_hub75 = "display_hub75";                 // HUB75 display configuration
 static constexpr const char* A_display_ws2812 = "display_ws2812";               // ws2812 display configuration
 static constexpr const char* A_display_tm1637 = "*et_display_tm1637";           // get/set tm1637 display configuration
-
-
+static constexpr const char* A_button_gpio = "*et_button_gpio";                 // get/set button gpio configuration
+static constexpr const char* A_button_evt_edit = "button_evt_edit";             // edit button action form
+static constexpr const char* A_button_evt_save = "button_evt_save";             // save/apply button action form
 
 static constexpr const char* A_ui_page_effects_config = "effects_config";
 

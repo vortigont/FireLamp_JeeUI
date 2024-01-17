@@ -155,8 +155,8 @@ public:
     UIControl(const UIControl&rhs) : id(rhs.id), ctype(rhs.ctype), control_name(rhs.control_name), val(rhs.val), min(rhs.min), max(rhs.max), step(rhs.step) {};
     UIControl& operator =(const UIControl&rhs);
 
-    const uint8_t getId() {return id;}
-    const CONTROL_TYPE getType() {return ctype;}
+    uint8_t getId() const {return id;}
+    CONTROL_TYPE getType() const {return ctype;}
     const String &getName() {return control_name;}
     const String &getVal() {return val;}
     const String &getMin() {return min;}

@@ -55,7 +55,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "evtloop.h"
 
 // версия ресурсов в стороннем джейсон файле
-#define UIDATA_VERSION  3
+#define UIDATA_VERSION  4
 
 // placeholder for effect list rebuilder task
 Task *delayedOptionTask = nullptr;
@@ -176,16 +176,15 @@ void ui_page_selector(Interface *interf, const JsonObject *data, const char* act
         case page::mike :         // страница настроек микрофона
             show_settings_mic(interf, nullptr, NULL);
             return;
-    #ifdef MP3PLAYER
+
         case page::setup_dfplayer :    // страница настроек dfplayer
             show_settings_mp3(interf, nullptr, NULL);
             return;
-    #endif  // #ifdef MP3PLAYER
-/*     #ifdef ESP_USE_BUTTON
+
         case page::setup_bttn :    // страница настроек кнопки
-            show_settings_butt(interf, nullptr, NULL);
-            return;
-    #endif
+            return page_button_setup(interf, nullptr, NULL);
+            
+/*
     #ifdef ENCODER
         case page::setup_encdr :    // страница настроек кнопки
             show_settings_enc(interf, nullptr, NULL);
@@ -233,9 +232,7 @@ void ui_section_effects_list_configuration(Interface *interf, const JsonObject *
     interf->json_section_begin(TCONST_set_effect);
 
     interf->text(TCONST_effname, "", TINTF_effrename);       // поле под новое имя оставляем пустым
-#ifdef MP3PLAYER
-    //interf->text(TCONST_soundfile, tmpSoundfile, TINTF_0B2);
-#endif
+
     interf->json_section_line();
         interf->checkbox(TCONST_eff_sel, confEff->canBeSelected(), TINTF_in_sel_lst);      // доступен для выбора в выпадающем списке на главной странице
         interf->checkbox(TCONST_eff_fav, confEff->isFavorite(), TINTF_in_demo);            // доступен в демо-режиме
@@ -306,11 +303,15 @@ void ui_page_setup_devices(Interface *interf, const JsonObject *data, const char
 
     // display setup
     interf->button_value(button_t::generic, A_ui_page, e2int(page::setup_display), TINTF_display_setup);
+
+    // Button configuration
+    interf->button_value(button_t::generic, A_ui_page, e2int(page::setup_bttn), TINTF_013);
+
     // tm1637
     interf->button_value(button_t::generic, A_ui_page, e2int(page::setup_tm1637), TINTF_setup_tm1637);
-#ifdef MP3PLAYER
+
+    // MP# player
     interf->button_value(button_t::generic, A_ui_page, e2int(page::setup_dfplayer), TINTF_099);
-#endif
 
     interf->json_frame_flush();
 }
@@ -327,6 +328,134 @@ void ui_page_tm1637_setup(Interface *interf, const JsonObject *data, const char*
 
     // call setter with no data, it will publish existing config values if any
     getset_tm1637(interf, nullptr, NULL);
+}
+
+/**
+ * @brief build a page with Button configuration
+ * it contains a set of controls and options
+ */
+void page_button_setup(Interface *interf, const JsonObject *data, const char* action){
+    interf->json_frame_interface();
+    interf->json_section_uidata();
+        interf->uidata_pick( "lampui.settings.button" );
+    interf->json_frame_flush();
+
+    // call setter with no data, it will publish existing config values if any
+    getset_button_gpio(interf, nullptr, NULL);
+
+    DynamicJsonDocument doc(4096);
+    if (!embuifs::deserializeFile(doc, T_benc_cfg)) return;      // config is missing, bad
+    JsonArray bevents( doc[T_btn_events] );
+
+    interf->json_frame_interface();
+    interf->json_section_begin("button_events_list");
+
+    int cnt = 0;
+    for (JsonVariant value : bevents) {
+        JsonObject obj = value.as<JsonObject>();
+        interf->json_section_begin(String("sec") + cnt, (const char*)0, false, false, true );
+        interf->checkbox(P_EMPTY, obj[T_enabled], "Active");
+        interf->checkbox(P_EMPTY, obj[T_pwr], "Pwr On/Off");
+
+        String s;
+        switch (obj[T_btn_event].as<int>()){
+            case 2:
+                s = "Click";
+                break;
+            case 3:
+                s = "Long Press";
+                break;
+            case 5:
+                s = "Hold repeat";
+                break;
+            case 6:
+                s = "MultiClick:";
+                s += obj[T_clicks].as<int>();
+                break;
+            default:
+                s = "Unknown";
+        }
+
+        interf->constant(s);
+
+        switch (obj[T_lamp_event].as<int>()){
+            case 11:
+                s = "PwrOn";
+                break;
+            case 12:
+                s = "PwrOff";
+                break;
+            case 13:
+                s = "Pwr Toggle";
+                break;
+            case 24:
+                s = "Brightness:";
+                s += obj[T_arg].as<int>();
+                break;
+            case 30:
+                s = "Sw Effect to:";
+                s += obj[T_arg].as<int>();
+                break;
+            case 31:
+                s = "Sw Effect next";
+                break;
+            case 32:
+                s = "Sw Effect prev";
+                break;
+            case 33:
+                s = "Sw Effect random";
+                break;
+            default:
+                s = "Unknown";
+        }
+
+        interf->constant(s);
+        interf->button_value(button_t::generic, A_button_evt_edit, cnt , T_edit);
+
+        interf->json_section_end();
+        ++cnt;
+    }
+
+    interf->json_frame_flush();
+}
+
+void page_button_evtedit(Interface *interf, const JsonObject *data, const char* action){
+    DynamicJsonDocument doc(4096);
+    if (!embuifs::deserializeFile(doc, T_benc_cfg)) return;
+    JsonArray bevents( doc[T_btn_events] );
+    int idx = (*data)[A_button_evt_edit];
+    JsonObject obj = bevents[idx];
+
+    interf->json_frame_interface();
+    interf->json_section_begin("button_events_edit", "Button Event Editor", true);
+        // side-load button configuration form
+        interf->json_section_uidata();
+            interf->uidata_pick( "lampui.sections.button_event" );
+        interf->json_section_end();
+    interf->json_frame_flush();
+
+    // fill the form with values
+    interf->json_frame_value(obj, true);
+    interf->value(T_idx, idx);
+    interf->json_frame_flush();
+}
+
+void page_button_evt_save(Interface *interf, const JsonObject *data, const char* action){
+    DynamicJsonDocument doc(4096);
+    if (!embuifs::deserializeFile(doc, T_benc_cfg)) doc.clear();
+    JsonArray bevents( doc[T_btn_events] );
+    int idx = (*data)[T_idx];
+    JsonObject obj = idx < bevents.size() ? bevents[idx] : bevents.createNestedObject();
+
+    // copy keys from post'ed object
+    for (JsonPair kvp : *data)
+        obj[kvp.key()] = kvp.value();
+
+    embuifs::serialize2file(doc, T_benc_cfg);
+
+    button_configure_events(doc[T_btn_events]);
+
+    if (interf) page_button_setup(interf, nullptr, NULL);
 }
 
 /**
@@ -483,11 +612,10 @@ void set_effects_config_list(Interface *interf, const JsonObject *data, const ch
     // обновляем поля
     interf->json_frame_value();
 
-#ifdef MP3PLAYER
     String tmpSoundfile;
     myLamp.effwrkr.loadsoundfile(tmpSoundfile,confEff->eff_nb);
     interf->value(TCONST_soundfile, tmpSoundfile, false);
-#endif
+
     interf->value(TCONST_eff_sel, confEff->canBeSelected(), false);          // доступен для выбора в выпадающем списке на главной странице
     interf->value(TCONST_eff_fav, confEff->isFavorite(), false);             // доступен в демо-режиме
 
@@ -649,12 +777,8 @@ void ui_block_mainpage_switches(Interface *interf, const JsonObject *data, const
     interf->checkbox(TCONST_drawbuff, myLamp.isDrawOn(), TINTF_0CE, true);
     interf->checkbox(TCONST_Mic, myLamp.isMicOnOff(), TINTF_012, true);
     interf->checkbox(TCONST_AUX, embui.paramVariant(TCONST_AUX), TCONST_AUX, true);
-#ifdef ESP_USE_BUTTON
-    interf->checkbox(TCONST_Btn, myButtons->isButtonOn(), TINTF_013, true);
-#endif
-#ifdef MP3PLAYER
     interf->checkbox(TCONST_isOnMP3, myLamp.isONMP3(), TINTF_099, true);
-#endif
+
 #ifdef LAMP_DEBUG
     interf->checkbox(TCONST_debug, myLamp.isDebugOn(), TINTF_08E, true);
 #endif
@@ -669,7 +793,7 @@ void ui_block_mainpage_switches(Interface *interf, const JsonObject *data, const
     interf->json_section_end();     // select
 
     interf->json_section_end();     // json_section_line()
-#ifdef MP3PLAYER
+
     if(mp3->isMP3Mode()){
         interf->json_section_line("line124"); // спец. имя - разбирается внутри html
         interf->button(button_t::generic, CMD_MP3_PREV, TINTF_0BD, P_GRAY);
@@ -680,7 +804,6 @@ void ui_block_mainpage_switches(Interface *interf, const JsonObject *data, const
     }
     // регулятор громкости mp3 плеера
     interf->range(TCONST_mp3volume, embui.paramVariant(TCONST_mp3volume).as<int>(), 1, 30, 1, TINTF_09B, true);
-#endif
 
     interf->button(button_t::generic, A_ui_page_effects, TINTF_exit);
     interf->json_frame_flush();
@@ -942,7 +1065,6 @@ void set_overlay_drawing(Interface *interf, const JsonObject *data, const char* 
     myLamp.enableDrawing((*data)[TCONST_drawbuff]);
 }
 
-#ifdef MP3PLAYER
 // show page with MP3 Player setup
 void show_settings_mp3(Interface *interf, const JsonObject *data, const char* action){
     if (!interf) return;
@@ -1073,7 +1195,6 @@ void set_mp3_player(Interface *interf, const JsonObject *data, const char* actio
         mp3->playEffect(cur_palyingnb+5,"");
     }
 }
-#endif
 
 /*
     сохраняет настройки GPIO и перегружает контроллер
@@ -1087,7 +1208,6 @@ void set_gpios(Interface *interf, const JsonObject *data, const char* action){
 
     gpio_device dev = static_cast<gpio_device>((*data)[TCONST_set_gpio].as<int>());
     switch(dev){
-#ifdef MP3PLAYER
         // DFPlayer gpios
         case gpio_device::dfplayer : {
             // save pin numbers into config file if present/valid
@@ -1098,7 +1218,6 @@ void set_gpios(Interface *interf, const JsonObject *data, const char* action){
             else doc[TCONST_mp3tx] = (*data)[TCONST_mp3tx];
             break;
         }
-#endif
         // MOSFET gpios
         case gpio_device::mosfet : {
             if ( (*data)[TCONST_mosfet_gpio] == static_cast<int>(GPIO_NUM_NC) ) doc.remove(TCONST_mosfet_gpio);
@@ -1267,9 +1386,7 @@ void user_settings_frame(Interface *interf, const JsonObject *data, const char* 
     // other
     interf->button_value(button_t::generic, A_ui_page, e2int(page::setup_devices), "Внешние устройства");
     interf->button_value(button_t::generic, A_ui_page, e2int(page::mike), TINTF_020);
-#ifdef ESP_USE_BUTTON
-    interf->button_value(button_t::generic, A_ui_page, e2int(page::setup_bttn), TINTF_013);
-#endif
+
 #ifdef ENCODER
     interf->button_value(button_t::generic, A_ui_page, e2int(page::setup_encdr), TINTF_0DC);
 #endif
@@ -1296,7 +1413,7 @@ void page_gpiocfg(Interface *interf, const JsonObject *data, const char* action)
     embuifs::deserializeFile(doc, TCONST_fcfg_gpio);
 
     interf->json_section_begin(TCONST_set_gpio, "");
-#ifdef MP3PLAYER
+
     // gpio для подключения DP-плеера
     interf->json_section_hidden(TCONST_playMP3, "DFPlayer");
         interf->json_section_line(); // расположить в одной линии
@@ -1305,7 +1422,6 @@ void page_gpiocfg(Interface *interf, const JsonObject *data, const char* action)
         interf->json_section_end();
         interf->button_value(button_t::submit, TCONST_set_gpio, static_cast<int>(gpio_device::dfplayer), TINTF_Save);
     interf->json_section_end();
-#endif
 
 #if DISABLED_CODE
     // gpio для подключения 7 сегментного индикатора
@@ -1396,47 +1512,6 @@ uint8_t uploadProgress(size_t len, size_t total){
     return progress;
 }
 */
-// Функции обработчики и другие служебные
-#ifdef ESP_USE_BUTTON
-void default_buttons(){
-    myButtons->clear();
-    // Выключена
-    myButtons->add(new Button(false, false, 1, true, BA::BA_ON)); // 1 клик - ON
-    myButtons->add(new Button(false, false, 2, true, BA::BA_DEMO)); // 2 клика - Демо
-    myButtons->add(new Button(false, true, 0, true, BA::BA_WHITE_LO)); // удержание Включаем белую лампу в мин яркость
-    myButtons->add(new Button(false, true, 1, true, BA::BA_WHITE_HI)); // удержание + 1 клик Включаем белую лампу в полную яркость
-    myButtons->add(new Button(false, true, 0, false, BA::BA_BRIGHT)); // удержание из выключенного - яркость
-    myButtons->add(new Button(false, true, 1, false, BA::BA_BRIGHT)); // удержание из выключенного - яркость
-
-    // Включена
-    myButtons->add(new Button(true, false, 1, true, BA::BA_OFF)); // 1 клик - OFF
-    myButtons->add(new Button(true, false, 2, true, BA::BA_EFF_NEXT)); // 2 клика - след эффект
-    myButtons->add(new Button(true, false, 3, true, BA::BA_EFF_PREV)); // 3 клика - пред эффект
-    myButtons->add(new Button(true, false, 5, true, BA::BA_SEND_IP)); // 5 клика - показ IP
-    myButtons->add(new Button(true, false, 6, true, BA::BA_SEND_TIME)); // 6 клика - показ времени
-    myButtons->add(new Button(true, false, 7, true, BA::BA_EFFECT, String("253"))); // 7 кликов - эффект часы
-    myButtons->add(new Button(true, true, 0, false, BA::BA_BRIGHT)); // удержание яркость
-    myButtons->add(new Button(true, true, 1, false, BA::BA_SPEED)); // удержание + 1 клик скорость
-    myButtons->add(new Button(true, true, 2, false, BA::BA_SCALE)); // удержание + 2 клика масштаб
-}
-#endif
-
-#ifdef ESP_USE_BUTTON
-void load_button_config(const char* path){
-    if (path){
-        String filename(TCONST__backup_btn_);
-        filename.concat(path);
-        myButtons->clear();
-        if (!myButtons->loadConfig(filename.c_str())) {
-            default_buttons();
-        }
-    } else {
-        if (!myButtons->loadConfig()) {
-            default_buttons();
-        }
-    }
-}
-#endif
 
 /**
  * @brief build a page with LED Display setup
@@ -1593,10 +1668,6 @@ void embui_actions_register(){
     embui.var_create(TCONST_spdcf, 1.0);
 
     // пины и системные настройки
-#ifdef ESP_USE_BUTTON
-    embui.var_create(TCONST_PINB, BTN_PIN); // Пин кнопки
-    embui.var_create(TCONST_EncVG, static_cast<int>(GAUGETYPE::GT_VERT) );         // Тип шкалы
-#endif
 #ifdef ENCODER
     //embui.var_create(TCONST_encTxtCol, "#FFA500");  // Дефолтный цвет текста (Orange)
     //embui.var_create(TCONST_encTxtDel, 40);        // Задержка прокрутки текста
@@ -1604,10 +1675,8 @@ void embui_actions_register(){
     //embui.var_create(TCONST_EncVGCol, "#FF2A00");  // Дефолтный цвет шкалы
 #endif
 
-#ifdef MP3PLAYER
     embui.var_create(TCONST_mp3volume, 25); // громкость
     //embui.var_create(TCONST_mp3count, 255); // кол-во файлов в папке mp3 (установка убрана, используется значение по-умолчанию равное максимальному числу эффектов)
-#endif
 
     embui.var_create(TCONST_tmBright, 82); // 5<<4+5, старшие и младшие 4 байта содержат 5
 
@@ -1636,6 +1705,11 @@ void embui_actions_register(){
     embui.action.add(A_display_ws2812, set_ledstrip);                       // Set LED strip layout setup
     embui.action.add(A_display_hub75, set_hub75);                           // Set options for HUB75 panel
     embui.action.add(A_display_tm1637, getset_tm1637);                      // get/set tm1637 display configuration
+
+    embui.action.add(A_button_gpio, getset_button_gpio);                    // button setup
+    embui.action.add(A_button_evt_edit, page_button_evtedit);               // button event edit form
+    embui.action.add(A_button_evt_save, page_button_evt_save);              // button save/apply event
+
 
     // to be refactored
 
@@ -1667,18 +1741,11 @@ void embui_actions_register(){
     embui.action.add(TCONST_Mic, set_micflag);
     //embui.action.add(TCONST_mic_cal, set_settings_mic_calib);
 
-#ifdef ESP_USE_BUTTON
-//    embui.action.add(TCONST_butt_conf, show_butt_conf);
-//    embui.action.add(TCONST_set_butt, set_butt_conf);
-//    embui.action.add(TCONST_Btn, set_btnflag);
-    //embui.action.add(TCONST_EncVG, set_gaugetype);
-#endif
 
 #ifdef LAMP_DEBUG
     embui.action.add(TCONST_debug, set_debugflag);
 #endif
 
-#ifdef MP3PLAYER
     embui.action.add(TCONST_isOnMP3, set_mp3flag);
     embui.action.add(TCONST_mp3volume, set_mp3volume);
     embui.action.add(TCONST_show_mp3, show_settings_mp3);
@@ -1688,7 +1755,6 @@ void embui_actions_register(){
     embui.action.add(CMD_MP3_NEXT, set_mp3_player);
     embui.action.add(TCONST_mp3_p5, set_mp3_player);
     embui.action.add(TCONST_mp3_n5, set_mp3_player);
-#endif
 /* #ifdef ENCODER
     embui.action.add(TCONST_set_enc, set_settings_enc);
 #endif

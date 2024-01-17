@@ -176,7 +176,6 @@ void run_action(ra act, const T& param) {
       break;
     }
 
-#ifdef MP3PLAYER
     //MP3: enable/disable
     case ra::mp3_enable : {
       obj[P_action] = TCONST_Mic;
@@ -199,7 +198,6 @@ void run_action(ra act, const T& param) {
       mp3->playEffect(mp3->getCurPlayingNb() + offset, "");
       return; // no need to execute any UI action
     }
-#endif  //#ifdef MP3PLAYER
 
 
     // all the rest we just assign "action": 'value' pair

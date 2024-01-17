@@ -166,7 +166,6 @@ private:
     uint8_t BFade;                      // затенение фона под текстом
 
     // GPIO's
-    uint8_t bPin = BTN_PIN;        // пин кнопки
     // это должен быть gpio_num_t в есп32, но пока нужна совместимость с 8266 держим инт
     int8_t fet_gpio = GPIO_NUM_NC, aux_gpio = GPIO_NUM_NC;
     int8_t fet_ll, aux_ll;
@@ -199,10 +198,8 @@ private:
      */
     uint8_t _get_brightness(bool absolute=false);
 
-#ifdef MP3PLAYER
     // temp disable
     void playEffect(bool isPlayName = false, effswitch_t action = effswitch_t::next){};
-#endif
 
     /**
      * @brief effectiveley wipes LedBuffers and fills LED Strip with Black
@@ -226,8 +223,6 @@ public:
     // инициализация Лампы
     void lamp_init();
 
-    void setbPin(uint8_t val) {bPin = val;}
-    uint8_t getbPin() {return bPin;}
     LAMPSTATE &getLampState() {return lampState;}
     LList<std::shared_ptr<UIControl>>&getEffControls() { return effwrkr.getControls(); }
 
@@ -333,6 +328,8 @@ public:
     bool getFaderFlag() {return flags.isFaderON; save_flags(); }
     void setClearingFlag(bool flag) {flags.isEffClearing = flag; save_flags(); }
     bool getClearingFlag() {return flags.isEffClearing; }
+
+
     void disableEffectsUntilText() {lampState.isEffectsDisabledUntilText = true; display.clear(); save_flags(); }
     void setOffAfterText() {lampState.isOffAfterText = true; save_flags(); }
     void setIsEventsHandled(bool flag) {flags.isEventsHandled = flag; save_flags(); }
@@ -341,7 +338,6 @@ public:
     bool isDebugOn() {return flags.isDebug;}
     bool isDebug() {return lampState.isDebug;}
     void setDebug(bool flag) {flags.isDebug=flag; lampState.isDebug=flag; save_flags(); }
-    void setButton(bool flag) {flags.isBtn=flag; save_flags(); }
 
     // set/clear "restore on/off/demo" state on boot
     void setRestoreState(bool flag){ flags.restoreState = flag; save_flags(); }
@@ -562,7 +558,7 @@ public:
      * @param uint32_t _duration - fade effect duraion, ms
      * @param callback  -  callback-функция, которая будет выполнена после окончания затухания
      */
-    void fadelight(const uint8_t _targetbrightness=0, const uint32_t _duration=FADE_TIME, std::function<void()> callback=nullptr);
+    void fadelight(int _targetbrightness=0, uint32_t _duration=FADE_TIME, std::function<void()> callback=nullptr);
 
     /**
      * @brief check if fade is in progress

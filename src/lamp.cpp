@@ -192,7 +192,6 @@ void Lamp::power(bool flag) // флаг включения/выключения 
   save_flags();
 }
 
-#ifdef MP3PLAYER
 /*
 temporary disable
 void Lamp::playEffect(bool isPlayName, EFFSWITCH action){
@@ -205,7 +204,6 @@ void Lamp::playEffect(bool isPlayName, EFFSWITCH action){
   }
 }
 */
-#endif  // MP3PLAYER
 
 void Lamp::startRGB(CRGB &val){
   rgbColor = val;
@@ -383,8 +381,9 @@ void Lamp::setBrightness(uint8_t tgtbrt, fade_t fade, bool bypass){
       EVT_POST_DATA(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::brightness), &b, sizeof(unsigned));
     }
 
-    globalBrightness = tgtbrt;              // set configured brightness variable
-    embui.var(A_dev_brightness, tgtbrt);    // save brightness variable
+    // set configured brightness variable
+    globalBrightness = tgtbrt > _brightnessScale ? _brightnessScale : tgtbrt;
+    embui.var(A_dev_brightness, globalBrightness);    // save brightness variable
 }
 
 /*
@@ -478,21 +477,15 @@ void Lamp::_switcheffect(effswitch_t action, bool fade, uint16_t effnb, bool ski
     effwrkr.switchEffect(effnb, true);
 
   bool isShowName = (mode==LAMPMODE::MODE_DEMO && flags.showName);
-#ifdef MP3PLAYER
   bool isPlayName = (isShowName && flags.playName && !flags.playMP3 && effwrkr.getCurrent()>0);
-#endif
 
   // show effects's name on screen and play name over speaker (if set)
   if(isShowName){
-#ifdef MP3PLAYER
     if(isPlayName && mp3!=nullptr && mp3->isOn()) // воспроизведение 
       mp3->playName(effwrkr.getCurrent());
-#endif
   }
 
-#ifdef MP3PLAYER
   playEffect(isPlayName, action); // воспроизведение звука, с проверкой текущего состояния
-#endif
 
   setBrightness(globalBrightness);      // need to reapply brightness as effect's curve might have changed
 
@@ -602,32 +595,55 @@ void Lamp::events_unsubsribe(){
   esp_event_handler_instance_unregister_with(evt::get_hndlr(), ESP_EVENT_ANY_BASE, ESP_EVENT_ANY_ID, _events_lamp_cmd);
 }
 
+// handle command events and react accordingly with lamp actions
 void Lamp::_event_picker_cmd(esp_event_base_t base, int32_t id, void* data){
-
 
     switch (static_cast<evt::lamp_t>(id)){
     // Power control
       case evt::lamp_t::pwron :
         power(true);
-        break;
+        return;
       case evt::lamp_t::pwroff :
         power(false);
-        break;
+        return;
       case evt::lamp_t::pwrtoggle :
         power();
-        break;
+        return;
 
     // Brightness control
-      case evt::lamp_t::brightness :
-        setBrightness(*((int*) data));
-        break;
+      case evt::lamp_t::brightness : {
+        if (base == LAMP_SET_EVENTS){
+          setBrightness(*((int*) data));
+        } else {
+          // otherwise it's a GET event, publish current brightness
+          int32_t b = getBrightness();
+          EVT_POST_DATA( LAMP_STATE_EVENTS, e2int(evt::lamp_t::brightness), &b, sizeof(int32_t) );
+        }
+        return;
+      }
       case evt::lamp_t::brightness_nofade :
         setBrightness(*((int*) data), fade_t::off);
         break;
       case evt::lamp_t::brightness_lcurve :
         setLumaCurve(*( (luma::curve*)data) );
         break;
+      case evt::lamp_t::brightness_step :
+        setBrightness(getBrightness() + *((int*) data), fade_t::off);
+        break;
         
+    // Effect switching
+      case evt::lamp_t::effSwitchNext :
+        switcheffect(effswitch_t::next);
+        break;
+      case evt::lamp_t::effSwitchPrev :
+        switcheffect(effswitch_t::prev);
+        break;
+      case evt::lamp_t::effSwitchRnd :
+        switcheffect(effswitch_t::rnd);
+        break;
+      case evt::lamp_t::effSwitchTo :
+        switcheffect(effswitch_t::num, *((int*) data));
+        break;
 
     // Get State Commands
       case evt::lamp_t::pwr :
@@ -663,12 +679,9 @@ void Lamp::_event_picker_state(esp_event_base_t base, int32_t id, void* data){
 // *********************************
 /*  LEDFader class implementation */
 
-void LEDFader::fadelight(const uint8_t _targetbrightness, const uint32_t _duration, std::function<void()> callback){
+void LEDFader::fadelight(int _targetbrightness, uint32_t _duration, std::function<void()> callback){
   if (!lmp) return;
   LOG(printf, "Fader: tgt:%u, lamp:%u/%u, _br_scaled/_br_abs:%u/%u\n", _targetbrightness, lmp->getBrightness(), lmp->getBrightnessScale(), lmp->_get_brightness(), lmp->_get_brightness(true));
-
-  int b = _targetbrightness;
-  EVT_POST_DATA(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::brightness), &b, sizeof(int));
 
   _brt = lmp->_get_brightness(true);        // get current absolute Display brightness
   _tgtbrt = luma::curveMap(lmp->_curve, _targetbrightness, MAX_BRIGHTNESS, lmp->_brightnessScale);
@@ -710,6 +723,13 @@ void LEDFader::fadelight(const uint8_t _targetbrightness, const uint32_t _durati
           lmp->_brightness(_tgtbrt, true);  // set exact target brightness value
           LOG(printf, "Fading to %d done\n", _tgtbrt);
           EVT_POST(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::fadeEnd));
+
+          // send brightness change event only for positive brt values (0 is usually means that lamp has been switched off)
+          if (_targetbrightness){
+            int b = _targetbrightness;
+            EVT_POST_DATA(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::brightness), &b, sizeof(int));
+          }
+
           // use new task for callback, 'cause effect switching will immidiatetly respawn new fader from callback, so I need to release a Task instance
           if(_cb) { new Task(FADE_STEPTIME, TASK_ONCE, [this](){ if (_cb) { _cb(); _cb = nullptr; } }, &ts, true, nullptr, nullptr, true ); }
           runner = nullptr;
