@@ -46,9 +46,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "DS18B20.h"
 #endif
 
-#ifdef ESP_USE_BUTTON
-Buttons *myButtons;
-#endif
 
 #ifdef MP3PLAYER
 MP3PlayerDevice *mp3 = nullptr;
@@ -128,14 +125,6 @@ void setup() {
     ds_setup();
 #endif
 
-#ifdef ESP_USE_BUTTON
-    myLamp.setbPin(embui.paramVariant(TCONST_PINB));
-    myButtons = new Buttons(myLamp.getbPin(), PULL_MODE, NORM_OPEN);
-    if (!myButtons->loadConfig()) {
-      default_buttons();
-      myButtons->saveConfig();
-    }
-#endif
 
     // configure and init attached devices
     gpio_setup();

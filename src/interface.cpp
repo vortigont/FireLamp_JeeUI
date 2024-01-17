@@ -780,9 +780,6 @@ void ui_block_mainpage_switches(Interface *interf, const JsonObject *data, const
     interf->checkbox(TCONST_drawbuff, myLamp.isDrawOn(), TINTF_0CE, true);
     interf->checkbox(TCONST_Mic, myLamp.isMicOnOff(), TINTF_012, true);
     interf->checkbox(TCONST_AUX, embui.paramVariant(TCONST_AUX), TCONST_AUX, true);
-#ifdef ESP_USE_BUTTON
-    interf->checkbox(TCONST_Btn, myButtons->isButtonOn(), TINTF_013, true);
-#endif
 #ifdef MP3PLAYER
     interf->checkbox(TCONST_isOnMP3, myLamp.isONMP3(), TINTF_099, true);
 #endif
@@ -1525,45 +1522,6 @@ uint8_t uploadProgress(size_t len, size_t total){
     return progress;
 }
 */
-// Функции обработчики и другие служебные
-#ifdef ESP_USE_BUTTON
-void default_buttons(){
-    myButtons->clear();
-    // Выключена
-    myButtons->add(new Button(false, false, 1, true, BA::BA_ON)); // 1 клик - ON
-    myButtons->add(new Button(false, false, 2, true, BA::BA_DEMO)); // 2 клика - Демо
-    myButtons->add(new Button(false, true, 0, true, BA::BA_WHITE_LO)); // удержание Включаем белую лампу в мин яркость
-    myButtons->add(new Button(false, true, 1, true, BA::BA_WHITE_HI)); // удержание + 1 клик Включаем белую лампу в полную яркость
-    myButtons->add(new Button(false, true, 0, false, BA::BA_BRIGHT)); // удержание из выключенного - яркость
-    myButtons->add(new Button(false, true, 1, false, BA::BA_BRIGHT)); // удержание из выключенного - яркость
-
-    // Включена
-    myButtons->add(new Button(true, false, 1, true, BA::BA_OFF)); // 1 клик - OFF
-    myButtons->add(new Button(true, false, 2, true, BA::BA_EFF_NEXT)); // 2 клика - след эффект
-    myButtons->add(new Button(true, false, 3, true, BA::BA_EFF_PREV)); // 3 клика - пред эффект
-    myButtons->add(new Button(true, false, 5, true, BA::BA_SEND_IP)); // 5 клика - показ IP
-    myButtons->add(new Button(true, false, 6, true, BA::BA_SEND_TIME)); // 6 клика - показ времени
-    myButtons->add(new Button(true, false, 7, true, BA::BA_EFFECT, String("253"))); // 7 кликов - эффект часы
-    myButtons->add(new Button(true, true, 0, false, BA::BA_BRIGHT)); // удержание яркость
-    myButtons->add(new Button(true, true, 1, false, BA::BA_SPEED)); // удержание + 1 клик скорость
-    myButtons->add(new Button(true, true, 2, false, BA::BA_SCALE)); // удержание + 2 клика масштаб
-}
-
-void load_button_config(const char* path){
-    if (path){
-        String filename(TCONST__backup_btn_);
-        filename.concat(path);
-        myButtons->clear();
-        if (!myButtons->loadConfig(filename.c_str())) {
-            default_buttons();
-        }
-    } else {
-        if (!myButtons->loadConfig()) {
-            default_buttons();
-        }
-    }
-}
-#endif
 
 /**
  * @brief build a page with LED Display setup
@@ -1720,10 +1678,6 @@ void embui_actions_register(){
     embui.var_create(TCONST_spdcf, 1.0);
 
     // пины и системные настройки
-#ifdef ESP_USE_BUTTON
-    embui.var_create(TCONST_PINB, BTN_PIN); // Пин кнопки
-    embui.var_create(TCONST_EncVG, static_cast<int>(GAUGETYPE::GT_VERT) );         // Тип шкалы
-#endif
 #ifdef ENCODER
     //embui.var_create(TCONST_encTxtCol, "#FFA500");  // Дефолтный цвет текста (Orange)
     //embui.var_create(TCONST_encTxtDel, 40);        // Задержка прокрутки текста
@@ -1799,12 +1753,6 @@ void embui_actions_register(){
     embui.action.add(TCONST_Mic, set_micflag);
     //embui.action.add(TCONST_mic_cal, set_settings_mic_calib);
 
-#ifdef ESP_USE_BUTTON
-//    embui.action.add(TCONST_butt_conf, show_butt_conf);
-//    embui.action.add(TCONST_set_butt, set_butt_conf);
-//    embui.action.add(TCONST_Btn, set_btnflag);
-    //embui.action.add(TCONST_EncVG, set_gaugetype);
-#endif
 
 #ifdef LAMP_DEBUG
     embui.action.add(TCONST_debug, set_debugflag);

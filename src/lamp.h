@@ -166,7 +166,6 @@ private:
     uint8_t BFade;                      // затенение фона под текстом
 
     // GPIO's
-    uint8_t bPin = BTN_PIN;        // пин кнопки
     // это должен быть gpio_num_t в есп32, но пока нужна совместимость с 8266 держим инт
     int8_t fet_gpio = GPIO_NUM_NC, aux_gpio = GPIO_NUM_NC;
     int8_t fet_ll, aux_ll;
@@ -226,8 +225,6 @@ public:
     // инициализация Лампы
     void lamp_init();
 
-    void setbPin(uint8_t val) {bPin = val;}
-    uint8_t getbPin() {return bPin;}
     LAMPSTATE &getLampState() {return lampState;}
     LList<std::shared_ptr<UIControl>>&getEffControls() { return effwrkr.getControls(); }
 
