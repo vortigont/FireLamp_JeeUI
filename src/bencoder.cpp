@@ -81,14 +81,14 @@ void ButtonEventHandler::_btnEventHandler(ESPButton::event_t e, const EventMsg* 
   }
 
   for (auto &it : _event_map ){
-    LOG(printf, "Lookup event: it_en:%u, it.e:%u, e:%u ilp:%u lp:%u\n", it.enabled, it.e, e, it.lamppwr, _lamp_pwr );
+    //LOG(printf, "Lookup event: it_en:%u, it.e:%u, e:%u ilp:%u lp:%u\n", it.enabled, it.e, e, it.lamppwr, _lamp_pwr );
     if ( it.enabled && (it.e == e) && (it.lamppwr == _lamp_pwr) ){
       // check for multiclicks
       if (e == ESPButton::event_t::multiClick && msg->cntr != it.clicks)
         continue;
 
       // event matches
-      LOG(printf, "BTN Execute Event:%u\n", e2int( it.evt_lamp ) );
+      LOG(printf, "BTN Execute LampEvent:%u\n", e2int( it.evt_lamp ) );
 
       switch (it.evt_lamp){
         case evt::lamp_t::effSwitchTo:
@@ -128,9 +128,8 @@ void ButtonEventHandler::load(JsonVariantConst cfg){
   _event_map.clear();
 
   for(JsonVariantConst v : array) {
-    LOG(printf, "Add cfg Event:%u\n", v[T_btn_event].as<int>() );
+    //LOG(printf, "Add cfg Event:%u\n", v[T_btn_event].as<int>() );
     _event_map.emplace_back(ButtonAction(static_cast<ESPButton::event_t>(v[T_btn_event].as<int>()), static_cast<evt::lamp_t>(v[T_lamp_event].as<int>()), v[T_clicks], v[T_arg], v[T_enabled], v[T_pwr] ));
-    //Serial.println(v.as<int>());
   }
 
 }

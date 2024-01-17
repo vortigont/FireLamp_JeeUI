@@ -55,7 +55,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "evtloop.h"
 
 // версия ресурсов в стороннем джейсон файле
-#define UIDATA_VERSION  3
+#define UIDATA_VERSION  4
 
 // placeholder for effect list rebuilder task
 Task *delayedOptionTask = nullptr;
@@ -390,7 +390,7 @@ void page_button_setup(Interface *interf, const JsonObject *data, const char* ac
             case 13:
                 s = "Pwr Toggle";
                 break;
-            case 20:
+            case 24:
                 s = "Brightness:";
                 s += obj[T_arg].as<int>();
                 break;

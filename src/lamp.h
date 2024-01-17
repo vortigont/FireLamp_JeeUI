@@ -333,6 +333,8 @@ public:
     bool getFaderFlag() {return flags.isFaderON; save_flags(); }
     void setClearingFlag(bool flag) {flags.isEffClearing = flag; save_flags(); }
     bool getClearingFlag() {return flags.isEffClearing; }
+
+
     void disableEffectsUntilText() {lampState.isEffectsDisabledUntilText = true; display.clear(); save_flags(); }
     void setOffAfterText() {lampState.isOffAfterText = true; save_flags(); }
     void setIsEventsHandled(bool flag) {flags.isEventsHandled = flag; save_flags(); }
@@ -341,7 +343,6 @@ public:
     bool isDebugOn() {return flags.isDebug;}
     bool isDebug() {return lampState.isDebug;}
     void setDebug(bool flag) {flags.isDebug=flag; lampState.isDebug=flag; save_flags(); }
-    void setButton(bool flag) {flags.isBtn=flag; save_flags(); }
 
     // set/clear "restore on/off/demo" state on boot
     void setRestoreState(bool flag){ flags.restoreState = flag; save_flags(); }
@@ -562,7 +563,7 @@ public:
      * @param uint32_t _duration - fade effect duraion, ms
      * @param callback  -  callback-функция, которая будет выполнена после окончания затухания
      */
-    void fadelight(const uint8_t _targetbrightness=0, const uint32_t _duration=FADE_TIME, std::function<void()> callback=nullptr);
+    void fadelight(int _targetbrightness=0, uint32_t _duration=FADE_TIME, std::function<void()> callback=nullptr);
 
     /**
      * @brief check if fade is in progress

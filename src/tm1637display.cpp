@@ -49,8 +49,8 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 
 TMDisplay::~TMDisplay(){
-  esp_event_handler_instance_unregister_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, _evt_ch_hndlr);
-  esp_event_handler_instance_unregister_with(evt::get_hndlr(), LAMP_SET_EVENTS, ESP_EVENT_ANY_ID, _evt_set_hndlr);
+  esp_event_handler_instance_unregister_with(evt::get_hndlr(), ESP_EVENT_ANY_BASE, ESP_EVENT_ANY_ID, _evt_state_hndlr);
+  //esp_event_handler_instance_unregister_with(evt::get_hndlr(), LAMP_SET_EVENTS, ESP_EVENT_ANY_ID, _evt_set_hndlr);
   WiFi.removeEvent(eid);
 };
 
@@ -65,8 +65,8 @@ void TMDisplay::init() {
   // Set WiFi event handlers
   eid = WiFi.onEvent( [this](WiFiEvent_t event, WiFiEventInfo_t info){ _onWiFiEvent(event, info); } );
 
-  ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, TMDisplay::event_hndlr, this, &_evt_ch_hndlr));
-  ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_SET_EVENTS, ESP_EVENT_ANY_ID, TMDisplay::event_hndlr, this, &_evt_set_hndlr));
+  ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), ESP_EVENT_ANY_BASE, ESP_EVENT_ANY_ID, TMDisplay::event_hndlr, this, &_evt_state_hndlr));
+  //ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_SET_EVENTS, ESP_EVENT_ANY_ID, TMDisplay::event_hndlr, this, &_evt_set_hndlr));
 
   LOG(println, "tm1637 initialized");
 }
@@ -128,22 +128,18 @@ void TMDisplay::event_hndlr(void* handler_args, esp_event_base_t base, int32_t i
 }
 
 void TMDisplay::_event_picker(esp_event_base_t base, int32_t id, void* data){
-  switch (static_cast<evt::lamp_t>(id)){
-  // Power control
-    case evt::lamp_t::pwron :
-      setBrightness(brtOn);
-      _addscroll(T_On);
-      //display(T_On, true, true);
-      //timer = 2;
-      break;
-    case evt::lamp_t::pwroff :
-      setBrightness(brtOff);
-      _addscroll(T_Off);
-      //display(T_Off, true, true);
-      //timer = 2;
-      break;
-
-    default:;
+  if (base == LAMP_CHANGE_EVENTS){
+    switch (static_cast<evt::lamp_t>(id)){
+      // Power control
+      case evt::lamp_t::pwron :
+        setBrightness(brtOn);
+        _addscroll(T_On);
+        return;
+      case evt::lamp_t::pwroff :
+        setBrightness(brtOff);
+        _addscroll(T_Off);
+        return;
+    }
   }
 
   // pick only SET events
@@ -151,20 +147,24 @@ void TMDisplay::_event_picker(esp_event_base_t base, int32_t id, void* data){
     switch (static_cast<evt::lamp_t>(id)){
     // Brightness control
       case evt::lamp_t::brightness_nofade :
-      case evt::lamp_t::brightness : {
-        String s("Br.");
-        unsigned b = *((unsigned*) data);
-        if (b<10) s.concat((char)0x20); // append space
-        s += b;
-        display(s);
-        timer = 2;
-        break;
-      }
-
-      default:;
+      case evt::lamp_t::brightness :
+        _msg_brt(*((unsigned*) data));
+        return;
+      case evt::lamp_t::brightness_step :
+        // disaply can't process this event, so let's request for real brt value
+        EVT_POST(LAMP_GET_EVENTS, static_cast<int32_t>(evt::lamp_t::brightness));
+        return;
     }
   }
 
+  if (base == LAMP_STATE_EVENTS){
+    switch (static_cast<evt::lamp_t>(id)){
+      // Brightness state reply
+      case evt::lamp_t::brightness :
+        _msg_brt(*((unsigned*) data));
+        return;
+    }
+  }
 }
 
 void TMDisplay::_onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info){
@@ -199,3 +199,11 @@ void TMDisplay::brightness(uint8_t b, bool lampon){
   lampon ? brtOn = b : brtOff = b;
   setBrightness(b);
 }
+
+void TMDisplay::_msg_brt(int32_t b){
+  String s("Br.");
+  if (b<10) s.concat((char)0x20); // append space
+  s += b;
+  display(s);
+  timer = 2;
+};

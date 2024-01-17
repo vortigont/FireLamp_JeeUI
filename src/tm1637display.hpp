@@ -115,8 +115,8 @@ private:
   // *** Event bus members    ***
 
   // instance that holds tm's command events handlers
-  esp_event_handler_instance_t _evt_ch_hndlr;
-  esp_event_handler_instance_t _evt_set_hndlr;
+  esp_event_handler_instance_t _evt_state_hndlr;
+  //esp_event_handler_instance_t _evt_set_hndlr;
 
   /**
    * @brief event picker method, processes incoming command events from a event_hndlr wrapper
@@ -132,6 +132,8 @@ private:
    * 
    */
   void _loop();
+
+  void _msg_brt(int32_t b);
 };
 
 extern TMDisplay *tm1637;

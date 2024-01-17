@@ -352,7 +352,7 @@ void getset_button_gpio(Interface *interf, const JsonObject *data, const char* a
 }
 
 
-// a call-back handler that listens for status change events and publish it to EmbUI feeders
+// a call-back handler that listens for status CHANGE events and publish it to EmbUI feeders
 void event_publisher(void* handler_args, esp_event_base_t base, int32_t id, void* event_data){
     // quit if there are no feeders to notify
     if (!embui.feeders.available()) return;
