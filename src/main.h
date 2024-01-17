@@ -69,7 +69,5 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 
 // глобальные переменные для работы с ними в программе
-#ifdef MP3PLAYER
 #include "mp3player.h"
 extern MP3PlayerDevice *mp3;
-#endif

@@ -47,9 +47,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #endif
 
 
-#ifdef MP3PLAYER
 MP3PlayerDevice *mp3 = nullptr;
-#endif
 
 
 // Forward declarations
@@ -315,13 +313,11 @@ void gpio_setup(){
     embuifs::deserializeFile(doc, TCONST_fcfg_gpio);
     int rxpin, txpin;
 
-#ifdef MP3PLAYER
     // spawn an instance of mp3player
     rxpin = doc[TCONST_mp3rx] | -1;
     txpin = doc[TCONST_mp3tx] | -1;
     LOG(printf_P, PSTR("DFPlayer: rx:%d tx:%d\n"), rxpin, txpin);
     mp3 = new MP3PlayerDevice(rxpin, txpin, embui.paramVariant(TCONST_mp3volume) | DFPLAYER_DEFAULT_VOL );
-#endif
 
 }
 

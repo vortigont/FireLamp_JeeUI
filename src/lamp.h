@@ -198,10 +198,8 @@ private:
      */
     uint8_t _get_brightness(bool absolute=false);
 
-#ifdef MP3PLAYER
     // temp disable
     void playEffect(bool isPlayName = false, effswitch_t action = effswitch_t::next){};
-#endif
 
     /**
      * @brief effectiveley wipes LedBuffers and fills LED Strip with Black

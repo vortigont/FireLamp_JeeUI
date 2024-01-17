@@ -59,7 +59,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 //-----------------------------------
 //#define LAMP_DEBUG                                          // режим отладки, можно также включать в platformio.ini
-//#define MP3PLAYER                                           // Включить использование MP3 плеера (DF Player)
 //-----------------------------------
 #ifndef LANG_FILE
 #define LANG_FILE                  "text_res-RUS.h"           // Языковой файл по дефолту
@@ -134,38 +133,11 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #define MIN_PEAK_LEVEL        (50U)                         // Минимальный амплитудный уровень, для эффектов зависящих от микрофона
 #endif
 
-#ifdef MP3PLAYER
-#ifndef MP3_TX_PIN
- #ifdef ESP8266
-  #define MP3_TX_PIN          (12)                         // TX mp3 player RX (D5)
- #else
-  #define MP3_TX_PIN          17                           // Serial2 tx
- #endif
-#endif
-#ifndef MP3_RX_PIN
- #ifdef ESP8266
-  #define MP3_RX_PIN          (14)                         // RX mp3 player TX (D6)
- #else
-  #define MP3_RX_PIN          16                           // Serial2 rx
- #endif
-
-#endif
 #ifndef MP3_SERIAL_TIMEOUT
 #define MP3_SERIAL_TIMEOUT    (300U)                       // 300мс по умолчанию, диапазон 200...1000, подбирается экспериментально, не желательно сильно повышать
 #endif
 #ifndef DFPLAYER_START_DELAY
 #define DFPLAYER_START_DELAY  (500U)                       // 500мс по умолчанию, диапазон 10...1000, подбирается экспериментально, не желательно сильно повышать, безусловная задержка до инициализации
-#endif
-#endif
-
-#ifndef BTN_PIN
-#define BTN_PIN               (5U)                         // пин кнопки               (D1)
-#if BTN_PIN == 0
-#define PULL_MODE             (HIGH_PULL)                  // пин кнопки "FLASH" NodeMCU, подтяжка должна быть PULL_MODE=HIGH_PULL
-#endif
-#endif
-#ifndef NUMHOLD_TIME
-#define NUMHOLD_TIME          (3000U)                       // время запоминания последней комбинации яркости/скорости/масштаба в мс
 #endif
 
 

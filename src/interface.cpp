@@ -232,9 +232,7 @@ void ui_section_effects_list_configuration(Interface *interf, const JsonObject *
     interf->json_section_begin(TCONST_set_effect);
 
     interf->text(TCONST_effname, "", TINTF_effrename);       // поле под новое имя оставляем пустым
-#ifdef MP3PLAYER
-    //interf->text(TCONST_soundfile, tmpSoundfile, TINTF_0B2);
-#endif
+
     interf->json_section_line();
         interf->checkbox(TCONST_eff_sel, confEff->canBeSelected(), TINTF_in_sel_lst);      // доступен для выбора в выпадающем списке на главной странице
         interf->checkbox(TCONST_eff_fav, confEff->isFavorite(), TINTF_in_demo);            // доступен в демо-режиме
@@ -614,11 +612,10 @@ void set_effects_config_list(Interface *interf, const JsonObject *data, const ch
     // обновляем поля
     interf->json_frame_value();
 
-#ifdef MP3PLAYER
     String tmpSoundfile;
     myLamp.effwrkr.loadsoundfile(tmpSoundfile,confEff->eff_nb);
     interf->value(TCONST_soundfile, tmpSoundfile, false);
-#endif
+
     interf->value(TCONST_eff_sel, confEff->canBeSelected(), false);          // доступен для выбора в выпадающем списке на главной странице
     interf->value(TCONST_eff_fav, confEff->isFavorite(), false);             // доступен в демо-режиме
 
@@ -780,9 +777,8 @@ void ui_block_mainpage_switches(Interface *interf, const JsonObject *data, const
     interf->checkbox(TCONST_drawbuff, myLamp.isDrawOn(), TINTF_0CE, true);
     interf->checkbox(TCONST_Mic, myLamp.isMicOnOff(), TINTF_012, true);
     interf->checkbox(TCONST_AUX, embui.paramVariant(TCONST_AUX), TCONST_AUX, true);
-#ifdef MP3PLAYER
     interf->checkbox(TCONST_isOnMP3, myLamp.isONMP3(), TINTF_099, true);
-#endif
+
 #ifdef LAMP_DEBUG
     interf->checkbox(TCONST_debug, myLamp.isDebugOn(), TINTF_08E, true);
 #endif
@@ -797,7 +793,7 @@ void ui_block_mainpage_switches(Interface *interf, const JsonObject *data, const
     interf->json_section_end();     // select
 
     interf->json_section_end();     // json_section_line()
-#ifdef MP3PLAYER
+
     if(mp3->isMP3Mode()){
         interf->json_section_line("line124"); // спец. имя - разбирается внутри html
         interf->button(button_t::generic, CMD_MP3_PREV, TINTF_0BD, P_GRAY);
@@ -808,7 +804,6 @@ void ui_block_mainpage_switches(Interface *interf, const JsonObject *data, const
     }
     // регулятор громкости mp3 плеера
     interf->range(TCONST_mp3volume, embui.paramVariant(TCONST_mp3volume).as<int>(), 1, 30, 1, TINTF_09B, true);
-#endif
 
     interf->button(button_t::generic, A_ui_page_effects, TINTF_exit);
     interf->json_frame_flush();
@@ -1070,7 +1065,6 @@ void set_overlay_drawing(Interface *interf, const JsonObject *data, const char* 
     myLamp.enableDrawing((*data)[TCONST_drawbuff]);
 }
 
-#ifdef MP3PLAYER
 // show page with MP3 Player setup
 void show_settings_mp3(Interface *interf, const JsonObject *data, const char* action){
     if (!interf) return;
@@ -1201,7 +1195,6 @@ void set_mp3_player(Interface *interf, const JsonObject *data, const char* actio
         mp3->playEffect(cur_palyingnb+5,"");
     }
 }
-#endif
 
 /*
     сохраняет настройки GPIO и перегружает контроллер
@@ -1215,7 +1208,6 @@ void set_gpios(Interface *interf, const JsonObject *data, const char* action){
 
     gpio_device dev = static_cast<gpio_device>((*data)[TCONST_set_gpio].as<int>());
     switch(dev){
-#ifdef MP3PLAYER
         // DFPlayer gpios
         case gpio_device::dfplayer : {
             // save pin numbers into config file if present/valid
@@ -1226,7 +1218,6 @@ void set_gpios(Interface *interf, const JsonObject *data, const char* action){
             else doc[TCONST_mp3tx] = (*data)[TCONST_mp3tx];
             break;
         }
-#endif
         // MOSFET gpios
         case gpio_device::mosfet : {
             if ( (*data)[TCONST_mosfet_gpio] == static_cast<int>(GPIO_NUM_NC) ) doc.remove(TCONST_mosfet_gpio);
@@ -1422,7 +1413,7 @@ void page_gpiocfg(Interface *interf, const JsonObject *data, const char* action)
     embuifs::deserializeFile(doc, TCONST_fcfg_gpio);
 
     interf->json_section_begin(TCONST_set_gpio, "");
-#ifdef MP3PLAYER
+
     // gpio для подключения DP-плеера
     interf->json_section_hidden(TCONST_playMP3, "DFPlayer");
         interf->json_section_line(); // расположить в одной линии
@@ -1431,7 +1422,6 @@ void page_gpiocfg(Interface *interf, const JsonObject *data, const char* action)
         interf->json_section_end();
         interf->button_value(button_t::submit, TCONST_set_gpio, static_cast<int>(gpio_device::dfplayer), TINTF_Save);
     interf->json_section_end();
-#endif
 
 #if DISABLED_CODE
     // gpio для подключения 7 сегментного индикатора
@@ -1685,10 +1675,8 @@ void embui_actions_register(){
     //embui.var_create(TCONST_EncVGCol, "#FF2A00");  // Дефолтный цвет шкалы
 #endif
 
-#ifdef MP3PLAYER
     embui.var_create(TCONST_mp3volume, 25); // громкость
     //embui.var_create(TCONST_mp3count, 255); // кол-во файлов в папке mp3 (установка убрана, используется значение по-умолчанию равное максимальному числу эффектов)
-#endif
 
     embui.var_create(TCONST_tmBright, 82); // 5<<4+5, старшие и младшие 4 байта содержат 5
 
@@ -1758,7 +1746,6 @@ void embui_actions_register(){
     embui.action.add(TCONST_debug, set_debugflag);
 #endif
 
-#ifdef MP3PLAYER
     embui.action.add(TCONST_isOnMP3, set_mp3flag);
     embui.action.add(TCONST_mp3volume, set_mp3volume);
     embui.action.add(TCONST_show_mp3, show_settings_mp3);
@@ -1768,7 +1755,6 @@ void embui_actions_register(){
     embui.action.add(CMD_MP3_NEXT, set_mp3_player);
     embui.action.add(TCONST_mp3_p5, set_mp3_player);
     embui.action.add(TCONST_mp3_n5, set_mp3_player);
-#endif
 /* #ifdef ENCODER
     embui.action.add(TCONST_set_enc, set_settings_enc);
 #endif

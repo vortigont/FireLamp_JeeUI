@@ -96,10 +96,8 @@ void set_pwrswitch(Interface *interf, const JsonObject *data, const char* action
     myLamp.power((*data)[action]);
     //EVT_POST(LAMP_SET_EVENTS, (*data)[A_dev_pwrswitch] ? e2int(evt::lamp_t::pwron) : e2int(evt::lamp_t::pwroff));
 
-    #ifdef MP3PLAYER
         if(myLamp.getLampFlagsStuct().isOnMP3)
             mp3->setIsOn((*data)[A_dev_pwrswitch]);
-    #endif
 }
 
 /**

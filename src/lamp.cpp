@@ -192,7 +192,6 @@ void Lamp::power(bool flag) // флаг включения/выключения 
   save_flags();
 }
 
-#ifdef MP3PLAYER
 /*
 temporary disable
 void Lamp::playEffect(bool isPlayName, EFFSWITCH action){
@@ -205,7 +204,6 @@ void Lamp::playEffect(bool isPlayName, EFFSWITCH action){
   }
 }
 */
-#endif  // MP3PLAYER
 
 void Lamp::startRGB(CRGB &val){
   rgbColor = val;
@@ -479,21 +477,15 @@ void Lamp::_switcheffect(effswitch_t action, bool fade, uint16_t effnb, bool ski
     effwrkr.switchEffect(effnb, true);
 
   bool isShowName = (mode==LAMPMODE::MODE_DEMO && flags.showName);
-#ifdef MP3PLAYER
   bool isPlayName = (isShowName && flags.playName && !flags.playMP3 && effwrkr.getCurrent()>0);
-#endif
 
   // show effects's name on screen and play name over speaker (if set)
   if(isShowName){
-#ifdef MP3PLAYER
     if(isPlayName && mp3!=nullptr && mp3->isOn()) // воспроизведение 
       mp3->playName(effwrkr.getCurrent());
-#endif
   }
 
-#ifdef MP3PLAYER
   playEffect(isPlayName, action); // воспроизведение звука, с проверкой текущего состояния
-#endif
 
   setBrightness(globalBrightness);      // need to reapply brightness as effect's curve might have changed
 
