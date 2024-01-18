@@ -1,0 +1,12 @@
+{
+"btn_events":[
+    {"enabled":true,"pwr":false,"btn_event":2,"lamp_event":13},
+    {"enabled":true,"pwr":true,"btn_event":2,"lamp_event":13},
+    {"enabled":true,"pwr":true,"btn_event":5,"lamp_event":24,"arg":1},
+    {"enabled":true,"pwr":true,"btn_event":6,"lamp_event":31,"clicks":2},
+    {"enabled":true,"pwr":true,"btn_event":6,"lamp_event":32,"clicks":3},
+    {"enabled":true,"pwr":true,"btn_event":6,"lamp_event":33,"clicks":4},
+    {"enabled":false,"pwr":false,"btn_event":3,"lamp_event":30,"arg":1}
+],
+"btn_cfg":{"enabled":false,"gpio":-1,"logicL":0,"debounce":true}
+}
