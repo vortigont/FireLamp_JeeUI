@@ -85,7 +85,6 @@ public:
 
     void load(JsonVariantConst cfg);
 
-    void save();
 };
 
 
