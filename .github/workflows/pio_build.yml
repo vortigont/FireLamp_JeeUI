@@ -41,13 +41,12 @@ jobs:
           - esp32
           - esp32debug
           - esp32full
-          - esp32btn
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: PIP Cache
         id: cache-pip
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         env:
           cache-name: cache-pip-pkgs
         with:
@@ -59,7 +58,7 @@ jobs:
             ${{ runner.os }}-
       - name: Platformio Cache
         id: cache-pio
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         env:
           cache-name: cache-pio-pkgs
         with:
