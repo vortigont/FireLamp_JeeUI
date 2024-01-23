@@ -195,7 +195,12 @@ void Lamp::power(bool flag) // флаг включения/выключения 
 /*
 temporary disable
 void Lamp::playEffect(bool isPlayName, EFFSWITCH action){
-  if(mp3!=nullptr && mp3->isOn() && effwrkr.getCurrent()>0 && (flags.playEffect || ((isLampOn() || millis()>5000) && flags.playMP3 && action!=EFFSWITCH::SW_NEXT_DEMO && action!=EFFSWITCH::SW_RND))){
+  if( mp3!=nullptr && mp3->isOn() &&
+      effwrkr.getCurrent()>0 &&
+      (flags.playEffect ||
+        ((isLampOn() || millis()>5000) && flags.playMP3 && action!=EFFSWITCH::SW_NEXT_DEMO && action!=EFFSWITCH::SW_RND)
+      )
+    ){
     LOG(printf_P, PSTR("playEffect soundfile:%s, effect:%d, delayed:%d\n"), effwrkr.getSoundfile().c_str(), effwrkr.getCurrent(), (flags.playName && !flags.playMP3));
     if(!flags.playMP3 || (flags.playEffect && action!=EFFSWITCH::SW_NEXT_DEMO && action!=EFFSWITCH::SW_RND)) // для mp3-плеера есть отдельное управление
       mp3->playEffect(effwrkr.getCurrent(), effwrkr.getSoundfile(), (isPlayName && mp3!=nullptr && mp3->isOn() && !flags.playMP3)); // влияние на отложенное воспроизведение, но не для MP3-плеера

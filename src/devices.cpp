@@ -128,11 +128,16 @@ void button_configure_gpio(JsonVariantConst btn_cfg){
     button = new GPIOButton<ESPEventPolicy> (static_cast<gpio_num_t>(gpio), btn_cfg[T_logicL]);
     if (!button) return;
     button->setDebounce(debn);
+    button->timeouts.setLongPress(btn_cfg[T_lpresst]);
+    button->timeouts.setMultiClick(btn_cfg[T_mclickt]);
   } else {
     if ( gpio != button->getGPIO() ){
       button->setGPIO(static_cast<gpio_num_t>(gpio), btn_cfg[T_logicL]);
-      button->setDebounce(debn);
     }
+    button->setDebounce(debn);
+    button->timeouts.setLongPress(btn_cfg[T_lpresst]);
+    button->timeouts.setMultiClick(btn_cfg[T_mclickt]);
+
     // button obj already exist, so no need to configure it further
     return;
   }
@@ -149,7 +154,6 @@ void button_configure_gpio(JsonVariantConst btn_cfg){
   ESPButton::set_event_loop_hndlr(evt::get_hndlr());
 
   button->enable();
-  Serial.print("Button enabled\n");
 }
 
 void button_configure_events(JsonVariantConst btn_cfg){

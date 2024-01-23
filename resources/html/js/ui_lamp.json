@@ -1,6 +1,6 @@
 {
   "type":"interface",
-  "version":4,
+  "version":5,
   "descr":"FireLamp UI objects",
   "settings":{
     "hub75":{
@@ -627,7 +627,7 @@
               "section": "set_button_gpio",
               "block": [
                 {
-                  "section": "enagpio",
+                  "section": "btngpio",
                   "line": true,
                   "block": [
                     {
@@ -638,7 +638,7 @@
                     },
                     {
                       "id": "gpio",
-                      "html": "input",
+                      "html":"input",
                       "value": -1,
                       "type": "number",
                       "label": "GPIO pin",
@@ -648,7 +648,7 @@
                   ]
                 },
                 {
-                  "section": "enagpio",
+                  "section": "btndebnc",
                   "line": true,
                   "block": [
                     {
@@ -662,6 +662,30 @@
                       "html":"input",
                       "label":"Debounce",
                       "type":"checkbox"
+                    }
+                  ]
+                },
+                {
+                  "section": "btntimes",
+                  "line": true,
+                  "block": [
+                    {
+                      "id":"lpresst",
+                      "html":"input",
+                      "value": 750,
+                      "type": "number",
+                      "label": "Long press time, ms",
+                      "min": 250,
+                      "step": 50
+                    },
+                    {
+                      "id":"mclickt",
+                      "html":"input",
+                      "value": 350,
+                      "type": "number",
+                      "label": "Multi Click time, ms",
+                      "min": 100,
+                      "step": 50
                     }
                   ]
                 },

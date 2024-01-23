@@ -68,6 +68,8 @@ static constexpr const char* T_btn_events = "btn_events";
 static constexpr const char* T_debounce = "debounce";
 static constexpr const char* T_lamp_event = "lamp_event";
 static constexpr const char* T_lamppwr = "lamppwr";
+static constexpr const char* T_lpresst = "lpresst";
+static constexpr const char* T_mclickt = "mclickt";
 
 // Other
 static constexpr const char* T_Active = "Active";

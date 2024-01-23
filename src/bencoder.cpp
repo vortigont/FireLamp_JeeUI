@@ -134,11 +134,6 @@ void ButtonEventHandler::load(JsonVariantConst cfg){
 
 }
 
-void ButtonEventHandler::save(){
-
-}
-
-
 
 
 
