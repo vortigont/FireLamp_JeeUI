@@ -635,7 +635,7 @@ void mqtt_publish_selected_effect_config_json(){
  */
 void block_effect_controls(Interface *interf, const JsonObject *data, const char* action){
 
-    JsonArrayConst sect = interf->json_section_begin(A_effect_ctrls);
+    JsonArrayConst sect = interf->json_section_begin(A_effect_ctrls, P_EMPTY, false, false, false, true);   // do not append section to main
     LList<std::shared_ptr<UIControl>> &controls = myLamp.effwrkr.getControls();
     uint8_t ctrlCaseType; // тип контрола, старшие 4 бита соответствуют CONTROL_CASE, младшие 4 - CONTROL_TYPE
 
