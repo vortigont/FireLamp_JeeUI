@@ -66,8 +66,3 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 /* make version as string, i.e. "2.6.1" */
 #define LAMPFW_VERSION_STRING    TOSTRING(LAMPFW_VERSION_MAJOR) "." TOSTRING(LAMPFW_VERSION_MINOR) "." TOSTRING(LAMPFW_VERSION_REVISION)
-
-
-// глобальные переменные для работы с ними в программе
-#include "mp3player.h"
-extern MP3PlayerDevice *mp3;

@@ -195,7 +195,7 @@ void run_action(ra act, const T& param) {
       //if(!myLamp.isONMP3()) return;
       int offset = param;
       if ( act == ra::mp3_prev) offset *= -1;
-      mp3->playEffect(mp3->getCurPlayingNb() + offset, "");
+      //mp3->playEffect(mp3->getCurPlayingNb() + offset, "");
       return; // no need to execute any UI action
     }
 

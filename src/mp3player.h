@@ -35,19 +35,21 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
    <https://www.gnu.org/licenses/>.)
 */
 #pragma once
-typedef enum : uint8_t {TS_NONE=0, TS_VER1, TS_VER2} TIME_SOUND_TYPE; // виды озвучки времени (8 вариантов максимум)
+//typedef enum : uint8_t {TS_NONE=0, TS_VER1, TS_VER2} TIME_SOUND_TYPE; // виды озвучки времени (8 вариантов максимум)
 typedef enum : uint8_t {AT_NONE=0, AT_FIRST, AT_SECOND, AT_THIRD, AT_FOURTH, AT_FIFTH, AT_RANDOM, AT_RANDOMMP3} ALARM_SOUND_TYPE; // виды будильников (8 вариантов максимум)
 
-#ifdef ESP8266
-#include <SoftwareSerial.h>
-#endif
-#include "DFRobotDFPlayerMini.h"
+#include "config.h"
+#include <DFMiniMp3.h>
 #include "ts.h"
+#include "evtloop.h"
 
+#define MP3_SERIAL Serial1
 #define DFPLAYER_DEFAULT_VOL  15
+#define DFPLAYER_JSON_CFG_JSIZE 4096
 
-class MP3PlayerDevice : protected DFRobotDFPlayerMini {
-  private:
+
+class MP3PlayerController {
+private:
     union {
       struct {
         uint8_t timeSoundType:3; // вид озвучивания времени
@@ -64,59 +66,91 @@ class MP3PlayerDevice : protected DFRobotDFPlayerMini {
       };
       uint32_t flags;
     };
-    Task *tPeriodic = nullptr; // периодический опрос плеера
+
+    HardwareSerial& _serial;
+    Task _tPeriodic; // периодический опрос плеера
     uint8_t cur_volume;
     uint16_t mp3filescount = 255; // кол-во файлов в каталоге MP3
     uint16_t nextAdv=0; // следующее воспроизводимое сообщение (произношение минут после часов)
     uint16_t cur_effnb=0; // текущий эффект
     uint16_t prev_effnb=0; // предыдущий эффект
 
-    bool internalsoftserial = false;        // if we are using internal softserial, than it need to be destructed on eol
-    Stream *mp3player;                      // serial port mapped stream object (hw or softserial)
+    //String soundfile; // хранилище пути/имени
+    //void printSatusDetail();
+    //void playAdvertise(int filenb);
+    //void playFolder0(int filenb);
+    //void restartSound();
 
-    String soundfile; // хранилище пути/имени
-    unsigned long restartTimeout = millis(); // таймаут воспроизведения имени эффекта
-    void printSatusDetail();
-    void playAdvertise(int filenb);
-    void playFolder0(int filenb);
-    void restartSound();
+  esp_event_handler_instance_t _lmp_einstance = nullptr;
 
-    /**
-     * @brief initialize player
-     * 
-     */
-    void init();
+  static void event_hndlr(void* handler, esp_event_base_t base, int32_t id, void* event_data);
 
-  public:
-    /**
-     * @brief Construct a new MP3PlayerDevice object
-     * для 8266 будет создан softwareserial port
-     * для esp32 будет подключен аппартный Serial2
-     * 
-     * @param rxPin 
-     * @param txPin 
-     */
-    MP3PlayerDevice(int8_t rxPin, int8_t txPin, uint8_t vol = DFPLAYER_DEFAULT_VOL);
+  void _lmpEventHandler(esp_event_base_t base, int32_t id, void* data);
 
-    /**
-     * @brief Construct a new MP3PlayerDevice object
-     * плюключить плеер на произвольный порт
-     * порт должен быть УЖЕ инициализирован на требуемую скорость/параметры
-     * @param port stream object
-     */
-    MP3PlayerDevice(Stream *port, uint8_t vol = DFPLAYER_DEFAULT_VOL); // конструктор для Stream
+  /**
+   * @brief initialze player instance
+   * 
+   */
+  void init();
 
-    // d-tor
-    ~MP3PlayerDevice();
+public:
+  MP3PlayerController(HardwareSerial& serial, DfMp3Type type = DfMp3Type::origin, uint32_t ackTimeout = DF_ACK_TIMEOUT);
+  // d-tor
+  ~MP3PlayerController(){ unsubscribe(); delete dfp; dfp = nullptr; }
 
+  /**
+   * @brief Construct a new MP3PlayerController object
+   * для 8266 будет создан softwareserial port
+   * для esp32 будет подключен аппартный Serial2
+   * 
+   * @param rxPin 
+   * @param txPin 
+   */
+  //MP3PlayerController(DFPLAYER_MODULE_TYPE type, int8_t rxPin, int8_t txPin, uint8_t vol = DFPLAYER_DEFAULT_VOL);
+
+  /**
+   * @brief Construct a new MP3PlayerController object
+   * плюключить плеер на произвольный порт
+   * порт должен быть УЖЕ инициализирован на требуемую скорость/параметры
+   * @param port stream object
+   */
+  //MP3PlayerController(Stream *port, uint8_t vol = DFPLAYER_DEFAULT_VOL); // конструктор для Stream
+
+  // d-tor
+  //~MP3PlayerController();
+
+  // Player instance
+  DFMiniMp3 *dfp = nullptr;
+
+  /**
+   * @brief initialize player
+   * 
+   */
+  void begin(int8_t rxPin, int8_t txPin, DfMp3Type type, uint32_t ackTimeout = DF_ACK_TIMEOUT);
+
+  void begin(int8_t rxPin, int8_t txPin);
+
+
+  void subscribe();
+
+  void unsubscribe();
+
+  void loop();
+
+  // play/advertise current time
+  void playTime(int hours, int minutes);
+
+  bool isReady(){ return ready; }
+
+
+/*
     uint16_t getCurPlayingNb() {return prev_effnb;} // вернуть предыдущий для смещения
     void setupplayer(uint16_t effnb, const String &_soundfile) {soundfile = _soundfile; cur_effnb=effnb;};
-    bool isReady() {return ready;}
     bool isAlarm() {return alarm;}
     bool isOn() {return on && ready;}
     bool isMP3Mode() {return mp3mode;}
     void setIsOn(bool val, bool forcePlay=true);
-    void playTime(int hours, int minutes, TIME_SOUND_TYPE tst);
+
     void playEffect(uint16_t effnb, const String &_soundfile, bool delayed=false);
     void playName(uint16_t effnb);
     uint8_t getVolume() { return cur_volume; }
@@ -132,5 +166,58 @@ class MP3PlayerDevice : protected DFRobotDFPlayerMini {
     void ReStartAlarmSound(ALARM_SOUND_TYPE val);
     void RestoreVolume() { setVolume(cur_volume); }
     void setCurEffect(uint16_t effnb) { prev_effnb=cur_effnb; cur_effnb = effnb%256; }
-    void handle();
+*/
+    //void handle();
 };
+
+/*
+class Mp3Notify
+{
+public:
+  static void PrintlnSourceAction(DfMp3_PlaySources source, const char* action)
+  {
+    if (source == DfMp3_PlaySources_Sd) 
+    {
+        Serial.print("SD Card, ");
+    }
+    if (source == DfMp3_PlaySources_Usb) 
+    {
+        Serial.print("USB Disk, ");
+    }
+    if (source == DfMp3_PlaySources_Flash) 
+    {
+        Serial.print("Flash, ");
+    }
+    Serial.println(action);
+  }
+
+  static void OnError([[maybe_unused]] DFPlayer& mp3, uint16_t errorCode)
+  {
+    // see DfMp3_Error for code meaning
+    Serial.println();
+    Serial.print("Com Error ");
+    Serial.println(errorCode);
+  }
+
+  static void OnPlayFinished([[maybe_unused]] DFPlayer& mp3, [[maybe_unused]] DfMp3_PlaySources source, uint16_t track)
+  {
+    Serial.print("Play finished for #");
+    Serial.println(track);
+  }
+
+  static void OnPlaySourceOnline([[maybe_unused]] DFPlayer& mp3, DfMp3_PlaySources source)
+  {
+    PrintlnSourceAction(source, "online");
+  }
+
+  static void OnPlaySourceInserted([[maybe_unused]] DFPlayer& mp3, DfMp3_PlaySources source)
+  {
+    PrintlnSourceAction(source, "inserted");
+  }
+
+  static void OnPlaySourceRemoved([[maybe_unused]] DFPlayer& mp3, DfMp3_PlaySources source)
+  {
+    PrintlnSourceAction(source, "removed");
+  }
+};
+*/

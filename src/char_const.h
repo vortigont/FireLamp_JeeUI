@@ -51,7 +51,7 @@ static constexpr const char* T_clk_phase = "clkphase";
 static constexpr const char* T_min_refresh = "minrr";
 static constexpr const char* T_color_depth = "colordpth";
 
-// For TM1637
+// TM1637 Display
 static constexpr const char* T_On = "-On-";
 static constexpr const char* T_Off = "Off";
 static constexpr const char* T_tm1637 = "tm1637";
@@ -71,15 +71,24 @@ static constexpr const char* T_lamppwr = "lamppwr";
 static constexpr const char* T_lpresst = "lpresst";
 static constexpr const char* T_mclickt = "mclickt";
 
+// DFPlayer
+static constexpr const char* T_dfplayer_cfg = "/dfplayer.json";
+
+
 // Other
 static constexpr const char* T_Active = "Active";
 static constexpr const char* T_arg = "arg";
 static constexpr const char* T_clicks = "clicks";
+static constexpr const char* T_device = "device";
 static constexpr const char* T_edit = "edit";
 static constexpr const char* T_Enable = "Enable";
 static constexpr const char* T_enabled = "enabled";
 static constexpr const char* T_idx = "idx";
 static constexpr const char* T_pwr = "pwr";
+static constexpr const char* T_rx = "rx";
+static constexpr const char* T_tx = "tx";
+static constexpr const char* T_timeout = "timeout";
+static constexpr const char* T_type = "type";
 
 
 static constexpr const char* TCONST_act = "act";
@@ -171,8 +180,6 @@ static constexpr const char* TCONST_mosfet_gpio = "fet_gpio";             // MOS
 static constexpr const char* TCONST_mosfet_ll = "fet_ll";                // MOSFET logic level
 static constexpr const char* TCONST_mp3count = "mp3count";
 static constexpr const char* TCONST_mp3volume = "mp3volume";
-static constexpr const char* TCONST_mp3rx = "mp3rx";
-static constexpr const char* TCONST_mp3tx = "mp3tx";
 static constexpr const char* TCONST_mp3_n5 = "mp3_n5";
 static constexpr const char* TCONST_mp3_p5 = "mp3_p5";
 static constexpr const char* TCONST_msg = "msg";

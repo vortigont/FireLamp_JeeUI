@@ -58,10 +58,25 @@ void tm1637_setup();
  * 
  * @param tm JsonObject with configuration params
  */
-void tm1637_configure(JsonVariantConst& tm);
+void tm1637_configure(JsonVariantConst cfg);
 
 void button_cfg_load();
 
-void button_configure_gpio(JsonVariantConst btn_cfg);
+void button_configure_gpio(JsonVariantConst cfg);
 
-void button_configure_events(JsonVariantConst btn_cfg);
+void button_configure_events(JsonVariantConst cfg);
+
+
+// *** DFPlayer
+
+// Load DFPlayer configuration from JSON on flash
+void dfplayer_cfg_load();
+
+/**
+ * @brief configure hw options for DFPlayer
+ * it could be executes either
+ * 
+ * @param cfg 
+ */
+void dfplayer_setup_device(JsonVariantConst cfg);
+

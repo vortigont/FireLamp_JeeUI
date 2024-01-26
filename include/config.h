@@ -133,12 +133,13 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #define MIN_PEAK_LEVEL        (50U)                         // Минимальный амплитудный уровень, для эффектов зависящих от микрофона
 #endif
 
-#ifndef MP3_SERIAL_TIMEOUT
-#define MP3_SERIAL_TIMEOUT    (300U)                       // 300мс по умолчанию, диапазон 200...1000, подбирается экспериментально, не желательно сильно повышать
-#endif
-#ifndef DFPLAYER_START_DELAY
-#define DFPLAYER_START_DELAY  (500U)                       // 500мс по умолчанию, диапазон 10...1000, подбирается экспериментально, не желательно сильно повышать, безусловная задержка до инициализации
-#endif
+// DFPlayer
+//#ifndef MP3_SERIAL_TIMEOUT
+//#define MP3_SERIAL_TIMEOUT    (300U)                       // 300мс по умолчанию, диапазон 200...1000, подбирается экспериментально, не желательно сильно повышать
+//#endif
+//#ifndef DFPLAYER_START_DELAY
+//#define DFPLAYER_START_DELAY  (500U)                       // 500мс по умолчанию, диапазон 10...1000, подбирается экспериментально, не желательно сильно повышать, безусловная задержка до инициализации
+//#endif
 
 
 #ifndef DS18B20_PIN

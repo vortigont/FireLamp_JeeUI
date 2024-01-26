@@ -485,11 +485,12 @@ void Lamp::_switcheffect(effswitch_t action, bool fade, uint16_t effnb, bool ski
   bool isPlayName = (isShowName && flags.playName && !flags.playMP3 && effwrkr.getCurrent()>0);
 
   // show effects's name on screen and play name over speaker (if set)
+/*
   if(isShowName){
     if(isPlayName && mp3!=nullptr && mp3->isOn()) // воспроизведение 
       mp3->playName(effwrkr.getCurrent());
   }
-
+*/
   playEffect(isPlayName, action); // воспроизведение звука, с проверкой текущего состояния
 
   setBrightness(globalBrightness);      // need to reapply brightness as effect's curve might have changed

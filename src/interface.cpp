@@ -793,7 +793,7 @@ void ui_block_mainpage_switches(Interface *interf, const JsonObject *data, const
     interf->json_section_end();     // select
 
     interf->json_section_end();     // json_section_line()
-
+/*
     if(mp3->isMP3Mode()){
         interf->json_section_line("line124"); // спец. имя - разбирается внутри html
         interf->button(button_t::generic, CMD_MP3_PREV, TINTF_0BD, P_GRAY);
@@ -802,6 +802,7 @@ void ui_block_mainpage_switches(Interface *interf, const JsonObject *data, const
         interf->button(button_t::generic, TCONST_mp3_n5, TINTF_0C0, P_GRAY);
         interf->json_section_end(); // line
     }
+*/
     // регулятор громкости mp3 плеера
     interf->range(TCONST_mp3volume, embui.paramVariant(TCONST_mp3volume).as<int>(), 1, 30, 1, TINTF_09B, true);
 
@@ -1079,10 +1080,12 @@ void show_settings_mp3(Interface *interf, const JsonObject *data, const char* ac
     interf->json_section_line(); // расположить в одной линии
         interf->checkbox(TCONST_isOnMP3, myLamp.isONMP3(), TINTF_099, true);
         // show message if DFPlayer is not available
+/*
         if (!mp3->isReady())
             interf->constant("DFPlayer is not connected, not ready or not responding :(");
         else
             interf->constant("DFPlayer player: Connected");
+*/
     interf->json_section_end();
 
     interf->json_section_begin(TCONST_set_mp3);
@@ -1092,7 +1095,7 @@ void show_settings_mp3(Interface *interf, const JsonObject *data, const char* ac
         interf->checkbox(TCONST_playEffect, myLamp.getLampFlagsStuct().playEffect , TINTF_09E, false);
         interf->checkbox(TCONST_playMP3, myLamp.getLampFlagsStuct().playMP3 , TINTF_0AF, false);
     interf->json_section_end();
-
+/*
     interf->json_section_line(); // время/будильник
     interf->select(TCONST_playTime, myLamp.getLampFlagsStuct().playTime, TINTF_09C, false);
     interf->option(TIME_SOUND_TYPE::TS_NONE, TINTF_0B6);
@@ -1111,7 +1114,6 @@ void show_settings_mp3(Interface *interf, const JsonObject *data, const char* ac
     interf->option(ALARM_SOUND_TYPE::AT_RANDOMMP3, TINTF_0A2);
     interf->json_section_end();
     interf->json_section_end(); // время/будильник
-
     interf->checkbox(TCONST_limitAlarmVolume, myLamp.getLampFlagsStuct().limitAlarmVolume , TINTF_0B3, false);
 
     interf->json_section_line();
@@ -1122,7 +1124,8 @@ void show_settings_mp3(Interface *interf, const JsonObject *data, const char* ac
         interf->option(DFPLAYER_EQ_JAZZ, TINTF_0AC);
         interf->option(DFPLAYER_EQ_CLASSIC, TINTF_0AD);
         interf->option(DFPLAYER_EQ_BASS, TINTF_0AE);
-        interf->json_section_end();
+    interf->json_section_end();
+*/
         
         //interf->number(TCONST_mp3count, mp3->getMP3count(), TINTF_0B0);
     interf->json_section_end();
@@ -1142,13 +1145,15 @@ void set_settings_mp3(Interface *interf, const JsonObject *data, const char* act
     resetAutoTimers(); // сдвинем таймеры автосейва, т.к. длительная операция
     uint8_t val = (*data)[TCONST_eqSetings].as<uint8_t>();
     myLamp.setEqType(val);
-    mp3->setEqType(val); // пишет в плеер!
+    //mp3->setEqType(val); // пишет в плеер!
 
     myLamp.setPlayTime((*data)[TCONST_playTime].as<int>());
     myLamp.setPlayName((*data)[TCONST_playName]);
-    myLamp.setPlayEffect((*data)[TCONST_playEffect]); mp3->setPlayEffect(myLamp.getLampFlagsStuct().playEffect);
+    myLamp.setPlayEffect((*data)[TCONST_playEffect]);
+    //mp3->setPlayEffect(myLamp.getLampFlagsStuct().playEffect);
     //myLamp.setAlatmSound((ALARM_SOUND_TYPE)(*data)[TCONST_alarmSound].as<int>());
-    myLamp.setPlayMP3((*data)[TCONST_playMP3]); mp3->setPlayMP3(myLamp.getLampFlagsStuct().playMP3);
+    myLamp.setPlayMP3((*data)[TCONST_playMP3]);
+    //mp3->setPlayMP3(myLamp.getLampFlagsStuct().playMP3);
     //myLamp.setLimitAlarmVolume((*data)[TCONST_limitAlarmVolume]);
 
     //SETPARAM(TCONST_mp3count);
@@ -1161,6 +1166,7 @@ void set_settings_mp3(Interface *interf, const JsonObject *data, const char* act
 
 void set_mp3flag(Interface *interf, const JsonObject *data, const char* action){
     if (!data) return;
+/*
     myLamp.setONMP3((*data)[TCONST_isOnMP3]);
     if(myLamp.isLampOn())
         mp3->setIsOn(myLamp.isONMP3(), true); // при включенной лампе - форсировать воспроизведение
@@ -1170,6 +1176,7 @@ void set_mp3flag(Interface *interf, const JsonObject *data, const char* action){
             if( !data->containsKey(TCONST_force) || (*data)[TCONST_force] ) // при наличие force="1" или без этого ключа
                 mp3->playTime(TimeProcessor::getInstance().getHours(), TimeProcessor::getInstance().getMinutes(), (TIME_SOUND_TYPE)myLamp.getLampFlagsStuct().playTime);
     }
+*/
     myLamp.save_flags();
 }
 
@@ -1177,12 +1184,12 @@ void set_mp3volume(Interface *interf, const JsonObject *data, const char* action
     if (!data) return;
     int volume = (*data)[TCONST_mp3volume];
     embui.var(TCONST_mp3volume, volume);
-    mp3->setVolume(volume);
+    //mp3->setVolume(volume);
 }
 
 void set_mp3_player(Interface *interf, const JsonObject *data, const char* action){
     if (!data) return;
-
+/*
     if(!myLamp.isONMP3()) return;
     uint16_t cur_palyingnb = mp3->getCurPlayingNb();
     if(data->containsKey(CMD_MP3_PREV)){
@@ -1194,6 +1201,7 @@ void set_mp3_player(Interface *interf, const JsonObject *data, const char* actio
     } else if(data->containsKey(TCONST_mp3_n5)){
         mp3->playEffect(cur_palyingnb+5,"");
     }
+*/
 }
 
 /*
@@ -1208,6 +1216,7 @@ void set_gpios(Interface *interf, const JsonObject *data, const char* action){
 
     gpio_device dev = static_cast<gpio_device>((*data)[TCONST_set_gpio].as<int>());
     switch(dev){
+/*
         // DFPlayer gpios
         case gpio_device::dfplayer : {
             // save pin numbers into config file if present/valid
@@ -1218,6 +1227,7 @@ void set_gpios(Interface *interf, const JsonObject *data, const char* action){
             else doc[TCONST_mp3tx] = (*data)[TCONST_mp3tx];
             break;
         }
+*/
         // MOSFET gpios
         case gpio_device::mosfet : {
             if ( (*data)[TCONST_mosfet_gpio] == static_cast<int>(GPIO_NUM_NC) ) doc.remove(TCONST_mosfet_gpio);
@@ -1413,7 +1423,7 @@ void page_gpiocfg(Interface *interf, const JsonObject *data, const char* action)
     embuifs::deserializeFile(doc, TCONST_fcfg_gpio);
 
     interf->json_section_begin(TCONST_set_gpio, "");
-
+#if DISABLED_CODE
     // gpio для подключения DP-плеера
     interf->json_section_hidden(TCONST_playMP3, "DFPlayer");
         interf->json_section_line(); // расположить в одной линии
@@ -1423,7 +1433,7 @@ void page_gpiocfg(Interface *interf, const JsonObject *data, const char* action)
         interf->button_value(button_t::submit, TCONST_set_gpio, static_cast<int>(gpio_device::dfplayer), TINTF_Save);
     interf->json_section_end();
 
-#if DISABLED_CODE
+
     // gpio для подключения 7 сегментного индикатора
     interf->json_section_hidden(TCONST_tm24, "TM1637 Display");
         interf->json_section_line(); // расположить в одной линии

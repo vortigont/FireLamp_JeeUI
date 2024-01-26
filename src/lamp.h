@@ -139,10 +139,10 @@ _LAMPFLAGS(){
     isOnMP3 = false;
     isBtn = true;
     showName = false;
-    playTime = TIME_SOUND_TYPE::TS_NONE; // воспроизводить время?
+    playTime = 0; //TIME_SOUND_TYPE::TS_NONE; // воспроизводить время?
     playName = false; // воспроизводить имя?
     playEffect = false; // воспроизводить эффект?
-    alarmSound = ALARM_SOUND_TYPE::AT_NONE;
+    alarmSound = 0; //ALARM_SOUND_TYPE::AT_NONE;
     MP3eq = 0;
     playMP3 = false;
     limitAlarmVolume = false;
