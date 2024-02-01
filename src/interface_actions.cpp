@@ -349,6 +349,35 @@ void getset_button_gpio(Interface *interf, const JsonObject *data, const char* a
     if (interf) ui_page_setup_devices(interf, nullptr, NULL);
 }
 
+void getset_dfplayer_device(Interface *interf, const JsonObject *data, const char* action){
+    {
+        DynamicJsonDocument doc(DFPLAYER_JSON_CFG_JSIZE);
+        if (!embuifs::deserializeFile(doc, T_dfplayer_cfg)) doc.clear();
+
+        // if this is a request with no data, then just provide existing configuration and quit
+        if (!data || !(*data).size()){
+            if (interf && doc.containsKey(T_device)){
+                interf->json_frame_value(doc[T_device], true);
+                interf->json_frame_flush();
+            }
+            return;
+        }
+
+        JsonVariant dst = doc[T_device].isNull() ? doc.createNestedObject(T_btn_cfg) : doc[T_device];
+
+        // copy keys to a destination object
+        for (JsonPair kvp : *data)
+            dst[kvp.key()] = kvp.value();
+
+        embuifs::serialize2file(doc, T_dfplayer_cfg);
+
+        JsonVariantConst cfg(dst);
+        // reconfig DFPlayer device
+        dfplayer_setup_device(cfg);
+    }
+
+    if (interf) ui_page_setup_devices(interf, nullptr, NULL);
+}
 
 // a call-back handler that listens for status CHANGE events and publish it to EmbUI feeders
 void event_publisher(void* handler_args, esp_event_base_t base, int32_t id, void* event_data){

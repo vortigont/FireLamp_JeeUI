@@ -214,7 +214,6 @@ static constexpr const char* TCONST_showName = "showName";
 static constexpr const char* TCONST_show_button = "show_button";
 static constexpr const char* TCONST_show_butt = "show_butt";
 static constexpr const char* TCONST_show_event = "show_event";
-static constexpr const char* TCONST_show_mp3 = "show_mp3";
 static constexpr const char* TCONST_soundfile = "soundfile";
 static constexpr const char* TCONST_spdcf = "spdcf";
 static constexpr const char* TCONST_speed = "speed";
@@ -295,13 +294,18 @@ static constexpr const char* A_effect_ctrls = "eff_ctrls";                      
 static constexpr const char* A_effect_dynCtrl = "eff_dynCtrl*";                 // Effect controls handler
 static constexpr const char* A_display_hub75 = "display_hub75";                 // HUB75 display configuration
 static constexpr const char* A_display_ws2812 = "display_ws2812";               // ws2812 display configuration
+// TM1637
 static constexpr const char* A_display_tm1637 = "*et_display_tm1637";           // get/set tm1637 display configuration
+// button
 static constexpr const char* A_button_gpio = "*et_button_gpio";                 // get/set button gpio configuration
 static constexpr const char* A_button_evt_edit = "button_evt_edit";             // edit button action form
 static constexpr const char* A_button_evt_save = "button_evt_save";             // save/apply button action form
+// DFPlayer
+static constexpr const char* A_dfplayer_gpio = "*et_dfplayer_device";           // get/set DFPlayer device configuration
+
+
 
 static constexpr const char* A_ui_page_effects_config = "effects_config";
-
 
 static constexpr const char* TCONST_set_gpio = "s_gpio";                    // set gpio action
 static constexpr const char* TCONST_set_butt = "set_butt";                  // set button

@@ -106,16 +106,27 @@ void ui_page_setup_devices(Interface *interf, const JsonObject *data, const char
  */
 void event_publisher(void* handler_args, esp_event_base_t base, int32_t id, void* event_data);
 
+// ========== Button
+
 /**
  * @brief webui page with button configuration
  * 
- * @param interf 
- * @param data 
- * @param action 
  */
 void page_button_setup(Interface *interf, const JsonObject *data, const char* action);
 
 void getset_button_gpio(Interface *interf, const JsonObject *data, const char* action);
+
+
+// ========== DFPlayer
+
+/**
+ * @brief DFPlayer configuration page
+ * 
+ */
+void page_dfplayer_setup(Interface *interf, const JsonObject *data, const char* action);
+// DFPlayer get/set device form handler
+void getset_dfplayer_device(Interface *interf, const JsonObject *data, const char* action);
+
 
 
 // ==========
