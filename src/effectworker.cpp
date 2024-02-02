@@ -58,7 +58,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 #define WRKR_TASK_CORE          CONFIG_ARDUINO_RUNNING_CORE    // task MUST be pinned to the second core to avoid LED glitches (if applicable)
 #define WRKR_TASK_PRIO          tskIDLE_PRIORITY+1    // task priority
-#ifdef LAMP_DEBUG
+#ifdef LAMP_DEBUG_LEVEL
 #define WRKR_TASK_STACK         2048                  // sprintf could take lot's of stack mem for debug messages
 #else
 #define WRKR_TASK_STACK         1536                  // effects code should mostly allocate mem on heap
@@ -258,6 +258,7 @@ void EffectWorker::workerset(uint16_t effect){
 
   // grab mutex
   std::unique_lock<std::mutex> lock(_mtx);
+  // create a new instance of effect child
   switch (static_cast<EFF_ENUM>(effect%256)) // номер может быть больше чем ENUM из-за копирований, находим эффект по модулю
   {
   case EFF_ENUM::EFF_TIME :
@@ -510,8 +511,8 @@ void EffectWorker::workerset(uint16_t effect){
     display.canvasProtect(eff_persistent_buff[effect%256]);     // set 'persistent' frambuffer flag if effect's manifest demands it
     _start_runner();  // start calculator task IF we are marked as active
     // send event
-    unsigned n = effect;
-    EVT_POST_DATA(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::effSwitchTo), &n, sizeof(unsigned));
+    uint32_t n = effect;
+    EVT_POST_DATA(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::effSwitchTo), &n, sizeof(uint32_t));
   }
 }
 

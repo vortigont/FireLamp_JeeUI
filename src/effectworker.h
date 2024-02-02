@@ -309,7 +309,6 @@ class EffectWorker;
 */
 class EffectCalc {
 private:
-    //EffectWorker *_pworker = nullptr; // указатель на воркер
     LAMPSTATE *_lampstate = nullptr;
     LList<std::shared_ptr<UIControl>> *ctrls;
     String dummy; // дефолтная затычка для отсутствующего контролла, в случае приведения к целому получится "0"
@@ -317,6 +316,7 @@ private:
     bool isCtrlPallete = false; // признак наличия контрола палитры
     bool isMicActive = false; // признак включенного микрофона
     bool isMicOnState() {return _lampstate ? _lampstate->isMicOn : false;}
+
 protected:
     LedFB<CRGB> *fb;          // Framebuffer to work on
     EFF_ENUM effect;        /**< энумератор эффекта */
@@ -439,7 +439,6 @@ public:
 class EffectWorker {
 private:
     LAMPSTATE *lampstate;   // ссылка на состояние лампы
-    //LedFB *fb;              // framebuffer to run EffectCalcs
     SORT_TYPE effSort;      // порядок сортировки в UI
 
     Effcfg curEff;          // конфигурация текущего эффекта, имя/версия и т.п.

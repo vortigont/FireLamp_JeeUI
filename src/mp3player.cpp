@@ -37,11 +37,15 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "config.h"
 #include "mp3player.h"
 #include "log.h"
+#include "char_const.h"
 
 // which serial to use for esp32
 #define MP3_SERIAL_SPEED    9600  //DFPlayer Mini suport only 9600-baud
 #define MP3_SERIAL_TIMEOUT  350   //average DFPlayer response timeout 200msec..300msec for YX5200/AAxxxx chip & 350msec..500msec for GD3200B/MH2024K chip
 
+#define MP3_EFF_FOLDER       3     // folder with effects track
+
+#define MP3_LOOPTRACK_CMD_DELAY 5000
 
 MP3PlayerController::MP3PlayerController(HardwareSerial& serial, DfMp3Type type, uint32_t ackTimeout) : _serial(serial) {
   dfp = new DFMiniMp3(serial, type, ackTimeout);
@@ -62,15 +66,30 @@ void MP3PlayerController::begin(int8_t rxPin, int8_t txPin){
   // event bus subsribe
   subscribe();
 
-  dfp->onPlayFinished( [](DfMp3_PlaySources source, uint16_t track){ Serial.print("Play finished for #"); Serial.println(track); } );
+  dfp->onPlayFinished( [this](DfMp3_PlaySources source, uint16_t track){
+    LOGI(T_DFPlayer, printf, "playback end #%u\n", track);
+    // ignore "play end event if loop is active"
+    if (!loop)
+      _state = DfMp3_StatusState_Idle;
+  } );
 
-  dfp->onPlaySource( [](DfMp3_SourceEvent event, DfMp3_PlaySources source){ Serial.print("DFP: on-line: "); Serial.println(source); } );
+  dfp->onPlaySource( [this](DfMp3_SourceEvent event, DfMp3_PlaySources source)
+    {
+      LOGI(T_DFPlayer, printf, "on-line: %u\n", source);
+      // set vol on first online event
+      if (!ready){
+        ready = true;
+        dfp->setVolume(_volume);
+      }
+      _state = DfMp3_StatusState_Idle;
+    }
+  );
 
-  dfp->onError( [](uint16_t errorCode){  Serial.print("DFP Error: "); Serial.println(errorCode); Serial.println(); } );
+  dfp->onError( [](uint16_t errorCode){  LOGW(T_DFPlayer, printf, "Error: %u\n", errorCode); } );
 
   // this will (probably) make a player to reply with state packet and we can understand that it's on-line
-  dfp->getTotalTrackCount();
-  //dfp->reset();
+  //dfp->getTotalTrackCount();
+  dfp->reset();
 }
 
 // this method will recreate MP3Player object
@@ -108,16 +127,17 @@ void MP3PlayerController::event_hndlr(void* handler, esp_event_base_t base, int3
 
 void MP3PlayerController::_lmpEventHandler(esp_event_base_t base, int32_t id, void* data){
   switch (static_cast<evt::lamp_t>(id)){
-  // Power control
+    // Power control
     case evt::lamp_t::pwron :
-      LOG(println,"DFplayer: playOn");
+      LOGI(T_DFPlayer, println, T_Notification);
       dfp->playFolderTrack(2, 1);
-      //_lamp_pwr = true;
       break;
     case evt::lamp_t::pwroff :
-      LOG(println,"DFplayer: playOff");
+      LOGI(T_DFPlayer, println, T_Notification);
       dfp->playFolderTrack(2, 1);
-      //_lamp_pwr = false;
+      break;
+    case evt::lamp_t::effSwitchTo :
+      playEffect(*reinterpret_cast<uint32_t*>(data));
       break;
   }
 }
@@ -246,23 +266,33 @@ void MP3PlayerController::printSatusDetail(){
   }
 }
 */
-/*
-void MP3PlayerController::handle()
-{
-  if (available()) { // эта часть не только пишет ошибки, но также отлавливает изменение состояний!!!
-    printSatusDetail(); //Print the detail message from DFPlayer to handle different errors and states.
-  }
-}
-*/
+
 void MP3PlayerController::playTime(int hours, int minutes){
   if(!isReady()) return;
 
   if( dfp->getStatus().state == DfMp3_StatusState_Playing ){
     dfp->playAdvertisement(100*hours+minutes);
   } else {
-    dfp->playFolderTrack(0, 100*hours+minutes);
+    loop  = false;
+    dfp->playFolderTrack16(0, 100*hours+minutes);
   }
 }
+
+void MP3PlayerController::playEffect(uint32_t effnb){
+  LOGI(T_DFPlayer, printf, "effect folder:%u, track:%u, effnb:%u\n", MP3_EFF_FOLDER, effnb%256, effnb);
+  dfp->playFolderTrack(MP3_EFF_FOLDER, effnb%256);
+  _state = DfMp3_StatusState_Playing;
+  // for looping current track player must be in play mode already playing
+  // it needs a delay between starting playback and sending repeat command
+  Task *t = new Task(MP3_LOOPTRACK_CMD_DELAY, TASK_ONCE,
+      [this](){
+        dfp->setRepeatPlayCurrentTrack(true);
+        looptrack = true;
+      },
+      &ts, false, nullptr, nullptr, true );
+  t->enableDelayed();
+}
+
 /*
 void MP3PlayerController::playFolder0(int filenb) {
   LOG(printf_P, PSTR("DFplayer: playLargeFolder filenb: %d\n"), filenb);
@@ -284,40 +314,7 @@ void MP3PlayerController::playAdvertise(int filenb) {
 }
 
 
-void MP3PlayerController::playEffect(uint16_t effnb, const String &_soundfile, bool delayed)
-{
-  isplayname = false;
-  soundfile = _soundfile;
-  int folder = _soundfile.substring(0,_soundfile.lastIndexOf('\\')).toInt();
-  int filenb = _soundfile.substring(_soundfile.lastIndexOf('\\')+1).toInt();
-  LOG(printf_P, PSTR("DFplayer: soundfile:%s, folder:%d, filenb:%d, effnb:%d\n"), soundfile.c_str(), folder, filenb, effnb%256);
-  if(!mp3mode){
-    if(!filenb){
-      cur_effnb = effnb%256;
-      if(!delayed)
-        playFolder(3, cur_effnb);
-      prev_effnb = effnb%256;
-    } else if(!folder){
-      //mp3
-      if(!delayed)
-        playMp3Folder(filenb);
-    } else {
-      //folder#
-      if(!delayed)
-        playFolder(folder, filenb);
-    }
-  } else {
-    int shift=effnb%256-prev_effnb%256;
-    prev_effnb = effnb%256;
-    cur_effnb = ((int32_t)cur_effnb + shift)%256;
-    if(cur_effnb>mp3filescount)
-      cur_effnb%=mp3filescount;
-    else if(cur_effnb==0)
-      cur_effnb=1;
-    if(!delayed)
-      playMp3Folder(cur_effnb);
-  }
-}
+
 
 void MP3PlayerController::playName(uint16_t effnb)
 {

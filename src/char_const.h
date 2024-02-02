@@ -72,6 +72,7 @@ static constexpr const char* T_lpresst = "lpresst";
 static constexpr const char* T_mclickt = "mclickt";
 
 // DFPlayer
+static constexpr const char* T_DFPlayer = "DFPlayer";
 static constexpr const char* T_dfplayer_cfg = "/dfplayer.json";
 
 
@@ -84,6 +85,7 @@ static constexpr const char* T_edit = "edit";
 static constexpr const char* T_Enable = "Enable";
 static constexpr const char* T_enabled = "enabled";
 static constexpr const char* T_idx = "idx";
+static constexpr const char* T_Notification = "Notification";
 static constexpr const char* T_pwr = "pwr";
 static constexpr const char* T_rx = "rx";
 static constexpr const char* T_tx = "tx";
@@ -180,8 +182,6 @@ static constexpr const char* TCONST_mosfet_gpio = "fet_gpio";             // MOS
 static constexpr const char* TCONST_mosfet_ll = "fet_ll";                // MOSFET logic level
 static constexpr const char* TCONST_mp3count = "mp3count";
 static constexpr const char* TCONST_mp3volume = "mp3volume";
-static constexpr const char* TCONST_mp3_n5 = "mp3_n5";
-static constexpr const char* TCONST_mp3_p5 = "mp3_p5";
 static constexpr const char* TCONST_msg = "msg";
 static constexpr const char* TCONST_nofade = "nofade";
 static constexpr const char* TCONST_Normal = "Normal";

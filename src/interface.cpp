@@ -1675,8 +1675,8 @@ void embui_actions_register(){
 
     embui.action.add(CMD_MP3_PREV, set_mp3_player);
     embui.action.add(CMD_MP3_NEXT, set_mp3_player);
-    embui.action.add(TCONST_mp3_p5, set_mp3_player);
-    embui.action.add(TCONST_mp3_n5, set_mp3_player);
+    //embui.action.add(TCONST_mp3_p5, set_mp3_player);
+    //embui.action.add(TCONST_mp3_n5, set_mp3_player);
 /* #ifdef ENCODER
     embui.action.add(TCONST_set_enc, set_settings_enc);
 #endif
