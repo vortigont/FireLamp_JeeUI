@@ -266,7 +266,7 @@ if freshtag https://github.com/ajaxorg/ace/raw/master/doc/site/images/favicon.ic
     curl -sL https://github.com/ajaxorg/ace/raw/master/doc/site/images/favicon.ico | ${compress_cmd} ${compress_args} > $ace_dst/ace.ico.${compressor}
 fi
 
-updlocalarchive extras/edit.htm
+#updlocalarchive extras/edit.htm
 
 
 mv -f newetags.txt $tags

@@ -1,7 +1,8 @@
 {
   "type":"interface",
-  "version":5,
+  "version":6,
   "descr":"FireLamp UI objects",
+
   "settings":{
     "hub75":{
       "section":"display_hub75",
@@ -329,6 +330,7 @@
           "id":"display_hub75",
           "html":"button",
           "type":1,
+          "fa": "fas fa-circle-check",
           "label":"Сохранить"
         },
         {
@@ -336,6 +338,7 @@
           "html":"button",
           "color": "green",
           "type":0,
+          "fa": "fas fa-door-open",
           "label":"Выход"
         }
       ]
@@ -515,12 +518,14 @@
           "html": "button",
           "type": 1,
           "color": "green",
+          "fa": "fas fa-circle-check",
           "label": "Сохранить"
         },
         {
           "id": "ui_page_settings",
           "html": "button",
           "type": 0,
+          "fa": "fas fa-door-open",
           "label": "Выход"
         }
       ]
@@ -603,12 +608,14 @@
           "html": "button",
           "type": 1,
           "color": "green",
+          "fa": "fas fa-circle-check",
           "label": "Сохранить"
         },
         {
           "id": "ui_page_settings",
           "html": "button",
           "type": 0,
+          "fa": "fas fa-door-open",
           "label": "Выход"
         }
       ]
@@ -694,6 +701,7 @@
                   "html": "button",
                   "type": 1,
                   "color": "green",
+                  "fa": "fas fa-circle-check",
                   "label": "Сохранить"
                 }
               ]
@@ -715,11 +723,150 @@
           "id": "ui_page_settings",
           "html": "button",
           "type": 0,
+          "fa": "fas fa-door-open",
           "label": "Выход"
+        }
+      ]
+    },
+    "dfplayer":{
+      "section":"set_dfplayer",
+      "main": true,
+      "label":"Параметры MP3 DFPlayer",
+      "block":[
+        {
+          "section": "set_dfplayer_device",
+          "label": "DFPlayer device",
+          "hidden": true,
+          "block":[
+            {
+              "section": "dfdev01",
+              "line": true,
+              "block": [
+                {
+                  "id":"enabled",
+                  "html":"input",
+                  "label":"Enable DFPlayer",
+                  "type":"checkbox"
+                },
+                {
+                  "id":"driver",
+                  "html":"select",
+                  "value":0,
+                  "label":"Chip model",
+                  "section":"options",
+                  "block":[
+                    {
+                      "value":0,
+                      "label":"Generic DFPlayer"
+                    },
+                    {
+                      "value":1,
+                      "label":"No Ack models"
+                    },
+                    {
+                      "value":2,
+                      "label":"No checksum models"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "section": "dfdev02",
+              "line": true,
+              "block": [
+                {
+                  "id": "rx",
+                  "html":"input",
+                  "value": -1,
+                  "type": "number",
+                  "label": "GPIO RX",
+                  "min": -1,
+                  "step": 1
+                },
+                {
+                  "id": "timeout",
+                  "html":"input",
+                  "value": 900,
+                  "type": "number",
+                  "label": "Ack timeout, ms",
+                  "min": 100,
+                  "max": 2000,
+                  "step": 50
+                },
+                {
+                  "id": "tx",
+                  "html":"input",
+                  "value": -1,
+                  "type": "number",
+                  "label": "GPIO TX",
+                  "min": -1,
+                  "step": 1
+                }
+              ]
+            },
+            {
+              "id": "set_dfplayer_device",
+              "html": "button",
+              "type": 1,
+              "color": "green",
+              "fa": "fas fa-circle-check",
+              "label": "Сохранить"
+            },
+            {
+              "id": "ui_page_settings",
+              "html": "button",
+              "type": 0,
+              "fa": "fas fa-door-open",
+              "label": "Выход"
+            }
+          ]
+        },
+        {
+          "section": "set_dfplayer_opt",
+          "label": "Функции DFPlayer",
+          "hidden": true,
+          "block":[
+            {
+              "section": "dffunc01",
+              "line": true,
+              "block": [
+                {
+                  "id":"eff_tracks",
+                  "html":"input",
+                  "label":"Effects sounds",
+                  "type":"checkbox"
+                },
+                {
+                  "id":"eff_tracks_loop",
+                  "html":"input",
+                  "label":"Loop Effects",
+                  "type":"checkbox"
+                }
+              ]
+            },
+            {
+              "id": "set_dfplayer_opt",
+              "html": "button",
+              "type": 1,
+              "color": "green",
+              "fa": "fas fa-circle-check",
+              "label": "Сохранить"
+            },
+            {
+              "id": "ui_page_settings",
+              "html": "button",
+              "type": 0,
+              "fa": "fas fa-door-open",
+              "label": "Выход"
+            }
+
+          ]
         }
       ]
     }
   },
+
   "sections":{
     "button_event":{
       "section":"button_evt_save",

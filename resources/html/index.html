@@ -21,6 +21,7 @@
 	<title>FireLamp</title>
 	<link rel="stylesheet" href="css/pure.css">
 	<link rel="stylesheet" href="css/lamp.css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 	<link id="dyncss" rel="stylesheet" type="text/css" href="css/style.css">
 </head>
 <body>
@@ -114,7 +115,7 @@
 			{{#if2 type == 1}}{{onevent "click", "on_submit", id, value}}{{/if2}}
 			{{#if2 type == 2}}{{onevent "click", "on_js", id, value}}{{/if2}}
 			{{#if2 type == 3}} onclick="location.href='{{value}}'" type="button"{{/if2}}
-			>{{label}}</button>
+			>{{#if2 fa}}<i class="{{fa}}">{{/if2}}</i>{{/if2}}{{label}}</button>
 		{{/if}}
 		{{#if type == "checkbox"}}
 		    <div class="switch-block">
@@ -123,7 +124,7 @@
 		    </div>
 		{{/if}}
 		{{#if html == "const"}}
-			<div id="{{id}}" class="pure-u-1 pure-button mr">{{label}}{{#if2 value}}<input type="hidden" name="{{id}}" value="{{value}}">{{/if2}}</div>
+			<div id="{{id}}" class="pure-u-1 pure-button mr">{{#if2 fa}}<i class="{{fa}}">{{/if2}}</i>{{/if2}}{{label}}{{#if2 value}}<input type="hidden" name="{{id}}" value="{{value}}">{{/if2}}</div>
 		{{/if}}
 		{{#if html == "comment"}}
 			<div id="{{id}}" class="comment">{{label}}</div>
@@ -174,7 +175,7 @@
 		{{/if}}
 
 		{{#if html == "img"}}
-		<div class = "image"><img id="{{id}}" src = {{value}}></div>
+			<div class = "image"><img id="{{id}}" src = {{value}}></div>
 		{{/if}}
 		{{#if html == "input" && type != "checkbox"}}
 			<span>{{label}}</span>
