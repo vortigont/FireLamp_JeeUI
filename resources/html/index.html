@@ -114,8 +114,10 @@
 			{{#if2 type == 0}}{{onevent "click", "on_change", id, value}}{{/if2}}
 			{{#if2 type == 1}}{{onevent "click", "on_submit", id, value}}{{/if2}}
 			{{#if2 type == 2}}{{onevent "click", "on_js", id, value}}{{/if2}}
-			{{#if2 type == 3}} onclick="location.href='{{value}}'" type="button"{{/if2}}
-			>{{#if2 fa}}<i class="{{fa}}">{{/if2}}</i>{{/if2}}{{label}}</button>
+			{{#if2 type == 3}} onclick="location.href='{{value}}'" type="button">{{/if2}}
+			{{#if2 fa}}<i class="{{fa}}"></i>{{/if2}}
+			>{{label}}
+		</button>
 		{{/if}}
 		{{#if type == "checkbox"}}
 		    <div class="switch-block">
