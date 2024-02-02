@@ -120,6 +120,8 @@ void setup() {
     button_cfg_load();
     // DFPlayer
     dfplayer_cfg_load();
+    // restore mp3 player vol
+    dfplayer_volume(embui.paramVariant(T_mp3vol));
 
     embui.setPubInterval(30);   // change periodic WebUI publish interval from EMBUI_PUB_PERIOD to 10 secs
 

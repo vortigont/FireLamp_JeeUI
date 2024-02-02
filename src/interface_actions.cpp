@@ -379,6 +379,37 @@ void getset_dfplayer_device(Interface *interf, const JsonObject *data, const cha
     if (interf) ui_page_setup_devices(interf, nullptr, NULL);
 }
 
+void getset_dfplayer_opt(Interface *interf, const JsonObject *data, const char* action){
+    {
+        DynamicJsonDocument doc(DFPLAYER_JSON_CFG_JSIZE);
+        if (!embuifs::deserializeFile(doc, T_dfplayer_cfg)) doc.clear();
+
+        // if this is a request with no data, then just provide existing configuration and quit
+        if (!data || !(*data).size()){
+            if (interf && doc.containsKey(T_opt)){
+                interf->json_frame_value(doc[T_opt], true);
+                interf->json_frame_flush();
+            }
+            return;
+        }
+
+        JsonVariant dst = doc[T_opt].isNull() ? doc.createNestedObject(T_opt) : doc[T_opt];
+
+        // copy keys to a destination object
+        for (JsonPair kvp : *data)
+            dst[kvp.key()] = kvp.value();
+
+        embuifs::serialize2file(doc, T_dfplayer_cfg);
+
+        JsonVariantConst cfg(dst);
+        // reconfig DFPlayer device
+        dfplayer_setup_opt(cfg);
+    }
+
+    if (interf) ui_page_setup_devices(interf, nullptr, NULL);
+}
+
+
 // a call-back handler that listens for status CHANGE events and publish it to EmbUI feeders
 void event_publisher(void* handler_args, esp_event_base_t base, int32_t id, void* event_data){
     // quit if there are no feeders to notify

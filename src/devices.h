@@ -80,3 +80,12 @@ void dfplayer_cfg_load();
  */
 void dfplayer_setup_device(JsonVariantConst cfg);
 
+/**
+ * @brief configure playback options for player
+ * 
+ * @param cfg 
+ */
+void dfplayer_setup_opt(JsonVariantConst cfg);
+
+// mp3 vol wrapper, needed only on boot to restore vol from config
+void dfplayer_volume(int v);

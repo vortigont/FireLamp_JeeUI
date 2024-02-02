@@ -55,7 +55,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "evtloop.h"
 
 // версия ресурсов в стороннем джейсон файле
-#define UIDATA_VERSION  5
+#define UIDATA_VERSION  6
 
 // placeholder for effect list rebuilder task
 Task *delayedOptionTask = nullptr;
@@ -463,6 +463,7 @@ void page_dfplayer_setup(Interface *interf, const JsonObject *data, const char* 
 
     // call setter with no data, it will publish existing config values if any
     getset_dfplayer_device(interf, nullptr, NULL);
+    getset_dfplayer_opt(interf, nullptr, NULL);
 }
 
 
@@ -785,7 +786,7 @@ void ui_block_mainpage_switches(Interface *interf, const JsonObject *data, const
     interf->checkbox(TCONST_drawbuff, myLamp.isDrawOn(), TINTF_0CE, true);
     interf->checkbox(TCONST_Mic, myLamp.isMicOnOff(), TINTF_012, true);
     interf->checkbox(TCONST_AUX, embui.paramVariant(TCONST_AUX), TCONST_AUX, true);
-    interf->checkbox(TCONST_isOnMP3, myLamp.isONMP3(), TINTF_099, true);
+    interf->checkbox(T_mp3mute, myLamp.isONMP3(), "MP3 Mute" /*TINTF_099*/, true);
 
 #ifdef LAMP_DEBUG
     interf->checkbox(TCONST_debug, myLamp.isDebugOn(), TINTF_08E, true);
@@ -812,7 +813,7 @@ void ui_block_mainpage_switches(Interface *interf, const JsonObject *data, const
     }
 */
     // регулятор громкости mp3 плеера
-    interf->range(TCONST_mp3volume, embui.paramVariant(TCONST_mp3volume).as<int>(), 1, 30, 1, TINTF_09B, true);
+    interf->range(T_mp3vol, embui.paramVariant(T_mp3vol).as<int>(), 1, 30, 1, TINTF_09B, true);
 
     interf->button(button_t::generic, A_ui_page_effects, TINTF_exit);
     interf->json_frame_flush();
@@ -1074,26 +1075,19 @@ void set_overlay_drawing(Interface *interf, const JsonObject *data, const char* 
     myLamp.enableDrawing((*data)[TCONST_drawbuff]);
 }
 
-void set_mp3flag(Interface *interf, const JsonObject *data, const char* action){
+void set_mp3mute(Interface *interf, const JsonObject *data, const char* action){
     if (!data) return;
-/*
-    myLamp.setONMP3((*data)[TCONST_isOnMP3]);
-    if(myLamp.isLampOn())
-        mp3->setIsOn(myLamp.isONMP3(), true); // при включенной лампе - форсировать воспроизведение
-    else {
-        mp3->setIsOn(myLamp.isONMP3(), false); // при выключенной - не форсировать, но произнести время, но не ранее чем через 10с после перезагрузки
-        if(myLamp.isONMP3() && millis()>10000)
-            if( !data->containsKey(TCONST_force) || (*data)[TCONST_force] ) // при наличие force="1" или без этого ключа
-                mp3->playTime(TimeProcessor::getInstance().getHours(), TimeProcessor::getInstance().getMinutes(), (TIME_SOUND_TYPE)myLamp.getLampFlagsStuct().playTime);
-    }
-*/
-    myLamp.save_flags();
+
+    int v = (*data)[T_mp3mute];
+    EVT_POST(LAMP_SET_EVENTS, e2int(v ? evt::lamp_t::mp3mute : evt::lamp_t::mp3unmute ));
 }
 
 void set_mp3volume(Interface *interf, const JsonObject *data, const char* action){
     if (!data) return;
-    int volume = (*data)[TCONST_mp3volume];
-    embui.var(TCONST_mp3volume, volume);
+    int volume = (*data)[T_mp3vol];
+    embui.var(T_mp3vol, volume);
+    EVT_POST_DATA(LAMP_SET_EVENTS, e2int(evt::lamp_t::mp3vol), &volume, sizeof(int));
+
     //mp3->setVolume(volume);
 }
 
@@ -1596,7 +1590,7 @@ void embui_actions_register(){
     //embui.var_create(TCONST_EncVGCol, "#FF2A00");  // Дефолтный цвет шкалы
 #endif
 
-    embui.var_create(TCONST_mp3volume, 25); // громкость
+    embui.var_create(T_mp3vol, 25); // громкость
     //embui.var_create(TCONST_mp3count, 255); // кол-во файлов в папке mp3 (установка убрана, используется значение по-умолчанию равное максимальному числу эффектов)
 
     embui.var_create(TCONST_tmBright, 82); // 5<<4+5, старшие и младшие 4 байта содержат 5
@@ -1633,7 +1627,10 @@ void embui_actions_register(){
     embui.action.add(A_button_evt_save, page_button_evt_save);              // button save/apply event
 
     // DFPlayer
-    embui.action.add(A_button_gpio, getset_button_gpio);                    // button setup
+    embui.action.add(A_dfplayer_dev, getset_dfplayer_device);               // DFPlayer device setup
+    embui.action.add(A_dfplayer_opt, getset_dfplayer_opt);                  // DFPlayer options setup
+    embui.action.add(T_mp3vol, set_mp3volume);
+    embui.action.add(T_mp3mute, set_mp3mute);
 
     // to be refactored
 
@@ -1670,8 +1667,6 @@ void embui_actions_register(){
     embui.action.add(TCONST_debug, set_debugflag);
 #endif
 
-    embui.action.add(TCONST_isOnMP3, set_mp3flag);
-    embui.action.add(TCONST_mp3volume, set_mp3volume);
 
     embui.action.add(CMD_MP3_PREV, set_mp3_player);
     embui.action.add(CMD_MP3_NEXT, set_mp3_player);

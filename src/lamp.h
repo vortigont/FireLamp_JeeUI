@@ -165,6 +165,8 @@ private:
     uint8_t storedBright;               // "запасное" значение яркости
     uint8_t BFade;                      // затенение фона под текстом
 
+    bool mp3mute = false;               // времянка
+
     // GPIO's
     // это должен быть gpio_num_t в есп32, но пока нужна совместимость с 8266 держим инт
     int8_t fet_gpio = GPIO_NUM_NC, aux_gpio = GPIO_NUM_NC;
@@ -366,8 +368,8 @@ public:
      */
     void clearDrawBuf() { CRGB c = CRGB::Black; fillDrawBuf(c); }
 
-    bool isONMP3() {return flags.isOnMP3;}
-    void setONMP3(bool flag) {flags.isOnMP3=flag;}
+    bool isONMP3() {return mp3mute;}
+    void setONMP3(bool flag) { mp3mute=flag; }
 
     void setPlayTime(uint8_t val) {flags.playTime = val;}
     void setPlayName(bool flag) {flags.playName = flag;}

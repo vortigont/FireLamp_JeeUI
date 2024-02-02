@@ -79,6 +79,11 @@ enum class lamp_t:int32_t {
   effSwitchPrev,
   effSwitchRnd,
 
+  // mp3 player
+  mp3vol = 40,              // get/set mp3 volume, param: int n
+  mp3volstep,               // set mp3 volume increment/decrement, param: int n
+  mp3mute,
+  mp3unmute,
 
   // **** state change / notification events ****
   fadeStart = 1000,

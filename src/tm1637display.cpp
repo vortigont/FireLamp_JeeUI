@@ -154,6 +154,9 @@ void TMDisplay::_event_picker(esp_event_base_t base, int32_t id, void* data){
         // disaply can't process this event, so let's request for real brt value
         EVT_POST(LAMP_GET_EVENTS, static_cast<int32_t>(evt::lamp_t::brightness));
         return;
+      case evt::lamp_t::mp3vol :
+        _msg_vol(*((int*) data));
+        return;
     }
   }
 
@@ -202,6 +205,14 @@ void TMDisplay::brightness(uint8_t b, bool lampon){
 
 void TMDisplay::_msg_brt(int32_t b){
   String s("Br.");
+  if (b<10) s.concat((char)0x20); // append space
+  s += b;
+  display(s);
+  timer = 2;
+};
+
+void TMDisplay::_msg_vol(int32_t b){
+  String s("Sn.");
   if (b<10) s.concat((char)0x20); // append space
   s += b;
   display(s);

@@ -176,13 +176,13 @@ void dfplayer_cfg_load(){
   DynamicJsonDocument doc(DFPLAYER_JSON_CFG_JSIZE);
   if (!embuifs::deserializeFile(doc, T_dfplayer_cfg)) return;      // config is missing, bad
 
-  JsonVariantConst _cfg( doc[T_device] );
-  dfplayer_setup_device(_cfg);
-
-  //_cfg = doc[T_btn_events];
-  //button_configure_events(_cfg);
+  {
+    JsonVariantConst dev( doc[T_device] );
+    dfplayer_setup_device(dev);
+  }
+  JsonVariantConst opt( doc[T_opt] );
+  dfplayer_setup_opt(opt);
 }
-
 
 void dfplayer_setup_device(JsonVariantConst cfg){
   if (!cfg[T_enabled]){
@@ -210,8 +210,14 @@ void dfplayer_setup_device(JsonVariantConst cfg){
       mp3player->begin(rx, tx, static_cast<DfMp3Type>(cfg[T_type].as<int>()), cfg[T_timeout]);
   }
 
-  //mp3player->init(14, 27);
 }
 
+void dfplayer_setup_opt(JsonVariantConst cfg){
+  if (!mp3player) return;
 
+  mp3player->setPlayEffects(cfg[T_eff_tracks]);
+  mp3player->setLoopEffects(cfg[T_eff_tracks_loop]);
+}
+
+void dfplayer_volume(int v){ if (mp3player) mp3player->setVolume(v); };
 

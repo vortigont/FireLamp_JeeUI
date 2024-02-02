@@ -74,6 +74,10 @@ static constexpr const char* T_mclickt = "mclickt";
 // DFPlayer
 static constexpr const char* T_DFPlayer = "DFPlayer";
 static constexpr const char* T_dfplayer_cfg = "/dfplayer.json";
+static constexpr const char* T_mp3vol = "mp3vol";
+static constexpr const char* T_eff_tracks = "eff_tracks";
+static constexpr const char* T_eff_tracks_loop = "eff_tracks_loop";
+static constexpr const char* T_mp3mute = "mp3mute";
 
 
 // Other
@@ -86,6 +90,7 @@ static constexpr const char* T_Enable = "Enable";
 static constexpr const char* T_enabled = "enabled";
 static constexpr const char* T_idx = "idx";
 static constexpr const char* T_Notification = "Notification";
+static constexpr const char* T_opt = "opt";
 static constexpr const char* T_pwr = "pwr";
 static constexpr const char* T_rx = "rx";
 static constexpr const char* T_tx = "tx";
@@ -159,7 +164,6 @@ static constexpr const char* TCONST_Host = "Host";
 static constexpr const char* TCONST_Ip = "Ip";
 static constexpr const char* TCONST_isClearing = "isClearing";
 static constexpr const char* TCONST_isFaderON = "isFaderON";
-static constexpr const char* TCONST_isOnMP3 = "isOnMP3";
 static constexpr const char* TCONST_isPlayTime = "isPlayTime";
 static constexpr const char* TCONST_isShowOff = "isShowOff";
 static constexpr const char* TCONST_isStreamOn = "isStreamOn";
@@ -180,14 +184,10 @@ static constexpr const char* TCONST_Mode = "Mode";
 static constexpr const char* TCONST_mode = "mode";
 static constexpr const char* TCONST_mosfet_gpio = "fet_gpio";             // MOSFET gpio
 static constexpr const char* TCONST_mosfet_ll = "fet_ll";                // MOSFET logic level
-static constexpr const char* TCONST_mp3count = "mp3count";
-static constexpr const char* TCONST_mp3volume = "mp3volume";
 static constexpr const char* TCONST_msg = "msg";
 static constexpr const char* TCONST_nofade = "nofade";
 static constexpr const char* TCONST_Normal = "Normal";
 static constexpr const char* TCONST_numInList = "numInList";
-static constexpr const char* TCONST_ny_period = "ny_period";
-static constexpr const char* TCONST_ny_unix = "ny_unix";
 static constexpr const char* TCONST_onetime = "onetime";
 static constexpr const char* TCONST_Other = "Other";
 static constexpr const char* TCONST_pFS = "pFS";
@@ -301,8 +301,8 @@ static constexpr const char* A_button_gpio = "*et_button_gpio";                 
 static constexpr const char* A_button_evt_edit = "button_evt_edit";             // edit button action form
 static constexpr const char* A_button_evt_save = "button_evt_save";             // save/apply button action form
 // DFPlayer
-static constexpr const char* A_dfplayer_gpio = "*et_dfplayer_device";           // get/set DFPlayer device configuration
-
+static constexpr const char* A_dfplayer_dev = "*et_dfplayer_device";           // get/set DFPlayer device configuration
+static constexpr const char* A_dfplayer_opt = "*et_dfplayer_opt";             // get/set DFPlayer functions
 
 
 static constexpr const char* A_ui_page_effects_config = "effects_config";

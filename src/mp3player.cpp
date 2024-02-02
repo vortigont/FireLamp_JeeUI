@@ -69,7 +69,7 @@ void MP3PlayerController::begin(int8_t rxPin, int8_t txPin){
   dfp->onPlayFinished( [this](DfMp3_PlaySources source, uint16_t track){
     LOGI(T_DFPlayer, printf, "playback end #%u\n", track);
     // ignore "play end event if loop is active"
-    if (!loop)
+    if (!flags.looptrack)
       _state = DfMp3_StatusState_Idle;
   } );
 
@@ -77,8 +77,8 @@ void MP3PlayerController::begin(int8_t rxPin, int8_t txPin){
     {
       LOGI(T_DFPlayer, printf, "on-line: %u\n", source);
       // set vol on first online event
-      if (!ready){
-        ready = true;
+      if (!flags.ready){
+        flags.ready = true;
         dfp->setVolume(_volume);
       }
       _state = DfMp3_StatusState_Idle;
@@ -104,28 +104,41 @@ void MP3PlayerController::loop(){
 }
 
 void MP3PlayerController::subscribe(){
-  if (_lmp_einstance) return;
 
   // Register the handler for task iteration event; need to pass instance handle for later unregistration.
-  ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, MP3PlayerController::event_hndlr, this, &_lmp_einstance));
+  if (!_lmp_ch_instance)
+    ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, MP3PlayerController::event_hndlr, this, &_lmp_ch_instance));
+
+  if (!_lmp_set_instance)
+    ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_SET_EVENTS, ESP_EVENT_ANY_ID, MP3PlayerController::event_hndlr, this, &_lmp_set_instance));
 
   //ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), EBTN_EVENTS, ESP_EVENT_ANY_ID, ButtonEventHandler::event_hndlr, this, &_btn_einstance));
 }
 
 void MP3PlayerController::unsubscribe(){
-  if (!_lmp_einstance) return;
-  ESP_ERROR_CHECK(esp_event_handler_instance_unregister_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, _lmp_einstance));
-  _lmp_einstance = nullptr;
+  if (_lmp_ch_instance){
+    ESP_ERROR_CHECK(esp_event_handler_instance_unregister_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, _lmp_ch_instance));
+    _lmp_ch_instance = nullptr;
+  }
+
+  if (_lmp_set_instance){
+    ESP_ERROR_CHECK(esp_event_handler_instance_unregister_with(evt::get_hndlr(), LAMP_SET_EVENTS, ESP_EVENT_ANY_ID, _lmp_set_instance));
+    _lmp_set_instance = nullptr;
+  }
+
   //ESP_ERROR_CHECK(esp_event_handler_instance_unregister_with(_loop, EBTN_EVENTS, ESP_EVENT_ANY_ID, _btn_einstance));
 };
 
 void MP3PlayerController::event_hndlr(void* handler, esp_event_base_t base, int32_t id, void* event_data){
-  //LOG(printf, "DPlayer::event_hndlr %s:%d\n", base, id);
+  LOGD(T_DFPlayer, printf, "EVENT %s:%d\n", base, id);
   if ( base == LAMP_CHANGE_EVENTS )
-    return static_cast<MP3PlayerController*>(handler)->_lmpEventHandler(base, id, event_data);
+    return static_cast<MP3PlayerController*>(handler)->_lmpChEventHandler(base, id, event_data);
+
+  if ( base == LAMP_SET_EVENTS )
+    return static_cast<MP3PlayerController*>(handler)->_lmpSetEventHandler(base, id, event_data);
 }
 
-void MP3PlayerController::_lmpEventHandler(esp_event_base_t base, int32_t id, void* data){
+void MP3PlayerController::_lmpChEventHandler(esp_event_base_t base, int32_t id, void* data){
   switch (static_cast<evt::lamp_t>(id)){
     // Power control
     case evt::lamp_t::pwron :
@@ -137,7 +150,26 @@ void MP3PlayerController::_lmpEventHandler(esp_event_base_t base, int32_t id, vo
       dfp->playFolderTrack(2, 1);
       break;
     case evt::lamp_t::effSwitchTo :
-      playEffect(*reinterpret_cast<uint32_t*>(data));
+      if (flags.eff_playtrack)
+        playEffect(*reinterpret_cast<uint32_t*>(data));
+      break;
+  }
+}
+
+void MP3PlayerController::_lmpSetEventHandler(esp_event_base_t base, int32_t id, void* data){
+  switch (static_cast<evt::lamp_t>(id)){
+    // Volume control
+    case evt::lamp_t::mp3vol :
+      LOGI(T_DFPlayer, println, T_mp3vol);
+      setVolume(*reinterpret_cast<int*>(data));
+      break;
+    case evt::lamp_t::mp3mute :
+      LOGI(T_DFPlayer, println, "mute");
+      dfp->disableDac();
+      break;
+    case evt::lamp_t::mp3unmute :
+      LOGI(T_DFPlayer, println, "unmute");
+      dfp->enableDac();
       break;
   }
 }
@@ -273,7 +305,7 @@ void MP3PlayerController::playTime(int hours, int minutes){
   if( dfp->getStatus().state == DfMp3_StatusState_Playing ){
     dfp->playAdvertisement(100*hours+minutes);
   } else {
-    loop  = false;
+    flags.looptrack  = false;
     dfp->playFolderTrack16(0, 100*hours+minutes);
   }
 }
@@ -284,14 +316,22 @@ void MP3PlayerController::playEffect(uint32_t effnb){
   _state = DfMp3_StatusState_Playing;
   // for looping current track player must be in play mode already playing
   // it needs a delay between starting playback and sending repeat command
-  Task *t = new Task(MP3_LOOPTRACK_CMD_DELAY, TASK_ONCE,
-      [this](){
-        dfp->setRepeatPlayCurrentTrack(true);
-        looptrack = true;
-      },
-      &ts, false, nullptr, nullptr, true );
-  t->enableDelayed();
+  if (flags.eff_looptrack){
+    Task *t = new Task(MP3_LOOPTRACK_CMD_DELAY, TASK_ONCE,
+        [this](){
+          dfp->setRepeatPlayCurrentTrack(true);
+          flags.looptrack = true;
+        },
+        &ts, false, nullptr, nullptr, true );
+    t->enableDelayed();
+  }
 }
+
+void MP3PlayerController::setVolume(uint8_t vol) {
+  _volume=vol;
+  dfp->setVolume(vol);
+}
+
 
 /*
 void MP3PlayerController::playFolder0(int filenb) {
@@ -369,11 +409,6 @@ void MP3PlayerController::ReStartAlarmSound(ALARM_SOUND_TYPE val){
     default:
     break;
   }
-}
-
-void MP3PlayerController::setVolume(uint8_t vol) {
-  cur_volume=vol;
-  setTempVolume(vol);
 }
 
 void MP3PlayerController::setTempVolume(uint8_t vol) {

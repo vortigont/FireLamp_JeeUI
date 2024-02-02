@@ -50,21 +50,21 @@ typedef enum : uint8_t {AT_NONE=0, AT_FIRST, AT_SECOND, AT_THIRD, AT_FOURTH, AT_
 
 class MP3PlayerController {
 private:
-    union {
-      struct {
+      struct Flags {
         uint8_t timeSoundType:3;      // вид озвучивания времени
         uint8_t tAlarm:3;             // вид будильника
         bool ready:1;                 // закончилась ли инициализация
-        bool on:1;                    // включен ли...
-        bool effectmode:1;            // режим проигрывания эффектов
-        bool alarm:1;                 // сейчас будильник
-        bool isplayname:1;            // проигрывается имя
-        bool isadvert:1;              // воспроизводится ли сейчас время в ADVERT (для совместимости между 24SS и GD3200B)
+        //bool on:1;                    // включен ли...
+        bool eff_playtrack:1;         // режим проигрывания треков эффектов
+        bool eff_looptrack:1;         // зацикливать дорожку эффекта
+        //bool alarm:1;                 // сейчас будильник
+        //bool isplayname:1;            // проигрывается имя
+        //bool isadvert:1;              // воспроизводится ли сейчас время в ADVERT (для совместимости между 24SS и GD3200B)
         bool isplaying:1;             // воспроизводится ли сейчас песня или эффект
-        bool looptrack:1;             // if track loop is enabled
+        bool looptrack:1;             // if current track is looped (cmd has been sent to player)
       };
-      uint32_t flags = 0;
-    };
+
+    Flags flags{};
 
     HardwareSerial& _serial;
     Task _tPeriodic; // периодический опрос плеера
@@ -79,11 +79,17 @@ private:
     //void playFolder0(int filenb);
     //void restartSound();
 
-  esp_event_handler_instance_t _lmp_einstance = nullptr;
+  esp_event_handler_instance_t _lmp_ch_instance = nullptr;
+  esp_event_handler_instance_t _lmp_set_instance = nullptr;
 
   static void event_hndlr(void* handler, esp_event_base_t base, int32_t id, void* event_data);
 
-  void _lmpEventHandler(esp_event_base_t base, int32_t id, void* data);
+  // change events handler
+  void _lmpChEventHandler(esp_event_base_t base, int32_t id, void* data);
+
+  // set events handler
+
+  void _lmpSetEventHandler(esp_event_base_t base, int32_t id, void* data);
 
   /**
    * @brief initialze player instance
@@ -117,7 +123,7 @@ public:
   // play/advertise current time
   void playTime(int hours, int minutes);
 
-  bool isReady(){ return ready; }
+  bool isReady(){ return flags.ready; }
 
   /**
    * @brief play effect melody
@@ -125,6 +131,24 @@ public:
    * @param effnb 
    */
   void playEffect(uint32_t effnb);
+
+  /**
+   * @brief set/unset playing effect sounds
+   * 
+   * @param value 
+   */
+  void setPlayEffects(bool value){ flags.eff_playtrack = value; }
+
+  /**
+   * @brief Set/uset loop effect's track
+   * otherwise player will play next track on end
+   * 
+   * @param value 
+   */
+  void setLoopEffects(bool value){ flags.eff_looptrack = value; }
+
+  uint8_t getVolume() const { return _volume; }
+  void setVolume(uint8_t vol);
 
 /*
     uint16_t getCurPlayingNb() {return prev_effnb;} // вернуть предыдущий для смещения
@@ -136,8 +160,6 @@ public:
 
 
     void playName(uint16_t effnb);
-    uint8_t getVolume() { return cur_volume; }
-    void setVolume(uint8_t vol);
     void setTempVolume(uint8_t vol);
     void setMP3count(uint16_t cnt) {mp3filescount = cnt;} // кол-во файлов в папке MP3
     uint16_t getMP3count() {return mp3filescount;}
@@ -152,55 +174,3 @@ public:
 */
     //void handle();
 };
-
-/*
-class Mp3Notify
-{
-public:
-  static void PrintlnSourceAction(DfMp3_PlaySources source, const char* action)
-  {
-    if (source == DfMp3_PlaySources_Sd) 
-    {
-        Serial.print("SD Card, ");
-    }
-    if (source == DfMp3_PlaySources_Usb) 
-    {
-        Serial.print("USB Disk, ");
-    }
-    if (source == DfMp3_PlaySources_Flash) 
-    {
-        Serial.print("Flash, ");
-    }
-    Serial.println(action);
-  }
-
-  static void OnError([[maybe_unused]] DFPlayer& mp3, uint16_t errorCode)
-  {
-    // see DfMp3_Error for code meaning
-    Serial.println();
-    Serial.print("Com Error ");
-    Serial.println(errorCode);
-  }
-
-  static void OnPlayFinished([[maybe_unused]] DFPlayer& mp3, [[maybe_unused]] DfMp3_PlaySources source, uint16_t track)
-  {
-    Serial.print("Play finished for #");
-    Serial.println(track);
-  }
-
-  static void OnPlaySourceOnline([[maybe_unused]] DFPlayer& mp3, DfMp3_PlaySources source)
-  {
-    PrintlnSourceAction(source, "online");
-  }
-
-  static void OnPlaySourceInserted([[maybe_unused]] DFPlayer& mp3, DfMp3_PlaySources source)
-  {
-    PrintlnSourceAction(source, "inserted");
-  }
-
-  static void OnPlaySourceRemoved([[maybe_unused]] DFPlayer& mp3, DfMp3_PlaySources source)
-  {
-    PrintlnSourceAction(source, "removed");
-  }
-};
-*/

@@ -126,7 +126,8 @@ void getset_button_gpio(Interface *interf, const JsonObject *data, const char* a
 void page_dfplayer_setup(Interface *interf, const JsonObject *data, const char* action);
 // DFPlayer get/set device form handler
 void getset_dfplayer_device(Interface *interf, const JsonObject *data, const char* action);
-
+// DFPlayer get/set options form handler
+void getset_dfplayer_opt(Interface *interf, const JsonObject *data, const char* action);
 
 
 // ==========
