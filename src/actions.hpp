@@ -184,8 +184,8 @@ void run_action(ra act, const T& param) {
     }
     //MP3: set volume
     case ra::mp3_vol : {
-      obj[P_action] = TCONST_mp3volume;
-      data[TCONST_mp3volume] = param;
+      obj[P_action] = T_mp3vol;
+      data[T_mp3vol] = param;
       break;
     }
 
@@ -195,7 +195,7 @@ void run_action(ra act, const T& param) {
       //if(!myLamp.isONMP3()) return;
       int offset = param;
       if ( act == ra::mp3_prev) offset *= -1;
-      mp3->playEffect(mp3->getCurPlayingNb() + offset, "");
+      //mp3->playEffect(mp3->getCurPlayingNb() + offset, "");
       return; // no need to execute any UI action
     }
 

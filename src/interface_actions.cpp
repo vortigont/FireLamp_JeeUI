@@ -96,8 +96,8 @@ void set_pwrswitch(Interface *interf, const JsonObject *data, const char* action
     myLamp.power((*data)[action]);
     //EVT_POST(LAMP_SET_EVENTS, (*data)[A_dev_pwrswitch] ? e2int(evt::lamp_t::pwron) : e2int(evt::lamp_t::pwroff));
 
-        if(myLamp.getLampFlagsStuct().isOnMP3)
-            mp3->setIsOn((*data)[A_dev_pwrswitch]);
+        //if(myLamp.getLampFlagsStuct().isOnMP3)
+        //    mp3->setIsOn((*data)[A_dev_pwrswitch]);
 }
 
 /**
@@ -344,6 +344,66 @@ void getset_button_gpio(Interface *interf, const JsonObject *data, const char* a
         JsonVariantConst cfg(dst);
         // reconfig button
         button_configure_gpio(cfg);
+    }
+
+    if (interf) ui_page_setup_devices(interf, nullptr, NULL);
+}
+
+void getset_dfplayer_device(Interface *interf, const JsonObject *data, const char* action){
+    {
+        DynamicJsonDocument doc(DFPLAYER_JSON_CFG_JSIZE);
+        if (!embuifs::deserializeFile(doc, T_dfplayer_cfg)) doc.clear();
+
+        // if this is a request with no data, then just provide existing configuration and quit
+        if (!data || !(*data).size()){
+            if (interf && doc.containsKey(T_device)){
+                interf->json_frame_value(doc[T_device], true);
+                interf->json_frame_flush();
+            }
+            return;
+        }
+
+        JsonVariant dst = doc[T_device].isNull() ? doc.createNestedObject(T_btn_cfg) : doc[T_device];
+
+        // copy keys to a destination object
+        for (JsonPair kvp : *data)
+            dst[kvp.key()] = kvp.value();
+
+        embuifs::serialize2file(doc, T_dfplayer_cfg);
+
+        JsonVariantConst cfg(dst);
+        // reconfig DFPlayer device
+        dfplayer_setup_device(cfg);
+    }
+
+    if (interf) ui_page_setup_devices(interf, nullptr, NULL);
+}
+
+void getset_dfplayer_opt(Interface *interf, const JsonObject *data, const char* action){
+    {
+        DynamicJsonDocument doc(DFPLAYER_JSON_CFG_JSIZE);
+        if (!embuifs::deserializeFile(doc, T_dfplayer_cfg)) doc.clear();
+
+        // if this is a request with no data, then just provide existing configuration and quit
+        if (!data || !(*data).size()){
+            if (interf && doc.containsKey(T_opt)){
+                interf->json_frame_value(doc[T_opt], true);
+                interf->json_frame_flush();
+            }
+            return;
+        }
+
+        JsonVariant dst = doc[T_opt].isNull() ? doc.createNestedObject(T_opt) : doc[T_opt];
+
+        // copy keys to a destination object
+        for (JsonPair kvp : *data)
+            dst[kvp.key()] = kvp.value();
+
+        embuifs::serialize2file(doc, T_dfplayer_cfg);
+
+        JsonVariantConst cfg(dst);
+        // reconfig DFPlayer device
+        dfplayer_setup_opt(cfg);
     }
 
     if (interf) ui_page_setup_devices(interf, nullptr, NULL);

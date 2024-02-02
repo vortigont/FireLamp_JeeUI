@@ -47,22 +47,12 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #endif
 
 
-MP3PlayerDevice *mp3 = nullptr;
-
-
-// Forward declarations
 
 #ifdef EMBUI_USE_MQTT
 #include "AsyncMqttClient/Callbacks.hpp"
 String ha_autodiscovery();
 #endif
 
-
-/**
- * @brief restore gpio configurtion and initialise attached devices
- * 
- */
-void gpio_setup();
 
 // restores LED fb config from file
 void led_fb_setup();
@@ -79,9 +69,7 @@ void mqttOnMessageCallback(char* topic, char* payload, AsyncMqttClientMessagePro
 // Arduino setup
 void setup() {
     Serial.begin(115200);
-
-    LOG(printf, "\n\nloop ptr: %u\n", evt::hndlr);
-
+    delay(1);
     // Start event loop task
     evt::start();
 #ifdef LAMP_DEBUG
@@ -124,14 +112,16 @@ void setup() {
 #endif
 
 
-    // configure and init attached devices
-    gpio_setup();
     // restore matrix configuration from file and create a proper LED buffer
     display.start();
     // start tm1637
     tm1637_setup();
     // button setup
     button_cfg_load();
+    // DFPlayer
+    dfplayer_cfg_load();
+    // restore mp3 player vol
+    dfplayer_volume(embui.paramVariant(T_mp3vol));
 
     embui.setPubInterval(30);   // change periodic WebUI publish interval from EMBUI_PUB_PERIOD to 10 secs
 
@@ -307,19 +297,6 @@ void sendData(){
     embui.publish(TCONST_state, out.c_str(), true); // отправляем обратно в MQTT в топик embui/pub/
 }
 #endif
-
-void gpio_setup(){
-    DynamicJsonDocument doc(512);
-    embuifs::deserializeFile(doc, TCONST_fcfg_gpio);
-    int rxpin, txpin;
-
-    // spawn an instance of mp3player
-    rxpin = doc[TCONST_mp3rx] | -1;
-    txpin = doc[TCONST_mp3tx] | -1;
-    LOG(printf_P, PSTR("DFPlayer: rx:%d tx:%d\n"), rxpin, txpin);
-    mp3 = new MP3PlayerDevice(rxpin, txpin, embui.paramVariant(TCONST_mp3volume) | DFPLAYER_DEFAULT_VOL );
-
-}
 
 void wled_announce(){
     MDNS.addService("wled", "tcp", 80);

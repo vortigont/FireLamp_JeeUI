@@ -58,7 +58,7 @@ namespace evt {
 #define LOOP_EVT_Q_SIZE         8              // events loop queue size
 #define LOOP_EVT_PRIORITY       1              // task priority is same as arduino's loop() to avoid extra context switches
 #define LOOP_EVT_RUNNING_CORE   ARDUINO_RUNNING_CORE  //   tskNO_AFFINITY
-#ifdef LAMP_DEBUG
+#ifdef LAMP_DEBUG_LEVEL
  #define LOOP_EVT_STACK_SIZE     4096           // task stack size
 #else
  #define LOOP_EVT_STACK_SIZE     2048           // task stack size

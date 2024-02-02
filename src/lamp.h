@@ -139,10 +139,10 @@ _LAMPFLAGS(){
     isOnMP3 = false;
     isBtn = true;
     showName = false;
-    playTime = TIME_SOUND_TYPE::TS_NONE; // воспроизводить время?
+    playTime = 0; //TIME_SOUND_TYPE::TS_NONE; // воспроизводить время?
     playName = false; // воспроизводить имя?
     playEffect = false; // воспроизводить эффект?
-    alarmSound = ALARM_SOUND_TYPE::AT_NONE;
+    alarmSound = 0; //ALARM_SOUND_TYPE::AT_NONE;
     MP3eq = 0;
     playMP3 = false;
     limitAlarmVolume = false;
@@ -164,6 +164,8 @@ private:
     uint8_t globalBrightness = 127;     // глобальная яркость
     uint8_t storedBright;               // "запасное" значение яркости
     uint8_t BFade;                      // затенение фона под текстом
+
+    bool mp3mute = false;               // времянка
 
     // GPIO's
     // это должен быть gpio_num_t в есп32, но пока нужна совместимость с 8266 держим инт
@@ -366,8 +368,8 @@ public:
      */
     void clearDrawBuf() { CRGB c = CRGB::Black; fillDrawBuf(c); }
 
-    bool isONMP3() {return flags.isOnMP3;}
-    void setONMP3(bool flag) {flags.isOnMP3=flag;}
+    bool isONMP3() {return mp3mute;}
+    void setONMP3(bool flag) { mp3mute=flag; }
 
     void setPlayTime(uint8_t val) {flags.playTime = val;}
     void setPlayName(bool flag) {flags.playName = flag;}

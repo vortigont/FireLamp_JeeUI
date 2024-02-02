@@ -133,7 +133,12 @@ private:
    */
   void _loop();
 
+  // display brightness
   void _msg_brt(int32_t b);
+
+  // display volume
+  void _msg_vol(int32_t b);
+
 };
 
 extern TMDisplay *tm1637;

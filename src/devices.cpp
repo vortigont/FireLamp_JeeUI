@@ -44,7 +44,8 @@ Copyright © 2023 Emil Muratov (vortigont)
 #include "tm1637display.hpp"
 // ESPAsyncButton
 #include "bencoder.hpp"
-
+// DFPlayer
+#include "mp3player.h"
 
 
 // Device object placesholders
@@ -56,6 +57,9 @@ TMDisplay *tm1637 = nullptr;
 GPIOButton<ESPEventPolicy> *button = nullptr;
 ButtonEventHandler *button_handler = nullptr;
 
+// DFPlayer
+MP3PlayerController *mp3player = nullptr;
+
 void tm1637_setup(){
   DynamicJsonDocument doc(DISPLAY_CFG_JSIZE);
   if (!embuifs::deserializeFile(doc, TCONST_fcfg_display) || !doc.containsKey(T_tm1637)) return;      // config is missing, bad or has no TM1637 data
@@ -64,8 +68,8 @@ void tm1637_setup(){
   tm1637_configure(cfg);
 }
 
-void tm1637_configure(JsonVariantConst& tm){
-  if (!tm[T_enabled]){
+void tm1637_configure(JsonVariantConst cfg){
+  if (!cfg[T_enabled]){
      // TM module disabled or config is invalid
     if (tm1637){
       delete tm1637;
@@ -76,8 +80,8 @@ void tm1637_configure(JsonVariantConst& tm){
 
   if (!tm1637){
     // create TM1637 display object if it's pins are defined
-    unsigned clk = tm[T_CLK] | -1;
-    unsigned dio = tm[P_data] | -1;
+    int clk = cfg[T_CLK] | -1;
+    int dio = cfg[P_data] | -1;
     if (clk != -1 && dio != -1){
       //LOG(printf, "tm1637 using pins rx:%d, tx:%d\n", clk, dio);
       tm1637 = new TMDisplay(clk, dio);
@@ -85,10 +89,10 @@ void tm1637_configure(JsonVariantConst& tm){
     }
   }
 
-  tm1637->brightness(tm[T_tm_brt_on], true);
-  tm1637->brightness(tm[T_tm_brt_off], false);
-  tm1637->clk_12h = tm[T_tm_12h];
-  tm1637->clk_lzero = tm[T_tm_lzero];
+  tm1637->brightness(cfg[T_tm_brt_on], true);
+  tm1637->brightness(cfg[T_tm_brt_off], false);
+  tm1637->clk_12h = cfg[T_tm_12h];
+  tm1637->clk_lzero = cfg[T_tm_lzero];
   tm1637->init();
 
 }
@@ -104,9 +108,9 @@ void button_cfg_load(){
   button_configure_events(_cfg);
 }
 
-void button_configure_gpio(JsonVariantConst btn_cfg){
+void button_configure_gpio(JsonVariantConst cfg){
 
-  if (!btn_cfg[T_enabled]){
+  if (!cfg[T_enabled]){
      // button disabled or config is invalid
     if (button){
       delete button;
@@ -119,24 +123,24 @@ void button_configure_gpio(JsonVariantConst btn_cfg){
     return;
   }
 
-  int32_t gpio = btn_cfg[T_gpio] | -1;
+  int32_t gpio = cfg[T_gpio] | -1;
   if (gpio == -1) return;                 // pin disabled
-  bool debn = btn_cfg[T_debounce];
+  bool debn = cfg[T_debounce];
 
   // create GPIOButton object
   if (!button){
-    button = new GPIOButton<ESPEventPolicy> (static_cast<gpio_num_t>(gpio), btn_cfg[T_logicL]);
+    button = new GPIOButton<ESPEventPolicy> (static_cast<gpio_num_t>(gpio), cfg[T_logicL]);
     if (!button) return;
     button->setDebounce(debn);
-    button->timeouts.setLongPress(btn_cfg[T_lpresst]);
-    button->timeouts.setMultiClick(btn_cfg[T_mclickt]);
+    button->timeouts.setLongPress(cfg[T_lpresst]);
+    button->timeouts.setMultiClick(cfg[T_mclickt]);
   } else {
     if ( gpio != button->getGPIO() ){
-      button->setGPIO(static_cast<gpio_num_t>(gpio), btn_cfg[T_logicL]);
+      button->setGPIO(static_cast<gpio_num_t>(gpio), cfg[T_logicL]);
     }
     button->setDebounce(debn);
-    button->timeouts.setLongPress(btn_cfg[T_lpresst]);
-    button->timeouts.setMultiClick(btn_cfg[T_mclickt]);
+    button->timeouts.setLongPress(cfg[T_lpresst]);
+    button->timeouts.setMultiClick(cfg[T_mclickt]);
 
     // button obj already exist, so no need to configure it further
     return;
@@ -156,7 +160,7 @@ void button_configure_gpio(JsonVariantConst btn_cfg){
   button->enable();
 }
 
-void button_configure_events(JsonVariantConst btn_cfg){
+void button_configure_events(JsonVariantConst cfg){
   if (!button_handler){
     button_handler = new ButtonEventHandler();
     if (!button_handler) return;
@@ -164,10 +168,56 @@ void button_configure_events(JsonVariantConst btn_cfg){
     button_handler->subscribe(evt::get_hndlr());
   }
 
-  button_handler->load(btn_cfg);     // load config
+  button_handler->load(cfg);     // load config
 }
 
 
+void dfplayer_cfg_load(){
+  DynamicJsonDocument doc(DFPLAYER_JSON_CFG_JSIZE);
+  if (!embuifs::deserializeFile(doc, T_dfplayer_cfg)) return;      // config is missing, bad
 
+  {
+    JsonVariantConst dev( doc[T_device] );
+    dfplayer_setup_device(dev);
+  }
+  JsonVariantConst opt( doc[T_opt] );
+  dfplayer_setup_opt(opt);
+}
 
+void dfplayer_setup_device(JsonVariantConst cfg){
+  if (!cfg[T_enabled]){
+     // player disabled or config is invalid
+    if (mp3player){
+      delete mp3player;
+      mp3player = nullptr;
+    }
+    return;
+  }
+  int rx = cfg[T_rx] | -1;
+  int tx = cfg[T_tx] | -1;
+
+  // create object instance if enabled
+  if (!mp3player){
+    // create DFPlayer object if it's pins are defined
+    if (rx != -1 && tx != -1){
+      //LOG(printf, "DFPlayer using pins rx:%d, tx:%d\n", rx, tx);
+      mp3player = new MP3PlayerController(MP3_SERIAL, static_cast<DfMp3Type>(cfg[T_type].as<int>()), cfg[T_timeout]);
+      if (!mp3player) return;
+      mp3player->begin(rx, tx);
+    }
+  } else {
+    // player object already exist, reconfigure it
+      mp3player->begin(rx, tx, static_cast<DfMp3Type>(cfg[T_type].as<int>()), cfg[T_timeout]);
+  }
+
+}
+
+void dfplayer_setup_opt(JsonVariantConst cfg){
+  if (!mp3player) return;
+
+  mp3player->setPlayEffects(cfg[T_eff_tracks]);
+  mp3player->setLoopEffects(cfg[T_eff_tracks_loop]);
+}
+
+void dfplayer_volume(int v){ if (mp3player) mp3player->setVolume(v); };
 

@@ -35,92 +35,131 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
    <https://www.gnu.org/licenses/>.)
 */
 #pragma once
-typedef enum : uint8_t {TS_NONE=0, TS_VER1, TS_VER2} TIME_SOUND_TYPE; // виды озвучки времени (8 вариантов максимум)
+//typedef enum : uint8_t {TS_NONE=0, TS_VER1, TS_VER2} TIME_SOUND_TYPE; // виды озвучки времени (8 вариантов максимум)
 typedef enum : uint8_t {AT_NONE=0, AT_FIRST, AT_SECOND, AT_THIRD, AT_FOURTH, AT_FIFTH, AT_RANDOM, AT_RANDOMMP3} ALARM_SOUND_TYPE; // виды будильников (8 вариантов максимум)
 
-#ifdef ESP8266
-#include <SoftwareSerial.h>
-#endif
-#include "DFRobotDFPlayerMini.h"
+#include "config.h"
+#include <DFMiniMp3.h>
 #include "ts.h"
+#include "evtloop.h"
 
-#define DFPLAYER_DEFAULT_VOL  15
+#define MP3_SERIAL Serial1
+#define DFPLAYER_DEFAULT_VOL  12
+#define DFPLAYER_JSON_CFG_JSIZE 4096
 
-class MP3PlayerDevice : protected DFRobotDFPlayerMini {
-  private:
-    union {
-      struct {
-        uint8_t timeSoundType:3; // вид озвучивания времени
-        uint8_t tAlarm:3; // вид будильника
-        bool ready:1; // закончилась ли инициализация
-        bool on:1; // включен ли...
-        bool mp3mode:1; // режим mp3 плеера
-        bool effectmode:1; // режим проигрывания эффектов
-        bool alarm:1; // сейчас будильник
-        bool isplayname:1; // проигрывается имя
-        bool isadvert:1; // воспроизводится ли сейчас время в ADVERT (для совместимости между 24SS и GD3200B)
-        bool isplaying:1; // воспроизводится ли сейчас песня или эффект
-        bool iscancelrestart:1; // отменить рестарт после однократного воспроизведения
+
+class MP3PlayerController {
+private:
+      struct Flags {
+        uint8_t timeSoundType:3;      // вид озвучивания времени
+        uint8_t tAlarm:3;             // вид будильника
+        bool ready:1;                 // закончилась ли инициализация
+        //bool on:1;                    // включен ли...
+        bool eff_playtrack:1;         // режим проигрывания треков эффектов
+        bool eff_looptrack:1;         // зацикливать дорожку эффекта
+        //bool alarm:1;                 // сейчас будильник
+        //bool isplayname:1;            // проигрывается имя
+        //bool isadvert:1;              // воспроизводится ли сейчас время в ADVERT (для совместимости между 24SS и GD3200B)
+        bool isplaying:1;             // воспроизводится ли сейчас песня или эффект
+        bool looptrack:1;             // if current track is looped (cmd has been sent to player)
       };
-      uint32_t flags;
-    };
-    Task *tPeriodic = nullptr; // периодический опрос плеера
-    uint8_t cur_volume;
-    uint16_t mp3filescount = 255; // кол-во файлов в каталоге MP3
-    uint16_t nextAdv=0; // следующее воспроизводимое сообщение (произношение минут после часов)
-    uint16_t cur_effnb=0; // текущий эффект
-    uint16_t prev_effnb=0; // предыдущий эффект
 
-    bool internalsoftserial = false;        // if we are using internal softserial, than it need to be destructed on eol
-    Stream *mp3player;                      // serial port mapped stream object (hw or softserial)
+    Flags flags{};
 
-    String soundfile; // хранилище пути/имени
-    unsigned long restartTimeout = millis(); // таймаут воспроизведения имени эффекта
-    void printSatusDetail();
-    void playAdvertise(int filenb);
-    void playFolder0(int filenb);
-    void restartSound();
+    HardwareSerial& _serial;
+    Task _tPeriodic; // периодический опрос плеера
+    uint8_t _volume = DFPLAYER_DEFAULT_VOL;
+    DfMp3_StatusState _state = DfMp3_StatusState_Idle;
+    //uint16_t mp3filescount = 255; // кол-во файлов в каталоге MP3
+    //uint16_t nextAdv=0; // следующее воспроизводимое сообщение (произношение минут после часов)
 
-    /**
-     * @brief initialize player
-     * 
-     */
-    void init();
+    //String soundfile; // хранилище пути/имени
+    //void printSatusDetail();
+    //void playAdvertise(int filenb);
+    //void playFolder0(int filenb);
+    //void restartSound();
 
-  public:
-    /**
-     * @brief Construct a new MP3PlayerDevice object
-     * для 8266 будет создан softwareserial port
-     * для esp32 будет подключен аппартный Serial2
-     * 
-     * @param rxPin 
-     * @param txPin 
-     */
-    MP3PlayerDevice(int8_t rxPin, int8_t txPin, uint8_t vol = DFPLAYER_DEFAULT_VOL);
+  esp_event_handler_instance_t _lmp_ch_instance = nullptr;
+  esp_event_handler_instance_t _lmp_set_instance = nullptr;
 
-    /**
-     * @brief Construct a new MP3PlayerDevice object
-     * плюключить плеер на произвольный порт
-     * порт должен быть УЖЕ инициализирован на требуемую скорость/параметры
-     * @param port stream object
-     */
-    MP3PlayerDevice(Stream *port, uint8_t vol = DFPLAYER_DEFAULT_VOL); // конструктор для Stream
+  static void event_hndlr(void* handler, esp_event_base_t base, int32_t id, void* event_data);
 
-    // d-tor
-    ~MP3PlayerDevice();
+  // change events handler
+  void _lmpChEventHandler(esp_event_base_t base, int32_t id, void* data);
 
+  // set events handler
+
+  void _lmpSetEventHandler(esp_event_base_t base, int32_t id, void* data);
+
+  /**
+   * @brief initialze player instance
+   * 
+   */
+  void init();
+
+public:
+  MP3PlayerController(HardwareSerial& serial, DfMp3Type type = DfMp3Type::origin, uint32_t ackTimeout = DF_ACK_TIMEOUT);
+  // d-tor
+  ~MP3PlayerController(){ unsubscribe(); delete dfp; dfp = nullptr; }
+
+  // Player instance
+  DFMiniMp3 *dfp = nullptr;
+
+  /**
+   * @brief initialize player
+   * 
+   */
+  void begin(int8_t rxPin, int8_t txPin, DfMp3Type type, uint32_t ackTimeout = DF_ACK_TIMEOUT);
+
+  void begin(int8_t rxPin, int8_t txPin);
+
+
+  void subscribe();
+
+  void unsubscribe();
+
+  void loop();
+
+  // play/advertise current time
+  void playTime(int hours, int minutes);
+
+  bool isReady(){ return flags.ready; }
+
+  /**
+   * @brief play effect melody
+   * 
+   * @param effnb 
+   */
+  void playEffect(uint32_t effnb);
+
+  /**
+   * @brief set/unset playing effect sounds
+   * 
+   * @param value 
+   */
+  void setPlayEffects(bool value){ flags.eff_playtrack = value; }
+
+  /**
+   * @brief Set/uset loop effect's track
+   * otherwise player will play next track on end
+   * 
+   * @param value 
+   */
+  void setLoopEffects(bool value){ flags.eff_looptrack = value; }
+
+  uint8_t getVolume() const { return _volume; }
+  void setVolume(uint8_t vol);
+
+/*
     uint16_t getCurPlayingNb() {return prev_effnb;} // вернуть предыдущий для смещения
     void setupplayer(uint16_t effnb, const String &_soundfile) {soundfile = _soundfile; cur_effnb=effnb;};
-    bool isReady() {return ready;}
     bool isAlarm() {return alarm;}
     bool isOn() {return on && ready;}
     bool isMP3Mode() {return mp3mode;}
     void setIsOn(bool val, bool forcePlay=true);
-    void playTime(int hours, int minutes, TIME_SOUND_TYPE tst);
-    void playEffect(uint16_t effnb, const String &_soundfile, bool delayed=false);
+
+
     void playName(uint16_t effnb);
-    uint8_t getVolume() { return cur_volume; }
-    void setVolume(uint8_t vol);
     void setTempVolume(uint8_t vol);
     void setMP3count(uint16_t cnt) {mp3filescount = cnt;} // кол-во файлов в папке MP3
     uint16_t getMP3count() {return mp3filescount;}
@@ -132,5 +171,6 @@ class MP3PlayerDevice : protected DFRobotDFPlayerMini {
     void ReStartAlarmSound(ALARM_SOUND_TYPE val);
     void RestoreVolume() { setVolume(cur_volume); }
     void setCurEffect(uint16_t effnb) { prev_effnb=cur_effnb; cur_effnb = effnb%256; }
-    void handle();
+*/
+    //void handle();
 };

@@ -51,7 +51,7 @@ static constexpr const char* T_clk_phase = "clkphase";
 static constexpr const char* T_min_refresh = "minrr";
 static constexpr const char* T_color_depth = "colordpth";
 
-// For TM1637
+// TM1637 Display
 static constexpr const char* T_On = "-On-";
 static constexpr const char* T_Off = "Off";
 static constexpr const char* T_tm1637 = "tm1637";
@@ -71,15 +71,31 @@ static constexpr const char* T_lamppwr = "lamppwr";
 static constexpr const char* T_lpresst = "lpresst";
 static constexpr const char* T_mclickt = "mclickt";
 
+// DFPlayer
+static constexpr const char* T_DFPlayer = "DFPlayer";
+static constexpr const char* T_dfplayer_cfg = "/dfplayer.json";
+static constexpr const char* T_mp3vol = "mp3vol";
+static constexpr const char* T_eff_tracks = "eff_tracks";
+static constexpr const char* T_eff_tracks_loop = "eff_tracks_loop";
+static constexpr const char* T_mp3mute = "mp3mute";
+
+
 // Other
 static constexpr const char* T_Active = "Active";
 static constexpr const char* T_arg = "arg";
 static constexpr const char* T_clicks = "clicks";
+static constexpr const char* T_device = "device";
 static constexpr const char* T_edit = "edit";
 static constexpr const char* T_Enable = "Enable";
 static constexpr const char* T_enabled = "enabled";
 static constexpr const char* T_idx = "idx";
+static constexpr const char* T_Notification = "Notification";
+static constexpr const char* T_opt = "opt";
 static constexpr const char* T_pwr = "pwr";
+static constexpr const char* T_rx = "rx";
+static constexpr const char* T_tx = "tx";
+static constexpr const char* T_timeout = "timeout";
+static constexpr const char* T_type = "type";
 
 
 static constexpr const char* TCONST_act = "act";
@@ -148,7 +164,6 @@ static constexpr const char* TCONST_Host = "Host";
 static constexpr const char* TCONST_Ip = "Ip";
 static constexpr const char* TCONST_isClearing = "isClearing";
 static constexpr const char* TCONST_isFaderON = "isFaderON";
-static constexpr const char* TCONST_isOnMP3 = "isOnMP3";
 static constexpr const char* TCONST_isPlayTime = "isPlayTime";
 static constexpr const char* TCONST_isShowOff = "isShowOff";
 static constexpr const char* TCONST_isStreamOn = "isStreamOn";
@@ -169,18 +184,10 @@ static constexpr const char* TCONST_Mode = "Mode";
 static constexpr const char* TCONST_mode = "mode";
 static constexpr const char* TCONST_mosfet_gpio = "fet_gpio";             // MOSFET gpio
 static constexpr const char* TCONST_mosfet_ll = "fet_ll";                // MOSFET logic level
-static constexpr const char* TCONST_mp3count = "mp3count";
-static constexpr const char* TCONST_mp3volume = "mp3volume";
-static constexpr const char* TCONST_mp3rx = "mp3rx";
-static constexpr const char* TCONST_mp3tx = "mp3tx";
-static constexpr const char* TCONST_mp3_n5 = "mp3_n5";
-static constexpr const char* TCONST_mp3_p5 = "mp3_p5";
 static constexpr const char* TCONST_msg = "msg";
 static constexpr const char* TCONST_nofade = "nofade";
 static constexpr const char* TCONST_Normal = "Normal";
 static constexpr const char* TCONST_numInList = "numInList";
-static constexpr const char* TCONST_ny_period = "ny_period";
-static constexpr const char* TCONST_ny_unix = "ny_unix";
 static constexpr const char* TCONST_onetime = "onetime";
 static constexpr const char* TCONST_Other = "Other";
 static constexpr const char* TCONST_pFS = "pFS";
@@ -207,7 +214,6 @@ static constexpr const char* TCONST_showName = "showName";
 static constexpr const char* TCONST_show_button = "show_button";
 static constexpr const char* TCONST_show_butt = "show_butt";
 static constexpr const char* TCONST_show_event = "show_event";
-static constexpr const char* TCONST_show_mp3 = "show_mp3";
 static constexpr const char* TCONST_soundfile = "soundfile";
 static constexpr const char* TCONST_spdcf = "spdcf";
 static constexpr const char* TCONST_speed = "speed";
@@ -288,13 +294,18 @@ static constexpr const char* A_effect_ctrls = "eff_ctrls";                      
 static constexpr const char* A_effect_dynCtrl = "eff_dynCtrl*";                 // Effect controls handler
 static constexpr const char* A_display_hub75 = "display_hub75";                 // HUB75 display configuration
 static constexpr const char* A_display_ws2812 = "display_ws2812";               // ws2812 display configuration
+// TM1637
 static constexpr const char* A_display_tm1637 = "*et_display_tm1637";           // get/set tm1637 display configuration
+// button
 static constexpr const char* A_button_gpio = "*et_button_gpio";                 // get/set button gpio configuration
 static constexpr const char* A_button_evt_edit = "button_evt_edit";             // edit button action form
 static constexpr const char* A_button_evt_save = "button_evt_save";             // save/apply button action form
+// DFPlayer
+static constexpr const char* A_dfplayer_dev = "*et_dfplayer_device";           // get/set DFPlayer device configuration
+static constexpr const char* A_dfplayer_opt = "*et_dfplayer_opt";             // get/set DFPlayer functions
+
 
 static constexpr const char* A_ui_page_effects_config = "effects_config";
-
 
 static constexpr const char* TCONST_set_gpio = "s_gpio";                    // set gpio action
 static constexpr const char* TCONST_set_butt = "set_butt";                  // set button
