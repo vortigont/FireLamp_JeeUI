@@ -111,12 +111,12 @@
 
 		{{#if html == "button"}}
 		<button id="{{id}}" {{#if2 color}}style="background-color: {{color}}"{{/if2}} class="pure-u-1 pure-button pure-button-primary mr"
+			{{#if2 fa}}<i class="{{fa}}"></i>{{/if2}}
 			{{#if2 type == 0}}{{onevent "click", "on_change", id, value}}{{/if2}}
 			{{#if2 type == 1}}{{onevent "click", "on_submit", id, value}}{{/if2}}
 			{{#if2 type == 2}}{{onevent "click", "on_js", id, value}}{{/if2}}
-			{{#if2 type == 3}} onclick="location.href='{{value}}'" type="button">{{/if2}}
-			{{#if2 fa}}<i class="{{fa}}"></i>{{/if2}}
-			>{{label}}
+			{{#if2 type == 3}} onclick="location.href='{{value}}'"{{/if2}}
+			type="button">{{label}}
 		</button>
 		{{/if}}
 		{{#if type == "checkbox"}}
@@ -126,7 +126,7 @@
 		    </div>
 		{{/if}}
 		{{#if html == "const"}}
-			<div id="{{id}}" class="pure-u-1 pure-button mr">{{#if2 fa}}<i class="{{fa}}">{{/if2}}</i>{{/if2}}{{label}}{{#if2 value}}<input type="hidden" name="{{id}}" value="{{value}}">{{/if2}}</div>
+			<div id="{{id}}" class="pure-u-1 pure-button mr">{{#if2 fa}}<i class="{{fa}}"></i>{{/if2}}{{label}}{{#if2 value}}<input type="hidden" name="{{id}}" value="{{value}}">{{/if2}}</div>
 		{{/if}}
 		{{#if html == "comment"}}
 			<div id="{{id}}" class="comment">{{label}}</div>
