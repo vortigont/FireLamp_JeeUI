@@ -363,7 +363,7 @@ void getset_dfplayer_device(Interface *interf, const JsonObject *data, const cha
             return;
         }
 
-        JsonVariant dst = doc[T_device].isNull() ? doc.createNestedObject(T_btn_cfg) : doc[T_device];
+        JsonVariant dst = doc[T_device].isNull() ? doc.createNestedObject(T_device) : doc[T_device];
 
         // copy keys to a destination object
         for (JsonPair kvp : *data)
