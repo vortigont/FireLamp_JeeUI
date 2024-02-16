@@ -6,18 +6,29 @@ PATH=%PATH%;%workdir%;%ProgramFiles%\Git;%ProgramFiles%\Git\bin
 cls
 Echo.
 
+
+where /q git
+IF ERRORLEVEL 1 (
+    ECHO "Git not in path. Assume it is '%pfilespath%\Git\bin\git'"
+    set "gitcmd=%pfilespath%\Git\bin\git"
+) ELSE (
+    ECHO Git найден в PATH
+    set "gitcmd=git"
+)
+
+
 if "%param%"=="1" ( rem переключаем на мастер
-	"%ProgramFiles%\Git\bin\git" switch master
-	"%ProgramFiles%\Git\bin\git" pull
+	%gitcmd% switch master
+	%gitcmd% pull
 )
 if "%param%"=="2" ( rem переключаем на релизную ветку
-	"%ProgramFiles%\Git\bin\git" switch v3.4
-	"%ProgramFiles%\Git\bin\git" pull
+	%gitcmd% switch v3.4
+	%gitcmd% pull
 )
 if "%param%"=="3" ( rem сброс состояния локального репозитория
-	"%ProgramFiles%\Git\bin\git" reset --hard
+	%gitcmd% reset --hard
 	rem "%ProgramFiles%\Git\bin\git" checkout .
-	"%ProgramFiles%\Git\bin\git" pull
+	%gitcmd% pull
 )
 Echo.
 

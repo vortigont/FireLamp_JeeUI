@@ -3,10 +3,7 @@ SETLOCAL EnableDelayedExpansion
 set workdir=%~dp0
 PATH=%PATH%;%workdir%;%USERPROFILE%\.platformio\penv\Scripts;
 echo off
-rem set the code page to UTF8
-chcp 65001 >nul
-rem @chcp 1251>nul
-mode con: cols=88
+
 
 rem VARIABLES
 set "lamprepo=https://github.com/vortigont/FireLamp_JeeUI.git"
@@ -19,6 +16,8 @@ set "repodstdir=FireLamp.vortigont"
 
 cls
 
+CALL :consetup
+
 : detect arch
 SET "ARCH=x64"
 IF NOT EXIST "%SystemRoot%\SysWOW64\cmd.exe" (     IF NOT DEFINED PROCESSOR_ARCHITEW6432 SET "ARCH=x86" )
@@ -29,6 +28,7 @@ set "pfilespath=%ProgramW6432%"
 set "pfilespath=%ProgramFiles%"
 )
 
+: BEGIN
 
 where /q git
 IF ERRORLEVEL 1 (
@@ -65,9 +65,9 @@ Set /p choice="Your choice [Ваш выбор]: ► "
 
 if "%choice%"=="1" (
 	if "%ARCH%"=="x64" (
-		CALL DOWNLOAD_FILE %pythondistro64% "%TMP%\python.exe"
+		CALL :DOWNLOAD_FILE %pythondistro64% "%TMP%\python.exe"
 	) else (
-		CALL DOWNLOAD_FILE %pythondistro%  "%TMP%\python.exe"
+		CALL :DOWNLOAD_FILE %pythondistro%  "%TMP%\python.exe"
 	)
 	
 	%TMP%\python.exe /passive InstallAllUsers=0 PrependPath=1 Include_pip=1 Include_launcher=1 AssociateFiles=1 TargetDir=%USERPROFILE%\Python
@@ -86,23 +86,30 @@ if "%choice%"=="1" (
 		set PYTHONHOME=%USERPROFILE%\Python
 		set PYTHONPATH=%USERPROFILE%\Python
 	)
+
+	echo "Run this script again and proceed with step 2"
+	pause
+	exit
 )
 
 if "%choice%"=="2" (
-	CALL DOWNLOAD_FILE https://raw.githubusercontent.com/platformio/platformio-core-installer/master/get-platformio.py -O %workdir%\get-platformio.py
+	CALL :DOWNLOAD_FILE https://raw.githubusercontent.com/platformio/platformio-core-installer/master/get-platformio.py %workdir%\get-platformio.py
 	python %workdir%\get-platformio.py
-	del %workdir%\get-platformio.py
+rem	del %workdir%\get-platformio.py
 )
 
 if "%choice%"=="3" (
 	if "%ARCH%"=="x64" (
-		CALL DOWNLOAD_FILE %gitdistro64% %TMP%\git.exe
+		CALL :DOWNLOAD_FILE %gitdistro64% %TMP%\git.exe
 	) else (
-		CALL DOWNLOAD_FILE %gitdistro% %TMP%\git.exe
+		CALL :DOWNLOAD_FILE %gitdistro% %TMP%\git.exe
 	)
 	
 	%TMP%\git.exe /SILENT
 	del %TMP%\git.exe
+	echo "Перезапуститите данный скрипт заново и выпоните 4й шаг по клонированию репозитория"
+	pause
+	exit
 )
 
 if "%choice%"=="4" (
@@ -133,26 +140,6 @@ if "%choice%"=="4" (
 if "%choice%"=="r" (rmdir /S %USERPROFILE%\.platformio)
 
 Echo.
-if "%choice%"=="1" (
-	Echo Не забудьте перезагрузить компьютер прямо сейчас!
-        echo. & echo    Нажмите любую клавишу для продолжения . . .                    
-        echo.
-	pause >> nul
-) else (
-	pause
-)
-
-:IsAdmin
-reg.exe query "HKU\S-1-5-19\Environment"
-if Not %ERRORLEVEL% EQU 0 (
-mode con: cols=88 lines=5
-color 4F
-   echo. & echo    Запустите Файл от Имени Администратора ...                    
-   echo.
-   Pause & Exit
-)
-goto:eof
-
 cls
 goto m1
 
@@ -160,5 +147,13 @@ goto m1
 rem FUNCTIONS SECTION
 
 :DOWNLOAD_FILE
-    powershell -Command "Invoke-WebRequest %1 -OutFile %2"
-GOTO :EOF
+    echo Downloading file %1 to %2
+    start /WAIT powershell -Command "Invoke-WebRequest %1 -OutFile %2"
+EXIT /B
+
+:consetup
+chcp 65001 >nul
+rem @chcp 1251>nul
+rem mode con: cols=88
+cls
+EXIT /B
