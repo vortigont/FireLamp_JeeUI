@@ -64,34 +64,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #define LANG_FILE                  "text_res-RUS.h"           // Языковой файл по дефолту
 #endif
 
-#ifdef RTC
-  #ifndef RTC_MODULE
-  #define RTC_MODULE          (2U)                          // Поддерживаются модули DS1302 = (1U),  DS1307 = (2U), DS3231 = (3U)
-  #endif
-  #ifndef RTC_SYNC_PERIOD
-  #define RTC_SYNC_PERIOD     (24U)                         // Период синхронизации RTC c ntp (часы)
-  #endif
-  #if RTC_MODULE > (1U)                                     // Если выбран модуль с I2C (DS1307 или DS3231)
-      #ifndef pin_SW_SDA
-      #define pin_SW_SDA        (4)                         // Назначаем вывод для работы в качестве линии SDA программной шины I2C, D2 on wemos
-      #endif
-      #ifndef pin_SW_SCL
-      #define pin_SW_SCL        (2)                         // Назначаем вывод для работы в качестве линии SCL программной шины I2C, D4 on wemos
-      #endif
-    #if RTC_MODULE == (1U)                                  // Если выбран модуль DS1302.
-      #ifndef pin_RST
-      #define pin_RST             (15)                      // Назначаем вывод RST, D8 on wemos
-      #endif
-      #ifndef pin_DAT
-      #define pin_DAT             (0)                       // Назначаем вывод DAT, D3 on wemos
-      #endif
-      #ifndef pin_DAT
-      #define pin_CLK             (2)                       // Назначаем вывод CLK, D4 on wemos
-      #endif
-    #endif
-  #endif
-#endif
-
 #ifndef MIC_PIN
  #ifdef ESP8266
   #define MIC_PIN               (A0)                          // ESP8266 Analog Pin ADC0 = A0

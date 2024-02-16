@@ -103,14 +103,6 @@ void setup() {
     }
 #endif
 
-#ifdef RTC
-    rtc.init();
-#endif
-
-#ifdef DS18B20
-    ds_setup();
-#endif
-
 
     // restore matrix configuration from file and create a proper LED buffer
     display.start();
@@ -151,15 +143,6 @@ void loop() {
     encLoop(); // цикл обработки событий энкодера. Эта функция будет отправлять в УИ изменения, только тогда, когда подошло время ее loop
 #endif
 
-#ifdef RTC
-    rtc.updateRtcTime();
-#endif
-
-#ifdef DS18B20
-    EVERY_N_MILLIS(1000*DS18B_READ_DELAY + 25) {
-        ds_loop();
-    }
-#endif
 #ifdef USE_STREAMING
     if (ledStream)
         ledStream->handle();
