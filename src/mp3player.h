@@ -57,9 +57,7 @@ private:
         //bool on:1;                    // включен ли...
         bool eff_playtrack:1;         // режим проигрывания треков эффектов
         bool eff_looptrack:1;         // зацикливать дорожку эффекта
-        //bool alarm:1;                 // сейчас будильник
-        //bool isplayname:1;            // проигрывается имя
-        //bool isadvert:1;              // воспроизводится ли сейчас время в ADVERT (для совместимости между 24SS и GD3200B)
+        bool mute:1;                  // Player's DAC disabled
         bool isplaying:1;             // воспроизводится ли сейчас песня или эффект
         bool looptrack:1;             // if current track is looped (cmd has been sent to player)
       };
@@ -100,7 +98,7 @@ private:
 public:
   MP3PlayerController(HardwareSerial& serial, DfMp3Type type = DfMp3Type::origin, uint32_t ackTimeout = DF_ACK_TIMEOUT);
   // d-tor
-  ~MP3PlayerController(){ unsubscribe(); delete dfp; dfp = nullptr; }
+  ~MP3PlayerController();
 
   // Player instance
   DFMiniMp3 *dfp = nullptr;

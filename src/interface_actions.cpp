@@ -374,6 +374,9 @@ void getset_dfplayer_device(Interface *interf, const JsonObject *data, const cha
         JsonVariantConst cfg(dst);
         // reconfig DFPlayer device
         dfplayer_setup_device(cfg);
+        // need to apply options config also in case player was reenabled with previous config
+        cfg = doc[T_opt];
+        dfplayer_setup_opt(cfg);
     }
 
     if (interf) ui_page_setup_devices(interf, nullptr, NULL);

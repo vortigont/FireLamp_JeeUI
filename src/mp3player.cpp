@@ -51,8 +51,15 @@ MP3PlayerController::MP3PlayerController(HardwareSerial& serial, DfMp3Type type,
   dfp = new DFMiniMp3(serial, type, ackTimeout);
 }
 
+MP3PlayerController::~MP3PlayerController(){
+  unsubscribe();
+  dfp->stop();
+  delete dfp; dfp = nullptr;
+}
+
+
 void MP3PlayerController::begin(int8_t rxPin, int8_t txPin){
-  LOG(println, "DFplayer: Initializing...");
+  LOGD(T_DFPlayer, println, "Initializing...");
   _serial.begin(MP3_SERIAL_SPEED, SERIAL_8N1, rxPin, txPin);
 
   // event poller
@@ -141,6 +148,7 @@ void MP3PlayerController::event_hndlr(void* handler, esp_event_base_t base, int3
 void MP3PlayerController::_lmpChEventHandler(esp_event_base_t base, int32_t id, void* data){
   switch (static_cast<evt::lamp_t>(id)){
     // Power control
+/*
     case evt::lamp_t::pwron :
       LOGI(T_DFPlayer, println, T_Notification);
       dfp->playFolderTrack(2, 1);
@@ -149,6 +157,7 @@ void MP3PlayerController::_lmpChEventHandler(esp_event_base_t base, int32_t id, 
       LOGI(T_DFPlayer, println, T_Notification);
       dfp->playFolderTrack(2, 1);
       break;
+*/
     case evt::lamp_t::effSwitchTo :
       if (flags.eff_playtrack)
         playEffect(*reinterpret_cast<uint32_t*>(data));
@@ -166,10 +175,12 @@ void MP3PlayerController::_lmpSetEventHandler(esp_event_base_t base, int32_t id,
     case evt::lamp_t::mp3mute :
       LOGI(T_DFPlayer, println, "mute");
       dfp->disableDac();
+      flags.mute = true;
       break;
     case evt::lamp_t::mp3unmute :
       LOGI(T_DFPlayer, println, "unmute");
       dfp->enableDac();
+      flags.mute = true;
       break;
   }
 }
@@ -300,7 +311,8 @@ void MP3PlayerController::printSatusDetail(){
 */
 
 void MP3PlayerController::playTime(int hours, int minutes){
-  if(!isReady()) return;
+  // do not play anything if player is on Mute
+  if (flags.mute) return;
 
   if( dfp->getStatus().state == DfMp3_StatusState_Playing ){
     dfp->playAdvertisement(100*hours+minutes);
@@ -311,6 +323,11 @@ void MP3PlayerController::playTime(int hours, int minutes){
 }
 
 void MP3PlayerController::playEffect(uint32_t effnb){
+  // do not play anything if player is on Mute
+  if (flags.mute){
+   return;
+   LOGD(T_DFPlayer, println, "suppress play due to mute flag");
+  }
   LOGI(T_DFPlayer, printf, "effect folder:%u, track:%u, effnb:%u\n", MP3_EFF_FOLDER, effnb%256, effnb);
   dfp->playFolderTrack(MP3_EFF_FOLDER, effnb%256);
   _state = DfMp3_StatusState_Playing;
