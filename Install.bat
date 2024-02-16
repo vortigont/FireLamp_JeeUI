@@ -12,8 +12,8 @@ rem VARIABLES
 set "lamprepo=https://github.com/vortigont/FireLamp_JeeUI.git"
 set "pythondistro=https://www.python.org/ftp/python/3.11.7/python-3.11.7.exe"
 set "pythondistro64=https://www.python.org/ftp/python/3.11.7/python-3.11.7-amd64.exe"
-set "gitdistro=https://github.com/git-for-windows/git/releases/download/v2.43.0.windows.1/Git-2.43.0-32-bit.exe"
-set "gitdistro64=https://github.com/git-for-windows/git/releases/download/v2.43.0.windows.1/Git-2.43.0-64-bit.exe"
+set "gitdistro=https://github.com/git-for-windows/git/releases/download/v2.36.1.windows.1/Git-2.36.1-32-bit.exe"
+set "gitdistro64=https://github.com/git-for-windows/git/releases/download/v2.36.1.windows.1/Git-2.36.1-64-bit.exe"
 set "repodstdir=FireLamp.vortigont"
 
 
@@ -35,7 +35,7 @@ IF ERRORLEVEL 1 (
     ECHO "Git not in path. Assume it is '%pfilespath%\Git\bin\git'"
     set "gitcmd=%pfilespath%\Git\bin\git"
 ) ELSE (
-    ECHO Git found in PATH
+    ECHO Git найден в PATH
     set "gitcmd=git"
 )
 Echo.
@@ -58,7 +58,7 @@ Echo  ║  Install Platformio Core [step 2]    ► 2 │  Установить P
 Echo  ║  Install Git for Windows [step 3]    ► 3 │  Установить Git                [Шаг 3]   ║
 Echo  ║  Get firmware repository [step 4]    ► 4 │  Получить репозиторий прошивки [Шаг 4]   ║
 Echo  ╠═════════════════════════════════════════════════════════════════════════════════════╣
-Echo  ║  Remove Platformio installation      ► R │  Удалить установку Платформио            ║
+Echo  ║  Remove Platformio installation      ► r │  Удалить установку Платформио            ║
 Echo  ╚═════════════════════════════════════════════════════════════════════════════════════╝
 Echo.
 Set /p choice="Your choice [Ваш выбор]: ► "
@@ -115,26 +115,44 @@ if "%choice%"=="4" (
 		goto m1
     )
 
-    echo "FireLamp repo will be instaled into !diskInstal!:\%repodstdir% directory, any existing data will be lost"
+    echo [33m"ВНИМАНИЕ: репозиторий FireLamp будет установлен в каталог !diskInstal!:\%repodstdir%, если он уже существует в этом расположении, то все находящиеся в нём данные будут потеряны/перезаписаны"[m [92m 
     pause
     !diskInstal!:
     if exist "!diskInstal!:\%repodstdir%" (rmdir /S /Q !diskInstal!:\%repodstdir%)
     cd \
     mkdir %repodstdir%
     %gitcmd% clone -q --progress --depth 1 --no-single-branch %lamprepo% %repodstdir%
+: WA for windows dir ownership
+: https://git-scm.com/docs/git-config/2.35.2#Documentation/git-config.txt-safedirectory
+: https://github.com/git/git/commit/8959555cee7ec045958f9b6dd62e541affb7e7d9
+    git config --global --add safe.directory %repodstdir%
     start %repodstdir%
     GOTO :EOF
 )
 
-if "%choice%"=="R" (rmdir /S %USERPROFILE%\.platformio)
+if "%choice%"=="r" (rmdir /S %USERPROFILE%\.platformio)
 
 Echo.
 if "%choice%"=="1" (
-	Echo Don't forget to restart your computer right now!
+	Echo Не забудьте перезагрузить компьютер прямо сейчас!
+        echo. & echo    Нажмите любую клавишу для продолжения . . .                    
+        echo.
 	pause >> nul
 ) else (
 	pause
 )
+
+:IsAdmin
+reg.exe query "HKU\S-1-5-19\Environment"
+if Not %ERRORLEVEL% EQU 0 (
+mode con: cols=88 lines=5
+color 4F
+   echo. & echo    Запустите Файл от Имени Администратора ...                    
+   echo.
+   Pause & Exit
+)
+goto:eof
+
 cls
 goto m1
 
