@@ -180,7 +180,7 @@ void MP3PlayerController::_lmpSetEventHandler(esp_event_base_t base, int32_t id,
     case evt::lamp_t::mp3unmute :
       LOGI(T_DFPlayer, println, "unmute");
       dfp->enableDac();
-      flags.mute = true;
+      flags.mute = false;
       break;
   }
 }
