@@ -7,9 +7,24 @@ LOG macro will enable/disable logs to serial depending on LAMP_DEBUG build-time 
 #define LAMP_DEBUG_PORT Serial
 #endif
 
-// undef possible LOG from EmbUI
-#if defined(LOG)
+// undef possible LOG macros
+#ifdef LOG
   #undef LOG
+#endif
+#ifdef LOGV
+  #undef LOGV
+#endif
+#ifdef LOGD
+  #undef LOGD
+#endif
+#ifdef LOGI
+  #undef LOGI
+#endif
+#ifdef LOGW
+  #undef LOGW
+#endif
+#ifdef LOGE
+  #undef LOGE
 #endif
 
 #if defined(LAMP_DEBUG_LEVEL) && LAMP_DEBUG_LEVEL == 5
