@@ -54,9 +54,10 @@ Echo  ╠═══════════════════════�
 Echo  ║               Install tools              ║          Установка инструментов          ║
 Echo  ╠══════════════════════════════════════════╩══════════════════════════════════════════╣
 Echo  ║  Install Python          [step 1]    ► 1 │  Установить Python             [Шаг 1]   ║
-Echo  ║  Install Platformio Core [step 2]    ► 2 │  Установить PIO Core           [Шаг 2]   ║
-Echo  ║  Install Git for Windows [step 3]    ► 3 │  Установить Git                [Шаг 3]   ║
-Echo  ║  Get firmware repository [step 4]    ► 4 │  Получить репозиторий прошивки [Шаг 4]   ║
+::Echo  ║  Install Platformio Core [step 2]    ► 2 │  Установить PIO Core           [Шаг 2]   ║
+Echo  ║  Install Git for Windows [step 2]    ► 2 │  Установить Git                [Шаг 2]   ║
+Echo  ║  Get the firmware repository and         │  Получить репозиторий прошивки           ║
+Echo  ║  install PIO Core        [step 3]    ► 3 │  и установить PIO Core         [Шаг 3]   ║
 Echo  ╠═════════════════════════════════════════════════════════════════════════════════════╣
 Echo  ║  Remove Platformio installation      ► r │  Удалить установку Платформио            ║
 Echo  ╚═════════════════════════════════════════════════════════════════════════════════════╝
@@ -92,13 +93,13 @@ if "%choice%"=="1" (
 	exit
 )
 
-if "%choice%"=="2" (
+if "%choice%"=="0" (
 	CALL :DOWNLOAD_FILE https://raw.githubusercontent.com/platformio/platformio-core-installer/master/get-platformio.py %workdir%\get-platformio.py
-	python %workdir%\get-platformio.py
+	"%USERPROFILE%\Python\python.exe" %workdir%\get-platformio.py
 rem	del %workdir%\get-platformio.py
 )
 
-if "%choice%"=="3" (
+if "%choice%"=="2" (
 	if "%ARCH%"=="x64" (
 		CALL :DOWNLOAD_FILE %gitdistro64% %TMP%\git.exe
 	) else (
@@ -107,12 +108,12 @@ if "%choice%"=="3" (
 	
 	%TMP%\git.exe /SILENT
 	del %TMP%\git.exe
-	echo "Перезапуститите данный скрипт заново и выпоните 4й шаг по клонированию репозитория"
+	echo "Перезапуститите данный скрипт заново и выпоните 3й шаг по клонированию репозитория"
 	pause
 	exit
 )
 
-if "%choice%"=="4" (
+if "%choice%"=="3" (
 	Set /p diskInstal="Enter a drive letter C,D etc. (Введите букву диска C,D и т.п): "
 	rem echo  test !%diskInstal!
 	if not exist "!diskInstal!:\" (
@@ -132,6 +133,9 @@ if "%choice%"=="4" (
 : WA for windows dir ownership
 : https://git-scm.com/docs/git-config/2.35.2#Documentation/git-config.txt-safedirectory
 : https://github.com/git/git/commit/8959555cee7ec045958f9b6dd62e541affb7e7d9
+        CALL :DOWNLOAD_FILE https://raw.githubusercontent.com/platformio/platformio-core-installer/master/get-platformio.py %repodstdir%\get-platformio.py
+	"%USERPROFILE%\Python\python" %repodstdir%\get-platformio.py
+    rem	del %repodstdir%\get-platformio.py
     git config --global --add safe.directory %repodstdir%
     start %repodstdir%
     GOTO :EOF
