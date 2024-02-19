@@ -55,7 +55,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "evtloop.h"
 
 // версия ресурсов в стороннем джейсон файле
-#define UIDATA_VERSION  6
+#define UIDATA_VERSION  7
 
 // placeholder for effect list rebuilder task
 Task *delayedOptionTask = nullptr;

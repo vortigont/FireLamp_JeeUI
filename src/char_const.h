@@ -15,6 +15,7 @@ static constexpr const char* T_display_type = "dtype";                          
 static constexpr const char* T_ws2812 = "ws2812";                               // ws2812 led stip type
 static constexpr const char* T_mx_gpio = "mx_gpio";
 static constexpr const char* T_CLmt = "CLmt";                                   // лимит тока
+static constexpr const char* T_col_order = "col_order";                         // RGB color order
 static constexpr const char* T_hcnt = "hcnt";
 static constexpr const char* T_height = "height";
 static constexpr const char* T_hflip = "hflip";

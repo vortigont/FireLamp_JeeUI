@@ -58,6 +58,7 @@ class LEDDisplay {
     engine_t _etype;        // type of backend to use
     int _gpio{-1};          // fastled gpio
     uint32_t fastled_current_limit{FASTLED_CURRENT_LIMIT};      // Led strip current limit
+    EOrder _color_ordr;     // FastLED color order for sw stripes
     uint8_t _brt{32};       // backend engine brightness, if supported
 
     // An object ref I'll use to access LED device
@@ -72,7 +73,8 @@ class LEDDisplay {
     // Addresable led strip topology transformation object
     LedTiles tiles;
 
-    bool _start_rmt();
+    bool _start_rmt(const DynamicJsonDocument& doc);
+    bool _start_rmt_engine();
     bool _start_hub75(const DynamicJsonDocument& doc);
 
 public:
@@ -86,10 +88,13 @@ public:
     const LedTiles& getLayout() const { return tiles; } 
 
     // get FastLED gpio
-    int getGPIO(){ return _gpio; }
+    int getGPIO() const { return _gpio; }
 
     // get FastLED current limit
-    uint32_t getCurrentLimit(){ return fastled_current_limit; }
+    uint32_t getCurrentLimit() const { return fastled_current_limit; }
+
+    // get ws stripe colo order
+    int getColorOrder() const;
 
     /*** SETTERS ***/
 
@@ -98,6 +103,9 @@ public:
 
     // set FastLED current limit
     void setCurrentLimit(uint32_t i);
+
+    // set ws stripe colo order
+    void setColorOrder(int order);
 
     // Update LED stripe topology and sizing
     void updateStripeLayout(uint16_t w, uint16_t h, uint16_t wcnt, uint16_t hcnt,
