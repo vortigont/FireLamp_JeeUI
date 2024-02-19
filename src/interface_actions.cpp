@@ -238,14 +238,18 @@ void set_ledstrip(Interface *interf, const JsonObject *data, const char* action)
         (*data)[T_thflip]
     );
 
+
+    int colorder = (*data)[T_col_order];
+
     // go to "settings page"
     if (interf) basicui::page_system_settings(interf, nullptr, NULL);
 
-    // Check if I need to reset FastLED gpio
-    if (display.getGPIO() == (*data)[T_mx_gpio] || (*data)[T_mx_gpio] == static_cast<int>(GPIO_NUM_NC)) return;       /// gpio not changed or not set, just quit
+    // Check if I need to reset FastLED gpio or change color order
+    if ( colorder == display.getColorOrder() && ( display.getGPIO() == (*data)[T_mx_gpio] || (*data)[T_mx_gpio] == static_cast<int>(GPIO_NUM_NC) ) ) return;       /// gpio not changed or not set, just quit
 
     if (display.getGPIO() == GPIO_NUM_NC){
         // it's a cold start, so I can change GPIO on the fly
+        display.setColorOrder(colorder);
         display.setGPIO((*data)[T_mx_gpio]);
         display.start();
     } else {

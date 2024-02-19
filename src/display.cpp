@@ -61,13 +61,21 @@ bool LEDDisplay::start(){
     if (doc[T_display_type] == static_cast<int>(engine_t::hub75))
         return _start_hub75(doc);
 
+    return _start_rmt(doc);
+}
+
+bool LEDDisplay::_start_rmt(const DynamicJsonDocument& doc){
+    if (_dengine) return true;  // RMT already running
+
     if (!doc.containsKey(T_ws2812)) return false;    // no object with stripe config
 
     // shortcut
-    JsonVariant o = doc[T_ws2812];
+    JsonVariantConst o = doc[T_ws2812];
 
     // load gpio value, if defined
     setGPIO(o[T_mx_gpio].as<int>());
+
+    setColorOrder(o[T_col_order]);
 
     // set current, if defined
     setCurrentLimit(o[T_CLmt]);
@@ -85,18 +93,16 @@ bool LEDDisplay::start(){
     // tiles layout
     tiles.tileLayout.setLayout(o[T_tsnake], o[T_tvertical], o[T_tvflip], o[T_thflip]);
 
-    return _start_rmt();
+    return _start_rmt_engine();
 }
 
-//template<EOrder RGB_ORDER>
-bool LEDDisplay::_start_rmt(){
-    if (_dengine) return true;  // RMT already running
+bool LEDDisplay::_start_rmt_engine(){
 
     // RMT engine setup
     if (_gpio == -1) return false;      // won't run on disabled pin
 
     // create new led strip object using our configured pin
-    _dengine = new ESP32RMTDisplayEngine<COLOR_ORDER>(_gpio, tiles.canvas_w() * tiles.canvas_h());
+    _dengine = new ESP32RMTDisplayEngine(_gpio, _color_ordr, tiles.canvas_w() * tiles.canvas_h());
 
     // attach buffer to an object that will perform matrix layout trasformation on buffer access
     if (!_canvas){
@@ -184,7 +190,7 @@ void LEDDisplay::updateStripeLayout(uint16_t w, uint16_t h, uint16_t wcnt, uint1
     tiles.tileLayout.setLayout(tsnake, tvert, tvmirr, thmirr);
 
     // start rmt, if has not been started yet
-    if (!_start_rmt()){
+    if (!_start_rmt_engine()){
         LOG(println, "can't start RMT engine");
     }
 
@@ -223,6 +229,49 @@ void LEDDisplay::setCurrentLimit(uint32_t i){
     FastLED.setMaxPowerInVoltsAndMilliamps(FASTLED_VOLTAGE, i);
 }
 
+void LEDDisplay::setColorOrder(int order){
+
+    EOrder c_order;
+
+    switch(order){
+        case 1 :
+            c_order = RBG;
+            break;
+        case 2 :
+            c_order = GRB;
+            break;
+        case 3 :
+            c_order = GBR;
+            break;
+        case 4 :
+            c_order = BRG;
+            break;
+        case 5 :
+            c_order = BGR;
+            break;
+        default :
+            c_order = RGB;
+    };
+
+    _color_ordr = c_order;
+}
+
+int LEDDisplay::getColorOrder() const {
+    switch(_color_ordr){
+        case 1 :
+            return RBG;
+        case 2 :
+            return GRB;
+        case 3 :
+            return GBR;
+        case 4 :
+            return BRG;
+        case 5 :
+            return BGR;
+        default :
+            return RGB;
+    };
+}
 
 // my display object
 LEDDisplay display;
