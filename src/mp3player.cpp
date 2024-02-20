@@ -174,12 +174,14 @@ void MP3PlayerController::_lmpSetEventHandler(esp_event_base_t base, int32_t id,
       break;
     case evt::lamp_t::mp3mute :
       LOGI(T_DFPlayer, println, "mute");
-      dfp->disableDac();
+      dfp->stop();
+      // disabling DAC works only untill next track is played, so it is useless
+      // dfp->disableDac();
       flags.mute = true;
       break;
     case evt::lamp_t::mp3unmute :
       LOGI(T_DFPlayer, println, "unmute");
-      dfp->enableDac();
+      //dfp->enableDac();
       flags.mute = false;
       break;
   }
