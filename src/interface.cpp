@@ -786,7 +786,7 @@ void ui_block_mainpage_switches(Interface *interf, const JsonObject *data, const
     interf->checkbox(TCONST_drawbuff, myLamp.isDrawOn(), TINTF_0CE, true);
     interf->checkbox(TCONST_Mic, myLamp.isMicOnOff(), TINTF_012, true);
     interf->checkbox(TCONST_AUX, embui.paramVariant(TCONST_AUX), TCONST_AUX, true);
-    interf->checkbox(T_mp3mute, myLamp.isONMP3(), "MP3 Mute" /*TINTF_099*/, true);
+    interf->checkbox(T_mp3mute, myLamp.isMP3mute(), "MP3 Mute" /*TINTF_099*/, true);
 
 #ifdef LAMP_DEBUG
     interf->checkbox(TCONST_debug, myLamp.isDebugOn(), TINTF_08E, true);
@@ -1078,7 +1078,8 @@ void set_overlay_drawing(Interface *interf, const JsonObject *data, const char* 
 void set_mp3mute(Interface *interf, const JsonObject *data, const char* action){
     if (!data) return;
 
-    int v = (*data)[T_mp3mute];
+    bool v = (*data)[T_mp3mute];
+    myLamp.setMP3mute(v);
     EVT_POST(LAMP_SET_EVENTS, e2int(v ? evt::lamp_t::mp3mute : evt::lamp_t::mp3unmute ));
 }
 
@@ -1087,25 +1088,6 @@ void set_mp3volume(Interface *interf, const JsonObject *data, const char* action
     int volume = (*data)[T_mp3vol];
     embui.var(T_mp3vol, volume);
     EVT_POST_DATA(LAMP_SET_EVENTS, e2int(evt::lamp_t::mp3vol), &volume, sizeof(int));
-
-    //mp3->setVolume(volume);
-}
-
-void set_mp3_player(Interface *interf, const JsonObject *data, const char* action){
-    if (!data) return;
-/*
-    if(!myLamp.isONMP3()) return;
-    uint16_t cur_palyingnb = mp3->getCurPlayingNb();
-    if(data->containsKey(CMD_MP3_PREV)){
-        mp3->playEffect(cur_palyingnb-1,"");
-    } else if(data->containsKey(CMD_MP3_NEXT)){
-        mp3->playEffect(cur_palyingnb+1,"");
-    } else if(data->containsKey(TCONST_mp3_p5)){
-        mp3->playEffect(cur_palyingnb-5,"");
-    } else if(data->containsKey(TCONST_mp3_n5)){
-        mp3->playEffect(cur_palyingnb+5,"");
-    }
-*/
 }
 
 /*
@@ -1553,10 +1535,6 @@ void embui_actions_register(){
 #endif
 
 
-    embui.action.add(CMD_MP3_PREV, set_mp3_player);
-    embui.action.add(CMD_MP3_NEXT, set_mp3_player);
-    //embui.action.add(TCONST_mp3_p5, set_mp3_player);
-    //embui.action.add(TCONST_mp3_n5, set_mp3_player);
 /* #ifdef ENCODER
     embui.action.add(TCONST_set_enc, set_settings_enc);
 #endif

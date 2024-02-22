@@ -192,24 +192,6 @@ void Lamp::power(bool flag) // флаг включения/выключения 
   save_flags();
 }
 
-/*
-temporary disable
-void Lamp::playEffect(bool isPlayName, EFFSWITCH action){
-  if( mp3!=nullptr && mp3->isOn() &&
-      effwrkr.getCurrent()>0 &&
-      (flags.playEffect ||
-        ((isLampOn() || millis()>5000) && flags.playMP3 && action!=EFFSWITCH::SW_NEXT_DEMO && action!=EFFSWITCH::SW_RND)
-      )
-    ){
-    LOG(printf_P, PSTR("playEffect soundfile:%s, effect:%d, delayed:%d\n"), effwrkr.getSoundfile().c_str(), effwrkr.getCurrent(), (flags.playName && !flags.playMP3));
-    if(!flags.playMP3 || (flags.playEffect && action!=EFFSWITCH::SW_NEXT_DEMO && action!=EFFSWITCH::SW_RND)) // для mp3-плеера есть отдельное управление
-      mp3->playEffect(effwrkr.getCurrent(), effwrkr.getSoundfile(), (isPlayName && mp3!=nullptr && mp3->isOn() && !flags.playMP3)); // влияние на отложенное воспроизведение, но не для MP3-плеера
-  } else {
-    mp3->setCurEffect(effwrkr.getCurrent());
-  }
-}
-*/
-
 void Lamp::startRGB(CRGB &val){
   rgbColor = val;
   storedMode = ((mode == LAMPMODE::MODE_RGBLAMP) ? storedMode: mode);
@@ -482,16 +464,6 @@ void Lamp::_switcheffect(effswitch_t action, bool fade, uint16_t effnb, bool ski
     effwrkr.switchEffect(effnb, true);
 
   bool isShowName = (mode==LAMPMODE::MODE_DEMO && flags.showName);
-  bool isPlayName = (isShowName && flags.playName && !flags.playMP3 && effwrkr.getCurrent()>0);
-
-  // show effects's name on screen and play name over speaker (if set)
-/*
-  if(isShowName){
-    if(isPlayName && mp3!=nullptr && mp3->isOn()) // воспроизведение 
-      mp3->playName(effwrkr.getCurrent());
-  }
-*/
-  playEffect(isPlayName, action); // воспроизведение звука, с проверкой текущего состояния
 
   setBrightness(globalBrightness);      // need to reapply brightness as effect's curve might have changed
 
