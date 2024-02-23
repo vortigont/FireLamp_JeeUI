@@ -55,7 +55,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "evtloop.h"
 
 // версия ресурсов в стороннем джейсон файле
-#define UIDATA_VERSION  7
+#define UIDATA_VERSION  8
 
 // placeholder for effect list rebuilder task
 Task *delayedOptionTask = nullptr;
@@ -209,6 +209,7 @@ void ui_section_menu(Interface *interf, const JsonObject *data, const char* acti
     interf->option(A_ui_page_effects, TINTF_000);        //  Эффекты
     //interf->option(TCONST_lamptext, TINTF_001);       //  Вывод текста
     interf->option(A_ui_page_drawing, TINTF_0CE);        //  Рисование
+    interf->option(A_ui_page_widgets, "Widgets");        //  Widgets
 #ifdef USE_STREAMING
     interf->option(TCONST_streaming, TINTF_0E2);      //  Трансляция
 #endif

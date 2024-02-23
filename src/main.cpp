@@ -42,11 +42,10 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "actions.hpp"
 #include "evtloop.h"
 #include "devices.h"
+#include "informer.hpp"
 #ifdef DS18B20
 #include "DS18B20.h"
 #endif
-
-
 
 #ifdef EMBUI_USE_MQTT
 #include "AsyncMqttClient/Callbacks.hpp"
@@ -130,6 +129,11 @@ void setup() {
 
     // Hookup IPC event publisher callback
     ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, event_publisher, NULL, NULL));
+
+    // attach Informer handlers
+    informer.register_handlers();
+    // start widgets
+    informer.start();
 
     LOG(printf, "\n\nsetup complete: free heap: %uk, PSRAM:%uk\n\n", ESP.getFreeHeap()/1024, ESP.getFreePsram()/1024);
 }   // End setup()
