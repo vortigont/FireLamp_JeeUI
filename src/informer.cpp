@@ -73,6 +73,8 @@
 
 #define WIDGETS_CFG_JSIZE   4096
 
+#define CLOCK_DEFAULT_YOFFSET   14          // default offset for clock widget
+
 static constexpr const char* T_Informer = "Informer";
 
 //static const GFXfont* fonts[] = {&FreeMono9pt7b, &FreeMonoBold9pt7b, &FreeSans9pt7b, &FreeSansOblique9pt7b, &FreeSerif9pt7b,
@@ -123,11 +125,10 @@ GenericGFXWidget::GenericGFXWidget(const char* wlabel, LedFB_GFX* display, unsig
 
 void GenericGFXWidget::_deserialize_cfg(){
   DynamicJsonDocument doc(WIDGETS_CFG_JSIZE);
-  if (!embuifs::deserializeFile(doc, T_widgets_cfg)) return;
 
-  // skip config with empty objects, i.e. new file or new widget
-  if ( doc[label].isNull() ) return;
-
+  // it does not matter if config file does not exist or requested object is missing
+  // we should anyway call load_cfg to let derived class implement any default values configuration
+  embuifs::deserializeFile(doc, T_widgets_cfg);
   JsonVariantConst cfg( doc[label] );
   // load config via derivated method
   load_cfg(cfg);
@@ -177,7 +178,7 @@ void GenericGFXWidget::begin(){
 void ClockWidget::load_cfg(JsonVariantConst cfg){
   // clk
   clk.x = cfg[T_x1offset];
-  clk.y = cfg[T_y1offset];
+  clk.y = cfg[T_y1offset] | CLOCK_DEFAULT_YOFFSET;     // if not defined, then set y offset to default value
   clk.font_index = cfg[T_font1];
   clk.seconds_font_index = cfg[T_font2];
   clk.show_seconds = cfg[T_seconds];
@@ -284,6 +285,8 @@ void WidgetManager::_overlay_buffer(bool activate) {
 
 void WidgetManager::start(){
   _overlay_buffer(true);
+
+  if (!_overlay_buffer) return;   // failed to allocate overlay, i.e. display configuration has not been done yet
 
   if (!clock)
     clock = std::make_unique<ClockWidget>(_screen);
