@@ -1,5 +1,64 @@
 # Change Log
 
+## 3.5.0 (2024-02-27)
++ implement run-time configuration for address leds RGB color order option for WS2812, Closes #54
++ update windows batch installer
++ add font Awesome icons to UI buttons
++ reworked LOG macros, updated macro will allow to set severity level and component tag
+* DFPlayer adapter
+   - use forked DFMiniMp3 lib
+   - keep cfg in json file
+   - add effect track loop function
++ Button - reimplement button control
+   - use new ESPAsyncButton library for button handling
+   - implement event-based button<>lamp communication
+   - implement UI configuration for button, gpio, logic level, etc...
+   - implement UI configuration for button events, i.e. mapping actions to button events
+   - implement UI configuration for button timings 
+* Effects
+   - removed rudiment "individual brightness" from effect configs
+   - EffectFlags add control to randomly switch flags
+   - fix TetrisClock orientation
+   - исправлен эффект "Узоры" на широких экранах
+   - fix fireworks running on large screens. Closes #47
++ TM1637 rework
+   - tm's options are kept in a display.json file
+   - modified 1637 driver to handle appended messages
+   - TMDisplay class now handles events from a message bus
+     - show IP on WiFi connect
+     - show power On/Off
+     - show Brightness change
+     - tm display track brightness control from button events
++ Lamp class refactoring
+   - replace EFFSWITCH enum with enum class effswitch_t
+   - rename Lamp::effects member to Lamp::effwrkr
+   - remove long obsolete sync_parameters()
+   - rename overloaded Lamp::switcheffect to private Lamp::_switcheffect
++ add IPC to EmbUI.feeders event publisher
++ Implement ESP32 event loop bus for exchangind control messages between lamp's componets
+   - control matrix MOSFET via event bus
+   - power on/off events via event loop bus
+   - brightness control events
+   - effect switch events
+- remove obsolete code
+   - RTC module related libs and code
+   - DS temp sensor related
+   - E131 related code
+   - remove MP3PLAYER define
+   - remove obsolete ESP_USE_BUTTON define and related code
+   - убрана кнопка "калибровка микрофона"
+   - remove button actions from interfaces.cpp
+   - remove old tm methood calls from encoder and rtc
+   - alarm
+   - events
+   - gauge
+   - some webui related code
+   - code related to pending/current effect switching from EffectWorker
+- Other
+   - восстанавливать статус активности микрофона после перезагрузки. Closes #19
+   - removed build_time define MIC_EFFECTS
+
+
 ## 3.4.0 (2023-12-01)
 - Update EmbUI resources
 - Update Builder scripts
