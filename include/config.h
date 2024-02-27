@@ -138,10 +138,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 
 
-#ifndef COLOR_ORDER
-#define COLOR_ORDER           (GRB)                         // порядок цветов на ленте. Если цвет отображается некорректно - меняйте. Начать можно с RGB
-#endif
-
 #ifndef OFF_BRIGHTNESS
 #define OFF_BRIGHTNESS          (2U)                        // яркость вывода текста в случае выключенной лампы
 #endif

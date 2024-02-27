@@ -114,12 +114,12 @@ struct {
     bool showName:1;        // отображение имени в демо
     bool isMicOn:1;         // глобальное включение/выключение микрофона
     bool effHasMic:1;       // микрофон для эффекта
-    bool isOnMP3:1;         // включен ли плеер?
+    bool mp3mute:1;         // включен ли плеер?
     bool isBtn:1;           // включена ли кнопка?
-    bool playName:1;        // воспроизводить имя?
+    bool reserved15:1;      // ex. воспроизводить имя?
     //--------16 штук граница-------------------
-    bool playEffect:1;      // воспроизводить эффект?
-    bool playMP3:1;         // режим mp3-плеера
+    bool reserved16:1;      // ex. воспроизводить эффект?
+    bool reserved17:1;      // ex. режим mp3-плеера
     uint8_t alarmSound:3;   // звук будильника ALARM_SOUND_TYPE
     uint8_t playTime:3;     // воспроизводить время?
     uint8_t GaugeType:2;    // тип индикатора
@@ -135,16 +135,12 @@ _LAMPFLAGS(){
     isEventsHandled = false;
     isMicOn = false;
     effHasMic = false;
+    mp3mute = false;
     dRand = false;
-    isOnMP3 = false;
     isBtn = true;
     showName = false;
     playTime = 0; //TIME_SOUND_TYPE::TS_NONE; // воспроизводить время?
-    playName = false; // воспроизводить имя?
-    playEffect = false; // воспроизводить эффект?
     alarmSound = 0; //ALARM_SOUND_TYPE::AT_NONE;
-    MP3eq = 0;
-    playMP3 = false;
     limitAlarmVolume = false;
     GaugeType = GAUGETYPE::GT_VERT;
 }
@@ -165,7 +161,8 @@ private:
     uint8_t storedBright;               // "запасное" значение яркости
     uint8_t BFade;                      // затенение фона под текстом
 
-    bool mp3mute = false;               // времянка
+    // глушен ли мп3 плеер (времянка)
+    bool mp3mute = false;
 
     // GPIO's
     // это должен быть gpio_num_t в есп32, но пока нужна совместимость с 8266 держим инт
@@ -200,14 +197,6 @@ private:
      */
     uint8_t _get_brightness(bool absolute=false);
 
-    // temp disable
-    void playEffect(bool isPlayName = false, effswitch_t action = effswitch_t::next){};
-
-    /**
-     * @brief effectiveley wipes LedBuffers and fills LED Strip with Black
-     * 
-     */
-    //void _wipe_screen();
 
 public:
     // c-tor
@@ -288,6 +277,10 @@ public:
     bool isAlarm() {return mode == LAMPMODE::MODE_ALARMCLOCK;}
     bool isWarning() {return lampState.isWarning;}
 
+    // return MP3 speaker Mute state
+    bool isMP3mute() const { return mp3mute; }
+    void setMP3mute(bool state){ mp3mute = state; }
+
 #ifdef EMBUI_USE_MQTT
     void setmqtt_int(int val=DEFAULT_MQTTPUB_INTERVAL);
 #endif
@@ -367,16 +360,6 @@ public:
      * 
      */
     void clearDrawBuf() { CRGB c = CRGB::Black; fillDrawBuf(c); }
-
-    bool isONMP3() {return mp3mute;}
-    void setONMP3(bool flag) { mp3mute=flag; }
-
-    void setPlayTime(uint8_t val) {flags.playTime = val;}
-    void setPlayName(bool flag) {flags.playName = flag;}
-    void setPlayEffect(bool flag) {flags.playEffect = flag;}
-    void setPlayMP3(bool flag) {flags.playMP3 = flag;}
-    void setLimitAlarmVolume(bool flag) {flags.limitAlarmVolume = flag;}
-    void setEqType(uint8_t val) {flags.MP3eq = val;}
 
     /**
      * @brief prints current time on screen
