@@ -153,11 +153,11 @@ void MP3PlayerController::_lmpChEventHandler(esp_event_base_t base, int32_t id, 
       LOGI(T_DFPlayer, println, T_Notification);
       dfp->playFolderTrack(2, 1);
       break;
-    case evt::lamp_t::pwroff :
-      LOGI(T_DFPlayer, println, T_Notification);
-      dfp->playFolderTrack(2, 1);
-      break;
 */
+    case evt::lamp_t::pwroff :
+      dfp->stop();
+      //dfp->playFolderTrack(2, 1);
+      break;
     case evt::lamp_t::effSwitchTo :
       if (flags.eff_playtrack)
         playEffect(*reinterpret_cast<uint32_t*>(data));
