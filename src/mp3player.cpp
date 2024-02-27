@@ -34,10 +34,10 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
    вместе с этой программой. Если это не так, см.
    <https://www.gnu.org/licenses/>.)
 */
-#include "config.h"
+
 #include "mp3player.h"
-#include "log.h"
 #include "char_const.h"
+#include "log.h"
 
 // which serial to use for esp32
 #define MP3_SERIAL_SPEED    9600  //DFPlayer Mini suport only 9600-baud
@@ -188,130 +188,6 @@ void MP3PlayerController::_lmpSetEventHandler(esp_event_base_t base, int32_t id,
 }
 
 
-/*
-void MP3PlayerController::restartSound(){
-  isplayname = false;
-  int currentState = dfp->getStatus();
-  LOG(printf_P,PSTR("DFplayer: readState()=%d, mp3mode=%d, alarm=%d\n"), currentState, mp3mode, alarm);
-  if(currentState == 512 || currentState == -1 || currentState == 0){ // странное поведение, попытка фикса https://community.alexgyver.ru/threads/wifi-lampa-budilnik-proshivka-firelamp_jeeui-gpl.2739/page-312#post-75394
-    Task *_t = new Task(
-        200,
-        TASK_ONCE, [this](){
-          if(isOn() || (ready && alarm)){
-            if(alarm){
-              ReStartAlarmSound((ALARM_SOUND_TYPE)tAlarm);
-            } else if(!mp3mode && effectmode){
-              if(cur_effnb>0)
-                playEffect(cur_effnb, soundfile); // начать повтороное воспроизведение в эффекте
-            } else if(mp3mode) {
-              cur_effnb++;
-              if(cur_effnb>mp3filescount)
-                cur_effnb=1;
-              playMp3Folder(cur_effnb);
-            }
-          }
-          isplaying = true; },
-        &ts, false, nullptr, nullptr, true);
-    _t->enableDelayed();
-  }
-}
-*/
-/*
-void MP3PlayerController::printSatusDetail(){
-  uint8_t type = readType();
-  int value = read();
-
-  switch (type) {
-    case TimeOut:
-      LOG(println, "DFplayer: Time Out!");
-      if(isAlarm()){
-        isplaying = false;
-        restartSound();
-      }
-      break;
-    case WrongStack:
-      LOG(println, "DFplayer: Stack Wrong!");
-      break;
-    case DFPlayerCardInserted:
-      LOG(println, "DFplayer: Card Inserted!");
-      ready = true;
-      setVolume(cur_volume); // в случае перетыкания карты или сборса плеера - восстановим громкость
-      break;
-    case DFPlayerCardRemoved:
-      LOG(println, "DFplayer: Card Removed!");
-      ready = false;
-      break;
-    case DFPlayerCardOnline:
-      LOG(println, "DFplayer: Card Online!");
-      setVolume(cur_volume); // в случае перетыкания карты или сборса плеера - восстановим громкость
-      break;
-    //case DFPlayerFeedBack:  // этот кейс добавлен для нормальной работы с некоторыми версиями DFPlayer - поправлено в библиотеке, требуется проверка
-    case DFPlayerPlayFinished:
-     {
-        LOG(printf_P, PSTR("DFplayer: Number: %d Play Finished!\n"), value);
-        if(restartTimeout+5000<millis() && !isadvert){ // c момента инициализации таймаута прошло более 5 секунд (нужно чтобы не прерывало вывод времени в режиме без звука)
-          isplaying = false;
-          if(!iscancelrestart)
-            restartSound();
-          else {
-            iscancelrestart = false;
-            restartTimeout = millis();
-          }
-        }
-      }
-      break;
-    case DFPlayerError:
-      LOG(print, "DFPlayerError:");
-      switch (value) {
-        case Busy:
-          LOG(println, "Card not found");
-          break;
-        case Sleeping:
-          LOG(println, "Sleeping");
-          break;
-        case SerialWrongStack:
-          LOG(println, "Get Wrong Stack");
-          break;
-        case CheckSumNotMatch:
-          LOG(println, "Check Sum Not Match");
-          break;
-        case FileIndexOut:
-          LOG(println, "File Index Out of Bound");
-          break;
-        case FileMismatch:
-          LOG(println, "Cannot Find File");
-          if(isplayname) // только для случая когда нет файла с именем эффекта, если нет самой озвучки эффекта, то не рестартуем
-            restartSound();
-          isplaying = false;
-          break;
-        case Advertise:
-          LOG(println, "In Advertise");
-          isplaying = false;
-          isadvert = false;
-          // возникла ошибка с минутами или будильником, попробуем еще раз
-          if((restartTimeout+10000<millis() && timeSoundType == TIME_SOUND_TYPE::TS_VER1) || isAlarm()){ // c момента инициализации таймаута прошло более 10 секунд, избавляюсь от зацикливания попыток
-            restartTimeout=millis();
-            if(isAlarm())
-              restartSound();
-            if(timeSoundType == TIME_SOUND_TYPE::TS_VER1 && nextAdv){
-              Task *_t = new Task(
-                  2.5 * TASK_SECOND + 300,
-                  TASK_ONCE, [this](){ playAdvertise(nextAdv); },
-                  &ts, false, nullptr, nullptr, true);
-              _t->enableDelayed();
-            }
-          }
-          break;
-        default:
-          break;
-      }
-      break;
-    default:
-      break;
-  }
-}
-*/
-
 void MP3PlayerController::playTime(int hours, int minutes){
   // do not play anything if player is on Mute
   if (flags.mute) return;
@@ -349,12 +225,13 @@ void MP3PlayerController::playEffect(uint32_t effnb){
 void MP3PlayerController::setVolume(uint8_t vol) {
   _volume=vol;
   dfp->setVolume(vol);
+  LOGI(T_DFPlayer, printf, "volume: %u", vol);
 }
-
 
 void MP3PlayerController::setLoopEffects(bool value){
   flags.eff_looptrack = value;
   dfp->setRepeatPlayCurrentTrack(value);
+  LOGI(T_DFPlayer, printf, "track loop: %u", value);
 }
 
 
