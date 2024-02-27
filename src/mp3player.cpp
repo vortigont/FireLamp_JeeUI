@@ -352,6 +352,12 @@ void MP3PlayerController::setVolume(uint8_t vol) {
 }
 
 
+void MP3PlayerController::setLoopEffects(bool value){
+  flags.eff_looptrack = value;
+  dfp->setRepeatPlayCurrentTrack(value);
+}
+
+
 /*
 void MP3PlayerController::playFolder0(int filenb) {
   LOG(printf_P, PSTR("DFplayer: playLargeFolder filenb: %d\n"), filenb);

@@ -143,7 +143,7 @@ public:
    * 
    * @param value 
    */
-  void setLoopEffects(bool value){ flags.eff_looptrack = value; }
+  void setLoopEffects(bool value);
 
   uint8_t getVolume() const { return _volume; }
   void setVolume(uint8_t vol);
