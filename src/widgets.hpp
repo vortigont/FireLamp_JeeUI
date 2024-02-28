@@ -48,7 +48,13 @@
 
 #define DEFAULT_TEXT_COLOR  54000
 
-class GenericGFXWidget : public Task {
+/**
+ * @brief an abstract class to implement small "apps" or widgets
+ * practically it is just a class that is able to load/save it's state serialized,
+ * has a periodic timer ticker and could attach/detach to event bus
+ * 
+ */
+class GenericWidget : public Task {
 
     /**
      * @brief load widget config using widget name as a config selector key
@@ -57,9 +63,8 @@ class GenericGFXWidget : public Task {
     void _deserialize_cfg();
 
 protected:
+    // widget label or "name"
     const char* label;
-    LedFB_GFX   *screen;
-
 
     /**
      * @brief derived method should generate object's configuration into provided JsonVariant
@@ -77,8 +82,15 @@ protected:
     virtual void load_cfg(JsonVariantConst cfg) = 0;
 
 public:
-    GenericGFXWidget(const char* wlabel, LedFB_GFX* display, unsigned interval);
-    virtual ~GenericGFXWidget(){};
+
+    /**
+     * @brief Construct a new Generic Widget object
+     * 
+     * @param wlabel - widget label identifier
+     * @param interval - ticker execution interval in ms
+     */
+    GenericWidget(const char* wlabel, unsigned interval);
+    virtual ~GenericWidget(){};
 
     // function to run on ticker call 
     virtual void widgetRunner() = 0;
@@ -101,6 +113,27 @@ public:
      * 
      */
     void setConfig(JsonVariantConst cfg);
+
+};
+
+
+class GenericGFXWidget : public GenericWidget {
+
+
+protected:
+    LedFB_GFX   *screen;
+    // буфер оверлея
+    std::shared_ptr<LedFB<CRGB> > overlay;
+
+    // make/release display overlay
+    bool getOverlay();
+
+    void releaseOverlay();
+
+public:
+    GenericGFXWidget(const char* wlabel, unsigned interval) : GenericWidget(wlabel, interval){};
+    virtual ~GenericGFXWidget(){};
+
 };
 
 
@@ -136,8 +169,8 @@ struct Date {
     // elements structs
     Clock clk{};
     Date date{};
-
-    bool ready = false;
+    // last timestamp
+    std::time_t last_date;
 
     // pack class configuration into JsonObject
     void generate_cfg(JsonVariant cfg) override;
@@ -152,20 +185,15 @@ struct Date {
     void _print_date(std::tm *tm);
 
 public:
-    ClockWidget(LedFB_GFX* display) : GenericGFXWidget(T_w_clock, display, TASK_SECOND){}
+    ClockWidget() : GenericGFXWidget(T_w_clock, TASK_SECOND){}
     void widgetRunner() override;
 };
 
 class WidgetManager {
 
     bool registered{false};
-    LedFB_GFX   *_screen;
-    std::shared_ptr<LedFB<CRGB> > _overlay;     // буфер оверлея
 
     std::unique_ptr<GenericGFXWidget> clock;
-
-    // make/release display overlay
-    void _overlay_buffer(bool activate);
 
 public:
     //WidgetManager();

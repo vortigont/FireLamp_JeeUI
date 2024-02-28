@@ -40,7 +40,7 @@
 */
 
 #include <ctime>
-#include "informer.hpp"
+#include "widgets.hpp"
 #include "EmbUI.h"
 #include "log.h"
 
@@ -75,7 +75,7 @@
 
 #define CLOCK_DEFAULT_YOFFSET   14          // default offset for clock widget
 
-static constexpr const char* T_Informer = "Informer";
+static constexpr const char* T_Widget = "Widget";
 
 //static const GFXfont* fonts[] = {&FreeMono9pt7b, &FreeMonoBold9pt7b, &FreeSans9pt7b, &FreeSansOblique9pt7b, &FreeSerif9pt7b,
 //  &FreeSerifBold9pt7b, &FreeSerifItalic9pt7b, &Org_01, &Picopixel, &TomThumb};
@@ -112,18 +112,14 @@ void set_widget_cfg(Interface *interf, const JsonObject *data, const char* actio
 
 
 
+// ****  GenericWidget methods
 
-GenericGFXWidget::GenericGFXWidget(const char* wlabel, LedFB_GFX* display, unsigned periodic) : label(wlabel), screen(display) {
-  set(periodic, TASK_FOREVER,
-    [this](){ widgetRunner(); } //,
-//    [this](){ onStart(); },
-//    [this](){ onStop(); }
+GenericWidget::GenericWidget(const char* wlabel, unsigned periodic) : label(wlabel) {
+  set(periodic, TASK_FOREVER, [this](){ widgetRunner(); }
   );
 }
 
-//GenericGFXWidget::~GenericGFXWidget(){}
-
-void GenericGFXWidget::_deserialize_cfg(){
+void GenericWidget::_deserialize_cfg(){
   DynamicJsonDocument doc(WIDGETS_CFG_JSIZE);
 
   // it does not matter if config file does not exist or requested object is missing
@@ -134,8 +130,8 @@ void GenericGFXWidget::_deserialize_cfg(){
   load_cfg(cfg);
 }
 
-JsonVariant GenericGFXWidget::getConfig(){
-  LOGD(T_Informer, printf, "getConfig for widget: %s\n", label);
+JsonVariant GenericWidget::getConfig(){
+  LOGD(T_Widget, print, "getConfig for widget:"); LOGD(T_Widget, println, label);
 
   DynamicJsonDocument doc(WIDGETS_CFG_JSIZE);
 
@@ -145,8 +141,8 @@ JsonVariant GenericGFXWidget::getConfig(){
   return cfg;
 }
 
-void GenericGFXWidget::setConfig(JsonVariantConst cfg){
-  LOGD(T_Informer, printf, "setConfig for widget: %s\n", label);
+void GenericWidget::setConfig(JsonVariantConst cfg){
+  LOGD(T_Widget, printf, "setConfig for widget: %s\n", label);
 
   // apply supplied configuration to widget 
   load_cfg(cfg);
@@ -165,14 +161,35 @@ void GenericGFXWidget::setConfig(JsonVariantConst cfg){
   embuifs::serialize2file(doc, T_widgets_cfg);
 }
 
-void GenericGFXWidget::begin(){
+void GenericWidget::begin(){
+  LOGI(T_Widget, printf, "Start widget %s", label);
   _deserialize_cfg();
   ts.addTask(*this);
   enable();
 }
 
 
-// ***
+// ****  GenericGFXWidget methods
+
+bool GenericGFXWidget::getOverlay(){
+  if (overlay) return true;
+  LOGD(T_Widget, printf, "%s obtain overlay", label);
+  overlay = display.getOverlay();  // obtain overlay buffer
+  if (!overlay) return false;   // failed to allocate overlay, i.e. display configuration has not been done yet
+  screen = new LedFB_GFX(overlay);
+  screen->setRotation(2);            // adafruit coordinates are different from LedFB, so need to rotate it
+  return true;
+}
+
+void GenericGFXWidget::releaseOverlay(){
+  LOGD(T_Widget, printf, "%s release overlay", label);
+  delete(screen);
+  screen = nullptr;
+  overlay.reset();
+}
+
+
+
 // *** ClockWidget
 
 void ClockWidget::load_cfg(JsonVariantConst cfg){
@@ -192,11 +209,11 @@ void ClockWidget::load_cfg(JsonVariantConst cfg){
   date.color = cfg[T_color2];
   date.font_index = cfg[T_font3];
 
+  if (!screen) return;  // overlay is not loaded yet
   screen->setTextWrap(false);
   clk.fresh = false;
   date.fresh = false;
   screen->fillScreen(CRGB::Black);
-  ready = true;
 }
 
 void ClockWidget::generate_cfg(JsonVariant cfg){
@@ -218,8 +235,15 @@ void ClockWidget::generate_cfg(JsonVariant cfg){
 }
 
 void ClockWidget::widgetRunner(){
+/*
   if (!ready){
-    LOGE(T_Informer, println, "****** RUN WHEN NOT INIT!!!!");
+    LOGE(T_Widget, println, "****** RUN WHEN NOT INIT!!!!");
+    return;
+  }
+*/
+  // make sure that we have screen to write to
+  if (!getOverlay()) {
+    LOGE(T_Widget, println, "No overlay available");
     return;
   }
 
@@ -228,15 +252,17 @@ void ClockWidget::widgetRunner(){
   std::tm *tm = std::localtime(&now);
 
   // check if I need to refresh clock on display
-  if (clk.show_seconds || !clk.fresh || (tm->tm_min != 0) )
+  if (clk.show_seconds || !clk.fresh || (now - last_date>60) )
     _print_clock(tm);
 
   // check if I need to refresh date on display
-  if (date.show || !date.fresh || (tm->tm_hour != 0) && (tm->tm_min != 0) )
+  // I will refresh it at least one minute just in case the date will change due to ntp events or else
+  if (date.show && ( !date.fresh ||  (now - last_date>86400) ) )
     _print_date(tm);
 }
 
 void ClockWidget::_print_clock(std::tm *tm){
+  //LOGI(T_Widget, println, "sec");
   screen->setTextColor(clk.color);
   screen->setFont(fonts[clk.font_index]);
   screen->setCursor(clk.x, clk.y);
@@ -256,6 +282,7 @@ void ClockWidget::_print_clock(std::tm *tm){
 
   //_screen->fillScreen(CRGB::Black);
   screen->print(result);
+  LOGV(T_Widget, printf, "time: %s, font:%u, clr:%u, bounds: %d, %d, %u, %u\n", result, clk.font_index, clk.color, clk.minX, clk.minY, clk.maxW, clk.maxH);
 
   if (clk.show_seconds){
     screen->setFont(fonts[clk.seconds_font_index]);
@@ -270,10 +297,11 @@ void ClockWidget::_print_clock(std::tm *tm){
   }
 
   clk.fresh = true;
-  LOGD(T_Informer, printf, "time: %s, font:%u, clr:%u, bounds: %d, %d, %u, %u\n", result, clk.font_index, clk.color, clk.minX, clk.minY, clk.maxW, clk.maxH);
+  LOGV(T_Widget, printf, "sec: %s, font:%u, clr:%u, bounds: %d, %d, %u, %u\n", result, clk.seconds_font_index, clk.color, clk.minX, clk.minY, clk.maxW, clk.maxH);
 }
 
 void ClockWidget::_print_date(std::tm *tm){
+  //LOGI(T_Widget, println, "sec");
   constexpr size_t buffsize = sizeof("2024-02-23");
   //constexpr size_t buffsize = sizeof("23 Oct, Sun blah");
   char result[buffsize];
@@ -296,30 +324,15 @@ void ClockWidget::_print_date(std::tm *tm){
   screen->print(result);
   date.fresh = true;
 
-  LOGD(T_Informer, printf, "Date: %s, font:%u, clr:%u, bounds: %d %d %u %u\n", result, date.font_index, date.color, date.minX, date.minY, date.maxW, date.maxH);
+  LOGV(T_Widget, printf, "Date: %s, font:%u, clr:%u, bounds: %d %d %u %u\n", result, date.font_index, date.color, date.minX, date.minY, date.maxW, date.maxH);
 }
 
-void WidgetManager::_overlay_buffer(bool activate) {
-  if (activate && !_overlay){
-    LOGD(T_Informer, println, "obtain overlay");
-    _overlay = display.getOverlay();  // obtain overlay buffer
-    _screen = new LedFB_GFX(_overlay);
-    _screen->setRotation(2);            // adafruit coordinates are different from LedFB, so need to rotate it
-  } else{
-    LOGD(T_Informer, println, "release overlay");
-    delete(_screen);
-    _screen = nullptr;
-    _overlay.reset();
-  }
-}
+// ****  Widget Manager methods
+
 
 void WidgetManager::start(){
-  _overlay_buffer(true);
-
-  if (!_overlay) return;   // failed to allocate overlay, i.e. display configuration has not been done yet
-
   if (!clock)
-    clock = std::make_unique<ClockWidget>(_screen);
+    clock = std::make_unique<ClockWidget>();
 
   clock->begin();
 }
@@ -328,7 +341,6 @@ void WidgetManager::stop(){
   if (clock)
     delete clock.release();
 
-  _overlay_buffer(false);
 }
 
 void WidgetManager::register_handlers(){

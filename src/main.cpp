@@ -42,10 +42,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "actions.hpp"
 #include "evtloop.h"
 #include "devices.h"
-#include "informer.hpp"
-#ifdef DS18B20
-#include "DS18B20.h"
-#endif
+#include "widgets.hpp"
 
 #ifdef EMBUI_USE_MQTT
 #include "AsyncMqttClient/Callbacks.hpp"
