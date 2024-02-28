@@ -193,6 +193,7 @@ void ClockWidget::load_cfg(JsonVariantConst cfg){
   date.font_index = cfg[T_font3];
 
   screen->setTextWrap(false);
+  clk.fresh = false;
   date.fresh = false;
   screen->fillScreen(CRGB::Black);
   ready = true;
@@ -218,56 +219,85 @@ void ClockWidget::generate_cfg(JsonVariant cfg){
 
 void ClockWidget::widgetRunner(){
   if (!ready){
-    LOGD(T_Informer, println, "****** RUN WHEN NOT INIT!!!!");
+    LOGE(T_Informer, println, "****** RUN WHEN NOT INIT!!!!");
     return;
   }
-
-
-  screen->setTextColor(clk.color);
-  screen->setFont(fonts[clk.font_index]);
-  screen->setCursor(clk.x, clk.y);
 
   std::time_t now;
   std::time(&now);
   std::tm *tm = std::localtime(&now);
 
-  constexpr size_t buffsize = sizeof("2024-02-23");
+  // check if I need to refresh clock on display
+  if (clk.show_seconds || !clk.fresh || (tm->tm_min != 0) )
+    _print_clock(tm);
+
+  // check if I need to refresh date on display
+  if (date.show || !date.fresh || (tm->tm_hour != 0) && (tm->tm_min != 0) )
+    _print_date(tm);
+}
+
+void ClockWidget::_print_clock(std::tm *tm){
+  screen->setTextColor(clk.color);
+  screen->setFont(fonts[clk.font_index]);
+  screen->setCursor(clk.x, clk.y);
+
+  constexpr size_t buffsize = sizeof("20:23");
   char result[buffsize];
-  std::strftime(result, buffsize, "%H:%M", tm);
+  std::strftime(result, buffsize, clk.twelwehr ? "%I:%M" : "%R", tm);    // "%R" equivalent to "%H:%M"
 
   int16_t x,y;
   uint16_t w,h;
   screen->getTextBounds(result, clk.x, clk.y, &x, &y, &w, &h);
-  screen->fillRect(x,y, w,h, 0);
+  clk.minX = std::min(clk.minX, x);
+  clk.minY = std::min(clk.minY, y);
+  clk.maxW = std::max(clk.maxW, w);
+  clk.maxH = std::max(clk.maxH, h);
+  screen->fillRect(clk.minX, clk.minY, clk.maxW, clk.maxH, 0);
 
   //_screen->fillScreen(CRGB::Black);
   screen->print(result);
-  LOGD(T_Informer, printf, "time: %s, font:%u, clr:%u, bounds: %d, %d, %u, %u\n", result, clk.font_index, clk.color, x,y,w,h);
 
   if (clk.show_seconds){
     screen->setFont(fonts[clk.seconds_font_index]);
     std::strftime(result, buffsize, ":%S", tm);
     screen->getTextBounds(result, screen->getCursorX(), screen->getCursorY(), &x, &y, &w, &h);
-    screen->fillRect(x,y, w,h, 0);
+    clk.sminX = std::min(clk.sminX, x);
+    clk.sminY = std::min(clk.sminY, y);
+    clk.smaxW = std::max(clk.smaxW, w);
+    clk.smaxH = std::max(clk.smaxH, h);
+    screen->fillRect(clk.sminX,clk.sminY, clk.smaxW,clk.smaxH, 0);
     screen->print(result);
   }
 
-  // check if I need to refresh date on display
-  if (!date.show || (date.fresh && (tm->tm_hour != 0) && (tm->tm_min != 0)) ) return;
+  clk.fresh = true;
+  LOGD(T_Informer, printf, "time: %s, font:%u, clr:%u, bounds: %d, %d, %u, %u\n", result, clk.font_index, clk.color, clk.minX, clk.minY, clk.maxW, clk.maxH);
+}
 
-  // print date
+void ClockWidget::_print_date(std::tm *tm){
+  constexpr size_t buffsize = sizeof("2024-02-23");
+  //constexpr size_t buffsize = sizeof("23 Oct, Sun blah");
+  char result[buffsize];
+
   std::strftime(result, buffsize, "%F", tm);
+  //std::strftime(result, buffsize, "%d %b, %a", tm);
   screen->setFont(fonts[date.font_index]);
   screen->setTextColor(date.color);
   screen->setCursor(date.x, date.y);
+
+  int16_t x,y;
+  uint16_t w,h;
   screen->getTextBounds(result, date.x, date.y, &x, &y, &w, &h);
-  screen->fillRect(x,y, w,h, 0);
+  date.minX = std::min(date.minX, x);
+  date.minY = std::min(date.minY, y);
+  date.maxW = std::max(date.maxW, w);
+  date.maxH = std::max(date.maxH, h);
+
+  screen->fillRect(date.minX,date.minY, date.maxW,date.maxH, 0);
   screen->print(result);
   date.fresh = true;
 
-  LOGD(T_Informer, printf, "date: %s, font:%u, clr:%u, bounds: %d %d %u %u\n", result, date.font_index, date.color, x,y,w,h);
+  LOGD(T_Informer, printf, "Date: %s, font:%u, clr:%u, bounds: %d %d %u %u\n", result, date.font_index, date.color, date.minX, date.minY, date.maxW, date.maxH);
 }
-
 
 void WidgetManager::_overlay_buffer(bool activate) {
   if (activate && !_overlay){
@@ -286,7 +316,7 @@ void WidgetManager::_overlay_buffer(bool activate) {
 void WidgetManager::start(){
   _overlay_buffer(true);
 
-  if (!_overlay_buffer) return;   // failed to allocate overlay, i.e. display configuration has not been done yet
+  if (!_overlay) return;   // failed to allocate overlay, i.e. display configuration has not been done yet
 
   if (!clock)
     clock = std::make_unique<ClockWidget>(_screen);

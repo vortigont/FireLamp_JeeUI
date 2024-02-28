@@ -101,8 +101,6 @@ public:
      * 
      */
     void setConfig(JsonVariantConst cfg);
-
-
 };
 
 
@@ -115,6 +113,13 @@ struct Clock {
     uint8_t seconds_font_index; // font to use
     bool show_seconds;          // show seconds
     bool twelwehr;      // 12/24 hour clock
+    bool fresh;         // flag that indicates if date has been displayed yet or needs a refresh
+    // max text bounds - needed to track max block size to cover the clock text
+    int16_t minX{32762}, minY{32762};
+    uint16_t maxW{0}, maxH{0};
+    // same for seconds
+    int16_t sminX{32762}, sminY{32762};
+    uint16_t smaxW{0}, smaxH{0};
 };
 
 struct Date {
@@ -123,6 +128,9 @@ struct Date {
     uint8_t font_index; // font to use
     bool show;          // show date
     bool fresh;         // flag that indicates if date has been displayed yet or needs a refresh
+    // max text bounds - needed to track max block size to cover the clock text
+    int16_t minX{32762}, minY{32762};
+    uint16_t maxW{0}, maxH{0};
 };
 
     // elements structs
@@ -131,9 +139,17 @@ struct Date {
 
     bool ready = false;
 
+    // pack class configuration into JsonObject
     void generate_cfg(JsonVariant cfg) override;
 
+    // load class configuration into JsonObject
     void load_cfg(JsonVariantConst cfg) override;
+
+    // print clock
+    void _print_clock(std::tm *tm);
+
+    // print date
+    void _print_date(std::tm *tm);
 
 public:
     ClockWidget(LedFB_GFX* display) : GenericGFXWidget(T_w_clock, display, TASK_SECOND){}
