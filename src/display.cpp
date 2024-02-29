@@ -165,6 +165,10 @@ bool LEDDisplay::_start_hub75(const DynamicJsonDocument& doc){
 std::shared_ptr< LedFB<CRGB> > LEDDisplay::getOverlay(){
     auto instance = _ovr.lock();
 
+    // if engine or canvas does not exist (yet) just return empty obj here
+    if (!_dengine || !_canvas)
+        return instance;
+
     if (!instance){
         // no overlay exist at the moment, let's create one
         instance = std::make_shared< LedFB<CRGB> >(LedFB<CRGB>(tiles.canvas_w(), tiles.canvas_h(), _dengine->getOverlay()));
