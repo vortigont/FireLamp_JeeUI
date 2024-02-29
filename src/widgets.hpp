@@ -121,7 +121,7 @@ class GenericGFXWidget : public GenericWidget {
 
 
 protected:
-    LedFB_GFX   *screen;
+    LedFB_GFX   *screen = nullptr;
     // буфер оверлея
     std::shared_ptr<LedFB<CRGB> > overlay;
 
@@ -148,10 +148,10 @@ struct Clock {
     bool twelwehr;      // 12/24 hour clock
     bool fresh;         // flag that indicates if date has been displayed yet or needs a refresh
     // max text bounds - needed to track max block size to cover the clock text
-    int16_t minX{32762}, minY{32762};
+    int16_t minX{0x7fff}, minY{0x7fff};
     uint16_t maxW{0}, maxH{0};
     // same for seconds
-    int16_t sminX{32762}, sminY{32762};
+    int16_t sminX{0x7fff}, sminY{0x7fff};
     uint16_t smaxW{0}, smaxH{0};
 };
 

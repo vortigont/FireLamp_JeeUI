@@ -200,14 +200,14 @@ void ClockWidget::load_cfg(JsonVariantConst cfg){
   clk.seconds_font_index = cfg[T_font2];
   clk.show_seconds = cfg[T_seconds];
   clk.twelwehr = cfg[T_tm_12h];
-  clk.color = cfg[T_color1];
+  clk.color = cfg[T_color1] | DEFAULT_TEXT_COLOR;
 
   // date
   date.show = cfg[T_enabled];
   date.x = cfg[T_x2offset];
   date.y = cfg[T_y2offset];
   date.color = cfg[T_color2];
-  date.font_index = cfg[T_font3];
+  date.font_index = cfg[T_font3] | DEFAULT_TEXT_COLOR;
 
   if (!screen) return;  // overlay is not loaded yet
   screen->setTextWrap(false);
@@ -259,6 +259,8 @@ void ClockWidget::widgetRunner(){
   // I will refresh it at least one minute just in case the date will change due to ntp events or else
   if (date.show && ( !date.fresh ||  (now - last_date>86400) ) )
     _print_date(tm);
+
+  last_date = now;
 }
 
 void ClockWidget::_print_clock(std::tm *tm){
