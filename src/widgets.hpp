@@ -60,7 +60,7 @@ class GenericWidget : public Task {
      * @brief load widget config using widget name as a config selector key
      * 
      */
-    void _deserialize_cfg();
+    JsonVariantConst _load_cfg_from_NVS();
 
 protected:
     // widget label or "name"
@@ -72,7 +72,7 @@ protected:
      * @param cfg 
      * @return JsonVariantConst 
      */
-    virtual void generate_cfg(JsonVariant cfg) = 0;
+    virtual void generate_cfg(JsonVariant cfg) const = 0;
 
     /**
      * @brief load configuration from a json object
@@ -96,25 +96,47 @@ public:
     virtual void widgetRunner() = 0;
 
     /**
-     * @brief load widget's config from persistent storage and runs ticker
+     * @brief load widget's config from persistent storage and calls start()
      * 
      */
-    void begin();
+    void load(){ load(_load_cfg_from_NVS()); };
+
+    /**
+     * @brief load widget's config from persistent storage and calls start()
+     * 
+     */
+    void load(JsonVariantConst cfg);
+
+
+    // start widget ticker
+    virtual void start(){ enable(); };
+
+    // stop widget ticker
+    virtual void stop(){ disable(); };
 
     /**
      * @brief Get widget's configuration packed into json object
      * used to feed control's values to WebUI/MQTT
      * @return JsonVariant
      */
-    JsonVariant getConfig();
+    JsonVariant getConfig() const;
 
     /**
      * @brief Set widget's configuration packed into json object
-     * 
+     * this call will also SAVE supplied configuration to persistent storage
      */
     void setConfig(JsonVariantConst cfg);
 
+    /**
+     * @brief Get widget's Label
+     * 
+     * @return const char* 
+     */
+    const char* getLabel() const { return label; }
+
 };
+
+using widget_pt = std::unique_ptr<GenericWidget>;
 
 
 class GenericGFXWidget : public GenericWidget {
@@ -173,7 +195,7 @@ struct Date {
     std::time_t last_date;
 
     // pack class configuration into JsonObject
-    void generate_cfg(JsonVariant cfg) override;
+    void generate_cfg(JsonVariant cfg) const override;
 
     // load class configuration into JsonObject
     void load_cfg(JsonVariantConst cfg) override;
@@ -185,20 +207,27 @@ struct Date {
     void _print_date(std::tm *tm);
 
 public:
-    ClockWidget() : GenericGFXWidget(T_w_clock, TASK_SECOND){}
+    ClockWidget() : GenericGFXWidget(T_clock, TASK_SECOND){}
     void widgetRunner() override;
 };
 
 class WidgetManager {
 
-    bool registered{false};
+    // widgets container
+    std::list<widget_pt> _widgets;
 
-    std::unique_ptr<GenericGFXWidget> clock;
+    /**
+     * @brief spawn a new instance of a widget with supplied config
+     * used with configuration is suplied via webui for non existing widgets
+     * @param widget_label 
+     * @param cfg whether to use a supplied configuration or load from NVS
+     */
+    void _spawn(const char* widget_label, JsonVariantConst cfg);
 
 public:
-    //WidgetManager();
+    //~WidgetManager(){};
 
-    void start();
+    void start(const char* label = NULL);
     void stop();
 
     void register_handlers();
@@ -209,7 +238,28 @@ public:
 };
 
 
-// EmbUI Widgets page
+// Unary predicate for Widget's label search match
+template <class T>
+class MatchLabel : public std::unary_function<T, bool>{
+    std::string_view _lookup;
+public:
+    explicit MatchLabel(const char* label) : _lookup(label) {}
+    bool operator() ( const T& item ){
+       LOGV(T_Widget, printf, "MatchLabel %s vs %s\n", _lookup, item->getLabel());
+
+        // T is widget_pt
+        return _lookup.compare(item->getLabel()) == 0;
+    }
+};
+
+
+/**
+ * @brief register EmbUI action handlers for managing widgets
+ * 
+ */
+void register_widgets_handlers();
+
+// EmbUI Page with a list of available Widgets that could be enabled and configured
 void ui_page_widgets(Interface *interf, const JsonObject *data, const char* action);
 
 extern WidgetManager informer;

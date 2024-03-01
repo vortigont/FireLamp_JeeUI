@@ -64,17 +64,14 @@ void mqttOnMessageCallback(char* topic, char* payload, AsyncMqttClientMessagePro
 
 // Arduino setup
 void setup() {
+    // debug console
     Serial.begin(115200);
-    delay(1);
+    LOGI(T_Main, printf, "Setup: free heap: %uk, PSRAM:%uk\n\n", ESP.getFreeHeap()/1024, ESP.getFreePsram()/1024);
+
     // Start event loop task
     evt::start();
-#ifdef LAMP_DEBUG
+    // event bus sniffer
     //evt::debug();
-#endif
-
-#ifdef EMBUI_USE_UDP
-    embui.udp(); // Ответ на UDP запрс. в качестве аргумента - переменная, содержащая macid (по умолчанию)
-#endif
 
     // add WLED mobile app handler
     embui.server.on("/win", HTTP_ANY, [](AsyncWebServerRequest *request){ wled_handle(request); } );
@@ -84,55 +81,45 @@ void setup() {
     //  *** EmbUI ***
     // Инициализируем EmbUI фреймворк - загружаем конфиг, запускаем WiFi и все зависимые от него службы
     embui.begin();
+    // change periodic WebUI publish interval
+    embui.setPubInterval(30);
 
     // Add mDNS CB handler for WLED app
     embui.wifi->mdns_cb = wled_announce;
 
-    // register config params and action callbacks
+    // register EmbUI action callbacks
     embui_actions_register();
 
-#ifdef EMBUI_USE_MQTT
-    // assign our callbacks for mqtt
-    if (embui.mqttClient){
-        embui.mqttClient->onConnect([](bool session){ ha_autodiscovery(); });        // run HomeAssistant autodiscovery
-        //embui.mqttClient->onMessage(mqttOnMessageCallback);                          // process incoming messages
-    }
-#endif
-
-
-    // restore matrix configuration from file and create a proper LED buffer
+    // Load display configuration from file and create a proper LED buffer
     display.start();
-    // start tm1637
+    // Load tm1637 if enabled
     tm1637_setup();
-    // button setup
+    // Load button support if enabled
     button_cfg_load();
-    // DFPlayer
+    // Load DFPlayer support if enabled
     dfplayer_cfg_load();
     // restore mp3 player vol
     dfplayer_volume(embui.paramVariant(T_mp3vol));
-
-    embui.setPubInterval(30);   // change periodic WebUI publish interval from EMBUI_PUB_PERIOD to 10 secs
 
 #ifdef ENCODER
     enc_setup();
 #endif
 
+    // attach Informer handlers
+    register_widgets_handlers();
+    // spawn widgets from saved configurations, this must be done AFTER display initialisation
+    informer.start();
+
     // Lamp object initialization must be done AFTER display.start(), so that display object could create pixel buffer first
+    // TODO: this is ugly
     myLamp.effwrkr.setEffSortType((SORT_TYPE)embui.paramVariant(V_effSort).as<int>()); // сортировка должна быть определена до заполнения
-    myLamp.effwrkr.initDefault(); // если вызывать из конструктора, то не забыть о том, что нужно инициализировать Serial.begin(115200); иначе ничего не увидеть!
-    //myLamp.events.loadConfig();
-    //myLamp.events.setEventCallback(event_worker);
+    myLamp.effwrkr.initDefault();
     myLamp.lamp_init();
 
     // Hookup IPC event publisher callback
     ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, event_publisher, NULL, NULL));
 
-    // attach Informer handlers
-    informer.register_handlers();
-    // start widgets
-    informer.start();
-
-    LOG(printf, "\n\nsetup complete: free heap: %uk, PSRAM:%uk\n\n", ESP.getFreeHeap()/1024, ESP.getFreePsram()/1024);
+    LOGI(T_Main, printf, "Setup complete: free heap: %uk, PSRAM:%uk\n\n", ESP.getFreeHeap()/1024, ESP.getFreePsram()/1024);
 }   // End setup()
 
 

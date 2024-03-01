@@ -89,25 +89,25 @@ static constexpr std::array<const GFXfont*, 7> fonts = {&FreeSerif9pt8b, &FreeSe
 
 void ui_page_widgets(Interface *interf, const JsonObject *data, const char* action){
   interf->json_frame_interface();
-    interf->json_section_uidata();
+     interf->json_section_uidata();
         interf->uidata_pick( "lampui.pages.widgets" );
     interf->json_frame_flush();
-
-  interf->json_frame_value(informer.getConfig(NULL), true);
+  interf->json_frame_value(informer.getConfig(T_clock), true);
   interf->json_frame_flush();
-
-  // call setter with no data, it will publish existing config values if any
-  //getset_dfplayer_device(interf, nullptr, NULL);
-  //getset_dfplayer_opt(interf, nullptr, NULL);
-
 }
+
 
 void set_widget_cfg(Interface *interf, const JsonObject *data, const char* action){
   // only one widget for now - clock, later need to make a selector via widget's label
 
   if (!data || !(*data).size()) return;   // call with no data
 
-  informer.setConfig(action, *data);
+  informer.setConfig(std::string_view (action).substr(9).data(), *data);  // set_wdgt_
+}
+
+void register_widgets_handlers(){
+  embui.action.add(A_ui_page_widgets, ui_page_widgets);                   // меню: переход на страницу "Виджеты"
+  embui.action.add(A_set_widget, set_widget_cfg);                         // set widget configuration
 }
 
 
@@ -115,23 +115,21 @@ void set_widget_cfg(Interface *interf, const JsonObject *data, const char* actio
 // ****  GenericWidget methods
 
 GenericWidget::GenericWidget(const char* wlabel, unsigned periodic) : label(wlabel) {
-  set(periodic, TASK_FOREVER, [this](){ widgetRunner(); }
-  );
+  set( periodic, TASK_FOREVER, [this](){ widgetRunner(); } );
+  ts.addTask(*this);
 }
 
-void GenericWidget::_deserialize_cfg(){
+JsonVariantConst GenericWidget::_load_cfg_from_NVS(){
   DynamicJsonDocument doc(WIDGETS_CFG_JSIZE);
 
   // it does not matter if config file does not exist or requested object is missing
   // we should anyway call load_cfg to let derived class implement any default values configuration
   embuifs::deserializeFile(doc, T_widgets_cfg);
-  JsonVariantConst cfg( doc[label] );
-  // load config via derivated method
-  load_cfg(cfg);
+  return doc[label];
 }
 
-JsonVariant GenericWidget::getConfig(){
-  LOGD(T_Widget, print, "getConfig for widget:"); LOGD(T_Widget, println, label);
+JsonVariant GenericWidget::getConfig() const {
+  LOGD(T_Widget, printf, "getConfig for widget:%s", label);
 
   DynamicJsonDocument doc(WIDGETS_CFG_JSIZE);
 
@@ -161,13 +159,10 @@ void GenericWidget::setConfig(JsonVariantConst cfg){
   embuifs::serialize2file(doc, T_widgets_cfg);
 }
 
-void GenericWidget::begin(){
-  LOGI(T_Widget, printf, "Start widget %s", label);
-  _deserialize_cfg();
-  ts.addTask(*this);
-  enable();
+void GenericWidget::load(JsonVariantConst cfg){
+  load_cfg(cfg);
+  start();
 }
-
 
 // ****  GenericGFXWidget methods
 
@@ -194,6 +189,7 @@ void GenericGFXWidget::releaseOverlay(){
 
 void ClockWidget::load_cfg(JsonVariantConst cfg){
   // clk
+  clk = {};
   clk.x = cfg[T_x1offset];
   clk.y = cfg[T_y1offset] | CLOCK_DEFAULT_YOFFSET;     // if not defined, then set y offset to default value
   clk.font_index = cfg[T_font1];
@@ -203,7 +199,8 @@ void ClockWidget::load_cfg(JsonVariantConst cfg){
   clk.color = cfg[T_color1] | DEFAULT_TEXT_COLOR;
 
   // date
-  date.show = cfg[T_enabled];
+  date = {};
+  date.show = cfg[P_date];
   date.x = cfg[T_x2offset];
   date.y = cfg[T_y2offset];
   date.color = cfg[T_color2];
@@ -216,7 +213,7 @@ void ClockWidget::load_cfg(JsonVariantConst cfg){
   screen->fillScreen(CRGB::Black);
 }
 
-void ClockWidget::generate_cfg(JsonVariant cfg){
+void ClockWidget::generate_cfg(JsonVariant cfg) const {
   // clk
   cfg[T_x1offset] = clk.x;
   cfg[T_y1offset] = clk.y;
@@ -227,11 +224,13 @@ void ClockWidget::generate_cfg(JsonVariant cfg){
   cfg[T_color1] = clk.color;
 
   // date
-  cfg[T_enabled] = date.show;
+  cfg[P_date] = date.show;
   cfg[T_x2offset] = date.x;
   cfg[T_y2offset] = date.y;
   cfg[T_color2] = date.color;
   cfg[T_font3] = date.font_index;
+  // temporary flag, until I implement it outside of wdget's configuration
+  cfg[T_enabled] = true; 
 }
 
 void ClockWidget::widgetRunner(){
@@ -332,35 +331,84 @@ void ClockWidget::_print_date(std::tm *tm){
 // ****  Widget Manager methods
 
 
-void WidgetManager::start(){
-  if (!clock)
-    clock = std::make_unique<ClockWidget>();
+void WidgetManager::start(const char* label){
 
-  clock->begin();
+  DynamicJsonDocument doc(WIDGETS_CFG_JSIZE);
+
+  // it does not matter if config file does not exist or requested object is missing
+  // we should anyway call load_cfg to let derived class implement any default values configuration
+  embuifs::deserializeFile(doc, T_widgets_cfg);
+
+  JsonObject obj = doc.as<JsonObject>();
+
+  for (JsonPair kvp : obj){
+    LOGI(T_Widget, printf, "Instantiating:%s\n", kvp.key().c_str());
+
+    // check if widget is enabled at all
+    JsonVariant v = kvp.value();
+    if(!v[T_enabled])
+      continue;
+
+    // if only specific widget needs to be started, check if it's label match 
+    if (label && std::string_view(kvp.key().c_str()).compare(label) !=0)
+      continue;
+
+    // check if such widget is already spawned
+    auto i = std::find_if(_widgets.cbegin(), _widgets.cend(), MatchLabel<widget_pt>(kvp.key().c_str()));
+    if ( i != _widgets.end() )
+      continue;
+
+    // spawn a new widget based on label
+    _spawn(kvp.key().c_str(), v);
+  }
 }
 
 void WidgetManager::stop(){
-  if (clock)
-    delete clock.release();
+//  if (clock)
+//    delete clock.release();
 
-}
-
-void WidgetManager::register_handlers(){
-  embui.action.add(A_ui_page_widgets, ui_page_widgets);                   // меню: переход на страницу "Виджеты"
-  embui.action.add(A_set_widget, set_widget_cfg);                         // set widget configuration
 }
 
 JsonVariant WidgetManager::getConfig(const char* widget_label){
-  //if (std::string_view wdgt(widget_label).compare(T_w_clock) == 0)
+  LOGD(T_Widget, printf, "getConfig for: %s\n", widget_label);
 
-  return clock->getConfig();
-  
+  auto i = std::find_if(_widgets.begin(), _widgets.end(), MatchLabel<widget_pt>(widget_label));
+  if ( i != _widgets.end() ) {
+    return (*i)->getConfig();
+  }
+  return {};
 }
 
 void WidgetManager::setConfig(const char* widget_label, JsonVariantConst cfg){
-  // pick which widget we should configure
-  // for now only clock
-  clock->setConfig(cfg);
+  LOGD(T_Widget, printf, "got cfg data for: %s\n", widget_label);
+
+  auto i = std::find_if(_widgets.begin(), _widgets.end(), MatchLabel<widget_pt>(widget_label));
+  if ( i == _widgets.end() ) {
+    // no such widget exist currently, spawn a new one with supplied config
+    _spawn(widget_label, cfg);
+    return;
+  }
+
+  // apply and save widget's configuration
+  (*i)->setConfig(cfg);
+  // if widget was disabled, then remove its instance from container
+  if (!cfg[T_enabled])
+    _widgets.erase(i);
+}
+
+void WidgetManager::_spawn(const char* widget_label, JsonVariantConst cfg){
+  LOGD(T_Widget, printf, "spawn: %s\n", widget_label);
+  // spawn a new widget based on label
+  if(std::string_view(widget_label).compare(T_clock) == 0){
+    auto w = std::make_unique<ClockWidget>();
+    if (cfg.isNull())
+      w->load();
+    else
+      w->load(cfg);
+
+    _widgets.push_back(std::move(w));
+  }
+// some other widgets to be done
 }
 
 

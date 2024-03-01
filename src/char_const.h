@@ -83,7 +83,7 @@ static constexpr const char* T_mp3mute = "mp3mute";
 
 // Widgets
 static constexpr const char* T_widgets_cfg = "/widgets.json";
-static constexpr const char* T_w_clock = "w_clock";             // Clock widget
+static constexpr const char* T_clock = "clock";                     // Clock widget
 
 static constexpr const char* T_color1 = "color1";
 static constexpr const char* T_color2 = "color2";
@@ -108,6 +108,7 @@ static constexpr const char* T_edit = "edit";
 static constexpr const char* T_Enable = "Enable";
 static constexpr const char* T_enabled = "enabled";
 static constexpr const char* T_idx = "idx";
+static constexpr const char* T_Main = "Main";                           // used as LOG tag
 static constexpr const char* T_Notification = "Notification";
 static constexpr const char* T_opt = "opt";
 static constexpr const char* T_pwr = "pwr";
@@ -190,8 +191,7 @@ static constexpr const char* TCONST_lamptext = "lamptext";
 static constexpr const char* TCONST_lamp_config = "lamp_config";
 static constexpr const char* TCONST_limitAlarmVolume = "limitAlarmVolume";
 static constexpr const char* TCONST_load = "load";
-static constexpr const char* TCONST_Mac = "Mac";
-//static constexpr const char* TCONST_main = "main";
+//static constexpr const char* TCONST_Mac = "Mac";
 static constexpr const char* TCONST_makeidx = "makeidx";
 static constexpr const char* TCONST_mapping = "mapping";
 static constexpr const char* TCONST_Memory = "Memory";
@@ -347,5 +347,5 @@ static constexpr const char* T_switches = "switches";
 static constexpr const char* MQT_effect_controls = "effect/controls/";      // topic suffix
 static constexpr const char* MQT_lamp = "lamp/";
 
-static constexpr const char* CMD_MP3_PREV = "MP3_PREV";        // Без параметров - переключает трек на 1 назад, принимает числовой параметр, на сколько треков вернуть назад
-static constexpr const char* CMD_MP3_NEXT = "MP3_NEXT";        // Без параметров - переключает трек на 1 назад, принимает числовой параметр, на сколько треков вернуть назад
+//static constexpr const char* CMD_MP3_PREV = "MP3_PREV";        // Без параметров - переключает трек на 1 назад, принимает числовой параметр, на сколько треков вернуть назад
+//static constexpr const char* CMD_MP3_NEXT = "MP3_NEXT";        // Без параметров - переключает трек на 1 назад, принимает числовой параметр, на сколько треков вернуть назад
