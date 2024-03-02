@@ -132,7 +132,7 @@ JsonVariant GenericWidget::getConfig() const {
   LOGD(T_Widget, printf, "getConfig for widget:%s", label);
 
   DynamicJsonDocument doc(WIDGETS_CFG_JSIZE);
-
+  //JsonObject cfg = doc.to<JsonObject>();
   JsonVariant cfg( doc.createNestedObject(label) );
 
   generate_cfg(cfg);
@@ -144,7 +144,20 @@ void GenericWidget::setConfig(JsonVariantConst cfg){
 
   // apply supplied configuration to widget 
   load_cfg(cfg);
+  // save supplied config to NVS
+  save(cfg);
+}
 
+void GenericWidget::load(JsonVariantConst cfg){
+  load_cfg(cfg);
+  start();
+}
+
+void GenericWidget::save(){
+  save(getConfig());
+}
+
+void GenericWidget::save(JsonVariantConst cfg){
   // save supplied config to persistent storage
   DynamicJsonDocument doc(WIDGETS_CFG_JSIZE);
   embuifs::deserializeFile(doc, T_widgets_cfg);
@@ -159,10 +172,6 @@ void GenericWidget::setConfig(JsonVariantConst cfg){
   embuifs::serialize2file(doc, T_widgets_cfg);
 }
 
-void GenericWidget::load(JsonVariantConst cfg){
-  load_cfg(cfg);
-  start();
-}
 
 // ****  GenericGFXWidget methods
 
@@ -279,7 +288,7 @@ void ClockWidget::_print_clock(std::tm *tm){
     // save cursor for seconds printing
     clk.scursor_x = screen->getCursorX();
     clk.scursor_y = screen->getCursorY();
-    LOGV(T_Widget, printf, "time: %s, font:%u, clr:%u, bounds: %d, %d, %u, %u\n", result, clk.font_index, clk.color, clk.minX, clk.minY, clk.maxW, clk.maxH);
+    LOGV(T_Widget, printf, "time: %s, font:%u, clr:%u, bounds: %d, %d, %u, %u\n", result, clk.font_index, clk.color, x, y, clk.maxW, h);
   }
 
   if (clk.show_seconds){
@@ -315,10 +324,51 @@ void ClockWidget::_print_date(std::tm *tm){
   LOGD(T_Widget, printf, "Date: %s, font:%u, clr:%u, bounds: %d %d %u %u\n", result, date.font_index, date.color, x, y, date.maxW, h);
 }
 
+void ClockWidget::start(){
+  if (!_hdlr_lmp_change_evt)
+    ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, ClockWidget::_event_hndlr, this, &_hdlr_lmp_change_evt));
+
+}
+
+void ClockWidget::stop(){
+
+}
+
+void ClockWidget::_event_hndlr(void* handler, esp_event_base_t base, int32_t id, void* event_data){
+  LOGV(T_clock, printf, "EVENT %s:%d\n", base, id);
+  if ( base == LAMP_CHANGE_EVENTS )
+    return static_cast<ClockWidget*>(handler)->_lmpChEventHandler(base, id, event_data);
+
+  //if ( base == LAMP_SET_EVENTS )
+  //  return static_cast<ClockWidget*>(handler)->_lmpSetEventHandler(base, id, event_data);
+}
+
+void ClockWidget::_lmpChEventHandler(esp_event_base_t base, int32_t id, void* data){
+  switch (static_cast<evt::lamp_t>(id)){
+    // Power control
+    case evt::lamp_t::pwron :
+      LOGI(T_clock, println, "activate widget");
+      redraw = true;
+      enable();
+      break;
+    case evt::lamp_t::pwroff :
+      LOGI(T_clock, println, "suspend widget");
+      disable();
+      releaseOverlay();
+      break;
+  }
+}
+
+
 // ****  Widget Manager methods
 
-
 void WidgetManager::start(const char* label){
+  if (label){
+    // check if such widget is already spawned
+    auto i = std::find_if(_widgets.cbegin(), _widgets.cend(), MatchLabel<widget_pt>(label));
+    if ( i != _widgets.end() )
+      return;
+  }
 
   DynamicJsonDocument doc(WIDGETS_CFG_JSIZE);
 
@@ -329,8 +379,6 @@ void WidgetManager::start(const char* label){
   JsonObject obj = doc.as<JsonObject>();
 
   for (JsonPair kvp : obj){
-    LOGI(T_Widget, printf, "Instantiating:%s\n", kvp.key().c_str());
-
     // check if widget is enabled at all
     JsonVariant v = kvp.value();
     if(!v[T_enabled])
@@ -340,24 +388,19 @@ void WidgetManager::start(const char* label){
     if (label && std::string_view(kvp.key().c_str()).compare(label) !=0)
       continue;
 
-    // check if such widget is already spawned
-    auto i = std::find_if(_widgets.cbegin(), _widgets.cend(), MatchLabel<widget_pt>(kvp.key().c_str()));
-    if ( i != _widgets.end() )
-      continue;
-
-    // spawn a new widget based on label
+    // spawn a new widget based on label and loaded configuration
     _spawn(kvp.key().c_str(), v);
   }
 }
 
-void WidgetManager::stop(){
+void WidgetManager::stop(const char* label){
 //  if (clock)
 //    delete clock.release();
 
 }
 
 JsonVariant WidgetManager::getConfig(const char* widget_label){
-  LOGD(T_Widget, printf, "getConfig for: %s\n", widget_label);
+  //LOGD(T_Widget, printf, "getConfig for: %s\n", widget_label);
 
   auto i = std::find_if(_widgets.begin(), _widgets.end(), MatchLabel<widget_pt>(widget_label));
   if ( i != _widgets.end() ) {
@@ -367,12 +410,12 @@ JsonVariant WidgetManager::getConfig(const char* widget_label){
 }
 
 void WidgetManager::setConfig(const char* widget_label, JsonVariantConst cfg){
-  LOGD(T_Widget, printf, "got cfg data for: %s\n", widget_label);
+  LOGD(T_Widget, printf, "WM setConfig for: %s\n", widget_label);
 
   auto i = std::find_if(_widgets.begin(), _widgets.end(), MatchLabel<widget_pt>(widget_label));
   if ( i == _widgets.end() ) {
-    // no such widget exist currently, spawn a new one with supplied config
-    _spawn(widget_label, cfg);
+    // such widget does not exist currently, spawn a new one with supplied config and store cfg to NVS
+    _spawn(widget_label, cfg, true);
     return;
   }
 
@@ -383,18 +426,29 @@ void WidgetManager::setConfig(const char* widget_label, JsonVariantConst cfg){
     _widgets.erase(i);
 }
 
-void WidgetManager::_spawn(const char* widget_label, JsonVariantConst cfg){
+void WidgetManager::_spawn(const char* widget_label, JsonVariantConst cfg, bool persistent){
   LOGD(T_Widget, printf, "spawn: %s\n", widget_label);
   // spawn a new widget based on label
+//  std::unique_ptr<GenericWidget> w;
+
   if(std::string_view(widget_label).compare(T_clock) == 0){
     auto w = std::make_unique<ClockWidget>();
-    if (cfg.isNull())
+    if (cfg.isNull()){
+      // ask widget to read it's config from NVS, if any
+      LOGV(T_Widget, println, "WM call widget load cfg from NVS");
       w->load();
-    else
-      w->load(cfg);
+    } else {
+      if (persistent)
+        w->setConfig(cfg);
+      else
+        w->load(cfg);
 
+      // this is a temp stub, widget should use event to run ticker
+      w->enable();
+    }
     _widgets.push_back(std::move(w));
   }
+
 // some other widgets to be done
 }
 

@@ -44,6 +44,7 @@
 #include "display.hpp"
 #include "ts.h"
 #include "ui.h"
+#include "evtloop.h"
 #include "char_const.h"
 
 #define DEFAULT_TEXT_COLOR  54000
@@ -102,10 +103,23 @@ public:
     void load(){ load(_load_cfg_from_NVS()); };
 
     /**
-     * @brief load widget's config from persistent storage and calls start()
+     * @brief load widget's config from supplied config and calls start()
      * 
      */
     void load(JsonVariantConst cfg);
+
+    /**
+     * @brief save current widget's configuration to NVS
+     * 
+     */
+    void save();
+
+    /**
+     * @brief save supplied widget's configuration to NVS
+     * it will actually try to merge supplied object with the one stored in NVS
+     * @param cfg 
+     */
+    void save(JsonVariantConst cfg);
 
 
     // start widget ticker
@@ -191,6 +205,8 @@ struct Date {
     // flag that indicates screen needs a refresh
     bool redraw;
 
+    esp_event_handler_instance_t _hdlr_lmp_change_evt = nullptr;
+
     // pack class configuration into JsonObject
     void generate_cfg(JsonVariant cfg) const override;
 
@@ -203,9 +219,21 @@ struct Date {
     // print date
     void _print_date(std::tm *tm);
 
+    static void _event_hndlr(void* handler, esp_event_base_t base, int32_t id, void* event_data);
+
+    // change events handler
+    void _lmpChEventHandler(esp_event_base_t base, int32_t id, void* data);
+
+    // set events handler
+    //void _lmpSetEventHandler(esp_event_base_t base, int32_t id, void* data);
+
 public:
     ClockWidget() : GenericGFXWidget(T_clock, TASK_SECOND){}
+
     void widgetRunner() override;
+
+    void start() override;
+    void stop() override;
 };
 
 class WidgetManager {
@@ -218,14 +246,15 @@ class WidgetManager {
      * used with configuration is suplied via webui for non existing widgets
      * @param widget_label 
      * @param cfg whether to use a supplied configuration or load from NVS
+     * @param persistent if 'true' a spawned widget will save supplied configuration to NVS, set this to false if spawning widget with cfg FROM NVS to avoid exta writes
      */
-    void _spawn(const char* widget_label, JsonVariantConst cfg);
+    void _spawn(const char* widget_label, JsonVariantConst cfg, bool persistent = false);
 
 public:
     //~WidgetManager(){};
 
     void start(const char* label = NULL);
-    void stop();
+    void stop(const char* label = NULL);
 
     void register_handlers();
     void unregister_handlers();
