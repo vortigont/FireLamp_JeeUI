@@ -168,13 +168,10 @@ struct Clock {
     uint8_t seconds_font_index; // font to use
     bool show_seconds;          // show seconds
     bool twelwehr;      // 12/24 hour clock
-    bool fresh;         // flag that indicates if date has been displayed yet or needs a refresh
     // max text bounds - needed to track max block size to cover the clock text
-    int16_t minX{0x7fff}, minY{0x7fff};
-    uint16_t maxW{0}, maxH{0};
-    // same for seconds
-    int16_t sminX{0x7fff}, sminY{0x7fff};
-    uint16_t smaxW{0}, smaxH{0};
+    uint16_t maxW{0}, smaxW{0};   //, maxH{0};
+    // save seconds starting position
+    int16_t scursor_x, scursor_y;
 };
 
 struct Date {
@@ -182,10 +179,8 @@ struct Date {
     uint16_t color{DEFAULT_TEXT_COLOR};     // color in 5-6-5 mode
     uint8_t font_index; // font to use
     bool show;          // show date
-    bool fresh;         // flag that indicates if date has been displayed yet or needs a refresh
     // max text bounds - needed to track max block size to cover the clock text
-    int16_t minX{32762}, minY{32762};
-    uint16_t maxW{0}, maxH{0};
+    uint16_t maxW{0};   //, maxH{0};
 };
 
     // elements structs
@@ -193,6 +188,8 @@ struct Date {
     Date date{};
     // last timestamp
     std::time_t last_date;
+    // flag that indicates screen needs a refresh
+    bool redraw;
 
     // pack class configuration into JsonObject
     void generate_cfg(JsonVariant cfg) const override;

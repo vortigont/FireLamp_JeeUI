@@ -149,6 +149,9 @@ bool LEDDisplay::_start_hub75(const DynamicJsonDocument& doc){
                         o[T_color_depth]
     );
 
+    // check if panel size not a zero
+    if (!mxconfig.mx_width || !mxconfig.mx_height) return false;
+
     _dengine = new ESP32HUB75_DisplayEngine(mxconfig);
 
     // attach buffer to an object that will perform matrix layout trasformation on buffer access

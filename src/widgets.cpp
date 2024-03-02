@@ -151,7 +151,7 @@ void GenericWidget::setConfig(JsonVariantConst cfg){
 
   // get/created nested object for specific widget
   JsonVariant dst = doc[label].isNull() ? doc.createNestedObject(label) : doc[label];
-  JsonObjectConst o(cfg);
+  JsonObjectConst o = cfg.as<JsonObjectConst>();
 
   for (JsonPairConst kvp : o)
       dst[kvp.key()] = kvp.value();
@@ -168,7 +168,7 @@ void GenericWidget::load(JsonVariantConst cfg){
 
 bool GenericGFXWidget::getOverlay(){
   if (overlay) return true;
-  LOGD(T_Widget, printf, "%s obtain overlay", label);
+  LOGD(T_Widget, printf, "%s obtain overlay\n", label);
   overlay = display.getOverlay();  // obtain overlay buffer
   if (!overlay) return false;   // failed to allocate overlay, i.e. display configuration has not been done yet
   screen = new LedFB_GFX(overlay);
@@ -208,9 +208,8 @@ void ClockWidget::load_cfg(JsonVariantConst cfg){
 
   if (!screen) return;  // overlay is not loaded yet
   screen->setTextWrap(false);
-  clk.fresh = false;
-  date.fresh = false;
   screen->fillScreen(CRGB::Black);
+  redraw = true;
 }
 
 void ClockWidget::generate_cfg(JsonVariant cfg) const {
@@ -234,15 +233,9 @@ void ClockWidget::generate_cfg(JsonVariant cfg) const {
 }
 
 void ClockWidget::widgetRunner(){
-/*
-  if (!ready){
-    LOGE(T_Widget, println, "****** RUN WHEN NOT INIT!!!!");
-    return;
-  }
-*/
   // make sure that we have screen to write to
-  if (!getOverlay()) {
-    LOGE(T_Widget, println, "No overlay available");
+  if (!getOverlay()){
+    LOGW(T_Widget, println, "No overlay available");
     return;
   }
 
@@ -250,64 +243,62 @@ void ClockWidget::widgetRunner(){
   std::time(&now);
   std::tm *tm = std::localtime(&now);
 
+  // force redraw on a date shift, i.e. ntp adjustment, etc
+  if (now - last_date>60) redraw = true;
+
   // check if I need to refresh clock on display
-  if (clk.show_seconds || !clk.fresh || (now - last_date>60) )
+  if (clk.show_seconds || tm->tm_sec == 0 || redraw )
     _print_clock(tm);
 
-  // check if I need to refresh date on display
-  // I will refresh it at least one minute just in case the date will change due to ntp events or else
-  if (date.show && ( !date.fresh ||  (now - last_date>86400) ) )
+  // check if I need to refresh date on display once in an hour
+  if (date.show && ( redraw || (tm->tm_min == 0 && tm->tm_sec == 0 ) ) )
     _print_date(tm);
 
   last_date = now;
+  redraw = false;
 }
 
 void ClockWidget::_print_clock(std::tm *tm){
-  //LOGI(T_Widget, println, "sec");
-  screen->setTextColor(clk.color);
-  screen->setFont(fonts[clk.font_index]);
-  screen->setCursor(clk.x, clk.y);
-
-  constexpr size_t buffsize = sizeof("20:23");
-  char result[buffsize];
-  std::strftime(result, buffsize, clk.twelwehr ? "%I:%M" : "%R", tm);    // "%R" equivalent to "%H:%M"
+  char result[std::size("20:23")];
 
   int16_t x,y;
   uint16_t w,h;
-  screen->getTextBounds(result, clk.x, clk.y, &x, &y, &w, &h);
-  clk.minX = std::min(clk.minX, x);
-  clk.minY = std::min(clk.minY, y);
-  clk.maxW = std::max(clk.maxW, w);
-  clk.maxH = std::max(clk.maxH, h);
-  screen->fillRect(clk.minX, clk.minY, clk.maxW, clk.maxH, 0);
+  // print minutes only at :00 or stale screen
+  if (tm->tm_sec == 0 || redraw){
+    std::strftime(result, std::size(result), clk.twelwehr ? "%I:%M" : "%R", tm);    // "%R" equivalent to "%H:%M"
 
-  //_screen->fillScreen(CRGB::Black);
-  screen->print(result);
-  LOGV(T_Widget, printf, "time: %s, font:%u, clr:%u, bounds: %d, %d, %u, %u\n", result, clk.font_index, clk.color, clk.minX, clk.minY, clk.maxW, clk.maxH);
+    screen->setTextColor(clk.color);
+    screen->setFont(fonts[clk.font_index]);
+    screen->setCursor(clk.x, clk.y);
+
+    screen->getTextBounds(result, clk.x, clk.y, &x, &y, &w, &h);
+    clk.maxW = std::max(clk.maxW, w);
+    LOGV(T_Widget, printf, "fill time bounds: %d, %d, %u, %u\n", x, y, clk.maxW, h);
+    screen->fillRect(x, y, clk.maxW, h, 0);
+    screen->print(result);
+    // save cursor for seconds printing
+    clk.scursor_x = screen->getCursorX();
+    clk.scursor_y = screen->getCursorY();
+    LOGV(T_Widget, printf, "time: %s, font:%u, clr:%u, bounds: %d, %d, %u, %u\n", result, clk.font_index, clk.color, clk.minX, clk.minY, clk.maxW, clk.maxH);
+  }
 
   if (clk.show_seconds){
     screen->setFont(fonts[clk.seconds_font_index]);
-    std::strftime(result, buffsize, ":%S", tm);
-    screen->getTextBounds(result, screen->getCursorX(), screen->getCursorY(), &x, &y, &w, &h);
-    clk.sminX = std::min(clk.sminX, x);
-    clk.sminY = std::min(clk.sminY, y);
-    clk.smaxW = std::max(clk.smaxW, w);
-    clk.smaxH = std::max(clk.smaxH, h);
-    screen->fillRect(clk.sminX,clk.sminY, clk.smaxW,clk.smaxH, 0);
+    screen->setCursor(clk.scursor_x, clk.scursor_y);
+    std::strftime(result, std::size(result), ":%S", tm);
+    screen->getTextBounds(result, clk.scursor_x, clk.scursor_x, &x, &y, &w, &h);
+    clk.smaxW = std::max(clk.smaxW, static_cast<uint16_t>(clk.scursor_x+w));
+    LOGV(T_Widget, printf, "fill sec bounds: %d, %d, %u, %u\n", clk.scursor_x, clk.scursor_y-h+1, clk.smaxW-w, h);
+    screen->fillRect(clk.scursor_x, clk.scursor_y-h+1, clk.smaxW-clk.scursor_x, h, 0);
+    LOGV(T_Widget, printf, "sec: %s, font:%u, clr:%u, bounds: %d, %d, %u, %u\n", result, clk.seconds_font_index, clk.color, clk.scursor_x, clk.scursor_y, clk.smaxW, h);
     screen->print(result);
   }
-
-  clk.fresh = true;
-  LOGV(T_Widget, printf, "sec: %s, font:%u, clr:%u, bounds: %d, %d, %u, %u\n", result, clk.seconds_font_index, clk.color, clk.minX, clk.minY, clk.maxW, clk.maxH);
 }
 
 void ClockWidget::_print_date(std::tm *tm){
-  //LOGI(T_Widget, println, "sec");
-  constexpr size_t buffsize = sizeof("2024-02-23");
-  //constexpr size_t buffsize = sizeof("23 Oct, Sun blah");
-  char result[buffsize];
+  char result[std::size("2024-02-23")];
 
-  std::strftime(result, buffsize, "%F", tm);
+  std::strftime(result, std::size(result), "%F", tm);
   //std::strftime(result, buffsize, "%d %b, %a", tm);
   screen->setFont(fonts[date.font_index]);
   screen->setTextColor(date.color);
@@ -316,16 +307,12 @@ void ClockWidget::_print_date(std::tm *tm){
   int16_t x,y;
   uint16_t w,h;
   screen->getTextBounds(result, date.x, date.y, &x, &y, &w, &h);
-  date.minX = std::min(date.minX, x);
-  date.minY = std::min(date.minY, y);
   date.maxW = std::max(date.maxW, w);
-  date.maxH = std::max(date.maxH, h);
 
-  screen->fillRect(date.minX,date.minY, date.maxW,date.maxH, 0);
+  screen->fillRect(x,y, date.maxW,h, 0);
   screen->print(result);
-  date.fresh = true;
 
-  LOGV(T_Widget, printf, "Date: %s, font:%u, clr:%u, bounds: %d %d %u %u\n", result, date.font_index, date.color, date.minX, date.minY, date.maxW, date.maxH);
+  LOGD(T_Widget, printf, "Date: %s, font:%u, clr:%u, bounds: %d %d %u %u\n", result, date.font_index, date.color, x, y, date.maxW, h);
 }
 
 // ****  Widget Manager methods
