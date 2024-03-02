@@ -73,7 +73,7 @@ bool LEDDisplay::_start_rmt(const DynamicJsonDocument& doc){
     JsonVariantConst o = doc[T_ws2812];
 
     // load gpio value, if defined
-    setGPIO(o[T_mx_gpio].as<int>());
+    setGPIO(o[T_mx_gpio].as<int>() | -1);
 
     setColorOrder(o[T_col_order]);
 
