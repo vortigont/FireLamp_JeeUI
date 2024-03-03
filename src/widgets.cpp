@@ -442,9 +442,6 @@ void WidgetManager::_spawn(const char* widget_label, JsonVariantConst cfg, bool 
         w->setConfig(cfg);
       else
         w->load(cfg);
-
-      // this is a temp stub, widget should use event to run ticker
-      w->enable();
     }
     _widgets.push_back(std::move(w));
   }
