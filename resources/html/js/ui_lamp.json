@@ -1,6 +1,6 @@
 {
   "type":"interface",
-  "version":7,
+  "version":9,
   "descr":"FireLamp UI objects",
 
   "settings":{
@@ -897,6 +897,257 @@
           ]
         }
       ]
+    }
+  },
+
+  "pages":{
+    "widgets":{
+      "section":"widgets",
+      "label":"Виджеты",
+      "main":true,
+      "block":[
+        {
+        "section":"set_wdgt_clock",
+        "label":"Overlay Clock",
+        "hidden":true,
+        "block":[
+          {
+            "id":"enabled",
+            "html":"input",
+            "label":"Активирован",
+            "type":"checkbox"
+          },
+          {
+            "html":"comment",
+            "label":"See <a href=\"https://github.com/vortigont/FireLamp_JeeUI/wiki/%D0%92%D0%B8%D0%B4%D0%B6%D0%B5%D1%82-%D1%87%D0%B0%D1%81%D1%8B\">WiKi</a> for options help"
+          },
+          {
+            "section":"wdgt_clock_time",
+            "label":"Часы",
+            "block":[
+              {
+                "section":"clk_flags",
+                "line":true,
+                "block":[
+                  {
+                    "id":"seconds",
+                    "html":"input",
+                    "label":"Отображать секунды",
+                    "type":"checkbox"
+                  },
+                  {
+                    "id":"clk12h",
+                    "html":"input",
+                    "label":"12-часовой формат",
+                    "type":"checkbox"
+                  },
+                  {
+                    "id": "x1off",
+                    "html":"input",
+                    "value": 0,
+                    "type": "number",
+                    "label": "CursorX",
+                    "min": 0,
+                    "step": 1
+                  },
+                  {
+                    "id": "y1off",
+                    "html":"input",
+                    "value": 15,
+                    "type": "number",
+                    "label": "CursorY",
+                    "min": 0,
+                    "step": 1
+                  }
+                ]
+              },
+              {
+                "section":"clk_fonts",
+                "line":true,
+                "block":[
+                  {
+                    "id":"font1",
+                    "html":"select",
+                    "value":5,
+                    "label":"Шрифт",
+                    "section":"options",
+                    "block":[
+                      {
+                        "value":0,
+                        "label":"FreeSerif9"
+                      },
+                      {
+                        "value":1,
+                        "label":"FreeSerifBold9"
+                      },
+                      {
+                        "value":2,
+                        "label":"Cooper6"
+                      },
+                      {
+                        "value":3,
+                        "label":"Cooper8"
+                      },
+                      {
+                        "value":4,
+                        "label":"CrystalNormal8"
+                      },
+                      {
+                        "value":5,
+                        "label":"CrystalNormal10"
+                      },
+                      {
+                        "value":6,
+                        "label":"Org 5x5"
+                      }
+                    ]
+                  },
+                  {
+                    "id":"font2",
+                    "html":"select",
+                    "value":6,
+                    "label":"Шрифт секунд",
+                    "section":"options",
+                    "block":[
+                      {
+                        "value":0,
+                        "label":"FreeSerif9"
+                      },
+                      {
+                        "value":1,
+                        "label":"FreeSerifBold9"
+                      },
+                      {
+                        "value":2,
+                        "label":"Cooper6"
+                      },
+                      {
+                        "value":3,
+                        "label":"Cooper8"
+                      },
+                      {
+                        "value":4,
+                        "label":"CrystalNormal8"
+                      },
+                      {
+                        "value":5,
+                        "label":"CrystalNormal10"
+                      },
+                      {
+                        "value":6,
+                        "label":"Org 5x5"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "color1",
+                "html":"input",
+                "value": 54000,
+                "type": "number",
+                "label": "Цвет 565",
+                "min": 1
+              }    
+            ]
+          },
+          {
+            "section":"wdgt_clock_date",
+            "label":"Календарь",
+            "block":[
+              {
+                "id":"date",
+                "html":"input",
+                "label":"Отображать дату",
+                "type":"checkbox"
+              },
+              {
+                "section":"date_fonts",
+                "line":true,
+                "block":[
+                  {
+                    "id":"font3",
+                    "html":"select",
+                    "value":6,
+                    "label":"Шрифт",
+                    "section":"options",
+                    "block":[
+                      {
+                        "value":0,
+                        "label":"FreeSerif9"
+                      },
+                      {
+                        "value":1,
+                        "label":"FreeSerifBold9"
+                      },
+                      {
+                        "value":2,
+                        "label":"Cooper6"
+                      },
+                      {
+                        "value":3,
+                        "label":"Cooper8"
+                      },
+                      {
+                        "value":4,
+                        "label":"CrystalNormal8"
+                      },
+                      {
+                        "value":5,
+                        "label":"CrystalNormal10"
+                      },
+                      {
+                        "value":6,
+                        "label":"Org 5x5"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "color2",
+                    "html":"input",
+                    "value": 54000,
+                    "type": "number",
+                    "label": "Цвет 565",
+                    "min": 1
+                  }
+                ]
+              },
+              {
+                "section":"date_pos",
+                "line":true,
+                "block":[
+                  {
+                    "id": "x2off",
+                    "html":"input",
+                    "value": 0,
+                    "type": "number",
+                    "label": "CursorX",
+                    "min": 0,
+                    "step": 1
+                  },
+                  {
+                    "id": "y2off",
+                    "html":"input",
+                    "value": 31,
+                    "type": "number",
+                    "label": "CursorY",
+                    "min": 0,
+                    "step": 1
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id":"set_wdgt_clock",
+            "html":"button",
+            "type":1,
+            "label":"Применить",
+            "fa": "fas fa-circle-check"
+          }
+        ]
+        }
+    ]
     }
   },
 

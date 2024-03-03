@@ -59,7 +59,7 @@ MP3PlayerController::~MP3PlayerController(){
 
 
 void MP3PlayerController::begin(int8_t rxPin, int8_t txPin){
-  LOGD(T_DFPlayer, println, "Initializing...");
+  LOGD(T_DFPlayer, printf, "Initializing at rx:%d, tx:%d", rxPin, txPin);
   _serial.begin(MP3_SERIAL_SPEED, SERIAL_8N1, rxPin, txPin);
 
   // event poller

@@ -81,6 +81,24 @@ static constexpr const char* T_eff_tracks_loop = "eff_tracks_loop";
 static constexpr const char* T_mp3mute = "mp3mute";
 
 
+// Widgets
+static constexpr const char* T_widgets_cfg = "/widgets.json";
+static constexpr const char* T_clock = "clock";                     // Clock widget
+
+static constexpr const char* T_color1 = "color1";
+static constexpr const char* T_color2 = "color2";
+// static constexpr const char* T_color3 = "color3";
+static constexpr const char* T_font1 = "font1";
+static constexpr const char* T_font2 = "font2";
+static constexpr const char* T_font3 = "font3";
+static constexpr const char* T_x1offset = "x1off";
+static constexpr const char* T_y1offset = "y1off";
+static constexpr const char* T_x2offset = "x2off";
+static constexpr const char* T_y2offset = "y2off";
+// Widget Clock
+static constexpr const char* T_seconds = "seconds";
+
+
 // Other
 static constexpr const char* T_Active = "Active";
 static constexpr const char* T_arg = "arg";
@@ -90,6 +108,7 @@ static constexpr const char* T_edit = "edit";
 static constexpr const char* T_Enable = "Enable";
 static constexpr const char* T_enabled = "enabled";
 static constexpr const char* T_idx = "idx";
+static constexpr const char* T_Main = "Main";                           // used as LOG tag
 static constexpr const char* T_Notification = "Notification";
 static constexpr const char* T_opt = "opt";
 static constexpr const char* T_pwr = "pwr";
@@ -172,8 +191,7 @@ static constexpr const char* TCONST_lamptext = "lamptext";
 static constexpr const char* TCONST_lamp_config = "lamp_config";
 static constexpr const char* TCONST_limitAlarmVolume = "limitAlarmVolume";
 static constexpr const char* TCONST_load = "load";
-static constexpr const char* TCONST_Mac = "Mac";
-//static constexpr const char* TCONST_main = "main";
+//static constexpr const char* TCONST_Mac = "Mac";
 static constexpr const char* TCONST_makeidx = "makeidx";
 static constexpr const char* TCONST_mapping = "mapping";
 static constexpr const char* TCONST_Memory = "Memory";
@@ -286,6 +304,7 @@ static constexpr const char* A_ui_page_effects = "ui_page_effects";             
 static constexpr const char* A_ui_page_drawing = "ui_page_drawing";             // Contstruct UI page - drawing panel
 static constexpr const char* A_ui_block_switches = "ui_block_switches";         // Contstruct UI block - show extended switches at effects page
 static constexpr const char* A_ui_page_setupdevs = "ui_page_setupdevs";         // periferal devices setup menu page
+static constexpr const char* A_ui_page_widgets = "ui_page_widgets";             // Widgets page
 static constexpr const char* A_effect_switch = "eff_sw_*";                      // Wildcard Effect switcher action
 static constexpr const char* A_effect_switch_idx = "eff_sw_idx";                // Switch Effect to specified index
 static constexpr const char* A_effect_switch_next = "eff_sw_next";              // Switch to next effect
@@ -304,6 +323,9 @@ static constexpr const char* A_button_evt_save = "button_evt_save";             
 // DFPlayer
 static constexpr const char* A_dfplayer_dev = "*et_dfplayer_device";           // get/set DFPlayer device configuration
 static constexpr const char* A_dfplayer_opt = "*et_dfplayer_opt";             // get/set DFPlayer functions
+// Widgets
+static constexpr const char* A_set_widget = "set_wdgt_*";                     // set Widget's configuration
+//static constexpr const char* A_get_widget = "get_wdgt_*";                     // get Widget's configuration
 
 
 static constexpr const char* A_ui_page_effects_config = "effects_config";
@@ -325,5 +347,5 @@ static constexpr const char* T_switches = "switches";
 static constexpr const char* MQT_effect_controls = "effect/controls/";      // topic suffix
 static constexpr const char* MQT_lamp = "lamp/";
 
-static constexpr const char* CMD_MP3_PREV = "MP3_PREV";        // Без параметров - переключает трек на 1 назад, принимает числовой параметр, на сколько треков вернуть назад
-static constexpr const char* CMD_MP3_NEXT = "MP3_NEXT";        // Без параметров - переключает трек на 1 назад, принимает числовой параметр, на сколько треков вернуть назад
+//static constexpr const char* CMD_MP3_PREV = "MP3_PREV";        // Без параметров - переключает трек на 1 назад, принимает числовой параметр, на сколько треков вернуть назад
+//static constexpr const char* CMD_MP3_NEXT = "MP3_NEXT";        // Без параметров - переключает трек на 1 назад, принимает числовой параметр, на сколько треков вернуть назад

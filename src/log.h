@@ -55,7 +55,7 @@ LOG macro will enable/disable logs to serial depending on LAMP_DEBUG build-time 
 	#define LOGW(...)
 #endif
 
-#if defined(LAMP_DEBUG_LEVEL) && LAMP_DEBUG_LEVEL == 1
+#if defined(LAMP_DEBUG_LEVEL) && LAMP_DEBUG_LEVEL > 0
 	#define LOGE(tag, func, ...) LAMP_DEBUG_PORT.print(tag); LAMP_DEBUG_PORT.print(" E: "); LAMP_DEBUG_PORT.func(__VA_ARGS__)
 #else
 	#define LOGE(...)

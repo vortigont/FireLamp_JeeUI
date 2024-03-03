@@ -73,7 +73,7 @@ bool LEDDisplay::_start_rmt(const DynamicJsonDocument& doc){
     JsonVariantConst o = doc[T_ws2812];
 
     // load gpio value, if defined
-    setGPIO(o[T_mx_gpio].as<int>());
+    setGPIO(o[T_mx_gpio].as<int>() | -1);
 
     setColorOrder(o[T_col_order]);
 
@@ -149,6 +149,9 @@ bool LEDDisplay::_start_hub75(const DynamicJsonDocument& doc){
                         o[T_color_depth]
     );
 
+    // check if panel size not a zero
+    if (!mxconfig.mx_width || !mxconfig.mx_height) return false;
+
     _dengine = new ESP32HUB75_DisplayEngine(mxconfig);
 
     // attach buffer to an object that will perform matrix layout trasformation on buffer access
@@ -164,6 +167,10 @@ bool LEDDisplay::_start_hub75(const DynamicJsonDocument& doc){
 
 std::shared_ptr< LedFB<CRGB> > LEDDisplay::getOverlay(){
     auto instance = _ovr.lock();
+
+    // if engine or canvas does not exist (yet) just return empty obj here
+    if (!_dengine || !_canvas)
+        return instance;
 
     if (!instance){
         // no overlay exist at the moment, let's create one
