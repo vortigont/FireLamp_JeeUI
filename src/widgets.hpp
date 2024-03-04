@@ -57,12 +57,6 @@
  */
 class GenericWidget : public Task {
 
-    /**
-     * @brief load widget config using widget name as a config selector key
-     * 
-     */
-    JsonVariantConst _load_cfg_from_NVS();
-
 protected:
     // widget label or "name"
     const char* label;
@@ -100,7 +94,7 @@ public:
      * @brief load widget's config from persistent storage and calls start()
      * 
      */
-    void load(){ load(_load_cfg_from_NVS()); };
+    void load(){ load(load_cfg_from_NVS(label)); };
 
     /**
      * @brief load widget's config from supplied config and calls start()
@@ -148,6 +142,12 @@ public:
      */
     const char* getLabel() const { return label; }
 
+    /**
+     * @brief load widget config using widget name as a config selector key
+     * 
+     */
+    static JsonVariant load_cfg_from_NVS(const char* lbl);
+
 };
 
 using widget_pt = std::unique_ptr<GenericWidget>;
@@ -159,7 +159,7 @@ class GenericGFXWidget : public GenericWidget {
 protected:
     LedFB_GFX   *screen = nullptr;
     // буфер оверлея
-    std::shared_ptr<LedFB<CRGB> > overlay;
+    //std::shared_ptr<LedFB<CRGB> > overlay;
 
     // make/release display overlay
     bool getOverlay();
@@ -168,7 +168,7 @@ protected:
 
 public:
     GenericGFXWidget(const char* wlabel, unsigned interval) : GenericWidget(wlabel, interval){};
-    virtual ~GenericGFXWidget(){};
+    virtual ~GenericGFXWidget(){ releaseOverlay(); };
 
 };
 
@@ -206,6 +206,7 @@ struct Date {
     bool redraw;
 
     esp_event_handler_instance_t _hdlr_lmp_change_evt = nullptr;
+    esp_event_handler_instance_t _hdlr_lmp_state_evt = nullptr;
 
     // pack class configuration into JsonObject
     void generate_cfg(JsonVariant cfg) const override;
@@ -228,7 +229,8 @@ struct Date {
     //void _lmpSetEventHandler(esp_event_base_t base, int32_t id, void* data);
 
 public:
-    ClockWidget() : GenericGFXWidget(T_clock, TASK_SECOND){}
+    ClockWidget();
+    ~ClockWidget();
 
     void widgetRunner() override;
 
@@ -259,6 +261,7 @@ public:
     void register_handlers();
     void unregister_handlers();
 
+    // can't be const due to EmbUI's value method, TODO: fix it
     JsonVariant getConfig(const char* widget_label);
     void setConfig(const char* widget_label, JsonVariantConst cfg);
 };
@@ -270,7 +273,7 @@ class MatchLabel : public std::unary_function<T, bool>{
     std::string_view _lookup;
 public:
     explicit MatchLabel(const char* label) : _lookup(label) {}
-    bool operator() ( const T& item ){
+    bool operator() (const T& item ){
        LOGV(T_Widget, printf, "MatchLabel %s vs %s\n", _lookup, item->getLabel());
 
         // T is widget_pt

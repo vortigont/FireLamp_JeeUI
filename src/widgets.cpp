@@ -119,13 +119,13 @@ GenericWidget::GenericWidget(const char* wlabel, unsigned periodic) : label(wlab
   ts.addTask(*this);
 }
 
-JsonVariantConst GenericWidget::_load_cfg_from_NVS(){
+JsonVariant GenericWidget::load_cfg_from_NVS(const char* lbl){
   DynamicJsonDocument doc(WIDGETS_CFG_JSIZE);
 
   // it does not matter if config file does not exist or requested object is missing
   // we should anyway call load_cfg to let derived class implement any default values configuration
   embuifs::deserializeFile(doc, T_widgets_cfg);
-  return doc[label];
+  return doc[lbl];
 }
 
 JsonVariant GenericWidget::getConfig() const {
@@ -140,7 +140,7 @@ JsonVariant GenericWidget::getConfig() const {
 }
 
 void GenericWidget::setConfig(JsonVariantConst cfg){
-  LOGD(T_Widget, printf, "setConfig for widget: %s\n", label);
+  LOGD(T_Widget, printf, "%s: setConfig()\n", label);
 
   // apply supplied configuration to widget 
   load_cfg(cfg);
@@ -176,25 +176,29 @@ void GenericWidget::save(JsonVariantConst cfg){
 // ****  GenericGFXWidget methods
 
 bool GenericGFXWidget::getOverlay(){
-  if (overlay) return true;
-  LOGD(T_Widget, printf, "%s obtain overlay\n", label);
-  overlay = display.getOverlay();  // obtain overlay buffer
+  if (screen) return true;
+  auto overlay = display.getOverlay();  // obtain overlay buffer
   if (!overlay) return false;   // failed to allocate overlay, i.e. display configuration has not been done yet
+  LOGD(T_Widget, printf, "%s obtain overlay\n", label);
   screen = new LedFB_GFX(overlay);
   screen->setRotation(2);            // adafruit coordinates are different from LedFB, so need to rotate it
   return true;
 }
 
 void GenericGFXWidget::releaseOverlay(){
-  LOGD(T_Widget, printf, "%s release overlay", label);
+  LOGD(T_Widget, printf, "%s release overlay\n", label);
   delete(screen);
   screen = nullptr;
-  overlay.reset();
+  //overlay.reset();
 }
 
 
 
 // *** ClockWidget
+ClockWidget::ClockWidget() : GenericGFXWidget(T_clock, TASK_SECOND) {
+  ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, ClockWidget::_event_hndlr, this, &_hdlr_lmp_change_evt));
+  ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_STATE_EVENTS, ESP_EVENT_ANY_ID, ClockWidget::_event_hndlr, this, &_hdlr_lmp_state_evt));
+}
 
 void ClockWidget::load_cfg(JsonVariantConst cfg){
   // clk
@@ -328,22 +332,22 @@ void ClockWidget::_print_date(std::tm *tm){
 }
 
 void ClockWidget::start(){
-  if (!_hdlr_lmp_change_evt)
-    ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, ClockWidget::_event_hndlr, this, &_hdlr_lmp_change_evt));
-
+  // request lamp's status to discover it's power state
+  EVT_POST(LAMP_GET_EVENTS, e2int(evt::lamp_t::pwr));
 }
 
 void ClockWidget::stop(){
-
+  disable();
+  releaseOverlay();
 }
 
 void ClockWidget::_event_hndlr(void* handler, esp_event_base_t base, int32_t id, void* event_data){
   LOGV(T_clock, printf, "EVENT %s:%d\n", base, id);
-  if ( base == LAMP_CHANGE_EVENTS )
+  //if ( base == LAMP_CHANGE_EVENTS )
     return static_cast<ClockWidget*>(handler)->_lmpChEventHandler(base, id, event_data);
 
-  //if ( base == LAMP_SET_EVENTS )
-  //  return static_cast<ClockWidget*>(handler)->_lmpSetEventHandler(base, id, event_data);
+  //if ( base == LAMP_STATE_EVENTS )
+  //  return static_cast<ClockWidget*>(handler)->_lmpChEventHandler(base, id, event_data);
 }
 
 void ClockWidget::_lmpChEventHandler(esp_event_base_t base, int32_t id, void* data){
@@ -356,20 +360,30 @@ void ClockWidget::_lmpChEventHandler(esp_event_base_t base, int32_t id, void* da
       break;
     case evt::lamp_t::pwroff :
       LOGI(T_clock, println, "suspend widget");
-      disable();
-      releaseOverlay();
+      stop();
       break;
   }
 }
 
+ClockWidget::~ClockWidget(){
+  if (_hdlr_lmp_change_evt){
+    esp_event_handler_instance_unregister_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, _hdlr_lmp_change_evt);
+    _hdlr_lmp_change_evt = nullptr;
+  }
+  if (_hdlr_lmp_state_evt){
+    esp_event_handler_instance_unregister_with(evt::get_hndlr(), LAMP_STATE_EVENTS, ESP_EVENT_ANY_ID, _hdlr_lmp_state_evt);
+    _hdlr_lmp_state_evt = nullptr;
+  }
+}
 
 // ****  Widget Manager methods
 
 void WidgetManager::start(const char* label){
+  LOGD(T_Widget, printf, "WM::start widget: %s\n", label ? label : "ALL");
   if (label){
     // check if such widget is already spawned
     auto i = std::find_if(_widgets.cbegin(), _widgets.cend(), MatchLabel<widget_pt>(label));
-    if ( i != _widgets.end() )
+    if ( i != _widgets.cend() )
       return;
   }
 
@@ -403,13 +417,15 @@ void WidgetManager::stop(const char* label){
 }
 
 JsonVariant WidgetManager::getConfig(const char* widget_label){
-  //LOGD(T_Widget, printf, "getConfig for: %s\n", widget_label);
+  LOGV(T_Widget, printf, "WM::getConfig for: %s\n", widget_label);
 
   auto i = std::find_if(_widgets.begin(), _widgets.end(), MatchLabel<widget_pt>(widget_label));
   if ( i != _widgets.end() ) {
     return (*i)->getConfig();
   }
-  return {};
+
+  // widget instance is not created, try to load from config
+  return GenericWidget::load_cfg_from_NVS(widget_label);
 }
 
 void WidgetManager::setConfig(const char* widget_label, JsonVariantConst cfg){
@@ -417,6 +433,7 @@ void WidgetManager::setConfig(const char* widget_label, JsonVariantConst cfg){
 
   auto i = std::find_if(_widgets.begin(), _widgets.end(), MatchLabel<widget_pt>(widget_label));
   if ( i == _widgets.end() ) {
+    LOGV(T_Widget, println, "WM widget does not exist, spawn a new one");
     // such widget does not exist currently, spawn a new one with supplied config and store cfg to NVS
     _spawn(widget_label, cfg, true);
     return;
@@ -425,8 +442,10 @@ void WidgetManager::setConfig(const char* widget_label, JsonVariantConst cfg){
   // apply and save widget's configuration
   (*i)->setConfig(cfg);
   // if widget was disabled, then remove its instance from container
-  if (!cfg[T_enabled])
+  if (!cfg[T_enabled]){
+    LOGD(T_Widget, printf, "WM delete widget instance: %s\n", widget_label);
     _widgets.erase(i);
+  }
 }
 
 void WidgetManager::_spawn(const char* widget_label, JsonVariantConst cfg, bool persistent){
@@ -441,12 +460,13 @@ void WidgetManager::_spawn(const char* widget_label, JsonVariantConst cfg, bool 
       LOGV(T_Widget, println, "WM call widget load cfg from NVS");
       w->load();
     } else {
-      if (persistent)
+      if (persistent){
         w->setConfig(cfg);
-      else
+        w->start();
+      } else
         w->load(cfg);
     }
-    _widgets.push_back(std::move(w));
+    _widgets.emplace_back(std::move(w));
   }
 
 // some other widgets to be done
