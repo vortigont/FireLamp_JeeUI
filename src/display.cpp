@@ -67,13 +67,17 @@ bool LEDDisplay::start(){
 bool LEDDisplay::_start_rmt(const DynamicJsonDocument& doc){
     if (_dengine) return true;  // RMT already running
 
+    LOGI(T_Display, println, "starting RMT engine");
+
+
     if (!doc.containsKey(T_ws2812)) return false;    // no object with stripe config
 
     // shortcut
     JsonVariantConst o = doc[T_ws2812];
 
     // load gpio value, if defined
-    setGPIO(o[T_mx_gpio].as<int>() | -1);
+    int gpio = o[T_mx_gpio] | -1;
+    setGPIO(gpio);
 
     setColorOrder(o[T_col_order]);
 
@@ -99,7 +103,12 @@ bool LEDDisplay::_start_rmt(const DynamicJsonDocument& doc){
 bool LEDDisplay::_start_rmt_engine(){
 
     // RMT engine setup
-    if (_gpio == -1) return false;      // won't run on disabled pin
+    if (_gpio == -1){
+        LOGW(T_Display, println, "Won't run on GPIO -1");
+        return false;      // won't run on disabled pin
+    }
+
+    LOGD(T_Display, printf, "run on GPIO %d\n", _gpio);
 
     // create new led strip object using our configured pin
     _dengine = new ESP32RMTDisplayEngine(_gpio, _color_ordr, tiles.canvas_w() * tiles.canvas_h());
@@ -225,9 +234,9 @@ uint8_t LEDDisplay::brightness(){
 }
 
 void LEDDisplay::print_stripe_cfg(){
-    LOG(printf, "Stripe layout W=%dx%d, H=%dx%d\n", tiles.tile_w(), tiles.tile_wcnt(), tiles.tile_h(), tiles.tile_hcnt() );
-    LOG(printf, "Matrix: snake:%o, vert:%d, vflip:%d, hflip:%d\n", tiles.snake(), tiles.vertical(), tiles.vmirror(), tiles.hmirror() );
-    LOG(printf, "Tiles: snake:%o, vert:%d, vflip:%d, hflip:%d\n", tiles.tileLayout.snake(), tiles.tileLayout.vertical(), tiles.tileLayout.vmirror(), tiles.tileLayout.hmirror() );
+    LOGD(T_Display, printf, "Stripe layout W=%dx%d, H=%dx%d\n", tiles.tile_w(), tiles.tile_wcnt(), tiles.tile_h(), tiles.tile_hcnt() );
+    LOGD(T_Display, printf, "Matrix: snake:%o, vert:%d, vflip:%d, hflip:%d\n", tiles.snake(), tiles.vertical(), tiles.vmirror(), tiles.hmirror() );
+    LOGD(T_Display, printf, "Tiles: snake:%o, vert:%d, vflip:%d, hflip:%d\n", tiles.tileLayout.snake(), tiles.tileLayout.vertical(), tiles.tileLayout.vmirror(), tiles.tileLayout.hmirror() );
 }
 
 void LEDDisplay::setCurrentLimit(uint32_t i){

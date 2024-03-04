@@ -129,7 +129,7 @@ JsonVariantConst GenericWidget::_load_cfg_from_NVS(){
 }
 
 JsonVariant GenericWidget::getConfig() const {
-  LOGD(T_Widget, printf, "getConfig for widget:%s", label);
+  LOGD(T_Widget, printf, "getConfig for widget:%s\n", label);
 
   DynamicJsonDocument doc(WIDGETS_CFG_JSIZE);
   //JsonObject cfg = doc.to<JsonObject>();

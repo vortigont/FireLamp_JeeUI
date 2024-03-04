@@ -9,6 +9,7 @@ static constexpr const char* T_logicL= "logicL";                                
 
 // Display
 static constexpr const char* TCONST_fcfg_display = "/display.json";
+static constexpr const char* T_Display = "Display";                             // LOG macro
 static constexpr const char* T_display_type = "dtype";                          // LED Display engine type
 
 // ws2812 config var names
