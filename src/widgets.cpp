@@ -275,15 +275,18 @@ void ClockWidget::_print_clock(std::tm *tm){
   // print minutes only at :00 or stale screen
   if (tm->tm_sec == 0 || redraw){
     std::strftime(result, std::size(result), clk.twelwehr ? "%I:%M" : "%R", tm);    // "%R" equivalent to "%H:%M"
+    // put a space inplace of a leading zero
+    if (tm->tm_hour < 10)
+      result[0] = 0x20;
 
     screen->setTextColor(clk.color);
     screen->setFont(fonts[clk.font_index]);
     screen->setCursor(clk.x, clk.y);
 
     screen->getTextBounds(result, clk.x, clk.y, &x, &y, &w, &h);
-    clk.maxW = std::max(clk.maxW, w);
+    clk.maxW = std::max( clk.maxW, static_cast<uint16_t>(w + (x-clk.x)) );   // (x-clk.x) is the offset from cursolr position to the nearest dot of the printed text
     LOGV(T_Widget, printf, "fill time bounds: %d, %d, %u, %u\n", x, y, clk.maxW, h);
-    screen->fillRect(x, y, clk.maxW, h, 0);
+    screen->fillRect(clk.x, y, clk.maxW, h, 0);
     screen->print(result);
     // save cursor for seconds printing
     clk.scursor_x = screen->getCursorX();
