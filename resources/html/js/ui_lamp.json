@@ -999,6 +999,10 @@
                       {
                         "value":6,
                         "label":"Org 5x5"
+                      },
+                      {
+                        "value":7,
+                        "label":"TomThumb 3x5"
                       }
                     ]
                   },
@@ -1036,6 +1040,10 @@
                       {
                         "value":6,
                         "label":"Org 5x5"
+                      },
+                      {
+                        "value":7,
+                        "label":"TomThumb 3x5"
                       }
                     ]
                   }
@@ -1099,6 +1107,10 @@
                       {
                         "value":6,
                         "label":"Org 5x5"
+                      },
+                      {
+                        "value":7,
+                        "label":"TomThumb 3x5"
                       }
                     ]
                   },

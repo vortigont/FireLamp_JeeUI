@@ -49,8 +49,8 @@
 
 // Adfruit fonts
 #include "Fonts/Org_01.h"                   // классный мелкий квадратный шрифт 5х5 /english/
-//#include "Fonts/Picopixel.h"                // 3x5  /english/
-//#include "Fonts/TomThumb.h"                 // 3x5 скругленный /english/
+//#include "Fonts/Picopixel.h"                // proportional up to 5x5 3x5  /english/
+#include "Fonts/TomThumb.h"                 // 3x5 /english/
 //#include "Fonts/FreeSerif9pt7b.h"           // "01:33:30" влезает время целиком
 //#include "Fonts/FreeSerifBold9pt7b.h"       // "01:35:5 " толстый аккуратный шрифт, последня цифра не всегда влезает /english/
 
@@ -81,7 +81,7 @@ static constexpr const char* T_Widget = "Widget";
 //  &FreeSerifBold9pt7b, &FreeSerifItalic9pt7b, &Org_01, &Picopixel, &TomThumb};
 
 // array of available fonts
-static constexpr std::array<const GFXfont*, 7> fonts = {&FreeSerif9pt8b, &FreeSerifBold9pt8b, &Cooper6pt8b, &Cooper8pt8b, &CrystalNormal8pt8b, &CrystalNormal10pt8b, &Org_01};
+static constexpr std::array<const GFXfont*, 8> fonts = {&FreeSerif9pt8b, &FreeSerifBold9pt8b, &Cooper6pt8b, &Cooper8pt8b, &CrystalNormal8pt8b, &CrystalNormal10pt8b, &Org_01, &TomThumb};
 
 
 // *****
