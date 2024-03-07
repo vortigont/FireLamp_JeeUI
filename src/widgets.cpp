@@ -42,6 +42,7 @@
 #include <ctime>
 #include "widgets.hpp"
 #include "EmbUI.h"
+#include <string_view>
 #include "log.h"
 
 
@@ -291,7 +292,13 @@ void ClockWidget::_print_clock(std::tm *tm){
     clk.maxW = std::max( clk.maxW, static_cast<uint16_t>(w + (x-clk.x)) );   // (x-clk.x) is the offset from cursolr position to the nearest dot of the printed text
     LOGV(T_Widget, printf, "fill time bounds: %d, %d, %u, %u\n", x, y, clk.maxW, h);
     screen->fillRect(clk.x, y, clk.maxW, h, 0);
-    screen->print(result);
+    // для шрифта 3х5 откусываем незначащий ноль что бы текст влез на матрицу 16х16. Коряво, но люди просят.
+    if (clk.font_index == 7 && tm->tm_hour < 10){
+      std::string_view s(result);
+      s.remove_prefix(1);
+      screen->print(s.data());
+    } else
+      screen->print(result);
     // save cursor for seconds printing
     clk.scursor_x = screen->getCursorX();
     clk.scursor_y = screen->getCursorY();
