@@ -87,16 +87,6 @@ static constexpr std::array<const GFXfont*, 8> fonts = {&FreeSerif9pt8b, &FreeSe
 // *****
 // EmbUI handlers
 
-void ui_page_widgets(Interface *interf, const JsonObject *data, const char* action){
-  interf->json_frame_interface();
-     interf->json_section_uidata();
-        interf->uidata_pick( "lampui.pages.widgets" );
-    interf->json_frame_flush();
-  interf->json_frame_value(informer.getConfig(T_clock), true);
-  interf->json_frame_flush();
-}
-
-
 void set_widget_cfg(Interface *interf, const JsonObject *data, const char* action){
   // only one widget for now - clock, later need to make a selector via widget's label
 
@@ -106,7 +96,6 @@ void set_widget_cfg(Interface *interf, const JsonObject *data, const char* actio
 }
 
 void register_widgets_handlers(){
-  embui.action.add(A_ui_page_widgets, ui_page_widgets);                   // меню: переход на страницу "Виджеты"
   embui.action.add(A_set_widget, set_widget_cfg);                         // set widget configuration
 }
 
@@ -200,6 +189,17 @@ ClockWidget::ClockWidget() : GenericGFXWidget(T_clock, TASK_SECOND) {
   ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_STATE_EVENTS, ESP_EVENT_ANY_ID, ClockWidget::_event_hndlr, this, &_hdlr_lmp_state_evt));
 }
 
+ClockWidget::~ClockWidget(){
+  if (_hdlr_lmp_change_evt){
+    esp_event_handler_instance_unregister_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, _hdlr_lmp_change_evt);
+    _hdlr_lmp_change_evt = nullptr;
+  }
+  if (_hdlr_lmp_state_evt){
+    esp_event_handler_instance_unregister_with(evt::get_hndlr(), LAMP_STATE_EVENTS, ESP_EVENT_ANY_ID, _hdlr_lmp_state_evt);
+    _hdlr_lmp_state_evt = nullptr;
+  }
+}
+
 void ClockWidget::load_cfg(JsonVariantConst cfg){
   // clk
   clk = {};
@@ -241,6 +241,7 @@ void ClockWidget::generate_cfg(JsonVariant cfg) const {
   cfg[T_y2offset] = date.y;
   cfg[T_color2] = date.color;
   cfg[T_font3] = date.font_index;
+
   // temporary flag, until I implement it outside of wdget's configuration
   cfg[T_enabled] = true; 
 }
@@ -365,16 +366,63 @@ void ClockWidget::_lmpChEventHandler(esp_event_base_t base, int32_t id, void* da
   }
 }
 
-ClockWidget::~ClockWidget(){
-  if (_hdlr_lmp_change_evt){
-    esp_event_handler_instance_unregister_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, _hdlr_lmp_change_evt);
-    _hdlr_lmp_change_evt = nullptr;
+// **** AlarmClock
+AlarmClock::AlarmClock() : GenericWidget(T_alrmclock, TASK_SECOND) {
+//  ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, ClockWidget::_event_hndlr, this, &_hdlr_lmp_change_evt));
+//  ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_STATE_EVENTS, ESP_EVENT_ANY_ID, ClockWidget::_event_hndlr, this, &_hdlr_lmp_state_evt));
+}
+
+void AlarmClock::load_cfg(JsonVariantConst cfg){
+  // Cucoo
+  _cuckoo.hr = cfg[T_hr];
+  _cuckoo.hhr = cfg[T_hhr];
+  _cuckoo.quater = cfg[T_quarter];
+}
+
+void AlarmClock::generate_cfg(JsonVariant cfg) const {
+  // Cucoo
+  cfg[T_hr] = _cuckoo.hr;
+  cfg[T_hhr] = _cuckoo.hhr;
+  cfg[T_quarter] = _cuckoo.quater;
+
+  // temporary flag, until I implement it outside of wdget's configuration
+  cfg[T_enabled] = true; 
+}
+
+void AlarmClock::widgetRunner(){
+  std::time_t now;
+  std::time(&now);
+  std::tm *tm = std::localtime(&now);
+
+  // cockoo clock
+  if (tm->tm_sec == 0)
+    _cockoo_events(tm);
+}
+
+void AlarmClock::_cockoo_events(std::tm *tm){
+  int t{0};
+  if (_cuckoo.hr && tm->tm_min == 0){
+    t = _cuckoo.hr;
+    LOGV(T_clock, println, "hr cuckoo cmd");
+    EVT_POST_DATA(LAMP_SET_EVENTS, e2int(evt::lamp_t::mp3cockoo), &t, sizeof(int));
+    return;
   }
-  if (_hdlr_lmp_state_evt){
-    esp_event_handler_instance_unregister_with(evt::get_hndlr(), LAMP_STATE_EVENTS, ESP_EVENT_ANY_ID, _hdlr_lmp_state_evt);
-    _hdlr_lmp_state_evt = nullptr;
+
+  if (_cuckoo.hhr && tm->tm_min == 30){
+    t = _cuckoo.hhr;
+    LOGV(T_clock, println, "hhr cuckoo cmd");
+    EVT_POST_DATA(LAMP_SET_EVENTS, e2int(evt::lamp_t::mp3cockoo), &t, sizeof(int));
+    return;
+  }
+
+  if (_cuckoo.quater && (tm->tm_min == 15 || tm->tm_min == 45 )){
+    t = _cuckoo.quater;
+    LOGV(T_clock, println, "quarter cuckoo cmd");
+    EVT_POST_DATA(LAMP_SET_EVENTS, e2int(evt::lamp_t::mp3cockoo), &t, sizeof(int));
+    //return;
   }
 }
+
 
 // ****  Widget Manager methods
 
@@ -449,30 +497,32 @@ void WidgetManager::setConfig(const char* widget_label, JsonVariantConst cfg){
 }
 
 void WidgetManager::_spawn(const char* widget_label, JsonVariantConst cfg, bool persistent){
-  LOGD(T_Widget, printf, "spawn: %s\n", widget_label);
+  LOGD(T_Widget, printf, "WM spawn: %s\n", widget_label);
   // spawn a new widget based on label
-//  std::unique_ptr<GenericWidget> w;
+  std::unique_ptr<GenericWidget> w;
 
   if(std::string_view(widget_label).compare(T_clock) == 0){
-    auto w = std::make_unique<ClockWidget>();
-    if (cfg.isNull()){
-      // ask widget to read it's config from NVS, if any
-      LOGV(T_Widget, println, "WM call widget load cfg from NVS");
-      w->load();
-    } else {
-      if (persistent){
-        w->setConfig(cfg);
-        w->start();
-      } else
-        w->load(cfg);
-    }
-    _widgets.emplace_back(std::move(w));
+    w = std::make_unique<ClockWidget>();
+  } else if(std::string_view(widget_label).compare(T_alrmclock) == 0){
+    w = std::make_unique<AlarmClock>();
   }
+
+  if (cfg.isNull()){
+    // ask widget to read it's config from NVS, if any
+    LOGV(T_Widget, println, "WM call widget load cfg from NVS");
+    w->load();
+  } else {
+    if (persistent){
+      w->setConfig(cfg);
+      w->start();
+    } else
+      w->load(cfg);
+  }
+
+  _widgets.emplace_back(std::move(w));
 
 // some other widgets to be done
 }
-
-
 
 // ****
 // Widgets Manager instance

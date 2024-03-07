@@ -117,7 +117,7 @@ public:
   void loop();
 
   // play/advertise current time
-  void playTime(int hours, int minutes);
+  void playTime(int track);
 
   bool isReady(){ return flags.ready; }
 
@@ -133,7 +133,7 @@ public:
    * 
    * @param value 
    */
-  void setPlayEffects(bool value){ flags.eff_playtrack = value; }
+  void setPlayEffects(bool value);
 
   /**
    * @brief Set/uset loop effect's track

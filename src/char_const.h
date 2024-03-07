@@ -85,6 +85,7 @@ static constexpr const char* T_mp3mute = "mp3mute";
 // Widgets
 static constexpr const char* T_widgets_cfg = "/widgets.json";
 static constexpr const char* T_clock = "clock";                     // Clock widget
+static constexpr const char* T_alrmclock = "alrmclock";                 // Alarm Clock / Cockoo
 
 static constexpr const char* T_color1 = "color1";
 static constexpr const char* T_color2 = "color2";
@@ -98,6 +99,9 @@ static constexpr const char* T_x2offset = "x2off";
 static constexpr const char* T_y2offset = "y2off";
 // Widget Clock
 static constexpr const char* T_seconds = "seconds";
+static constexpr const char* T_hr = "hr";                           // hourly cockoo
+static constexpr const char* T_hhr = "hhr";                         // half hour cockoo
+static constexpr const char* T_quarter = "quarter";                 // quarter hour cockoo
 
 
 // Other

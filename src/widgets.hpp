@@ -197,9 +197,15 @@ struct Date {
     uint16_t maxW{0};   //, maxH{0};
 };
 
+// кукушка
+struct Cuckoo {
+    uint8_t hr{0}, hhr{0}, quater{0};
+};
+
     // elements structs
     Clock clk{};
     Date date{};
+    Cuckoo _cuckoo{};
     // last timestamp
     std::time_t last_date;
     // flag that indicates screen needs a refresh
@@ -219,6 +225,9 @@ struct Date {
 
     // print date
     void _print_date(std::tm *tm);
+
+    // cockoo/talking clock
+    void _cockoo_events(std::tm *tm);
 
     static void _event_hndlr(void* handler, esp_event_base_t base, int32_t id, void* event_data);
 
@@ -274,13 +283,36 @@ class MatchLabel : public std::unary_function<T, bool>{
 public:
     explicit MatchLabel(const char* label) : _lookup(label) {}
     bool operator() (const T& item ){
-       LOGV(T_Widget, printf, "MatchLabel %s vs %s\n", _lookup, item->getLabel());
-
         // T is widget_pt
         return _lookup.compare(item->getLabel()) == 0;
     }
 };
 
+class AlarmClock : public GenericWidget {
+// кукушка
+struct Cuckoo {
+    uint8_t hr{0}, hhr{0}, quater{0};
+};
+
+    Cuckoo _cuckoo{};
+
+    // pack class configuration into JsonObject
+    void generate_cfg(JsonVariant cfg) const override;
+
+    // load class configuration into JsonObject
+    void load_cfg(JsonVariantConst cfg) override;
+
+    // cockoo/talking clock
+    void _cockoo_events(std::tm *tm);
+
+public:
+    AlarmClock();
+
+    void widgetRunner() override;
+
+    //void start() override;
+    //void stop() override;
+};
 
 /**
  * @brief register EmbUI action handlers for managing widgets
@@ -289,6 +321,5 @@ public:
 void register_widgets_handlers();
 
 // EmbUI Page with a list of available Widgets that could be enabled and configured
-void ui_page_widgets(Interface *interf, const JsonObject *data, const char* action);
 
 extern WidgetManager informer;

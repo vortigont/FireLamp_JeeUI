@@ -47,6 +47,8 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 #define MP3_LOOPTRACK_CMD_DELAY 5000
 
+#define MP3_CUCKOO_FILES_INCREMENT  10    // file names increment
+
 MP3PlayerController::MP3PlayerController(HardwareSerial& serial, DfMp3Type type, uint32_t ackTimeout) : _serial(serial) {
   dfp = new DFMiniMp3(serial, type, ackTimeout);
 }
@@ -184,19 +186,39 @@ void MP3PlayerController::_lmpSetEventHandler(esp_event_base_t base, int32_t id,
       //dfp->enableDac();
       flags.mute = false;
       break;
+    case evt::lamp_t::mp3cockoo :
+      playTime(*reinterpret_cast<int*>(data));
+      break;
   }
 }
 
-
-void MP3PlayerController::playTime(int hours, int minutes){
+void MP3PlayerController::playTime(int track){
   // do not play anything if player is on Mute
   if (flags.mute) return;
 
-  if( dfp->getStatus().state == DfMp3_StatusState_Playing ){
-    dfp->playAdvertisement(100*hours+minutes);
-  } else {
-    flags.looptrack  = false;
-    dfp->playFolderTrack16(0, 100*hours+minutes);
+  // check for talking clock
+  if (track == 1){
+    std::time_t now;
+    std::time(&now);
+    std::tm *tm = std::localtime(&now);
+    track = 100*tm->tm_hour + tm->tm_min;   // формируем индекс файла
+
+    if( dfp->getStatus().state == DfMp3_StatusState_Playing ){
+      dfp->playAdvertisement(track);
+      LOGD(T_DFPlayer, printf, "adv time:%d\n", track);
+    } else {
+      flags.looptrack  = false;
+      dfp->setRepeatPlayCurrentTrack(false);
+      dfp->playFolderTrack16(0, track);
+      LOGD(T_DFPlayer, printf, "play time:%d\n", track);
+    }
+    return;
+  }
+
+  // играть "кукушки" только если плеер простаивает
+  if( dfp->getStatus().state == DfMp3_StatusState_Idle ){
+    dfp->playFolderTrack16(1, track + MP3_CUCKOO_FILES_INCREMENT);
+    LOGD(T_DFPlayer, printf, "play cockoo:%d\n", track + MP3_CUCKOO_FILES_INCREMENT);
   }
 }
 
@@ -232,6 +254,12 @@ void MP3PlayerController::setLoopEffects(bool value){
   flags.eff_looptrack = value;
   dfp->setRepeatPlayCurrentTrack(value);
   LOGI(T_DFPlayer, printf, "track loop: %u", value);
+}
+
+void MP3PlayerController::setPlayEffects(bool value){
+  flags.eff_playtrack = value;
+  if (!value)
+    dfp->stop();
 }
 
 

@@ -901,15 +901,32 @@
   },
 
   "pages":{
-    "widgets":{
+    "wdgtslist":{
       "section":"widgets",
       "label":"Виджеты",
       "main":true,
       "block":[
         {
+          "id": "ui_page",
+          "html": "button",
+          "type": 0,
+          "label": "Часы в наложении",
+          "value": 102
+        },
+        {
+          "id": "ui_page",
+          "html": "button",
+          "type": 0,
+          "label": "Кукушка будильник",
+          "value": 103
+        }
+      ]
+    },
+    "wdgt":{
+      "ovrclock":{
         "section":"set_wdgt_clock",
-        "label":"Overlay Clock",
-        "hidden":true,
+        "label":"Часы в наложении",
+        "main":true,
         "block":[
           {
             "id":"enabled",
@@ -1158,8 +1175,180 @@
             "fa": "fas fa-circle-check"
           }
         ]
-        }
-    ]
+      },
+      "alrmclock":{
+        "section":"set_wdgt_alrmclock",
+        "label":"Кукушка будильник",
+        "main":true,
+        "block":[
+          {
+            "section":"cockoo",
+            "label":"Кукушка",
+            "block":[
+              {
+                "id":"enabled",
+                "html":"input",
+                "label":"Активирован",
+                "type":"checkbox"
+              },
+              {
+                "id":"hr",
+                "html":"select",
+                "value":0,
+                "label":"Ежечасно",
+                "section":"options",
+                "block":[
+                  {
+                    "value":0,
+                    "label":"Выключено"
+                  },
+                  {
+                    "value":1,
+                    "label":"Говорящие часы"
+                  },
+                  {
+                    "value":2,
+                    "label":"Ку-ку 2"
+                  },
+                  {
+                    "value":3,
+                    "label":"Ку-ку 3"
+                  },
+                  {
+                    "value":4,
+                    "label":"Ку-ку 4"
+                  },
+                  {
+                    "value":5,
+                    "label":"Ку-ку 5"
+                  },
+                  {
+                    "value":6,
+                    "label":"Ку-ку 6"
+                  },
+                  {
+                    "value":7,
+                    "label":"Ку-ку 7"
+                  },
+                  {
+                    "value":8,
+                    "label":"Ку-ку 8"
+                  },
+                  {
+                    "value":9,
+                    "label":"Ку-ку 9"
+                  }
+                ]
+              },
+              {
+                "id":"hhr",
+                "html":"select",
+                "value":0,
+                "label":"Пол часа",
+                "section":"options",
+                "block":[
+                  {
+                    "value":0,
+                    "label":"Выключено"
+                  },
+                  {
+                    "value":1,
+                    "label":"Говорящие часы"
+                  },
+                  {
+                    "value":2,
+                    "label":"Ку-ку 2"
+                  },
+                  {
+                    "value":3,
+                    "label":"Ку-ку 3"
+                  },
+                  {
+                    "value":4,
+                    "label":"Ку-ку 4"
+                  },
+                  {
+                    "value":5,
+                    "label":"Ку-ку 5"
+                  },
+                  {
+                    "value":6,
+                    "label":"Ку-ку 6"
+                  },
+                  {
+                    "value":7,
+                    "label":"Ку-ку 7"
+                  },
+                  {
+                    "value":8,
+                    "label":"Ку-ку 8"
+                  },
+                  {
+                    "value":9,
+                    "label":"Ку-ку 9"
+                  }
+                ]
+              },
+              {
+                "id":"quarter",
+                "html":"select",
+                "value":0,
+                "label":"Четверть часа",
+                "section":"options",
+                "block":[
+                  {
+                    "value":0,
+                    "label":"Выключено"
+                  },
+                  {
+                    "value":1,
+                    "label":"Говорящие часы"
+                  },
+                  {
+                    "value":2,
+                    "label":"Ку-ку 2"
+                  },
+                  {
+                    "value":3,
+                    "label":"Ку-ку 3"
+                  },
+                  {
+                    "value":4,
+                    "label":"Ку-ку 4"
+                  },
+                  {
+                    "value":5,
+                    "label":"Ку-ку 5"
+                  },
+                  {
+                    "value":6,
+                    "label":"Ку-ку 6"
+                  },
+                  {
+                    "value":7,
+                    "label":"Ку-ку 7"
+                  },
+                  {
+                    "value":8,
+                    "label":"Ку-ку 8"
+                  },
+                  {
+                    "value":9,
+                    "label":"Ку-ку 9"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id":"set_wdgt_alrmclock",
+            "html":"button",
+            "type":1,
+            "label":"Применить",
+            "fa": "fas fa-circle-check"
+          }
+        ]        
+      }
     }
   },
 

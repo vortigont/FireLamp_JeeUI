@@ -53,6 +53,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "actions.hpp"
 #include <type_traits>
 #include "evtloop.h"
+#include "widgets.hpp"
 
 // версия ресурсов в стороннем джейсон файле
 #define UIDATA_VERSION  9
@@ -77,7 +78,11 @@ enum class page : uint16_t {
     setup_other,
     setup_gpio,
     setup_tm1637,
-    setup_devices      // page with configuration links to external devices
+    setup_devices,      // page with configuration links to external devices
+
+    widgetslist = 101,      // available widgets page
+    wdgt_clock,
+    wdgt_alrmclock
 };
 
 // enumerator for gpio setup form
@@ -155,6 +160,36 @@ void resetAutoTimers(bool isEffects=false){
 
 /* *** WebUI generators *** */
 
+/**
+ * @brief loads UI page from uidata storage and triggers value generation for UI elements
+ * 
+ * @param interf 
+ * @param data 
+ * @param action 
+ */
+void uidata_page_selector(Interface *interf, const JsonObject *data, const char* action, page idx){
+    interf->json_frame_interface();
+    interf->json_section_uidata();
+
+    switch (idx){
+        case page::widgetslist :   // писок виджетов
+            interf->uidata_pick( "lampui.pages.wdgtslist" );
+            break;
+        case page::wdgt_clock :   // писок виджетов
+            interf->uidata_pick( "lampui.pages.wdgt.ovrclock" );
+            interf->json_frame_flush();
+            interf->json_frame_value(informer.getConfig(T_clock), true);
+            break;
+        case page::wdgt_alrmclock :   // писок виджетов
+            interf->uidata_pick( "lampui.pages.wdgt.alrmclock" );
+            interf->json_frame_flush();
+            interf->json_frame_value(informer.getConfig(T_alrmclock), true);
+            break;
+        default:;                   // by default do nothing
+    }
+
+  interf->json_frame_flush();
+}
 
 /**
  * @brief when action is called to display a specific page
@@ -199,6 +234,9 @@ void ui_page_selector(Interface *interf, const JsonObject *data, const char* act
 
         default:;                   // by default do nothing
     }
+
+    if (e2int(idx) > 100)
+        uidata_page_selector(interf, data, action, idx);
 }
 
 void ui_section_menu(Interface *interf, const JsonObject *data, const char* action){
@@ -325,6 +363,11 @@ void ui_page_tm1637_setup(Interface *interf, const JsonObject *data, const char*
 
     // call setter with no data, it will publish existing config values if any
     getset_tm1637(interf, nullptr, NULL);
+}
+
+// this will trigger widgets list page opening
+void ui_page_widgets(Interface *interf, const JsonObject *data, const char* action){
+  uidata_page_selector(interf, data, action, page::widgetslist);
 }
 
 /**
@@ -1470,6 +1513,7 @@ void embui_actions_register(){
     embui.action.add(A_ui_page, ui_page_selector);                          // ui page switcher, same as in basicui::
     embui.action.add(A_ui_page_effects, ui_page_effects);                   // меню: переход на страницу "Эффекты"
     embui.action.add(A_ui_page_drawing, ui_page_drawing);                   // меню: переход на страницу "Рисование"
+    embui.action.add(A_ui_page_widgets, ui_page_widgets);                   // меню: переход на страницу "Виджеты"
     embui.action.add(A_ui_block_switches, ui_block_mainpage_switches);      // нажатие кнопки "еще..." на странице "Эффекты"
 
     // led controls
