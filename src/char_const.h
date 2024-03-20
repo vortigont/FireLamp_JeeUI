@@ -100,7 +100,7 @@ static constexpr const char* T_x1offset = "x1off";
 static constexpr const char* T_y1offset = "y1off";
 static constexpr const char* T_x2offset = "x2off";
 static constexpr const char* T_y2offset = "y2off";
-// Widget Clock
+// Widget Alarm clock
 static constexpr const char* T_seconds = "seconds";
 static constexpr const char* T_hr = "hr";                           // hourly cockoo
 static constexpr const char* T_hhr = "hhr";                         // half hour cockoo
@@ -118,6 +118,8 @@ static constexpr const char* T_enabled = "enabled";
 static constexpr const char* T_idx = "idx";
 static constexpr const char* T_Main = "Main";                           // used as LOG tag
 static constexpr const char* T_Notification = "Notification";
+static constexpr const char* T_on = "on";
+static constexpr const char* T_off = "off";
 static constexpr const char* T_opt = "opt";
 static constexpr const char* T_pwr = "pwr";
 static constexpr const char* T_rx = "rx";

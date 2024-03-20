@@ -295,7 +295,10 @@ public:
 class AlarmClock : public GenericWidget {
 // кукушка
 struct Cuckoo {
+    // active minutes
     uint8_t hr{0}, hhr{0}, quater{0};
+    // work hours
+    uint8_t on, off;
 };
 
     Cuckoo _cuckoo{};

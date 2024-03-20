@@ -391,6 +391,8 @@ void AlarmClock::load_cfg(JsonVariantConst cfg){
   _cuckoo.hr = cfg[T_hr];
   _cuckoo.hhr = cfg[T_hhr];
   _cuckoo.quater = cfg[T_quarter];
+  _cuckoo.on = cfg[T_on];
+  _cuckoo.off = cfg[T_off] | 24;
 }
 
 void AlarmClock::generate_cfg(JsonVariant cfg) const {
@@ -398,6 +400,8 @@ void AlarmClock::generate_cfg(JsonVariant cfg) const {
   cfg[T_hr] = _cuckoo.hr;
   cfg[T_hhr] = _cuckoo.hhr;
   cfg[T_quarter] = _cuckoo.quater;
+  cfg[T_on] = _cuckoo.on;
+  cfg[T_off] = _cuckoo.off;
 }
 
 void AlarmClock::widgetRunner(){
@@ -406,7 +410,7 @@ void AlarmClock::widgetRunner(){
   std::tm *tm = std::localtime(&now);
 
   // cockoo clock
-  if (tm->tm_sec == 0)
+  if (tm->tm_sec == 0 && tm->tm_hour >= _cuckoo.on && tm->tm_hour < _cuckoo.off)
     _cockoo_events(tm);
 }
 
