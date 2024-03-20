@@ -84,8 +84,11 @@ static constexpr const char* T_mp3mute = "mp3mute";
 
 // Widgets
 static constexpr const char* T_widgets_cfg = "/widgets.json";
-static constexpr const char* T_clock = "clock";                     // Clock widget
-static constexpr const char* T_alrmclock = "alrmclock";                 // Alarm Clock / Cockoo
+static constexpr const char* T_clock = "clock";                     // LABEL Clock widget
+static constexpr const char* T_alrmclock = "alrmclock";             // LABEL Alarm Clock / Cockoo
+static constexpr const char* T_Widget = "Widget";                   // log tag
+static constexpr const char* T_WdgtMGR = "WdgtMGR";                 // log tag
+static constexpr const char* T_widgets = "widgets";                 // NVS namespace
 
 static constexpr const char* T_color1 = "color1";
 static constexpr const char* T_color2 = "color2";
@@ -330,6 +333,7 @@ static constexpr const char* A_dfplayer_dev = "*et_dfplayer_device";           /
 static constexpr const char* A_dfplayer_opt = "*et_dfplayer_opt";             // get/set DFPlayer functions
 // Widgets
 static constexpr const char* A_set_widget = "set_wdgt_*";                     // set Widget's configuration
+static constexpr const char* A_set_widget_onoff = "set_wdgtena_*";                  // enable/disable Widget by name
 //static constexpr const char* A_get_widget = "get_wdgt_*";                     // get Widget's configuration
 
 

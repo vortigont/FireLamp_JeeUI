@@ -262,10 +262,11 @@ class WidgetManager {
     void _spawn(const char* widget_label, JsonVariantConst cfg, bool persistent = false);
 
 public:
+    //WidgetManager();
     //~WidgetManager(){};
 
     void start(const char* label = NULL);
-    void stop(const char* label = NULL);
+    void stop(const char* label);
 
     void register_handlers();
     void unregister_handlers();
@@ -273,6 +274,9 @@ public:
     // can't be const due to EmbUI's value method, TODO: fix it
     JsonVariant getConfig(const char* widget_label);
     void setConfig(const char* widget_label, JsonVariantConst cfg);
+
+    // generate values representing state of the active widgets
+    void getWidgetsState(Interface *interf) const;
 };
 
 
@@ -320,6 +324,5 @@ public:
  */
 void register_widgets_handlers();
 
-// EmbUI Page with a list of available Widgets that could be enabled and configured
 
 extern WidgetManager informer;

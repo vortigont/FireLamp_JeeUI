@@ -247,13 +247,13 @@ void MP3PlayerController::playEffect(uint32_t effnb){
 void MP3PlayerController::setVolume(uint8_t vol) {
   _volume=vol;
   dfp->setVolume(vol);
-  LOGI(T_DFPlayer, printf, "volume: %u", vol);
+  LOGI(T_DFPlayer, printf, "volume: %u\n", vol);
 }
 
 void MP3PlayerController::setLoopEffects(bool value){
   flags.eff_looptrack = value;
   dfp->setRepeatPlayCurrentTrack(value);
-  LOGI(T_DFPlayer, printf, "track loop: %u", value);
+  LOGI(T_DFPlayer, printf, "track loop: %u\n", value);
 }
 
 void MP3PlayerController::setPlayEffects(bool value){

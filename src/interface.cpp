@@ -172,15 +172,17 @@ void uidata_page_selector(Interface *interf, const JsonObject *data, const char*
     interf->json_section_uidata();
 
     switch (idx){
-        case page::widgetslist :   // писок виджетов
+        case page::widgetslist :   // список виджетов
             interf->uidata_pick( "lampui.pages.wdgtslist" );
+            interf->json_frame_flush();
+            informer.getWidgetsState(interf);
             break;
-        case page::wdgt_clock :   // писок виджетов
+        case page::wdgt_clock :   // настройки часов
             interf->uidata_pick( "lampui.pages.wdgt.ovrclock" );
             interf->json_frame_flush();
             interf->json_frame_value(informer.getConfig(T_clock), true);
             break;
-        case page::wdgt_alrmclock :   // писок виджетов
+        case page::wdgt_alrmclock :   // настройки будильника
             interf->uidata_pick( "lampui.pages.wdgt.alrmclock" );
             interf->json_frame_flush();
             interf->json_frame_value(informer.getConfig(T_alrmclock), true);
