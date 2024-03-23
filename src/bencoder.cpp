@@ -80,6 +80,13 @@ void ButtonEventHandler::_btnEventHandler(ESPButton::event_t e, const EventMsg* 
     return;
   }
 
+  // if Alarm flag is set, any button event will generate Alarm cancelling event
+  if (_alarm){
+    _alarm = false;
+    EVT_POST(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::alarmStop));
+    return;
+  }
+
   for (auto &it : _event_map ){
     //LOG(printf, "Lookup event: it_en:%u, it.e:%u, e:%u ilp:%u lp:%u\n", it.enabled, it.e, e, it.lamppwr, _lamp_pwr );
     if ( it.enabled && (it.e == e) && (it.lamppwr == _lamp_pwr) ){
@@ -115,6 +122,9 @@ void ButtonEventHandler::_lmpEventHandler(esp_event_base_t base, int32_t id, voi
         break;
       case evt::lamp_t::pwroff :
         _lamp_pwr = false;
+        break;
+      case evt::lamp_t::alarmTrigger :
+        _alarm = true;
         break;
     }
 }

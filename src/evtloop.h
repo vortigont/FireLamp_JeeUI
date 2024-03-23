@@ -84,7 +84,11 @@ enum class lamp_t:int32_t {
   mp3volstep,               // set mp3 volume increment/decrement, param: int n
   mp3mute,
   mp3unmute,
-  mp3cockoo,                // play cockoo or talking clock. param int - track to play, 1 is for Talking clock, any other - number of track from signals folder
+
+  // Notifications
+  cockoo = 50,           // play cockoo or talking clock. param int - track to play, 1 is for Talking clock, any other - number of track from signals folder
+  alarmTrigger,          // Alarm event. Play alarm track. param int - track to play
+  alarmStop,             // Stop alarm actions event
 
   // **** state change / notification events ****
   fadeStart = 1000,

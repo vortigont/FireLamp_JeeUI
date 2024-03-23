@@ -129,6 +129,13 @@ public:
   void playEffect(uint32_t effnb);
 
   /**
+   * @brief play alarm melody
+   * 
+   * @param track 
+   */
+  void playAlarm(int track);
+
+  /**
    * @brief set/unset playing effect sounds
    * 
    * @param value 

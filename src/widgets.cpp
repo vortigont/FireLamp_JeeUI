@@ -382,8 +382,8 @@ void ClockWidget::_lmpChEventHandler(esp_event_base_t base, int32_t id, void* da
 
 // **** AlarmClock
 AlarmClock::AlarmClock() : GenericWidget(T_alrmclock, TASK_SECOND) {
-//  ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, ClockWidget::_event_hndlr, this, &_hdlr_lmp_change_evt));
-//  ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_STATE_EVENTS, ESP_EVENT_ANY_ID, ClockWidget::_event_hndlr, this, &_hdlr_lmp_state_evt));
+//  ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, AlarmClock::_event_hndlr, this, &_hdlr_lmp_change_evt));
+//  ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_STATE_EVENTS, ESP_EVENT_ANY_ID, AlarmClock::_event_hndlr, this, &_hdlr_lmp_state_evt));
 }
 
 void AlarmClock::load_cfg(JsonVariantConst cfg){
@@ -393,6 +393,23 @@ void AlarmClock::load_cfg(JsonVariantConst cfg){
   _cuckoo.quater = cfg[T_quarter];
   _cuckoo.on = cfg[T_on];
   _cuckoo.off = cfg[T_off] | 24;
+
+  // Alarm
+  JsonArrayConst al = cfg[T_event];
+  // quit if config is empty
+  if (!al.size())
+    return;
+
+  size_t cnt{0};
+  for (JsonVariantConst e : al){
+    if (cnt++ == _alarms.size()) return;  // array overflow
+    _alarms.at(cnt).active = e[T_on];
+    _alarms.at(cnt).type = static_cast<alarm_t>(e[T_type].as<int>());
+    _alarms.at(cnt).hr = e[T_hr];
+    _alarms.at(cnt).min = e[T_min];
+    _alarms.at(cnt).track = e[T_snd];
+    LOGD(T_alrmclock, printf, "Alarm:%u, %u:%u, track:%d\n", _alarms.at(cnt).active, _alarms.at(cnt).hr, _alarms.at(cnt).min, _alarms.at(cnt).track );
+  }
 }
 
 void AlarmClock::generate_cfg(JsonVariant cfg) const {
@@ -402,6 +419,19 @@ void AlarmClock::generate_cfg(JsonVariant cfg) const {
   cfg[T_quarter] = _cuckoo.quater;
   cfg[T_on] = _cuckoo.on;
   cfg[T_off] = _cuckoo.off;
+
+  // serialize _alarm array into Jdoc array of objects
+  JsonArray arr = cfg[T_event].isNull() ? cfg.createNestedArray(T_event) : cfg[T_event];
+  size_t cnt{0};
+  for (auto &e : _alarms){
+    JsonObject obj = (arr.size() == cnt) ? arr.createNestedObject() : arr[cnt];
+    obj[T_on] = e.active;
+    obj[T_type] = static_cast<uint16_t>(e.type);
+    obj[T_hr] = e.hr;
+    obj[T_min] = e.min;
+    obj[T_snd] = e.track;
+    ++cnt;
+  }
 }
 
 void AlarmClock::widgetRunner(){
@@ -409,9 +439,37 @@ void AlarmClock::widgetRunner(){
   std::time(&now);
   std::tm *tm = std::localtime(&now);
 
+  // skip non 00 seconds
+  if (tm->tm_sec) return;
+
+  // iterate alarms
+  for (auto &e : _alarms){
+    if (!e.active || tm->tm_hour != e.hr || tm->tm_min != e.min) continue;  // skip disabled or alarms not matching current time
+
+    // skip weekend alarms if today is not one of the weekend days
+    if ( e.type == alarm_t::weekends && (tm->tm_wday != 0 && tm->tm_wday != 6) ) continue;
+
+    // skip workday alarms if today is one of the weekend days
+    if ( e.type == alarm_t::workdays && (tm->tm_wday == 0 || tm->tm_wday == 6) ) continue;
+
+    // else it must be either an alarm_t::onetime or alarm_t::daily alarm, so I can trigger it
+    EVT_POST_DATA(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::alarmTrigger), &e.track, sizeof(int));
+
+    // if it was one-time alarm, disable it and save config
+    if (e.type == alarm_t::onetime){
+      e.active = false;
+      save();
+    }
+
+    // if one of the alarms was triggered, then I can quit here,
+    // no need to check for other alarms or call for Cuckoo clock
+    return;
+  }
+
   // cockoo clock
-  if (tm->tm_sec == 0 && tm->tm_hour >= _cuckoo.on && tm->tm_hour < _cuckoo.off)
+  if (tm->tm_hour >= _cuckoo.on && tm->tm_hour < _cuckoo.off)
     _cockoo_events(tm);
+
 }
 
 void AlarmClock::_cockoo_events(std::tm *tm){
@@ -419,25 +477,22 @@ void AlarmClock::_cockoo_events(std::tm *tm){
   if (_cuckoo.hr && tm->tm_min == 0){
     t = _cuckoo.hr;
     LOGV(T_clock, println, "hr cuckoo cmd");
-    EVT_POST_DATA(LAMP_SET_EVENTS, e2int(evt::lamp_t::mp3cockoo), &t, sizeof(int));
+    EVT_POST_DATA(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::cockoo), &t, sizeof(int));
     return;
   }
 
   if (_cuckoo.hhr && tm->tm_min == 30){
     t = _cuckoo.hhr;
     LOGV(T_clock, println, "hhr cuckoo cmd");
-    EVT_POST_DATA(LAMP_SET_EVENTS, e2int(evt::lamp_t::mp3cockoo), &t, sizeof(int));
+    EVT_POST_DATA(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::cockoo), &t, sizeof(int));
     return;
   }
-
   if (_cuckoo.quater && (tm->tm_min == 15 || tm->tm_min == 45 )){
     t = _cuckoo.quater;
     LOGV(T_clock, println, "quarter cuckoo cmd");
-    EVT_POST_DATA(LAMP_SET_EVENTS, e2int(evt::lamp_t::mp3cockoo), &t, sizeof(int));
-    //return;
+    EVT_POST_DATA(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::cockoo), &t, sizeof(int));
   }
 }
-
 
 // ****  Widget Manager methods
 
@@ -502,26 +557,26 @@ void WidgetManager::stop(const char* label){
   }
 }
 
-JsonVariant WidgetManager::getConfig(const char* widget_label){
-  LOGV(T_WdgtMGR, printf, "getConfig for: %s\n", widget_label);
+JsonVariant WidgetManager::getConfig(const char* label){
+  LOGV(T_WdgtMGR, printf, "getConfig for: %s\n", label);
 
-  auto i = std::find_if(_widgets.begin(), _widgets.end(), MatchLabel<widget_pt>(widget_label));
+  auto i = std::find_if(_widgets.begin(), _widgets.end(), MatchLabel<widget_pt>(label));
   if ( i != _widgets.end() ) {
     return (*i)->getConfig();
   }
 
   // widget instance is not created, try to load from config
-  return GenericWidget::load_cfg_from_NVS(widget_label);
+  return GenericWidget::load_cfg_from_NVS(label);
 }
 
-void WidgetManager::setConfig(const char* widget_label, JsonVariantConst cfg){
-  LOGD(T_WdgtMGR, printf, "setConfig for: %s\n", widget_label);
+void WidgetManager::setConfig(const char* label, JsonVariantConst cfg){
+  LOGD(T_WdgtMGR, printf, "setConfig for: %s\n", label);
 
-  auto i = std::find_if(_widgets.begin(), _widgets.end(), MatchLabel<widget_pt>(widget_label));
+  auto i = std::find_if(_widgets.begin(), _widgets.end(), MatchLabel<widget_pt>(label));
   if ( i == _widgets.end() ) {
     LOGV(T_WdgtMGR, println, "widget does not exist, spawn a new one");
     // such widget does not exist currently, spawn a new one with supplied config and store cfg to NVS
-    _spawn(widget_label, cfg, true);
+    _spawn(label, cfg, true);
     return;
   }
 
@@ -529,14 +584,14 @@ void WidgetManager::setConfig(const char* widget_label, JsonVariantConst cfg){
   (*i)->setConfig(cfg);
 }
 
-void WidgetManager::_spawn(const char* widget_label, JsonVariantConst cfg, bool persistent){
-  LOGD(T_Widget, printf, "WM spawn: %s\n", widget_label);
+void WidgetManager::_spawn(const char* label, JsonVariantConst cfg, bool persistent){
+  LOGD(T_Widget, printf, "WM spawn: %s\n", label);
   // spawn a new widget based on label
   std::unique_ptr<GenericWidget> w;
 
-  if(std::string_view(widget_label).compare(T_clock) == 0){
+  if(std::string_view(label).compare(T_clock) == 0){
     w = std::make_unique<ClockWidget>();
-  } else if(std::string_view(widget_label).compare(T_alrmclock) == 0){
+  } else if(std::string_view(label).compare(T_alrmclock) == 0){
     w = std::make_unique<AlarmClock>();
   }
 
@@ -570,6 +625,14 @@ void WidgetManager::getWidgetsState(Interface *interf) const {
   //interf->json_frame_flush();
 }
 
+GenericWidget* WidgetManager::getWidgetPtr(const char* label){
+  if (!_widgets.size()) return nullptr;
+  auto i = std::find_if(_widgets.begin(), _widgets.end(), MatchLabel<widget_pt>(label));
+  if ( i == _widgets.end() )
+    return nullptr;
+
+  return (*i).get();
+}
 
 
 // ****

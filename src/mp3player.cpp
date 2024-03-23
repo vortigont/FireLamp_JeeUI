@@ -43,7 +43,8 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #define MP3_SERIAL_SPEED    9600  //DFPlayer Mini suport only 9600-baud
 #define MP3_SERIAL_TIMEOUT  350   //average DFPlayer response timeout 200msec..300msec for YX5200/AAxxxx chip & 350msec..500msec for GD3200B/MH2024K chip
 
-#define MP3_EFF_FOLDER       3     // folder with effects track
+#define MP3_EFF_FOLDER            3     // folder with effects track
+#define MP3_NOTIFICATION_FOLDER   1     // folder with cuckoo and alarm files
 
 #define MP3_LOOPTRACK_CMD_DELAY 5000
 
@@ -164,6 +165,16 @@ void MP3PlayerController::_lmpChEventHandler(esp_event_base_t base, int32_t id, 
       if (flags.eff_playtrack)
         playEffect(*reinterpret_cast<uint32_t*>(data));
       break;
+    case evt::lamp_t::cockoo :
+      playTime(*reinterpret_cast<int*>(data));
+      break;
+    case evt::lamp_t::alarmTrigger :
+      playAlarm(*reinterpret_cast<int*>(data));
+      break;
+    // stop alarm playback
+    case evt::lamp_t::alarmStop :
+      dfp->stop();
+      break;
   }
 }
 
@@ -185,9 +196,6 @@ void MP3PlayerController::_lmpSetEventHandler(esp_event_base_t base, int32_t id,
       LOGI(T_DFPlayer, println, "unmute");
       //dfp->enableDac();
       flags.mute = false;
-      break;
-    case evt::lamp_t::mp3cockoo :
-      playTime(*reinterpret_cast<int*>(data));
       break;
   }
 }
@@ -242,6 +250,14 @@ void MP3PlayerController::playEffect(uint32_t effnb){
         &ts, false, nullptr, nullptr, true );
     t->enableDelayed();
   }
+}
+
+void MP3PlayerController::playAlarm(int track){
+  // will force play event if player is on Mute
+
+  LOGI(T_DFPlayer, printf, "Alarm folder:%u, track:%u\n", MP3_NOTIFICATION_FOLDER, track+100);
+  dfp->playFolderTrack16(MP3_NOTIFICATION_FOLDER, track+100);
+  _state = DfMp3_StatusState_Playing;
 }
 
 void MP3PlayerController::setVolume(uint8_t vol) {

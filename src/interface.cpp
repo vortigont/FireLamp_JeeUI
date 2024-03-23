@@ -594,9 +594,6 @@ void set_effects_config_param(Interface *interf, const JsonObject *data, const c
     // could be used in demo
     effect->isFavorite((*data)[TCONST_eff_fav]);
 
-    // set sound file, if any defined
-    if ( !(*data)[TCONST_soundfile].isNull() ) myLamp.effwrkr.setSoundfile((*data)[TCONST_soundfile], effect);
-
     // check if effect has been renamed
     if (!(*data)[TCONST_effname].isNull()){
         LOG(println, PSTR("Effect rename, rebuild list"));
@@ -666,10 +663,6 @@ void set_effects_config_list(Interface *interf, const JsonObject *data, const ch
 
     // обновляем поля
     interf->json_frame_value();
-
-    String tmpSoundfile;
-    myLamp.effwrkr.loadsoundfile(tmpSoundfile,confEff->eff_nb);
-    interf->value(TCONST_soundfile, tmpSoundfile, false);
 
     interf->value(TCONST_eff_sel, confEff->canBeSelected(), false);          // доступен для выбора в выпадающем списке на главной странице
     interf->value(TCONST_eff_fav, confEff->isFavorite(), false);             // доступен в демо-режиме
