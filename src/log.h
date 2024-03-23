@@ -28,19 +28,19 @@ LOG macro will enable/disable logs to serial depending on LAMP_DEBUG build-time 
 #endif
 
 #if defined(LAMP_DEBUG_LEVEL) && LAMP_DEBUG_LEVEL == 5
-	#define LOGV(tag, func, ...) LAMP_DEBUG_PORT.print(tag); LAMP_DEBUG_PORT.print(" V: "); LAMP_DEBUG_PORT.func(__VA_ARGS__)
+	#define LOGV(tag, func, ...) LAMP_DEBUG_PORT.print("V: "); LAMP_DEBUG_PORT.print(tag); LAMP_DEBUG_PORT.print((char)0x9); LAMP_DEBUG_PORT.func(__VA_ARGS__)
 #else
 	#define LOGV(...)
 #endif
 
 #if defined(LAMP_DEBUG_LEVEL) && LAMP_DEBUG_LEVEL > 3
-	#define LOGD(tag, func, ...) LAMP_DEBUG_PORT.print(tag); LAMP_DEBUG_PORT.print(" D: "); LAMP_DEBUG_PORT.func(__VA_ARGS__)
+	#define LOGD(tag, func, ...) LAMP_DEBUG_PORT.print("D: "); LAMP_DEBUG_PORT.print(tag); LAMP_DEBUG_PORT.print((char)0x9); LAMP_DEBUG_PORT.func(__VA_ARGS__)
 #else
 	#define LOGD(...)
 #endif
 
 #if defined(LAMP_DEBUG_LEVEL) && LAMP_DEBUG_LEVEL > 2
-	#define LOGI(tag, func, ...) LAMP_DEBUG_PORT.print(tag); LAMP_DEBUG_PORT.print(" I: "); LAMP_DEBUG_PORT.func(__VA_ARGS__)
+	#define LOGI(tag, func, ...) LAMP_DEBUG_PORT.print("I: "); LAMP_DEBUG_PORT.print(tag); LAMP_DEBUG_PORT.print((char)0x9); LAMP_DEBUG_PORT.func(__VA_ARGS__)
 	// compat macro
 	#define LOG(func, ...) LAMP_DEBUG_PORT.func(__VA_ARGS__)
 #else
@@ -50,13 +50,13 @@ LOG macro will enable/disable logs to serial depending on LAMP_DEBUG build-time 
 #endif
 
 #if defined(LAMP_DEBUG_LEVEL) && LAMP_DEBUG_LEVEL > 1
-	#define LOGW(tag, func, ...) LAMP_DEBUG_PORT.print(tag); LAMP_DEBUG_PORT.print(" W: "); LAMP_DEBUG_PORT.func(__VA_ARGS__)
+	#define LOGW(tag, func, ...) LAMP_DEBUG_PORT.print("W: "); LAMP_DEBUG_PORT.print(tag); LAMP_DEBUG_PORT.print((char)0x9); LAMP_DEBUG_PORT.func(__VA_ARGS__)
 #else
 	#define LOGW(...)
 #endif
 
 #if defined(LAMP_DEBUG_LEVEL) && LAMP_DEBUG_LEVEL > 0
-	#define LOGE(tag, func, ...) LAMP_DEBUG_PORT.print(tag); LAMP_DEBUG_PORT.print(" E: "); LAMP_DEBUG_PORT.func(__VA_ARGS__)
+	#define LOGE(tag, func, ...) LAMP_DEBUG_PORT.print("E: "); LAMP_DEBUG_PORT.print(tag); LAMP_DEBUG_PORT.print((char)0x9); LAMP_DEBUG_PORT.func(__VA_ARGS__)
 #else
 	#define LOGE(...)
 #endif
