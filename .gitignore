@@ -3,6 +3,7 @@
 .vscode
 eff
 user_*.ini
+lnk
 .vscode/extensions.json
 .vscode/settings.json
 .vscode/c_cpp_properties.json
@@ -14,3 +15,4 @@ include/user_cfg*
 resources/embui.zip
 resources/etags.txt
 test/
+temp/
