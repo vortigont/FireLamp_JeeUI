@@ -2,7 +2,8 @@
 
 # embui branch/tag name to fetch
 embuirepo='https://github.com/vortigont/EmbUI'
-embuitag="v3.1"
+embuitag="main"
+#embuitag="v3.1"
 
 #####
 # no changes below this point!
@@ -192,6 +193,8 @@ if [ $refresh_js -eq 1 ] ; then
         #echo "fetch $f"
     done
     ${compress_cmd} ${compress_args} embui.js -c > ../data/js/embui.js.${compressor} && rm -f embui.js
+
+    curl -sL ${embuirepo}/raw/$embuitag/resources/html/js/ui_sys.json | ${compress_cmd} ${compress_args} > ../data/js/ui_sys.json.${compressor}
 fi
 
 echo "Update local resources"
@@ -229,6 +232,7 @@ cp -u html/css/*.png ../data/css/
 #cp -u html/events_config.json ../data/
 #cp -u html/buttons_config.json ../data/
 
+: '
 ###
 # обновляем ace-editor в data/extras folder
 # collect all required ACE editor extensions here
@@ -267,7 +271,7 @@ if freshtag https://github.com/ajaxorg/ace/raw/master/doc/site/images/favicon.ic
 fi
 
 #updlocalarchive extras/edit.htm
-
+'
 
 mv -f newetags.txt $tags
 

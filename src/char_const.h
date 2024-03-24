@@ -318,12 +318,12 @@ static constexpr const char* A_button_gpio = "*et_button_gpio";                 
 static constexpr const char* A_button_evt_edit = "button_evt_edit";             // edit button action form
 static constexpr const char* A_button_evt_save = "button_evt_save";             // save/apply button action form
 // DFPlayer
-static constexpr const char* A_dfplayer_dev = "*et_dfplayer_device";           // get/set DFPlayer device configuration
-static constexpr const char* A_dfplayer_opt = "*et_dfplayer_opt";             // get/set DFPlayer functions
+static constexpr const char* A_dfplayer_dev = "*et_dfplayer_device";            // get/set DFPlayer device configuration
+static constexpr const char* A_dfplayer_opt = "*et_dfplayer_opt";               // get/set DFPlayer functions
 // Widgets
-static constexpr const char* A_set_widget = "set_wdgt_*";                     // set Widget's configuration
-static constexpr const char* A_set_widget_onoff = "set_wdgtena_*";                  // enable/disable Widget by name
-//static constexpr const char* A_get_widget = "get_wdgt_*";                     // get Widget's configuration
+static constexpr const char* A_set_widget = "set_wdgt_*";                       // set Widget's configuration
+static constexpr const char* A_set_widget_onoff = "set_wdgtena_*";              // enable/disable Widget by name
+static constexpr const char* A_set_wcfg_alrm = "set_wcfg_alrm";                 // set alarm widget item configuration
 
 
 static constexpr const char* A_ui_page_effects_config = "effects_config";

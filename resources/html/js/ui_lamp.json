@@ -1,6 +1,6 @@
 {
   "type":"interface",
-  "version":9,
+  "version":10,
   "descr":"FireLamp UI objects",
 
   "settings":{
@@ -907,18 +907,44 @@
       "main":true,
       "block":[
         {
-          "id": "ui_page",
-          "html": "button",
-          "type": 0,
-          "label": "Часы в наложении",
-          "value": 102
+          "section":"clock",
+          "line":true,
+          "block":[
+            {
+              "id":"set_wdgtena_clock",
+              "html":"input",
+              "label":"Слой с часами",
+              "type":"checkbox",
+              "onChange": true
+            },
+            {
+              "id": "ui_page",
+              "html": "button",
+              "type": 0,
+              "label": "Параметры",
+              "value": 102
+            }
+          ]
         },
         {
-          "id": "ui_page",
-          "html": "button",
-          "type": 0,
-          "label": "Кукушка будильник",
-          "value": 103
+          "section":"alrmclock",
+          "line":true,
+          "block":[
+            {
+              "id":"set_wdgtena_alrmclock",
+              "html":"input",
+              "label":"Будильник/Кукушка",
+              "type":"checkbox",
+              "onChange": true
+            },
+            {
+              "id": "ui_page",
+              "html": "button",
+              "type": 0,
+              "label": "Параметры",
+              "value": 103
+            }
+          ]
         }
       ]
     },
@@ -929,14 +955,8 @@
         "main":true,
         "block":[
           {
-            "id":"enabled",
-            "html":"input",
-            "label":"Активирован",
-            "type":"checkbox"
-          },
-          {
             "html":"comment",
-            "label":"See <a href=\"https://github.com/vortigont/FireLamp_JeeUI/wiki/%D0%92%D0%B8%D0%B4%D0%B6%D0%B5%D1%82-%D1%87%D0%B0%D1%81%D1%8B\">WiKi</a> for options help"
+            "label":"Параметры настройки см. в <a href=\"https://github.com/vortigont/FireLamp_JeeUI/wiki/%D0%92%D0%B8%D0%B4%D0%B6%D0%B5%D1%82-%D1%87%D0%B0%D1%81%D1%8B\">WiKi</a>"
           },
           {
             "section":"wdgt_clock_time",
@@ -1073,7 +1093,7 @@
                 "type": "number",
                 "label": "Цвет 565",
                 "min": 1
-              }    
+              }
             ]
           },
           {
@@ -1173,24 +1193,26 @@
             "type":1,
             "label":"Применить",
             "fa": "fas fa-circle-check"
+          },
+          {
+            "id":"ui_page_widgets",
+            "html":"button",
+            "color": "green",
+            "type":0,
+            "fa": "fas fa-door-open",
+            "label":"Выход"
           }
         ]
       },
       "alrmclock":{
-        "section":"set_wdgt_alrmclock",
-        "label":"Кукушка будильник",
+        "section":"wdgt_alrmclock",
+        "label":"Будильник / Кукушка",
         "main":true,
         "block":[
           {
-            "section":"cockoo",
+            "section":"set_wdgt_alrmclock",
             "label":"Кукушка",
             "block":[
-              {
-                "id":"enabled",
-                "html":"input",
-                "label":"Активирован",
-                "type":"checkbox"
-              },
               {
                 "id":"hr",
                 "html":"select",
@@ -1337,17 +1359,48 @@
                     "label":"Ку-ку 9"
                   }
                 ]
+              },
+              {
+                "html":"spacer"
+              },
+              {
+                "section":"wrkhrs",
+                "label":"Часы работы кукушки",
+                "line": true,
+                "block":[
+                  {
+                    "id": "on",
+                    "html":"input",
+                    "value": 0,
+                    "type": "number",
+                    "label": "Начало",
+                    "min": 0,
+                    "max": 23,
+                    "step": 1
+                  },
+                  {
+                    "id": "off",
+                    "html":"input",
+                    "value": 24,
+                    "type": "number",
+                    "label": "Конец",
+                    "min": 1,
+                    "max": 24,
+                    "step": 1
+                  }
+                ]
+
+              },
+              {
+                "id":"set_wdgt_alrmclock",
+                "html":"button",
+                "type":1,
+                "label":"Применить",
+                "fa": "fas fa-circle-check"
               }
-            ]
-          },
-          {
-            "id":"set_wdgt_alrmclock",
-            "html":"button",
-            "type":1,
-            "label":"Применить",
-            "fa": "fas fa-circle-check"
+           ]
           }
-        ]        
+        ]
       }
     }
   },
@@ -1468,6 +1521,115 @@
           "value": 55,
           "label": "Exit"
         }
+      ]
+    },
+    "wdgt_alarm_hdr":{
+      "section":"alrm_items_hdr",
+      "block":[
+        {
+          "html":"comment",
+          "label":"Установки будильников"
+        }
+      ]
+    },
+    "wdgt_alarm_item":{
+      "section":"alrm_item",
+      "block":[
+        {
+          "section":"alrm_item_num",
+          "line": true,
+          "block":[
+            {
+              "id":"on",
+              "html":"input",
+              "label":"Активен",
+              "type":"checkbox"
+            },
+            {
+              "id":"hr",
+              "html":"input",
+              "type":"number",
+              "label":"Часы",
+              "min":0,
+              "max":23,
+              "step":1
+            },
+            {
+              "id":"min",
+              "html":"input",
+              "type":"number",
+              "label":"Минуты",
+              "min":0,
+              "max":59,
+              "step":1
+            },
+            {
+              "id":"snd",
+              "html":"input",
+              "type":"number",
+              "label":"Мелодия",
+              "min":1,
+              "max":9,
+              "step":1,
+              "value":1
+            }
+          ]
+        },
+        {
+          "section":"alrm_item_btn",
+          "line": true,
+          "block":[
+            {
+              "id":"type",
+              "html":"select",
+              "value":0,
+              "label":"Повтор",
+              "section":"options",
+              "block":[
+                {
+                  "value":0,
+                  "label":"Однократно"
+                },
+                {
+                  "value":1,
+                  "label":"Ежедневно"
+                },
+                {
+                  "value":2,
+                  "label":"По будням"
+                },
+                {
+                  "value":3,
+                  "label":"По выходным"
+                }
+              ]
+            },
+            {
+              "id": "alrm_item",
+              "html": "button",
+              "type": 2,
+              "label":"Сохранить",
+              "function": "alarm_item_set",
+              "fa": "fas fa-circle-check"
+            }
+          ]
+        },
+        {
+          "html":"spacer"
+        }
+     ]
+    },
+    "btn_exit_to_wdgt":{
+      "section":"btn_exit_to_wdgt",
+      "block":[
+        {
+          "id":"ui_page_widgets",
+          "html":"button",
+          "color": "green",
+          "type":0,
+          "fa": "fas fa-door-open",
+          "label":"Выход"
+       }
       ]
     }
   }

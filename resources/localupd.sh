@@ -26,3 +26,14 @@ for f in ${lamp_files}
 do
     updlocalarchive $f
 done
+
+# lamp js files
+lamp_js="lamp.js drawing.js pubcallback.js"
+if [ html/js/lamp.js -nt ../data/js/lamp.js.gz ] ; then
+    for f in ${lamp_js}
+    do
+        cat ./html/js/${f} >> ../data/js/lamp.js
+    done
+    gzip -9f ../data/js/lamp.js
+    touch -r html/js/lamp.js ../data/js/lamp.js.gz
+fi

@@ -56,7 +56,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "widgets.hpp"
 
 // версия ресурсов в стороннем джейсон файле
-#define UIDATA_VERSION  9
+#define UIDATA_VERSION  10
 
 // placeholder for effect list rebuilder task
 Task *delayedOptionTask = nullptr;
@@ -185,7 +185,21 @@ void uidata_page_selector(Interface *interf, const JsonObject *data, const char*
         case page::wdgt_alrmclock :   // настройки будильника
             interf->uidata_pick( "lampui.pages.wdgt.alrmclock" );
             interf->json_frame_flush();
-            interf->json_frame_value(informer.getConfig(T_alrmclock), true);
+            // Main frame MUST be flushed before sending other ui_data sections
+            interf->json_frame_interface();
+            interf->json_section_uidata();
+            interf->uidata_pick("lampui.sections.wdgt_alarm_hdr");
+            for (int i = 0; i !=4; ++i){
+                String idx(i);
+                interf->uidata_pick( "lampui.sections.wdgt_alarm_item", NULL, idx.c_str() );
+            }
+            //interf->json_section_end();
+            //interf->json_section_uidata();
+            //    interf->uidata_pick("lampui.sections.btn_exit_to_wdgt");
+            interf->json_frame_flush();
+            interf->json_frame_jscall("alarm_items_load");
+            interf->jobject(informer.getConfig(T_alrmclock), true);     // generate config with nested alarm event objects
+            //interf->json_frame_value(informer.getConfig(T_alrmclock), true);
             break;
         default:;                   // by default do nothing
     }

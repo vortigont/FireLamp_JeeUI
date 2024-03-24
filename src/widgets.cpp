@@ -104,10 +104,16 @@ void set_widget_cfg(Interface *interf, const JsonObject *data, const char* actio
   informer.setConfig(std::string_view (action).substr(9).data(), *data);  // set_wdgt_
 }
 
+void set_alrm_item(Interface *interf, const JsonObject *data, const char* action){
+  AlarmClock* ptr = reinterpret_cast<AlarmClock*>( informer.getWidgetPtr(T_alrmclock) );
+  if (!ptr) return;
+  ptr->setAlarmItem((*data));
+}
 
 void register_widgets_handlers(){
   embui.action.add(A_set_widget_onoff, set_widget_onoff);                 // start/stop widget
-  embui.action.add(A_set_widget, set_widget_cfg);                         // set widget configuration
+  embui.action.add(A_set_wcfg_alrm, set_alrm_item);                       // set alarm item
+  embui.action.add(A_set_widget, set_widget_cfg);                         // set widget configuration (this wildcard should be the last one)
 }
 
 
@@ -166,8 +172,9 @@ void GenericWidget::save(JsonVariantConst cfg){
   JsonVariant dst = doc[label].isNull() ? doc.createNestedObject(label) : doc[label];
   JsonObjectConst o = cfg.as<JsonObjectConst>();
 
-  for (JsonPairConst kvp : o)
-      dst[kvp.key()] = kvp.value();
+  for (JsonPairConst kvp : o){
+    dst[kvp.key()] = kvp.value();
+  }
 
   embuifs::serialize2file(doc, T_widgets_cfg);
 }
@@ -402,12 +409,13 @@ void AlarmClock::load_cfg(JsonVariantConst cfg){
 
   size_t cnt{0};
   for (JsonVariantConst e : al){
-    if (cnt++ == _alarms.size()) return;  // array overflow
+    if (cnt == _alarms.size()) return;  // array overflow
     _alarms.at(cnt).active = e[T_on];
     _alarms.at(cnt).type = static_cast<alarm_t>(e[T_type].as<int>());
     _alarms.at(cnt).hr = e[T_hr];
     _alarms.at(cnt).min = e[T_min];
     _alarms.at(cnt).track = e[T_snd];
+    ++cnt;
     LOGD(T_alrmclock, printf, "Alarm:%u, %u:%u, track:%d\n", _alarms.at(cnt).active, _alarms.at(cnt).hr, _alarms.at(cnt).min, _alarms.at(cnt).track );
   }
 }
@@ -422,15 +430,14 @@ void AlarmClock::generate_cfg(JsonVariant cfg) const {
 
   // serialize _alarm array into Jdoc array of objects
   JsonArray arr = cfg[T_event].isNull() ? cfg.createNestedArray(T_event) : cfg[T_event];
-  size_t cnt{0};
+  arr.clear();  // clear array, I'll replace it's content
   for (auto &e : _alarms){
-    JsonObject obj = (arr.size() == cnt) ? arr.createNestedObject() : arr[cnt];
+    JsonObject obj = arr.createNestedObject();
     obj[T_on] = e.active;
     obj[T_type] = static_cast<uint16_t>(e.type);
     obj[T_hr] = e.hr;
     obj[T_min] = e.min;
     obj[T_snd] = e.track;
-    ++cnt;
   }
 }
 
@@ -492,6 +499,18 @@ void AlarmClock::_cockoo_events(std::tm *tm){
     LOGV(T_clock, println, "quarter cuckoo cmd");
     EVT_POST_DATA(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::cockoo), &t, sizeof(int));
   }
+}
+
+void AlarmClock::setAlarmItem(JsonVariant cfg){
+  size_t idx = cfg[T_idx];
+  LOGD(T_alrmclock, printf, "save evetn:%u\n", idx);
+  if (idx >= _alarms.size() ) return;
+  _alarms.at(idx).active = cfg[T_on];
+  _alarms.at(idx).type = static_cast<alarm_t>(cfg[T_type].as<int>());
+  _alarms.at(idx).hr = cfg[T_hr];
+  _alarms.at(idx).min = cfg[T_min];
+  _alarms.at(idx).track = cfg[T_snd];
+  save();
 }
 
 // ****  Widget Manager methods
@@ -565,7 +584,7 @@ JsonVariant WidgetManager::getConfig(const char* label){
     return (*i)->getConfig();
   }
 
-  // widget instance is not created, try to load from config
+  // widget instance is not created, try to load from FS config
   return GenericWidget::load_cfg_from_NVS(label);
 }
 
@@ -593,7 +612,8 @@ void WidgetManager::_spawn(const char* label, JsonVariantConst cfg, bool persist
     w = std::make_unique<ClockWidget>();
   } else if(std::string_view(label).compare(T_alrmclock) == 0){
     w = std::make_unique<AlarmClock>();
-  }
+  } else
+    return;   // no such widget exist
 
   if (cfg.isNull()){
     // ask widget to read it's config from NVS, if any

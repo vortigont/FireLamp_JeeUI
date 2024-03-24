@@ -345,6 +345,8 @@ public:
 
     void widgetRunner() override;
 
+    void setAlarmItem(JsonVariant cfg);
+
     //void start() override;
     //void stop() override;
 };
