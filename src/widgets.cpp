@@ -308,7 +308,7 @@ void ClockWidget::_print_clock(std::tm *tm){
     LOGV(T_Widget, printf, "fill time bounds: %d, %d, %u, %u\n", x, y, clk.maxW, h);
     screen->fillRect(clk.x, y, clk.maxW, h, 0);
     // для шрифта 3х5 откусываем незначащий ноль что бы текст влез на матрицу 16х16. Коряво, но люди просят.
-    if (clk.font_index == 7 && tm->tm_hour < 10){
+    if (clk.font_index == 7 && tm->tm_hour%12 < 10){
       std::string_view s(result);
       s.remove_prefix(1);
       screen->print(s.data());
