@@ -84,8 +84,11 @@ static constexpr const char* T_mp3mute = "mp3mute";
 
 // Widgets
 static constexpr const char* T_widgets_cfg = "/widgets.json";
-static constexpr const char* T_clock = "clock";                     // Clock widget
-static constexpr const char* T_alrmclock = "alrmclock";                 // Alarm Clock / Cockoo
+static constexpr const char* T_clock = "clock";                     // LABEL Clock widget
+static constexpr const char* T_alrmclock = "alrmclock";             // LABEL Alarm Clock / Cockoo
+static constexpr const char* T_Widget = "Widget";                   // log tag
+static constexpr const char* T_WdgtMGR = "WdgtMGR";                 // log tag
+static constexpr const char* T_widgets = "widgets";                 // NVS namespace
 
 static constexpr const char* T_color1 = "color1";
 static constexpr const char* T_color2 = "color2";
@@ -97,11 +100,18 @@ static constexpr const char* T_x1offset = "x1off";
 static constexpr const char* T_y1offset = "y1off";
 static constexpr const char* T_x2offset = "x2off";
 static constexpr const char* T_y2offset = "y2off";
-// Widget Clock
+// Widget Alarm clock
 static constexpr const char* T_seconds = "seconds";
 static constexpr const char* T_hr = "hr";                           // hourly cockoo
 static constexpr const char* T_hhr = "hhr";                         // half hour cockoo
+static constexpr const char* T_min = "min";                         // minutes
 static constexpr const char* T_quarter = "quarter";                 // quarter hour cockoo
+static constexpr const char* T_snd = "snd";                         // track number to play as alarm melody
+//static constexpr const char* T_quarter = "alarms";
+//static constexpr const char* TCONST_Alarm = "Alarm";
+
+// Events
+static constexpr const char* T_event = "event";
 
 
 // Other
@@ -115,6 +125,8 @@ static constexpr const char* T_enabled = "enabled";
 static constexpr const char* T_idx = "idx";
 static constexpr const char* T_Main = "Main";                           // used as LOG tag
 static constexpr const char* T_Notification = "Notification";
+static constexpr const char* T_on = "on";
+static constexpr const char* T_off = "off";
 static constexpr const char* T_opt = "opt";
 static constexpr const char* T_pwr = "pwr";
 static constexpr const char* T_rx = "rx";
@@ -125,11 +137,6 @@ static constexpr const char* T_type = "type";
 
 static constexpr const char* TCONST_act = "act";
 static constexpr const char* TCONST_afS = "afS";
-static constexpr const char* TCONST_alarmPT = "alarmPT";
-static constexpr const char* TCONST_alarmP = "alarmP";
-static constexpr const char* TCONST_alarmSound = "alarmSound";
-static constexpr const char* TCONST_alarmT = "alarmT";
-static constexpr const char* TCONST_Alarm = "Alarm";
 static constexpr const char* TCONST_AUX = "AUX";
 static constexpr const char* TCONST_aux_gpio = "aux_gpio";             // AUX gpio
 static constexpr const char* TCONST_aux_ll = "aux_ll";                 // AUX logic level
@@ -173,7 +180,6 @@ static constexpr const char* TCONST_encTxtDel = "encTxtDel";
 static constexpr const char* TCONST_EncVGCol = "EncVGCol";
 static constexpr const char* TCONST_EncVG = "EncVG";
 static constexpr const char* TCONST_eqSetings = "eqSetings";
-static constexpr const char* TCONST_event = "event";
 static constexpr const char* TCONST_eventList = "eventList";
 static constexpr const char* TCONST_Events = "Events";
 static constexpr const char* TCONST_event_conf = "event_conf";
@@ -217,20 +223,7 @@ static constexpr const char* TCONST_Other = "Other";
 static constexpr const char* TCONST_pFS = "pFS";
 static constexpr const char* TCONST_PINB = "PINB"; // пин кнопки
 static constexpr const char* TCONST_pin = "pin";
-static constexpr const char* TCONST_playEffect = "playEffect";
-static constexpr const char* TCONST_playMP3 = "playMP3";
-static constexpr const char* TCONST_playName = "playName";
-static constexpr const char* TCONST_playTime = "playTime";
-static constexpr const char* TCONST_pMem = "pMem";
-static constexpr const char* TCONST_pRSSI = "pRSSI";
-static constexpr const char* TCONST_pTemp = "pTemp";
-static constexpr const char* TCONST_pTime = "pTime";
-static constexpr const char* TCONST_pUptime = "pUptime";
-static constexpr const char* TCONST_repeat = "repeat";
 static constexpr const char* TCONST_RGB = "RGB";
-static constexpr const char* TCONST_RSSI = "RSSI";
-static constexpr const char* TCONST_save = "save";
-static constexpr const char* TCONST_scale = "scale";
 static constexpr const char* TCONST_settings_mic = "settings_mic";
 static constexpr const char* TCONST_settings_mp3 = "settings_mp3";
 static constexpr const char* TCONST_settings_wifi = "settings_wifi";
@@ -238,7 +231,6 @@ static constexpr const char* TCONST_showName = "showName";
 static constexpr const char* TCONST_show_button = "show_button";
 static constexpr const char* TCONST_show_butt = "show_butt";
 static constexpr const char* TCONST_show_event = "show_event";
-static constexpr const char* TCONST_soundfile = "soundfile";
 static constexpr const char* TCONST_spdcf = "spdcf";
 static constexpr const char* TCONST_speed = "speed";
 static constexpr const char* TCONST_state = "state";
@@ -326,11 +318,12 @@ static constexpr const char* A_button_gpio = "*et_button_gpio";                 
 static constexpr const char* A_button_evt_edit = "button_evt_edit";             // edit button action form
 static constexpr const char* A_button_evt_save = "button_evt_save";             // save/apply button action form
 // DFPlayer
-static constexpr const char* A_dfplayer_dev = "*et_dfplayer_device";           // get/set DFPlayer device configuration
-static constexpr const char* A_dfplayer_opt = "*et_dfplayer_opt";             // get/set DFPlayer functions
+static constexpr const char* A_dfplayer_dev = "*et_dfplayer_device";            // get/set DFPlayer device configuration
+static constexpr const char* A_dfplayer_opt = "*et_dfplayer_opt";               // get/set DFPlayer functions
 // Widgets
-static constexpr const char* A_set_widget = "set_wdgt_*";                     // set Widget's configuration
-//static constexpr const char* A_get_widget = "get_wdgt_*";                     // get Widget's configuration
+static constexpr const char* A_set_widget = "set_wdgt_*";                       // set Widget's configuration
+static constexpr const char* A_set_widget_onoff = "set_wdgtena_*";              // enable/disable Widget by name
+static constexpr const char* A_set_wcfg_alrm = "set_wcfg_alrm";                 // set alarm widget item configuration
 
 
 static constexpr const char* A_ui_page_effects_config = "effects_config";

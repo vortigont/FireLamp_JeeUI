@@ -43,11 +43,14 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #define MP3_SERIAL_SPEED    9600  //DFPlayer Mini suport only 9600-baud
 #define MP3_SERIAL_TIMEOUT  350   //average DFPlayer response timeout 200msec..300msec for YX5200/AAxxxx chip & 350msec..500msec for GD3200B/MH2024K chip
 
-#define MP3_EFF_FOLDER       3     // folder with effects track
+#define MP3_EFF_FOLDER            3     // folder with effects track
+#define MP3_NOTIFICATION_FOLDER   1     // folder with cuckoo and alarm files
 
 #define MP3_LOOPTRACK_CMD_DELAY 5000
 
 #define MP3_CUCKOO_FILES_INCREMENT  10    // file names increment
+#define MP3_ALARM_DURATION          60    // how long to repeat alarm playback (sec)
+
 
 MP3PlayerController::MP3PlayerController(HardwareSerial& serial, DfMp3Type type, uint32_t ackTimeout) : _serial(serial) {
   dfp = new DFMiniMp3(serial, type, ackTimeout);
@@ -164,6 +167,17 @@ void MP3PlayerController::_lmpChEventHandler(esp_event_base_t base, int32_t id, 
       if (flags.eff_playtrack)
         playEffect(*reinterpret_cast<uint32_t*>(data));
       break;
+    case evt::lamp_t::cockoo :
+      playTime(*reinterpret_cast<int*>(data));
+      break;
+    case evt::lamp_t::alarmTrigger :
+      playAlarm(*reinterpret_cast<int*>(data));
+      break;
+    // stop alarm playback
+    case evt::lamp_t::alarmStop :
+      dfp->stop();
+      flags.alarm = false;
+      break;
   }
 }
 
@@ -185,9 +199,6 @@ void MP3PlayerController::_lmpSetEventHandler(esp_event_base_t base, int32_t id,
       LOGI(T_DFPlayer, println, "unmute");
       //dfp->enableDac();
       flags.mute = false;
-      break;
-    case evt::lamp_t::mp3cockoo :
-      playTime(*reinterpret_cast<int*>(data));
       break;
   }
 }
@@ -228,32 +239,46 @@ void MP3PlayerController::playEffect(uint32_t effnb){
    return;
    LOGD(T_DFPlayer, println, "suppress play due to mute flag");
   }
-  LOGI(T_DFPlayer, printf, "effect folder:%u, track:%u, effnb:%u\n", MP3_EFF_FOLDER, effnb%256, effnb);
+  LOGI(T_DFPlayer, printf, "effect: folder:%u, track:%u, effnb:%u\n", MP3_EFF_FOLDER, effnb%256, effnb);
   dfp->playFolderTrack(MP3_EFF_FOLDER, effnb%256);
   _state = DfMp3_StatusState_Playing;
   // for looping current track player must be in play mode already playing
   // it needs a delay between starting playback and sending repeat command
   if (flags.eff_looptrack){
-    Task *t = new Task(MP3_LOOPTRACK_CMD_DELAY, TASK_ONCE,
-        [this](){
-          dfp->setRepeatPlayCurrentTrack(true);
-          flags.looptrack = true;
-        },
-        &ts, false, nullptr, nullptr, true );
-    t->enableDelayed();
+    _loop_current_track();
   }
+}
+
+void MP3PlayerController::playAlarm(int track){
+  // will force play event if player is on Mute
+
+  LOGI(T_DFPlayer, printf, "Alarm: folder:%u, track:%u\n", MP3_NOTIFICATION_FOLDER, track+100);
+  dfp->playFolderTrack16(MP3_NOTIFICATION_FOLDER, track+100);
+  _loop_current_track();
+  _state = DfMp3_StatusState_Playing;
+  flags.alarm = true;
+  // scheduled alarm playback stop
+  Task *t = new Task(MP3_ALARM_DURATION * TASK_SECOND, TASK_ONCE,
+      [this](){
+        if (flags.alarm){
+          dfp->stop();
+          flags.alarm = false;
+        }
+      },
+      &ts, false, nullptr, nullptr, true );
+  t->enableDelayed();
 }
 
 void MP3PlayerController::setVolume(uint8_t vol) {
   _volume=vol;
   dfp->setVolume(vol);
-  LOGI(T_DFPlayer, printf, "volume: %u", vol);
+  LOGI(T_DFPlayer, printf, "volume: %u\n", vol);
 }
 
 void MP3PlayerController::setLoopEffects(bool value){
   flags.eff_looptrack = value;
   dfp->setRepeatPlayCurrentTrack(value);
-  LOGI(T_DFPlayer, printf, "track loop: %u", value);
+  LOGI(T_DFPlayer, printf, "track loop: %u\n", value);
 }
 
 void MP3PlayerController::setPlayEffects(bool value){
@@ -262,123 +287,12 @@ void MP3PlayerController::setPlayEffects(bool value){
     dfp->stop();
 }
 
-
-/*
-void MP3PlayerController::playFolder0(int filenb) {
-  LOG(printf_P, PSTR("DFplayer: playLargeFolder filenb: %d\n"), filenb);
-  playLargeFolder(0x00, filenb);
+void MP3PlayerController::_loop_current_track(){
+    Task *t = new Task(MP3_LOOPTRACK_CMD_DELAY, TASK_ONCE,
+        [this](){
+          dfp->setRepeatPlayCurrentTrack(true);
+          flags.looptrack = true;
+        },
+        &ts, false, nullptr, nullptr, true );
+    t->enableDelayed();
 }
-
-void MP3PlayerController::playAdvertise(int filenb) {
-  LOG(printf_P, PSTR("DFplayer: Advertise filenb: %d\n"), filenb);
-  advertise(filenb);
-  isadvert = true;
-  Task *_t = new Task(
-      6.66 * TASK_SECOND,
-      TASK_ONCE, [this](){
-        LOG(println, "DFplayer: isadvert = false");
-        isadvert = false; // через 6.66 секунд снимим флаг, шаманство!
-      },
-      &ts, false, nullptr, nullptr, true);
-  _t->enableDelayed();
-}
-
-
-
-
-void MP3PlayerController::playName(uint16_t effnb)
-{
-  isplayname = true;
-  LOG(printf_P, PSTR("DFplayer: playName, effnb:%d\n"), effnb%256);
-  playFolder(2, effnb%256);
-}
-
-void MP3PlayerController::StartAlarmSoundAtVol(ALARM_SOUND_TYPE val, uint8_t vol){
-  LOG(printf_P, PSTR("DFplayer: StartAlarmSoundAtVol at %d\n"), vol);
-  setTempVolume(vol);
-  tAlarm = val;
-  Task *_t = new Task(300, TASK_ONCE, nullptr, &ts, false, nullptr, [this](){
-    ReStartAlarmSound((ALARM_SOUND_TYPE)tAlarm);
-  }, true);
-  _t->enableDelayed();
-}
-
-void MP3PlayerController::ReStartAlarmSound(ALARM_SOUND_TYPE val){
-  isplaying = true;
-  LOG(printf_P, PSTR("DFplayer: ReStartAlarmSound %d\n"), val);
-  switch(val){
-    case ALARM_SOUND_TYPE::AT_FIRST :
-      playFolder(1,1);
-      break;
-    case ALARM_SOUND_TYPE::AT_SECOND :
-      playFolder(1,2);
-      break;
-    case ALARM_SOUND_TYPE::AT_THIRD :
-      playFolder(1,3);
-      break;
-    case ALARM_SOUND_TYPE::AT_FOURTH :
-      playFolder(1,4);
-      break;
-    case ALARM_SOUND_TYPE::AT_FIFTH :
-      playFolder(1,5);
-      break;
-    case ALARM_SOUND_TYPE::AT_RANDOM : {
-      randomSeed(millis());
-      int soundfile = random(5)+1;
-      LOG(printf_P, PSTR("DFplayer: Random alarm %d\n"), soundfile);
-      playFolder(1,soundfile);
-      break;
-    }
-    case ALARM_SOUND_TYPE::AT_RANDOMMP3 : {
-      randomSeed(millis());
-      int soundfile = random(mp3filescount)+1;
-      LOG(printf_P, PSTR("DFplayer: Random alarm %d\n"), soundfile);
-      playMp3Folder(soundfile);
-      break;
-    }
-    default:
-    break;
-  }
-}
-
-void MP3PlayerController::setTempVolume(uint8_t vol) {
-  if(ready){
-    int tcnt = 5;
-    do {
-      tcnt--;
-      if(readVolume()!=vol)
-        volume(vol);
-    } while(!readType() && tcnt);
-  }
-  LOG(printf_P, PSTR("DFplayer: Set volume: %d\n"), vol);
-}
-
-void MP3PlayerController::setIsOn(bool val, bool forcePlay) {
-  on = val;
-
-  if(!forcePlay){
-    iscancelrestart = true;
-    restartTimeout = millis();
-  }
-
-  if(!on){
-    stop();
-    isplaying = false;
-    iscancelrestart = true;
-    restartTimeout = millis();
-  } else if(forcePlay && (effectmode || mp3mode))
-    playEffect(cur_effnb, soundfile);
-
-  if(tPeriodic && on)
-    return;
-
-  if (!on){
-    delete tPeriodic;
-    tPeriodic = nullptr;
-    return;
-  }
-  
-    tPeriodic = new Task(1.21 * TASK_SECOND, TASK_FOREVER, std::bind(&MP3PlayerController::handle,this), &ts, false, nullptr, nullptr, true); // "ленивый" опрос - раз в 1.21 сек (стараюсь избежать пересеченией с произнесением времени)
-    tPeriodic->enableDelayed();
-}
-*/

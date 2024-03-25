@@ -40,9 +40,10 @@
 */
 
 #include <ctime>
+#include <string_view>
 #include "widgets.hpp"
 #include "EmbUI.h"
-#include <string_view>
+#include "nvs_handle.hpp"
 #include "log.h"
 
 
@@ -76,8 +77,6 @@
 
 #define CLOCK_DEFAULT_YOFFSET   14          // default offset for clock widget
 
-static constexpr const char* T_Widget = "Widget";
-
 //static const GFXfont* fonts[] = {&FreeMono9pt7b, &FreeMonoBold9pt7b, &FreeSans9pt7b, &FreeSansOblique9pt7b, &FreeSerif9pt7b,
 //  &FreeSerifBold9pt7b, &FreeSerifItalic9pt7b, &Org_01, &Picopixel, &TomThumb};
 
@@ -88,16 +87,33 @@ static constexpr std::array<const GFXfont*, 8> fonts = {&FreeSerif9pt8b, &FreeSe
 // *****
 // EmbUI handlers
 
-void set_widget_cfg(Interface *interf, const JsonObject *data, const char* action){
-  // only one widget for now - clock, later need to make a selector via widget's label
-
+// start/stop widget EmbUI command
+void set_widget_onoff(Interface *interf, const JsonObject *data, const char* action){
   if (!data || !(*data).size()) return;   // call with no data
+  bool state = (*data)[action];
+  //set_wdgtena_*
+  std::string_view lbl = std::string_view (action).substr(12);
+  // start / stop widget
+  state ? informer.start(lbl.data()) : informer.stop(lbl.data());
+}
 
+// set widget's configuration from WebUI
+void set_widget_cfg(Interface *interf, const JsonObject *data, const char* action){
+  if (!data || !(*data).size()) return;   // call with no data
+  // "set_wdgt_*" - action mask
   informer.setConfig(std::string_view (action).substr(9).data(), *data);  // set_wdgt_
 }
 
+void set_alrm_item(Interface *interf, const JsonObject *data, const char* action){
+  AlarmClock* ptr = reinterpret_cast<AlarmClock*>( informer.getWidgetPtr(T_alrmclock) );
+  if (!ptr) return;
+  ptr->setAlarmItem((*data));
+}
+
 void register_widgets_handlers(){
-  embui.action.add(A_set_widget, set_widget_cfg);                         // set widget configuration
+  embui.action.add(A_set_widget_onoff, set_widget_onoff);                 // start/stop widget
+  embui.action.add(A_set_wcfg_alrm, set_alrm_item);                       // set alarm item
+  embui.action.add(A_set_widget, set_widget_cfg);                         // set widget configuration (this wildcard should be the last one)
 }
 
 
@@ -156,8 +172,9 @@ void GenericWidget::save(JsonVariantConst cfg){
   JsonVariant dst = doc[label].isNull() ? doc.createNestedObject(label) : doc[label];
   JsonObjectConst o = cfg.as<JsonObjectConst>();
 
-  for (JsonPairConst kvp : o)
-      dst[kvp.key()] = kvp.value();
+  for (JsonPairConst kvp : o){
+    dst[kvp.key()] = kvp.value();
+  }
 
   embuifs::serialize2file(doc, T_widgets_cfg);
 }
@@ -242,9 +259,6 @@ void ClockWidget::generate_cfg(JsonVariant cfg) const {
   cfg[T_y2offset] = date.y;
   cfg[T_color2] = date.color;
   cfg[T_font3] = date.font_index;
-
-  // temporary flag, until I implement it outside of wdget's configuration
-  cfg[T_enabled] = true; 
 }
 
 void ClockWidget::widgetRunner(){
@@ -375,8 +389,8 @@ void ClockWidget::_lmpChEventHandler(esp_event_base_t base, int32_t id, void* da
 
 // **** AlarmClock
 AlarmClock::AlarmClock() : GenericWidget(T_alrmclock, TASK_SECOND) {
-//  ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, ClockWidget::_event_hndlr, this, &_hdlr_lmp_change_evt));
-//  ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_STATE_EVENTS, ESP_EVENT_ANY_ID, ClockWidget::_event_hndlr, this, &_hdlr_lmp_state_evt));
+//  ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, AlarmClock::_event_hndlr, this, &_hdlr_lmp_change_evt));
+//  ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_STATE_EVENTS, ESP_EVENT_ANY_ID, AlarmClock::_event_hndlr, this, &_hdlr_lmp_state_evt));
 }
 
 void AlarmClock::load_cfg(JsonVariantConst cfg){
@@ -384,6 +398,26 @@ void AlarmClock::load_cfg(JsonVariantConst cfg){
   _cuckoo.hr = cfg[T_hr];
   _cuckoo.hhr = cfg[T_hhr];
   _cuckoo.quater = cfg[T_quarter];
+  _cuckoo.on = cfg[T_on];
+  _cuckoo.off = cfg[T_off] | 24;
+
+  // Alarm
+  JsonArrayConst al = cfg[T_event];
+  // quit if config is empty
+  if (!al.size())
+    return;
+
+  size_t cnt{0};
+  for (JsonVariantConst e : al){
+    if (cnt == _alarms.size()) return;  // array overflow
+    _alarms.at(cnt).active = e[T_on];
+    _alarms.at(cnt).type = static_cast<alarm_t>(e[T_type].as<int>());
+    _alarms.at(cnt).hr = e[T_hr];
+    _alarms.at(cnt).min = e[T_min];
+    _alarms.at(cnt).track = e[T_snd];
+    ++cnt;
+    LOGD(T_alrmclock, printf, "Alarm:%u, %u:%u, track:%d\n", _alarms.at(cnt).active, _alarms.at(cnt).hr, _alarms.at(cnt).min, _alarms.at(cnt).track );
+  }
 }
 
 void AlarmClock::generate_cfg(JsonVariant cfg) const {
@@ -391,9 +425,20 @@ void AlarmClock::generate_cfg(JsonVariant cfg) const {
   cfg[T_hr] = _cuckoo.hr;
   cfg[T_hhr] = _cuckoo.hhr;
   cfg[T_quarter] = _cuckoo.quater;
+  cfg[T_on] = _cuckoo.on;
+  cfg[T_off] = _cuckoo.off;
 
-  // temporary flag, until I implement it outside of wdget's configuration
-  cfg[T_enabled] = true; 
+  // serialize _alarm array into Jdoc array of objects
+  JsonArray arr = cfg[T_event].isNull() ? cfg.createNestedArray(T_event) : cfg[T_event];
+  arr.clear();  // clear array, I'll replace it's content
+  for (auto &e : _alarms){
+    JsonObject obj = arr.createNestedObject();
+    obj[T_on] = e.active;
+    obj[T_type] = static_cast<uint16_t>(e.type);
+    obj[T_hr] = e.hr;
+    obj[T_min] = e.min;
+    obj[T_snd] = e.track;
+  }
 }
 
 void AlarmClock::widgetRunner(){
@@ -401,9 +446,37 @@ void AlarmClock::widgetRunner(){
   std::time(&now);
   std::tm *tm = std::localtime(&now);
 
+  // skip non 00 seconds
+  if (tm->tm_sec) return;
+
+  // iterate alarms
+  for (auto &e : _alarms){
+    if (!e.active || tm->tm_hour != e.hr || tm->tm_min != e.min) continue;  // skip disabled or alarms not matching current time
+
+    // skip weekend alarms if today is not one of the weekend days
+    if ( e.type == alarm_t::weekends && (tm->tm_wday != 0 && tm->tm_wday != 6) ) continue;
+
+    // skip workday alarms if today is one of the weekend days
+    if ( e.type == alarm_t::workdays && (tm->tm_wday == 0 || tm->tm_wday == 6) ) continue;
+
+    // else it must be either an alarm_t::onetime or alarm_t::daily alarm, so I can trigger it
+    EVT_POST_DATA(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::alarmTrigger), &e.track, sizeof(int));
+
+    // if it was one-time alarm, disable it and save config
+    if (e.type == alarm_t::onetime){
+      e.active = false;
+      save();
+    }
+
+    // if one of the alarms was triggered, then I can quit here,
+    // no need to check for other alarms or call for Cuckoo clock
+    return;
+  }
+
   // cockoo clock
-  if (tm->tm_sec == 0)
+  if (tm->tm_hour >= _cuckoo.on && tm->tm_hour < _cuckoo.off)
     _cockoo_events(tm);
+
 }
 
 void AlarmClock::_cockoo_events(std::tm *tm){
@@ -411,30 +484,39 @@ void AlarmClock::_cockoo_events(std::tm *tm){
   if (_cuckoo.hr && tm->tm_min == 0){
     t = _cuckoo.hr;
     LOGV(T_clock, println, "hr cuckoo cmd");
-    EVT_POST_DATA(LAMP_SET_EVENTS, e2int(evt::lamp_t::mp3cockoo), &t, sizeof(int));
+    EVT_POST_DATA(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::cockoo), &t, sizeof(int));
     return;
   }
 
   if (_cuckoo.hhr && tm->tm_min == 30){
     t = _cuckoo.hhr;
     LOGV(T_clock, println, "hhr cuckoo cmd");
-    EVT_POST_DATA(LAMP_SET_EVENTS, e2int(evt::lamp_t::mp3cockoo), &t, sizeof(int));
+    EVT_POST_DATA(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::cockoo), &t, sizeof(int));
     return;
   }
-
   if (_cuckoo.quater && (tm->tm_min == 15 || tm->tm_min == 45 )){
     t = _cuckoo.quater;
     LOGV(T_clock, println, "quarter cuckoo cmd");
-    EVT_POST_DATA(LAMP_SET_EVENTS, e2int(evt::lamp_t::mp3cockoo), &t, sizeof(int));
-    //return;
+    EVT_POST_DATA(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::cockoo), &t, sizeof(int));
   }
 }
 
+void AlarmClock::setAlarmItem(JsonVariant cfg){
+  size_t idx = cfg[T_idx];
+  LOGD(T_alrmclock, printf, "save evetn:%u\n", idx);
+  if (idx >= _alarms.size() ) return;
+  _alarms.at(idx).active = cfg[T_on];
+  _alarms.at(idx).type = static_cast<alarm_t>(cfg[T_type].as<int>());
+  _alarms.at(idx).hr = cfg[T_hr];
+  _alarms.at(idx).min = cfg[T_min];
+  _alarms.at(idx).track = cfg[T_snd];
+  save();
+}
 
 // ****  Widget Manager methods
 
 void WidgetManager::start(const char* label){
-  LOGD(T_Widget, printf, "WM::start widget: %s\n", label ? label : "ALL");
+  LOGD(T_WdgtMGR, printf, "start: %s\n", label ? label : "ALL");
   if (label){
     // check if such widget is already spawned
     auto i = std::find_if(_widgets.cbegin(), _widgets.cend(), MatchLabel<widget_pt>(label));
@@ -442,77 +524,96 @@ void WidgetManager::start(const char* label){
       return;
   }
 
-  DynamicJsonDocument doc(WIDGETS_CFG_JSIZE);
+  esp_err_t err;
+  std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_widgets, NVS_READWRITE, &err);
 
+  if (err != ESP_OK) {
+    // if NVS handle is unavailable then just quit
+    LOGD(T_WdgtMGR, printf, "Err opening NVS handle: %s\n", esp_err_to_name(err));
+    return;
+  }
+
+  DynamicJsonDocument doc(WIDGETS_CFG_JSIZE);
   // it does not matter if config file does not exist or requested object is missing
   // we should anyway call load_cfg to let derived class implement any default values configuration
   embuifs::deserializeFile(doc, T_widgets_cfg);
-
   JsonObject obj = doc.as<JsonObject>();
 
   for (JsonPair kvp : obj){
     // check if widget is enabled at all
     JsonVariant v = kvp.value();
-    if(!v[T_enabled])
-      continue;
-
     // if only specific widget needs to be started, check if it's label match 
-    if (label && std::string_view(kvp.key().c_str()).compare(label) !=0)
-      continue;
+    if (label && std::string_view(kvp.key().c_str()).compare(label) == 0){
+      // spawn a new widget based on label and loaded configuration
+      _spawn(kvp.key().c_str(), v);
+      // save "activated" flag to eeprom
+      handle->set_item(kvp.key().c_str(), 1UL);
+      return;
+    }
 
-    // spawn a new widget based on label and loaded configuration
-    _spawn(kvp.key().c_str(), v);
+    // if no label given, then check for NVS state key and start widget if activated
+    if (!label){
+      uint32_t state = 0; // value will default to 0, if not yet set in NVS
+      handle->get_item(kvp.key().c_str(), state);
+      LOGD(T_WdgtMGR, printf, "Boot state for %s: %u\n", kvp.key().c_str(), state);
+      // if saved state is >0 then widget is active, we can restore it
+      if (state)
+        _spawn(kvp.key().c_str(), v);
+    }
   }
 }
 
 void WidgetManager::stop(const char* label){
-//  if (clock)
-//    delete clock.release();
-
+  if (!label) return;
+  // check if such widget is already spawned
+  auto i = std::find_if(_widgets.cbegin(), _widgets.cend(), MatchLabel<widget_pt>(label));
+  if ( i != _widgets.cend() ){
+    LOGI(T_WdgtMGR, printf, "deactivate %s\n", label);
+    _widgets.erase(i);
+    // remove state flag from NVS
+    std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_widgets, NVS_READWRITE);
+    handle->erase_item(label);
+  }
 }
 
-JsonVariant WidgetManager::getConfig(const char* widget_label){
-  LOGV(T_Widget, printf, "WM::getConfig for: %s\n", widget_label);
+JsonVariant WidgetManager::getConfig(const char* label){
+  LOGV(T_WdgtMGR, printf, "getConfig for: %s\n", label);
 
-  auto i = std::find_if(_widgets.begin(), _widgets.end(), MatchLabel<widget_pt>(widget_label));
+  auto i = std::find_if(_widgets.begin(), _widgets.end(), MatchLabel<widget_pt>(label));
   if ( i != _widgets.end() ) {
     return (*i)->getConfig();
   }
 
-  // widget instance is not created, try to load from config
-  return GenericWidget::load_cfg_from_NVS(widget_label);
+  // widget instance is not created, try to load from FS config
+  return GenericWidget::load_cfg_from_NVS(label);
 }
 
-void WidgetManager::setConfig(const char* widget_label, JsonVariantConst cfg){
-  LOGD(T_Widget, printf, "WM setConfig for: %s\n", widget_label);
+void WidgetManager::setConfig(const char* label, JsonVariantConst cfg){
+  LOGD(T_WdgtMGR, printf, "setConfig for: %s\n", label);
 
-  auto i = std::find_if(_widgets.begin(), _widgets.end(), MatchLabel<widget_pt>(widget_label));
+  auto i = std::find_if(_widgets.begin(), _widgets.end(), MatchLabel<widget_pt>(label));
   if ( i == _widgets.end() ) {
-    LOGV(T_Widget, println, "WM widget does not exist, spawn a new one");
+    LOGV(T_WdgtMGR, println, "widget does not exist, spawn a new one");
     // such widget does not exist currently, spawn a new one with supplied config and store cfg to NVS
-    _spawn(widget_label, cfg, true);
+    _spawn(label, cfg, true);
     return;
   }
 
   // apply and save widget's configuration
   (*i)->setConfig(cfg);
-  // if widget was disabled, then remove its instance from container
-  if (!cfg[T_enabled]){
-    LOGD(T_Widget, printf, "WM delete widget instance: %s\n", widget_label);
-    _widgets.erase(i);
-  }
 }
 
-void WidgetManager::_spawn(const char* widget_label, JsonVariantConst cfg, bool persistent){
-  LOGD(T_Widget, printf, "WM spawn: %s\n", widget_label);
+void WidgetManager::_spawn(const char* label, JsonVariantConst cfg, bool persistent){
+  LOGD(T_Widget, printf, "WM spawn: %s\n", label);
   // spawn a new widget based on label
   std::unique_ptr<GenericWidget> w;
 
-  if(std::string_view(widget_label).compare(T_clock) == 0){
+  if(std::string_view(label).compare(T_clock) == 0){
     w = std::make_unique<ClockWidget>();
-  } else if(std::string_view(widget_label).compare(T_alrmclock) == 0){
+  } else if(std::string_view(label).compare(T_alrmclock) == 0){
     w = std::make_unique<AlarmClock>();
-  }
+  } else
+    return;   // no such widget exist
 
   if (cfg.isNull()){
     // ask widget to read it's config from NVS, if any
@@ -530,6 +631,29 @@ void WidgetManager::_spawn(const char* widget_label, JsonVariantConst cfg, bool 
 
 // some other widgets to be done
 }
+
+void WidgetManager::getWidgetsState(Interface *interf) const {
+  if (!_widgets.size()) return;
+
+  interf->json_frame_value();
+  // generate values 
+  for ( auto i = _widgets.cbegin(); i != _widgets.cend(); ++i){
+    String s(A_set_widget_onoff, 12 );   // truncate '*' "set_wdgtena_*"
+    interf->value( const_cast<char*>( (s + (*i)->getLabel()).c_str() ), true);
+  }
+  // not needed
+  //interf->json_frame_flush();
+}
+
+GenericWidget* WidgetManager::getWidgetPtr(const char* label){
+  if (!_widgets.size()) return nullptr;
+  auto i = std::find_if(_widgets.begin(), _widgets.end(), MatchLabel<widget_pt>(label));
+  if ( i == _widgets.end() )
+    return nullptr;
+
+  return (*i).get();
+}
+
 
 // ****
 // Widgets Manager instance

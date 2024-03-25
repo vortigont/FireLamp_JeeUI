@@ -56,7 +56,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "widgets.hpp"
 
 // версия ресурсов в стороннем джейсон файле
-#define UIDATA_VERSION  9
+#define UIDATA_VERSION  10
 
 // placeholder for effect list rebuilder task
 Task *delayedOptionTask = nullptr;
@@ -172,18 +172,34 @@ void uidata_page_selector(Interface *interf, const JsonObject *data, const char*
     interf->json_section_uidata();
 
     switch (idx){
-        case page::widgetslist :   // писок виджетов
+        case page::widgetslist :   // список виджетов
             interf->uidata_pick( "lampui.pages.wdgtslist" );
+            interf->json_frame_flush();
+            informer.getWidgetsState(interf);
             break;
-        case page::wdgt_clock :   // писок виджетов
+        case page::wdgt_clock :   // настройки часов
             interf->uidata_pick( "lampui.pages.wdgt.ovrclock" );
             interf->json_frame_flush();
             interf->json_frame_value(informer.getConfig(T_clock), true);
             break;
-        case page::wdgt_alrmclock :   // писок виджетов
+        case page::wdgt_alrmclock :   // настройки будильника
             interf->uidata_pick( "lampui.pages.wdgt.alrmclock" );
             interf->json_frame_flush();
-            interf->json_frame_value(informer.getConfig(T_alrmclock), true);
+            // Main frame MUST be flushed before sending other ui_data sections
+            interf->json_frame_interface();
+            interf->json_section_uidata();
+            interf->uidata_pick("lampui.sections.wdgt_alarm_hdr");
+            for (int i = 0; i !=4; ++i){
+                String idx(i);
+                interf->uidata_pick( "lampui.sections.wdgt_alarm_item", NULL, idx.c_str() );
+            }
+            //interf->json_section_end();
+            //interf->json_section_uidata();
+            //    interf->uidata_pick("lampui.sections.btn_exit_to_wdgt");
+            interf->json_frame_flush();
+            interf->json_frame_jscall("alarm_items_load");
+            interf->jobject(informer.getConfig(T_alrmclock), true);     // generate config with nested alarm event objects
+            //interf->json_frame_value(informer.getConfig(T_alrmclock), true);
             break;
         default:;                   // by default do nothing
     }
@@ -592,9 +608,6 @@ void set_effects_config_param(Interface *interf, const JsonObject *data, const c
     // could be used in demo
     effect->isFavorite((*data)[TCONST_eff_fav]);
 
-    // set sound file, if any defined
-    if ( !(*data)[TCONST_soundfile].isNull() ) myLamp.effwrkr.setSoundfile((*data)[TCONST_soundfile], effect);
-
     // check if effect has been renamed
     if (!(*data)[TCONST_effname].isNull()){
         LOG(println, PSTR("Effect rename, rebuild list"));
@@ -664,10 +677,6 @@ void set_effects_config_list(Interface *interf, const JsonObject *data, const ch
 
     // обновляем поля
     interf->json_frame_value();
-
-    String tmpSoundfile;
-    myLamp.effwrkr.loadsoundfile(tmpSoundfile,confEff->eff_nb);
-    interf->value(TCONST_soundfile, tmpSoundfile, false);
 
     interf->value(TCONST_eff_sel, confEff->canBeSelected(), false);          // доступен для выбора в выпадающем списке на главной странице
     interf->value(TCONST_eff_fav, confEff->isFavorite(), false);             // доступен в демо-режиме

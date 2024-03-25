@@ -47,18 +47,16 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 
 class MP3PlayerController {
-private:
-      struct Flags {
-        uint8_t timeSoundType:3;      // вид озвучивания времени
-        uint8_t tAlarm:3;             // вид будильника
-        bool ready:1;                 // закончилась ли инициализация
-        //bool on:1;                    // включен ли...
-        bool eff_playtrack:1;         // режим проигрывания треков эффектов
-        bool eff_looptrack:1;         // зацикливать дорожку эффекта
-        bool mute:1;                  // Player's DAC disabled
-        bool isplaying:1;             // воспроизводится ли сейчас песня или эффект
-        bool looptrack:1;             // if current track is looped (cmd has been sent to player)
-      };
+
+  struct Flags {
+    bool ready:1;                 // закончилась ли инициализация
+    bool eff_playtrack:1;         // режим проигрывания треков эффектов
+    bool eff_looptrack:1;         // зацикливать дорожку эффекта
+    bool mute:1;                  // Player's DAC disabled
+    bool isplaying:1;             // воспроизводится ли сейчас песня или эффект
+    bool looptrack:1;             // if current track is looped (cmd has been sent to player)
+    bool alarm:1;                 // alarm sound is playing
+  };
 
     Flags flags{};
 
@@ -66,14 +64,6 @@ private:
     Task _tPeriodic; // периодический опрос плеера
     uint8_t _volume = DFPLAYER_DEFAULT_VOL;
     DfMp3_StatusState _state = DfMp3_StatusState_Idle;
-    //uint16_t mp3filescount = 255; // кол-во файлов в каталоге MP3
-    //uint16_t nextAdv=0; // следующее воспроизводимое сообщение (произношение минут после часов)
-
-    //String soundfile; // хранилище пути/имени
-    //void printSatusDetail();
-    //void playAdvertise(int filenb);
-    //void playFolder0(int filenb);
-    //void restartSound();
 
   esp_event_handler_instance_t _lmp_ch_instance = nullptr;
   esp_event_handler_instance_t _lmp_set_instance = nullptr;
@@ -92,6 +82,12 @@ private:
    * 
    */
   void init();
+
+  /**
+   * @brief send a delayed command to loop currently played track
+   * 
+   */
+  void _loop_current_track();
 
 public:
   MP3PlayerController(HardwareSerial& serial, DfMp3Type type = DfMp3Type::origin, uint32_t ackTimeout = DF_ACK_TIMEOUT);
@@ -129,6 +125,13 @@ public:
   void playEffect(uint32_t effnb);
 
   /**
+   * @brief play alarm melody
+   * 
+   * @param track 
+   */
+  void playAlarm(int track);
+
+  /**
    * @brief set/unset playing effect sounds
    * 
    * @param value 
@@ -145,28 +148,4 @@ public:
 
   uint8_t getVolume() const { return _volume; }
   void setVolume(uint8_t vol);
-
-/*
-    uint16_t getCurPlayingNb() {return prev_effnb;} // вернуть предыдущий для смещения
-    void setupplayer(uint16_t effnb, const String &_soundfile) {soundfile = _soundfile; cur_effnb=effnb;};
-    bool isAlarm() {return alarm;}
-    bool isOn() {return on && ready;}
-    bool isMP3Mode() {return mp3mode;}
-    void setIsOn(bool val, bool forcePlay=true);
-
-
-    void playName(uint16_t effnb);
-    void setTempVolume(uint8_t vol);
-    void setMP3count(uint16_t cnt) {mp3filescount = cnt;} // кол-во файлов в папке MP3
-    uint16_t getMP3count() {return mp3filescount;}
-    void setEqType(uint8_t val) { EQ(val); }
-    void setPlayMP3(bool flag) {mp3mode = flag;}
-    void setPlayEffect(bool flag) {effectmode = flag;}
-    void setAlarm(bool flag) {alarm = flag; stop(); isplaying = false;}
-    void StartAlarmSoundAtVol(ALARM_SOUND_TYPE val, uint8_t vol);
-    void ReStartAlarmSound(ALARM_SOUND_TYPE val);
-    void RestoreVolume() { setVolume(cur_volume); }
-    void setCurEffect(uint16_t effnb) { prev_effnb=cur_effnb; cur_effnb = effnb%256; }
-*/
-    //void handle();
 };

@@ -91,16 +91,22 @@ public:
     virtual void widgetRunner() = 0;
 
     /**
-     * @brief load widget's config from persistent storage and calls start()
+     * @brief load widget config using widget name as a config selector key
      * 
      */
-    void load(){ load(load_cfg_from_NVS(label)); };
+    static JsonVariant load_cfg_from_NVS(const char* lbl);
 
     /**
      * @brief load widget's config from supplied config and calls start()
      * 
      */
     void load(JsonVariantConst cfg);
+
+    /**
+     * @brief load widget's config from persistent storage and calls start()
+     * 
+     */
+    void load(){ load(load_cfg_from_NVS(label)); };
 
     /**
      * @brief save current widget's configuration to NVS
@@ -141,12 +147,6 @@ public:
      * @return const char* 
      */
     const char* getLabel() const { return label; }
-
-    /**
-     * @brief load widget config using widget name as a config selector key
-     * 
-     */
-    static JsonVariant load_cfg_from_NVS(const char* lbl);
 
 };
 
@@ -197,15 +197,9 @@ struct Date {
     uint16_t maxW{0};   //, maxH{0};
 };
 
-// кукушка
-struct Cuckoo {
-    uint8_t hr{0}, hhr{0}, quater{0};
-};
-
     // elements structs
     Clock clk{};
     Date date{};
-    Cuckoo _cuckoo{};
     // last timestamp
     std::time_t last_date;
     // flag that indicates screen needs a refresh
@@ -262,10 +256,11 @@ class WidgetManager {
     void _spawn(const char* widget_label, JsonVariantConst cfg, bool persistent = false);
 
 public:
+    //WidgetManager();
     //~WidgetManager(){};
 
     void start(const char* label = NULL);
-    void stop(const char* label = NULL);
+    void stop(const char* label);
 
     void register_handlers();
     void unregister_handlers();
@@ -273,6 +268,21 @@ public:
     // can't be const due to EmbUI's value method, TODO: fix it
     JsonVariant getConfig(const char* widget_label);
     void setConfig(const char* widget_label, JsonVariantConst cfg);
+
+    // generate values representing state of the active widgets
+    void getWidgetsState(Interface *interf) const;
+
+    /**
+     * @brief Get pointer to the instance of an active Widget by it's label
+     * returns nullptr if requested widget is not currently runnning
+     * @note a care should be taken when widget pointer is used outside of manager object,
+     * currently there is no exclusive locking performed and widget instance could deleted any time via other call
+     * 
+     * 
+     * @param[in] label 
+     * @return GenericWidget* 
+     */
+    GenericWidget* getWidgetPtr(const char* label);
 };
 
 
@@ -289,12 +299,40 @@ public:
 };
 
 class AlarmClock : public GenericWidget {
-// кукушка
-struct Cuckoo {
-    uint8_t hr{0}, hhr{0}, quater{0};
-};
+    // типы будильника
+    enum class alarm_t {
+        onetime = 0,
+        daily,
+        workdays,
+        weekends
+    };
 
+    // параметры будильника
+    struct AlarmCfg {
+        bool active;
+        alarm_t type;
+        // trigger time
+        uint8_t hr{0}, min{0};
+        // track name to play for alarm
+        int track;
+    };
+
+    // кукушка
+    struct Cuckoo {
+        uint8_t hr{0}, hhr{0}, quater{0};
+        // inactive hours
+        uint8_t on, off;
+    };
+
+
+    // a set of alarms
+    std::array<AlarmCfg, 4> _alarms{};
+
+    // Cuckoo configuration
     Cuckoo _cuckoo{};
+
+    // cockoo/talking clock
+    void _cockoo_events(std::tm *tm);
 
     // pack class configuration into JsonObject
     void generate_cfg(JsonVariant cfg) const override;
@@ -302,13 +340,12 @@ struct Cuckoo {
     // load class configuration into JsonObject
     void load_cfg(JsonVariantConst cfg) override;
 
-    // cockoo/talking clock
-    void _cockoo_events(std::tm *tm);
-
 public:
     AlarmClock();
 
     void widgetRunner() override;
+
+    void setAlarmItem(JsonVariant cfg);
 
     //void start() override;
     //void stop() override;
@@ -320,6 +357,5 @@ public:
  */
 void register_widgets_handlers();
 
-// EmbUI Page with a list of available Widgets that could be enabled and configured
 
 extern WidgetManager informer;

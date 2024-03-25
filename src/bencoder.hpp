@@ -67,6 +67,8 @@ class ButtonEventHandler {
 
     // lamp power state
     bool _lamp_pwr = false;
+    // flag tracks when Alarm event triggers, in this case any button event will generate Alarm cancelling event
+    bool _alarm = false;
     // incr/decr multiplicator
     int _brightness_direction = 1;
 
