@@ -415,8 +415,8 @@ void AlarmClock::load_cfg(JsonVariantConst cfg){
     _alarms.at(cnt).hr = e[T_hr];
     _alarms.at(cnt).min = e[T_min];
     _alarms.at(cnt).track = e[T_snd];
+    LOGD(T_alrmclock, printf, "#%u active:%u, %u:%u, track:%d\n", cnt, _alarms.at(cnt).active, _alarms.at(cnt).hr, _alarms.at(cnt).min, _alarms.at(cnt).track );
     ++cnt;
-    LOGD(T_alrmclock, printf, "Alarm:%u, %u:%u, track:%d\n", _alarms.at(cnt).active, _alarms.at(cnt).hr, _alarms.at(cnt).min, _alarms.at(cnt).track );
   }
 }
 
