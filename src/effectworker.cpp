@@ -134,10 +134,6 @@ bool Effcfg::loadeffconfig(uint16_t nb, const char *folder){
 
   version = doc["ver"];
   effectName = doc["name"] ? doc["name"].as<const char*>() : T_EFFNAMEID[(uint8_t)nb];
-  if (doc[c_snd])
-    soundfile = doc[c_snd].as<const char*>();
-  else
-    soundfile.clear();
 
   //brt = doc["brt"];
   curve = doc[A_dev_lcurve] ? static_cast<luma::curve>(doc[A_dev_lcurve].as<int>()) : luma::curve::cie1931;
@@ -203,7 +199,6 @@ String Effcfg::getSerializedEffConfig(uint8_t replaceBright) const {
   doc["ver"] = version;
   //if (brt) doc["brt"] = brt;
   if (curve != luma::curve::cie1931) doc[A_dev_lcurve] = e2int(curve);
-  doc["snd"] = soundfile;
   JsonArray arr = doc.createNestedArray("ctrls");
   for (auto c = controls.cbegin(); c != controls.cend(); ++c){
     auto ctrl = c->get();
@@ -599,26 +594,6 @@ void EffectWorker::loadeffname(String& _effectName, const uint16_t nb, const cha
   }
 }
 
-/**
-* вычитать только имя\путь звука из конфиг-файла и записать в предоставленную строку
-* в случае отсутствия/повреждения возвращает пустую строку
-* @param effectName - String куда записать результат
-* @param nb  - айди эффекта
-* @param folder - какой-то префикс для каталога
-*/
-void EffectWorker::loadsoundfile(String& _soundfile, const uint16_t nb, const char *folder)
-{
-  String filename = fshlpr::getEffectCfgPath(nb,folder);
-  DynamicJsonDocument doc(2048);
-  bool ok = embuifs::deserializeFile(doc, filename.c_str());
-  LOG(printf_P,PSTR("snd: %s\n"),doc["snd"].as<String>().c_str());
-  if (ok && doc["snd"]){
-    _soundfile = doc["snd"].as<String>(); // перенакрываем именем из конфига, если есть
-  } else if(!ok) {
-    _soundfile.clear();
-  }
-}
-
 void EffectWorker::removeLists(){
   LittleFS.remove(TCONST_eff_list_json);
   LittleFS.remove(TCONST_eff_fulllist_json);
@@ -874,19 +849,6 @@ void EffectWorker::setEffectName(const String &name, EffectListElem*to){
   // load specific configuration
   Effcfg cfg(to->eff_nb);
   cfg.effectName = name;
-  cfg.autosave(true);
-}
-
-void EffectWorker::setSoundfile(const String &_soundfile, EffectListElem*to){
-  if(to->eff_nb==curEff.num){
-    curEff.soundfile=_soundfile;
-    curEff.autosave();
-    return;
-  }
-
-  // load specific configuration
-  Effcfg cfg(to->eff_nb);
-  cfg.soundfile=_soundfile;
   cfg.autosave(true);
 }
 

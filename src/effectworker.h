@@ -216,7 +216,6 @@ public:
     //uint8_t brt{0};         // effect's private brightness
     luma::curve curve{luma::curve::cie1931};
     String effectName;      // имя эффекта (предварительно заданное или из конфига)
-    String soundfile;       // имя/путь к звуковому файлу (DF Player Mini)
     // список контроллов эффекта
     LList<std::shared_ptr<UIControl>> controls;
 
@@ -580,11 +579,6 @@ public:
     // если текущий, то просто пишем имя, если другой - создаем экземпляр, пишем, удаляем
     void setEffectName(const String &name, EffectListElem*to);
 
-    const String &getSoundfile() const {return curEff.soundfile;}
-
-    // если текущий, то просто пишем имя звукового файла, если другой - создаем экземпляр, пишем, удаляем
-    void setSoundfile(const String &_soundfile, EffectListElem*to);
-
     /**
     * вычитать только имя эффекта из конфиг-файла и записать в предоставленную строку
     * в случае отсутствия/повреждения взять имя эффекта из флеш-таблицы, если есть
@@ -594,15 +588,6 @@ public:
     * @param folder - какой-то префикс для каталога
     */
     void loadeffname(String& effectName, const uint16_t nb, const char *folder=NULL);
-
-    /**
-    * вычитать только имя\путь звука из конфиг-файла и записать в предоставленную строку
-    * в случае отсутствия/повреждения возвращает пустую строку
-    * @param effectName - String куда записать результат
-    * @param nb  - айди эффекта
-    * @param folder - какой-то префикс для каталога
-    */
-    void loadsoundfile(String& effectName, const uint16_t nb, const char *folder=NULL);
 
     // следующий эффект, кроме canBeSelected==false
     uint16_t getNext();
