@@ -8004,7 +8004,7 @@ void EffectPuzzles::load() {
 
 void EffectPuzzles::regen() {
   pcols = fb->w() / psizeX + !!(fb->w() % psizeX);
-  prows = fb->h() / psizeY + !!(fb->w() % psizeY);
+  prows = fb->h() / psizeY + !!(fb->h() % psizeY);
 
   step = 0;
   puzzle = std::vector< std::vector<uint8_t> >(pcols, std::vector<uint8_t>(prows));
@@ -8043,7 +8043,7 @@ void EffectPuzzles::draw_squareF(float x1, float y1, float x2, float y2, byte co
 bool EffectPuzzles::run() { 
   for (byte x = 0; x < pcols; x++) {
     for (byte y = 0; y < prows; y++) {
-      draw_square(x * psizeX, y * psizeY, (x + 1) * psizeX, (y + 1) * psizeY, puzzle[x][y]);
+      draw_square(x * psizeX, y * psizeY, (x + 1) * psizeX, (y + 1) * psizeY, puzzle.at(x).at(y));
     }
   }
   //LOG(printf_P, PSTR("Step %d\n"), step);
