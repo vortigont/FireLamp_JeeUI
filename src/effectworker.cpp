@@ -104,7 +104,7 @@ Effcfg::~Effcfg(){
 }
 
 bool Effcfg::_eff_cfg_deserialize(DynamicJsonDocument &doc, const char *folder){
-  LOG(printf_P, PSTR("_eff_cfg_deserialize() eff:%u\n"), num);
+  LOGD(T_EffCfg, printf, "_eff_cfg_deserialize() eff:%u\n", num);
   String filename(fshlpr::getEffectCfgPath(num,folder));
 
   bool retry = true;
@@ -113,7 +113,7 @@ bool Effcfg::_eff_cfg_deserialize(DynamicJsonDocument &doc, const char *folder){
     if ( num>255 || geteffcodeversion((uint8_t)num) == doc["ver"] ){ // только для базовых эффектов эта проверка
       return true;   // we are OK
     }
-    LOG(printf_P, PSTR("Wrong version in effect cfg file, reset cfg to default (%d vs %d)\n"), doc["ver"].as<uint8_t>(), geteffcodeversion((uint8_t)num));
+    LOGW(T_EffCfg, printf, "Wrong version in effect cfg file, reset to default (%d vs %d)\n", doc["ver"].as<uint8_t>(), geteffcodeversion((uint8_t)num));
   }
   // something is wrong with eff config file, recreate it to default
   create_eff_default_cfg_file(num, filename);   // пробуем перегенерировать поврежденный конфиг (todo: remove it and provide default from code)
@@ -123,7 +123,7 @@ bool Effcfg::_eff_cfg_deserialize(DynamicJsonDocument &doc, const char *folder){
     goto READALLAGAIN;
   }
 
-  LOG(printf_P, PSTR("Failed to recreate eff config file: %s\n"), filename.c_str());
+  LOGE(T_EffCfg, printf, "Failed to recreate eff config file: %s\n", filename.c_str());
   return false;
 }
 
@@ -149,7 +149,7 @@ bool Effcfg::loadeffconfig(uint16_t nb, const char *folder){
 void Effcfg::create_eff_default_cfg_file(uint16_t nb, String &filename){
 
   const char* efname = T_EFFNAMEID[(uint8_t)nb]; // выдергиваем имя эффекта из таблицы
-  LOG(printf_P,PSTR("Make default config: %d %s\n"), nb, efname);
+  LOGD(T_EffCfg, printf, "Make default config: %d %s\n", nb, efname);
 
   String  cfg(T_EFFUICFG[(uint8_t)nb]);    // извлекаем конфиг для UI-эффекта по-умолчанию из флеш-таблицы
   cfg.replace("@name@", efname);
@@ -166,7 +166,7 @@ void Effcfg::create_eff_default_cfg_file(uint16_t nb, String &filename){
 void Effcfg::_savecfg(char *folder){
   File configFile;
   String filename = fshlpr::getEffectCfgPath(num, folder);
-  LOG(printf, "Writing eff #%d cfg: %s\n", num, filename.c_str());
+  LOGD(T_EffCfg, printf, "Writing eff #%d cfg: %s\n", num, filename.c_str());
   configFile = LittleFS.open(filename, "w");
   configFile.print(getSerializedEffConfig());
   configFile.close();
@@ -186,7 +186,7 @@ void Effcfg::autosave(bool force) {
     tConfigSave = new Task(CFG_AUTOSAVE_TIMEOUT, TASK_ONCE, [this](){
       _savecfg();
       //fsinforenew();
-      LOG(printf_P,PSTR("Autosave effect config: %d\n"), num);
+      LOGD(T_EffCfg, printf, "Autosave effect config: %u\n", num);
     }, &ts, false, nullptr, [this](){tConfigSave=nullptr;}, true);
     tConfigSave->enableDelayed();
   } else {
@@ -245,16 +245,16 @@ EffectWorker::EffectWorker(LAMPSTATE *_lampstate) : lampstate(_lampstate) {
  * Создаем экземпляр класса калькулятора в зависимости от требуемого эффекта
  */
 void EffectWorker::workerset(uint16_t effect){
-  LOG(print, "Wrkr set:"); LOG(println, effect);
+  LOGI(T_EffWrkr, printf, "workerset:%u\n", effect);
 
   LedFB<CRGB> *canvas = display.getCanvas().get();
-  if (!canvas) { LOG(println, "E: no canvas buffer!"); return; }
+  if (!canvas) { LOGW(T_EffWrkr, println, "no canvas buffer!"); return; }
 
   // load effect configuration from a saved file
   curEff.loadeffconfig(effect);
 
   // не создаем экземпляр калькулятора если воркер неактивен (лампа выключена и т.п.)
-  if (!_status) { LOG(println, "W: worker is inactive"); return; }
+  if (!_status) { LOGI(T_EffWrkr, println, "worker is inactive"); return; }
 
   // grab mutex
   std::unique_lock<std::mutex> lock(_mtx);
@@ -1214,7 +1214,7 @@ String EffectCalc::setDynCtrl(UIControl*_val){
     return String();
   String ret_val = _val->getVal();
   //LOG(printf_P, PSTR("ctrlVal=%s\n"), ret_val.c_str());
-  if (usepalettes && _val->getName().startsWith(TINTF_084)==1){ // Начинается с Палитра
+  if ( usepalettes && starts_with(_val->getName().c_str(), TINTF_084) ){ // Начинается с Палитра
     if(isRandDemo()){
       paletteIdx = random(_val->getMin().toInt(),_val->getMax().toInt()+1);
     } else
@@ -1223,7 +1223,8 @@ String EffectCalc::setDynCtrl(UIControl*_val){
     isCtrlPallete = true;
   }
 
-  if(_val->getId()==7 && _val->getName().startsWith(TINTF_020)==1){ // Начинается с микрофон и имеет 7 id
+  // имеет 7 id и начинается со строки "микрофон" с локализацией
+  if( _val->getId()==7 && starts_with(_val->getName().c_str(), TINTF_020) ){
     isMicActive = (ret_val.toInt() && isMicOnState()) ? true : false;
 
     if(_lampstate)

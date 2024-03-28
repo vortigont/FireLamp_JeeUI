@@ -2,6 +2,14 @@
 
 /** набор служебных текстовых констант (не для локализации)
  */
+
+// LOG tags
+static constexpr const char* T_Effect = "Effect";
+static constexpr const char* T_EffCfg = "EffCfg";
+static constexpr const char* T_EffWrkr = "EffWrkr";
+static constexpr const char* T_Widget = "Widget";
+static constexpr const char* T_WdgtMGR = "WdgtMGR";
+
 static constexpr const char* T_drawing = "drawing";
 static constexpr const char* T_effect_dynCtrl = "eff_dynCtrl";
 static constexpr const char* T_gpio = "gpio";                                   // gpio key for display configuration
@@ -86,8 +94,6 @@ static constexpr const char* T_mp3mute = "mp3mute";
 static constexpr const char* T_widgets_cfg = "/widgets.json";
 static constexpr const char* T_clock = "clock";                     // LABEL Clock widget
 static constexpr const char* T_alrmclock = "alrmclock";             // LABEL Alarm Clock / Cockoo
-static constexpr const char* T_Widget = "Widget";                   // log tag
-static constexpr const char* T_WdgtMGR = "WdgtMGR";                 // log tag
 static constexpr const char* T_widgets = "widgets";                 // NVS namespace
 
 static constexpr const char* T_color1 = "color1";
