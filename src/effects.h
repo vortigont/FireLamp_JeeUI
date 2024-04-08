@@ -54,25 +54,6 @@ public:
     bool run() override { fb->clear(); return false; };
 };
 
-//-------------- Эффект "Часы"
-class EffectTime : public EffectCalc {
-private:
-    bool timeShiftDir; // направление сдвига
-    float curTimePos; // текущая позиция вывода
-    float color_idx; // индекс цвета
-    CRGB hColor[1]; // цвет часов и минут
-    CRGB mColor[1]; // цвет часов и минут
-    uint32_t lastrun=0;     /**< счетчик времени для эффектов с "задержкой" */
-    bool isMinute=false;
-
-    bool timePrintRoutine();
-    bool palleteTest();
-    void load() override;
-public:
-    EffectTime(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
-    bool run() override;
-};
-
 /*
  ***** METABALLS / МЕТАСФЕРЫ *****
 Metaballs proof of concept by Stefan Petrick 

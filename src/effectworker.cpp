@@ -819,19 +819,6 @@ void EffectWorker::switchEffect(uint16_t effnb, bool twostage){
   workerset(effnb);
 }
 
-void EffectWorker::fsinforenew(){
-#ifdef ESP8266
-    FSInfo fs_info;
-    LittleFS.info(fs_info);
-    if(lampstate)
-    lampstate->fsfreespace = fs_info.totalBytes-fs_info.usedBytes;
-#endif
-#ifdef ESP32
-    if(lampstate)
-    lampstate->fsfreespace = LittleFS.totalBytes() - LittleFS.usedBytes();
-#endif
-}
-
 void EffectWorker::setEffectName(const String &name, EffectListElem*to){
   if (name == T_EFFNAMEID[(uint8_t)to->eff_nb]){
     to->flags.renamed = false;

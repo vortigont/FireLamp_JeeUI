@@ -56,9 +56,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 typedef enum _LAMPMODE {
   MODE_NORMAL = 0,
   MODE_DEMO,
-  MODE_RGBLAMP,
-  MODE_ALARMCLOCK,
-  MODE_OTA
 } LAMPMODE;
 
 // смена эффекта
@@ -74,7 +71,6 @@ enum class effswitch_t : uint8_t {
 typedef enum _SCHEDULER {
     T_DISABLE = 0,    // Выкл
     T_ENABLE,         // Вкл
-    T_FRAME_ENABLE,   // Вкл
     T_RESET,          // сброс
 } SCHEDULER;
 
@@ -88,71 +84,51 @@ enum class fade_t {
     preset
 };
 
-/*
- минимальная задержка между обсчетом и выводом кадра, мс
- нужна для обработки других задач в loop() между длинными вызовами
- калькулятора эффектов и его отрисовки. С другой стороны это время будет
- потеряно в любом случае, даже если остальные таски будут обработаны быстрее
- пока оставим тут, это крутилка не для общего конфига
- */
-#define LED_SHOW_DELAY 1
 
-#pragma pack(push,4)
-typedef union _LAMPFLAGS {
-struct {
+struct LampFlags {
     // ВНИМАНИЕ: порядок следования не менять, флаги не исключать, переводить в reserved!!! используется как битовый массив в конфиге!
     bool restoreState:1;    // restore lamp on/off/demo state on restart
-    bool ONflag:1;          // флаг включения/выключения
-    bool isFaderON:1;       // признак того, что фейдер используется для эффектов
-    bool reserved3:1;
-    bool reserved4:1;
-    bool limitAlarmVolume:1; // ограничивать громкость будильника
-    bool isEventsHandled:1; // глобальный признак обработки событий
-    bool isEffClearing:1;   // признак очистки эффектов при переходе с одного на другой
-    bool isDebug:1;         // признак режима отладки
-    bool dRand:1;           // случайный порядок демо
-    bool showName:1;        // отображение имени в демо
-    bool isMicOn:1;         // глобальное включение/выключение микрофона
+    bool pwrState:1;        // флаг включения/выключения
+    bool fadeEffects:1;     // признак использования затухания при смене эффектов/яркости
+    bool demoMode:1;
+    bool demoRandom:1;
+    bool reserved5:1;
+    bool reserved6:1;
+    bool wipeOnEffChange:1; // признак очистки экрана при переходе с одного эффекта на другой
+    bool debug:1;           // признак режима отладки
+    bool reserved9:1;       // случайный порядок демо
+    bool reserved10:1;      // отображение имени в демо
+    bool isMicOn:1;         // включение/выключение микрофона
     bool effHasMic:1;       // микрофон для эффекта
-    bool mp3mute:1;         // включен ли плеер?
-    bool isBtn:1;           // включена ли кнопка?
-    bool reserved15:1;      // ex. воспроизводить имя?
+    bool mp3sounds:1;       // enable/disable effect's track playback
+    bool button:1;          // enable/dsiable button
+    bool reserved15:1;      //
     //--------16 штук граница-------------------
     bool reserved16:1;      // ex. воспроизводить эффект?
     bool reserved17:1;      // ex. режим mp3-плеера
-    uint8_t alarmSound:3;   // звук будильника ALARM_SOUND_TYPE
-    uint8_t playTime:3;     // воспроизводить время?
-    uint8_t GaugeType:2;    // тип индикатора
-    uint8_t MP3eq:3;        // вид эквалайзера
 };
-uint32_t lampflags; // набор битов для конфига
-_LAMPFLAGS(){
-    restoreState = false;
-    ONflag = false;
-    isDebug = false;
-    isFaderON = true;
-    isEffClearing = false;
-    isEventsHandled = false;
-    isMicOn = false;
-    effHasMic = false;
-    mp3mute = false;
-    dRand = false;
-    isBtn = true;
-    showName = false;
-    playTime = 0; //TIME_SOUND_TYPE::TS_NONE; // воспроизводить время?
-    alarmSound = 0; //ALARM_SOUND_TYPE::AT_NONE;
-    limitAlarmVolume = false;
-    GaugeType = GAUGETYPE::GT_VERT;
-}
-} LAMPFLAGS;
-#pragma pack(pop)
 
+union LampFlagsPack{
+    uint32_t pack;          // vars packed into unsigned
+    LampFlags flag;
+    LampFlagsPack(){
+        pack = 24580;       // set fade, mp3, button
+    }
+};
+
+
+
+/**
+ * @brief Lamp class
+ * 
+ */
 class Lamp {
     friend class LEDFader;
 private:
     std::shared_ptr<LedFB<CRGB> > _overlay;     // буфер для оверлея
 
-    LAMPFLAGS flags;
+    // a set of lamp options (flags)
+    LampFlagsPack opts;
     LAMPSTATE lampState;                // текущее состояние лампы, которое передается эффектам
 
     uint8_t _brightnessScale = DEF_BRT_SCALE;
@@ -217,10 +193,8 @@ public:
     LAMPSTATE &getLampState() {return lampState;}
     LList<std::shared_ptr<UIControl>>&getEffControls() { return effwrkr.getControls(); }
 
-    //void setMicCalibration() {lampState.isCalibrationRequest = true;}
-    //bool isMicCalibration() const {return lampState.isCalibrationRequest;}
     void setMicOnOff(bool val);
-    bool isMicOnOff() const {return flags.isMicOn;}
+    bool isMicOnOff() const {return opts.flag.isMicOn;}
 
     void setSpeedFactor(float val) {
         lampState.speedfactor = val;
@@ -274,8 +248,6 @@ public:
      */
     uint8_t getBrightnessScale() const { return _brightnessScale; };
 
-    bool isAlarm() {return mode == LAMPMODE::MODE_ALARMCLOCK;}
-    bool isWarning() {return lampState.isWarning;}
 
     // return MP3 speaker Mute state
     bool isMP3mute() const { return mp3mute; }
@@ -307,35 +279,30 @@ public:
     void sendString(const char* text, CRGB letterColor, bool forcePrint = true, bool clearQueue = false);
     void sendStringToLamp(const char* text = nullptr, CRGB letterColor = CRGB::Black, bool forcePrint = false, bool clearQueue = false, const int8_t textOffset = -128, const int16_t fixedPos = 0);
     void sendStringToLampDirect(const char* text = nullptr,  CRGB letterColor = CRGB::Black, bool forcePrint = false, bool clearQueue = false, const int8_t textOffset = -128, const int16_t fixedPos = 0);
-    bool isPrintingNow() { return lampState.isStringPrinting; }
 
     void handle();          // главная функция обработки эффектов
 
     // === flag get/set methods ===
 
     // возвращает упакованные в целое флаги лампы
-    uint32_t getLampFlags() {return flags.lampflags;}
+    uint32_t getLampFlags() {return opts.pack; }
     // возвращает структуру флагов лампы
-    const LAMPFLAGS &getLampFlagsStuct() const {return flags;}
+    const LampFlags &getLampFlagsStuct() const {return opts.flag; }
     // saves flags to EmbUI config
     void save_flags();
-    void setFaderFlag(bool flag) {flags.isFaderON = flag; save_flags(); }
-    bool getFaderFlag() {return flags.isFaderON; save_flags(); }
-    void setClearingFlag(bool flag) {flags.isEffClearing = flag; save_flags(); }
-    bool getClearingFlag() {return flags.isEffClearing; }
+    void setFaderFlag(bool flag) {opts.flag.fadeEffects = flag; save_flags(); }
+    bool getFaderFlag() {return opts.flag.fadeEffects; save_flags(); }
+    void setClearingFlag(bool flag) {opts.flag.wipeOnEffChange = flag; save_flags(); }
+    bool getClearingFlag() {return opts.flag.wipeOnEffChange; }
 
 
-    void disableEffectsUntilText() {lampState.isEffectsDisabledUntilText = true; display.clear(); save_flags(); }
-    void setOffAfterText() {lampState.isOffAfterText = true; save_flags(); }
-    void setIsEventsHandled(bool flag) {flags.isEventsHandled = flag; save_flags(); }
-    bool IsEventsHandled() {return flags.isEventsHandled;} // LOG(printf_P,PSTR("flags.isEventsHandled=%d\n"), flags.isEventsHandled);
-    bool isLampOn() {return flags.ONflag;}
-    bool isDebugOn() {return flags.isDebug;}
+    bool isLampOn() {return opts.flag.pwrState;}
+    bool isDebugOn() {return opts.flag.debug;}
     bool isDebug() {return lampState.isDebug;}
-    void setDebug(bool flag) {flags.isDebug=flag; lampState.isDebug=flag; save_flags(); }
+    void setDebug(bool flag) {opts.flag.debug = flag; lampState.isDebug=flag; save_flags(); }
 
     // set/clear "restore on/off/demo" state on boot
-    void setRestoreState(bool flag){ flags.restoreState = flag; save_flags(); }
+    void setRestoreState(bool flag){ opts.flag.restoreState = flag; save_flags(); }
 
 
     // Drawing methods
@@ -369,20 +336,14 @@ public:
      */
     void showTimeOnScreen(const char *value, bool force=false);
 
-    bool getGaugeType() {return flags.GaugeType;}
-    void setGaugeType(GAUGETYPE val) {flags.GaugeType = val;}
-    void startRGB(CRGB &val);
-    void stopRGB();
-    bool isRGB() {return mode == LAMPMODE::MODE_RGBLAMP;}
     void startDemoMode(uint8_t tmout = DEFAULT_DEMO_TIMER); // дефолтное значение, настраивается из UI
     void startNormalMode(bool forceOff=false);
     void restoreStored();
     void storeEffect();
     void setBFade(uint8_t val){ BFade = val; }
     uint8_t getBFade(){ return BFade; }
-    void setEffHasMic(bool flag) {flags.effHasMic = flag;}
-    void setDRand(bool flag) {flags.dRand = flag; lampState.isRandDemo = (flag && mode==LAMPMODE::MODE_DEMO); }
-    void setShowName(bool flag) {flags.showName = flag;}
+    void setEffHasMic(bool flag) {opts.flag.effHasMic = flag;}
+    void setDRand(bool flag) {opts.flag.demoRandom = flag; lampState.isRandDemo = (flag && mode==LAMPMODE::MODE_DEMO); }
 
 
     // ---------- служебные функции -------------
