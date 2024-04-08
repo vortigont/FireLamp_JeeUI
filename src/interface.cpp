@@ -58,6 +58,10 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 // версия ресурсов в стороннем джейсон файле
 #define UIDATA_VERSION  10
 
+#define	DEMO_MIN_PERIOD		10
+#define	DEMO_MAX_PERIOD		900
+#define	DEMO_PERIOD_STEP	10
+
 // placeholder for effect list rebuilder task
 Task *delayedOptionTask = nullptr;
 // эффект, который сейчас конфигурируется на странице "Управление списком эффектов"
@@ -541,17 +545,6 @@ void set_effects_config_param(Interface *interf, const JsonObject *data, const c
 
     SORT_TYPE st = (*data)[V_effSort].as<SORT_TYPE>();
 
-    if(myLamp.getLampState().isInitCompleted){
-        bool isRecreate = false;
-        isRecreate = (myLamp.effwrkr.getEffSortType()!=st) || isRecreate;
-
-        if(isRecreate){
-            myLamp.effwrkr.setEffSortType(st);
-            LOG(println, PSTR("Sort type changed, rebuilding eff list"));
-            rebuild_effect_list_files(lstfile_t::all);
-        }
-    }
-
     embui.var(V_effSort, (*data)[V_effSort]); 
     myLamp.effwrkr.setEffSortType(st);
     myLamp.save_flags();
@@ -725,7 +718,7 @@ void block_effect_controls(Interface *interf, const JsonObject *data, const char
             default: break;
         }
 
-        bool isRandDemo = (myLamp.getLampFlagsStuct().dRand && myLamp.getMode()==LAMPMODE::MODE_DEMO);
+        bool isRandDemo = (myLamp.getLampFlagsStuct().demoRandom && myLamp.getMode()==LAMPMODE::MODE_DEMO);
         String ctrlId(T_effect_dynCtrl);
         ctrlId += ctrl->getId();
         String ctrlName = ctrl->getId() ? ctrl->getName() : TINTF_00D;
@@ -835,7 +828,6 @@ void ui_block_mainpage_switches(Interface *interf, const JsonObject *data, const
     interf->json_section_line();
     interf->checkbox(A_dev_pwrswitch, myLamp.isLampOn(), TINTF_00E, true);
     interf->checkbox(K_demo, myLamp.getMode() == LAMPMODE::MODE_DEMO, TINTF_00F, true);
-    interf->checkbox(TCONST_Events, myLamp.IsEventsHandled(), TINTF_011, true);
     interf->checkbox(TCONST_drawbuff, myLamp.isDrawOn(), TINTF_0CE, true);
     interf->checkbox(TCONST_Mic, myLamp.isMicOnOff(), TINTF_012, true);
     interf->checkbox(TCONST_AUX, embui.paramVariant(TCONST_AUX), TCONST_AUX, true);
@@ -930,10 +922,7 @@ void set_demoflag(Interface *interf, const JsonObject *data, const char* action)
         embui.var_dropnulls(K_demo, (*data)[K_demo].as<bool>());
 
     switch (myLamp.getMode()) {
-        case LAMPMODE::MODE_OTA:
-        case LAMPMODE::MODE_ALARMCLOCK:
         case LAMPMODE::MODE_NORMAL:
-        case LAMPMODE::MODE_RGBLAMP:
             if(newdemo)
                 myLamp.startDemoMode(embui.paramVariant(TCONST_DTimer) | DEFAULT_DEMO_TIMER);
             break;
@@ -943,11 +932,9 @@ void set_demoflag(Interface *interf, const JsonObject *data, const char* action)
             break;
         default:;
     }
-    myLamp.setDRand(myLamp.getLampFlagsStuct().dRand);
-#ifdef EMBUI_USE_MQTT
-    //embui.publish(String(embui.mqttPrefix()) + TCONST_mode, String(myLamp.getMode()), true);
+    myLamp.setDRand(myLamp.getLampFlagsStuct().demoRandom);
+
     embui.publish((String(MQT_lamp) + K_demo).c_str(), myLamp.getMode()==LAMPMODE::MODE_DEMO? 1:0, true);
-#endif
 }
 
 void set_auxflag(Interface *interf, const JsonObject *data, const char* action){
@@ -1042,33 +1029,20 @@ void page_settings_other(Interface *interf, const JsonObject *data, const char* 
     interf->spacer(TINTF_030);
 
     interf->checkbox(TCONST_f_restore_state, myLamp.getLampFlagsStuct().restoreState, TINTF_f_restore_state, false);
-    interf->checkbox(TCONST_isFaderON, myLamp.getLampFlagsStuct().isFaderON , TINTF_03D, false);
-    interf->checkbox(TCONST_isClearing, myLamp.getLampFlagsStuct().isEffClearing , TINTF_083, false);
+    interf->checkbox(TCONST_isFaderON, myLamp.getLampFlagsStuct().fadeEffects , TINTF_03D, false);
+    interf->checkbox(TCONST_isClearing, myLamp.getLampFlagsStuct().wipeOnEffChange , TINTF_083, false);
     interf->json_section_line();
-        interf->checkbox(TCONST_DRand, myLamp.getLampFlagsStuct().dRand , TINTF_03E, false);
-        interf->checkbox(TCONST_showName, myLamp.getLampFlagsStuct().showName , TINTF_09A, false);
+        interf->checkbox(TCONST_DRand, myLamp.getLampFlagsStuct().demoRandom , TINTF_03E, false);
     interf->json_section_end(); // line
 
     interf->number_constrained(V_dev_brtscale, static_cast<int>(myLamp.getBrightnessScale()), "Brightness Scale", 1, 5, static_cast<int>(MAX_BRIGHTNESS));
 
     interf->json_section_line();
-        interf->range(TCONST_DTimer, embui.paramVariant(TCONST_DTimer).as<int>(), 30, 600, 15, TINTF_03F);
+        interf->range(TCONST_DTimer, embui.paramVariant(TCONST_DTimer).as<int>(), DEMO_MIN_PERIOD, DEMO_MAX_PERIOD, DEMO_PERIOD_STEP, TINTF_03F);
         float sf = embui.paramVariant(TCONST_spdcf);
         interf->range(TCONST_spdcf, sf, 0.25f, 4.0f, 0.25f, TINTF_0D3, false);
     interf->json_section_end(); // line
 
-    #ifdef DS18B20
-    interf->checkbox(TCONST_ds18b20, myLamp.getLampFlagsStuct().isTempOn, TINTF_0E0, false);
-    #endif
-
-/*
-    interf->spacer(TINTF_0BA);
-    "рассвет" пока неработает
-    interf->json_section_line();
-        interf->range(TCONST_alarmP, (int)myLamp.getAlarmP(), 1, 15, 1, TINTF_0BB, false);     // рассвет длительность
-        interf->range(TCONST_alarmT, (int)myLamp.getAlarmT(), 1, 15, 1, TINTF_0BC, false);     // рассвет светить после
-    interf->json_section_end(); // line
-*/
     interf->button(button_t::submit, TCONST_set_other, TINTF_Save, P_GRAY);
 
     interf->spacer();
@@ -1084,7 +1058,6 @@ void set_settings_other(Interface *interf, const JsonObject *data, const char* a
         myLamp.setFaderFlag((*data)[TCONST_isFaderON]);
         myLamp.setClearingFlag((*data)[TCONST_isClearing]);
         myLamp.setDRand((*data)[TCONST_DRand]);
-        myLamp.setShowName((*data)[TCONST_showName]);
         myLamp.setRestoreState((*data)[TCONST_f_restore_state]);
 
         SETPARAM(TCONST_DTimer);

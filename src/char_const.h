@@ -10,6 +10,10 @@ static constexpr const char* T_EffWrkr = "EffWrkr";
 static constexpr const char* T_Widget = "Widget";
 static constexpr const char* T_WdgtMGR = "WdgtMGR";
 
+// NVS ns
+static constexpr const char* T_lamp = "lamp";
+
+
 static constexpr const char* T_drawing = "drawing";
 static constexpr const char* T_effect_dynCtrl = "eff_dynCtrl";
 static constexpr const char* T_gpio = "gpio";                                   // gpio key for display configuration

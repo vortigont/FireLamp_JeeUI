@@ -366,12 +366,7 @@ void exitSettings() {
 void myClicks() {
   //noInterrupt();
   resetTimers();
-	if (myLamp.isAlarm()) {
-		// нажатие во время будильника
-    enc.clicks = 0;
-		return;
-	}
-  
+ 
   switch (enc.clicks)
   {
   case 1: // Включение\выключение лампы

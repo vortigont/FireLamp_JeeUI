@@ -51,7 +51,7 @@ void run_action(ra act){
 
     // demo next effect
     case ra::demo_next : {
-      if (myLamp.getLampFlagsStuct().dRand)
+      if (myLamp.getLampFlagsStuct().demoRandom)
         myLamp.switcheffect(effswitch_t::rnd);
       else
         myLamp.switcheffect(effswitch_t::next);

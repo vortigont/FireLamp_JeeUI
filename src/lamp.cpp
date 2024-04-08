@@ -42,14 +42,10 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "actions.hpp"
 #include "ledfb.hpp"
 #include "evtloop.h"
+#include "nvs_handle.hpp"
 
 
 Lamp::Lamp() : effwrkr(&lampState){
-  lampState.isInitCompleted = false; // завершилась ли инициализация лампы
-  lampState.isStringPrinting = false; // печатается ли прямо сейчас строка?
-  lampState.isEffectsDisabledUntilText = false;
-  lampState.isOffAfterText = false;
-  lampState.dawnFlag = false; // флаг устанавливается будильником "рассвет"
   lampState.micAnalyseDivider = 1; // анализ каждый раз
   lampState.flags = 0; // сборосить все флаги состояния
   lampState.speedfactor = 1.0; // дефолтное значение
@@ -59,8 +55,7 @@ Lamp::~Lamp(){
   events_unsubsribe();
 }
 
-void Lamp::lamp_init()
-{
+void Lamp::lamp_init(){
   // subscribe to CMD events
   _events_subsribe();
 
@@ -96,22 +91,35 @@ void Lamp::lamp_init()
   // switch to last running effect
   run_action(ra::eff_switch, embui.paramVariant(V_effect_idx));
 
-  // restore lamp flags from cfg
-  flags.lampflags = embui.paramVariant(V_lampFlags);
-  if (flags.restoreState && flags.ONflag){
-    flags.ONflag = false;       // reset it first, so that power() method will know that we are in off state actually
+  // restore lamp flags from NVS
+  esp_err_t err;
+  std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_lamp, NVS_READWRITE, &err);
+
+  if (err == ESP_OK) {
+    // if NVS handle is unavailable then just quit
+    //LOGD(T_WdgtMGR, printf, "Err opening NVS handle: %s\n", esp_err_to_name(err));
+    handle->get_item(V_lampFlags, opts.pack);
+  }
+
+  if (opts.flag.restoreState && opts.flag.pwrState){
+    opts.flag.pwrState = false;       // reset it first, so that power() method will know that we are in off state actually
     power(true);
   } else {
-    flags.ONflag = false;
+    opts.flag.pwrState = false;
+  }
+
+  // restore demo mode
+  if (opts.flag.restoreState && opts.flag.demoMode){
+    startDemoMode(embui.paramVariant(TCONST_DTimer) | DEFAULT_DEMO_TIMER);
   }
 
   // restore mike on/off state
-  setMicOnOff(flags.isMicOn);
+  setMicOnOff(opts.flag.isMicOn);
 }
 
 void Lamp::handle(){
   static unsigned long mic_check = 0; // = 40000; // пропускаю первые 40 секунд
-  if(effwrkr.status() && flags.isMicOn && (flags.ONflag) && !isAlarm() && mic_check + MIC_POLLRATE < millis()){
+  if(effwrkr.status() && opts.flag.isMicOn && (opts.flag.pwrState) && mic_check + MIC_POLLRATE < millis()){
     if(effwrkr.isMicOn())
       micHandler();
     mic_check = millis();
@@ -126,35 +134,21 @@ void Lamp::handle(){
       return;
   wait_handlers = millis();
 
+#ifdef LAMP_DEBUG_LEVEL>2
   EVERY_N_SECONDS(15){
-    lampState.freeHeap = ESP.getFreeHeap();
-#ifdef ESP8266
-    lampState.HeapFragmentation = ESP.getHeapFragmentation();
-#else
-    lampState.HeapFragmentation = 0;
-#endif
-    lampState.rssi = WiFi.RSSI();
-
-#ifdef LAMP_DEBUG
     // fps counter
     LOG(printf_P, PSTR("Eff:%d, FastLED FPS: %u\n"), effwrkr.getCurrent(), FastLED.getFPS());
-#ifdef ESP8266
-
-    LOG(printf_P, PSTR("MEM stat: %d, HF: %d, Time: %s\n"), lampState.freeHeap, lampState.HeapFragmentation, TimeProcessor::getInstance().getFormattedShortTime().c_str());
-
-#else
-    LOG(printf_P, PSTR("MEM stat: %d, Time: %s\n"), lampState.freeHeap, TimeProcessor::getInstance().getFormattedShortTime().c_str());
-#endif
-#endif
+    LOG(printf_P, PSTR("MEM stat: %d, Time: %s\n"), ESP.getFreeHeap(), TimeProcessor::getInstance().getFormattedShortTime().c_str());
   }
+#endif
 
 }
 
-void Lamp::power() {power(!flags.ONflag);}
+void Lamp::power() {power(!opts.flag.pwrState);}
 
 void Lamp::power(bool flag) // флаг включения/выключения меняем через один метод
 {
-  if (flag == flags.ONflag) return;  // пропускаем холостые вызовы
+  if (flag == opts.flag.pwrState) return;  // пропускаем холостые вызовы
   LOG(print, "Lamp powering "); LOG(println, flag ? "On": "Off");
 
   if (flag){
@@ -173,7 +167,7 @@ void Lamp::power(bool flag) // флаг включения/выключения 
     EVT_POST(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::pwron));
   } else  {
     // POWER OFF
-    if(flags.isFaderON){
+    if(opts.flag.fadeEffects){
       // need to fade
       LEDFader::getInstance()->fadelight(0, FADE_TIME, [this](){ effectsTimer(SCHEDULER::T_DISABLE); } );     // гасим эффект-процессор
     } else {
@@ -188,26 +182,8 @@ void Lamp::power(bool flag) // флаг включения/выключения 
   }
 
   // update flag on last step to let other call understand in which state they were called
-  flags.ONflag = flag;
+  opts.flag.pwrState = flag;
   save_flags();
-}
-
-void Lamp::startRGB(CRGB &val){
-  rgbColor = val;
-  storedMode = ((mode == LAMPMODE::MODE_RGBLAMP) ? storedMode: mode);
-  mode = LAMPMODE::MODE_RGBLAMP;
-  demoTimer(T_DISABLE);     // гасим Демо-таймер
-  effectsTimer(T_ENABLE);
-}
-
-void Lamp::stopRGB(){
-  if (mode != LAMPMODE::MODE_RGBLAMP) return;
-
-  mode = (storedMode != LAMPMODE::MODE_RGBLAMP ? storedMode : LAMPMODE::MODE_NORMAL); // возвращаем предыдущий режим
-  if(mode==LAMPMODE::MODE_DEMO)
-    demoTimer(T_ENABLE);     // вернуть демо-таймер
-  if (flags.ONflag)
-    effectsTimer(T_ENABLE);
 }
 
 
@@ -223,6 +199,10 @@ void Lamp::startDemoMode(uint8_t tmout)
   
   storedEffect = ((static_cast<EFF_ENUM>(effwrkr.getCurrent()%256) == EFF_ENUM::EFF_WHITE_COLOR) ? storedEffect : effwrkr.getCurrent()); // сохраняем предыдущий эффект, если только это не белая лампа
   mode = LAMPMODE::MODE_DEMO;
+  if (!opts.flag.demoMode){
+    opts.flag.demoMode = true;
+    save_flags();
+  }
   demoTimer(T_ENABLE, tmout);
 }
 
@@ -239,7 +219,7 @@ void Lamp::restoreStored()
   LOG(printf_P, PSTR("restoreStored() %d,%d\n"),storedEffect,storedBright);
   if(storedBright)
     setBrightness(storedBright);
-  lampState.isMicOn = flags.isMicOn;
+  lampState.isMicOn = opts.flag.isMicOn;
   if (static_cast<EFF_ENUM>(storedEffect) != EFF_NONE) {    // ничего не должно происходить, включаемся на текущем :), текущий всегда определен...
     Task *_t = new Task(3 * TASK_SECOND, TASK_ONCE, [this](){ run_action( ra::eff_switch, storedEffect); }, &ts, false, nullptr, nullptr, true);
     _t->enableDelayed();
@@ -253,20 +233,24 @@ void Lamp::startNormalMode(bool forceOff)
 {
   LOG(println,"Normal mode");
   if(forceOff)
-    flags.ONflag=false;
+    opts.flag.pwrState=false;
   mode = LAMPMODE::MODE_NORMAL;
-  demoTimer(T_DISABLE);
+  if (opts.flag.demoMode){
+    opts.flag.demoMode = false;
+    save_flags();
+    demoTimer(T_DISABLE);
+  }
   restoreStored();
 }
 
-typedef enum {FIRSTSYMB=1,LASTSYMB=2} SYMBPOS;
+//typedef enum {FIRSTSYMB=1,LASTSYMB=2} SYMBPOS;
 
 void Lamp::micHandler()
 {
   static uint8_t counter=0;
   if(effwrkr.getCurrent()==EFF_ENUM::EFF_NONE)
     return;
-  if(!mw && !lampState.isCalibrationRequest && lampState.micAnalyseDivider){ // обычный режим
+  if(!mw && lampState.micAnalyseDivider){ // обычный режим
     //mw = new(std::nothrow) MicWorker(lampState.mic_scale,lampState.mic_noise,!counter);
     mw = new(std::nothrow) MicWorker(lampState.mic_scale,lampState.mic_noise,true);   // создаем полноценный объект и держим в памяти
 
@@ -285,46 +269,11 @@ void Lamp::micHandler()
       counter = (counter+1)%(0x01<<(lampState.micAnalyseDivider-1)); // как часто выполнять анализ
     else
       counter = 1; // при micAnalyseDivider == 0 - отключено
-
-    // EVERY_N_SECONDS(1){
-    //   LOG(println, counter);
-    // }
-
-    //LOG(println, last_freq);
-    //mw->debug();
-
-    //delete mw;    // не удаляем, пока пользуемся
-    //mw = nullptr;
-  } else if(lampState.isCalibrationRequest) {
-    if(!mw){ // калибровка начало
-      mw = new(std::nothrow) MicWorker();
-      if(!mw) return;   // was not able to alloc mem
-    }
-    mw->calibrate();
-    if(!mw->isCaliblation()){ // калибровка конец
-      lampState.mic_noise = mw->getNoise();
-      lampState.mic_scale = mw->getScale();
-      lampState.isCalibrationRequest = false; // завершили
-      delete mw;
-      mw = nullptr;
-
-      DynamicJsonDocument doc(512);
-      JsonObject obj = doc.to<JsonObject>();
-
-      //remote_action(RA::RA_MIC, NULL);
-      //CALL_INTF_OBJ(show_settings_mic);
-      if (embui.ws.count()){
-        Interface interf(&embui.feeders, SMALL_JSON_SIZE);
-        interf.json_frame_value();
-        interf.value(obj);
-        interf.json_frame_flush();
-      }
-    }
   }
 }
 
 void Lamp::setMicOnOff(bool val) {
-    flags.isMicOn = val;
+    opts.flag.isMicOn = val;
     lampState.isMicOn = val;
     if(effwrkr.getCurrent()==EFF_NONE || !effwrkr.status()) return;
 
@@ -359,7 +308,7 @@ void Lamp::setBrightness(uint8_t tgtbrt, fade_t fade, bool bypass){
     if (!isLampOn())
       return _brightness(tgtbrt);
 
-    if ( fade == fade_t::on || ( (fade == fade_t::preset) && flags.isFaderON) ) {
+    if ( fade == fade_t::on || ( (fade == fade_t::preset) && opts.flag.fadeEffects) ) {
       // fader will publish event once it will finish brightness scaling
       LEDFader::getInstance()->fadelight(tgtbrt);
     } else {
@@ -436,7 +385,7 @@ void Lamp::_switcheffect(effswitch_t action, bool fade, uint16_t effnb, bool ski
 
     LOG(printf, "Lamp::switcheffect() action=%d, fade=%d, effnb=%d\n", action, fade, next_eff_num);
     // тухнем "вниз" только на включенной лампе
-    if (fade && flags.ONflag) {
+    if (fade && opts.flag.pwrState) {
       // запускаем фейдер и уходим на второй круг переключения
       // если текущая абсолютная яркость больше чем 2*FADE_MINCHANGEBRT, то затухаем не полностью, а только до значения FADE_MINCHANGEBRTб в противном случае гаснем полностью
       LEDFader::getInstance()->fadelight( _get_brightness(true) < 3*MAX_BRIGHTNESS/FADE_LOWBRTFRACT/2 ? 0 : _brightnessScale/FADE_LOWBRTFRACT,
@@ -453,17 +402,15 @@ void Lamp::_switcheffect(effswitch_t action, bool fade, uint16_t effnb, bool ski
     LOG(printf, "Lamp::switcheffect() postfade act=%d, fade=%d, effnb=%d\n", action, fade, effnb);
   }
 
-  if(flags.isEffClearing || !effwrkr.getCurrent()){ // для EFF_NONE или для случая когда включена опция - чистим матрицу
+  if(opts.flag.wipeOnEffChange || !effwrkr.getCurrent()){ // для EFF_NONE или для случая когда включена опция - чистим матрицу
     if (display.getCanvas())
       display.getCanvas()->clear();
   }
 
   // move to 'selected' only if lamp is On and fader is in effect (i.e. it's a second call after fade),
   // otherwise it's been switched already
-  if (fade && flags.ONflag)
+  if (fade && opts.flag.pwrState)
     effwrkr.switchEffect(effnb, true);
-
-  bool isShowName = (mode==LAMPMODE::MODE_DEMO && flags.showName);
 
   setBrightness(globalBrightness);      // need to reapply brightness as effect's curve might have changed
 
@@ -540,8 +487,16 @@ void Lamp::writeDrawBuf(CRGB color, uint16_t x, uint16_t y){
 }
 
 void Lamp::save_flags(){
-  //if (flags.restoreState)
-  embui.var(V_lampFlags, flags.lampflags);
+  esp_err_t err;
+  std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_lamp, NVS_READWRITE, &err);
+
+  if (err != ESP_OK) {
+    // if NVS handle is unavailable then just quit
+    //LOGD(T_WdgtMGR, printf, "Err opening NVS handle: %s\n", esp_err_to_name(err));
+    return;
+  }
+
+  handle->set_item(V_lampFlags, opts.pack);
 }
 
 void Lamp::_overlay_buffer(bool activate) {
@@ -625,7 +580,7 @@ void Lamp::_event_picker_cmd(esp_event_base_t base, int32_t id, void* data){
 
     // Get State Commands
       case evt::lamp_t::pwr :
-        EVT_POST(LAMP_STATE_EVENTS, flags.ONflag ? e2int(evt::lamp_t::pwron) : e2int(evt::lamp_t::pwroff));
+        EVT_POST(LAMP_STATE_EVENTS, opts.flag.pwrState ? e2int(evt::lamp_t::pwron) : e2int(evt::lamp_t::pwroff));
         break;
 
       default:;
@@ -645,7 +600,7 @@ void Lamp::_event_picker_state(esp_event_base_t base, int32_t id, void* data){
       break;
     case evt::lamp_t::fadeEnd :
       // check if lamp is in "PowerOff" state, then we've just complete fade-out, need to send event
-      if (!flags.ONflag)
+      if (!opts.flag.pwrState)
         EVT_POST(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::pwroff));
       break;
 
