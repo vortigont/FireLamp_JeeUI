@@ -58,6 +58,10 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 // версия ресурсов в стороннем джейсон файле
 #define UIDATA_VERSION  10
 
+#define	DEMO_MIN_PERIOD		10
+#define	DEMO_MAX_PERIOD		900
+#define	DEMO_PERIOD_STEP	10
+
 // placeholder for effect list rebuilder task
 Task *delayedOptionTask = nullptr;
 // эффект, который сейчас конфигурируется на странице "Управление списком эффектов"
@@ -1052,23 +1056,11 @@ void page_settings_other(Interface *interf, const JsonObject *data, const char* 
     interf->number_constrained(V_dev_brtscale, static_cast<int>(myLamp.getBrightnessScale()), "Brightness Scale", 1, 5, static_cast<int>(MAX_BRIGHTNESS));
 
     interf->json_section_line();
-        interf->range(TCONST_DTimer, embui.paramVariant(TCONST_DTimer).as<int>(), 30, 600, 15, TINTF_03F);
+        interf->range(TCONST_DTimer, embui.paramVariant(TCONST_DTimer).as<int>(), DEMO_MIN_PERIOD, DEMO_MAX_PERIOD, DEMO_PERIOD_STEP, TINTF_03F);
         float sf = embui.paramVariant(TCONST_spdcf);
         interf->range(TCONST_spdcf, sf, 0.25f, 4.0f, 0.25f, TINTF_0D3, false);
     interf->json_section_end(); // line
 
-    #ifdef DS18B20
-    interf->checkbox(TCONST_ds18b20, myLamp.getLampFlagsStuct().isTempOn, TINTF_0E0, false);
-    #endif
-
-/*
-    interf->spacer(TINTF_0BA);
-    "рассвет" пока неработает
-    interf->json_section_line();
-        interf->range(TCONST_alarmP, (int)myLamp.getAlarmP(), 1, 15, 1, TINTF_0BB, false);     // рассвет длительность
-        interf->range(TCONST_alarmT, (int)myLamp.getAlarmT(), 1, 15, 1, TINTF_0BC, false);     // рассвет светить после
-    interf->json_section_end(); // line
-*/
     interf->button(button_t::submit, TCONST_set_other, TINTF_Save, P_GRAY);
 
     interf->spacer();
