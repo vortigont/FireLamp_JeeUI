@@ -42,7 +42,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "EmbUI.h"
 #include "extra_tasks.h"
 #include "char_const.h"
-#include "mp3player.h"
 #include "luma_curves.hpp"
 #include "micFFT.h"
 
@@ -100,20 +99,16 @@ struct LampFlags {
     bool reserved10:1;      // отображение имени в демо
     bool isMicOn:1;         // включение/выключение микрофона
     bool effHasMic:1;       // микрофон для эффекта
-    bool mp3sounds:1;       // enable/disable effect's track playback
-    bool button:1;          // enable/dsiable button
+    bool reserved13:1;
+    bool reserved14:1;
     bool reserved15:1;      //
     //--------16 штук граница-------------------
-    bool reserved16:1;      // ex. воспроизводить эффект?
-    bool reserved17:1;      // ex. режим mp3-плеера
 };
 
-union LampFlagsPack{
+union LampFlagsPack {
     uint32_t pack;          // vars packed into unsigned
     LampFlags flag;
-    LampFlagsPack(){
-        pack = 24580;       // set fade, mp3, button
-    }
+    LampFlagsPack() : pack(4){}     // set fade
 };
 
 
@@ -136,9 +131,6 @@ private:
     uint8_t globalBrightness = 127;     // глобальная яркость
     uint8_t storedBright;               // "запасное" значение яркости
     uint8_t BFade;                      // затенение фона под текстом
-
-    // глушен ли мп3 плеер (времянка)
-    bool mp3mute = false;
 
     // GPIO's
     // это должен быть gpio_num_t в есп32, но пока нужна совместимость с 8266 держим инт
@@ -194,7 +186,7 @@ public:
     LList<std::shared_ptr<UIControl>>&getEffControls() { return effwrkr.getControls(); }
 
     void setMicOnOff(bool val);
-    bool isMicOnOff() const {return opts.flag.isMicOn;}
+    //bool isMicOnOff() const {return opts.flag.isMicOn;}
 
     void setSpeedFactor(float val) {
         lampState.speedfactor = val;
@@ -247,11 +239,6 @@ public:
      * see setBrightnessScale()
      */
     uint8_t getBrightnessScale() const { return _brightnessScale; };
-
-
-    // return MP3 speaker Mute state
-    bool isMP3mute() const { return mp3mute; }
-    void setMP3mute(bool state){ mp3mute = state; }
 
 #ifdef EMBUI_USE_MQTT
     void setmqtt_int(int val=DEFAULT_MQTTPUB_INTERVAL);

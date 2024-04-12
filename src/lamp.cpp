@@ -93,10 +93,9 @@ void Lamp::lamp_init(){
 
   // restore lamp flags from NVS
   esp_err_t err;
-  std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_lamp, NVS_READWRITE, &err);
+  std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_lamp, NVS_READONLY, &err);
 
   if (err == ESP_OK) {
-    // if NVS handle is unavailable then just quit
     //LOGD(T_WdgtMGR, printf, "Err opening NVS handle: %s\n", esp_err_to_name(err));
     handle->get_item(V_lampFlags, opts.pack);
   }
@@ -134,7 +133,7 @@ void Lamp::handle(){
       return;
   wait_handlers = millis();
 
-#ifdef LAMP_DEBUG_LEVEL>2
+#if defined(LAMP_DEBUG_LEVEL) && LAMP_DEBUG_LEVEL>2
   EVERY_N_SECONDS(15){
     // fps counter
     LOG(printf_P, PSTR("Eff:%d, FastLED FPS: %u\n"), effwrkr.getCurrent(), FastLED.getFPS());
@@ -501,11 +500,11 @@ void Lamp::save_flags(){
 
 void Lamp::_overlay_buffer(bool activate) {
   if (activate && !_overlay){
-    LOG(println, "Create Display overlay");
+    LOGD(T_lamp, println, "Create Display overlay");
     _overlay = display.getOverlay();   // obtain overlay buffer
   }
   else{
-    LOG(println, "Release Display overlay");
+    LOGD(T_lamp, println, "Release Display overlay");
     _overlay.reset();
   }
 }
@@ -515,7 +514,7 @@ void Lamp::_events_subsribe(){
 }
 
 void Lamp::event_hndlr(void* handler_args, esp_event_base_t base, int32_t id, void* event_data){
-  LOG(printf, "Lamp::event_hndlr %s:%d\n", base, id);
+  LOGV(T_lamp, printf, "Lamp::event_hndlr %s:%d\n", base, id);
   if (base == LAMP_SET_EVENTS || base == LAMP_GET_EVENTS )
     return reinterpret_cast<Lamp*>(handler_args)->_event_picker_cmd(base, id, event_data);
 

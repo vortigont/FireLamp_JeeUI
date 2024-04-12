@@ -37,6 +37,8 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 #include "mp3player.h"
 #include "char_const.h"
+#include "EmbUI.h"           // EmbUI's header
+#include "nvs_handle.hpp"
 #include "log.h"
 
 // which serial to use for esp32
@@ -75,9 +77,6 @@ void MP3PlayerController::begin(int8_t rxPin, int8_t txPin){
   ts.addTask(_tPeriodic);
   _tPeriodic.enableDelayed();
 
-  // event bus subsribe
-  subscribe();
-
   dfp->onPlayFinished( [this](DfMp3_PlaySources source, uint16_t track){
     LOGI(T_DFPlayer, printf, "playback end #%u\n", track);
     // ignore "play end event if loop is active"
@@ -102,6 +101,21 @@ void MP3PlayerController::begin(int8_t rxPin, int8_t txPin){
   // this will (probably) make a player to reply with state packet and we can understand that it's on-line
   //dfp->getTotalTrackCount();
   dfp->reset();
+
+  // event bus subsribe
+  if (!_lmp_ch_events)
+    subscribe();
+
+  // restore opts state from NVS
+  esp_err_t err;
+  std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_lamp, NVS_READONLY, &err);
+
+  if (err == ESP_OK) {
+    //LOGD(T_WdgtMGR, printf, "Err opening NVS handle: %s\n", esp_err_to_name(err));
+    handle->get_item(T_mp3vol, _volume);
+    handle->get_item(T_mp3mute, _mute);
+  }
+
 }
 
 // this method will recreate MP3Player object
@@ -117,28 +131,33 @@ void MP3PlayerController::loop(){
 
 void MP3PlayerController::subscribe(){
 
-  // Register the handler for task iteration event; need to pass instance handle for later unregistration.
-  if (!_lmp_ch_instance)
-    ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, MP3PlayerController::event_hndlr, this, &_lmp_ch_instance));
+  // Register the handler for change notification events; need to pass instance handle for later unregistration.
+  if (!_lmp_ch_events)
+    esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, MP3PlayerController::event_hndlr, this, &_lmp_ch_events);
 
-  if (!_lmp_set_instance)
-    ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_SET_EVENTS, ESP_EVENT_ANY_ID, MP3PlayerController::event_hndlr, this, &_lmp_set_instance));
+  if (!_lmp_set_events)
+    esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_SET_EVENTS, ESP_EVENT_ANY_ID, MP3PlayerController::event_hndlr, this, &_lmp_set_events);
 
-  //ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), EBTN_EVENTS, ESP_EVENT_ANY_ID, ButtonEventHandler::event_hndlr, this, &_btn_einstance));
+  if (!_lmp_get_events){
+    esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_GET_EVENTS, e2int(evt::lamp_t::mp3state), MP3PlayerController::event_hndlr, this, &_lmp_get_events);
+  }
 }
 
 void MP3PlayerController::unsubscribe(){
-  if (_lmp_ch_instance){
-    ESP_ERROR_CHECK(esp_event_handler_instance_unregister_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, _lmp_ch_instance));
-    _lmp_ch_instance = nullptr;
+  if (_lmp_ch_events){
+    ESP_ERROR_CHECK(esp_event_handler_instance_unregister_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, _lmp_ch_events));
+    _lmp_ch_events = nullptr;
   }
 
-  if (_lmp_set_instance){
-    ESP_ERROR_CHECK(esp_event_handler_instance_unregister_with(evt::get_hndlr(), LAMP_SET_EVENTS, ESP_EVENT_ANY_ID, _lmp_set_instance));
-    _lmp_set_instance = nullptr;
+  if (_lmp_set_events){
+    ESP_ERROR_CHECK(esp_event_handler_instance_unregister_with(evt::get_hndlr(), LAMP_SET_EVENTS, ESP_EVENT_ANY_ID, _lmp_set_events));
+    _lmp_set_events = nullptr;
   }
 
-  //ESP_ERROR_CHECK(esp_event_handler_instance_unregister_with(_loop, EBTN_EVENTS, ESP_EVENT_ANY_ID, _btn_einstance));
+  if (_lmp_get_events){
+    esp_event_handler_instance_unregister_with(evt::get_hndlr(), LAMP_GET_EVENTS, e2int(evt::lamp_t::mp3state), _lmp_set_events);
+    _lmp_get_events = nullptr;
+  }
 };
 
 void MP3PlayerController::event_hndlr(void* handler, esp_event_base_t base, int32_t id, void* event_data){
@@ -148,6 +167,9 @@ void MP3PlayerController::event_hndlr(void* handler, esp_event_base_t base, int3
 
   if ( base == LAMP_SET_EVENTS )
     return static_cast<MP3PlayerController*>(handler)->_lmpSetEventHandler(base, id, event_data);
+
+  if ( base == LAMP_GET_EVENTS )
+    return static_cast<MP3PlayerController*>(handler)->_lmpGetEventHandler(base, id, event_data);
 }
 
 void MP3PlayerController::_lmpChEventHandler(esp_event_base_t base, int32_t id, void* data){
@@ -185,27 +207,29 @@ void MP3PlayerController::_lmpSetEventHandler(esp_event_base_t base, int32_t id,
   switch (static_cast<evt::lamp_t>(id)){
     // Volume control
     case evt::lamp_t::mp3vol :
-      LOGI(T_DFPlayer, println, T_mp3vol);
       setVolume(*reinterpret_cast<int*>(data));
       break;
     case evt::lamp_t::mp3mute :
-      LOGI(T_DFPlayer, println, "mute");
-      dfp->stop();
-      // disabling DAC works only untill next track is played, so it is useless
-      // dfp->disableDac();
-      flags.mute = true;
+      setSilent(true);
       break;
     case evt::lamp_t::mp3unmute :
-      LOGI(T_DFPlayer, println, "unmute");
-      //dfp->enableDac();
-      flags.mute = false;
+      setSilent(false);
       break;
   }
 }
 
+void MP3PlayerController::_lmpGetEventHandler(esp_event_base_t base, int32_t id, void* data){
+  // here I simply publish current player state
+  Interface interf(&embui.feeders, 1024);  
+  interf.json_frame_value();
+  interf.value(T_mp3vol, _volume);
+  interf.value(T_mp3mute, _mute);
+  interf.json_frame_flush();
+}
+
 void MP3PlayerController::playTime(int track){
   // do not play anything if player is on Mute
-  if (flags.mute) return;
+  if (_mute) return;
 
   // check for talking clock
   if (track == 1){
@@ -235,7 +259,7 @@ void MP3PlayerController::playTime(int track){
 
 void MP3PlayerController::playEffect(uint32_t effnb){
   // do not play anything if player is on Mute
-  if (flags.mute){
+  if (_mute){
    return;
    LOGD(T_DFPlayer, println, "suppress play due to mute flag");
   }
@@ -273,6 +297,13 @@ void MP3PlayerController::setVolume(uint8_t vol) {
   _volume=vol;
   dfp->setVolume(vol);
   LOGI(T_DFPlayer, printf, "volume: %u\n", vol);
+  esp_err_t err;
+  std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_lamp, NVS_READWRITE, &err);
+
+  if (err == ESP_OK) {
+    //LOGD(T_WdgtMGR, printf, "Err opening NVS handle: %s\n", esp_err_to_name(err));
+    handle->set_item(T_mp3vol, _volume);
+  }
 }
 
 void MP3PlayerController::setLoopEffects(bool value){
@@ -295,4 +326,29 @@ void MP3PlayerController::_loop_current_track(){
         },
         &ts, false, nullptr, nullptr, true );
     t->enableDelayed();
+}
+
+void MP3PlayerController::setSilent(bool m){
+  if(_mute == m) return;
+  _mute = m;
+
+  if (_mute){
+    LOGI(T_DFPlayer, println, "mute");
+    dfp->stop();
+    // disabling DAC works only untill next track is played, so it is useless
+    // dfp->disableDac();
+    _mute = true;
+  } else {
+    LOGI(T_DFPlayer, println, "unmute");
+    //dfp->enableDac();
+    _mute = false;
+  }
+
+  esp_err_t err;
+  std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_lamp, NVS_READWRITE, &err);
+
+  if (err == ESP_OK) {
+    //LOGD(T_WdgtMGR, printf, "Err opening NVS handle: %s\n", esp_err_to_name(err));
+    handle->set_item(T_mp3mute, _mute);
+  }
 }

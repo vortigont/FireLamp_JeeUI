@@ -36,9 +36,8 @@ Copyright © 2023 Emil Muratov (vortigont)
 
 #include "devices.h"
 #include "char_const.h"
-#include "constants.h"    // EmbUI char constants
 #include "embuifs.hpp"
-#include "log.h"
+#include "interface.h"
 
 // TM1637 disaplay class
 #include "tm1637display.hpp"
@@ -46,6 +45,8 @@ Copyright © 2023 Emil Muratov (vortigont)
 #include "bencoder.hpp"
 // DFPlayer
 #include "mp3player.h"
+
+#include "log.h"
 
 
 // Device object placesholders
@@ -61,7 +62,7 @@ ButtonEventHandler *button_handler = nullptr;
 MP3PlayerController *mp3player = nullptr;
 
 void tm1637_setup(){
-  DynamicJsonDocument doc(DISPLAY_CFG_JSIZE);
+  DynamicJsonDocument doc(DEVICES_CFG_JSIZE);
   if (!embuifs::deserializeFile(doc, TCONST_fcfg_display) || !doc.containsKey(T_tm1637)) return;      // config is missing, bad or has no TM1637 data
 
   JsonVariantConst cfg( doc[T_tm1637] );
@@ -95,6 +96,20 @@ void tm1637_configure(JsonVariantConst cfg){
   tm1637->clk_lzero = cfg[T_tm_lzero];
   tm1637->init();
 
+}
+
+// ========== Button
+
+// set button lock
+void getset_btn_lock(Interface *interf, const JsonObject *data, const char* action){
+  if (!button_handler) return;
+  if (data && data->size()){
+    // set lock state from provided data if there is no interf object
+    EVT_POST(LAMP_SET_EVENTS, (*data)[A_dev_btnlock] ? e2int(evt::lamp_t::btnLock) : e2int(evt::lamp_t::btnUnLock));
+  } else if (interf && button_handler) {
+    // request current state from Button object and send it to the provided Interface
+    interf->value(A_dev_btnlock, button_handler->lock());
+  }
 }
 
 void button_cfg_load(){
@@ -165,12 +180,44 @@ void button_configure_events(JsonVariantConst cfg){
     button_handler = new ButtonEventHandler();
     if (!button_handler) return;
     // subscribe only once, when object is newly created
-    button_handler->subscribe(evt::get_hndlr());
+    button_handler->subscribe();
   }
 
   button_handler->load(cfg);     // load config
 }
 
+void getset_button_gpio(Interface *interf, const JsonObject *data, const char* action){
+  {
+    DynamicJsonDocument doc(BTN_EVENTS_CFG_JSIZE);
+    if (!embuifs::deserializeFile(doc, T_benc_cfg)) doc.clear();
+
+    // if this is a request with no data, then just provide existing configuration and quit
+    if (!data || !(*data).size()){
+        if (interf && doc.containsKey(T_btn_cfg)){
+            interf->json_frame_value(doc[T_btn_cfg], true);
+            interf->json_frame_flush();
+        }
+        return;
+    }
+
+    JsonVariant dst = doc[T_btn_cfg].isNull() ? doc.createNestedObject(T_btn_cfg) : doc[T_btn_cfg];
+
+    // copy keys to a destination object
+    for (JsonPair kvp : *data)
+        dst[kvp.key()] = kvp.value();
+
+    embuifs::serialize2file(doc, T_benc_cfg);
+
+    JsonVariantConst cfg(dst);
+    // reconfig button
+    button_configure_gpio(cfg);
+  }
+
+  if (interf) ui_page_setup_devices(interf, nullptr, NULL);
+}
+
+
+// *** DFPlayer
 
 void dfplayer_cfg_load(){
   DynamicJsonDocument doc(DFPLAYER_JSON_CFG_JSIZE);
@@ -219,5 +266,66 @@ void dfplayer_setup_opt(JsonVariantConst cfg){
   mp3player->setLoopEffects(cfg[T_eff_tracks_loop]);
 }
 
-void dfplayer_volume(int v){ if (mp3player) mp3player->setVolume(v); };
+void getset_dfplayer_device(Interface *interf, const JsonObject *data, const char* action){
+    {
+        DynamicJsonDocument doc(DFPLAYER_JSON_CFG_JSIZE);
+        if (!embuifs::deserializeFile(doc, T_dfplayer_cfg)) doc.clear();
+
+        // if this is a request with no data, then just provide existing configuration and quit
+        if (!data || !(*data).size()){
+            if (interf && doc.containsKey(T_device)){
+                interf->json_frame_value(doc[T_device], true);
+                interf->json_frame_flush();
+            }
+            return;
+        }
+
+        JsonVariant dst = doc[T_device].isNull() ? doc.createNestedObject(T_device) : doc[T_device];
+
+        // copy keys to a destination object
+        for (JsonPair kvp : *data)
+            dst[kvp.key()] = kvp.value();
+
+        embuifs::serialize2file(doc, T_dfplayer_cfg);
+
+        JsonVariantConst cfg(dst);
+        // reconfig DFPlayer device
+        dfplayer_setup_device(cfg);
+        // need to apply options config also in case player was reenabled with previous config
+        cfg = doc[T_opt];
+        dfplayer_setup_opt(cfg);
+    }
+
+    if (interf) ui_page_setup_devices(interf, nullptr, NULL);
+}
+
+void getset_dfplayer_opt(Interface *interf, const JsonObject *data, const char* action){
+    {
+        DynamicJsonDocument doc(DFPLAYER_JSON_CFG_JSIZE);
+        if (!embuifs::deserializeFile(doc, T_dfplayer_cfg)) doc.clear();
+
+        // if this is a request with no data, then just provide existing configuration and quit
+        if (!data || !(*data).size()){
+            if (interf && doc.containsKey(T_opt)){
+                interf->json_frame_value(doc[T_opt], true);
+                interf->json_frame_flush();
+            }
+            return;
+        }
+
+        JsonVariant dst = doc[T_opt].isNull() ? doc.createNestedObject(T_opt) : doc[T_opt];
+
+        // copy keys to a destination object
+        for (JsonPair kvp : *data)
+            dst[kvp.key()] = kvp.value();
+
+        embuifs::serialize2file(doc, T_dfplayer_cfg);
+
+        JsonVariantConst cfg(dst);
+        // reconfig DFPlayer device
+        dfplayer_setup_opt(cfg);
+    }
+
+    if (interf) ui_page_setup_devices(interf, nullptr, NULL);
+}
 

@@ -98,8 +98,6 @@ void setup() {
     button_cfg_load();
     // Load DFPlayer support if enabled
     dfplayer_cfg_load();
-    // restore mp3 player vol
-    dfplayer_volume(embui.paramVariant(T_mp3vol));
 
 #ifdef ENCODER
     enc_setup();

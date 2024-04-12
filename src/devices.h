@@ -42,10 +42,10 @@ Copyright © 2023 Emil Muratov (vortigont)
 */
 
 #pragma once
-#include "ArduinoJson.h"
+#include "ui.h"
 
+#define DEVICES_CFG_JSIZE   2048
 #define DISPLAY_CFG_JSIZE   1500
-
 
 /**
  * @brief Read configuration and setup TM1637 Display if required
@@ -60,12 +60,19 @@ void tm1637_setup();
  */
 void tm1637_configure(JsonVariantConst cfg);
 
+// ========== Button
+
 void button_cfg_load();
 
 void button_configure_gpio(JsonVariantConst cfg);
 
 void button_configure_events(JsonVariantConst cfg);
 
+void getset_button_gpio(Interface *interf, const JsonObject *data, const char* action);
+
+
+// get/set button lock
+void getset_btn_lock(Interface *interf, const JsonObject *data, const char* action);
 
 // *** DFPlayer
 
@@ -87,5 +94,6 @@ void dfplayer_setup_device(JsonVariantConst cfg);
  */
 void dfplayer_setup_opt(JsonVariantConst cfg);
 
-// mp3 vol wrapper, needed only on boot to restore vol from config
-void dfplayer_volume(int v);
+void getset_dfplayer_device(Interface *interf, const JsonObject *data, const char* action);
+
+void getset_dfplayer_opt(Interface *interf, const JsonObject *data, const char* action);

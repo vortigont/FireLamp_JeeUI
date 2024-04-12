@@ -84,11 +84,17 @@ enum class lamp_t:int32_t {
   mp3volstep,               // set mp3 volume increment/decrement, param: int n
   mp3mute,
   mp3unmute,
+  mp3state,                 // get mp3player state, will publish current mp3player state both to event bus and EmbUI's feeders
 
   // Notifications
   cockoo = 50,           // play cockoo or talking clock. param int - track to play, 1 is for Talking clock, any other - number of track from signals folder
   alarmTrigger,          // Alarm event. Play alarm track. param int - track to play
   alarmStop,             // Stop alarm actions event
+
+  // ext devices control
+  btnLock = 100,            // Lock button
+  btnUnLock,                // UnLock button
+  btnLockState,             // request for button lock state, ButtonEventHandler will reply with LAMP_STATE_EVENTS:: btnUnLock/btnLock
 
   // **** state change / notification events ****
   fadeStart = 1000,

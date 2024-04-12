@@ -53,14 +53,15 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "actions.hpp"
 #include <type_traits>
 #include "evtloop.h"
+#include "devices.h"
 #include "widgets.hpp"
 
 // версия ресурсов в стороннем джейсон файле
-#define UIDATA_VERSION  10
+#define UIDATA_VERSION      11
 
-#define	DEMO_MIN_PERIOD		10
-#define	DEMO_MAX_PERIOD		900
-#define	DEMO_PERIOD_STEP	10
+#define DEMO_MIN_PERIOD     10
+#define DEMO_MAX_PERIOD     900
+#define DEMO_PERIOD_STEP    10
 
 // placeholder for effect list rebuilder task
 Task *delayedOptionTask = nullptr;
@@ -694,13 +695,13 @@ void block_effect_controls(Interface *interf, const JsonObject *data, const char
     LList<std::shared_ptr<UIControl>> &controls = myLamp.effwrkr.getControls();
     uint8_t ctrlCaseType; // тип контрола, старшие 4 бита соответствуют CONTROL_CASE, младшие 4 - CONTROL_TYPE
 
-    bool isMicOn = myLamp.isMicOnOff();
-    LOG(printf_P,PSTR("Make UI for %d controls\n"), controls.size());
+    bool isMicOn = myLamp.getLampFlagsStuct().isMicOn;
+    LOGD(T_WebUI, printf, "Make UI for %d controls\n", controls.size());
     for(unsigned i=0; i<controls.size();i++)
         if(controls[i]->getId()==7 && controls[i]->getName().startsWith(TINTF_020))
             isMicOn = isMicOn && controls[i]->getVal().toInt();
 
-    LOG(printf_P, PSTR("block_effect_controls() got %u ctrls\n"), controls.size());
+    LOGD(T_WebUI, printf, "block_effect_controls() got %u ctrls\n", controls.size());
     for (const auto &ctrl : controls){
         if (!ctrl->getId()) continue;       // skip old "brightness control"
 
@@ -710,10 +711,10 @@ void block_effect_controls(Interface *interf, const JsonObject *data, const char
                 continue;
                 break;
             case CONTROL_CASE::ISMICON :
-                if(!isMicOn && (!myLamp.isMicOnOff() || !(ctrl->getId()==7 && ctrl->getName().startsWith(TINTF_020)==1) )) continue;
+                if(!isMicOn && (!myLamp.getLampFlagsStuct().isMicOn || !(ctrl->getId()==7 && ctrl->getName().startsWith(TINTF_020)==1) )) continue;
                 break;
             case CONTROL_CASE::ISMICOFF :
-                if(isMicOn && (myLamp.isMicOnOff() || !(ctrl->getId()==7 && ctrl->getName().startsWith(TINTF_020)==1) )) continue;
+                if(isMicOn && (myLamp.getLampFlagsStuct().isMicOn || !(ctrl->getId()==7 && ctrl->getName().startsWith(TINTF_020)==1) )) continue;
                 break;
             default: break;
         }
@@ -785,7 +786,7 @@ void block_effect_controls(Interface *interf, const JsonObject *data, const char
     topic += A_effect_ctrls;
     embui.publish(topic.c_str(), sect, true);
 
-    LOG(println, "eof block_effect_controls()");
+    LOGD(T_WebUI, println, "eof block_effect_controls()");
 }
 
 /**
@@ -821,7 +822,31 @@ void publish_effect_controls(Interface *interf, const JsonObject *data, const ch
  * формируется не основная страница а секция, заменяющая собой одноименную секцию на основной странице
  */
 void ui_block_mainpage_switches(Interface *interf, const JsonObject *data, const char* action){
-    if (!interf) return;
+    interf->json_frame_interface(P_content);    // replace sections on existing main page
+    // load uidata objects for the lamp
+    interf->json_section_uidata();
+        interf->uidata_pick( "lampui.sections.main_switches");
+    interf->json_section_end();
+    interf->json_frame_flush();
+
+    interf->json_frame_value();
+        // lamp pwr switch
+        interf->value(A_dev_pwrswitch, myLamp.getLampFlagsStuct().pwrState);
+        // demo status
+        interf->value(K_demo, myLamp.getLampFlagsStuct().demoMode);
+        // button lock
+        getset_btn_lock(interf, nullptr, NULL);
+        // Mike
+        interf->value(T_mic, myLamp.getLampFlagsStuct().isMicOn);
+        // current effect's luma curve
+        interf->value(A_dev_lcurve, e2int(myLamp.effwrkr.getEffCfg().curve));
+    interf->json_frame_flush();
+
+    // request state publishing from MP3Player
+    EVT_POST(LAMP_GET_EVENTS, e2int(evt::lamp_t::mp3state));
+
+
+#ifdef DISABLED_CODE
     interf->json_frame_interface("content");    // replace sections on existing main page
 
     interf->json_section_begin(T_switches);   // section to replace
@@ -862,13 +887,14 @@ void ui_block_mainpage_switches(Interface *interf, const JsonObject *data, const
 
     interf->button(button_t::generic, A_ui_page_effects, TINTF_exit);
     interf->json_frame_flush();
+#endif  // DISABLED_CODE
+
 }
 
 /*  Страница "Эффекты" (заглавная страница)
     здесь выводится список эффектов который не содержит "скрытые" элементы
 */
 void ui_page_effects(Interface *interf, const JsonObject *data, const char* action){
-    confEff = NULL; // т.к. не в конфигурировании, то сбросить данное значение
     if (!interf) return;
 
     // start a new xload frame (need an xload for effects list)
@@ -977,7 +1003,7 @@ void show_settings_mic(Interface *interf, const JsonObject *data, const char* ac
     interf->json_frame_interface();
     interf->json_section_main(TCONST_settings_mic, TINTF_020);
 
-    interf->checkbox(TCONST_Mic, myLamp.isMicOnOff(), TINTF_012, true);
+    interf->checkbox(T_mic, myLamp.getLampFlagsStuct().isMicOn, TINTF_012, true);
 
     interf->json_section_begin(TCONST_set_mic);
         interf->number_constrained(V_micScale, round(myLamp.getLampState().getMicScale() * 10) / 10, TINTF_022, 0.1f, 0.1f, 4.0f);
@@ -1014,7 +1040,7 @@ void set_settings_mic(Interface *interf, const JsonObject *data, const char* act
 
 void set_micflag(Interface *interf, const JsonObject *data, const char* action){
     if (!data) return;
-    myLamp.setMicOnOff((*data)[TCONST_Mic]);
+    myLamp.setMicOnOff((*data)[T_mic]);
 }
 
 /**
@@ -1105,14 +1131,12 @@ void set_mp3mute(Interface *interf, const JsonObject *data, const char* action){
     if (!data) return;
 
     bool v = (*data)[T_mp3mute];
-    myLamp.setMP3mute(v);
     EVT_POST(LAMP_SET_EVENTS, e2int(v ? evt::lamp_t::mp3mute : evt::lamp_t::mp3unmute ));
 }
 
 void set_mp3volume(Interface *interf, const JsonObject *data, const char* action){
     if (!data) return;
     int volume = (*data)[T_mp3vol];
-    embui.var(T_mp3vol, volume);
     EVT_POST_DATA(LAMP_SET_EVENTS, e2int(evt::lamp_t::mp3vol), &volume, sizeof(int));
 }
 
@@ -1498,7 +1522,7 @@ void embui_actions_register(){
     embui.action.add(A_ui_page_widgets, ui_page_widgets);                   // меню: переход на страницу "Виджеты"
     embui.action.add(A_ui_block_switches, ui_block_mainpage_switches);      // нажатие кнопки "еще..." на странице "Эффекты"
 
-    // led controls
+    // device controls
     embui.action.add(A_dev_pwrswitch, set_pwrswitch);                       // lamp's powerswitch action
     embui.action.add(A_dev_brightness, getset_brightness);                  // Lamp brightness
     embui.action.add(A_dev_lcurve, set_lcurve);                             // luma curve control
@@ -1516,6 +1540,7 @@ void embui_actions_register(){
     embui.action.add(A_display_tm1637, getset_tm1637);                      // get/set tm1637 display configuration
 
     // button configurations
+    embui.action.add(A_dev_btnlock, getset_btn_lock);                       // button locking
     embui.action.add(A_button_gpio, getset_button_gpio);                    // button setup
     embui.action.add(A_button_evt_edit, page_button_evtedit);               // button event edit form
     embui.action.add(A_button_evt_save, page_button_evt_save);              // button save/apply event
@@ -1553,8 +1578,7 @@ void embui_actions_register(){
     embui.action.add(T_display_type, page_display_setup);                // load display setup page depending on selected disp type (action for drop down list)
 
     embui.action.add(TCONST_set_mic, set_settings_mic);
-    embui.action.add(TCONST_Mic, set_micflag);
-    //embui.action.add(TCONST_mic_cal, set_settings_mic_calib);
+    embui.action.add(T_mic, set_micflag);
 
 
 #ifdef LAMP_DEBUG

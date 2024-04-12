@@ -171,15 +171,15 @@ void run_action(ra act, const T& param) {
 
     // simple actions with provided key:value
     case ra::miconoff : {
-      obj[P_action] = TCONST_Mic;
-      data[TCONST_Mic] = param;
+      obj[P_action] = T_mic;
+      data[T_mic] = param;
       break;
     }
 
     //MP3: enable/disable
     case ra::mp3_enable : {
-      obj[P_action] = TCONST_Mic;
-      data[TCONST_Mic] = param;
+      obj[P_action] = T_mic;
+      data[T_mic] = param;
       break;
     }
     //MP3: set volume

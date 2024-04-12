@@ -57,13 +57,17 @@ struct ButtonAction {
 
 class ButtonEventHandler {
 
-    esp_event_loop_handle_t _loop;
     // button event instance
     esp_event_handler_instance_t _btn_einstance = nullptr;
     // lamp state events instance
     esp_event_handler_instance_t _lmp_einstance = nullptr;
+    // lamp set events instance
+    esp_event_handler_instance_t _lmp_set_events = nullptr;
 
     std::list<ButtonAction> _event_map;
+
+    // Button lock
+    bool _btn_lock = false;
 
     // lamp power state
     bool _lamp_pwr = false;
@@ -78,15 +82,26 @@ class ButtonEventHandler {
     void _lmpEventHandler(esp_event_base_t base, int32_t id, void* data);
 
 public:
+    ButtonEventHandler();
     ~ButtonEventHandler(){ unsubscribe(); }
 
-    void subscribe( esp_event_loop_handle_t loop );
+    void subscribe();
 
     void unsubscribe();
 
 
     void load(JsonVariantConst cfg);
 
+    // get button lock state
+    bool lock() const { return _btn_lock; }
+
+    /**
+     * @brief set button lock
+     * i.e. disable button from accidental press, cats, dogs, etc...
+     * 
+     * @param lock 
+     */
+    void lock(bool lock);
 };
 
 

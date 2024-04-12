@@ -114,8 +114,6 @@ void event_publisher(void* handler_args, esp_event_base_t base, int32_t id, void
  */
 void page_button_setup(Interface *interf, const JsonObject *data, const char* action);
 
-void getset_button_gpio(Interface *interf, const JsonObject *data, const char* action);
-
 
 // ========== DFPlayer
 
