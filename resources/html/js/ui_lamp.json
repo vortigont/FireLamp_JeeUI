@@ -1,6 +1,6 @@
 {
   "type":"interface",
-  "version":10,
+  "version":11,
   "descr":"FireLamp UI objects",
 
   "settings":{
@@ -1630,6 +1630,102 @@
           "fa": "fas fa-door-open",
           "label":"Выход"
        }
+      ]
+    },
+    "main_switches":{
+      "section": "switches",
+      "block": [
+        {
+          "section": "swboxes",
+          "line": true,
+          "block": [
+            {
+              "id": "dev_pwrswitch",
+              "html": "input",
+              "label": "Включить",
+              "type": "checkbox",
+              "onChange": true
+            },
+            {
+              "id": "demo",
+              "html": "input",
+              "label": "Демо",
+              "type": "checkbox",
+              "onChange": true
+            },
+            {
+              "id": "dev_btnlock",
+              "html": "input",
+              "label": "Блок. кнопку",
+              "type": "checkbox",
+              "onChange": true
+            },
+            {
+              "id": "dev_mike",
+              "html": "input",
+              "label": "Микрофон",
+              "type": "checkbox",
+              "onChange": true
+            },
+            {
+              "id": "mp3mute",
+              "html": "input",
+              "label": "Откл. мелодии",
+              "type": "checkbox",
+              "onChange": true
+            },
+            {
+              "id": "dev_lcurve",
+              "html": "select",
+              "value": 2,
+              "label": "Luma curve",
+              "onChange": true,
+              "section": "options",
+              "block": [
+                {
+                  "value": 0,
+                  "label": "binary"
+                },
+                {
+                  "value": 1,
+                  "label": "linear"
+                },
+                {
+                  "value": 2,
+                  "label": "cie1931"
+                },
+                {
+                  "value": 3,
+                  "label": "exponent"
+                },
+                {
+                  "value": 4,
+                  "label": "sine"
+                },
+                {
+                  "value": 5,
+                  "label": "square"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "mp3vol",
+          "html": "input",
+          "type": "range",
+          "min": 1,
+          "max": 30,
+          "step": 1,
+          "label": "MP3 Громкость",
+          "onChange": true
+        },
+        {
+          "id": "ui_page_effects",
+          "html": "button",
+          "type": 0,
+          "label": "Скрыть"
+        }
       ]
     }
   }
