@@ -807,15 +807,14 @@ uint16_t EffectWorker::getNext(){
   return firstfound;
 }
 
-void EffectWorker::switchEffect(uint16_t effnb, bool twostage){
-  LOG(println, "EffectWorker::switchEffect() ");
+void EffectWorker::switchEffect(uint16_t effnb){
   // NOTE: if call has been made to the SAME effect number as the current one, than it MUST be force-switched anyway to recreate EffectCalc object
   // (it's required for a cases like new LedFB has been provided, etc)
   if (effnb == curEff.num) return reset();
 
   curEff.flushcfg();  // сохраняем конфигурацию предыдущего эффекта если были несохраненные изменения
 
-  LOG(printf, "switch EffWorker to "); LOG(println, effnb);
+  LOGD(T_EffWrkr, printf, "switch to %u", effnb);
   workerset(effnb);
 }
 
@@ -1032,7 +1031,7 @@ void EffectWorker::_rebuild_eff_list(const char *folder){
 }
 
 void EffectWorker::reset(){
-  if (worker) workerset(getCurrent());
+  if (worker) workerset(getCurrentEffectNumber());
 }
 
 void EffectWorker::setLumaCurve(luma::curve c){
@@ -1084,7 +1083,7 @@ void EffectWorker::_runnerHndlr(){
 void EffectWorker::start(){
   _status = true;
   if (_runnerTask_h) return;    // we are already running
-  workerset(getCurrent());      // spawn an instance of effect and run the task
+  workerset(getCurrentEffectNumber());      // spawn an instance of effect and run the task
 }
 
 void EffectWorker::stop(){

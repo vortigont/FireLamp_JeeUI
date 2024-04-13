@@ -41,7 +41,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "lamp.h"
 #include "devices.h"
 #include "effects.h"
-#include "extra_tasks.h"
 #include "templates.hpp"
 
 #ifdef ENCODER
@@ -565,7 +564,7 @@ void set_effects_config_param(Interface *interf, const JsonObject *data, const c
         LOG(printf, "delete effect->eff_nb=%d\n", tmpEffnb);
         bool isCfgRemove = (act == TCONST_delall);
 
-        if(tmpEffnb==myLamp.effwrkr.getCurrent()){
+        if(tmpEffnb==myLamp.effwrkr.getCurrentEffectNumber()){
             myLamp.effwrkr.switchEffect(EFF_ENUM::EFF_NONE);
             run_action(ra::eff_next);
         }
@@ -811,7 +810,7 @@ void publish_effect_controls(Interface *interf, const JsonObject *data, const ch
 
     // publish also current effect index (for drop-down selector)
     interf->json_frame_value();
-    interf->value(A_effect_switch_idx, myLamp.effwrkr.getEffnum());
+    interf->value(A_effect_switch_idx, myLamp.effwrkr.getCurrentEffectNumber());
     interf->json_frame_flush();
     if (remove_iface) delete interf;
 }
@@ -914,7 +913,7 @@ void ui_page_effects(Interface *interf, const JsonObject *data, const char* acti
 
         interf->json_section_xload();
             // side load drop-down list from /eff_list.json file
-            interf->select(A_effect_switch_idx, myLamp.effwrkr.getEffnum(), TINTF_00A, true, TCONST_eff_list_json);
+            interf->select(A_effect_switch_idx, myLamp.effwrkr.getCurrentEffectNumber(), TINTF_00A, true, TCONST_eff_list_json);
         interf->json_section_end(); // close xload section
 
         // 'next', 'prev' effect buttons << >>

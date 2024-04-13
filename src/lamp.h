@@ -40,7 +40,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "config.h" // подключаем эффекты, там же их настройки
 #include "effectworker.h"
 #include "EmbUI.h"
-#include "extra_tasks.h"
 #include "char_const.h"
 #include "luma_curves.hpp"
 #include "micFFT.h"
@@ -120,33 +119,43 @@ union LampFlagsPack {
 class Lamp {
     friend class LEDFader;
 private:
+    // struct keep state during switching effects with fader
+    struct EffSwitch_state_t {
+        int fadeState{0};       // 0 not fading, -1 - fadeout, 1 - fadein
+        uint16_t pendingEffectNum{0};
+    };
+
+    // effect switching state
+    EffSwitch_state_t _swState;
+
     std::shared_ptr<LedFB<CRGB> > _overlay;     // буфер для оверлея
 
     // a set of lamp options (flags)
     LampFlagsPack opts;
-    LAMPSTATE lampState;                // текущее состояние лампы, которое передается эффектам
+    // текущее состояние лампы, которое передается в класс эффектпроцессора
+    LAMPSTATE lampState;
 
     uint8_t _brightnessScale = DEF_BRT_SCALE;
-    luma::curve _curve = luma::curve::cie1931;       // default luma correction curve for PWM driven LEDs
+    // default luma correction curve for PWM driven LEDs
+    luma::curve _curve = luma::curve::cie1931;
     uint8_t globalBrightness = 127;     // глобальная яркость
-    uint8_t storedBright;               // "запасное" значение яркости
-    uint8_t BFade;                      // затенение фона под текстом
+    //uint8_t storedBright;               // "запасное" значение яркости
+    //uint8_t BFade;                      // затенение фона под текстом
 
     // GPIO's
-    // это должен быть gpio_num_t в есп32, но пока нужна совместимость с 8266 держим инт
-    int8_t fet_gpio = GPIO_NUM_NC, aux_gpio = GPIO_NUM_NC;
-    int8_t fet_ll, aux_ll;
+    int32_t fet_gpio = GPIO_NUM_NC, aux_gpio = GPIO_NUM_NC;
+    bool fet_ll, aux_ll;
 
     LAMPMODE mode = LAMPMODE::MODE_NORMAL; // текущий режим
     LAMPMODE storedMode = LAMPMODE::MODE_NORMAL; // предыдущий режим
     uint16_t storedEffect = (uint16_t)EFF_ENUM::EFF_NONE;
-    CRGB rgbColor = CRGB::White; // дефолтный цвет для RGB-режима
 
     // Microphone
     MicWorker *mw = nullptr;
     void micHandler();
 
-    Task *demoTask = nullptr;    // динамический планировщик Смены эффектов в ДЕМО
+    // аймер смены эффектов в ДЕМО
+    Task *demoTask = nullptr;
 
     /**
      * @brief set brightness value to Display backend
@@ -201,7 +210,7 @@ public:
      * 
      * @param uint8_t tgtbrt - target brigtness level 0-255
      * @param fade_t fade - use/skip or use default fade effect
-     * @param bool bypass - set brightness as-as directly to backend, skipping fader, scaling and do NOT save new value
+     * @param bool bypass - set brightness as-шs directly to backend, skipping fader, scaling and do NOT save new value to NVS
      */
     void setBrightness(uint8_t tgtbrt, fade_t fade=fade_t::preset, bool bypass = false);
 
@@ -240,34 +249,12 @@ public:
      */
     uint8_t getBrightnessScale() const { return _brightnessScale; };
 
-#ifdef EMBUI_USE_MQTT
-    void setmqtt_int(int val=DEFAULT_MQTTPUB_INTERVAL);
-#endif
-
     LAMPMODE getMode() {return mode;}
     LAMPMODE getStoredMode() {return storedMode;}
     void setMode(LAMPMODE _mode) { storedMode = ((mode == _mode) ? storedMode: mode); mode=_mode;}
 
-    /**
-     * @brief send text to scroll on screen
-     * using default color and options
-     * @param text - text to scroll
-     */
-    void sendString(const char* text);
-
-    /**
-     * @brief 
-     * 
-     * @param text 
-     * @param letterColor 
-     * @param forcePrint - выводить текст при выключенной лампе
-     * @param clearQueue 
-     */
-    void sendString(const char* text, CRGB letterColor, bool forcePrint = true, bool clearQueue = false);
-    void sendStringToLamp(const char* text = nullptr, CRGB letterColor = CRGB::Black, bool forcePrint = false, bool clearQueue = false, const int8_t textOffset = -128, const int16_t fixedPos = 0);
-    void sendStringToLampDirect(const char* text = nullptr,  CRGB letterColor = CRGB::Black, bool forcePrint = false, bool clearQueue = false, const int8_t textOffset = -128, const int16_t fixedPos = 0);
-
-    void handle();          // главная функция обработки эффектов
+    // Loop cycle
+    void handle();
 
     // === flag get/set methods ===
 
@@ -278,10 +265,9 @@ public:
     // saves flags to EmbUI config
     void save_flags();
     void setFaderFlag(bool flag) {opts.flag.fadeEffects = flag; save_flags(); }
-    bool getFaderFlag() {return opts.flag.fadeEffects; save_flags(); }
+    bool getFaderFlag() const { return opts.flag.fadeEffects; }
     void setClearingFlag(bool flag) {opts.flag.wipeOnEffChange = flag; save_flags(); }
-    bool getClearingFlag() {return opts.flag.wipeOnEffChange; }
-
+    bool getClearingFlag() const {return opts.flag.wipeOnEffChange; }
 
     bool isLampOn() {return opts.flag.pwrState;}
     bool isDebugOn() {return opts.flag.debug;}
@@ -315,20 +301,9 @@ public:
      */
     void clearDrawBuf() { CRGB c = CRGB::Black; fillDrawBuf(c); }
 
-    /**
-     * @brief prints current time on screen
-     * 
-     * @param value - some ugly json string with opts   {'isShowOff':false,'isPlayTime':true}
-     * @param force - print even if lamp is off
-     */
-    void showTimeOnScreen(const char *value, bool force=false);
-
     void startDemoMode(uint8_t tmout = DEFAULT_DEMO_TIMER); // дефолтное значение, настраивается из UI
     void startNormalMode(bool forceOff=false);
-    void restoreStored();
-    void storeEffect();
-    void setBFade(uint8_t val){ BFade = val; }
-    uint8_t getBFade(){ return BFade; }
+
     void setEffHasMic(bool flag) {opts.flag.effHasMic = flag;}
     void setDRand(bool flag) {opts.flag.demoRandom = flag; lampState.isRandDemo = (flag && mode==LAMPMODE::MODE_DEMO); }
 
@@ -374,6 +349,7 @@ public:
      */
     void effectsTimer(SCHEDULER action);
 
+private:
     /**
      * @brief static event handler
      * wraps class members access for event loop
@@ -385,16 +361,30 @@ public:
      */
     static void event_hndlr(void* handler_args, esp_event_base_t base, int32_t id, void* event_data);
 
-private:
     /**
      * @brief - переключатель эффектов для других методов,
      * может использовать фейдер, выбирать случайный эффект для демо
      * @param effswitch_t action - вид переключения (пред, след, случ.)
      * @param fade - переключаться через фейдер или сразу
-     * @param effnb - номер эффекта
-     * @param skip - системное поле - пропуск фейдера
+     * @param effnb - номер эффекта на который переключаться (при переключении по конкретному номеру)
      */
-    void _switcheffect(effswitch_t action, bool fade, uint16_t effnb = EFF_ENUM::EFF_NONE, bool skip = false);
+    void _switcheffect(effswitch_t action, bool fade, uint16_t effnb = EFF_ENUM::EFF_NONE);
+
+    /**
+     * @brief get effect number relative to fader state
+     * when not in transition state it returns current effect number
+     * when in transition state, it returns pending effect number
+     * @return uint16_t 
+     */
+    uint16_t _getRealativeEffectNum();
+
+
+    /**
+     * @brief - обработка событий fadeEnd
+     * отслеживает стадии переключения эффектов через затухание
+     * запускает 2ю стадию переключения эффекта после окончания затухания
+     */
+    void _fadeEventHandler();
 
     /**
      * @brief creates/destroys buffer for "drawing, etc..."
@@ -489,9 +479,8 @@ public:
      * @brief - Non-blocking light fader, uses scheduler to globaly fade display brightness within specified duration
      * @param uint8_t _targetbrightness - end value for the brighness to fade to
      * @param uint32_t _duration - fade effect duraion, ms
-     * @param callback  -  callback-функция, которая будет выполнена после окончания затухания
      */
-    void fadelight(int _targetbrightness=0, uint32_t _duration=FADE_TIME, std::function<void()> callback=nullptr);
+    void fadelight(int _targetbrightness=0, uint32_t _duration=FADE_TIME);
 
     /**
      * @brief check if fade is in progress

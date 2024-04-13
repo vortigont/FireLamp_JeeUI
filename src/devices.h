@@ -70,9 +70,12 @@ void button_configure_events(JsonVariantConst cfg);
 
 void getset_button_gpio(Interface *interf, const JsonObject *data, const char* action);
 
-
 // get/set button lock
 void getset_btn_lock(Interface *interf, const JsonObject *data, const char* action);
+
+// ========== Encoder
+
+void encoder_load(JsonVariantConst cfg);
 
 // *** DFPlayer
 

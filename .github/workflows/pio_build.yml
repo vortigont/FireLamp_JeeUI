@@ -40,7 +40,6 @@ jobs:
         variant:
           - esp32
           - esp32debug
-          - esp32full
 
     steps:
       - uses: actions/checkout@v4

@@ -57,6 +57,7 @@ TMDisplay *tm1637 = nullptr;
 // GPIO button
 GPIOButton<ESPEventPolicy> *button = nullptr;
 ButtonEventHandler *button_handler = nullptr;
+PCNT_Encoder *encoder = nullptr;
 
 // DFPlayer
 MP3PlayerController *mp3player = nullptr;
@@ -112,13 +113,44 @@ void getset_btn_lock(Interface *interf, const JsonObject *data, const char* acti
   }
 }
 
+void encoder_cfg_load(JsonVariantConst cfg){
+  if (!cfg[T_enabled]){
+     // encoder disabled or config is invalid
+    if (encoder){
+      delete encoder;
+      encoder = nullptr;
+    }
+    return;
+  }
+
+  if (!encoder){
+    encoder = new PCNT_Encoder();
+    if (!encoder) return;
+
+    encoder->load(cfg);
+  }
+}
+
 void button_cfg_load(){
   DynamicJsonDocument doc(BTN_EVENTS_CFG_JSIZE);
   if (!embuifs::deserializeFile(doc, T_benc_cfg)) return;      // config is missing, bad
 
+  // setup encoder
+  JsonVariantConst _enc( doc[T_encoder] );
+  encoder_cfg_load(_enc);
+
+  // setup button
   JsonVariantConst _cfg( doc[T_btn_cfg] );
   button_configure_gpio(_cfg);
 
+  if (!button_handler){
+    button_handler = new ButtonEventHandler(doc[T_encoder][T_enabled].as<bool>());
+    if (!button_handler) return;
+    // subscribe only once, when object is newly created
+    button_handler->subscribe();
+  }
+
+  // load events
   _cfg = doc[T_btn_events];
   button_configure_events(_cfg);
 }
@@ -161,12 +193,16 @@ void button_configure_gpio(JsonVariantConst cfg){
     return;
   }
 
-  button->enableEvent(ESPButton::event_t::press, false);
-  button->enableEvent(ESPButton::event_t::release, false);
+  bool withEncoder = cfg[T_encoder];
 
-  button->enableEvent(ESPButton::event_t::longPress);
-  button->enableEvent(ESPButton::event_t::longRelease);
-  button->enableEvent(ESPButton::event_t::autoRepeat);
+  // if encoder is used then I need press/release events
+  button->enableEvent(ESPButton::event_t::press, withEncoder);
+  button->enableEvent(ESPButton::event_t::release, withEncoder);
+
+  // longPress/autorepeat will only work if encoder is disabled
+  button->enableEvent(ESPButton::event_t::longPress, !withEncoder);
+  button->enableEvent(ESPButton::event_t::autoRepeat, !withEncoder);
+  //button->enableEvent(ESPButton::event_t::longRelease);
   button->enableEvent(ESPButton::event_t::multiClick);
 
   // set event loop to post events to
@@ -176,14 +212,8 @@ void button_configure_gpio(JsonVariantConst cfg){
 }
 
 void button_configure_events(JsonVariantConst cfg){
-  if (!button_handler){
-    button_handler = new ButtonEventHandler();
-    if (!button_handler) return;
-    // subscribe only once, when object is newly created
-    button_handler->subscribe();
-  }
-
-  button_handler->load(cfg);     // load config
+  if (button_handler)
+    button_handler->load(cfg);     // load config
 }
 
 void getset_button_gpio(Interface *interf, const JsonObject *data, const char* action){
@@ -215,7 +245,6 @@ void getset_button_gpio(Interface *interf, const JsonObject *data, const char* a
 
   if (interf) ui_page_setup_devices(interf, nullptr, NULL);
 }
-
 
 // *** DFPlayer
 

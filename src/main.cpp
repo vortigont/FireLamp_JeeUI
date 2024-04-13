@@ -99,10 +99,6 @@ void setup() {
     // Load DFPlayer support if enabled
     dfplayer_cfg_load();
 
-#ifdef ENCODER
-    enc_setup();
-#endif
-
     // attach Informer handlers
     register_widgets_handlers();
     // spawn widgets from saved configurations, this must be done AFTER display initialisation
@@ -125,14 +121,6 @@ void loop() {
     embui.handle(); // цикл, необходимый фреймворку
 
     myLamp.handle(); // цикл, обработка лампы
-#ifdef ENCODER
-    encLoop(); // цикл обработки событий энкодера. Эта функция будет отправлять в УИ изменения, только тогда, когда подошло время ее loop
-#endif
-
-#ifdef USE_STREAMING
-    if (ledStream)
-        ledStream->handle();
-#endif
 }
 
 //------------------------------------------
