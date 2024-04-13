@@ -612,14 +612,9 @@ public:
     EffectListElem *getNextEffect(EffectListElem *current);
     // вернуть выбранный элемент списка
     EffectListElem *getEffect(uint16_t select);
-    // вернуть номер текущего эффекта
-    uint16_t getCurrent() const {return curEff.num; }
 
-    /**
-     * @brief  вернуть актуальный номер эффекта
-     * в случае если работает затухание, возвращает номер эффекта на очереди
-     */
-    uint16_t getEffnum() const { return curEff.num; }
+    // вернуть номер текущего эффекта
+    uint16_t getCurrentEffectNumber() const {return curEff.num; }
 
     // вернуть текущий элемент списка
     EffectListElem *getCurrentListElement();
@@ -650,9 +645,8 @@ public:
      * second one does the switching
      * 
      * @param effnb - effect to switch to
-     * @param twostate - use two staged switching
      */
-    void switchEffect(uint16_t effnb, bool twostate = false);
+    void switchEffect(uint16_t effnb);
 
     // копирование эффекта
     void copyEffect(const EffectListElem *base);

@@ -42,7 +42,9 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "evtloop.h"
 
 #define MP3_SERIAL Serial1
+#define DFPLAYER_MIN_VOL      0
 #define DFPLAYER_DEFAULT_VOL  12
+#define DFPLAYER_MAX_VOL      30
 #define DFPLAYER_JSON_CFG_JSIZE 4096
 
 
@@ -61,7 +63,7 @@ class MP3PlayerController {
 
   HardwareSerial& _serial;
   Task _tPeriodic; // периодический опрос плеера
-  uint8_t _volume = DFPLAYER_DEFAULT_VOL;
+  uint32_t _volume = DFPLAYER_DEFAULT_VOL;
   bool _mute{false};               // disable track sounds
   DfMp3_StatusState _state = DfMp3_StatusState_Idle;
 

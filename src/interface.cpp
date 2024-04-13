@@ -41,12 +41,8 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "lamp.h"
 #include "devices.h"
 #include "effects.h"
-#include "extra_tasks.h"
 #include "templates.hpp"
 
-#ifdef ENCODER
-    #include "enc.h"
-#endif
 #include LANG_FILE                  //"text_res.h"
 
 #include "basicui.h"
@@ -233,14 +229,7 @@ void ui_page_selector(Interface *interf, const JsonObject *data, const char* act
             return;
         case page::setup_bttn :    // страница настроек кнопки
             return page_button_setup(interf, nullptr, NULL);
-            
-/*
-    #ifdef ENCODER
-        case page::setup_encdr :    // страница настроек кнопки
-            show_settings_enc(interf, nullptr, NULL);
-            return;
-    #endif
- */        case page::setup_gpio :     // страница настроек GPIO
+        case page::setup_gpio :     // страница настроек GPIO
             return page_gpiocfg(interf, nullptr, NULL);
         case page::setup_other :    // страница "настройки"-"другие"
             return page_settings_other(interf, nullptr, NULL);
@@ -361,7 +350,7 @@ void ui_page_setup_devices(Interface *interf, const JsonObject *data, const char
     interf->button_value(button_t::generic, A_ui_page, e2int(page::setup_display), TINTF_display_setup);
 
     // Button configuration
-    interf->button_value(button_t::generic, A_ui_page, e2int(page::setup_bttn), TINTF_013);
+    interf->button_value(button_t::generic, A_ui_page, e2int(page::setup_bttn), TINTF_ButtonEncoder);
 
     // tm1637
     interf->button_value(button_t::generic, A_ui_page, e2int(page::setup_tm1637), TINTF_setup_tm1637);
@@ -392,7 +381,7 @@ void ui_page_widgets(Interface *interf, const JsonObject *data, const char* acti
 }
 
 /**
- * @brief build a page with Button configuration
+ * @brief build a page with Button / Encoder configuration
  * it contains a set of controls and options
  */
 void page_button_setup(Interface *interf, const JsonObject *data, const char* action){
@@ -403,6 +392,7 @@ void page_button_setup(Interface *interf, const JsonObject *data, const char* ac
 
     // call setter with no data, it will publish existing config values if any
     getset_button_gpio(interf, nullptr, NULL);
+    getset_encoder_gpio(interf, nullptr, NULL);
 
     DynamicJsonDocument doc(4096);
     if (!embuifs::deserializeFile(doc, T_benc_cfg)) return;      // config is missing, bad
@@ -450,21 +440,21 @@ void page_button_setup(Interface *interf, const JsonObject *data, const char* ac
                 s = "Pwr Toggle";
                 break;
             case 24:
-                s = "Brightness:";
+                s = "Яркость:";
                 s += obj[T_arg].as<int>();
                 break;
             case 30:
-                s = "Sw Effect to:";
+                s = "Эффект номер:";
                 s += obj[T_arg].as<int>();
                 break;
             case 31:
-                s = "Sw Effect next";
+                s = "Следующий эффект";
                 break;
             case 32:
-                s = "Sw Effect prev";
+                s = "Предыдущий эффект";
                 break;
             case 33:
-                s = "Sw Effect random";
+                s = "Случайный эффект";
                 break;
             default:
                 s = "Unknown";
@@ -565,7 +555,7 @@ void set_effects_config_param(Interface *interf, const JsonObject *data, const c
         LOG(printf, "delete effect->eff_nb=%d\n", tmpEffnb);
         bool isCfgRemove = (act == TCONST_delall);
 
-        if(tmpEffnb==myLamp.effwrkr.getCurrent()){
+        if(tmpEffnb==myLamp.effwrkr.getCurrentEffectNumber()){
             myLamp.effwrkr.switchEffect(EFF_ENUM::EFF_NONE);
             run_action(ra::eff_next);
         }
@@ -811,7 +801,7 @@ void publish_effect_controls(Interface *interf, const JsonObject *data, const ch
 
     // publish also current effect index (for drop-down selector)
     interf->json_frame_value();
-    interf->value(A_effect_switch_idx, myLamp.effwrkr.getEffnum());
+    interf->value(A_effect_switch_idx, myLamp.effwrkr.getCurrentEffectNumber());
     interf->json_frame_flush();
     if (remove_iface) delete interf;
 }
@@ -914,7 +904,7 @@ void ui_page_effects(Interface *interf, const JsonObject *data, const char* acti
 
         interf->json_section_xload();
             // side load drop-down list from /eff_list.json file
-            interf->select(A_effect_switch_idx, myLamp.effwrkr.getEffnum(), TINTF_00A, true, TCONST_eff_list_json);
+            interf->select(A_effect_switch_idx, myLamp.effwrkr.getCurrentEffectNumber(), TINTF_00A, true, TCONST_eff_list_json);
         interf->json_section_end(); // close xload section
 
         // 'next', 'prev' effect buttons << >>
@@ -1219,9 +1209,6 @@ void user_settings_frame(Interface *interf, const JsonObject *data, const char* 
     // mike
     interf->button_value(button_t::generic, A_ui_page, e2int(page::mike), TINTF_020);
 
-#ifdef ENCODER
-    interf->button_value(button_t::generic, A_ui_page, e2int(page::setup_encdr), TINTF_0DC);
-#endif
     // other
     interf->button_value(button_t::generic, A_ui_page, e2int(page::setup_other), TINTF_082);
 
@@ -1499,14 +1486,6 @@ void embui_actions_register(){
 //    embui.var_create(TCONST_alarmPT, 85); // 5<<4+5, старшие и младшие 4 байта содержат 5
     embui.var_create(TCONST_spdcf, 1.0);
 
-    // пины и системные настройки
-#ifdef ENCODER
-    //embui.var_create(TCONST_encTxtCol, "#FFA500");  // Дефолтный цвет текста (Orange)
-    //embui.var_create(TCONST_encTxtDel, 40);        // Задержка прокрутки текста
-    //embui.var_create(TCONST_EncVG, (int)GAUGETYPE::GT_VERT);  // Тип шкалы
-    //embui.var_create(TCONST_EncVGCol, "#FF2A00");  // Дефолтный цвет шкалы
-#endif
-
     embui.var_create(T_mp3vol, 25); // громкость
     //embui.var_create(TCONST_mp3count, 255); // кол-во файлов в папке mp3 (установка убрана, используется значение по-умолчанию равное максимальному числу эффектов)
 
@@ -1544,6 +1523,7 @@ void embui_actions_register(){
     embui.action.add(A_button_gpio, getset_button_gpio);                    // button setup
     embui.action.add(A_button_evt_edit, page_button_evtedit);               // button event edit form
     embui.action.add(A_button_evt_save, page_button_evt_save);              // button save/apply event
+    embui.action.add(A_encoder_gpio, getset_encoder_gpio);                  // encoder gpio
 
     // DFPlayer
     embui.action.add(A_dfplayer_dev, getset_dfplayer_device);               // DFPlayer device setup
@@ -1586,8 +1566,4 @@ void embui_actions_register(){
 #endif
 
 
-/* #ifdef ENCODER
-    embui.action.add(TCONST_set_enc, set_settings_enc);
-#endif
- */
 }

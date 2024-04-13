@@ -78,6 +78,7 @@ enum class lamp_t:int32_t {
   effSwitchNext,
   effSwitchPrev,
   effSwitchRnd,
+  effSwitchStep,            // switch n steps offset from current effect, param: signed n
 
   // mp3 player
   mp3vol = 40,              // get/set mp3 volume, param: int n
@@ -87,21 +88,23 @@ enum class lamp_t:int32_t {
   mp3state,                 // get mp3player state, will publish current mp3player state both to event bus and EmbUI's feeders
 
   // Notifications
-  cockoo = 50,           // play cockoo or talking clock. param int - track to play, 1 is for Talking clock, any other - number of track from signals folder
-  alarmTrigger,          // Alarm event. Play alarm track. param int - track to play
-  alarmStop,             // Stop alarm actions event
+  cockoo = 50,              // play cockoo or talking clock. param int - track to play, 1 is for Talking clock, any other - number of track from signals folder
+  alarmTrigger,             // Alarm event. Play alarm track. param int - track to play
+  alarmStop,                // Stop alarm actions event
 
   // ext devices control
   btnLock = 100,            // Lock button
   btnUnLock,                // UnLock button
   btnLockState,             // request for button lock state, ButtonEventHandler will reply with LAMP_STATE_EVENTS:: btnUnLock/btnLock
 
+  encoderMode = 110,        // change event, which mode encoder has switched to, param: unsigned
+
   // **** state change / notification events ****
   fadeStart = 1000,
-  fadeEnd,
+  fadeEnd,                  // param: signed int - brightness level that fader ended with
 
 
-  noop_end                // NoOp
+  noop_end                  // NoOp
 };
 
 

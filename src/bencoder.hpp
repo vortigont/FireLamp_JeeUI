@@ -39,10 +39,13 @@
 
 #pragma once
 #include "espasyncbutton.hpp"
+#include "ESP32Encoder.h"
 #include "evtloop.h"
 #include "ArduinoJson.h"
+#include "freertos/timers.h"
 
-#define BTN_EVENTS_CFG_JSIZE 4096
+#define BTN_EVENTS_CFG_JSIZE    4096
+#define ENCODER_SWITCH_MODES    3       // number of modes encoder could switch to (brightness, effects, mp3volume)
 
 struct ButtonAction {
     ESPButton::event_t e;
@@ -57,32 +60,54 @@ struct ButtonAction {
 
 class ButtonEventHandler {
 
+    struct Encoder_counts {
+        // track button state
+        bool btn{false};
+        // which mode currently encoder is switching now
+        int8_t mode{0};
+        // encoder counter
+        int32_t last{0};
+        // ignore next click event (after encoder mode change)
+        bool ignore{false};
+    };
+
     // button event instance
     esp_event_handler_instance_t _btn_einstance = nullptr;
+    // encoder events
+    esp_event_handler_instance_t _enc_events = nullptr;
     // lamp state events instance
     esp_event_handler_instance_t _lmp_einstance = nullptr;
     // lamp set events instance
     esp_event_handler_instance_t _lmp_set_events = nullptr;
 
+    // events list
     std::list<ButtonAction> _event_map;
 
+    // enable handling encoder events
+    bool _encoderEnabled;
     // Button lock
     bool _btn_lock = false;
-
     // lamp power state
     bool _lamp_pwr = false;
     // flag tracks when Alarm event triggers, in this case any button event will generate Alarm cancelling event
     bool _alarm = false;
+
     // incr/decr multiplicator
     int _brightness_direction = 1;
 
+    // encoder counts and values
+    Encoder_counts _enc;
+
     static void event_hndlr(void* handler, esp_event_base_t base, int32_t id, void* event_data);
 
+    // button & encoder events processor
     void _btnEventHandler(ESPButton::event_t e, const EventMsg* msg);
+    // lamp events processor
     void _lmpEventHandler(esp_event_base_t base, int32_t id, void* data);
 
+
 public:
-    ButtonEventHandler();
+    ButtonEventHandler(bool withEncoder = false);
     ~ButtonEventHandler(){ unsubscribe(); }
 
     void subscribe();
@@ -105,3 +130,25 @@ public:
 };
 
 
+class PCNT_Encoder : public ESP32Encoder {
+    // lamp set events instance
+    esp_event_handler_instance_t _lmp_set_events = nullptr;
+
+    TimerHandle_t _tmr = nullptr;
+
+    int64_t _cnt{0};
+
+    // encoder poller
+    void _poller();
+
+public:
+    //RotaryEncoderControl();
+
+    void subscribe();
+
+    void unsubscribe();
+
+
+    void load(JsonVariantConst cfg);
+
+};

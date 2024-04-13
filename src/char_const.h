@@ -7,6 +7,7 @@
 static constexpr const char* T_Effect = "Effect";
 static constexpr const char* T_EffCfg = "EffCfg";
 static constexpr const char* T_EffWrkr = "EffWrkr";
+static constexpr const char* T_Fade = "Fade";
 static constexpr const char* T_Widget = "Widget";
 static constexpr const char* T_WebUI = "WebUI";
 static constexpr const char* T_WdgtMGR = "WdgtMGR";
@@ -19,6 +20,10 @@ static constexpr const char* T_drawing = "drawing";
 static constexpr const char* T_effect_dynCtrl = "eff_dynCtrl";
 static constexpr const char* T_gpio = "gpio";                                   // gpio key for display configuration
 static constexpr const char* T_logicL= "logicL";                                // logic level for button
+static constexpr const char* T_encoder = "encoder";
+static constexpr const char* T_enctype = "enctype";
+static constexpr const char* T_pull = "pull";
+
 
 // Display
 static constexpr const char* TCONST_fcfg_display = "/display.json";
@@ -186,11 +191,6 @@ static constexpr const char* TCONST_eff_sel = "eff_sel";
 static constexpr const char* TCONST_effHasMic = "effHasMic";
 static constexpr const char* TCONST_effListConf = "effListConf";
 static constexpr const char* TCONST_effname = "effname";
-static constexpr const char* TCONST_encoder = "encoder";
-static constexpr const char* TCONST_encTxtCol = "encTxtCol";
-static constexpr const char* TCONST_encTxtDel = "encTxtDel";
-static constexpr const char* TCONST_EncVGCol = "EncVGCol";
-static constexpr const char* TCONST_EncVG = "EncVG";
 static constexpr const char* TCONST_eqSetings = "eqSetings";
 static constexpr const char* TCONST_eventList = "eventList";
 static constexpr const char* TCONST_Events = "Events";
@@ -326,10 +326,11 @@ static constexpr const char* A_display_hub75 = "display_hub75";                 
 static constexpr const char* A_display_ws2812 = "display_ws2812";               // ws2812 display configuration
 // TM1637
 static constexpr const char* A_display_tm1637 = "*et_display_tm1637";           // get/set tm1637 display configuration
-// button
+// button / encoder
 static constexpr const char* A_button_gpio = "*et_button_gpio";                 // get/set button gpio configuration
 static constexpr const char* A_button_evt_edit = "button_evt_edit";             // edit button action form
 static constexpr const char* A_button_evt_save = "button_evt_save";             // save/apply button action form
+static constexpr const char* A_encoder_gpio = "*et_encoder_gpio";               // get/set encoder gpio configuration
 // DFPlayer
 static constexpr const char* A_dfplayer_dev = "*et_dfplayer_device";            // get/set DFPlayer device configuration
 static constexpr const char* A_dfplayer_opt = "*et_dfplayer_opt";               // get/set DFPlayer functions

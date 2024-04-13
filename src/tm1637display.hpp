@@ -139,6 +139,8 @@ private:
   // display volume
   void _msg_vol(int32_t b);
 
+  // display effect number
+  void _msg_effectnum(uint32_t b);
 };
 
 extern TMDisplay *tm1637;

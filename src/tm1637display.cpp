@@ -139,6 +139,12 @@ void TMDisplay::_event_picker(esp_event_base_t base, int32_t id, void* data){
         setBrightness(brtOff);
         _addscroll(T_Off);
         return;
+      case evt::lamp_t::effSwitchTo :
+        _msg_effectnum(*((unsigned*) data));
+        return;
+      case evt::lamp_t::mp3vol :
+        _msg_vol(*((int*) data));
+        return;
     }
   }
 
@@ -213,6 +219,14 @@ void TMDisplay::_msg_brt(int32_t b){
 
 void TMDisplay::_msg_vol(int32_t b){
   String s("Sn.");
+  if (b<10) s.concat((char)0x20); // append space
+  s += b;
+  display(s);
+  timer = 2;
+};
+
+void TMDisplay::_msg_effectnum(uint32_t b){
+  String s("Ef.");
   if (b<10) s.concat((char)0x20); // append space
   s += b;
   display(s);

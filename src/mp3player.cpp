@@ -209,6 +209,9 @@ void MP3PlayerController::_lmpSetEventHandler(esp_event_base_t base, int32_t id,
     case evt::lamp_t::mp3vol :
       setVolume(*reinterpret_cast<int*>(data));
       break;
+    case evt::lamp_t::mp3volstep :
+      setVolume( constrain(_volume + *reinterpret_cast<int*>(data), DFPLAYER_MIN_VOL, DFPLAYER_MAX_VOL) );
+      break;
     case evt::lamp_t::mp3mute :
       setSilent(true);
       break;
@@ -304,6 +307,8 @@ void MP3PlayerController::setVolume(uint8_t vol) {
     //LOGD(T_WdgtMGR, printf, "Err opening NVS handle: %s\n", esp_err_to_name(err));
     handle->set_item(T_mp3vol, _volume);
   }
+  // post sound volume event update
+  EVT_POST_DATA(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::mp3vol), &_volume, sizeof(_volume) );
 }
 
 void MP3PlayerController::setLoopEffects(bool value){
