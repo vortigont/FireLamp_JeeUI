@@ -144,17 +144,17 @@ void ButtonEventHandler::_btnEventHandler(ESPButton::event_t e, const EventMsg* 
       case 1 :
       // effect switch
         EVT_POST_DATA(LAMP_SET_EVENTS, e2int(lamp_t::effSwitchStep), &diff, sizeof(diff));
-        LOGD(T_encoder, println, "effsw");
+        LOGV(T_encoder, println, "effsw");
         break;
       case 2 :
       // mp3 vol control
         EVT_POST_DATA(LAMP_SET_EVENTS, e2int(lamp_t::mp3volstep), &diff, sizeof(diff));
-        LOGD(T_encoder, println, "vol");
+        LOGV(T_encoder, println, "vol");
         break;
       default :
       // by default change brightness
         EVT_POST_DATA(LAMP_SET_EVENTS, e2int(lamp_t::brightness_step), &diff, sizeof(diff));
-        LOGD(T_encoder, println, "brt");
+        LOGV(T_encoder, println, "brt");
     }
     return;
   }
@@ -293,7 +293,7 @@ void PCNT_Encoder::_poller(){
   // gpio 0 is wrong here, but since it's an inherited class, I do not know how get it easily, no need anyway
   EventMsg m{0, static_cast<int32_t>(_cnt)};
 
-  LOGD(T_encoder, printf, "Counter:%d\n", m.cntr );
+  LOGV(T_encoder, printf, "Counter:%d\n", m.cntr );
   EVT_POST_DATA(EBTN_ENC_EVENTS, e2int(ESPButton::event_t::encCount), &m, sizeof(m));
 }
 

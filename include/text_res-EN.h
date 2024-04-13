@@ -206,6 +206,8 @@ static constexpr const char* TEFF_255 = "Oscilloscope";
 #define DFTINTF_11A "Color (1: cyclical)"
 #define DFTINTF_24hrs "24hr"
 
+static constexpr const char* TINTF_ButtonEncoder = "Button / Encoder";
+
 /** набор строк с текстовыми константами интерфейса
  */
 static constexpr const char* TINTF_000 = "Effects";
@@ -227,7 +229,6 @@ static constexpr const char* TINTF_00F = "Demo";
 static constexpr const char* TINTF_010 = "Gl. Bright";
 static constexpr const char* TINTF_011 = "Events";
 static constexpr const char* TINTF_012 = "Mic";
-static constexpr const char* TINTF_013 = "Button";
 static constexpr const char* TINTF_014 = "More...";
 static constexpr const char* TINTF_015 = "<<<";
 static constexpr const char* TINTF_016 = ">>>";

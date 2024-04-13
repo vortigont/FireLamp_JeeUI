@@ -75,7 +75,8 @@ void getset_btn_lock(Interface *interf, const JsonObject *data, const char* acti
 
 // ========== Encoder
 
-void encoder_load(JsonVariantConst cfg);
+// get/set encoder's configuration to/from WebUI
+void getset_encoder_gpio(Interface *interf, const JsonObject *data, const char* action);
 
 // *** DFPlayer
 

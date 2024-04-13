@@ -205,6 +205,7 @@ static constexpr const char* TEFF_255 = "Осцилограф";
 #define DFTINTF_11A "Колір (1 = циклічно)"
 #define DFTINTF_24hrs "24hr"
 
+static constexpr const char* TINTF_ButtonEncoder = "Кнопка / Энкодер";
 
 /** набор строк с текстовыми константами интерфейса
  */
@@ -227,7 +228,6 @@ static constexpr const char* TINTF_00F = "Демо";
 static constexpr const char* TINTF_010 = "Гл.Яскрав";
 static constexpr const char* TINTF_011 = "Події";
 static constexpr const char* TINTF_012 = "Мікр.";
-static constexpr const char* TINTF_013 = "Кнопка";
 static constexpr const char* TINTF_014 = "Ще...";
 static constexpr const char* TINTF_015 = "<<<";
 static constexpr const char* TINTF_016 = ">>>";

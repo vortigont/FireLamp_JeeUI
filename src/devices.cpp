@@ -114,8 +114,8 @@ void getset_btn_lock(Interface *interf, const JsonObject *data, const char* acti
 }
 
 void encoder_cfg_load(JsonVariantConst cfg){
-  if (!cfg[T_enabled]){
-     // encoder disabled or config is invalid
+  if (!cfg[T_Active]){
+    // encoder disabled or config is invalid
     if (encoder){
       delete encoder;
       encoder = nullptr;
@@ -126,9 +126,9 @@ void encoder_cfg_load(JsonVariantConst cfg){
   if (!encoder){
     encoder = new PCNT_Encoder();
     if (!encoder) return;
-
-    encoder->load(cfg);
   }
+  // apply configuration
+  encoder->load(cfg);
 }
 
 void button_cfg_load(){
@@ -144,7 +144,7 @@ void button_cfg_load(){
   button_configure_gpio(_cfg);
 
   if (!button_handler){
-    button_handler = new ButtonEventHandler(doc[T_encoder][T_enabled].as<bool>());
+    button_handler = new ButtonEventHandler(doc[T_encoder][T_Active].as<bool>());
     if (!button_handler) return;
     // subscribe only once, when object is newly created
     button_handler->subscribe();
@@ -241,6 +241,36 @@ void getset_button_gpio(Interface *interf, const JsonObject *data, const char* a
     JsonVariantConst cfg(dst);
     // reconfig button
     button_configure_gpio(cfg);
+  }
+
+  if (interf) ui_page_setup_devices(interf, nullptr, NULL);
+}
+
+void getset_encoder_gpio(Interface *interf, const JsonObject *data, const char* action){
+  {
+    DynamicJsonDocument doc(BTN_EVENTS_CFG_JSIZE);
+    if (!embuifs::deserializeFile(doc, T_benc_cfg)) doc.clear();
+
+    // if this is a request with no data, then just provide existing configuration and quit
+    if (!data || !(*data).size()){
+      if (interf && doc.containsKey(T_encoder)){
+          interf->json_frame_value(doc[T_encoder], true);
+          interf->json_frame_flush();
+      }
+      return;
+    }
+
+    JsonVariant dst = doc[T_btn_cfg].isNull() ? doc.createNestedObject(T_encoder) : doc[T_encoder];
+
+    // copy keys to a destination object
+    for (JsonPair kvp : *data)
+        dst[kvp.key()] = kvp.value();
+
+    embuifs::serialize2file(doc, T_benc_cfg);
+
+    JsonVariantConst cfg(dst);
+    // reconfig encoder
+    encoder_cfg_load(cfg);
   }
 
   if (interf) ui_page_setup_devices(interf, nullptr, NULL);

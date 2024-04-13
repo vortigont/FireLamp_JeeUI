@@ -326,10 +326,11 @@ static constexpr const char* A_display_hub75 = "display_hub75";                 
 static constexpr const char* A_display_ws2812 = "display_ws2812";               // ws2812 display configuration
 // TM1637
 static constexpr const char* A_display_tm1637 = "*et_display_tm1637";           // get/set tm1637 display configuration
-// button
+// button / encoder
 static constexpr const char* A_button_gpio = "*et_button_gpio";                 // get/set button gpio configuration
 static constexpr const char* A_button_evt_edit = "button_evt_edit";             // edit button action form
 static constexpr const char* A_button_evt_save = "button_evt_save";             // save/apply button action form
+static constexpr const char* A_encoder_gpio = "*et_encoder_gpio";               // get/set encoder gpio configuration
 // DFPlayer
 static constexpr const char* A_dfplayer_dev = "*et_dfplayer_device";            // get/set DFPlayer device configuration
 static constexpr const char* A_dfplayer_opt = "*et_dfplayer_opt";               // get/set DFPlayer functions
