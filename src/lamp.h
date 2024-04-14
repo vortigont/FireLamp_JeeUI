@@ -125,8 +125,22 @@ private:
         uint16_t pendingEffectNum{0};
     };
 
+    // used auxilary GPIOs 
+    struct GPIO_pins {
+        // matrix power switch FET
+        int32_t fet;
+        // some uknown AUX pin
+        int32_t aux;
+        // active logic levels
+        bool fet_ll;
+        bool aux_ll;
+        // Analog pin for microphone
+        int32_t  mic;
+    };
+
     // effect switching state
     EffSwitch_state_t _swState;
+    GPIO_pins _pins;
 
     std::shared_ptr<LedFB<CRGB> > _overlay;     // буфер для оверлея
 
@@ -141,10 +155,6 @@ private:
     uint8_t globalBrightness = 127;     // глобальная яркость
     //uint8_t storedBright;               // "запасное" значение яркости
     //uint8_t BFade;                      // затенение фона под текстом
-
-    // GPIO's
-    int32_t fet_gpio, aux_gpio, _mic_gpio;
-    bool fet_ll, aux_ll;
 
     LAMPMODE mode = LAMPMODE::MODE_NORMAL; // текущий режим
     LAMPMODE storedMode = LAMPMODE::MODE_NORMAL; // предыдущий режим
