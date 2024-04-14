@@ -52,14 +52,18 @@ enum class mic_noise_reduce_level_t {NR_NONE,BIT_1,BIT_2,BIT_3,BIT_4};
 
 class MicWorker {
 private:
+  // analog pin where microphone is attached to
+  int _mic_gpio;
+  float scale = 1.27; // 400 как средняя точка у меня, но надо будет калибравать для каждого случая отдельно калибровкой :)
+  float noise = 0; // заполняется калибровкой, это уровень шума микрофона
+
 #ifdef FAST_ADC_READ
   bool useFixedFreq = true; // использовать фиксированное семплирование, либо максимально возможное (false)
 #else
   bool useFixedFreq = false; // использовать фиксированное семплирование, либо максимально возможное (false)
 #endif
   bool _isCaliblation = false;
-  float scale = 1.27; // 400 как средняя точка у меня, но надо будет калибравать для каждого случая отдельно калибровкой :)
-  float noise = 0; // заполняется калибровкой, это уровень шума микрофона
+
   double signalFrequency = 700;
   uint32_t samplingFrequency = SAMPLING_FREQ; // частота семплирования для esp8266 (без разгонов) скорее всего не может быть выше 9500 если чтение через analogRead(MIC_PIN);
 
@@ -80,7 +84,7 @@ public:
 #else
   static const uint16_t samples=64U;     //This value MUST ALWAYS be a power of 2
 #endif
-  MicWorker(float scale = 1.28, float noise = 0, bool withAnalyse=true) {
+  MicWorker(int gpio, float scale = 1.28, float noise = 0, bool withAnalyse=true) : _mic_gpio(gpio), scale(scale), noise(noise) {
     this->vReal = new float[samples];
     if(withAnalyse)
       this->vImag = new float[samples];

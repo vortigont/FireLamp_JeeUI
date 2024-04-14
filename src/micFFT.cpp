@@ -72,7 +72,7 @@ void MicWorker::read_data()
     system_adc_read_fast(adc_addr, 1, adc_clk_div);
     vReal[i] = adc_addr[0]; // использую system_adc_read_fast для бОльшей скорости
 #else
-    vReal[i] = analogRead(MIC_PIN); // ESP8266 Analog Pin ADC0 = A0
+    vReal[i] = analogRead(_mic_gpio); // ESP8266 Analog Pin ADC0 = A0
 #endif
     if(useFixedFreq){ // используется фиксированное семплирование, организуем задержку
       while((micros() - m < sampling_period_us)){
@@ -276,7 +276,7 @@ void MicWorker::calibrate()
 
   // читаем сырые данные
   for(uint16_t i=0; i<samples; i++){
-    vReal[i] = analogRead(MIC_PIN); // ESP8266 Analog Pin ADC0 = A0
+    vReal[i] = analogRead(_mic_gpio); // ESP8266 Analog Pin ADC0 = A0
   }
 
   double sum=0, count=0;

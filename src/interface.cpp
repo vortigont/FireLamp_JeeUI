@@ -53,7 +53,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "widgets.hpp"
 
 // версия ресурсов в стороннем джейсон файле
-#define UIDATA_VERSION      11
+#define UIDATA_VERSION      12
 
 #define DEMO_MIN_PERIOD     10
 #define DEMO_MAX_PERIOD     900
@@ -77,13 +77,13 @@ enum class page : uint16_t {
     setup_bttn,
     setup_encdr,
     setup_other,
-    setup_gpio,
     setup_tm1637,
     setup_devices,      // page with configuration links to external devices
 
     widgetslist = 101,      // available widgets page
     wdgt_clock,
-    wdgt_alrmclock
+    wdgt_alrmclock,
+    setup_gpio
 };
 
 // enumerator for gpio setup form
@@ -123,7 +123,8 @@ void show_effects_config(Interface *interf, const JsonObject *data, const char* 
 void page_display_setup(Interface *interf, const JsonObject *data, const char* action);
 // construct a page with TM1637 setup
 void ui_page_tm1637_setup(Interface *interf, const JsonObject *data, const char* action);
-void page_gpiocfg(Interface *interf, const JsonObject *data, const char* action);
+// send element values to the page with gpio setup
+void page_gpiocfg_values(Interface *interf, const JsonObject *data, const char* action);
 void page_settings_other(Interface *interf, const JsonObject *data, const char* action);
 void section_sys_settings_frame(Interface *interf, const JsonObject *data, const char* action);
 //void show_settings_butt(Interface *interf, const JsonObject *data, const char* action);
@@ -173,6 +174,11 @@ void uidata_page_selector(Interface *interf, const JsonObject *data, const char*
     interf->json_section_uidata();
 
     switch (idx){
+        case page::setup_gpio :   // настрока gpio
+            interf->uidata_pick( "lampui.pages.gpiosetup" );
+            interf->json_frame_flush();
+            page_gpiocfg_values(interf, nullptr, NULL);
+            break;
         case page::widgetslist :   // список виджетов
             interf->uidata_pick( "lampui.pages.wdgtslist" );
             interf->json_frame_flush();
@@ -229,8 +235,6 @@ void ui_page_selector(Interface *interf, const JsonObject *data, const char* act
             return;
         case page::setup_bttn :    // страница настроек кнопки
             return page_button_setup(interf, nullptr, NULL);
-        case page::setup_gpio :     // страница настроек GPIO
-            return page_gpiocfg(interf, nullptr, NULL);
         case page::setup_other :    // страница "настройки"-"другие"
             return page_settings_other(interf, nullptr, NULL);
         case page::setup_display :  // led display setup (strip/hub75)
@@ -1217,12 +1221,27 @@ void user_settings_frame(Interface *interf, const JsonObject *data, const char* 
 }
 
 /**
- * @brief page with GPIO mapping setup
+ * @brief generate values for page with GPIO mapping setup
  * 
  */
-void page_gpiocfg(Interface *interf, const JsonObject *data, const char* action){
-    if (!interf) return;
+void page_gpiocfg_values(Interface *interf, const JsonObject *data, const char* action){
+    DynamicJsonDocument doc(512);
+    embuifs::deserializeFile(doc, TCONST_fcfg_gpio);
 
+    interf->json_frame_value();
+        // MOSFET gpio
+        interf->value(TCONST_mosfet_gpio, doc[TCONST_mosfet_gpio].as<int>());
+        interf->value(TCONST_mosfet_ll, doc[TCONST_mosfet_ll].as<int>());
+
+        // AUX gpio
+        interf->value(TCONST_aux_gpio, doc[TCONST_aux_gpio].as<int>());
+        interf->value(TCONST_aux_ll, doc[TCONST_aux_ll].as<int>());
+
+        // Microphone gpio
+        interf->value(T_mic, doc[T_mic].as<int>());
+    interf->json_frame_flush();
+
+#if DISABLED_CODE
     interf->json_frame_interface();
     interf->json_section_main(TCONST_pin, "GPIO Configuration");
 
@@ -1232,7 +1251,7 @@ void page_gpiocfg(Interface *interf, const JsonObject *data, const char* action)
     embuifs::deserializeFile(doc, TCONST_fcfg_gpio);
 
     interf->json_section_begin(TCONST_set_gpio, "");
-#if DISABLED_CODE
+
     // gpio для подключения DP-плеера
     interf->json_section_hidden(TCONST_playMP3, "DFPlayer");
         interf->json_section_line(); // расположить в одной линии
@@ -1251,8 +1270,6 @@ void page_gpiocfg(Interface *interf, const JsonObject *data, const char* action)
         interf->json_section_end();
         interf->button_value(button_t::submit, TCONST_set_gpio, static_cast<int>(gpio_device::tmdisplay), TINTF_Save);
     interf->json_section_end();
-#endif //DISABLED_CODE
-
     // gpio для подключения КМОП транзистора
     interf->json_section_hidden(TCONST_mosfet_gpio, "MOSFET");
         interf->json_section_line(); // расположить в одной линии
@@ -1276,6 +1293,7 @@ void page_gpiocfg(Interface *interf, const JsonObject *data, const char* action)
     interf->button(button_t::generic, A_ui_page_settings, TINTF_exit);
 
     interf->json_frame_flush();
+#endif //DISABLED_CODE
 }
 
 // обработчик, для поддержки приложения WLED APP

@@ -964,6 +964,7 @@ public:
 // (c) kostyamat
 class EffectOsc : public EffectCalc {
 private:
+    int _mic_gpio{-1};
     int oscHV, oscilLimit;
 #ifdef ESP32
     int pointer{2048};
@@ -974,11 +975,11 @@ private:
     int div{1}, gain{1};
     int y[2] = {0, 0};
     String setDynCtrl(UIControl*_val) override;
-    
 
 public:
-    EffectOsc(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer), oscHV(fb->w()), oscilLimit(fb->h()) {}
+    EffectOsc(LedFB<CRGB> *framebuffer, int gpio = GPIO_NUM_NC) : EffectCalc(framebuffer), _mic_gpio(gpio), oscHV(fb->w()), oscilLimit(fb->h()) {}
     bool run() override;
+    void setMicGPIO(int gpio){ _mic_gpio = gpio; };
 };
 
 // ------ Эффект "Вышиванка" 

@@ -49,38 +49,27 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 // Вывод значка микрофона в списке эффектов
 #define MIC_SYMBOL(N) (pgm_read_byte(T_EFFVER + (uint8_t)N) % 2 ? "" : " \U0001F399")
-    //#define MIC_SYMBOL (micSymb ? (pgm_read_byte(T_EFFVER + (uint8_t)eff->eff_nb) % 2 == 0 ? " \U0001F399" : "") : "")
-    //#define MIC_SYMB bool micSymb = myLamp.getLampSettings().effHasMic
-
 // Вывод номеров эффектов в списке, в WebUI
 #define EFF_NUMBER(N)   N <= 255 ? (String(N) + ". ") : (String((byte)(N & 0xFF)) + "." + String((byte)(N >> 8) - 1U) + " ")
 
 
 
-typedef struct {
+struct LampState {
     // todo: убрать этот тупизм с дублированием флагов лампы в двух разных структурах
     union {
         uint32_t flags;
         struct {
-            bool unused1:1; // завершилась ли инициализация лампы
-            bool unused2:1;       // введен ли пароль для опций
             bool isMicOn:1;
             bool isDebug:1;
             bool isRandDemo:1;
-
-            bool unused3:1; // флаг устанавливается будильником "рассвет"
-            bool unused4:1; // печатается ли прямо сейчас строка?
-            bool unused5:1; // признак отключения эффектов, пока выводится текст
-            bool unused6:1; // признак нужно ли выключать после вывода текста
-            bool unused7:1; // находимся ли в режиме калибровки микрофона
-            bool unused8:1; // выводится ли индикация предупреждения
             uint8_t micAnalyseDivider:2; // делитель анализа микрофона 0 - выключен, 1 - каждый раз, 2 - каждый четвертый раз, 3 - каждый восьмой раз
-            uint8_t warnType:2; // тип предупреждения 0 - цвет, 1 - цвет + счетчик,  1 - цвет + счетчик обратным цветом,  3 - счетчик цветом
         };
     };
-    float speedfactor;
+
+    float speedfactor{1.0};
 
     // Mike related
+    int   mic_gpio{-1};     // пин микрофона
     float mic_noise = 0.0; // уровень шума в ед.
     float mic_scale = 1.0; // коэф. смещения
     float last_freq = 0.0; // последняя измеренная часота
@@ -107,7 +96,7 @@ typedef struct {
         return (uint8_t)(isMicOn?(log(last_freq)-minFreq)*scale:0);
     }
 
-} LAMPSTATE;
+};
 
 typedef union {
     uint8_t mask;
@@ -303,7 +292,7 @@ class EffectWorker;
 */
 class EffectCalc {
 private:
-    LAMPSTATE *_lampstate = nullptr;
+    LampState *_lampstate = nullptr;
     LList<std::shared_ptr<UIControl>> *ctrls;
     String dummy; // дефолтная затычка для отсутствующего контролла, в случае приведения к целому получится "0"
     bool active = false;          /**< работает ли воркер и был ли обсчет кадров с момента последнего вызова, пока нужно чтобы пропускать холостые кадры */
@@ -372,7 +361,7 @@ public:
      * @param _state - текущее состояние лампы
      *
     */
-    void init(EFF_ENUM eff, LList<std::shared_ptr<UIControl>> *controls, LAMPSTATE* state);
+    void init(EFF_ENUM eff, LList<std::shared_ptr<UIControl>> *controls, LampState* state);
 
     /**
      * load метод, по умолчанию пустой. Вызывается автоматом из init(), в дочернем классе можно заменять на процедуру первой загрузки эффекта (вместо того что выполняется под флагом load)
@@ -432,7 +421,7 @@ public:
 
 class EffectWorker {
 private:
-    LAMPSTATE *lampstate;   // ссылка на состояние лампы
+    LampState *lampstate;   // ссылка на состояние лампы
     SORT_TYPE effSort;      // порядок сортировки в UI
 
     Effcfg curEff;          // конфигурация текущего эффекта, имя/версия и т.п.
@@ -500,7 +489,7 @@ private:
 
 public:
     // дефолтный конструктор
-    EffectWorker(LAMPSTATE *_lampstate);
+    EffectWorker(LampState *_lampstate);
     ~EffectWorker(){ if(_runnerTask_h) vTaskDelete(_runnerTask_h); _runnerTask_h = nullptr; };
 
     // noncopyable

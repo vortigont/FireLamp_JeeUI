@@ -64,18 +64,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #define LANG_FILE                  "text_res-RUS.h"           // Языковой файл по дефолту
 #endif
 
-#ifndef MIC_PIN
- #ifdef ESP8266
-  #define MIC_PIN               (A0)                          // ESP8266 Analog Pin ADC0 = A0
- #elif defined CONFIG_IDF_TARGET_ESP32
-  #define MIC_PIN               (GPIO_NUM_34)                 // ESP32 Analog Pin
- #elif defined CONFIG_IDF_TARGET_ESP32C3
-  #define MIC_PIN               (GPIO_NUM_2)                  // ESP32c3 Analog Pin
- #elif defined CONFIG_IDF_TARGET_ESP32S3                                                                                                                      
-  #define MIC_PIN               (GPIO_NUM_34)                 // ESP32-S3 Analog Pin
- #endif
-#endif
-
 #ifndef MIC_POLLRATE
 #define MIC_POLLRATE          (50U)                         // как часто опрашиваем микрофон, мс
 #endif
