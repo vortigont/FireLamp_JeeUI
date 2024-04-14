@@ -260,7 +260,7 @@ void getset_encoder_gpio(Interface *interf, const JsonObject *data, const char* 
       return;
     }
 
-    JsonVariant dst = doc[T_btn_cfg].isNull() ? doc.createNestedObject(T_encoder) : doc[T_encoder];
+    JsonVariant dst = doc[T_encoder].isNull() ? doc.createNestedObject(T_encoder) : doc[T_encoder];
 
     // copy keys to a destination object
     for (JsonPair kvp : *data)
