@@ -69,7 +69,7 @@ void setup() {
     LOGI(T_Main, printf, "Setup: free heap: %uk, PSRAM:%uk\n\n", ESP.getFreeHeap()/1024, ESP.getFreePsram()/1024);
 
     // cap ADC resolution to 10 bit
-    adc1_config_width(ADC_WIDTH_BIT_10);
+    analogReadResolution(10);
 
     // Start event loop task
     evt::start();
