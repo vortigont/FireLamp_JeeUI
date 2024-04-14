@@ -484,7 +484,7 @@ void EffectWorker::workerset(uint16_t effect){
     worker = std::unique_ptr<EffectFlower>(new EffectFlower(canvas));
     break;
   case EFF_ENUM::EFF_VU :
-    worker = std::unique_ptr<EffectVU>(new EffectVU(canvas));
+    worker = std::unique_ptr<EffectVU>(new EffectVU(canvas, lampstate->mic_gpio));
     break;
   case EFF_ENUM::EFF_OSC :
     worker = std::unique_ptr<EffectOsc>(new EffectOsc(canvas, lampstate->mic_gpio));
@@ -1101,7 +1101,6 @@ void EffectCalc::init(EFF_ENUM eff, LList<std::shared_ptr<UIControl>> *controls,
   ctrls = controls;
   _lampstate = state;
 
-  isMicActive = isMicOnState();
   for(unsigned i=0; i<controls->size(); i++){
     setDynCtrl((*controls)[i].get());
     // switch(i){
@@ -1173,10 +1172,10 @@ String EffectCalc::setDynCtrl(UIControl*_val){
 
   // имеет 7 id и начинается со строки "микрофон" с локализацией
   if( _val->getId()==7 && starts_with(_val->getName().c_str(), TINTF_020) ){
-    isMicActive = (ret_val.toInt() && isMicOnState()) ? true : false;
+    _lampstate->isMicOn = ret_val.toInt();
 
     if(_lampstate)
-      _lampstate->setMicAnalyseDivider(isMicActive);
+      _lampstate->setMicAnalyseDivider(_lampstate->isMicOn);
 
   } else {
     if(isRandDemo()){ // для режима рандомного ДЕМО, если это не микрофон - то вернуть рандомное значение в пределах диапазона значений

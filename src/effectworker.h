@@ -297,8 +297,6 @@ private:
     String dummy; // дефолтная затычка для отсутствующего контролла, в случае приведения к целому получится "0"
     bool active = false;          /**< работает ли воркер и был ли обсчет кадров с момента последнего вызова, пока нужно чтобы пропускать холостые кадры */
     bool isCtrlPallete = false; // признак наличия контрола палитры
-    bool isMicActive = false; // признак включенного микрофона
-    bool isMicOnState() {return _lampstate ? _lampstate->isMicOn : false;}
 
 protected:
     LedFB<CRGB> *fb;          // Framebuffer to work on
@@ -351,7 +349,7 @@ public:
      */
     virtual ~EffectCalc() = default;
 
-    bool isMicOn() {return isMicActive;}
+    bool isMicOn() { return _lampstate ? _lampstate->isMicOn : false; }
 
     /**
      * intit метод, вызывается отдельно после создания экземпляра эффекта для установки базовых переменных

@@ -195,7 +195,6 @@ public:
     LList<std::shared_ptr<UIControl>>&getEffControls() { return effwrkr.getControls(); }
 
     void setMicOnOff(bool val);
-    //bool isMicOnOff() const {return opts.flag.isMicOn;}
 
     void setSpeedFactor(float val) {
         lampState.speedfactor = val;

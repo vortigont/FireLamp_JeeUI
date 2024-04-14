@@ -1882,6 +1882,7 @@ private:
     std::vector<float> bandValues{std::vector<float>(fb->w())};
     MicWorker *mw = nullptr;
 
+    int _mic_gpio;
     float samp_freq;
     double last_freq = 0;
     uint8_t last_min_peak, last_max_peak;
@@ -1907,7 +1908,7 @@ private:
     void waterfall(uint8_t band, uint8_t barHeight);
 
 public:
-    EffectVU(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
+    EffectVU(LedFB<CRGB> *framebuffer, int gpio) : EffectCalc(framebuffer), _mic_gpio(gpio) {}
     ~EffectVU(){ delete mw; }
     bool run() override;
     void load() override;

@@ -7441,7 +7441,7 @@ String EffectVU::setDynCtrl(UIControl*_val){
 
 void EffectVU::load() {
   setMicAnalyseDivider(0); // отключить авто-работу микрофона, т.к. тут все анализируется отдельно, т.е. не нужно выполнять одну и ту же работу дважды
-  mw = new MicWorker(getMicScale(),getMicNoise(), true);
+  mw = new MicWorker(_mic_gpio, getMicScale(),getMicNoise(), true);
 
     bands = effId & 01 ? (fb->w()/2 + (fb->w() & 01 ? 1:0)) : fb->w();
     bar_width =  (fb->w()  / (bands - 1));

@@ -53,7 +53,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "widgets.hpp"
 
 // версия ресурсов в стороннем джейсон файле
-#define UIDATA_VERSION      12
+#define UIDATA_VERSION      13
 
 #define DEMO_MIN_PERIOD     10
 #define DEMO_MAX_PERIOD     900
@@ -123,8 +123,8 @@ void show_effects_config(Interface *interf, const JsonObject *data, const char* 
 void page_display_setup(Interface *interf, const JsonObject *data, const char* action);
 // construct a page with TM1637 setup
 void ui_page_tm1637_setup(Interface *interf, const JsonObject *data, const char* action);
-// send element values to the page with gpio setup
-void page_gpiocfg_values(Interface *interf, const JsonObject *data, const char* action);
+// send/set element values to the page with gpio setup
+void getset_gpios(Interface *interf, const JsonObject *data, const char* action);
 void page_settings_other(Interface *interf, const JsonObject *data, const char* action);
 void section_sys_settings_frame(Interface *interf, const JsonObject *data, const char* action);
 //void show_settings_butt(Interface *interf, const JsonObject *data, const char* action);
@@ -177,7 +177,7 @@ void uidata_page_selector(Interface *interf, const JsonObject *data, const char*
         case page::setup_gpio :   // настрока gpio
             interf->uidata_pick( "lampui.pages.gpiosetup" );
             interf->json_frame_flush();
-            page_gpiocfg_values(interf, nullptr, NULL);
+            getset_gpios(interf,  nullptr, NULL);
             break;
         case page::widgetslist :   // список виджетов
             interf->uidata_pick( "lampui.pages.wdgtslist" );
@@ -1028,13 +1028,15 @@ void set_settings_mic(Interface *interf, const JsonObject *data, const char* act
     myLamp.getLampState().setMicScale(scale);
     myLamp.getLampState().setMicNoise(noise);
     myLamp.getLampState().setMicNoiseRdcLevel(rdl);
+    myLamp.setMicOnOff((*data)[T_mic]);
 
     basicui::page_system_settings(interf, data, NULL);
 }
 
 void set_micflag(Interface *interf, const JsonObject *data, const char* action){
     if (!data) return;
-    myLamp.setMicOnOff((*data)[T_mic]);
+    myLamp.setMicOnOff((*data)[A_dev_mike]);
+    LOGD(T_WebUI, printf, "Set mike: %u/%u\n", (*data)[T_mic].as<bool>(), myLamp.getLampFlagsStuct().isMicOn);
 }
 
 /**
@@ -1137,50 +1139,20 @@ void set_mp3volume(Interface *interf, const JsonObject *data, const char* action
 /*
     сохраняет настройки GPIO и перегружает контроллер
  */
-void set_gpios(Interface *interf, const JsonObject *data, const char* action){
-    if (!data) return;
+void getset_gpios(Interface *interf, const JsonObject *data, const char* action){
 
-    DynamicJsonDocument doc(512);
-    if (!embuifs::deserializeFile(doc, TCONST_fcfg_gpio)) doc.clear();     // reset if cfg is broken or missing
-    //LOG(printf, "Set GPIO configuration %d\n", (*data)[TCONST_set_gpio].as<int>());
+    if (!data || !(*data).size()){
+        DynamicJsonDocument doc(512);
+        if (!embuifs::deserializeFile(doc, TCONST_fcfg_gpio)) doc.clear();     // reset if cfg is broken or missing
 
-    gpio_device dev = static_cast<gpio_device>((*data)[TCONST_set_gpio].as<int>());
-    switch(dev){
-/*
-        // DFPlayer gpios
-        case gpio_device::dfplayer : {
-            // save pin numbers into config file if present/valid
-            if ( (*data)[TCONST_mp3rx] == static_cast<int>(GPIO_NUM_NC) ) doc.remove(TCONST_mp3rx);
-            else doc[TCONST_mp3rx] = (*data)[TCONST_mp3rx];
-
-            if ( (*data)[TCONST_mp3tx] == static_cast<int>(GPIO_NUM_NC) ) doc.remove(TCONST_mp3tx);
-            else doc[TCONST_mp3tx] = (*data)[TCONST_mp3tx];
-            break;
-        }
-*/
-        // MOSFET gpios
-        case gpio_device::mosfet : {
-            if ( (*data)[TCONST_mosfet_gpio] == static_cast<int>(GPIO_NUM_NC) ) doc.remove(TCONST_mosfet_gpio);
-            else doc[TCONST_mosfet_gpio] = (*data)[TCONST_mosfet_gpio];
-
-            doc[TCONST_mosfet_ll] = (*data)[TCONST_mosfet_ll];
-            break;
-        }
-        // AUX gpios
-        case gpio_device::aux : {
-            if ( (*data)[TCONST_aux_gpio] == static_cast<int>(GPIO_NUM_NC) ) doc.remove(TCONST_aux_gpio);
-            else doc[TCONST_aux_gpio] = (*data)[TCONST_aux_gpio];
-
-            doc[TCONST_aux_ll] = (*data)[TCONST_aux_ll];
-            break;
-        }
-
-        default :
-            return;     // for any uknown action - just quit
+        // it's a request, send current configuration
+        interf->json_frame_value(doc, true);
+        interf->json_frame_flush();
+        return;
     }
 
-    // save resulting config
-    embuifs::serialize2file(doc, TCONST_fcfg_gpio);
+    // save posted config to file
+    embuifs::serialize2file(*data, TCONST_fcfg_gpio);
 
     run_action(ra::reboot);         // reboot in 5 sec
     basicui::page_system_settings(interf, nullptr, NULL);
@@ -1218,82 +1190,6 @@ void user_settings_frame(Interface *interf, const JsonObject *data, const char* 
 
     // show gpio setup page button
     interf->button_value(button_t::generic, A_ui_page, e2int(page::setup_gpio), TINTF_gpiocfg);
-}
-
-/**
- * @brief generate values for page with GPIO mapping setup
- * 
- */
-void page_gpiocfg_values(Interface *interf, const JsonObject *data, const char* action){
-    DynamicJsonDocument doc(512);
-    embuifs::deserializeFile(doc, TCONST_fcfg_gpio);
-
-    interf->json_frame_value();
-        // MOSFET gpio
-        interf->value(TCONST_mosfet_gpio, doc[TCONST_mosfet_gpio].as<int>());
-        interf->value(TCONST_mosfet_ll, doc[TCONST_mosfet_ll].as<int>());
-
-        // AUX gpio
-        interf->value(TCONST_aux_gpio, doc[TCONST_aux_gpio].as<int>());
-        interf->value(TCONST_aux_ll, doc[TCONST_aux_ll].as<int>());
-
-        // Microphone gpio
-        interf->value(T_mic, doc[T_mic].as<int>());
-    interf->json_frame_flush();
-
-#if DISABLED_CODE
-    interf->json_frame_interface();
-    interf->json_section_main(TCONST_pin, "GPIO Configuration");
-
-    interf->comment((char*)0, "<ul><li>Check <a href=\"https://github.com/vortigont/FireLamp_JeeUI/wiki/\" target=\"_blank\">WiKi page</a> for GPIO reference</li><li>Set '-1' to disable GPIO</li><li>MCU will <b>reboot</b> on any gpio change! Wait 5-10 sec after each save</li>");
-
-    DynamicJsonDocument doc(512);
-    embuifs::deserializeFile(doc, TCONST_fcfg_gpio);
-
-    interf->json_section_begin(TCONST_set_gpio, "");
-
-    // gpio для подключения DP-плеера
-    interf->json_section_hidden(TCONST_playMP3, "DFPlayer");
-        interf->json_section_line(); // расположить в одной линии
-            interf->number_constrained(TCONST_mp3rx, doc[TCONST_mp3rx] | static_cast<int>(GPIO_NUM_NC), TINTF_097, /*step*/ 1, /*min*/ -1, /*max*/ NUM_OUPUT_PINS);
-            interf->number_constrained(TCONST_mp3tx, doc[TCONST_mp3tx] | static_cast<int>(GPIO_NUM_NC), TINTF_098, 1, -1, NUM_OUPUT_PINS);
-        interf->json_section_end();
-        interf->button_value(button_t::submit, TCONST_set_gpio, static_cast<int>(gpio_device::dfplayer), TINTF_Save);
-    interf->json_section_end();
-
-
-    // gpio для подключения 7 сегментного индикатора
-    interf->json_section_hidden(TCONST_tm24, "TM1637 Display");
-        interf->json_section_line(); // расположить в одной линии
-            interf->number_constrained(TCONST_tm_clk, doc[TCONST_tm_clk] | static_cast<int>(GPIO_NUM_NC), "TM Clk gpio", /*step*/ 1, /*min*/ -1, /*max*/ NUM_OUPUT_PINS);
-            interf->number_constrained(TCONST_tm_dio, doc[TCONST_tm_dio] | static_cast<int>(GPIO_NUM_NC), "TM DIO gpio", 1, -1, NUM_OUPUT_PINS);
-        interf->json_section_end();
-        interf->button_value(button_t::submit, TCONST_set_gpio, static_cast<int>(gpio_device::tmdisplay), TINTF_Save);
-    interf->json_section_end();
-    // gpio для подключения КМОП транзистора
-    interf->json_section_hidden(TCONST_mosfet_gpio, "MOSFET");
-        interf->json_section_line(); // расположить в одной линии
-            interf->number_constrained(TCONST_mosfet_gpio, doc[TCONST_mosfet_gpio] | static_cast<int>(GPIO_NUM_NC), "MOSFET gpio", /*step*/ 1, /*min*/ -1, /*max*/ NUM_OUPUT_PINS);
-            interf->number_constrained(TCONST_mosfet_ll,   doc[TCONST_mosfet_ll]   | 1, "MOSFET logic level", 1, 0, 1);
-        interf->json_section_end();
-        interf->button_value(button_t::submit, TCONST_set_gpio, static_cast<int>(gpio_device::mosfet), TINTF_Save);
-    interf->json_section_end();
-
-    // gpio AUX
-    interf->json_section_hidden(TCONST_aux_gpio, TCONST_AUX);
-        interf->json_section_line(); // расположить в одной линии
-            interf->number_constrained(TCONST_aux_gpio, doc[TCONST_aux_gpio] | static_cast<int>(GPIO_NUM_NC), "AUX gpio", /*step*/ 1, /*min*/ -1, /*max*/ NUM_OUPUT_PINS);
-            interf->number_constrained(TCONST_aux_ll,   doc[TCONST_aux_ll]   | 1, "AUX logic level", 1, 0, 1);
-        interf->json_section_end();
-        interf->button_value(button_t::submit, TCONST_set_gpio, static_cast<int>(gpio_device::aux), TINTF_Save);
-    interf->json_section_end();
-
-    interf->json_section_end(); // json_section_begin ""
-
-    interf->button(button_t::generic, A_ui_page_settings, TINTF_exit);
-
-    interf->json_frame_flush();
-#endif //DISABLED_CODE
 }
 
 // обработчик, для поддержки приложения WLED APP
@@ -1549,6 +1445,8 @@ void embui_actions_register(){
     embui.action.add(T_mp3vol, set_mp3volume);
     embui.action.add(T_mp3mute, set_mp3mute);
 
+    embui.action.add(A_set_gpio, getset_gpios);                             // Get/Set gpios
+
     // to be refactored
 
     embui.action.add(TCONST_effListConf, set_effects_config_list);
@@ -1560,28 +1458,9 @@ void embui_actions_register(){
     embui.action.add(TCONST_draw_dat, set_drawing);
     embui.action.add(TCONST_drawbuff, set_overlay_drawing);
 
-#ifdef USE_STREAMING    
-    embui.action.add(TCONST_streaming, section_streaming_frame);
-    embui.action.add(TCONST_isStreamOn, set_streaming);
-    embui.action.add(TCONST_stream_type, set_streaming_type);
-    embui.action.add(TCONST_direct, set_streaming_drirect);
-    embui.action.add(TCONST_mapping, set_streaming_mapping);
-    embui.action.add(TCONST_Universe, set_streaming_universe);
-    embui.action.add(TCONST_bright, set_streaming_bright);
-#endif
-    //embui.action.add(TCONST_edit_text_config, set_text_config);
-
     embui.action.add(TCONST_set_other, set_settings_other);
-    embui.action.add(TCONST_set_gpio, set_gpios);                       // Set gpios
     embui.action.add(T_display_type, page_display_setup);                // load display setup page depending on selected disp type (action for drop down list)
 
     embui.action.add(TCONST_set_mic, set_settings_mic);
-    embui.action.add(T_mic, set_micflag);
-
-
-#ifdef LAMP_DEBUG
-    embui.action.add(TCONST_debug, set_debugflag);
-#endif
-
-
+    embui.action.add(A_dev_mike, set_micflag);
 }

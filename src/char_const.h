@@ -339,10 +339,11 @@ static constexpr const char* A_set_widget = "set_wdgt_*";                       
 static constexpr const char* A_set_widget_onoff = "set_wdgtena_*";              // enable/disable Widget by name
 static constexpr const char* A_set_wcfg_alrm = "set_wcfg_alrm";                 // set alarm widget item configuration
 
+static constexpr const char* A_set_gpio = "*et_gpio";                           // ge/set gpios action
+
 
 static constexpr const char* A_ui_page_effects_config = "effects_config";
 
-static constexpr const char* TCONST_set_gpio = "s_gpio";                    // set gpio action
 static constexpr const char* TCONST_set_butt = "set_butt";                  // set button
 static constexpr const char* TCONST_set_effect = "set_effect";
 static constexpr const char* TCONST_set_enc = "set_enc";

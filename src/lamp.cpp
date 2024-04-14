@@ -121,7 +121,7 @@ void Lamp::lamp_init(){
 }
 
 void Lamp::handle(){
-  static unsigned long mic_check = 0; // = 40000; // пропускаю первые 40 секунд
+  static unsigned long mic_check = 0;
   if(effwrkr.status() && opts.flag.isMicOn && (opts.flag.pwrState) && mic_check + MIC_POLLRATE < millis()){
     if(effwrkr.isMicOn())
       micHandler();
@@ -230,32 +230,41 @@ void Lamp::micHandler()
   static uint8_t counter=0;
   if(effwrkr.getCurrentEffectNumber()==EFF_ENUM::EFF_NONE)
     return;
-  if(!mw && lampState.micAnalyseDivider){ // обычный режим
-    mw = new(std::nothrow) MicWorker(_mic_gpio, lampState.mic_scale,lampState.mic_noise,true);   // создаем полноценный объект и держим в памяти
 
+  if (!mw && opts.flag.isMicOn && lampState.micAnalyseDivider){
+    //create micfft object
+    mw = new(std::nothrow) MicWorker(_mic_gpio, lampState.mic_scale,lampState.mic_noise,true);   // создаем полноценный объект и держим в памяти
     if(!mw) {
       return; // не удалось выделить память, на выход
     }
-    
-    lampState.samp_freq = mw->process(lampState.noise_reduce); // возвращаемое значение - частота семплирования
-    lampState.last_min_peak = mw->getMinPeak();
-    lampState.last_max_peak = mw->getMaxPeak();
-    lampState.cur_val = mw->getCurVal();
-
-    if(!counter) // раз на N измерений берем частоту, т.к. это требует обсчетов
-      lampState.last_freq = mw->analyse(); // возвращаемое значение - частота главной гармоники
-    if(lampState.micAnalyseDivider)
-      counter = (counter+1)%(0x01<<(lampState.micAnalyseDivider-1)); // как часто выполнять анализ
-    else
-      counter = 1; // при micAnalyseDivider == 0 - отключено
+  } else {
+    // delete object
+    if (mw){
+      delete mw;
+      mw = nullptr;
+    }
+    return;
   }
+
+  lampState.samp_freq = mw->process(lampState.noise_reduce); // возвращаемое значение - частота семплирования
+  lampState.last_min_peak = mw->getMinPeak();
+  lampState.last_max_peak = mw->getMaxPeak();
+  lampState.cur_val = mw->getCurVal();
+
+  if(!counter) // раз на N измерений берем частоту, т.к. это требует обсчетов
+    lampState.last_freq = mw->analyse(); // возвращаемое значение - частота главной гармоники
+  if(lampState.micAnalyseDivider)
+    counter = (counter+1)%(0x01<<(lampState.micAnalyseDivider-1)); // как часто выполнять анализ
+  else
+    counter = 1; // при micAnalyseDivider == 0 - отключено
 }
 
 void Lamp::setMicOnOff(bool val) {
     opts.flag.isMicOn = val;
     lampState.isMicOn = val;
-    if(effwrkr.getCurrentEffectNumber()==EFF_NONE || !effwrkr.status()) return;
 
+// have no idea what that bullshit means, I just set the flag that mike is enabled
+/*
     unsigned foundc7 = 0;
     LList<std::shared_ptr<UIControl>>&controls = effwrkr.getControls();
     if(val){
@@ -274,7 +283,8 @@ void Lamp::setMicOnOff(bool val) {
     if(foundc7){ // был найден 7 контрол, но не микрофон
         effwrkr.setDynCtrl(controls[foundc7].get());
     }
-    save_flags();
+*/
+  save_flags();
 }
 
 void Lamp::setBrightness(uint8_t tgtbrt, fade_t fade, bool bypass){
