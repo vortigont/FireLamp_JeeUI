@@ -221,7 +221,7 @@ String Effcfg::getSerializedEffConfig(uint8_t replaceBright) const {
 
 //  ***** EffectWorker implementation *****
 
-EffectWorker::EffectWorker(LAMPSTATE *_lampstate) : lampstate(_lampstate) {
+EffectWorker::EffectWorker(LampState *_lampstate) : lampstate(_lampstate) {
   // create 3 'faivored' superusefull controls for 'brightness', 'speed', 'scale'
   for(int8_t id=0;id<3;id++){
     auto c = std::make_shared<UIControl>(
@@ -487,7 +487,7 @@ void EffectWorker::workerset(uint16_t effect){
     worker = std::unique_ptr<EffectVU>(new EffectVU(canvas));
     break;
   case EFF_ENUM::EFF_OSC :
-    worker = std::unique_ptr<EffectOsc>(new EffectOsc(canvas));
+    worker = std::unique_ptr<EffectOsc>(new EffectOsc(canvas, lampstate->mic_gpio));
     break;
 
   default:
@@ -1096,7 +1096,7 @@ void EffectWorker::stop(){
 
 
 /*  *** EffectCalc  implementation  ***   */
-void EffectCalc::init(EFF_ENUM eff, LList<std::shared_ptr<UIControl>> *controls, LAMPSTATE* state){
+void EffectCalc::init(EFF_ENUM eff, LList<std::shared_ptr<UIControl>> *controls, LampState* state){
   effect = eff;
   ctrls = controls;
   _lampstate = state;

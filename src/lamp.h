@@ -133,7 +133,7 @@ private:
     // a set of lamp options (flags)
     LampFlagsPack opts;
     // текущее состояние лампы, которое передается в класс эффектпроцессора
-    LAMPSTATE lampState;
+    LampState lampState;
 
     uint8_t _brightnessScale = DEF_BRT_SCALE;
     // default luma correction curve for PWM driven LEDs
@@ -143,7 +143,7 @@ private:
     //uint8_t BFade;                      // затенение фона под текстом
 
     // GPIO's
-    int32_t fet_gpio = GPIO_NUM_NC, aux_gpio = GPIO_NUM_NC;
+    int32_t fet_gpio, aux_gpio, _mic_gpio;
     bool fet_ll, aux_ll;
 
     LAMPMODE mode = LAMPMODE::MODE_NORMAL; // текущий режим
@@ -191,7 +191,7 @@ public:
     // инициализация Лампы
     void lamp_init();
 
-    LAMPSTATE &getLampState() {return lampState;}
+    LampState &getLampState() {return lampState;}
     LList<std::shared_ptr<UIControl>>&getEffControls() { return effwrkr.getControls(); }
 
     void setMicOnOff(bool val);

@@ -70,6 +70,10 @@ void Lamp::lamp_init(){
   // GPIO's
   DynamicJsonDocument doc(512);
   if (embuifs::deserializeFile(doc, TCONST_fcfg_gpio)){
+    // restore mic gpio
+    _mic_gpio = doc[T_mic] | static_cast<int>(GPIO_NUM_NC);
+    // copy gpio value to this ugly shared struct for EffectWorker
+    lampState.mic_gpio = _mic_gpio;
     // restore fet gpio
     fet_gpio = doc[TCONST_mosfet_gpio] | static_cast<int>(GPIO_NUM_NC);
     fet_ll = doc[TCONST_mosfet_ll];
@@ -227,8 +231,7 @@ void Lamp::micHandler()
   if(effwrkr.getCurrentEffectNumber()==EFF_ENUM::EFF_NONE)
     return;
   if(!mw && lampState.micAnalyseDivider){ // обычный режим
-    //mw = new(std::nothrow) MicWorker(lampState.mic_scale,lampState.mic_noise,!counter);
-    mw = new(std::nothrow) MicWorker(lampState.mic_scale,lampState.mic_noise,true);   // создаем полноценный объект и держим в памяти
+    mw = new(std::nothrow) MicWorker(_mic_gpio, lampState.mic_scale,lampState.mic_noise,true);   // создаем полноценный объект и держим в памяти
 
     if(!mw) {
       return; // не удалось выделить память, на выход

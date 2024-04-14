@@ -3869,11 +3869,12 @@ bool EffectOsc::run() {
 
     y[0] = y[1];
     y[1] = map(
-                          (isMicOn() ? analogRead(MIC_PIN) : random(pointer - gain, pointer + gain)),
-                          gain,
-                          pointer * 2. - gain,
-                          0., 
-                          oscilLimit - 1);
+          (isMicOn() ? analogRead(_mic_gpio) : random(pointer - gain, pointer + gain)),
+          gain,
+          pointer * 2. - gain,
+          0., 
+          oscilLimit - 1
+    );
     delayMicroseconds((uint16_t)(1024.0 * div));
 
   }

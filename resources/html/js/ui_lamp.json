@@ -1,6 +1,6 @@
 {
   "type":"interface",
-  "version":11,
+  "version":12,
   "descr":"FireLamp UI objects",
 
   "settings":{
@@ -1496,6 +1496,108 @@
           }
         ]
       }
+    },
+    "gpiosetup":{
+      "section": "gpiosetup",
+      "label": "GPIO Configuration",
+      "main": true,
+      "block": [
+        {
+          "html": "comment",
+          "label": "<ul><li>Check <a href=\"https://github.com/vortigont/FireLamp_JeeUI/wiki/\" target=\"_blank\">WiKi page</a> for GPIO reference</li><li>Set '-1' to disable GPIO</li><li>MCU will <b>reboot</b> on any gpio change! Wait 5-10 sec after each save</li>"
+        },
+        {
+          "section": "s_gpio",
+          "block": [
+            {
+              "section": "fet_gpio",
+              "label": "MOSFET",
+              "hidden": true,
+              "block": [
+                {
+                  "section": "fet",
+                  "line": true,
+                  "block": [
+                    {
+                      "id": "fet_gpio",
+                      "html": "input",
+                      "type": "number",
+                      "label": "MOSFET gpio",
+                      "value": -1,
+                      "min": -1,
+                      "step": 1
+                    },
+                    {
+                      "id": "fet_ll",
+                      "html": "input",
+                      "type": "number",
+                      "label": "MOSFET logic level",
+                      "min": 0,
+                      "max": 1,
+                      "step": 1
+                    }
+                  ]
+                },
+                {
+                  "id": "s_gpio",
+                  "html": "button",
+                  "type": 1,
+                  "label":"Применить",
+                  "fa": "fas fa-circle-check",
+                  "value": 2
+                }
+              ]
+            },
+            {
+              "section": "aux_gpio",
+              "label": "AUX",
+              "hidden": true,
+              "block": [
+                {
+                  "section": "aux",
+                  "line": true,
+                  "block": [
+                    {
+                      "id": "aux_gpio",
+                      "html": "input",
+                      "value": -1,
+                      "type": "number",
+                      "label": "AUX gpio",
+                      "min": -1,
+                      "step": 1
+                    },
+                    {
+                      "id": "aux_ll",
+                      "html": "input",
+                      "type": "number",
+                      "label": "AUX logic level",
+                      "min": 0,
+                      "max": 1,
+                      "step": 1
+                    }
+                  ]
+                },
+                {
+                  "id": "s_gpio",
+                  "html": "button",
+                  "type": 1,
+                  "label":"Применить",
+                  "fa": "fas fa-circle-check",
+                  "value": 3
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ui_page_settings",
+          "html":"button",
+          "color": "green",
+          "type":0,
+          "fa": "fas fa-door-open",
+          "label":"Выход"
+        }
+      ]
     }
   },
 
