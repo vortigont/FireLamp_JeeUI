@@ -59,9 +59,9 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #define WRKR_TASK_CORE          CONFIG_ARDUINO_RUNNING_CORE    // task MUST be pinned to the second core to avoid LED glitches (if applicable)
 #define WRKR_TASK_PRIO          tskIDLE_PRIORITY+1    // task priority
 #ifdef LAMP_DEBUG_LEVEL
-#define WRKR_TASK_STACK         2304                  // sprintf could take lot's of stack mem for debug messages
+#define WRKR_TASK_STACK         2048                  // sprintf could take lot's of stack mem for debug messages
 #else
-#define WRKR_TASK_STACK         1792                  // effects code should mostly allocate mem on heap
+#define WRKR_TASK_STACK         1536                  // effects code should mostly allocate mem on heap
 #endif
 #define WRKR_TASK_NAME          "EFF_WRKR"
 
