@@ -661,6 +661,9 @@ private:
 
   LedFB<CRGB> ledbuff;        // виртуальй холст
 
+  // effect instance mutex
+  std::mutex _mtx;
+
   void swapBuff();
   void cubesize();
   bool cube2dRoutine();

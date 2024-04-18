@@ -2374,6 +2374,12 @@ void EffectCube2d::swapBuff() {
 bool EffectCube2d::run(){
   if (dryrun(classic ? 4. : 3., classic ? 3 : EFFECTS_RUN_TIMER))
     return false;
+
+  // aquire mutex
+  std::unique_lock<std::mutex> lock(_mtx, std::defer_lock);
+  if (!lock.try_lock())
+    return false;
+
   if (classic)
     return cube2dClassicRoutine();
   else
@@ -2404,6 +2410,9 @@ void EffectCube2d::cubesize() {
   }
 
   fb->clear();
+
+  // aquire mutex
+  std::unique_lock<std::mutex> lock(_mtx);
 
   cntY = fb->h() / (sizeY+1) + !!(fb->h() / (sizeY+1));
 	fieldY = (sizeY + 1U) * cntY;
