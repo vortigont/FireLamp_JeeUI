@@ -8523,7 +8523,7 @@ void TetrisClock::_clock_animation(){
     // currently still animating.
     bool tetris1Done = t_clk.drawNumbers(-6, 26, showColon);
     bool tetris2Done = t_m.drawText(56, 25);
-    bool tetris3Done;
+    bool tetris3Done = false;
 
     // Only draw the top letter once the bottom letter is finished.
     if (tetris2Done) {

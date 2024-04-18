@@ -2207,7 +2207,7 @@ class TetrisClock : public EffectCalc {
     TetrisClock(std::shared_ptr< LedFB<CRGB> > framebuffer) : EffectCalc(framebuffer.get()), screen(framebuffer), t_clk(screen), t_m(screen), t_ap(screen) {
         screen.setRotation(2);
     }
-    ~TetrisClock(){ ts.deleteTask(seconds); ts.deleteTask(animatic); }
+    //~TetrisClock();
     void load() override; 
     bool run() override;
 };
