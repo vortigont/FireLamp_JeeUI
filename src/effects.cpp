@@ -3853,6 +3853,10 @@ String EffectOsc::setDynCtrl(UIControl*_val) {
 }
 
 bool EffectOsc::run() {
+  // do not work on undefined pin
+  if (_mic_gpio == GPIO_NUM_NC)
+    return false;
+
   if((millis() - lastrun ) <= (isMicOn() ? 15U : map(speed, speed <= 127 ? 1 : 128, speed <= 12 ? 128 : 255, 15, 60))) 
     return false;
   else {
