@@ -2374,6 +2374,12 @@ void EffectCube2d::swapBuff() {
 bool EffectCube2d::run(){
   if (dryrun(classic ? 4. : 3., classic ? 3 : EFFECTS_RUN_TIMER))
     return false;
+
+  // aquire mutex
+  std::unique_lock<std::mutex> lock(_mtx, std::defer_lock);
+  if (!lock.try_lock())
+    return false;
+
   if (classic)
     return cube2dClassicRoutine();
   else
@@ -2404,6 +2410,9 @@ void EffectCube2d::cubesize() {
   }
 
   fb->clear();
+
+  // aquire mutex
+  std::unique_lock<std::mutex> lock(_mtx);
 
   cntY = fb->h() / (sizeY+1) + !!(fb->h() / (sizeY+1));
 	fieldY = (sizeY + 1U) * cntY;
@@ -7891,6 +7900,8 @@ void EffectFire2021::Spark::draw(LedFB<CRGB> *fb) {
 String EffectPuzzles::setDynCtrl(UIControl*_val) {
   if(_val->getId()==1) speedFactor = EffectMath::fmap(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 0.05, 0.5);
   else if(_val->getId()==3) {
+    // aquire mutex
+    std::unique_lock<std::mutex> lock(_mtx);
     psizeX = psizeY = EffectCalc::setDynCtrl(_val).toInt();
     regen();
   }
@@ -7941,7 +7952,9 @@ void EffectPuzzles::draw_squareF(float x1, float y1, float x2, float y2, byte co
   }
 }
 
-bool EffectPuzzles::run() { 
+bool EffectPuzzles::run() {
+  // aquire mutex
+  std::unique_lock<std::mutex> lock(_mtx);
   for (byte x = 0; x < pcols; x++) {
     for (byte y = 0; y < prows; y++) {
       draw_square(x * psizeX, y * psizeY, (x + 1) * psizeX, (y + 1) * psizeY, puzzle.at(x).at(y));
@@ -7966,8 +7979,8 @@ bool EffectPuzzles::run() {
       step = 1;
       break;
     case 1:
-      color = puzzle[z_dot.x + move.x][z_dot.y + move.y];
-      puzzle[z_dot.x + move.x][z_dot.y + move.y] = 0;
+      color = puzzle.at(z_dot.x + move.x).at(z_dot.y + move.y);
+      puzzle.at(z_dot.x + move.x).at(z_dot.y + move.y) = 0;
       step = 2;
       break;
     case 2:
@@ -7977,7 +7990,7 @@ bool EffectPuzzles::run() {
       if ((fabs(shift.x) >= fb->w() / pcols) || (fabs(shift.y) >= fb->h() / prows)) {
         shift.x = 0;
         shift.y = 0;
-        puzzle[z_dot.x][z_dot.y] = color;
+        puzzle.at(z_dot.x).at(z_dot.y) = color;
         step = 3;
       }
       break;

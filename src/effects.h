@@ -661,6 +661,9 @@ private:
 
   LedFB<CRGB> ledbuff;        // виртуальй холст
 
+  // effect instance mutex
+  std::mutex _mtx;
+
   void swapBuff();
   void cubesize();
   bool cube2dRoutine();
@@ -1978,6 +1981,8 @@ private:
     void draw_squareF(float x1, float y1, float x2, float y2, byte col);
     void regen();
 
+    // effect instance mutex, 'cause controls are not thread-safe here
+    std::mutex _mtx;
     String setDynCtrl(UIControl*_val) override;
 
 public:

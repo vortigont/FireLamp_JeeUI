@@ -494,13 +494,15 @@ void EffectWorker::workerset(uint16_t effect){
     worker = std::unique_ptr<EffectNone>(new EffectNone(canvas)); // std::unique_ptr<EffectCalc>(new EffectCalc());
   }
 
-  // release mutex
+  if(worker){
+    // apply effect's controls
+    worker->init(static_cast<EFF_ENUM>(effect%256), &curEff.controls, lampstate);
+  }
+
+  // release mutex after effect init  has complete
   lock.unlock();
 
   if(worker){
-    // окончательная инициализация эффекта тут
-    worker->init(static_cast<EFF_ENUM>(effect%256), &curEff.controls, lampstate);
-
     // set newly loaded luma curve to the lamp
     run_action(ra::brt_lcurve, e2int(curEff.curve));
     display.canvasProtect(eff_persistent_buff[effect%256]);     // set 'persistent' frambuffer flag if effect's manifest demands it
