@@ -133,7 +133,7 @@ void effect_switch(Interface *interf, const JsonObject *data, const char* action
     // сбросить флаг случайного демо
     //myLamp.setDRand(myLamp.getLampFlagsStuct().dRand);
 
-    LOG(printf_P, PSTR("UI EFF switch to:%d, LampOn:%d, mode:%d\n"), eff->eff_nb, myLamp.isLampOn(), myLamp.getMode());
+    LOGD(T_lamp, printf, "UI EFF switch to:%d, LampOn:%d\n", eff->eff_nb, myLamp.isLampOn());
     myLamp.switcheffect(effswitch_t::num, eff->eff_nb);
 }
 

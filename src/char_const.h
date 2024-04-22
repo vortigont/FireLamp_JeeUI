@@ -15,7 +15,7 @@ static constexpr const char* T_WdgtMGR = "WdgtMGR";
 // NVS ns
 static constexpr const char* T_lamp = "lamp";
 
-
+static constexpr const char* T_DemoTime = "DemoTime";
 static constexpr const char* T_drawing = "drawing";
 static constexpr const char* T_effect_dynCtrl = "eff_dynCtrl";
 static constexpr const char* T_gpio = "gpio";                                   // gpio key for display configuration
@@ -178,7 +178,6 @@ static constexpr const char* TCONST_drawbuff = "drawbuff";
 static constexpr const char* TCONST_drawClear = "drawClear";
 static constexpr const char* TCONST_draw_dat = "draw_dat";
 static constexpr const char* TCONST_ds18b20 = "ds18b20";
-static constexpr const char* TCONST_DTimer = "DTimer";
 //static constexpr const char* TCONST_edit_lamp_config = "edit_lamp_config";
 static constexpr const char* TCONST_edit_text_config = "edit_text_config";
 static constexpr const char* TCONST_eff_config = "eff_config";

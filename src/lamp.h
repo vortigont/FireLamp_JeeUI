@@ -51,11 +51,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #define MAX_BRIGHTNESS            (255U)                    // максимальная яркость LED
 #define DEF_BRT_SCALE               20                      // шкала регулировки яркости по-умолчанию
 
-typedef enum _LAMPMODE {
-  MODE_NORMAL = 0,
-  MODE_DEMO,
-} LAMPMODE;
-
 // смена эффекта
 enum class effswitch_t : uint8_t {
     none = 0,   // переключить на пустой эффект, он же темнота
@@ -64,13 +59,6 @@ enum class effswitch_t : uint8_t {
     rnd,        // случайный
     num        // переход на конкретный эффект по индексу
 };  // ex EFFSWITCH;
-
-// управление Тикером
-typedef enum _SCHEDULER {
-    T_DISABLE = 0,    // Выкл
-    T_ENABLE,         // Вкл
-    T_RESET,          // сброс
-} SCHEDULER;
 
 /**
  * @brief if method should use a fader when changing brightness
@@ -156,16 +144,17 @@ private:
     //uint8_t storedBright;               // "запасное" значение яркости
     //uint8_t BFade;                      // затенение фона под текстом
 
-    LAMPMODE mode = LAMPMODE::MODE_NORMAL; // текущий режим
-    LAMPMODE storedMode = LAMPMODE::MODE_NORMAL; // предыдущий режим
     uint16_t storedEffect = (uint16_t)EFF_ENUM::EFF_NONE;
 
     // Microphone
     MicWorker *mw = nullptr;
     void micHandler();
 
-    // аймер смены эффектов в ДЕМО
+    // Таймер смены эффектов в ДЕМО
     Task *demoTask = nullptr;
+    // Demo change period
+    uint32_t demoTime{DEFAULT_DEMO_TIMER};
+
 
     /**
      * @brief set brightness value to Display backend
@@ -258,10 +247,6 @@ public:
      */
     uint8_t getBrightnessScale() const { return _brightnessScale; };
 
-    LAMPMODE getMode() {return mode;}
-    LAMPMODE getStoredMode() {return storedMode;}
-    void setMode(LAMPMODE _mode) { storedMode = ((mode == _mode) ? storedMode: mode); mode=_mode;}
-
     // Loop cycle
     void handle();
 
@@ -271,7 +256,7 @@ public:
     uint32_t getLampFlags() {return opts.pack; }
     // возвращает структуру флагов лампы
     const LampFlags &getLampFlagsStuct() const {return opts.flag; }
-    // saves flags to EmbUI config
+    // saves flags to NVS
     void save_flags();
     void setFaderFlag(bool flag) {opts.flag.fadeEffects = flag; save_flags(); }
     bool getFaderFlag() const { return opts.flag.fadeEffects; }
@@ -310,11 +295,28 @@ public:
      */
     void clearDrawBuf() { CRGB c = CRGB::Black; fillDrawBuf(c); }
 
-    void startDemoMode(uint8_t tmout = DEFAULT_DEMO_TIMER); // дефолтное значение, настраивается из UI
-    void startNormalMode(bool forceOff=false);
+    /**
+     * @brief enable/disable demo mode
+     * 
+     * @param avtive 
+     */
+    void demoMode(bool active);
+
+    // reset demo timer
+    void demoReset(){ if (demoTask) demoTask->restart(); }
+
+    /**
+     * @brief Set the Demo Timer period
+     * 
+     * @param seconds 
+     */
+    void setDemoTime(uint32_t seconds);
+
+    // get demo period
+    uint32_t getDemoTime() const { return demoTime; }
 
     void setEffHasMic(bool flag) {opts.flag.effHasMic = flag;}
-    void setDRand(bool flag) {opts.flag.demoRandom = flag; lampState.isRandDemo = (flag && mode==LAMPMODE::MODE_DEMO); }
+    void setDRand(bool flag) {opts.flag.demoRandom = flag; lampState.isRandDemo = flag; }
 
 
     // ---------- служебные функции -------------
@@ -347,16 +349,10 @@ public:
     void switcheffect(effswitch_t action, uint16_t effnb = EFF_ENUM::EFF_NONE);
 
     /*
-     * включает/выключает "демо"-таймер
-     * @param SCHEDULER action - enable/disable/reset
-     */
-    void demoTimer(SCHEDULER action, uint8_t tmout = DEFAULT_DEMO_TIMER); // дефолтное значение, настраивается из UI
-
-    /*
      * включает/выключает "эффект"-таймер
      * @param SCHEDULER action - enable/disable/reset
      */
-    void effectsTimer(SCHEDULER action);
+    void effectsTimer(bool action);
 
 private:
     /**
@@ -437,7 +433,6 @@ private:
      * @param event_data 
      */
     void _event_picker_state(esp_event_base_t base, int32_t id, void* data);
-
 
 };
 

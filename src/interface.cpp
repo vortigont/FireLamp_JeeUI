@@ -153,7 +153,7 @@ void rebuild_effect_list_files(lstfile_t lst);
 
 // сброс таймера демо и настройка автосохранений
 void resetAutoTimers(bool isEffects=false){
-    myLamp.demoTimer(T_RESET);
+    myLamp.demoReset();
     if(isEffects)
         myLamp.effwrkr.autoSaveConfig();
 }
@@ -713,7 +713,7 @@ void block_effect_controls(Interface *interf, const JsonObject *data, const char
             default: break;
         }
 
-        bool isRandDemo = (myLamp.getLampFlagsStuct().demoRandom && myLamp.getMode()==LAMPMODE::MODE_DEMO);
+        bool isRandDemo = myLamp.getLampFlagsStuct().demoRandom;
         String ctrlId(T_effect_dynCtrl);
         ctrlId += ctrl->getId();
         String ctrlName = ctrl->getId() ? ctrl->getName() : TINTF_00D;
@@ -932,29 +932,18 @@ void ui_page_effects(Interface *interf, const JsonObject *data, const char* acti
     interf->json_frame_flush();
 }
 
+/**
+ * @brief handle Demo flag change from WebUI
+ * 
+ */
 void set_demoflag(Interface *interf, const JsonObject *data, const char* action){
     if (!data) return;
-    resetAutoTimers();
     // Специально не сохраняем, считаю что демо при старте не должно запускаться
     bool newdemo = (*data)[K_demo];
-    // сохраняем состояние демо если настроено сохранение
-    if (myLamp.getLampFlagsStuct().restoreState)
-        embui.var_dropnulls(K_demo, (*data)[K_demo].as<bool>());
 
-    switch (myLamp.getMode()) {
-        case LAMPMODE::MODE_NORMAL:
-            if(newdemo)
-                myLamp.startDemoMode(embui.paramVariant(TCONST_DTimer) | DEFAULT_DEMO_TIMER);
-            break;
-        case LAMPMODE::MODE_DEMO:
-            if(!newdemo)
-                myLamp.startNormalMode();
-            break;
-        default:;
-    }
+    myLamp.demoMode(newdemo);
+    // this might not be working
     myLamp.setDRand(myLamp.getLampFlagsStuct().demoRandom);
-
-    embui.publish((String(MQT_lamp) + K_demo).c_str(), myLamp.getMode()==LAMPMODE::MODE_DEMO? 1:0, true);
 }
 
 void set_auxflag(Interface *interf, const JsonObject *data, const char* action){
@@ -1060,7 +1049,7 @@ void page_settings_other(Interface *interf, const JsonObject *data, const char* 
     interf->number_constrained(V_dev_brtscale, static_cast<int>(myLamp.getBrightnessScale()), "Brightness Scale", 1, 5, static_cast<int>(MAX_BRIGHTNESS));
 
     interf->json_section_line();
-        interf->range(TCONST_DTimer, embui.paramVariant(TCONST_DTimer).as<int>(), DEMO_MIN_PERIOD, DEMO_MAX_PERIOD, DEMO_PERIOD_STEP, TINTF_03F);
+        interf->range(T_DemoTime, embui.paramVariant(T_DemoTime).as<int>(), DEMO_MIN_PERIOD, DEMO_MAX_PERIOD, DEMO_PERIOD_STEP, TINTF_03F);
         float sf = embui.paramVariant(TCONST_spdcf);
         interf->range(TCONST_spdcf, sf, 0.25f, 4.0f, 0.25f, TINTF_0D3, false);
     interf->json_section_end(); // line
@@ -1076,36 +1065,23 @@ void page_settings_other(Interface *interf, const JsonObject *data, const char* 
 void set_settings_other(Interface *interf, const JsonObject *data, const char* action){
     if (!data) return;
     resetAutoTimers();
-        // LOG(printf_P,PSTR("Settings: %s\n"),tmpData.c_str());
-        myLamp.setFaderFlag((*data)[TCONST_isFaderON]);
-        myLamp.setClearingFlag((*data)[TCONST_isClearing]);
-        myLamp.setDRand((*data)[TCONST_DRand]);
-        myLamp.setRestoreState((*data)[TCONST_f_restore_state]);
+    // LOG(printf_P,PSTR("Settings: %s\n"),tmpData.c_str());
+    myLamp.setFaderFlag((*data)[TCONST_isFaderON]);
+    myLamp.setClearingFlag((*data)[TCONST_isClearing]);
+    myLamp.setDRand((*data)[TCONST_DRand]);
+    myLamp.setRestoreState((*data)[TCONST_f_restore_state]);
 
-        SETPARAM(TCONST_DTimer);
-        if (myLamp.getMode() == LAMPMODE::MODE_DEMO)
-            myLamp.demoTimer(T_ENABLE, embui.paramVariant(TCONST_DTimer));;
+    myLamp.setDemoTime((*data)[T_DemoTime]);
 
-        float sf = (*data)[TCONST_spdcf];
-        SETPARAM(TCONST_spdcf);
-        myLamp.setSpeedFactor(sf);
+    float sf = (*data)[TCONST_spdcf];
+    SETPARAM(TCONST_spdcf);
+    myLamp.setSpeedFactor(sf);
 
-        // save non-default brightness scale
-        unsigned b = (*data)[V_dev_brtscale];
-        if (b){         // бестолковый вызов sync_parameters() может не передать сюда значение [V_dev_brtscale], проверяем что b!=0
-            if (b == DEF_BRT_SCALE)
-                embui.var_remove(V_dev_brtscale);
-            else
-                embui.var(V_dev_brtscale, b);
+    // save non-default brightness scale
+    unsigned b = (*data)[V_dev_brtscale];
+    embui.var(V_dev_brtscale, b);
 
-            myLamp.setBrightnessScale(b);
-        }
-
-        #ifdef DS18B20
-        myLamp.setTempDisp((*data)[TCONST_ds18b20]);
-        #endif
-
-        myLamp.save_flags();
+    myLamp.save_flags();
 
     if(interf)
         basicui::page_system_settings(interf, data, NULL);
@@ -1393,11 +1369,7 @@ void embui_actions_register(){
     // создаем конфигурационные параметры и регистрируем обработчики активностей
 
     embui.var_create(V_micScale, 1.28);
-//    embui.var_create(V_micNoise, 0.0);
-//    embui.var_create(V_micRdcLvl, 0);
 
-    embui.var_create(TCONST_DTimer, DEFAULT_DEMO_TIMER); // Дефолтное значение, настраивается из UI
-//    embui.var_create(TCONST_alarmPT, 85); // 5<<4+5, старшие и младшие 4 байта содержат 5
     embui.var_create(TCONST_spdcf, 1.0);
 
     embui.var_create(T_mp3vol, 25); // громкость
