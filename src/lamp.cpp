@@ -123,8 +123,7 @@ void Lamp::lamp_init(){
 void Lamp::handle(){
   static unsigned long mic_check = 0;
   if(effwrkr.status() && opts.flag.isMicOn && (opts.flag.pwrState) && mic_check + MIC_POLLRATE < millis()){
-    if(effwrkr.isMicOn())
-      micHandler();
+    micHandler();
     mic_check = millis();
   } else {
     // если микрофон не нужен, удаляем объект
@@ -144,7 +143,6 @@ void Lamp::handle(){
     LOG(printf_P, PSTR("MEM stat: %d, Time: %s\n"), ESP.getFreeHeap(), TimeProcessor::getInstance().getFormattedShortTime().c_str());
   }
 #endif
-
 }
 
 void Lamp::power() {power(!opts.flag.pwrState);}
@@ -260,8 +258,15 @@ void Lamp::micHandler()
 }
 
 void Lamp::setMicOnOff(bool val) {
-    opts.flag.isMicOn = val;
-    lampState.isMicOn = val;
+  if (_pins.mic == -1){
+    // force disable mic if proper gpio has not been set
+    opts.flag.isMicOn = false;
+    lampState.isMicOn = false;
+    return;
+  }
+
+  opts.flag.isMicOn = val;
+  lampState.isMicOn = val;
 
 // have no idea what that bullshit means, I just set the flag that mike is enabled
 /*

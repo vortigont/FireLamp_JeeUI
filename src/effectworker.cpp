@@ -1054,6 +1054,8 @@ void EffectWorker::_start_runner(){
 
 void EffectWorker::_runnerHndlr(){
   TickType_t xLastWakeTime = xTaskGetTickCount ();
+  // make a defered mutex lock
+  std::unique_lock<std::mutex> lock(_mtx, std::defer_lock);
 
   for (;;){
     // if task has been delayed, than we can't keep up with desired frame rate, let's give other tasks time to run anyway
@@ -1067,8 +1069,11 @@ void EffectWorker::_runnerHndlr(){
       return;
     }
 
-    // aquire mutex
-    std::unique_lock<std::mutex> lock(_mtx);
+    // aquire mutex, if unseccessful then simply skip this run cycle
+    if (!lock.try_lock())
+      continue;
+    //std::unique_lock<std::mutex> lock(_mtx);
+
     if (worker->run()){
       // effect has rendered a data in buffer, need to call the engine draw it
       display.show();
