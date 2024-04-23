@@ -38,8 +38,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "effects.h"
 #include "char_const.h"
 #include "constants.h"        // EmbUI string literals
-#include "filehelpers.hpp"
-#include "embuifs.hpp"
 #include "templates.hpp"
 #include "actions.hpp"
 #include "evtloop.h"
@@ -240,7 +238,7 @@ EffectWorker::EffectWorker(LampState *_lampstate) : lampstate(_lampstate) {
  * Создаем экземпляр класса калькулятора в зависимости от требуемого эффекта
  */
 void EffectWorker::workerset(uint16_t effect){
-  LOGI(T_EffWrkr, printf, "workerset:%u\n", effect);
+  LOGI(T_EffWrkr, printf, "Switch to eff:%u\n", effect);
 
   LedFB<CRGB> *canvas = display.getCanvas().get();
   if (!canvas) { LOGW(T_EffWrkr, println, "no canvas buffer!"); return; }
@@ -604,7 +602,6 @@ void EffectWorker::removeLists(){
 
 void EffectWorker::makeIndexFileFromList(const char *folder, bool forceRemove)
 {
-  unsigned long s = millis();
   if(forceRemove)
     removeLists();
 
@@ -636,7 +633,7 @@ void EffectWorker::makeIndexFileFromList(const char *folder, bool forceRemove)
   hndlr.close();
   delete buff;
 
-  LOG(printf_P, PSTR("Индекс эффектов обновлен, %lums\n"), millis()-s );
+  LOGD(T_EffWrkr, println, "Индекс эффектов обновлен" );
   effectsReSort(); // восстанавливаем сортировку
 }
 
@@ -1370,5 +1367,5 @@ void build_eff_names_list_file(EffectWorker &w, bool full){
   hndlr.close();
 
   LittleFS.rename(TCONST_eff_list_json_tmp, full ? TCONST_eff_fulllist_json : TCONST_eff_list_json);
-  LOG(printf_P, PSTR("\nGENERATE effects name json file for GUI(%s): %lums\n"), full ? "brief" : "full", millis()-s);
+  LOGD(T_EffWrkr, printf, "\nGENERATE effects name json file for GUI(%s): %lums\n", full ? "brief" : "full", millis()-s);
 }

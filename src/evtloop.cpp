@@ -64,6 +64,9 @@ namespace evt {
  #define LOOP_EVT_STACK_SIZE     4096           // task stack size
 #endif
 
+// LighEvents loop handler
+static esp_event_loop_handle_t hndlr = nullptr;
+
 void start(){
   if (hndlr) return;
 

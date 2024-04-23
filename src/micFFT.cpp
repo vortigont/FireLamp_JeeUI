@@ -44,10 +44,11 @@ ADC_MODE(ADC_TOUT);
 
 void MicWorker::read_data()
 {
-  //uint16_t adc_addr[samples]; // point to the address of ADC continuously fast sampling output
+#if defined(ESP8266) && defined(FAST_ADC_READ)
   uint16_t adc_addr[1]; // point to the address of ADC continuously fast sampling output
   //uint16_t adc_num = samples; // sampling number of ADC continuously fast sampling, range [1, 65535]
   const uint8_t adc_clk_div = 8; // ADC working clock = 80M/adc_clk_div, range [1, 23], the recommended value is 8
+#endif
 
   unsigned long m=micros(), _m=m;
   // /* Build raw data */

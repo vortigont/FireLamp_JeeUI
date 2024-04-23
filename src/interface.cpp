@@ -725,10 +725,6 @@ void block_effect_controls(Interface *interf, const JsonObject *data, const char
                         ctrlName=String(TINTF_0C9)+ctrlName;
                     int value = ctrl->getId() ? ctrl->getVal().toInt() : myLamp.getBrightness();
                     if(interf) interf->range( ctrlId, (long)value, ctrl->getMin().toInt(), ctrl->getMax().toInt(), ctrl->getStep().toInt(), ctrlName, true);
-#ifdef EMBUI_USE_MQTT
-                    // obsolete
-                    //embui.publish((MQT_effect_controls + ctrlId).c_str(), value, true);
-#endif
                 }
                 break;
             case CONTROL_TYPE::EDIT :

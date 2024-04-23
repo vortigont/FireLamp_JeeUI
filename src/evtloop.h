@@ -108,9 +108,6 @@ enum class lamp_t:int32_t {
 };
 
 
-  // LighEvents loop handler
-  static esp_event_loop_handle_t hndlr = nullptr;
-
   /**
    * @brief Starts Lamp's event loop task
    * this loop will manage events processing between Lamp's components and controls

@@ -2420,7 +2420,7 @@ void EffectCube2d::cubesize() {
   cntX = fb->w() / (sizeX+1) + !!(fb->w() / (sizeX+1));
 	fieldX = (sizeX + 1U) * cntX;
 
-  bool res = ledbuff.resize(fieldX, fieldY);   // создаем виртуальную матрицу, размером кратную размеру кубика+1
+  ledbuff.resize(fieldX, fieldY);   // создаем виртуальную матрицу, размером кратную размеру кубика+1
 
   //LOG(printf_P, PSTR("CUBE2D Size: lfb_size:%d sizeX,Y:%d,%d cntX,Y:%d,%d fieldX,Y:%d,%d\n"), ledbuff.size(), sizeX,sizeY, cntX,cntY, fieldX,fieldY );
   uint8_t x=0, y = 0;

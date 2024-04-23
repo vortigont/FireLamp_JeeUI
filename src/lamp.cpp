@@ -416,8 +416,8 @@ void Lamp::_fadeEventHandler(){
  * запускаем режим "ДЕМО"
  */
 void Lamp::demoMode(bool active){
-  LOGI(T_lamp, printf, "Demo %s, time: %u\n", opts.flag.demoMode ? T_On : T_Off, demoTime);
   if(active == opts.flag.demoMode) return;   // уже и так в нужном "демо" режиме, выходим
+  LOGI(T_lamp, printf, "Demo %s, time: %u\n", active ? T_On : T_Off, demoTime);
 
   if (active){
     // enable demo
