@@ -335,9 +335,12 @@ void event_publisher(void* handler_args, esp_event_base_t base, int32_t id, void
     switch (static_cast<evt::lamp_t>(id)){
         // Lamp Power change state
         case evt::lamp_t::pwron :
+            interf.json_frame_value();
+            interf.value(A_dev_pwrswitch, true);
+            break;
         case evt::lamp_t::pwroff :
             interf.json_frame_value();
-            interf.value(A_dev_pwrswitch, myLamp.isLampOn());
+            interf.value(A_dev_pwrswitch, false);
             break;
 
         // brightness related change notifications

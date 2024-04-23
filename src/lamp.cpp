@@ -153,7 +153,7 @@ void Lamp::power() {power(!opts.flag.pwrState);}
 void Lamp::power(bool flag) // флаг включения/выключения меняем через один метод
 {
   if (flag == opts.flag.pwrState) return;  // пропускаем холостые вызовы
-  LOG(print, "Lamp powering "); LOG(println, flag ? "On": "Off");
+  LOGI(T_lamp, printf, "Lamp powering %s\n", flag ? "On": "Off");
 
   if (flag){
     // POWER ON
