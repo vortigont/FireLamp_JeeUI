@@ -57,7 +57,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 struct LampState {
     // todo: убрать этот тупизм с дублированием флагов лампы в двух разных структурах
     union {
-        uint32_t flags;
+        uint32_t flags{0};
         struct {
             bool isMicOn:1;
             bool isDebug:1;
@@ -69,7 +69,7 @@ struct LampState {
     float speedfactor{1.0};
 
     // Mike related
-    int   mic_gpio{-1};     // пин микрофона
+    int   mic_gpio{GPIO_NUM_NC};     // пин микрофона
     float mic_noise = 0.0; // уровень шума в ед.
     float mic_scale = 1.0; // коэф. смещения
     float last_freq = 0.0; // последняя измеренная часота
@@ -349,7 +349,7 @@ public:
      */
     virtual ~EffectCalc() = default;
 
-    bool isMicOn() { return _lampstate ? _lampstate->isMicOn : false; }
+    bool isMicOn() { return ( _lampstate ? _lampstate->isMicOn : false); }
 
     /**
      * intit метод, вызывается отдельно после создания экземпляра эффекта для установки базовых переменных
@@ -435,13 +435,6 @@ private:
 
     volatile bool _status = false;                  // if worker is in active (enabled and running state)
     TaskHandle_t    _runnerTask_h=nullptr;          // effect calculator task
-
-    /**
-     * @brief WTF???
-     * update LAMP class instance with FileSystem stat info
-     * todo: move it to a proper place
-     */
-    void fsinforenew();
 
     /**
      * создает и инициализирует экземпляр класса выбранного эффекта

@@ -1176,11 +1176,14 @@ String EffectCalc::setDynCtrl(UIControl*_val){
 
   // имеет 7 id и начинается со строки "микрофон" с локализацией
   if( _val->getId()==7 && starts_with(_val->getName().c_str(), TINTF_020) ){
-    _lampstate->isMicOn = ret_val.toInt();
-
-    if(_lampstate)
+    // не будем заниматься ерундой и включать/выключать микрофон из конфига эффекта, для этого есть глобальный флажек
+    // 
+/*
+    if(_lampstate){
+      _lampstate->isMicOn = ret_val.toInt() && (_lampstate->mic_gpio != GPIO_NUM_NC);
       _lampstate->setMicAnalyseDivider(_lampstate->isMicOn);
-
+    }
+*/
   } else {
     if(isRandDemo()){ // для режима рандомного ДЕМО, если это не микрофон - то вернуть рандомное значение в пределах диапазона значений
       ret_val = String(random(_val->getMin().toInt(), _val->getMax().toInt()+1));

@@ -74,6 +74,7 @@ void Lamp::lamp_init(){
     _pins.mic = doc[T_mic] | static_cast<int>(GPIO_NUM_NC);
     // copy gpio value to this ugly shared struct for EffectWorker
     lampState.mic_gpio = _pins.mic;
+
     // restore fet gpio
     _pins.fet = doc[TCONST_mosfet_gpio] | static_cast<int>(GPIO_NUM_NC);
     _pins.fet_ll = doc[TCONST_mosfet_ll];
@@ -92,9 +93,6 @@ void Lamp::lamp_init(){
     }
   }
 
-  // switch to last running effect
-  run_action(ra::eff_switch, embui.paramVariant(V_effect_idx));
-
   // restore lamp flags from NVS
   esp_err_t err;
   std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_lamp, NVS_READONLY, &err);
@@ -103,6 +101,17 @@ void Lamp::lamp_init(){
     //LOGD(T_WdgtMGR, printf, "Err opening NVS handle: %s\n", esp_err_to_name(err));
     handle->get_item(V_lampFlags, opts.pack);
   }
+
+  // restore mike on/off state
+  if (_pins.mic != GPIO_NUM_NC){
+    opts.flag.isMicOn = false;
+    lampState.isMicOn = false;
+  } else {
+    lampState.isMicOn = opts.flag.isMicOn;
+  }
+
+  // switch to last running effect
+  run_action(ra::eff_switch, embui.paramVariant(V_effect_idx));
 
   if (opts.flag.restoreState && opts.flag.pwrState){
     opts.flag.pwrState = false;       // reset it first, so that power() method would know that we are in off state for now
@@ -121,25 +130,14 @@ void Lamp::lamp_init(){
     opts.flag.demoMode = false;
   }
 
-  // restore mike on/off state
-  setMicOnOff(opts.flag.isMicOn);
 }
 
 void Lamp::handle(){
   static unsigned long mic_check = 0;
-  if(effwrkr.status() && opts.flag.isMicOn && (opts.flag.pwrState) && mic_check + MIC_POLLRATE < millis()){
+  if(effwrkr.status() && opts.flag.isMicOn && opts.flag.pwrState && (mic_check + MIC_POLLRATE < millis()) ){
     micHandler();
     mic_check = millis();
-  } else {
-    // если микрофон не нужен, удаляем объект
-    if (mw){ delete mw; mw = nullptr; }
   }
-
-  // все что ниже, будет выполняться раз в 0.999 секундy
-  static unsigned long wait_handlers;
-  if (wait_handlers + 999U > millis())
-      return;
-  wait_handlers = millis();
 
 #if defined(LAMP_DEBUG_LEVEL) && LAMP_DEBUG_LEVEL>2
   EVERY_N_SECONDS(15){
@@ -232,7 +230,7 @@ void Lamp::micHandler()
 }
 
 void Lamp::setMicOnOff(bool val) {
-  if (_pins.mic == -1){
+  if (_pins.mic == GPIO_NUM_NC){
     // force disable mic if proper gpio has not been set
     opts.flag.isMicOn = false;
     lampState.isMicOn = false;

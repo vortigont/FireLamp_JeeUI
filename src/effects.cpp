@@ -3832,7 +3832,7 @@ bool EffectPacific::run()
 //----- Эффект "Осциллограф" (c) kostyamat
 // !++
 String EffectOsc::setDynCtrl(UIControl*_val) {
-  pointer = 4096/(getMicScale()*2);
+  pointer = 2048 / (getMicScale() ? getMicScale() : 1.0) ;
 
   if(_val->getId()==1) {
     speed = EffectCalc::setDynCtrl(_val).toInt();
@@ -3853,20 +3853,14 @@ String EffectOsc::setDynCtrl(UIControl*_val) {
 }
 
 bool EffectOsc::run() {
-  // do not work on undefined pin
-  if (_mic_gpio == GPIO_NUM_NC)
-    return false;
-
   if((millis() - lastrun ) <= (isMicOn() ? 15U : map(speed, speed <= 127 ? 1 : 128, speed <= 12 ? 128 : 255, 15, 60))) 
     return false;
-  else {
-    lastrun = millis();
-  }
+
   //fb->fade(200);
   fb->clear();
 
   if (scale == 1) {
-    byte micPick = (isMicOn()? getMicMaxPeak() : random8(200));
+    byte micPick = isMicOn()? getMicMaxPeak() : random8(200);
     color = CHSV((isMicOn()? getMicFreq() : random(240)), 255, scale == 1 ? 100 : constrain(micPick * map(gain, 1, 255, 1, 5), 51, 255));
   }
   else if (scale == 255)
@@ -3874,25 +3868,24 @@ bool EffectOsc::run() {
   else 
     color = CHSV(scale, 255, 255);
 
-  for (int x = 0; x < oscHV; x += div) {
+  for (int x = 0; x < fb->h(); x += div) {
     if (speed < 128)
       EffectMath::drawLine(y[0], x, y[1], (x + div), color, fb);
     else
       EffectMath::drawLine(x, y[0], (x + div), y[1], color, fb);
 
     y[0] = y[1];
+    long v = isMicOn() ? analogRead(_mic_gpio) : random(pointer - gain, pointer + gain);
     y[1] = map(
-          (isMicOn() ? analogRead(_mic_gpio) : random(pointer - gain, pointer + gain)),
+          v,
           gain,
-          pointer * 2. - gain,
-          0., 
-          oscilLimit - 1
+          pointer * 2 - gain,
+          0, oscilLimit - 1
     );
-    delayMicroseconds((uint16_t)(1024.0 * div));
-
+    if (isMicOn()) delayMicroseconds((uint16_t)(1024.0 * div));
   }
 
-return true;
+  return true;
 }
 
 // ------ Эффект "Вышиванка" (с) проект Aurora "Munch"
@@ -7434,11 +7427,8 @@ String EffectVU::setDynCtrl(UIControl*_val){
     bands = effId & 01 ? (fb->w()/2 + (fb->w() & 01 ? 1:0)) : fb->w();
     bar_width =  (fb->w()  / (bands - 1));
 
-    //memset(oldBarHeights,0,sizeof(oldBarHeights));
-    for(uint16_t i = 0; i < fb->w(); i++) {
-      oldBarHeights[i] = 0.;
-      bandValues[i] = 0.;
-    }
+    bandValues.assign(fb->w(), 0);
+    oldBarHeights.assign(fb->w(), 0);
   }
   else if (_val->getId()==4) colorType = EffectCalc::setDynCtrl(_val).toInt() - 1;
   else if (_val->getId()==5) {
@@ -7454,16 +7444,15 @@ String EffectVU::setDynCtrl(UIControl*_val){
 
 void EffectVU::load() {
   setMicAnalyseDivider(0); // отключить авто-работу микрофона, т.к. тут все анализируется отдельно, т.е. не нужно выполнять одну и ту же работу дважды
+
+  bands = effId & 01 ? (fb->w()/2 + (fb->w() & 01 ? 1:0)) : fb->w();
+  bar_width =  (fb->w()  / (bands - 1));
+  bandValues.assign(fb->w(), 0);
+  oldBarHeights.assign(fb->w(), 0);
+
+  if (_mic_gpio == GPIO_NUM_NC)
+    return;
   mw = new MicWorker(_mic_gpio, getMicScale(),getMicNoise(), true);
-
-    bands = effId & 01 ? (fb->w()/2 + (fb->w() & 01 ? 1:0)) : fb->w();
-    bar_width =  (fb->w()  / (bands - 1));
-
-  for(uint16_t i = 0; i < fb->w(); i++) {
-    oldBarHeights[i] = 0.0;
-    bandValues[i] = 0.0;
-  }
-
 }
 
 bool EffectVU::run() {
@@ -7478,8 +7467,7 @@ bool EffectVU::run() {
         samp_freq = mw->process(getMicNoiseRdcLevel()); // частота семплирования
         last_min_peak = mw->getMinPeak();
         last_max_peak = mw->getMaxPeak()*2;
-        // for(uint16_t i=0; i<sizeof(bandValues)/(sizeof(*bandValues));i++)
-        //   bandValues[i]=0.0f;
+
         if(withAnalyse){
           maxVal=mw->fillSizeScaledArray(bandValues.data(), bands);
           last_freq=mw->getFreq();
@@ -7487,7 +7475,6 @@ bool EffectVU::run() {
           calcArray=1;
         }
         samp_freq = samp_freq; last_min_peak=last_min_peak; last_freq=last_freq; // давим варнинги
-        //delete mw;
       }
     }
     if (!(tickCounter%3)) return false; // не будем заставлять бедный контроллер еще и выводить инфу в том же цикле, что и рассчеты. Это режет ФПС. Но без новых рассчетов - ФПС просто спам.
@@ -7496,9 +7483,11 @@ bool EffectVU::run() {
     if (!(tickCounter%random(2,11))) {
       last_max_peak=random(0,fb->h());
       maxVal=random(0,last_max_peak);
-      for (uint16_t i = 0; i < (sizeof(bandValues) / sizeof(float)); i++) {
-        bandValues[i] = random(2)? random(0, fb->h()) : bandValues[i];
+      for (size_t i = 0; i != bands; ++i){
+        if (random(2))
+          bandValues.at(i) = random(0, fb->h());
       }
+
       last_freq = random(100,20000);
     }
   }
@@ -7508,18 +7497,18 @@ bool EffectVU::run() {
   fb->clear();
 
   // Process the FFT data into bar heights
-  for (byte band = 0; band < bands; band++) {
+  for (size_t band = 0; band != bandValues.size(); band++) {
 
     // Scale the bars for the display
-    float barHeight = bandValues[band] * _scale > threshold ? (bandValues[band] * _scale) : 0.;
+    float barHeight = bandValues.at(band) * _scale > threshold ? (bandValues.at(band) * _scale) : 0.;
     if (barHeight > fb->maxHeightIndex()) barHeight = fb->maxHeightIndex();
 
     // Small amount of averaging between frames
-    if (averaging) barHeight = (oldBarHeights[band] + barHeight) / 2;
+    if (averaging) barHeight = (oldBarHeights.at(band) + barHeight) / 2;
 
     // Move peak up
-    if (barHeight > peak[band]) {
-      peak[band] = min((float)fb->maxHeightIndex(), barHeight);
+    if (barHeight > peak.at(band)) {
+      peak.at(band) = min((float)fb->maxHeightIndex(), barHeight);
     }
 
   // EVERY_N_SECONDS(1){
@@ -7565,13 +7554,13 @@ bool EffectVU::run() {
       }
 
     // Save oldBarHeights for averaging later
-    if (averaging) oldBarHeights[band] = barHeight;
+    if (averaging) oldBarHeights.at(band) = barHeight;
   }
 
 // Decay peak
  // EVERY_N_MILLISECONDS(EFFECTS_RUN_TIMER +1) {
-    for (byte band = 0; band < bands; band++)
-      if (peak[band] > 0) peak[band] -= 0.25 * speedFactorVertical;
+    for (size_t band = 0; band < bands; band++)
+      if (peak.at(band) > 0) peak.at(band) -= 0.25 * speedFactorVertical;
     //colorTimer++;
   //}
 

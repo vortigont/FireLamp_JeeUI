@@ -115,15 +115,15 @@ private:
 
     // used auxilary GPIOs 
     struct GPIO_pins {
+        // Analog pin for microphone
+        int32_t mic{GPIO_NUM_NC};
         // matrix power switch FET
-        int32_t fet;
+        int32_t fet{GPIO_NUM_NC};
         // some uknown AUX pin
-        int32_t aux;
+        int32_t aux{GPIO_NUM_NC};
         // active logic levels
         bool fet_ll;
         bool aux_ll;
-        // Analog pin for microphone
-        int32_t  mic;
     };
 
     // effect switching state

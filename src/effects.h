@@ -967,20 +967,17 @@ public:
 // (c) kostyamat
 class EffectOsc : public EffectCalc {
 private:
-    int _mic_gpio{-1};
-    int oscHV, oscilLimit;
-#ifdef ESP32
-    int pointer{2048};
-#else
-    int pointer{512};
-#endif
+    int _mic_gpio;
+    int pointer = 2048;
+    uint32_t oscHV{16}, oscilLimit{16};
+
     CRGB color;
-    int div{1}, gain{1};
+    int div{1}, gain{16};
     int y[2] = {0, 0};
     String setDynCtrl(UIControl*_val) override;
 
 public:
-    EffectOsc(LedFB<CRGB> *framebuffer, int gpio = GPIO_NUM_NC) : EffectCalc(framebuffer), _mic_gpio(gpio), oscHV(fb->w()), oscilLimit(fb->h()) {}
+    EffectOsc(LedFB<CRGB> *framebuffer, int gpio = GPIO_NUM_NC) : EffectCalc(framebuffer), _mic_gpio(gpio) {}
     bool run() override;
     void setMicGPIO(int gpio){ _mic_gpio = gpio; };
 };
@@ -1862,7 +1859,7 @@ public:
     void load() override;
 };
 
-/* -------------- эффект "VU-meter"
+/* -------------- эффект "VU-meter, частотный анализатор"
     (c) G6EJD, https://www.youtube.com/watch?v=OStljy_sUVg&t=0s
     reworked by s-marley https://github.com/s-marley/ESP32_FFT_VU
     adopted for FireLamp_jeeUI by kostyamat, kDn
@@ -1874,8 +1871,8 @@ private:
         purple_gp,    rainbowsherbet_gp, 
         redyellow_gp, Colorfull_gp, es_ocean_breeze_068_gp
     };
-    uint8_t bands = fb->w();
-    uint8_t bar_width{1};
+    size_t bands = fb->w();
+    size_t bar_width{1};
     uint8_t calcArray = 1;          // уменьшение частоты пересчета массива
     uint8_t colorTimer = 0;
     const uint8_t colorDev = 256/fb->maxHeightIndex();
@@ -2179,7 +2176,7 @@ class EffectFlower : public EffectCalc {
     EffectFlower(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
         bool run() override;
 };
-#include "log.h"
+
 /*
     Effect "Tetris clock"
     based on https://github.com/witnessmenow/WiFi-Tetris-Clock
