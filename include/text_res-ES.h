@@ -45,6 +45,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 /** набор строк с именами эффектов
  *  ссылки на эти строки собираются во флеш-массив в файле effect_types.h
  */
+static constexpr const char* TEFF_blank = "Nero";  // пустой эффект, темный экран
 static constexpr const char* TEFF_000 = "";  // "пустышка"
 static constexpr const char* TEFF_001  = "Lámpara blanca";
 static constexpr const char* TEFF_002  = "Colores";

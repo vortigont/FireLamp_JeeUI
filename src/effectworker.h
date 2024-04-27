@@ -303,7 +303,9 @@ protected:
     EFF_ENUM effect;        /**< энумератор эффекта */
     bool isDebug() {return _lampstate ? _lampstate->isDebug : false;}
     bool isRandDemo() {return _lampstate ? _lampstate->isRandDemo : false;}
-    float getSpeedFactor() {return _lampstate ? _lampstate->speedfactor : 1.0;}
+
+    // коэффициент скорости эффектов (некоторых, блин!)
+    float getBaseSpeedFactor() {return _lampstate ? _lampstate->speedfactor : 1.0;}
     //float getBrightness() {return _lampstate ? _lampstate->brightness : 127;}
 
     void setMicAnalyseDivider(uint8_t val) {if(_lampstate) _lampstate->micAnalyseDivider = val&3;}
@@ -320,10 +322,13 @@ protected:
     bool isActive() {return active;}
     void setActive(bool flag) {active=flag;}
     uint32_t lastrun=0;     /**< счетчик времени для эффектов с "задержкой" */
-    static constexpr byte brightness{128};    // рудиментная "яркость", должна быть удалена из кода эффектов
+
+    // рудиментная "яркость", должна быть удалена из кода эффектов
+    static constexpr byte brightness{128};
     byte speed=1;
     byte scale=1;
-    float speedfactor=1.0;      // коэффициент скорости эффекта
+    // inheritable effect speedfactor variable
+    float speedFactor=1.0;
 
     uint8_t palettescale=1.0;     // внутренний масштаб для палитр, т.е. при 22 палитрах на нее будет приходится около 11 пунктов, при 8 палитрах - около 31 пункта
     float ptPallete=1.0;          // сколько пунктов приходится на одну палитру; 255.1 - диапазон ползунка, не включая 255, т.к. растягиваем только нужное :)

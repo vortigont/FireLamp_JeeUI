@@ -111,10 +111,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #define MAX_FPS               (50U)                         // Максимальное число обсчитываемых и выводимых кадров в секунду
 #endif
 
-#ifndef SPEED_ADJ
-#define SPEED_ADJ             (1.0)                         // Поправка скорости эффектов относительно размеров метрицы.
-#endif
-
 #define EFFECTS_RUN_TIMER   (uint16_t)(1000 / MAX_FPS)     // период обработки эффектов - при 10 это 10мс, т.е. 1000/10 = 100 раз в секунду, при 20 = 50 раз в секунду, желательно использовать диапазон 10...40
 
 #ifndef DEFAULT_DEMO_TIMER

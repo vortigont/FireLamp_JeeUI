@@ -220,12 +220,12 @@ String Effcfg::getSerializedEffConfig(uint8_t replaceBright) const {
 //  ***** EffectWorker implementation *****
 
 EffectWorker::EffectWorker(LampState *_lampstate) : lampstate(_lampstate) {
-  // create 3 'faivored' superusefull controls for 'brightness', 'speed', 'scale'
-  for(int8_t id=0;id<3;id++){
+  // create 3 'faivored' superusefull controls for 'speed', 'scale'
+  for(unsigned id=1; id<2; id++){
     auto c = std::make_shared<UIControl>(
       id,                                     // id
       CONTROL_TYPE::RANGE,                    // type
-      id==0 ? String(TINTF_00D) : id==1 ? String(TINTF_087) : String(TINTF_088)           // name
+      id==1 ? String(TINTF_087) : String(TINTF_088)           // name
     );
     curEff.controls.add(c);
   }
@@ -907,7 +907,7 @@ void EffectWorker::_load_default_fweff_list(){
   effects.clear();
 
   for (uint16_t i = 0; i != 256U; i++){
-    if (!strlen(T_EFFNAMEID[i]) && i)   // пропускаем индексы-"пустышки" без названия, кроме 0 "EFF_NONE"
+    if (!strlen(T_EFFNAMEID[i]))   // пропускаем индексы-"пустышки" без названия
       continue;
 
     EffectListElem el(i, SET_ALL_EFFFLAGS);
@@ -1191,10 +1191,13 @@ String EffectCalc::setDynCtrl(UIControl*_val){
   }
 
   switch(_val->getId()){
-    //case 0: brightness = getBrightness(); break; // яркость всегда как есть, без рандома, но с учетом глобальности :) //LOG(printf_P,PSTR("brightness=%d\n"), brightness);
-    case 1: speed = ret_val.toInt(); speedfactor = getSpeedFactor()*SPEED_ADJ; break; // LOG(printf_P,PSTR("speed=%d, speedfactor=%2.2f\n"), speed, speedfactor);
-    case 2: scale = ret_val.toInt(); break;
-    default: break;
+    case 1:
+      speed = ret_val.toInt();
+      LOGD(T_Effect, printf, "speed=%d, speedfactor=%2.2f\n", speed, speedFactor);
+      break;
+    case 2:
+      scale = ret_val.toInt(); break;
+    default:;
   }
 
   return ret_val;

@@ -61,8 +61,7 @@ https://gist.github.com/StefanPetrick/170fbf141390fafb9c0c76b8a0d34e54
 */
 class EffectMetaBalls : public EffectCalc {
 private:
-	float speedFactor;
-	const float hormap = (256 / fb->w());
+		const float hormap = (256 / fb->w());
     const float vermap = (256 / fb->h());
 	String setDynCtrl(UIControl*_val) override;
     void load() override;
@@ -131,8 +130,7 @@ private:
 	#define BORDERTHICKNESS       (1U)   // глубина бордюра для размытия яркой частицы: 0U - без границы (резкие края); 1U - 1 пиксель (среднее размытие) ; 2U - 2 пикселя (глубокое размытие)
 	const uint8_t paintWidth = fb->w() - BORDERTHICKNESS * 2;
 	const uint8_t paintHeight = fb->h() - BORDERTHICKNESS * 2;
-	float speedFactor;
-	
+		
 	String setDynCtrl(UIControl*_val) override;
 
 public:
@@ -149,8 +147,7 @@ class EffectPulse : public EffectCalc {
     uint8_t currentRadius = 4;
     float _pulse_hue = 0;
     uint8_t _pulse_hueall = 0;
-    float speedFactor;
-    String setDynCtrl(UIControl*_val) override;
+        String setDynCtrl(UIControl*_val) override;
 public:
     EffectPulse(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     bool run() override;
@@ -164,8 +161,7 @@ private:
     float vectorB[2U];
     float coordB[2U];
 	bool flag[2] = {true, true};
-	float speedFactor;
-
+	
 	String setDynCtrl(UIControl*_val);
 	
 public:
@@ -183,8 +179,7 @@ private:
     float coord[_AMOUNT][2U];
     int16_t ballColors[_AMOUNT];
     byte light[_AMOUNT];
-    float speedFactor;
-    bool lighterTracersRoutine();
+        bool lighterTracersRoutine();
 
 public:
     EffectLighterTracers(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
@@ -303,8 +298,6 @@ struct Lighter {
 };
 
     bool subPix = false;
-    //uint16_t lightersIdx;
-    float speedFactor{0.1};
     std::vector<Lighter> lighters;
 private:
     String setDynCtrl(UIControl*_val) override;
@@ -397,8 +390,7 @@ private:
   float spirotheta1 = 0;
   float spirotheta2 = 0;
   uint8_t internalCnt = 0;
-  float speedFactor;
-
+  
   String setDynCtrl(UIControl*_val) override;
 
 public:
@@ -413,8 +405,7 @@ class EffectPrismata : public EffectCalc {
 private:
     byte spirohueoffset = 0;
     uint8_t fadelvl=1;
-	float speedFactor;
-    
+	    
     String setDynCtrl(UIControl*_val) override;
 public:
     EffectPrismata(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
@@ -429,8 +420,7 @@ private:
   std::vector<Boid> boids;
   Boid predator;
   PVector wind;
-  float speedFactor;
-
+  
   bool predatorPresent;
   float hueoffset;
 
@@ -529,8 +519,7 @@ private:
   uint8_t thue = 0U;
   uint8_t tnum;
   PixelDataBuffer<CRGB> ledsbuff;
-  float speedFactor;
-  bool twinklesRoutine();
+    bool twinklesRoutine();
   String setDynCtrl(UIControl*_val) override;
   //void setscl(const byte _scl) override;
 public:
@@ -545,8 +534,7 @@ private:
   float whue;
   float waveTheta;
   uint8_t _scale=1;
-  float speedFactor;
-  bool wavesRoutine();
+    bool wavesRoutine();
   String setDynCtrl(UIControl*_val) override;
 public:
     EffectWaves(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
@@ -693,7 +681,6 @@ private:
     };
     uint8_t effId=0;
     uint8_t pidx = 0;
-	float speedFactor{1};
     std::vector<Particle> particles{std::vector<Particle>(PICASSO_MIN_PARTICLES, Particle())};
 
     void generate(bool reset = false);
@@ -720,7 +707,6 @@ class EffectLeapers : public EffectCalc {
 private:
     unsigned numParticles = 0;
     uint8_t _rv{0};
-	float speedFactor{1};
     std::vector<Leaper> leapers{std::vector<Leaper>(LEAPERS_MIN, Leaper())};
 
     void generate();
@@ -758,7 +744,6 @@ class EffectLiquidLamp : public EffectCalc {
     uint8_t pidx = 0;
     bool physic_on = 1;
     uint8_t filter = 0;
-	float speedFactor = 1.0;
     GradientPaletteList palettes;
 
     std::vector<Particle> particles{std::vector<Particle>(LIQLAMP_MIN_PARTICLES, Particle())};
@@ -789,8 +774,7 @@ private:
     float hue;
     std::vector<Boid> boids;
     uint8_t micPick = 0;
-	float speedFactor;
-
+	
     const uint8_t ff_speed = 1; // чем выше этот параметр, тем короче переходы (градиенты) между цветами. 1 - это самое красивое
     const uint8_t ff_scale = 26; // чем больше этот параметр, тем больше "языков пламени" или как-то так. 26 - это норм
 
@@ -827,7 +811,6 @@ struct Drop{
     uint8_t satur;
     uint8_t glare = 0;
     uint8_t iconIdx = 0;
-	float speedFactor{1};
 
     void nGlare(uint8_t bri);
     void nDrops(uint8_t bri);
@@ -860,7 +843,6 @@ private:
     float cangle, sangle;
     float radius2;
     float counter = 0;                                // счетчик для реализации смещений, нарастания и т.д.
-	float _speedFactor{1};
 	float _speed;
     bool setup = true;
     uint8_t micPick = 0;
@@ -947,7 +929,6 @@ public:
 // https://raw.githubusercontent.com/FastLED/FastLED/master/examples/Pacifica/Pacifica.ino
 class EffectPacific : public EffectCalc {
 private:
-	uint32_t speedFactor = 100;
 
     uint16_t sCIStart1, sCIStart2, sCIStart3, sCIStart4;    // "color index start" counters
     uint32_t sLastms = 0;
@@ -958,7 +939,7 @@ private:
 	String setDynCtrl(UIControl*_val) override;
 
 public:
-    EffectPacific(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
+    EffectPacific(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){ speedFactor = 100; }
     //void load() override;
     bool run() override;
 };
@@ -1012,7 +993,6 @@ private:
     const uint8_t centreX = (fb->w() / 2) - 1;
     const uint8_t centreY = (fb->h() / 2) - 1;
     Noise3dMap  noise{Noise3dMap(1, fb->w(), fb->h())};
-	uint8_t speedFactor;
     bool type = false;
 
 	String setDynCtrl(UIControl*_val) override;
@@ -1043,8 +1023,7 @@ private:
     uint8_t cnt;
     bool wings = false;
     bool isColored = true;
-	float speedFactor;
-	String setDynCtrl(UIControl*_val) override;
+		String setDynCtrl(UIControl*_val) override;
 
 public:
     EffectButterfly(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
@@ -1132,8 +1111,7 @@ private:
     byte arrow_play_mode_count[6];      // Сколько раз проигрывать полностью каждый режим если вариант 0 - текущий счетчик
     byte arrow_play_mode_count_orig[6]; // Сколько раз проигрывать полностью каждый режим если вариант 0 - исходные настройки
     uint8_t _scale;
-    float speedFactor;
-    void arrowSetupForMode(byte mode, bool change);
+        void arrowSetupForMode(byte mode, bool change);
     void arrowSetup_mode1();
     void arrowSetup_mode2();
     //void arrowSetup_mode3(;)
@@ -1173,8 +1151,7 @@ class EffectAttract : public EffectCalc {
 private:
     const uint8_t spirocenterX = fb->w() / 2;
     const uint8_t spirocenterY = fb->h() / 2;
-    float speedFactor;
-    float mass{10};    // Mass, tied to size
+        float mass{10};    // Mass, tied to size
     float G{0.5};      // Gravitational Constant
     uint8_t _mass = 127;
     uint8_t _energy = 127;
@@ -1203,8 +1180,7 @@ class EffectSnake : public EffectCalc {
 private:
     const int snake_len{fb->h()/2};
     float hue;
-    float speedFactor;
-    bool subPix = false;
+        bool subPix = false;
     bool onecolor = false;
     enum class dir_t:uint8_t {
         UP,
@@ -1261,8 +1237,6 @@ class EffectNexus: public EffectCalc {
     byte type = 1;
     uint8_t _scale = 1;
     bool randColor = false;
-    //float windProgress{1};
-	float speedFactor{1};
     std::vector<Nexus> nxdots{std::vector<Nexus>(NEXUS_MIN, Nexus())};
 
     void reload();
@@ -1290,8 +1264,7 @@ class EffectSnakeIsland : public EffectCalc {
     };
 
     std::vector<Snake> snakes{std::vector<Snake>(1)};
-	float speedFactor;
-
+	
     String setDynCtrl(UIControl*_val) override;
     void regen();
 
@@ -1311,8 +1284,7 @@ private:
     bool blurred = false;
     bool revCol = false;
     //bool tiltDirec;
-    float speedFactor;
-    float center = (float)fb->w() / 2.;
+        float center = (float)fb->w() / 2.;
 
     struct Rocket {
         float x, y, xd, yd;
@@ -1346,14 +1318,13 @@ class EffectSmokeballs: public EffectCalc {
     };
     uint8_t dimming = 240;
     uint8_t _scale = 1;
-    float speedFactor = 0.1;
     std::vector<Wave> waves{std::vector<Wave>(fb->w()/4)};      // allow max w/4 waves to run simultaneously
 
     void shiftUp();
     void regen();
     String setDynCtrl(UIControl*_val) override;
   public:
-    EffectSmokeballs(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
+    EffectSmokeballs(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){ speedFactor = 0.1; }
     void load() override;
     bool run() override;
 };
@@ -1375,8 +1346,7 @@ class EffectCell: public EffectCalc {
     uint8_t hue;
     int16_t a;
 
-	float speedFactor;
-    void cell();
+	    void cell();
     void spider();
     void spruce();
     void vals();
@@ -1464,7 +1434,6 @@ class EffectWrain: public EffectCalc {
     bool _flash;
     bool randColor = false;
     float windProgress = 0;
-    float speedFactor = 0.5;
     uint32_t timer = 0;
     Vector2D<uint8_t> _noise {Vector2D<uint8_t>(fb->w(), cloudHeight)};
     std::vector<Drop> drops {std::vector<Drop>(fb->w() * 3)};
@@ -1510,8 +1479,7 @@ struct TObject {
     uint8_t step;
     uint8_t deltaValue;
     uint8_t deltaHue, deltaHue2;
-    float speedFactor;
-    bool type = false;
+        bool type = false;
     byte blur;
     uint8_t _video = 255;
     uint8_t gain;
@@ -1548,7 +1516,6 @@ private:
     };
 
     byte color;
-    float speedFactor{1};
     byte _video = 255;
     byte gain;
     std::vector<Circle> circles{ std::vector<Circle>(CIRCLES_MIN) };
@@ -1623,8 +1590,7 @@ private:
 
     const float radiusMax = (float)fb->maxDim() /5;
     std::vector<Ball> balls{ std::vector<Ball>(BALLS_MIN) };
-    float speedFactor;
-    String setDynCtrl(UIControl*_val) override;
+        String setDynCtrl(UIControl*_val) override;
     void reset();
 
 public:
@@ -1726,8 +1692,7 @@ private:
     float radius = 0;
     byte hue = millis()>>1; //random(0, 255);
     CRGB color;
-    float speedFactor;
-    float addRadius;
+        float addRadius;
     float angle;
     byte starPoints = random(3, 7);
 
@@ -1766,8 +1731,7 @@ private:
     const byte deltaValue = 6U;     // 2-12 
     const byte deltaHue = 8U;       // высота языков пламени должна уменьшаться не так быстро, как ширина
     const float gravity = 0.1;
-    uint8_t step = fb->w();
-    float speedFactor{0.1};
+    uint16_t step = fb->w();
     std::vector<uint8_t> shiftHue{std::vector<uint8_t>(fb->h())};
     std::vector<Magma> particles{std::vector<Magma>(fb->w(), Magma())};
 
@@ -1848,8 +1812,6 @@ private:
     byte count = 0;
     uint8_t _fade = 20;
 
-	float speedFactor = 0.5;
-
     void draw(float x, float y, CRGB color);
     String setDynCtrl(UIControl*_val) override;
 
@@ -1922,7 +1884,6 @@ class EffectFire2021 : public EffectCalc {
 private:
     byte _pal = 8;
     byte _scale = 32;
-	byte speedFactor;
     uint32_t t;
     bool withSparks = false;
 
@@ -1966,7 +1927,6 @@ private:
     byte psizeX = 4;
     byte psizeY = 4;
     uint8_t pcols, prows;
-    float speedFactor = 0.1;
     std::vector< std::vector<uint8_t> > puzzle;
     byte color;
     Vector2<int8_t> z_dot;
@@ -1983,7 +1943,7 @@ private:
     String setDynCtrl(UIControl*_val) override;
 
 public:
-    EffectPuzzles(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){ regen(); }
+    EffectPuzzles(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){ speedFactor = 0.1; regen(); }
     void load() override;
     bool run() override;
 };
@@ -2012,7 +1972,6 @@ class EffectDNA : public EffectCalc {
 private:
     float a = (256.0 / (float)fb->w());
     float t = 0.0;
-    float speedFactor = 0.5;
     bool flag = true; 
     bool bals = false;
     uint8_t type = 0, _type = 1, _scale = 16;
@@ -2031,8 +1990,7 @@ class EffectSmoker : public EffectCalc {
 private:
     byte color, saturation;
     byte _scale = 30, glitch;
-	float speedFactor;
-    float t;
+	    float t;
 
     String setDynCtrl(UIControl*_val) override;
 
@@ -2053,8 +2011,7 @@ private:
     bool colorShift = false;
     Noise3dMap buff{Noise3dMap(1, fb->w()+2, fb->h()+2)};
     bool a = true;
-	float speedFactor;
-
+	
     String setDynCtrl(UIControl*_val) override;
     void drawDot(float x, float y, byte a);
     void blur();
@@ -2070,8 +2027,7 @@ public:
 #define BLOT_COUNT 1U
 class EffectWcolor : public EffectCalc {
 private:
-    float speedFactor;
-    uint8_t blur;
+        uint8_t blur;
     bool mode = false;
     float t;
 
@@ -2142,8 +2098,6 @@ private:
     };
 
     std::array<Ball, 3> balls;
-
-    float speedFactor{1};
 
     float dist(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2);
 

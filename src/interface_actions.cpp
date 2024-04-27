@@ -39,21 +39,14 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "interface.h"
 #include "lamp.h"
 #include "display.hpp"
-#include "effects.h"
-#include "templates.hpp"
 #include LANG_FILE                  //"text_res.h"
 
 #include "devices.h"
-#ifdef ENCODER
-    #include "enc.h"
-#endif
-
 #include "basicui.h"
 #include "actions.hpp"
-#include <type_traits>
 #include "traits.hpp"               // embui traits
 #include "evtloop.h"
-#include "bencoder.hpp"
+#include "log.h"
 
 /**
  * @brief Set device display brightness
@@ -145,16 +138,25 @@ void set_eff_next(Interface *interf, const JsonObject *data, const char* action)
     run_action(ra::eff_next);
 }
 
+/**
+ * @brief контролы эффектов
+ * 
+ * @param interf 
+ * @param data 
+ * @param action 
+ */
 void set_effects_dynCtrl(Interface *interf, const JsonObject *data, const char* action){
+    LOGV(T_WebUI, printf, "set_effects_dynCtrl %s\n", action ? action : "empty");
 
     LList<std::shared_ptr<UIControl>>&controls = myLamp.effwrkr.getControls();
+
+    std::string_view a(action);
+    a.remove_prefix(std::string_view(T_effect_dynCtrl).length()); // chop off "eff_dynCtrl"
+    int idx = strtol(a.data(), NULL, 10);
 
     if (!data || !(*data).size()){
         if (!interf && !action) return;     // return if requred arguments are null
 
-        std::string_view a(action);
-        a.remove_prefix(std::string_view(T_effect_dynCtrl).length()); // chop off "dynCtrl"
-        int idx = strtol(a.data(), NULL, 10);
         
         for(unsigned i=1; i<controls.size();i++){       // I skip first control here [0] as it's the old 'individual brightness'
             if (controls[i]->getId() == idx){
@@ -168,15 +170,17 @@ void set_effects_dynCtrl(Interface *interf, const JsonObject *data, const char* 
         return;
     }
 
+
     // else it's a "set" request to set a value
-    String ctrlName;
-    for(unsigned i=1; i<controls.size();i++){       // I skip first control here [0] as it's the old 'individual brightness'
-        ctrlName = String(T_effect_dynCtrl) + controls[i]->getId();
-        if((*data).containsKey(ctrlName)){
-            if ((*data)[ctrlName].is<bool>() ){
-                controls[i]->setVal((*data)[ctrlName] ? "1" : "0");     // больше стрингов во славу Богу стрингов!
+    for(unsigned i=0; i<controls.size(); i++){
+        LOGV(T_WebUI, printf, "Lookup Eff control #%u, %s\n", controls[i]->getId(), controls[i]->getName().c_str());
+
+        if( idx == controls[i]->getId() ){
+            //LOGI(T_WebUI, printf, "Eff control #%u found\n", i);
+            if ((*data)[action].is<bool>() ){
+                controls[i]->setVal((*data)[action] ? "1" : "0");     // больше стрингов во славу Богу стрингов!
             } else
-                controls[i]->setVal((*data)[ctrlName]); // для всех остальных
+                controls[i]->setVal((*data)[action]); // для всех остальных
 
             resetAutoTimers(true);
             myLamp.effwrkr.setDynCtrl(controls[i].get());
