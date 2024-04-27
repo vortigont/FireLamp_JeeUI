@@ -44,6 +44,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "evtloop.h"
 #include "nvs_handle.hpp"
 
+#define DEFAULT_EFFECT_NUM  13  // неопалимая купина
 
 Lamp::Lamp() : effwrkr(&lampState){
   lampState.micAnalyseDivider = 1; // анализ каждый раз
@@ -111,7 +112,9 @@ void Lamp::lamp_init(){
   }
 
   // switch to last running effect
-  run_action(ra::eff_switch, embui.paramVariant(V_effect_idx));
+  uint16_t eff_idx = DEFAULT_EFFECT_NUM;
+  handle->get_item(V_effect_idx, eff_idx);
+  run_action(ra::eff_switch, eff_idx);
 
   if (opts.flag.restoreState && opts.flag.pwrState){
     opts.flag.pwrState = false;       // reset it first, so that power() method would know that we are in off state for now
@@ -377,7 +380,9 @@ void Lamp::_switcheffect(effswitch_t action, bool fade, uint16_t effnb) {
 
   // if lamp is not in Demo mode, then need to save new effect in config
   if(!opts.flag.demoMode){
-    embui.var(V_effect_idx, _swState.pendingEffectNum);
+    std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_lamp, NVS_READWRITE, NULL);
+    handle->set_item(V_effect_idx, _swState.pendingEffectNum);
+    //embui.var(V_effect_idx, _swState.pendingEffectNum);
   } else {
     myLamp.demoReset();
   }
