@@ -3056,14 +3056,9 @@ String EffectLeapers::setDynCtrl(UIControl*_val) {
 }
 
 bool EffectLeapers::run(){
-  EVERY_N_SECONDS(30) {
-    randomSeed(millis());
-  }
-
   //fb->dim(0);
   fb->clear();
 
-  //for (unsigned i = 0; i < numParticles; i++) {
   for (auto &l : leapers){
     move_leaper(l);
     EffectMath::drawPixelXYF(l.x, l.y, CHSV(l.color, 255, 255), fb);
@@ -7348,21 +7343,28 @@ void EffectStarShips::draw(float x, float y, CRGB color) {
 // 17.03.21
 // https://editor.soulmatelights.com/gallery/739-flags
 EffectFlags::EffectFlags(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){
-  switcher.set(CHANGE_FLAG_TIME * TASK_SECOND, TASK_FOREVER, [this](){ flag = random(total_flags); });
-  ts.addTask(switcher);
+  switcher = new Task();
+  switcher->set(CHANGE_FLAG_TIME * TASK_SECOND, TASK_FOREVER, [this](){ flag = random(total_flags); });
+  ts.addTask(*switcher);
 }
 
 String EffectFlags::setDynCtrl(UIControl*_val){
   if (_val->getId()==1)
     _speed = map(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 1, 16);
   else if (_val->getId()==3) flag = EffectCalc::setDynCtrl(_val).toInt();
-  else if (_val->getId()==4) EffectCalc::setDynCtrl(_val).toInt() == 1 ? switcher.enableDelayed() : switcher.disable();     // random flag switch
+  else if (_val->getId()==4) EffectCalc::setDynCtrl(_val).toInt() == 1 ? switcher->enableDelayed() : switcher->disable();     // random flag switch
   else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
   return String();
 }
 
 EffectFlags::~EffectFlags(){
-  ts.deleteTask(switcher);
+  // I can't destory Tasks here due to Scheduler is non-thread-safe, let's delegate it to the scheduler
+  // it's not perfiect, but do not have other options for now
+  switcher->setCallback(nullptr);
+  switcher->setSelfDestruct(true);
+  switcher->setIterations(0);
+  switcher->enable();           // need this if task was disabled
+  switcher = nullptr;
 }
 
 bool EffectFlags::run() {
@@ -7894,7 +7896,7 @@ String EffectPuzzles::setDynCtrl(UIControl*_val) {
   if(_val->getId()==1) speedFactor = EffectMath::fmap(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 0.05, 0.5);
   else if(_val->getId()==3) {
     // aquire mutex
-    std::unique_lock<std::mutex> lock(_mtx);
+    std::lock_guard<std::mutex> lock(_mtx);
     psizeX = psizeY = EffectCalc::setDynCtrl(_val).toInt();
     regen();
   }
@@ -7947,7 +7949,7 @@ void EffectPuzzles::draw_squareF(float x1, float y1, float x2, float y2, byte co
 
 bool EffectPuzzles::run() {
   // aquire mutex
-  std::unique_lock<std::mutex> lock(_mtx);
+  std::lock_guard<std::mutex> lock(_mtx);
   for (byte x = 0; x < pcols; x++) {
     for (byte y = 0; y < prows; y++) {
       draw_square(x * psizeX, y * psizeY, (x + 1) * psizeX, (y + 1) * psizeY, puzzle.at(x).at(y));
@@ -8506,6 +8508,28 @@ bool EffectFlower::run() {
 	return true;
 }
 
+/* Эффект "Часы-тетрис" */
+
+TetrisClock::TetrisClock(std::shared_ptr< LedFB<CRGB> > framebuffer) : EffectCalc(framebuffer.get()), screen(framebuffer), t_clk(screen), t_m(screen), t_ap(screen) {
+  screen.setRotation(2);
+  seconds = new Task();
+  animatic = new Task();
+}
+
+TetrisClock::~TetrisClock(){
+  // I can't destory Tasks here due to Scheduler is non-thread-safe, let's delegate it to the scheduler
+  // it's not perfiect, but do not have other options for now
+  seconds->setCallback(nullptr);
+  seconds->setSelfDestruct(true);
+  seconds->setIterations(0);
+  seconds = nullptr;
+  animatic->setCallback(nullptr);
+  animatic->setSelfDestruct(true);
+  animatic->setIterations(0);
+  animatic->enable();
+  animatic = nullptr;
+}
+
 bool TetrisClock::run(){
   if (redraw){
     redraw = false;
@@ -8561,7 +8585,7 @@ void TetrisClock::_gettime(){
     // Must set this to false so animation knows
     // to start again
     animation_idle = false;
-    animatic.restart();
+    animatic->restart();
   }
 
 }
@@ -8581,18 +8605,18 @@ void TetrisClock::_handleColonAfterAnimation(){
 
 void TetrisClock::load(){
   _gettime();
-  seconds.set(TASK_SECOND, TASK_FOREVER, [this](){_gettime(); showColon = !showColon; if (animation_idle) _handleColonAfterAnimation(); });
-  animatic.set(100, TASK_FOREVER, [this](){_clock_animation(); if (animation_idle) ts.getCurrentTask()->disable(); });
-  ts.addTask(seconds);
-  ts.addTask(animatic);
-  seconds.enableDelayed();
-  animatic.enableDelayed();
+  seconds->set(TASK_SECOND, TASK_FOREVER, [this](){_gettime(); showColon = !showColon; if (animation_idle) _handleColonAfterAnimation(); });
+  animatic->set(100, TASK_FOREVER, [this](){_clock_animation(); if (animation_idle) animatic->disable(); });
+  ts.addTask(*seconds);
+  ts.addTask(*animatic);
+  seconds->enableDelayed();
+  animatic->enableDelayed();
   t_clk.scale = 2;
 }
 
 String TetrisClock::setDynCtrl(UIControl*_val){
   if(_val->getId()==1) {
-    animatic.setInterval(map(EffectCalc::setDynCtrl(_val).toInt(), 1,255, 1000, 20));
+    animatic->setInterval(map(EffectCalc::setDynCtrl(_val).toInt(), 1,255, 1000, 20));
   } else if(_val->getId()==3) {
     t_clk.scale = EffectCalc::setDynCtrl(_val).toInt();
   } else if(_val->getId()==4) {

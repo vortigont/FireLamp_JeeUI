@@ -1800,7 +1800,7 @@ private:
     uint8_t thisVal;
     uint8_t thisMax;
 
-    Task switcher;                  // flag changer
+    Task *switcher;                  // flag changer
 
     //Germany
     void germany(uint8_t i);
@@ -2187,8 +2187,8 @@ class TetrisClock : public EffectCalc {
     TetrisMatrixDraw t_m;       // The "M" of AM/PM
     TetrisMatrixDraw t_ap;      // The "P" or "A" of AM/PM
 
-    Task seconds;               // seconds pulse
-    Task animatic;              // animation task
+    Task *seconds;               // seconds pulse
+    Task *animatic;              // animation task
 
     bool animation_idle;        // animation in progress
     bool hour24{1};             // 12/24 hour mode
@@ -2206,10 +2206,8 @@ class TetrisClock : public EffectCalc {
     String setDynCtrl(UIControl*_val) override;
 
 	public:
-    TetrisClock(std::shared_ptr< LedFB<CRGB> > framebuffer) : EffectCalc(framebuffer.get()), screen(framebuffer), t_clk(screen), t_m(screen), t_ap(screen) {
-        screen.setRotation(2);
-    }
-    //~TetrisClock();
+    TetrisClock(std::shared_ptr< LedFB<CRGB> > framebuffer);
+    ~TetrisClock();
     void load() override; 
     bool run() override;
 };
