@@ -290,6 +290,7 @@ void ui_section_effects_list_configuration(Interface *interf, const JsonObject *
     interf->spacer();
 
     // sorting option
+/*
     interf->select(V_effSort, TINTF_040);
         interf->option(SORT_TYPE::ST_BASE, TINTF_041);
         interf->option(SORT_TYPE::ST_END, TINTF_042);
@@ -298,6 +299,7 @@ void ui_section_effects_list_configuration(Interface *interf, const JsonObject *
         interf->option(SORT_TYPE::ST_AB2, TINTF_08A);
         interf->option(SORT_TYPE::ST_MIC, TINTF_08D);  // эффекты с микрофоном
     interf->json_section_end();
+*/
 
     interf->button(button_t::submit, TCONST_set_effect, TINTF_Save, P_GRAY);            // Save btn
     interf->button_value(button_t::submit, TCONST_set_effect, TCONST_copy, TINTF_005);  // Copy button
@@ -314,6 +316,42 @@ void ui_section_effects_list_configuration(Interface *interf, const JsonObject *
 
     interf->json_section_end(); // json_section_begin(TCONST_set_effect);
 }
+
+/**
+ * страница "Управление списком эффектов"
+ * здесь выводится ПОЛНЫЙ список эффектов в выпадающем списке
+ */
+void show_effects_config(Interface *interf, const JsonObject *data, const char* action){
+    if (!interf) return;
+
+    interf->json_frame_interface();
+    interf->json_section_main(A_ui_page_effects_config, TINTF_009);
+    confEff = myLamp.effwrkr.getSelectedListElement();
+
+    if(LittleFS.exists(TCONST_eff_fulllist_json)){
+        // формируем и отправляем кадр с запросом подгрузки внешнего ресурса
+        interf->json_frame(P_xload);
+
+        interf->json_section_content();
+        interf->select(TCONST_effListConf, (int)confEff->eff_nb, TINTF_00A,
+                        true,   // direct
+                        TCONST_eff_fulllist_json
+                );
+        interf->json_section_end();
+
+        // generate block with effect settings controls
+        ui_section_effects_list_configuration(interf, nullptr, NULL);
+        interf->spacer();
+        interf->button(button_t::generic, A_ui_page_effects, TINTF_exit);
+        interf->json_frame_flush();
+        return;
+    }
+
+    interf->constant("Rebuilding effects list, pls retry in a second...");
+    interf->json_frame_flush();
+    rebuild_effect_list_files(lstfile_t::full);
+}
+
 
 /**
  * @brief индексная страница WebUI
@@ -608,41 +646,6 @@ void set_effects_config_param(Interface *interf, const JsonObject *data, const c
     resetAutoTimers();
     myLamp.effwrkr.makeIndexFileFromList(); // обновить индексный файл после возможных изменений
     //ui_page_main(interf, nullptr, NULL);
-}
-
-/**
- * страница "Управление списком эффектов"
- * здесь выводится ПОЛНЫЙ список эффектов в выпадающем списке
- */
-void show_effects_config(Interface *interf, const JsonObject *data, const char* action){
-    if (!interf) return;
-
-    interf->json_frame_interface();
-    interf->json_section_main(A_ui_page_effects_config, TINTF_009);
-    confEff = myLamp.effwrkr.getSelectedListElement();
-
-    if(LittleFS.exists(TCONST_eff_fulllist_json)){
-        // формируем и отправляем кадр с запросом подгрузки внешнего ресурса
-        interf->json_frame(P_xload);
-
-        interf->json_section_content();
-        interf->select(TCONST_effListConf, (int)confEff->eff_nb, TINTF_00A,
-                        true,   // direct
-                        TCONST_eff_fulllist_json
-                );
-        interf->json_section_end();
-
-        // generate block with effect settings controls
-        ui_section_effects_list_configuration(interf, nullptr, NULL);
-        interf->spacer();
-        interf->button(button_t::generic, A_ui_page_effects, TINTF_exit);
-        interf->json_frame_flush();
-        return;
-    }
-
-    interf->constant("Rebuilding effects list, pls retry in a second...");
-    interf->json_frame_flush();
-    rebuild_effect_list_files(lstfile_t::full);
 }
 
 /**
