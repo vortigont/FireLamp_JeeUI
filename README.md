@@ -1,6 +1,8 @@
 __[CHANGELOG](/CHANGELOG.md)__ | [![PlatformIO CI](https://github.com/vortigont/FireLamp_JeeUI/actions/workflows/pio_build.yml/badge.svg)](https://github.com/vortigont/FireLamp_JeeUI/actions/workflows/pio_build.yml)
 
 ## Огненная лампа FireLamp_EmbUI
+Лампа, гирлянда, информер с поддержкой светодиодных матриц/лент ws2812 и HUB75 RGB панелей.
+
 Деполитизированный форк проекта "огненной" лампы [FireLamp_EmbUI](https://github.com/DmytroKorniienko/FireLamp_EmbUI).
 
 <details>
