@@ -431,7 +431,7 @@ void Lamp::demoMode(bool active){
     }
   }
 
-  opts.flag.demoMode == active;
+  opts.flag.demoMode = active;
 
   // save demo state if required
   if (opts.flag.restoreState)
