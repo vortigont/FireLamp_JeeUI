@@ -303,7 +303,7 @@ public:
     void demoMode(bool active);
 
     // reset demo timer
-    void demoReset(){ if (demoTask) demoTask->restart(); }
+    void demoReset(){ if (demoTask) demoTask->restartDelayed(); }
 
     /**
      * @brief Set the Demo Timer period
@@ -314,6 +314,13 @@ public:
 
     // get demo period
     uint32_t getDemoTime() const { return demoTime; }
+
+    /**
+     * @brief switch to next effect in demo mode
+     * 
+     */
+    void demoNext();
+
 
     void setEffHasMic(bool flag) {opts.flag.effHasMic = flag;}
     void setDRand(bool flag) {opts.flag.demoRandom = flag; lampState.isRandDemo = flag; }

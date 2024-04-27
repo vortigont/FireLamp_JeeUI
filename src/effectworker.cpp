@@ -1091,10 +1091,10 @@ void EffectWorker::start(){
 }
 
 void EffectWorker::stop(){
-  std::unique_lock<std::mutex> lock(_mtx);
   _status = false;                  // task will self destruct on next iteration
-  worker.reset();
-  display.clear();
+  //std::lock_guard<std::mutex> lock(_mtx);
+  //worker.reset();
+  //display.clear();
   display.canvasProtect(false);     // force clear persistent flag for frambuffer (if any) 
 }
 

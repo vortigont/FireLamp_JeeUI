@@ -44,6 +44,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "evtloop.h"
 #include "nvs_handle.hpp"
 
+#define DEFAULT_EFFECT_NUM  13  // неопалимая купина
 
 Lamp::Lamp() : effwrkr(&lampState){
   lampState.micAnalyseDivider = 1; // анализ каждый раз
@@ -111,7 +112,9 @@ void Lamp::lamp_init(){
   }
 
   // switch to last running effect
-  run_action(ra::eff_switch, embui.paramVariant(V_effect_idx));
+  uint16_t eff_idx = DEFAULT_EFFECT_NUM;
+  handle->get_item(V_effect_idx, eff_idx);
+  run_action(ra::eff_switch, eff_idx);
 
   if (opts.flag.restoreState && opts.flag.pwrState){
     opts.flag.pwrState = false;       // reset it first, so that power() method would know that we are in off state for now
@@ -165,7 +168,7 @@ void Lamp::power(bool flag) // флаг включения/выключения 
 
     // включаем демотаймер если был режим демо
     if(opts.flag.demoMode && demoTask)
-      demoTask->restart();
+      demoTask->restartDelayed();
 
     // generate pwr change state event 
     EVT_POST(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::pwron));
@@ -311,10 +314,11 @@ void Lamp::setLumaCurve(luma::curve c){
 };
 
 void Lamp::switcheffect(effswitch_t action, uint16_t effnb){
-  if (isLampOn())
-    _switcheffect(action, getFaderFlag(), effnb);
-  else
-    _switcheffect(action, false, effnb);
+  _switcheffect(action, isLampOn() ? getFaderFlag() : false, effnb);
+  // if in demo mode, and this switch came NOT from demo timer, delay restart demo timer
+  // a bit hakish but will work. Otherwise I have to segregate demo switches from all other
+  if(opts.flag.demoMode && demoTask && ts.timeUntilNextIteration(*demoTask) < demoTask->getInterval())
+    demoTask->delay();
 }
 
 /*
@@ -377,9 +381,9 @@ void Lamp::_switcheffect(effswitch_t action, bool fade, uint16_t effnb) {
 
   // if lamp is not in Demo mode, then need to save new effect in config
   if(!opts.flag.demoMode){
-    embui.var(V_effect_idx, _swState.pendingEffectNum);
-  } else {
-    myLamp.demoReset();
+    std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_lamp, NVS_READWRITE, NULL);
+    handle->set_item(V_effect_idx, _swState.pendingEffectNum);
+    //embui.var(V_effect_idx, _swState.pendingEffectNum);
   }
 
   // publish new effect's control to all available feeders
@@ -421,7 +425,7 @@ void Lamp::demoMode(bool active){
     // enable demo
     power(true);  // "включаем" лампу
     if (!demoTask){
-      demoTask = new Task(demoTime * TASK_SECOND, TASK_FOREVER, [](){run_action(ra::demo_next);}, &ts, false);    
+      demoTask = new Task(demoTime * TASK_SECOND, TASK_FOREVER, [this](){demoNext();}, &ts, false);
       demoTask->enableDelayed();
     }
   } else {
@@ -431,7 +435,7 @@ void Lamp::demoMode(bool active){
     }
   }
 
-  opts.flag.demoMode == active;
+  opts.flag.demoMode = active;
 
   // save demo state if required
   if (opts.flag.restoreState)
@@ -458,6 +462,18 @@ void Lamp::setDemoTime(uint32_t seconds){
   if (err != ESP_OK) return;
   handle->set_item(T_DemoTime, demoTime);
 }
+
+/**
+ * @brief switch to next effect in demo mode
+ * 
+ */
+void Lamp::demoNext(){
+if (opts.flag.demoRandom)
+  switcheffect(effswitch_t::rnd);
+else
+  switcheffect(effswitch_t::next);
+}
+
 
 /*
  * включает/выключает таймер обработки эффектов
