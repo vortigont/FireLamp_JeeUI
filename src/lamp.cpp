@@ -168,7 +168,7 @@ void Lamp::power(bool flag) // флаг включения/выключения 
 
     // включаем демотаймер если был режим демо
     if(opts.flag.demoMode && demoTask)
-      demoTask->restart();
+      demoTask->restartDelayed();
 
     // generate pwr change state event 
     EVT_POST(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::pwron));
@@ -314,10 +314,11 @@ void Lamp::setLumaCurve(luma::curve c){
 };
 
 void Lamp::switcheffect(effswitch_t action, uint16_t effnb){
-  if (isLampOn())
-    _switcheffect(action, getFaderFlag(), effnb);
-  else
-    _switcheffect(action, false, effnb);
+  _switcheffect(action, isLampOn() ? getFaderFlag() : false, effnb);
+  // if in demo mode, and this switch came NOT from demo timer, delay restart demo timer
+  // a bit hakish but will work. Otherwise I have to segregate demo switches from all other
+  if(opts.flag.demoMode && demoTask && ts.timeUntilNextIteration(*demoTask) < demoTask->getInterval())
+    demoTask->delay();
 }
 
 /*
@@ -383,8 +384,6 @@ void Lamp::_switcheffect(effswitch_t action, bool fade, uint16_t effnb) {
     std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_lamp, NVS_READWRITE, NULL);
     handle->set_item(V_effect_idx, _swState.pendingEffectNum);
     //embui.var(V_effect_idx, _swState.pendingEffectNum);
-  } else {
-    myLamp.demoReset();
   }
 
   // publish new effect's control to all available feeders
@@ -426,7 +425,7 @@ void Lamp::demoMode(bool active){
     // enable demo
     power(true);  // "включаем" лампу
     if (!demoTask){
-      demoTask = new Task(demoTime * TASK_SECOND, TASK_FOREVER, [](){run_action(ra::demo_next);}, &ts, false);    
+      demoTask = new Task(demoTime * TASK_SECOND, TASK_FOREVER, [this](){demoNext();}, &ts, false);
       demoTask->enableDelayed();
     }
   } else {
@@ -463,6 +462,18 @@ void Lamp::setDemoTime(uint32_t seconds){
   if (err != ESP_OK) return;
   handle->set_item(T_DemoTime, demoTime);
 }
+
+/**
+ * @brief switch to next effect in demo mode
+ * 
+ */
+void Lamp::demoNext(){
+if (opts.flag.demoRandom)
+  switcheffect(effswitch_t::rnd);
+else
+  switcheffect(effswitch_t::next);
+}
+
 
 /*
  * включает/выключает таймер обработки эффектов

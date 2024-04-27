@@ -42,21 +42,17 @@
 void run_action(ra act){
   LOG(printf, "run_action: %d\n", static_cast<int>(act));
   switch (act){
-    // AUX PIN flip
+/*
+    // AUX PIN flip (obsolete, gpio is in lamp's strutc now )
     case ra::aux_flip : {
       if ( embui.paramVariant(TCONST_aux_gpio) == -1) return;    // if AUX pin is not set, than quit
       run_action(ra::aux, !digitalRead(embui.paramVariant(TCONST_aux_gpio)) );  // we simply flip the state here
       break;
     }
-
+*/
     // demo next effect
     case ra::demo_next : {
-      if (myLamp.getLampFlagsStuct().demoRandom)
-        myLamp.switcheffect(effswitch_t::rnd);
-      else
-        myLamp.switcheffect(effswitch_t::next);
-
-      //run_action(ra::eff_switch, myLamp.effects.getEffnum() );     // call switch effect as in GUI/main page
+      myLamp.demoNext();
       break;
     }
 

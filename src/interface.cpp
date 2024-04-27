@@ -737,11 +737,6 @@ void block_effect_controls(Interface *interf, const JsonObject *data, const char
                     , ctrl->getVal()
                     , ctrlName
                     );
-/*
-#ifdef EMBUI_USE_MQTT
-                    embui.publish(MQT_effect_controls + ctrlId, ctrl->getVal(), true);
-#endif
-*/
                     break;
                 }
             case CONTROL_TYPE::CHECKBOX :
@@ -755,18 +750,10 @@ void block_effect_controls(Interface *interf, const JsonObject *data, const char
                     , ctrlName
                     , true
                     );
-/*
-#ifdef EMBUI_USE_MQTT
-                    embui.publish(MQT_effect_controls + ctrlId, ctrl->getVal(), true);
-#endif
-*/                    break;
+                    break;
                 }
             default:
-/*
-#ifdef EMBUI_USE_MQTT
-                embui.publish(MQT_effect_controls + ctrlId, ctrl->getVal(), true);
-#endif
-*/                break;
+                break;
         }
     }
 
@@ -934,9 +921,7 @@ void ui_page_effects(Interface *interf, const JsonObject *data, const char* acti
  */
 void set_demoflag(Interface *interf, const JsonObject *data, const char* action){
     if (!data) return;
-    // Специально не сохраняем, считаю что демо при старте не должно запускаться
     bool newdemo = (*data)[K_demo];
-
     myLamp.demoMode(newdemo);
     // this might not be working
     myLamp.setDRand(myLamp.getLampFlagsStuct().demoRandom);
@@ -1045,7 +1030,7 @@ void page_settings_other(Interface *interf, const JsonObject *data, const char* 
     interf->number_constrained(V_dev_brtscale, static_cast<int>(myLamp.getBrightnessScale()), "Brightness Scale", 1, 5, static_cast<int>(MAX_BRIGHTNESS));
 
     interf->json_section_line();
-        interf->range(T_DemoTime, embui.paramVariant(T_DemoTime).as<int>(), DEMO_MIN_PERIOD, DEMO_MAX_PERIOD, DEMO_PERIOD_STEP, TINTF_03F);
+        interf->range(T_DemoTime, static_cast<int>(myLamp.getDemoTime()), DEMO_MIN_PERIOD, DEMO_MAX_PERIOD, DEMO_PERIOD_STEP, TINTF_03F);
         float sf = embui.paramVariant(TCONST_spdcf);
         interf->range(TCONST_spdcf, sf, 0.25f, 4.0f, 0.25f, TINTF_0D3, false);
     interf->json_section_end(); // line
