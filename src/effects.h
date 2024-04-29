@@ -2147,11 +2147,11 @@ class TetrisClock : public EffectCalc {
     bool animation_idle;        // animation in progress
     bool hour24{1};             // 12/24 hour mode
     bool showColon{0};          // hh:mm sepparator
-    bool forceRefresh = true;   // redraw all numbers
+    bool forceRefresh{true};    // redraw all numbers
     bool redraw{0};             // flag that triggers screen refresh
 
-    String lastDisplayedTime;
     uint8_t lastDisplayedAmPm;
+    int lastmin{-1};
 
 
     void _clock_animation();

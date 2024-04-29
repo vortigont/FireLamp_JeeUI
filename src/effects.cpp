@@ -8518,6 +8518,10 @@ TetrisClock::TetrisClock(std::shared_ptr< LedFB<CRGB> > framebuffer) : EffectCal
   screen.setRotation(2);
   seconds = new Task();
   animatic = new Task();
+  // Second character is always "M"
+  t_m.setText("M", forceRefresh);
+  // init time and numbers
+  _gettime();
 }
 
 TetrisClock::~TetrisClock(){
@@ -8570,28 +8574,29 @@ void TetrisClock::_clock_animation(){
 }
 
 void TetrisClock::_gettime(){
-  String timeString(TimeProcessor::getInstance().getFormattedShortTime());
+  if ( lastmin == TimeProcessor::getInstance().getMinutes() ) return;
+  lastmin = TimeProcessor::getInstance().getMinutes();
 
-  if (hour24){
+  String timeString;
+ 
+  if (!hour24){
+    timeString = TimeProcessor::getInstance().getHours()%12;
+    timeString += (char)0x3a; // ":"
+    timeString += TimeProcessor::getInstance().getMinutes();
+
     if (lastDisplayedAmPm != TimeProcessor::getInstance().getHours()) {
       lastDisplayedAmPm = TimeProcessor::getInstance().getHours();
-      // Second character is always "M"
-      t_m.setText("M", forceRefresh);
       t_ap.setText(TimeProcessor::getInstance().getHours() > 12 ? "P" : "A", forceRefresh);
     }
+  } else
+    timeString = TimeProcessor::getInstance().getFormattedShortTime();
 
-  } 
+  t_clk.setTime(timeString, forceRefresh);
 
-  if (lastDisplayedTime != timeString) {
-    lastDisplayedTime = timeString;
-    t_clk.setTime(timeString, forceRefresh);
-
-    // Must set this to false so animation knows
-    // to start again
-    animation_idle = false;
-    animatic->restart();
-  }
-
+  // Must set this to false so animation knows
+  // to start again
+  animation_idle = false;
+  animatic->restart();
 }
 
 void TetrisClock::_handleColonAfterAnimation(){
@@ -8625,6 +8630,7 @@ String TetrisClock::setDynCtrl(UIControl*_val){
     t_clk.scale = EffectCalc::setDynCtrl(_val).toInt();
   } else if(_val->getId()==4) {
     hour24 = EffectCalc::setDynCtrl(_val).toInt();
+    _gettime();
   }
 
   EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
