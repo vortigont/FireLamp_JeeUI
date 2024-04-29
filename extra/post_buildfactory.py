@@ -64,48 +64,6 @@ def esp32_detect_flashsize():
 
 flash_size_from_esp, flash_size_was_overridden = esp32_detect_flashsize()
 
-def esp32_create_combined_bin(source, target, env):
-    print("Generating combined binary for serial flashing")
-
-    # The offset from begin of the file where the app0 partition starts
-    # This is defined in the partition .csv file
-    app_offset = 0x10000
-
-    new_file_name = env.subst("$BUILD_DIR/${PROGNAME}.factory.bin")
-    sections = env.subst(env.get("FLASH_EXTRA_IMAGES"))
-    firmware_name = env.subst("$BUILD_DIR/${PROGNAME}.bin")
-    chip = env.get("BOARD_MCU")
-    flash_size = env.BoardConfig().get("upload.flash_size", "4MB")
-    flash_mode = env["__get_board_flash_mode"](env)
-    flash_freq = env["__get_board_f_flash"](env)
-
-    cmd = [
-        "--chip",
-        chip,
-        "merge_bin",
-        "-o",
-        new_file_name,
-        "--flash_mode",
-        flash_mode,
-        "--flash_freq",
-        flash_freq,
-        "--flash_size",
-        flash_size,
-    ]
-
-    print("    Offset | File")
-    for section in sections:
-        sect_adr, sect_file = section.split(" ", 1)
-        print(f" -  {sect_adr} | {sect_file}")
-        cmd += [sect_adr, sect_file]
-
-    print(f" - {hex(app_offset)} | {firmware_name}")
-    cmd += [hex(app_offset), firmware_name]
-
-    print('Using esptool.py arguments: %s' % ' '.join(cmd))
-
-    esptool.main(cmd)
-
 
 def esp32_build_filesystem(fs_size):
     #files = env.GetProjectOption("custom_files_upload").splitlines()
@@ -116,14 +74,16 @@ def esp32_build_filesystem(fs_size):
     if not os.listdir(filesystem_dir):
         print("No files added -> will NOT create littlefs.bin and NOT overwrite fs partition!")
         return False
-    tool = env.subst(env["MKFSTOOL"])
+    # this does not work on GitHub, results in 'mklittlefs: No such file or directory'
+    tool =  env.subst(env["MKFSTOOL"])
+    #tool = "~/.platformio/packages/tool-mklittlefs/mklittlefs"
     cmd = (tool,"-c",filesystem_dir,"-s",fs_size,join(env.subst("$BUILD_DIR"),"littlefs.bin"))
     returncode = subprocess.call(cmd, shell=False)
     # print(returncode)
     return True
 
-def esp32_create_combined_bin_tm(source, target, env):
-    #print("Generating combined binary for serial flashing")
+def esp32_create_combined_bin(source, target, env):
+    print("Generating combined binary for serial flashing")
     # The offset from begin of the file where the app0 partition starts
     # This is defined in the partition .csv file
     # factory_offset = -1      # error code value - currently unused
@@ -153,7 +113,8 @@ def esp32_create_combined_bin_tm(source, target, env):
                         fs_offset = int(row[3],base=16)
 
 
-    new_file_name = env.subst("$BUILD_DIR/${PROGNAME}.factory.bin")
+    new_file_name = env.subst("$BUILD_DIR/factory.${PIOENV}.bin")
+    print("Factory image file: " + new_file_name)
     firmware_name = env.subst("$BUILD_DIR/${PROGNAME}.bin")
     #tasmota_platform = esp32_create_chip_string(chip)
 
@@ -213,5 +174,4 @@ def esp32_create_combined_bin_tm(source, target, env):
     print('Using esptool.py arguments: %s' % ' '.join(cmd))
     esptool.main(cmd)
 
-#env.AddPostAction("$BUILD_DIR/${PROGNAME}.bin", esp32_create_combined_bin)
-env.AddPostAction("$BUILD_DIR/${PROGNAME}.bin", esp32_create_combined_bin_tm)
+env.AddPostAction("$BUILD_DIR/${PROGNAME}.bin", esp32_create_combined_bin)
