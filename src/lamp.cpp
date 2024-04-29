@@ -112,8 +112,10 @@ void Lamp::lamp_init(){
   }
 
   // switch to last running effect
-  uint16_t eff_idx = DEFAULT_EFFECT_NUM;
-  handle->get_item(V_effect_idx, eff_idx);
+  uint16_t eff_idx{DEFAULT_EFFECT_NUM};
+  if (err == ESP_OK) {
+    handle->get_item(V_effect_idx, eff_idx);
+  }
   run_action(ra::eff_switch, eff_idx);
 
   if (opts.flag.restoreState && opts.flag.pwrState){
@@ -124,7 +126,9 @@ void Lamp::lamp_init(){
   }
 
   // restore demo mode
-  handle->get_item(T_DemoTime, demoTime);
+  if (err == ESP_OK) {
+    handle->get_item(T_DemoTime, demoTime);
+  }
 
   if (opts.flag.restoreState && opts.flag.demoMode){
     demoMode(true);
