@@ -817,7 +817,7 @@ void ui_block_mainpage_switches(Interface *interf, const JsonObject *data, const
         // button lock
         getset_btn_lock(interf, nullptr, NULL);
         // Mike
-        interf->value(T_mic, myLamp.getLampFlagsStuct().isMicOn);
+        interf->value(A_dev_mike, myLamp.getLampFlagsStuct().isMicOn);
         // current effect's luma curve
         interf->value(A_dev_lcurve, e2int(myLamp.effwrkr.getEffCfg().curve));
     interf->json_frame_flush();
@@ -970,7 +970,7 @@ void show_settings_mic(Interface *interf, const JsonObject *data, const char* ac
     interf->json_frame_interface();
     interf->json_section_main(TCONST_settings_mic, TINTF_020);
 
-    interf->checkbox(T_mic, myLamp.getLampFlagsStuct().isMicOn, TINTF_012, true);
+    interf->checkbox(A_dev_mike, myLamp.getLampFlagsStuct().isMicOn, TINTF_012, true);
 
     interf->json_section_begin(TCONST_set_mic);
         interf->number_constrained(V_micScale, round(myLamp.getLampState().getMicScale() * 10) / 10, TINTF_022, 0.1f, 0.1f, 4.0f);
@@ -1001,7 +1001,8 @@ void set_settings_mic(Interface *interf, const JsonObject *data, const char* act
     myLamp.getLampState().setMicScale(scale);
     myLamp.getLampState().setMicNoise(noise);
     myLamp.getLampState().setMicNoiseRdcLevel(rdl);
-    myLamp.setMicOnOff((*data)[T_mic]);
+    // mike has onChange control and does not work here
+    //myLamp.setMicOnOff((*data)[T_mic]);
 
     basicui::page_system_settings(interf, data, NULL);
 }
