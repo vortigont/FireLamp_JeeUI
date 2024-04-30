@@ -115,7 +115,7 @@ def esp32_create_combined_bin(source, target, env):
 
     new_file_name = env.subst("$BUILD_DIR/factory.${PIOENV}.bin")
     print("Factory image file: " + new_file_name)
-    firmware_name = env.subst("$BUILD_DIR/${PROGNAME}.${PIOENV}.bin")     # ${PROGNAME}
+    firmware_name = env.subst("$BUILD_DIR/${PROGNAME}.bin")
     #tasmota_platform = esp32_create_chip_string(chip)
 
     flash_size = env.BoardConfig().get("upload.flash_size", "4MB")
@@ -173,5 +173,7 @@ def esp32_create_combined_bin(source, target, env):
 
     print('Using esptool.py arguments: %s' % ' '.join(cmd))
     esptool.main(cmd)
+    # rename firmware image before uploading to artifactory
+    os.rename(firmware_name, env.subst("$BUILD_DIR/${PROGNAME}.${PIOENV}.bin"))
 
 env.AddPostAction("$BUILD_DIR/${PROGNAME}.bin", esp32_create_combined_bin)
