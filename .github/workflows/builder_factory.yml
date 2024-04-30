@@ -56,7 +56,7 @@ jobs:
           key: ${{ runner.os }}-pio-${{env.cache-name}}
           restore-keys: |
             ${{ runner.os }}-pio-
-            # Linux-pio-cache-pio-pkgs, Linux-pio-, Linux-
+#           Linux-pio-cache-pio-pkgs, Linux-pio-, Linux-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -93,6 +93,7 @@ jobs:
           name: factory_images
           path: ~/artifacts/firmware.*.bin
           compression-level: 9 # maximum compression
-      - name: Output artifact IDs
+      - name: Output factory artifact IDs
         run:  echo 'Factory Artifact ID is ${{ steps.artifact-factory-upload-step.artifact-id }}'
+      - name: Output firmware artifact IDs
         run:  echo 'Firmware Artifact ID is ${{ steps.artifact-ota-upload-step.artifact-id }}'
