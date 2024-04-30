@@ -115,7 +115,7 @@ def esp32_create_combined_bin(source, target, env):
 
     new_file_name = env.subst("$BUILD_DIR/factory.${PIOENV}.bin")
     print("Factory image file: " + new_file_name)
-    firmware_name = env.subst("$BUILD_DIR/${PROGNAME}.bin")
+    firmware_name = env.subst("$BUILD_DIR/${PROGNAME}.${PIOENV}.bin")     # ${PROGNAME}
     #tasmota_platform = esp32_create_chip_string(chip)
 
     flash_size = env.BoardConfig().get("upload.flash_size", "4MB")
