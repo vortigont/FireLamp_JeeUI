@@ -99,7 +99,7 @@ void Lamp::lamp_init(){
   std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_lamp, NVS_READONLY, &err);
 
   if (err == ESP_OK) {
-    //LOGD(T_WdgtMGR, printf, "Err opening NVS handle: %s\n", esp_err_to_name(err));
+    LOGD(T_WdgtMGR, printf, "Err opening NVS handle: %s\n", esp_err_to_name(err));
     handle->get_item(V_lampFlags, opts.pack);
   }
 
@@ -385,8 +385,10 @@ void Lamp::_switcheffect(effswitch_t action, bool fade, uint16_t effnb) {
 
   // if lamp is not in Demo mode, then need to save new effect in config
   if(!opts.flag.demoMode){
-    std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_lamp, NVS_READWRITE, NULL);
-    handle->set_item(V_effect_idx, _swState.pendingEffectNum);
+    esp_err_t err;
+    std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_lamp, NVS_READWRITE, &err);
+    if (err == ESP_OK)
+      handle->set_item(V_effect_idx, _swState.pendingEffectNum);
     //embui.var(V_effect_idx, _swState.pendingEffectNum);
   }
 
@@ -507,7 +509,7 @@ void Lamp::save_flags(){
 
   if (err != ESP_OK) {
     // if NVS handle is unavailable then just quit
-    //LOGD(T_WdgtMGR, printf, "Err opening NVS handle: %s\n", esp_err_to_name(err));
+    LOGD(T_WdgtMGR, printf, "Err opening NVS handle: %s\n", esp_err_to_name(err));
     return;
   }
 
