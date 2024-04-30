@@ -1,0 +1,16 @@
+# Name         Type    SubType  Offset           Size    Flags
+# NOTE: Keep first line intact!
+# NOTE: set ALL fields to hex value and do NOT use leave blank fields. Factory builder scripts needs it!
+# https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-guides/partition-tables.html
+# 4MiB == 0x400000
+#nvs,            data,  nvs,     0x9000,          0x5000,
+#otadata,        data,  ota,     0xe000,          0x2000,
+#app0,           app,   ota_0,   64K,             1600K,
+#app1,           app,   ota_1,   ,                1600K,
+#spiffs,         data,  spiffs,  ,                768K,
+#
+nvs,            data,  nvs,     0x9000,          0x5000,
+otadata,        data,  ota,     0xe000,          0x2000,
+app0,           app,   ota_0,   0x10000,         0x190000,
+app1,           app,   ota_1,   0x1a0000,        0x190000,
+spiffs,         data,  spiffs,  0x330000,        0xd0000,

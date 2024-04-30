@@ -15,6 +15,10 @@ on:
       - '**.hpp'
       - '**.ini'
       #- '**.yml'
+#    paths-ignore:
+#      - '**.md'             # Do no build if *.md files changes
+#      - 'data/**'           # Ignore changes in littlefs source files
+#      - 'resources/**'      # Ignore changes in web resource files
   pull_request:
     branches: [ master]
     paths:
@@ -63,11 +67,12 @@ jobs:
           cache-name: cache-pio-pkgs
         with:
           path: |
-            ~/.platformio/.cache
+            ~/.platformio/platforms
+            ~/.platformio/packages
           key: ${{ runner.os }}-pio-${{env.cache-name}}
           restore-keys: |
             ${{ runner.os }}-pio-
-            ${{ runner.os }}-
+            # Linux-pio-cache-pio-pkgs, Linux-pio-, Linux-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
