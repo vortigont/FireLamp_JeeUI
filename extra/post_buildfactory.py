@@ -16,6 +16,9 @@
 # -  0xe000 | ~\.platformio\packages\framework-arduinoespressif32\tools\partitions\boot_app0.bin
 # - 0x10000 | ~\ESPEasy\.pio\build\<env name>/<built binary>.bin
 
+# cli image builder
+# https://github.com/ThingPulse/esp32-epulse-feather-testbed/tree/main
+
 Import("env")
 
 env = DefaultEnvironment()
