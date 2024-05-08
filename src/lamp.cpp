@@ -111,32 +111,40 @@ void Lamp::lamp_init(){
     lampState.isMicOn = opts.flag.isMicOn;
   }
 
-  // switch to last running effect
-  uint16_t eff_idx{DEFAULT_EFFECT_NUM};
-  if (err == ESP_OK) {
-    handle->get_item(V_effect_idx, eff_idx);
-  }
-  run_action(ra::eff_switch, eff_idx);
-
-  if (opts.flag.restoreState && opts.flag.pwrState){
-    opts.flag.pwrState = false;       // reset it first, so that power() method would know that we are in off state for now
-    power(true);
-  } else {
-    opts.flag.pwrState = false;
-  }
-
-  // restore demo mode
+  // restore demo time
   if (err == ESP_OK) {
     handle->get_item(T_DemoTime, demoTime);
   }
 
-  if (opts.flag.restoreState && opts.flag.demoMode){
-    demoMode(true);
-  } else {
-    // force reset demo flag
-    opts.flag.demoMode = false;
+  // switch to last running effect
+  uint16_t eff_idx{DEFAULT_EFFECT_NUM};
+  if (err == ESP_OK) {
+    handle->get_item(V_effect_idx, eff_idx);
+    // switch to last running effect
+    run_action(ra::eff_switch, eff_idx);
   }
 
+  if (!opts.flag.restoreState){
+    opts.flag.pwrState = false;
+    opts.flag.demoMode = false;
+    return;
+  }
+
+  // if panel was in demo, switch it back to demo
+  if (opts.flag.demoMode){
+    // reset flags, so that power and demo switches could understand real state
+    opts.flag.pwrState = false;
+    opts.flag.demoMode = false;
+    demoMode(true);
+    return;
+  }
+
+  // if panel was On, switch it back to On
+  if (opts.flag.pwrState){
+    opts.flag.pwrState = false;       // reset it first, so that power() method would know that we are in off state for now
+    power(true);
+    // return
+  }
 }
 
 void Lamp::handle(){
@@ -197,7 +205,8 @@ void Lamp::power(bool flag) // флаг включения/выключения 
 
   // update flag on last step to let other call understand in which state they were called
   opts.flag.pwrState = flag;
-  save_flags();
+  if (opts.flag.restoreState)
+    save_flags();
 }
 
 //typedef enum {FIRSTSYMB=1,LASTSYMB=2} SYMBPOS;
@@ -424,7 +433,7 @@ void Lamp::_fadeEventHandler(){
  * запускаем режим "ДЕМО"
  */
 void Lamp::demoMode(bool active){
-  if(active == opts.flag.demoMode) return;   // уже и так в нужном "демо" режиме, выходим
+  if (active == opts.flag.demoMode) return;   // уже и так в нужном "демо" режиме, выходим
   LOGI(T_lamp, printf, "Demo %s, time: %u\n", active ? T_On : T_Off, demoTime);
 
   if (active){
