@@ -48,10 +48,10 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 //-------------- Специально обученный пустой эффект :)
 class EffectNone : public EffectCalc {
 private:
-    void load() override { fb->clear(); };
+    //void load() override { fb->clear(); };
 public:
-    EffectNone(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
-    bool run() override { fb->clear(); return false; };
+    EffectNone(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){ fb->clear(); }
+    bool run() override { return true; };
 };
 
 /*
