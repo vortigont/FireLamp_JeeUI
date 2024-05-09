@@ -55,6 +55,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 void getset_brightness(Interface *interf, const JsonObject *data, const char* action){
     if (data && (*data).size()){
         unsigned b = (*data)[A_dev_brightness];
+        LOGV(T_WebUI, printf, "getset_brightness(%u)\n", b);
         int evt = e2int( (*data)[TCONST_nofade] == true ? evt::lamp_t::brightness_nofade : evt::lamp_t::brightness);
         EVT_POST_DATA(LAMP_SET_EVENTS, evt, &b, sizeof(unsigned));
     }
@@ -100,7 +101,6 @@ void set_pwrswitch(Interface *interf, const JsonObject *data, const char* action
  */
 void effect_switch(Interface *interf, const JsonObject *data, const char* action){
     if (!data) return;
-    LOG(println, "effect_switch()");
 
     /*
      if fader is in progress now, than we just skip switching,
@@ -126,16 +126,8 @@ void effect_switch(Interface *interf, const JsonObject *data, const char* action
     // сбросить флаг случайного демо
     //myLamp.setDRand(myLamp.getLampFlagsStuct().dRand);
 
-    LOGD(T_lamp, printf, "UI EFF switch to:%d, LampOn:%d\n", eff->eff_nb, myLamp.isLampOn());
+    LOGD(T_WebUI, printf, "switch to:%d, LampPWR:%u\n", eff->eff_nb, myLamp.isLampOn());
     myLamp.switcheffect(effswitch_t::num, eff->eff_nb);
-}
-
-void set_eff_prev(Interface *interf, const JsonObject *data, const char* action){
-    run_action(ra::eff_prev);
-}
-
-void set_eff_next(Interface *interf, const JsonObject *data, const char* action){
-    run_action(ra::eff_next);
 }
 
 /**

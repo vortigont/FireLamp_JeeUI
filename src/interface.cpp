@@ -1063,8 +1063,7 @@ void set_settings_other(Interface *interf, const JsonObject *data, const char* a
     myLamp.setSpeedFactor(sf);
 
     // save non-default brightness scale
-    unsigned b = (*data)[V_dev_brtscale];
-    embui.var(V_dev_brtscale, b);
+    myLamp.setBrightnessScale( (*data)[V_dev_brtscale] );
 
     myLamp.save_flags();
 
@@ -1360,8 +1359,6 @@ void embui_actions_register(){
     embui.var_create(T_mp3vol, 25); // громкость
     //embui.var_create(TCONST_mp3count, 255); // кол-во файлов в папке mp3 (установка убрана, используется значение по-умолчанию равное максимальному числу эффектов)
 
-    embui.var_create(TCONST_tmBright, 82); // 5<<4+5, старшие и младшие 4 байта содержат 5
-
     // регистрируем обработчики активностей
     embui.action.set_mainpage_cb(ui_page_main);                             // index page callback
     embui.action.set_settings_cb(user_settings_frame);                      // "settings" page options callback
@@ -1379,8 +1376,6 @@ void embui_actions_register(){
 
     // Effects control
     embui.action.add(A_effect_switch, effect_switch);                       // effect switcher action
-    //embui.action.add(TCONST_eff_prev, set_eff_prev);
-    //embui.action.add(TCONST_eff_next, set_eff_next);
     embui.action.add(A_effect_ctrls, publish_effect_controls);              // сформировать и опубликовать блок контролов текущего эффекта
     embui.action.add(A_effect_dynCtrl, set_effects_dynCtrl);                // Effect controls handler
 

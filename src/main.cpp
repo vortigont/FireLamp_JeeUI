@@ -43,6 +43,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "evtloop.h"
 #include "devices.h"
 #include "widgets.hpp"
+#include "log.h"
 
 #ifdef EMBUI_USE_MQTT
 #include "AsyncMqttClient/Callbacks.hpp"

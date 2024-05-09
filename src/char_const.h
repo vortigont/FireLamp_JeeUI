@@ -15,13 +15,15 @@ static constexpr const char* T_WdgtMGR = "WdgtMGR";
 // NVS ns
 static constexpr const char* T_lamp = "lamp";
 
+static constexpr const char* T_bright = "bright";
+static constexpr const char* T_brt_scale = "brt_scale";
 static constexpr const char* T_DemoTime = "DemoTime";
 static constexpr const char* T_drawing = "drawing";
 static constexpr const char* T_effect_dynCtrl = "eff_dynCtrl";
-static constexpr const char* T_gpio = "gpio";                                   // gpio key for display configuration
-static constexpr const char* T_logicL= "logicL";                                // logic level for button
 static constexpr const char* T_encoder = "encoder";
 static constexpr const char* T_enctype = "enctype";
+static constexpr const char* T_gpio = "gpio";                                   // gpio key for display configuration
+static constexpr const char* T_logicL= "logicL";                                // logic level for button
 static constexpr const char* T_pull = "pull";
 
 
@@ -160,7 +162,6 @@ static constexpr const char* TCONST_aux_ll = "aux_ll";                 // AUX lo
 static constexpr const char* TCONST_bactList = "bactList";
 static constexpr const char* TCONST_blabel = "blabel";
 static constexpr const char* TCONST_bparam = "bparam";
-static constexpr const char* TCONST_bright = "bright";
 static constexpr const char* TCONST_Btn = "Btn";
 static constexpr const char* TCONST_buttList = "buttList";
 static constexpr const char* TCONST_butt_conf = "butt_conf";
@@ -253,11 +254,6 @@ static constexpr const char* TCONST_sysSettings = "sysSettings";
 static constexpr const char* TCONST_textsend = "textsend";
 static constexpr const char* TCONST_text_config = "text_config";
 static constexpr const char* TCONST_Time = "Time";
-static constexpr const char* TCONST_tmBrightOff = "tmBrightOff";
-static constexpr const char* TCONST_tmBrightOn = "tmBrightOn";
-static constexpr const char* TCONST_tmBright = "tmBright";
-static constexpr const char* TCONST_tmEvent = "tmEvent";
-static constexpr const char* TCONST_tmZero = "tmZero";
 static constexpr const char* TCONST_txtBfade = "txtBfade";
 static constexpr const char* TCONST_txtColor = "txtColor";
 static constexpr const char* TCONST_txtOf = "txtOf";

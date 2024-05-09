@@ -94,19 +94,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #endif
 
 
-#ifndef FADE_STEPTIME
-#define FADE_STEPTIME         (50U)                         // default time between fade steps, ms
-#endif
-#ifndef FADE_TIME
-#define FADE_TIME             (2000U)                       // Default fade time, ms
-#endif
-#ifndef FADE_MININCREMENT
-#define FADE_MININCREMENT     (2U)                          // Minimal increment for fading steps
-#endif
-#ifndef FADE_LOWBRTFRACT
-#define FADE_LOWBRTFRACT      (10U)                         // доля от максимальной яркости, до которой работает затухание при смене эффектов. Если текущая яркость ниже двойной доли, то затухание будет достигать нуля
-#endif
-
 #ifndef MAX_FPS
 #define MAX_FPS               (50U)                         // Максимальное число обсчитываемых и выводимых кадров в секунду
 #endif

@@ -48,8 +48,11 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
     #define DEFAULT_MQTTPUB_INTERVAL 30
 #endif
 
-#define MAX_BRIGHTNESS            (255U)                    // максимальная яркость LED
-#define DEF_BRT_SCALE               20                      // шкала регулировки яркости по-умолчанию
+#define MAX_BRIGHTNESS          255U                    // максимальная яркость LED
+#define DEF_BRT_SCALE           20                      // шкала регулировки яркости по-умолчанию
+#ifndef FADE_TIME
+#define FADE_TIME               2000U                   // Default fade time, ms
+#endif
 
 // смена эффекта
 enum class effswitch_t : uint8_t {
@@ -76,12 +79,12 @@ struct LampFlags {
     bool restoreState:1;    // restore lamp on/off/demo state on restart
     bool pwrState:1;        // флаг включения/выключения
     bool fadeEffects:1;     // признак использования затухания при смене эффектов/яркости
-    bool demoMode:1;
+    bool demoMode:1;        // demo state
     bool demoRandom:1;
     bool reserved5:1;
     bool reserved6:1;
     bool wipeOnEffChange:1; // признак очистки экрана при переходе с одного эффекта на другой
-    bool debug:1;           // признак режима отладки
+    bool reserved8:1;           // признак режима отладки
     bool reserved9:1;       // случайный порядок демо
     bool reserved10:1;      // отображение имени в демо
     bool isMicOn:1;         // включение/выключение микрофона
@@ -98,7 +101,13 @@ union LampFlagsPack {
     LampFlagsPack() : pack(4){}     // set fade
 };
 
-
+// this struct keeps volatile flags
+struct VolatileFlags {
+    bool pwrState:1;        // флаг включения/выключения
+    bool demoMode:1;        // running demo
+    bool isMicOn:1;         // включение/выключение микрофона
+    bool debug:1;           // some debug flag
+};
 
 /**
  * @brief Lamp class
@@ -134,15 +143,14 @@ private:
 
     // a set of lamp options (flags)
     LampFlagsPack opts;
+    VolatileFlags vopts{};
     // текущее состояние лампы, которое передается в класс эффектпроцессора
     LampState lampState;
 
-    uint8_t _brightnessScale = DEF_BRT_SCALE;
+    uint8_t _brightnessScale{DEF_BRT_SCALE};
     // default luma correction curve for PWM driven LEDs
     luma::curve _curve = luma::curve::cie1931;
-    uint8_t globalBrightness = 127;     // глобальная яркость
-    //uint8_t storedBright;               // "запасное" значение яркости
-    //uint8_t BFade;                      // затенение фона под текстом
+    uint8_t globalBrightness{DEF_BRT_SCALE/2};     // глобальная яркость
 
     uint16_t storedEffect = (uint16_t)EFF_ENUM::EFF_NONE;
 
@@ -239,7 +247,7 @@ public:
      * 
      * @param scale 
      */
-    void setBrightnessScale(uint8_t scale){ _brightnessScale = scale ? scale : DEF_BRT_SCALE; };
+    void setBrightnessScale(uint8_t scale);
 
     /**
      * @brief Get the Brightness Scale
@@ -263,10 +271,10 @@ public:
     void setClearingFlag(bool flag) {opts.flag.wipeOnEffChange = flag; save_flags(); }
     bool getClearingFlag() const {return opts.flag.wipeOnEffChange; }
 
-    bool isLampOn() {return opts.flag.pwrState;}
-    bool isDebugOn() {return opts.flag.debug;}
+    bool isLampOn() {return vopts.pwrState;}
+    bool isDebugOn() {return vopts.debug;}
     bool isDebug() {return lampState.isDebug;}
-    void setDebug(bool flag) {opts.flag.debug = flag; lampState.isDebug=flag; save_flags(); }
+    void setDebug(bool flag) { vopts.debug = flag; lampState.isDebug=flag; }
 
     // set/clear "restore on/off/demo" state on boot
     void setRestoreState(bool flag){ opts.flag.restoreState = flag; save_flags(); }
@@ -321,9 +329,15 @@ public:
      */
     void demoNext();
 
+    /**
+     * @brief set Random demo mode
+     * 
+     * @param flag 
+     */
+    void setDRand(bool flag){ opts.flag.demoRandom = flag; lampState.isRandDemo = flag; }
 
-    void setEffHasMic(bool flag) {opts.flag.effHasMic = flag;}
-    void setDRand(bool flag) {opts.flag.demoRandom = flag; lampState.isRandDemo = flag; }
+
+    void setEffHasMic(bool flag){ opts.flag.effHasMic = flag; }
 
 
     // ---------- служебные функции -------------
@@ -345,7 +359,7 @@ public:
      *  lampEvtId_t::pwroff
      * 
      */
-    void power();
+    void power(){ power(!opts.flag.pwrState); };
 
     /**
      * @brief общий переключатель эффектов лампы
@@ -488,7 +502,7 @@ public:
 
     /**
      * @brief - Non-blocking light fader, uses scheduler to globaly fade display brightness within specified duration
-     * @param uint8_t _targetbrightness - end value for the brighness to fade to
+     * @param uint8_t _targetbrightness - scaled end value for the brighness to fade to
      * @param uint32_t _duration - fade effect duraion, ms
      */
     void fadelight(int _targetbrightness=0, uint32_t _duration=FADE_TIME);

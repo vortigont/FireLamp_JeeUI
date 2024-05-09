@@ -62,10 +62,10 @@ class MP3PlayerController {
   Flags flags{};
 
   HardwareSerial& _serial;
-  Task _tPeriodic; // периодический опрос плеера
-  uint32_t _volume = DFPLAYER_DEFAULT_VOL;
+  Task _tPeriodic;                // периодический опрос плеера
+  int8_t _volume{DFPLAYER_DEFAULT_VOL};
   bool _mute{false};               // disable track sounds
-  DfMp3_StatusState _state = DfMp3_StatusState_Idle;
+  DfMp3_StatusState _state{DfMp3_StatusState_Idle};
 
   esp_event_handler_instance_t _lmp_ch_events = nullptr;
   esp_event_handler_instance_t _lmp_set_events = nullptr;

@@ -43,8 +43,19 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "ledfb.hpp"
 #include "evtloop.h"
 #include "nvs_handle.hpp"
+#include "log.h"
 
 #define DEFAULT_EFFECT_NUM  13  // неопалимая купина
+
+#ifndef FADE_STEPTIME
+#define FADE_STEPTIME         (50U)                         // default time between fade steps, ms
+#endif
+#ifndef FADE_MININCREMENT
+#define FADE_MININCREMENT     (2U)                          // Minimal increment for fading steps
+#endif
+#ifndef FADE_LOWBRTFRACT
+#define FADE_LOWBRTFRACT      (5U)                         // доля от максимальной шкалы яркости, до которой работает затухание при смене эффектов. Если текущая яркость ниже двойной доли, то затухание пропускается
+#endif
 
 Lamp::Lamp() : effwrkr(&lampState){
   lampState.micAnalyseDivider = 1; // анализ каждый раз
@@ -60,13 +71,35 @@ void Lamp::lamp_init(){
   // subscribe to CMD events
   _events_subsribe();
 
-  _brightnessScale = embui.paramVariant(V_dev_brtscale)  | DEF_BRT_SCALE;
-  globalBrightness = embui.paramVariant(A_dev_brightness) | DEF_BRT_SCALE/2;
+  // initialize fader instance
+  LEDFader::getInstance()->setLamp(this);
+
+  // open NVS storage
+  esp_err_t err;
+  std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_lamp, NVS_READONLY, &err);
+
+  if (err == ESP_OK) {
+    handle->get_item(T_bright, globalBrightness);
+    handle->get_item(V_dev_brtscale, _brightnessScale);
+    // restore lamp flags from NVS
+    handle->get_item(V_lampFlags, opts.pack);
+    // restore demo time
+    handle->get_item(T_DemoTime, demoTime);
+  } else {
+    LOGD(T_lamp, printf, "Err opening NVS handle: %s\n", esp_err_to_name(err));
+  }
+  //_brightnessScale = embui.paramVariant(V_dev_brtscale)  | DEF_BRT_SCALE;
+  //globalBrightness = embui.paramVariant(A_dev_brightness) | DEF_BRT_SCALE/2;
 
   _brightness(0, true);          // начинаем с полностью потушеной матрицы 0-й яркости
 
-  // initialize fader instance
-  LEDFader::getInstance()->setLamp(this);
+  // switch to last running effect
+  if (err == ESP_OK) {
+    uint16_t eff_idx{DEFAULT_EFFECT_NUM};
+    handle->get_item(V_effect_idx, eff_idx);
+    // switch to last running effect
+    run_action(ra::eff_switch, eff_idx);
+  }
 
   // GPIO's
   DynamicJsonDocument doc(512);
@@ -94,54 +127,22 @@ void Lamp::lamp_init(){
     }
   }
 
-  // restore lamp flags from NVS
-  esp_err_t err;
-  std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_lamp, NVS_READONLY, &err);
-
-  if (err == ESP_OK) {
-    LOGD(T_WdgtMGR, printf, "Err opening NVS handle: %s\n", esp_err_to_name(err));
-    handle->get_item(V_lampFlags, opts.pack);
-  }
-
   // restore mike on/off state
   if (_pins.mic != GPIO_NUM_NC){
-    opts.flag.isMicOn = false;
-    lampState.isMicOn = false;
-  } else {
-    lampState.isMicOn = opts.flag.isMicOn;
+    vopts.isMicOn = lampState.isMicOn = opts.flag.isMicOn;
   }
 
-  // restore demo time
-  if (err == ESP_OK) {
-    handle->get_item(T_DemoTime, demoTime);
-  }
-
-  // switch to last running effect
-  uint16_t eff_idx{DEFAULT_EFFECT_NUM};
-  if (err == ESP_OK) {
-    handle->get_item(V_effect_idx, eff_idx);
-    // switch to last running effect
-    run_action(ra::eff_switch, eff_idx);
-  }
-
-  if (!opts.flag.restoreState){
-    opts.flag.pwrState = false;
-    opts.flag.demoMode = false;
+  if (!opts.flag.restoreState)
     return;
-  }
 
   // if panel was in demo, switch it back to demo
   if (opts.flag.demoMode){
-    // reset flags, so that power and demo switches could understand real state
-    opts.flag.pwrState = false;
-    opts.flag.demoMode = false;
     demoMode(true);
     return;
   }
 
   // if panel was On, switch it back to On
   if (opts.flag.pwrState){
-    opts.flag.pwrState = false;       // reset it first, so that power() method would know that we are in off state for now
     power(true);
     // return
   }
@@ -149,7 +150,7 @@ void Lamp::lamp_init(){
 
 void Lamp::handle(){
   static unsigned long mic_check = 0;
-  if(effwrkr.status() && opts.flag.isMicOn && opts.flag.pwrState && (mic_check + MIC_POLLRATE < millis()) ){
+  if(effwrkr.status() && vopts.isMicOn && vopts.pwrState && (mic_check + MIC_POLLRATE < millis()) ){
     micHandler();
     mic_check = millis();
   }
@@ -163,11 +164,8 @@ void Lamp::handle(){
 #endif
 }
 
-void Lamp::power() {power(!opts.flag.pwrState);}
-
-void Lamp::power(bool flag) // флаг включения/выключения меняем через один метод
-{
-  if (flag == opts.flag.pwrState) return;  // пропускаем холостые вызовы
+void Lamp::power(bool flag){
+  if (flag == vopts.pwrState) return;  // пропускаем холостые вызовы
   LOGI(T_lamp, printf, "Lamp powering %s\n", flag ? "On": "Off");
 
   if (flag){
@@ -179,7 +177,7 @@ void Lamp::power(bool flag) // флаг включения/выключения 
     effectsTimer(true);
 
     // включаем демотаймер если был режим демо
-    if(opts.flag.demoMode && demoTask)
+    if(vopts.demoMode && demoTask)
       demoTask->restartDelayed();
 
     // generate pwr change state event 
@@ -197,19 +195,20 @@ void Lamp::power(bool flag) // флаг включения/выключения 
     }
 
     // гасим Демо-таймер
-    if(opts.flag.demoMode && demoTask)
+    if(demoTask)
       demoTask->disable();
 
     // событие о выключении будет сгенерированно в ответ на событие от фейдера когда его работа завершится
   }
 
   // update flag on last step to let other call understand in which state they were called
-  opts.flag.pwrState = flag;
-  if (opts.flag.restoreState)
+  vopts.pwrState = flag;
+  // save power state if required
+  if (opts.flag.restoreState && (opts.flag.pwrState != flag)){
+    opts.flag.pwrState = flag;
     save_flags();
+  }
 }
-
-//typedef enum {FIRSTSYMB=1,LASTSYMB=2} SYMBPOS;
 
 void Lamp::micHandler()
 {
@@ -217,7 +216,7 @@ void Lamp::micHandler()
   if(effwrkr.getCurrentEffectNumber()==EFF_ENUM::EFF_NONE)
     return;
 
-  if (!mw && opts.flag.isMicOn && lampState.micAnalyseDivider){
+  if (!mw && vopts.isMicOn && lampState.micAnalyseDivider){
     //create micfft object
     mw = new(std::nothrow) MicWorker(_pins.mic, lampState.mic_scale,lampState.mic_noise,true);   // создаем полноценный объект и держим в памяти
     if(!mw) {
@@ -248,13 +247,11 @@ void Lamp::micHandler()
 void Lamp::setMicOnOff(bool val) {
   if (_pins.mic == GPIO_NUM_NC){
     // force disable mic if proper gpio has not been set
-    opts.flag.isMicOn = false;
-    lampState.isMicOn = false;
+    vopts.isMicOn = opts.flag.isMicOn = lampState.isMicOn = false;
     return;
   }
 
-  opts.flag.isMicOn = val;
-  lampState.isMicOn = val;
+  vopts.isMicOn = opts.flag.isMicOn = lampState.isMicOn = val;
 
 // have no idea what that bullshit means, I just set the flag that mike is enabled
 /*
@@ -281,7 +278,7 @@ void Lamp::setMicOnOff(bool val) {
 }
 
 void Lamp::setBrightness(uint8_t tgtbrt, fade_t fade, bool bypass){
-    LOG(printf, "Lamp::setBrightness(%u,%u,%u)\n", tgtbrt, static_cast<uint8_t>(fade), bypass);
+    LOGD(T_lamp, printf, "setBrightness(%u,%u,%u)\n", tgtbrt, static_cast<uint8_t>(fade), bypass);
     // if bypass flag is given, than this is a low level request with unscaled brightness that should not be saved or published anywhere
     if (bypass)
       return _brightness(tgtbrt, true);
@@ -294,6 +291,7 @@ void Lamp::setBrightness(uint8_t tgtbrt, fade_t fade, bool bypass){
       // fader will publish event once it will finish brightness scaling
       LEDFader::getInstance()->fadelight(tgtbrt);
     } else {
+      LOGV(T_lamp, println, "skip fade");
       _brightness(tgtbrt);
       unsigned b = tgtbrt;
       EVT_POST_DATA(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::brightness), &b, sizeof(unsigned));
@@ -301,7 +299,12 @@ void Lamp::setBrightness(uint8_t tgtbrt, fade_t fade, bool bypass){
 
     // set configured brightness variable
     globalBrightness = tgtbrt > _brightnessScale ? _brightnessScale : tgtbrt;
-    embui.var(A_dev_brightness, globalBrightness);    // save brightness variable
+  esp_err_t err;
+  std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_lamp, NVS_READWRITE, &err);
+
+  if (err != ESP_OK) return;
+  // save brightness variable
+  handle->set_item(T_bright, globalBrightness);
 }
 
 /*
@@ -320,6 +323,16 @@ uint8_t Lamp::_get_brightness(bool absolute){
   return absolute ? display.brightness() : luma::curveUnMap(_curve, display.brightness(), MAX_BRIGHTNESS, _brightnessScale);
 }
 
+void Lamp::setBrightnessScale(uint8_t scale){
+  _brightnessScale = scale ? scale : DEF_BRT_SCALE;
+  esp_err_t err;
+  std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_lamp, NVS_READWRITE, &err);
+
+  if (err != ESP_OK) return;
+  // save brightness variable
+  handle->set_item(V_dev_brtscale, _brightnessScale);
+}
+
 void Lamp::setLumaCurve(luma::curve c){
   if (c == _curve) return;
   _curve = c;
@@ -330,7 +343,7 @@ void Lamp::switcheffect(effswitch_t action, uint16_t effnb){
   _switcheffect(action, isLampOn() ? getFaderFlag() : false, effnb);
   // if in demo mode, and this switch came NOT from demo timer, delay restart demo timer
   // a bit hakish but will work. Otherwise I have to segregate demo switches from all other
-  if(opts.flag.demoMode && demoTask && ts.timeUntilNextIteration(*demoTask) < demoTask->getInterval())
+  if(vopts.demoMode && demoTask && ts.timeUntilNextIteration(*demoTask) < demoTask->getInterval())
     demoTask->delay();
 }
 
@@ -365,15 +378,19 @@ void Lamp::_switcheffect(effswitch_t action, bool fade, uint16_t effnb) {
   LOGD(T_lamp, printf, "switcheffect() action=%d, fade=%d, effnb=%d\n", action, fade, _swState.pendingEffectNum);
 
   // проверяем нужно ли использовать затухание (только если лампа включена, и не идет разжигание)
-  if (fade && opts.flag.pwrState && _swState.fadeState <1){
+  if (fade && vopts.pwrState && _swState.fadeState <1){
     // если уже идет угасание вниз, просто выходим, переключение произойдет на новый эффект после конца затухания
     if(_swState.fadeState == -1)
       return;
-    // в противном случае запускаем затухание
-    // если текущая абсолютная яркость больше чем 2*FADE_MINCHANGEBRT, то затухаем не полностью, а только до значения FADE_MINCHANGEBRT, в противном случае гаснем полностью
-    LEDFader::getInstance()->fadelight( _get_brightness(true) < 3*MAX_BRIGHTNESS/FADE_LOWBRTFRACT/2 ? 0 : _brightnessScale/FADE_LOWBRTFRACT, FADE_TIME );
-    _swState.fadeState = -1;
-    return;
+
+    // если текущая скалированная яркость больше чем 2*FADE_MINCHANGEBRT, то используем затухание до значения FADE_LOWBRTFRACT, в противном случае пропускаем затухание
+    if (_get_brightness() > 2*FADE_LOWBRTFRACT){
+      LEDFader::getInstance()->fadelight(FADE_LOWBRTFRACT);
+      _swState.fadeState = -1;
+      return;
+        // если текущая абсолютная яркость больше чем 2*FADE_MINCHANGEBRT, то затухаем не полностью, а только до значения FADE_MINCHANGEBRT, в противном случае гаснем полностью
+        //LEDFader::getInstance()->fadelight( _get_brightness(true) < 3*MAX_BRIGHTNESS/FADE_LOWBRTFRACT/2 ? 0 : _brightnessScale/FADE_LOWBRTFRACT, FADE_TIME );
+    }
   }
 
   // затухание не требуется, переключаемся непосредственно на нужный эффект
@@ -393,7 +410,7 @@ void Lamp::_switcheffect(effswitch_t action, bool fade, uint16_t effnb) {
   }
 
   // if lamp is not in Demo mode, then need to save new effect in config
-  if(!opts.flag.demoMode){
+  if(!vopts.demoMode){
     esp_err_t err;
     std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_lamp, NVS_READWRITE, &err);
     if (err == ESP_OK)
@@ -412,7 +429,7 @@ uint16_t Lamp::_getRealativeEffectNum(){
 
 void Lamp::_fadeEventHandler(){
   // check if lamp is in "PowerOff" state, then we've just complete fade-out, need to send event
-  if (!opts.flag.pwrState){
+  if (!vopts.pwrState){
     _swState.fadeState = 0;
     effectsTimer(false);
     EVT_POST(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::pwroff));
@@ -433,7 +450,7 @@ void Lamp::_fadeEventHandler(){
  * запускаем режим "ДЕМО"
  */
 void Lamp::demoMode(bool active){
-  if (active == opts.flag.demoMode) return;   // уже и так в нужном "демо" режиме, выходим
+  if (active == vopts.demoMode) return;   // уже и так в нужном "демо" режиме, выходим
   LOGI(T_lamp, printf, "Demo %s, time: %u\n", active ? T_On : T_Off, demoTime);
 
   if (active){
@@ -449,12 +466,12 @@ void Lamp::demoMode(bool active){
       demoTask = nullptr;
     }
   }
-
-  opts.flag.demoMode = active;
-
+  vopts.demoMode = active;
   // save demo state if required
-  if (opts.flag.restoreState)
+  if (opts.flag.restoreState && (opts.flag.demoMode != active) ){
+    opts.flag.demoMode = active;
     save_flags();
+  }
 }
 
 /*
@@ -614,7 +631,7 @@ void Lamp::_event_picker_cmd(esp_event_base_t base, int32_t id, void* data){
 
     // Get State Commands
       case evt::lamp_t::pwr :
-        EVT_POST(LAMP_STATE_EVENTS, opts.flag.pwrState ? e2int(evt::lamp_t::pwron) : e2int(evt::lamp_t::pwroff));
+        EVT_POST(LAMP_STATE_EVENTS, vopts.pwrState ? e2int(evt::lamp_t::pwron) : e2int(evt::lamp_t::pwroff));
         break;
 
       default:;
@@ -647,7 +664,7 @@ void Lamp::_event_picker_state(esp_event_base_t base, int32_t id, void* data){
 
 void LEDFader::fadelight(int _targetbrightness, uint32_t _duration){
   if (!lmp) return;
-  LOGD(T_Fade, printf, "tgt:%u, lamp:%u/%u, _br_scaled/_br_abs:%u/%u\n", _targetbrightness, lmp->getBrightness(), lmp->getBrightnessScale(), lmp->_get_brightness(), lmp->_get_brightness(true));
+  LOGD(T_Fade, printf, "tgt:%u, lamp:%u/%u, _br scaled/abs:%u/%u\n", _targetbrightness, lmp->getBrightness(), lmp->getBrightnessScale(), lmp->_get_brightness(), lmp->_get_brightness(true));
 
   _brt = lmp->_get_brightness(true);        // get current absolute Display brightness
   _tgtbrt = luma::curveMap(lmp->_curve, _targetbrightness, MAX_BRIGHTNESS, lmp->_brightnessScale);
@@ -661,7 +678,7 @@ void LEDFader::fadelight(int _targetbrightness, uint32_t _duration){
   // calculate required steps
   int _steps = (abs(_tgtbrt - _brt) > FADE_MININCREMENT * _duration / FADE_STEPTIME) ? _duration / FADE_STEPTIME : abs(_tgtbrt - _brt)/FADE_MININCREMENT;
   if (_steps < 3) {   // no need to fade for such small difference
-    LOGD(T_Fade, printf, "Fast: %d->%d\n", _brt, _tgtbrt);
+    LOGD(T_Fade, printf, "fast: %hhu->%hhu\n", _brt, _tgtbrt);
     lmp->_brightness(_tgtbrt, true);
     abort();
     int b = _targetbrightness;
@@ -686,7 +703,7 @@ void LEDFader::fadelight(int _targetbrightness, uint32_t _duration){
       // onDisable
       [this, _targetbrightness](){
           lmp->_brightness(_tgtbrt, true);  // set exact target brightness value
-          LOGD(T_Fade, printf, "fading to %d complete\n", _tgtbrt);
+          LOGD(T_Fade, printf, "to %hhu complete\n", _tgtbrt);
           int b = _targetbrightness;
           EVT_POST_DATA(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::fadeEnd), &b, sizeof(b));
 
@@ -698,7 +715,7 @@ void LEDFader::fadelight(int _targetbrightness, uint32_t _duration){
     );
   }
 
-  LOGD(T_Fade, printf, "Fading lamp/fled:%d/%d->%d/%u, steps/inc %d/%d\n", lmp->getBrightness(), lmp->_get_brightness(true), _targetbrightness, _tgtbrt, _steps, _brtincrement);
+  LOGD(T_Fade, printf, "lamp/display:%hhu/%hhu->%d/%hhu, steps/inc %d/%hhd\n", lmp->getBrightness(), lmp->_get_brightness(true), _targetbrightness, _tgtbrt, _steps, _brtincrement);
   // send fader event
   EVT_POST(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::fadeStart));
 }
