@@ -811,13 +811,13 @@ void ui_block_mainpage_switches(Interface *interf, const JsonObject *data, const
 
     interf->json_frame_value();
         // lamp pwr switch
-        interf->value(A_dev_pwrswitch, myLamp.getLampFlagsStuct().pwrState);
+        interf->value(A_dev_pwrswitch, myLamp.getPwr());
         // demo status
-        interf->value(K_demo, myLamp.getLampFlagsStuct().demoMode);
+        interf->value(K_demo, myLamp.getDemoMode());
         // button lock
         getset_btn_lock(interf, nullptr, NULL);
         // Mike
-        interf->value(A_dev_mike, myLamp.getLampFlagsStuct().isMicOn);
+        interf->value(A_dev_mike, myLamp.getMicState());
         // current effect's luma curve
         interf->value(A_dev_lcurve, e2int(myLamp.effwrkr.getEffCfg().curve));
     interf->json_frame_flush();

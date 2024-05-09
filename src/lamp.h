@@ -203,6 +203,9 @@ public:
 
     void setMicOnOff(bool val);
 
+    // return if Microphone enabled state
+    bool getMicState() const { return vopts.isMicOn; }
+
     void setSpeedFactor(float val) {
         lampState.speedfactor = val;
         if(effwrkr.getControls().exist(1)) effwrkr.setDynCtrl(effwrkr.getControls()[1].get());
@@ -262,8 +265,9 @@ public:
 
     // возвращает упакованные в целое флаги лампы
     uint32_t getLampFlags() {return opts.pack; }
-    // возвращает структуру флагов лампы
+    // возвращает структуру СОХРАНЁННЫХ флагов лампы
     const LampFlags &getLampFlagsStuct() const {return opts.flag; }
+
     // saves flags to NVS
     void save_flags();
     void setFaderFlag(bool flag) {opts.flag.fadeEffects = flag; save_flags(); }
@@ -272,6 +276,10 @@ public:
     bool getClearingFlag() const {return opts.flag.wipeOnEffChange; }
 
     bool isLampOn() {return vopts.pwrState;}
+
+    // get lamp's power state
+    bool getPwr() const { return vopts.pwrState; }
+
     bool isDebugOn() {return vopts.debug;}
     bool isDebug() {return lampState.isDebug;}
     void setDebug(bool flag) { vopts.debug = flag; lampState.isDebug=flag; }
@@ -309,6 +317,9 @@ public:
      * @param avtive 
      */
     void demoMode(bool active);
+
+    // return demo mode status
+    bool getDemoMode() const { return vopts.demoMode; }
 
     // reset demo timer
     void demoReset(){ if (demoTask) demoTask->restartDelayed(); }
@@ -359,7 +370,7 @@ public:
      *  lampEvtId_t::pwroff
      * 
      */
-    void power(){ power(!opts.flag.pwrState); };
+    void power(){ power(!vopts.pwrState); };
 
     /**
      * @brief общий переключатель эффектов лампы
