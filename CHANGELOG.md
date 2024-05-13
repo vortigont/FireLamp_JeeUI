@@ -1,5 +1,72 @@
 # Change Log
 
+## 3.6.0 (2024-05-13)
++ Factory firmware builds
+  - on-demandfactory images builder CI pipeline
+  - post_buildfactory.py based on Tasmota's builder will create full factory images
+  - OTA images will also be collected and uploaded to artifacts
++ Microphone
+  - force ADC resolution to 10 bit
+  - move microphone gpio configuration to WebUI
+  - block all mike operation if mike pin is undefined
++ PCNT HW accelerated Encoder
+  библиотека энкодера заменена на ESP32Encoder с поддержкой аппаратного квадратурного декодра на PCNT движке esp32
+  обработка энкодера полностью переписана и интегрированна с шиной сообщений в связке с "кнопкой"
+  параметры энкодера настраиваются в живом режиме, поддерживаются 1х, 2х, 4х энкодеры
+  переработата схема переключения эффектов с затуханием, работа фейдера отслеживается через шину событий
+  оптимизированна схема переключения яркости при смене эффектов
+  доработан экран тм для отображения громкости звука плеера и номера переключаемого эффекта
+  WebUI settings for Encoder
++ Implement button lock checkbox
++ Most of the lamp's configuration variables moved to NVS
+  - avoid useless config rewrites
++ Tabulated LOGs
++ Widgets manager that will handle creating/destructing widgets on-demand
++ Alarm clock
+    Four alarms by default are availabe
+    Each alarm could one of those types
+     - one time
+     - daily
+     - workday
+     - weekend
+    Melody could be set per alarm
++ Cockoo/Talking clock
+   - hour/half/quater notifications
+   - selectable tunes for each notification interval
+   - silent hours for Talking clock
+* simplify fading, rework options saving
+  - fader will be engaged only when panel's brightness is > FADE_LOWBRTFRACT
+  - optimize lamp's flags save/restore to avoid useless rewrites on start
+* Fix effect controls
+  - Fix and simplify control selections
+  - Removed dublicated speedFactor variables from effects controls
+  - flatten mike flag options
+* workaround race conditions in TaskScheduler
+* Demo mode rework
+  - simplify demo switching/saving, remove old enums for lamp normal/unnormal modes, etc...
+  - rework timer control
+  - avoid extra config rewrites on on power on
+* Effects
+   - EffectPuzzles - wrong row size calculation #70
+   - EffectPuzzles add locking for resize
+   - add locking for EffectCube2d
+   - testris clock fix am/pm letters fall
+   - fix TetrisClock crash in 12h mode
+   - Oscillator run in demo mode when mike is disabled
+* Clock widget
+   - flickerless refresh using segmented area updates
+   - other fonts, 3x5 font
+   - chop off leading zero on small font
+* DFPlayer adapter
+   - fix various problems with start/stop tracks
+* Other fixes
+   - LEDDisplay fix crash when starting with blank configs
+   - removed that Control 7 hack for enabling/disabling mike per effect
+   - remove obsolete DS18B20 code
+   - fix wrong value being published for power switch
+- remove "sort" from effects configuration
+
+
 ## 3.5.0 (2024-02-27)
 + implement run-time configuration for address leds RGB color order option for WS2812, Closes #54
 + update windows batch installer

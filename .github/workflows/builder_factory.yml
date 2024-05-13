@@ -69,7 +69,7 @@ jobs:
           #platformio pkg update
       - name: Run PlatformIO build
         run: |
-          platformio run -e esp32_4M -e esp32_4M_debug -e esp32S3_4M -e esp32S3_4M_debug -e esp32S3_16M -e esp32S3_16M_debug
+          platformio run -e esp32_4M -e esp32_16M -e esp32S3_4M -e esp32S3_16M
 #         platformio run -e ${{ matrix.variant }}
       - name: Collect build images
         run: |
@@ -90,7 +90,7 @@ jobs:
         uses: actions/upload-artifact@v4
         id: artifact-ota-upload-step
         with:
-          name: factory_images
+          name: firmware_images
           path: ~/artifacts/firmware.*.bin
           compression-level: 9 # maximum compression
       - name: Output factory artifact IDs
