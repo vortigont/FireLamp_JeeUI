@@ -16,8 +16,15 @@ __[CHANGELOG](/CHANGELOG.md)__ | [![PlatformIO CI](https://github.com/vortigont/
 
 Канал в Telegram для общения пользователей прошивки - [LampDevs](https://t.me/LampDevs)
 
+
+### Галерея
+
+[![ESP32 FireLamp RGB HUB75 Informer panel Demo](https://img.youtube.com/vi/wbU1bn6YsDw/0.jpg)](https://www.youtube.com/watch?v=wbU1bn6YsDw)
+
+
 ## Содержание
 - [Огненная лампа FireLamp\_EmbUI](#огненная-лампа-firelamp_embui)
+  - [Галерея](#галерея)
 - [Содержание](#содержание)
   - [WiKi проекта](#wiki-проекта)
   - [Концепт](#концепт)
