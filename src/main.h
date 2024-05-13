@@ -43,20 +43,8 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 #include "config.h"
 
-#ifdef ENCODER
-  #include "enc.h"
-#endif
-
-#ifdef RTC
-  #include "rtc.h"
-#endif
-
-#ifdef USE_STREAMING
-  #include "ledStream.h"
-#endif
-
 #define LAMPFW_VERSION_MAJOR     3
-#define LAMPFW_VERSION_MINOR     5
+#define LAMPFW_VERSION_MINOR     6
 #define LAMPFW_VERSION_REVISION  0
 
 #define LAMPFW_VERSION_VALUE     (MAJ, MIN, REV) ((MAJ) << 16 | (MIN) << 8 | (REV))
