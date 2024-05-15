@@ -34,8 +34,21 @@ __[CHANGELOG](/CHANGELOG.md)__ | [![PlatformIO CI](https://github.com/vortigont/
 Актуальную документацию по проекту можно найти в [WiKi](https://github.com/vortigont/EmbUI/wiki)
 
 ### Концепт
-Исходный проект был значительно переписан и реструктурирован. В разработке основное внимание уделяется структуре кода, декомпозиции и объектоориентированности даже в ущерб функциональнсти и "фичам". Основная идея развития - вся конфигурация и управление периферией должна быть максимально доступна во время работы кода без необходимости пересборки всего проекта. Параметры в конфигурационных файлах и опции сборки сводятся к минимуму, упраздняются и заменяются настройками через WebUI.
+Исходный проект был полностью реструктурирован и переписан. Из "огненой лампы" проект трансформировался в универсальный движёк для работы как с адресными лентами так и RGB HUB75 панелями. Проект академический, используется как платформа для разработки отдельных библиотек под платфому ESP32. Целью разработок - создание качественных асинхронных библиотек, классов и компонентов.
 
+В разработке основное внимание уделяется структуре кода, декомпозиции и объектоориентированности в ущерб набору "фич" и количества функций.
+Основная идея развития - проект должен быть лекго конфигурируем и полностью настраиваться без необходимости создания дремучих конфиг файлов и пересборок уникальных прошивок. Вся периферия и функционал должен быть максимально гибко настраиваем уже во время работы кода без необходимости пересборки/перепрошивки проекта.
+Проект поставляется в виде [бинарных сборок](https://github.com/vortigont/FireLamp_JeeUI/wiki/%D0%A1%D0%B1%D0%BE%D1%80%D0%BA%D0%B0-%D0%B8-%D0%BF%D1%80%D0%BE%D1%88%D0%B8%D0%B2%D0%BA%D0%B0-%D0%BF%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D0%B0), может быть прошит и использован с любым шильдом/платой под HUB75 информеры/ленты. назначение выводов под периферию выполняется целиком из WebUI.
+
+### Библиотеки, используемые в проекте
+В процессе работы на проектом были разработаны с нуля или адаптированы следующие библиотеки:
+ - [EmbUI](https://github.com/vortigont/EmbUI) - Embedded WebUI framefork. Building interactive UI based on websockets for your Arduino projects
+ - [ESPAsyncButton](https://github.com/vortigont/ESPAsyncButton) - Event-based asynchronous button library for ESP32 family chips. It generate events for various button press patterns, like short/long press, clicks, autorepeat, multiple clicks
+ - [LedFB](https://github.com/vortigont/LedFB) - template-based LED framebuffer library for FastLED / AdafruitGFX API
+ - [DFMiniMp3](https://github.com/vortigont/DFMiniMp3) - библиотека DFPlayer'а от [Makuna](https://github.com/Makuna/DFMiniMp3), адаптированная для run-time конфигурации
+ - [esp32-flashz](https://github.com/vortigont/esp32-flashz) - zlib compressed OTA firmware update for ESP32. Implements on-the-fly OTA images decompression on upload/flashing
+ - [TM1637](https://github.com/vortigont/TM1637) - адаптированная библиотека от [AKJ7](https://github.com/AKJ7/TM1637) переработанная для дополнительных эффектов анимации
+ - [ESP32-DNSServerAsync](https://github.com/vortigont/ESP32-DNSServerAsync) - Async version of ESP32's DNSServer based on AsyncUDP lib 
 
 ### ESP8266 vs ESP32
 Разработка ведется под контроллеры семейства **esp32**. ESP8266 морально устарел, было принято решение не тратить время на поддержку совместимости и уделить больше времени и ресурсов актуальной платформе.
