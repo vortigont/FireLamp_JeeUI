@@ -308,8 +308,8 @@ void ui_section_effects_list_configuration(Interface *interf, const JsonObject *
     //}
 
     interf->json_section_line();
-        interf->button_value(button_t::submit, TCONST_set_effect, TCONST_delfromlist, TINTF_0B5, P_ORANGE);
-        interf->button_value(button_t::submit, TCONST_set_effect, TCONST_delall, TINTF_0B4, P_RED);
+        interf->button_value(button_t::submit, TCONST_set_effect, TCONST_delfromlist, TINTF_0B5, P_RED);    // удалить эффект из списка
+        interf->button_value(button_t::submit, TCONST_set_effect, TCONST_delall, TINTF_0B4, P_GREEN);       // сбросить настройки эффекта по-умолчанию
     interf->json_section_end();
 
     interf->button_value(button_t::submit, TCONST_set_effect, TCONST_makeidx, TINTF_007, P_BLACK);
@@ -576,10 +576,10 @@ void set_effects_config_param(Interface *interf, const JsonObject *data, const c
     bool isEffHasMic = (*data)[TCONST_effHasMic];
     myLamp.setEffHasMic(isEffHasMic);
 
-    SORT_TYPE st = (*data)[V_effSort].as<SORT_TYPE>();
-
-    embui.var(V_effSort, (*data)[V_effSort]); 
-    myLamp.effwrkr.setEffSortType(st);
+    // sorting is removed
+    //SORT_TYPE st = (*data)[V_effSort].as<SORT_TYPE>();
+    //embui.var(V_effSort, (*data)[V_effSort]); 
+    //myLamp.effwrkr.setEffSortType(st);
     myLamp.save_flags();
     
     String act = (*data)[TCONST_set_effect];
@@ -604,7 +604,7 @@ void set_effects_config_param(Interface *interf, const JsonObject *data, const c
 
         confEff = myLamp.effwrkr.getEffect(EFF_ENUM::EFF_NONE);
         if(isCfgRemove){
-            myLamp.effwrkr.deleteEffect(effect, true);  // удаляем эффект вместе с конфигом на ФС
+            myLamp.effwrkr.deleteEffect(effect, true);  // удаляем только конфиг эффекта с ФС
             myLamp.effwrkr.makeIndexFileFromList();     // создаем индекс по текущему списку и на выход
             //myLamp.effwrkr.makeIndexFileFromFS();       // создаем индекс по файлам ФС и на выход
             rebuild_effect_list_files(lstfile_t::all);
@@ -689,7 +689,7 @@ void mqtt_publish_selected_effect_config_json(){
 void block_effect_controls(Interface *interf, const JsonObject *data, const char* action){
 
     JsonArrayConst sect = interf->json_section_begin(A_effect_ctrls, P_EMPTY, false, false, false, true);   // do not append section to main
-    LList<std::shared_ptr<UIControl>> &controls = myLamp.effwrkr.getControls();
+    std::vector<std::shared_ptr<UIControl>> &controls = myLamp.effwrkr.getControls();
     uint8_t ctrlCaseType; // тип контрола, старшие 4 бита соответствуют CONTROL_CASE, младшие 4 - CONTROL_TYPE
 
     bool isMicOn = myLamp.getLampFlagsStuct().isMicOn;

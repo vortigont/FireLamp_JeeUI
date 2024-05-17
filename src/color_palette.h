@@ -7,7 +7,7 @@
 
 #include "FastLED.h"
 #include "colorutils.h"
-#include "LList.h"
+#include <list>
 
 /**
  * Набор палитр в дополнение к тем что идут с FastLED
@@ -120,30 +120,24 @@ class GradientPalette{
 };
 
 class GradientPaletteList{
-    LList<GradientPalette> palletes;
+    std::vector<GradientPalette> palletes;
     public:
-    GradientPaletteList(){}
-    // ~GradientPaletteList(){} d-tor is trivial
-
     // return element at [index], if index is out of bounds returns last element
-    GradientPalette operator[](unsigned i){ return (i < size()) ? palletes[i] : palletes.back(); }
+    GradientPalette operator[](unsigned i){ return (i < palletes.size()) ? palletes.at(i) : palletes.back(); }
 
-    int size(){ return palletes.size(); }
-    void del(int idx){ palletes.unlink(idx); }
+    int size() const { return palletes.size(); }
+    void del(int idx){ if (idx < palletes.size()) palletes.erase(palletes.begin() + idx); }
     int add(CRGBPalette32 pallete, int shift, uint8_t min = 0, uint8_t max = 0) {
-        GradientPalette p(pallete, shift, min, max);
-        palletes.add(p);
-        return size();
+        palletes.emplace_back(pallete, shift, min, max);
+        return palletes.size();
     }
     int add(int idx, CRGBPalette32 pallete, int shift, uint8_t min = 0, uint8_t max = 0) {
-        if (palletes.exist(idx)){
-            GradientPalette p(pallete, shift, min, max);
-            palletes.set(idx, p);
+        if (idx < palletes.size()){
+            palletes.at(idx) = GradientPalette (pallete, shift, min, max);
         } else {
-            GradientPalette p(pallete, shift, min, max);
-            palletes.add(p);
+            palletes.emplace_back(pallete, shift, min, max);
         }
-        return size();
+        return palletes.size();
     }
 };
 

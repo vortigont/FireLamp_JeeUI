@@ -158,20 +158,22 @@ void Lamp::handle(){
 #if defined(LAMP_DEBUG_LEVEL) && LAMP_DEBUG_LEVEL>2
   EVERY_N_SECONDS(15){
     // fps counter
-    LOG(printf_P, PSTR("Eff:%d, FastLED FPS: %u\n"), effwrkr.getCurrentEffectNumber(), FastLED.getFPS());
-    LOG(printf_P, PSTR("MEM stat: %d, Time: %s\n"), ESP.getFreeHeap(), TimeProcessor::getInstance().getFormattedShortTime().c_str());
+    LOGD(T_lamp, printf, "Eff:%d, FastLED FPS: %u\n", effwrkr.getCurrentEffectNumber(), FastLED.getFPS());
+    LOGD(T_lamp, printf, "MEM stat: %d, Time: %s\n", ESP.getFreeHeap(), TimeProcessor::getInstance().getFormattedShortTime().c_str());
   }
 #endif
 }
 
 void Lamp::power(bool flag){
   if (flag == vopts.pwrState) return;  // пропускаем холостые вызовы
-  LOGI(T_lamp, printf, "Lamp powering %s\n", flag ? "On": "Off");
+  LOGI(T_lamp, printf, "Powering %s\n", flag ? "On": "Off");
 
   if (flag){
     // POWER ON
 
-    // переключаемся на текущий эффект, переключение вызовет запуск движка калькулятора эффекта и фейдер (если необходимо)
+    _swState.fadeState = 1;   // fade-in
+    vopts.pwrState = true;    // set the flag here, from now on lamp considers itself in "On" state
+    // вторично переключаемся на текущий же эффект, переключение вызовет фейдер (если необходимо)
     _switcheffect(effswitch_t::num, getFaderFlag(), effwrkr.getCurrentEffectNumber());
     // запускаем планировщик движка эффектов
     effectsTimer(true);
@@ -184,6 +186,10 @@ void Lamp::power(bool flag){
     EVT_POST(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::pwron));
   } else  {
     // POWER OFF
+    // гасим Демо-таймер
+    if(demoTask)
+      demoTask->disable();
+
     if(opts.flag.fadeEffects){
       // need to fade
       LEDFader::getInstance()->fadelight(0, FADE_TIME );
@@ -193,10 +199,6 @@ void Lamp::power(bool flag){
       effectsTimer(false);
       EVT_POST(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::pwroff));
     }
-
-    // гасим Демо-таймер
-    if(demoTask)
-      demoTask->disable();
 
     // событие о выключении будет сгенерированно в ответ на событие от фейдера когда его работа завершится
   }

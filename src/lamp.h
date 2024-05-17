@@ -199,7 +199,7 @@ public:
     void lamp_init();
 
     LampState &getLampState() {return lampState;}
-    LList<std::shared_ptr<UIControl>>&getEffControls() { return effwrkr.getControls(); }
+    std::vector<std::shared_ptr<UIControl>>&getEffControls() { return effwrkr.getControls(); }
 
     void setMicOnOff(bool val);
 
@@ -208,7 +208,9 @@ public:
 
     void setSpeedFactor(float val) {
         lampState.speedfactor = val;
-        if(effwrkr.getControls().exist(1)) effwrkr.setDynCtrl(effwrkr.getControls()[1].get());
+        // speed is control number 1, so check the size of vector, must be >1
+        if ( effwrkr.getControls().size() >1 ) effwrkr.setDynCtrl(effwrkr.getControls().at(1).get());
+        //if(effwrkr.getControls().exist(1)) effwrkr.setDynCtrl(effwrkr.getControls()[1].get());
     }
 
     // Lamp brightness control
