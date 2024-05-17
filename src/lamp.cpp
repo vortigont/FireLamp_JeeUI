@@ -158,8 +158,8 @@ void Lamp::handle(){
 #if defined(LAMP_DEBUG_LEVEL) && LAMP_DEBUG_LEVEL>2
   EVERY_N_SECONDS(15){
     // fps counter
-    LOG(printf_P, PSTR("Eff:%d, FastLED FPS: %u\n"), effwrkr.getCurrentEffectNumber(), FastLED.getFPS());
-    LOG(printf_P, PSTR("MEM stat: %d, Time: %s\n"), ESP.getFreeHeap(), TimeProcessor::getInstance().getFormattedShortTime().c_str());
+    LOGD(T_lamp, printf, "Eff:%d, FastLED FPS: %u\n", effwrkr.getCurrentEffectNumber(), FastLED.getFPS());
+    LOGD(T_lamp, printf, "MEM stat: %d, Time: %s\n", ESP.getFreeHeap(), TimeProcessor::getInstance().getFormattedShortTime().c_str());
   }
 #endif
 }

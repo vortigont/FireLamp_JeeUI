@@ -153,9 +153,8 @@ void Effcfg::autosave(bool force) {
   if (force){
     if(tConfigSave)
       tConfigSave->cancel();
-    LOG(printf_P,PSTR("Force save eff cfg: %d\n"), num);
+    LOGD(T_EffCfg, printf, "Force save eff cfg: %d\n", num);
     _savecfg();
-    //fsinforenew();
     return;
   }
 
@@ -521,7 +520,7 @@ void EffectWorker::initDefault(const char *folder)
 
 void EffectWorker::removeConfig(const uint16_t nb, const char *folder)
 {
-  LOG(printf_P,PSTR("Remove from FS: %s\n"), fshlpr::getEffectCfgPath(nb,folder).c_str());
+  LOGD(T_EffWrkr, printf, "Remove from FS: %s\n", fshlpr::getEffectCfgPath(nb,folder).c_str());
   LittleFS.remove(fshlpr::getEffectCfgPath(nb,folder)); // удаляем файл
 }
 /*
@@ -557,6 +556,7 @@ void EffectWorker::effectsReSort(SORT_TYPE _effSort)
   }
 }
 */
+
 /**
  * вычитать только имя эффекта из конфиг-файла и записать в предоставленную строку
  * в случае отсутствия/повреждения взять имя эффекта из флеш-таблицы, если есть
@@ -602,7 +602,6 @@ void EffectWorker::makeIndexFileFromList(const char *folder, bool forceRemove)
     // {"n":%d,"f":%d},   => 32 bytes is more than enough
     if (ARR_LIST_SIZE - offset < 32){
       // write to file and purge buffer
-      //LOG(println,"Dumping buff...");
       hndlr.write(reinterpret_cast<uint8_t*>(buff->data()), offset);
       offset = 0;
     }
@@ -692,12 +691,11 @@ EffectListElem *EffectWorker::getFirstEffect()
 // вернуть выбранный элемент списка
 EffectListElem *EffectWorker::getEffect(uint16_t select){
   for (unsigned i = 0; i < effects.size(); i++) {
-      //LOG(println,effects[i]->eff_nb);
       if (effects[i].eff_nb == select) {
           return &effects[i];
       }
   }
-  LOG(printf_P, PSTR("requested eff %u not found\n"), select);
+  LOGW(T_Effect, printf, "requested eff %u not found\n", select);
   return nullptr; // NONE
 }
 
@@ -830,14 +828,14 @@ uint16_t EffectWorker::effIndexByList(uint16_t val) {
 }
 
 bool Effcfg::_eff_ctrls_load_from_jdoc(DynamicJsonDocument &effcfg, std::vector<std::shared_ptr<UIControl>> &ctrls){
-  LOG(print, "_eff_ctrls_load_from_jdoc(), ");
+  LOGD(T_Effect, print, "_eff_ctrls_load_from_jdoc(), ");
   //LOG(printf_P, PSTR("Load MEM: %s - CFG: %s - DEF: %s\n"), effectName.c_str(), doc[T_name].as<String>().c_str(), worker->getName().c_str());
   // вычитываею список контроллов
   // повторные - скипаем, нехватающие - создаем
   // обязательные контролы 0, 1, 2 - яркость, скорость, масштаб, остальные пользовательские
   JsonArray arr = effcfg[T_ctrls].as<JsonArray>();
   if (!arr) return false;
-  LOG(printf, "got arr of %u controls\n", arr.size());
+  LOGD(T_Effect, printf, "got arr of %u controls\n", arr.size());
 
   ctrls.clear();
   ctrls.reserve(arr.size());
@@ -904,7 +902,7 @@ void EffectWorker::_load_default_fweff_list(){
     //EffectListElem el(i, SET_ALL_EFFFLAGS);
     effects.emplace_back(i, SET_ALL_EFFFLAGS);
   }
-  LOG(printf_P, PSTR("Loaded default list of effects, %u entries\n"), effects.size());
+  LOGD(T_EffWrkr, printf, "Loaded default list of effects, %u entries\n", effects.size());
 }
 
 void EffectWorker::_load_eff_list_from_idx_file(const char *folder){
@@ -914,7 +912,7 @@ void EffectWorker::_load_eff_list_from_idx_file(const char *folder){
 
   // if index file does not exist - load default list from firmware tables
   if (!LittleFS.exists(filename)){
-    LOG(printf_P, PSTR("eff index file %s missing, loading fw defaults\n"), filename.c_str());
+    LOGD(T_EffWrkr, printf, "eff index file %s missing, loading fw defaults\n", filename.c_str());
     return _rebuild_eff_list();
   }
 
@@ -928,7 +926,7 @@ void EffectWorker::_load_eff_list_from_idx_file(const char *folder){
   JsonArray arr = doc.as<JsonArray>();
   if(arr.isNull() || arr.size()==0){
     LittleFS.remove(filename);    // remove corrupted index file
-    LOG(println, "eff index file corrupted, loading fw defaults");
+    LOGW(T_EffWrkr, println, "eff index file corrupted, loading fw defaults");
     return _rebuild_eff_list();
   }
 
@@ -952,11 +950,11 @@ void EffectWorker::_load_eff_list_from_idx_file(const char *folder){
   }
 
   //effectsReSort();
-  LOG(printf_P, PSTR("Loaded list of effects, %u entries\n"), effects.size());
+  LOGD(T_EffWrkr, printf, "Loaded list of effects, %u entries\n", effects.size());
 }
 
 void EffectWorker::_rebuild_eff_list(const char *folder){
-  LOG(println, "_rebuild_eff_list()");
+  LOGD(T_EffWrkr, println, "_rebuild_eff_list()");
   // load default fw list first
   _load_default_fweff_list();
 
@@ -968,39 +966,21 @@ void EffectWorker::_rebuild_eff_list(const char *folder){
   }
   sourcedir.concat("/eff");
 
-#ifdef ESP8266
-  Dir dir = LittleFS.openDir(sourcedir);
-#endif
-
-#ifdef ESP32
   File dir = LittleFS.open(sourcedir);
   if (!dir || !dir.isDirectory()){
-    LOG(print, "Can't open dir: "); LOG(println, sourcedir);
+    LOGE(T_EffWrkr, printf, "Can't open dir:%s\n", sourcedir);
     return;
   }
-#endif
 
   String fn;
 
   DynamicJsonDocument doc(2048);
 
-#ifdef ESP8266
-  while (dir.next())
-#else
   File _f;
-  while(_f = dir.openNextFile())
-#endif
-  {   // keep this bracket, otherwise VSCode cant fold a region
-#ifdef ESP8266
-      fn = sourcedir + "/" + dir.fileName();
-#else
-      fn = sourcedir + "/" + _f.name();
-#endif
+  while(_f = dir.openNextFile()){
+    fn = sourcedir + "/" + _f.name();
 
     if (!embuifs::deserializeFile(doc, fn.c_str())) {
-      //#ifdef ESP32
-      //_f.close();
-      //#endif
       LittleFS.remove(fn);                // delete corrupted config
       continue;
     }
@@ -1129,7 +1109,6 @@ bool EffectCalc::run(){
  * проверка на холостой вызов для эффектов с доп. задержкой
  */
 bool EffectCalc::dryrun(float n, uint8_t delay){
-  //if((millis() - lastrun - EFFECTS_RUN_TIMER) < (unsigned)(255-speed)/n){
   if((millis() - lastrun - delay) < (unsigned)(float(255 - speed) / n)) {
     active=false;
   } else {
@@ -1230,7 +1209,7 @@ void EffectCalc::palettesload(){
  */
 void EffectCalc::palettemap(std::vector<PGMPalette*> &_pals, const uint8_t _val, const uint8_t _min,  const uint8_t _max){
   if (!_pals.size() || _val>_max) {
-    LOG(println,"No palettes loaded or wrong value!");
+    LOGD(T_Effect, println,"No palettes loaded or wrong value!");
     return;
   }
   ptPallete = (_max+0.1)/_pals.size();     // сколько пунктов приходится на одну палитру; 255.1 - диапазон ползунка, не включая 255, т.к. растягиваем только нужное :)
@@ -1238,7 +1217,7 @@ void EffectCalc::palettemap(std::vector<PGMPalette*> &_pals, const uint8_t _val,
   curPalette = _pals.at(palettepos);
   palettescale = _val-ptPallete*(palettepos); // разбиваю на поддиапазоны внутри диапазона, будет уходить в 0 на крайней позиции поддиапазона, ну и хрен с ним :), хотя нужно помнить!
   
-  LOG(printf_P,PSTR("Mapping value to pallete: Psize=%d, POS=%d, ptPallete=%4.2f, palettescale=%d\n"), _pals.size(), palettepos, ptPallete, palettescale);
+  LOGD(T_Effect, printf, "Mapping value to pallete: Psize=%d, POS=%d, ptPallete=%4.2f, palettescale=%d\n", _pals.size(), palettepos, ptPallete, palettescale);
 }
 
 /**
@@ -1252,7 +1231,7 @@ void EffectCalc::scale2pallete(){
   if (!usepalettes)
     return;
 
-  LOG(println, "scale2pallete() Reset all controls, wtf???");
+  LOGD(T_Effect, println, "scale2pallete() Reset all controls, wtf???");
   // setbrt((*ctrls)[0]->getVal().toInt());
   // setspd((*ctrls)[1]->getVal().toInt());
   // setscl((*ctrls)[2]->getVal().toInt());
