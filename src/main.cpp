@@ -110,7 +110,7 @@ void setup() {
 
     // Lamp object initialization must be done AFTER display.start(), so that display object could create pixel buffer first
     // TODO: this is ugly
-    myLamp.effwrkr.setEffSortType((SORT_TYPE)embui.paramVariant(V_effSort).as<int>()); // сортировка должна быть определена до заполнения
+    //myLamp.effwrkr.setEffSortType((SORT_TYPE)embui.paramVariant(V_effSort).as<int>()); // сортировка должна быть определена до заполнения
     myLamp.effwrkr.initDefault();
     myLamp.lamp_init();
 

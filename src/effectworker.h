@@ -40,7 +40,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "freertos/FreeRTOS.h"
 #include <mutex>
 #include "filehelpers.hpp"
-#include "LList.h"
 #include "effects_types.h"
 #include "ledfb.hpp"
 #include "luma_curves.hpp"
@@ -184,14 +183,14 @@ class Effcfg {
     void _savecfg(char *folder=NULL);
 
     /**
-     * @brief load effect controls from JsonDocument to a list
+     * @brief load effect controls from JsonDocument to a vector
      * 
      * @param effcfg - deserialized JsonDocument with effect config (should come from a file)
      * @param ctrls - destination list to load controls (all existing controls will be cleared)
      * @return true - on success
      * @return false - on error
      */
-    bool _eff_ctrls_load_from_jdoc(DynamicJsonDocument &effcfg, LList<std::shared_ptr<UIControl>> &ctrls);
+    bool _eff_ctrls_load_from_jdoc(DynamicJsonDocument &effcfg, std::vector<std::shared_ptr<UIControl>> &ctrls);
 
 public:
     uint16_t num = 0;       // номер эффекта
@@ -201,7 +200,7 @@ public:
     luma::curve curve{luma::curve::cie1931};
     String effectName;      // имя эффекта (предварительно заданное или из конфига)
     // список контроллов эффекта
-    LList<std::shared_ptr<UIControl>> controls;
+    std::vector<std::shared_ptr<UIControl>> controls;
 
     Effcfg(){};
     // constructor loads or creates default configuration for effect with specified ID
@@ -293,7 +292,7 @@ class EffectWorker;
 class EffectCalc {
 private:
     LampState *_lampstate = nullptr;
-    LList<std::shared_ptr<UIControl>> *ctrls;
+    std::vector<std::shared_ptr<UIControl>> *ctrls;
     String dummy; // дефолтная затычка для отсутствующего контролла, в случае приведения к целому получится "0"
     bool active = false;          /**< работает ли воркер и был ли обсчет кадров с момента последнего вызова, пока нужно чтобы пропускать холостые кадры */
     bool isCtrlPallete = false; // признак наличия контрола палитры
@@ -364,7 +363,7 @@ public:
      * @param _state - текущее состояние лампы
      *
     */
-    void init(EFF_ENUM eff, LList<std::shared_ptr<UIControl>> *controls, LampState* state);
+    void init(EFF_ENUM eff, std::vector<std::shared_ptr<UIControl>> *controls, LampState* state);
 
     /**
      * load метод, по умолчанию пустой. Вызывается автоматом из init(), в дочернем классе можно заменять на процедуру первой загрузки эффекта (вместо того что выполняется под флагом load)
@@ -430,7 +429,7 @@ private:
     Effcfg curEff;          // конфигурация текущего эффекта, имя/версия и т.п.
     
     // список эффектов с флагами из индекса
-    LList<EffectListElem> effects;
+    std::vector<EffectListElem> effects;
 
     // указатель на экземпляр класса текущего эффекта
     std::unique_ptr<EffectCalc> worker;
@@ -447,7 +446,8 @@ private:
     */
     void workerset(uint16_t effect);
 
-    void effectsReSort(SORT_TYPE st=(SORT_TYPE)(255));
+    // obsolete
+    //void effectsReSort(SORT_TYPE st=(SORT_TYPE)(255));
 
     /**
      * @brief load a list of default effects from firmware tables
@@ -530,13 +530,13 @@ public:
      * @brief Get const reference to current Effects List
      * 
      */
-    LList<EffectListElem> const &getEffectsList() const { return effects; };
+    std::vector<EffectListElem> const &getEffectsList() const { return effects; };
 
-    LList<std::shared_ptr<UIControl>>&getControls() { return curEff.controls; }
+    std::vector<std::shared_ptr<UIControl>>&getControls() { return curEff.controls; }
 
-    // тип сортировки
-    void setEffSortType(SORT_TYPE type) {if(effSort != type) { effectsReSort(type); } effSort = type;}
-    SORT_TYPE getEffSortType() {return effSort;}
+    // тип сортировки (obsolete)
+    //void setEffSortType(SORT_TYPE type) {if(effSort != type) { effectsReSort(type); } effSort = type;}
+    //SORT_TYPE getEffSortType() {return effSort;}
 
     // удалить конфиг переданного эффекта
     void removeConfig(const uint16_t nb, const char *folder=NULL);
@@ -583,13 +583,13 @@ public:
     bool validByList(int val);
 
     // получить реальный номер эффекта по номеру элемента списка (для плагинов)
-    uint16_t realEffNumdByList(uint16_t val) { return effects[val].eff_nb; }
+    uint16_t realEffNumdByList(uint16_t val) { return effects.at(val).eff_nb; }
 
     // получить индекс эффекта по номеру (для плагинов)
     uint16_t effIndexByList(uint16_t val);
 
     // получить флаг canBeSelected по номеру элемента списка (для плагинов)
-    bool effCanBeSelected(uint16_t val) { return effects.exist(val) ? effects[val].canBeSelected() : false; }
+    bool effCanBeSelected(uint16_t val) { return val < effects.size() ? effects.at(val).canBeSelected() : false; }
 
     // вернуть первый элемент списка
     EffectListElem *getFirstEffect();
@@ -635,8 +635,15 @@ public:
 
     // копирование эффекта
     void copyEffect(const EffectListElem *base);
-    // удалить эффект
-    void deleteEffect(const EffectListElem *eff, bool isCfgRemove = false);
+
+
+    /**
+     * @brief удалить эффект  или из списка выбора или конфиг эффекта с ФС
+     * 
+     * @param eff 
+     * @param onlyCfgFile - удалить только конфиг файл с ФС (сбрасывает настройки эффекта на дефолтные)
+     */
+    void deleteEffect(const EffectListElem *eff, bool onlyCfgFile = false);
 
 
     // COMPAT methods

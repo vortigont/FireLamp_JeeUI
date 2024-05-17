@@ -140,7 +140,7 @@ void effect_switch(Interface *interf, const JsonObject *data, const char* action
 void set_effects_dynCtrl(Interface *interf, const JsonObject *data, const char* action){
     LOGV(T_WebUI, printf, "set_effects_dynCtrl %s\n", action ? action : "empty");
 
-    LList<std::shared_ptr<UIControl>>&controls = myLamp.effwrkr.getControls();
+    std::vector<std::shared_ptr<UIControl>>&controls = myLamp.effwrkr.getControls();
 
     std::string_view a(action);
     a.remove_prefix(std::string_view(T_effect_dynCtrl).length()); // chop off "eff_dynCtrl"
