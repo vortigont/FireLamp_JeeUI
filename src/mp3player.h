@@ -152,7 +152,7 @@ public:
   void setLoopEffects(bool value);
 
   uint8_t getVolume() const { return _volume; }
-  void setVolume(uint8_t vol);
+  void setVolume(int32_t vol);
 
   /**
    * @brief Set silent mode

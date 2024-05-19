@@ -160,9 +160,6 @@ void TMDisplay::_event_picker(esp_event_base_t base, int32_t id, void* data){
         // disaply can't process this event, so let's request for real brt value
         EVT_POST(LAMP_GET_EVENTS, static_cast<int32_t>(evt::lamp_t::brightness));
         return;
-      case evt::lamp_t::mp3vol :
-        _msg_vol(*((int*) data));
-        return;
     }
   }
 

@@ -1092,8 +1092,8 @@ void set_mp3mute(Interface *interf, const JsonObject *data, const char* action){
 
 void set_mp3volume(Interface *interf, const JsonObject *data, const char* action){
     if (!data) return;
-    int volume = (*data)[T_mp3vol];
-    EVT_POST_DATA(LAMP_SET_EVENTS, e2int(evt::lamp_t::mp3vol), &volume, sizeof(int));
+    int32_t volume = (*data)[T_mp3vol];
+    EVT_POST_DATA(LAMP_SET_EVENTS, e2int(evt::lamp_t::mp3vol), &volume, sizeof(volume));
 }
 
 /*

@@ -207,7 +207,7 @@ void MP3PlayerController::_lmpSetEventHandler(esp_event_base_t base, int32_t id,
   switch (static_cast<evt::lamp_t>(id)){
     // Volume control
     case evt::lamp_t::mp3vol :
-      setVolume(*reinterpret_cast<int*>(data));
+      setVolume(*reinterpret_cast<int32_t*>(data));
       break;
     case evt::lamp_t::mp3volstep :
       setVolume( constrain(_volume + *reinterpret_cast<int*>(data), DFPLAYER_MIN_VOL, DFPLAYER_MAX_VOL) );
@@ -296,10 +296,10 @@ void MP3PlayerController::playAlarm(int track){
   t->enableDelayed();
 }
 
-void MP3PlayerController::setVolume(uint8_t vol) {
+void MP3PlayerController::setVolume(int32_t vol) {
   _volume=vol;
   dfp->setVolume(vol);
-  LOGI(T_DFPlayer, printf, "volume: %u\n", vol);
+  LOGI(T_DFPlayer, printf, "volume: %u\n", _volume);
   esp_err_t err;
   std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_lamp, NVS_READWRITE, &err);
 
@@ -308,7 +308,7 @@ void MP3PlayerController::setVolume(uint8_t vol) {
     handle->set_item(T_mp3vol, _volume);
   }
   // post sound volume event update
-  EVT_POST_DATA(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::mp3vol), &_volume, sizeof(_volume) );
+  EVT_POST_DATA(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::mp3vol), &vol, sizeof(vol) );
 }
 
 void MP3PlayerController::setLoopEffects(bool value){
