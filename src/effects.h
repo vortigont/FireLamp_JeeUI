@@ -1372,9 +1372,9 @@ class EffectTLand: public EffectCalc {
     byte hue2 = 128;
     byte shift = 0;
     byte fine = 1;
-    double t;
-    void processFrame(LedFB<CRGB> *fb, double t, double x, double y);
-    float code(double i, double x, double y);
+    float t;
+    void processFrame(LedFB<CRGB> *fb, float t, float x, float y);
+    float code(float i, float x, float y);
     String setDynCtrl(UIControl*_val);
   public:
     EffectTLand(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
@@ -1846,7 +1846,7 @@ private:
 
     int _mic_gpio;
     float samp_freq;
-    double last_freq = 0;
+    float last_freq = 0;
     uint8_t last_min_peak, last_max_peak;
     float maxVal;
     float threshold;
@@ -2047,7 +2047,7 @@ private:
         }
         
         void reset(int w, int h);
-        double getY();
+        float getY();
         void drawing(LedFB<CRGB> *fb);
     };
 

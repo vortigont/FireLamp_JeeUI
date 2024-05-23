@@ -2822,7 +2822,7 @@ void EffectPicasso::generate(bool reset){
     reset = true;
   }
 
-  double minSpeed = 0.2, maxSpeed = 0.8;
+  float minSpeed = 0.2, maxSpeed = 0.8;
   for (auto &particle : particles){
     if (reset) {
       particle.position_x = random8(0, fb->w());
@@ -4330,7 +4330,7 @@ bool EffectPatterns::patternsRoutine()
         buff[y][x] = pgm_read_byte(&patterns[patternIdx][y % 10U][x % 10U]);
   }
 
-  double corr = fabs(_speedX) + fabs(_speedY);
+  float corr = fabs(_speedX) + fabs(_speedY);
 
   colorMR[6] = CHSV(beatsin88(EffectMath::fmap(corr, 0.1, 1.5, 350., 1200.), 0, 255), 255, 255);
   colorMR[7].hue = colorMR[6].hue + 96; 
@@ -4952,7 +4952,7 @@ void EffectSnake::Snake::shuffleDown(float speedy, bool subpix)
                 pixels[i].y = (uint8_t)pixels[i - 1].y;
             }
         }
-        double f;
+        float f;
         internal_counter=modf(internal_counter, &f);
     }
 }
@@ -5561,7 +5561,7 @@ String EffectTLand::setDynCtrl(UIControl*_val){
 }
 
 bool EffectTLand::run() {
-  t = (double)(millis()&0xFFFFF) / map(speed, 1, 255, 1200, 128); ; // на больших значениях будет странное поведение, поэтому уменьшаем точность, хоть и будет иногда срыв картинки, но в 18 минут, так что - хрен с ним
+  t = (float)(millis()&0xFFFFF) / map(speed, 1, 255, 1200, 128); ; // на больших значениях будет странное поведение, поэтому уменьшаем точность, хоть и будет иногда срыв картинки, но в 18 минут, так что - хрен с ним
   shift = (shift+1)%fine; // 0...3
   if(!ishue) hue++;
   if(!ishue2) hue2++;
@@ -5582,8 +5582,8 @@ bool EffectTLand::run() {
   return true;
 }
 
-void EffectTLand::processFrame(LedFB<CRGB> *fb, double t, double x, double y) {
-  double i = (y * fb->w()) + x;
+void EffectTLand::processFrame(LedFB<CRGB> *fb, float t, float x, float y) {
+  float i = (y * fb->w()) + x;
   int16_t frame = constrain(code(i, x, y), -1, 1) * 255;
 
   if (frame > 0) {
@@ -5594,7 +5594,7 @@ void EffectTLand::processFrame(LedFB<CRGB> *fb, double t, double x, double y) {
   } else fb->at(x, y) = CRGB::Black;
 }
 
-float EffectTLand::code(double i, double x, double y) {
+float EffectTLand::code(float i, float x, float y) {
 
   switch (animation) {
     /**
@@ -8330,8 +8330,8 @@ void EffectWcolor::Blot::drawing(LedFB<CRGB> *fb) {
     }
 }
 
-double EffectWcolor::Blot::getY() {
-    double result = y[0];
+float EffectWcolor::Blot::getY() {
+    float result = y[0];
     for (uint8_t i = 1; i < y.size(); i++) {
         if (y[i] > result) result = y[i];
     }
