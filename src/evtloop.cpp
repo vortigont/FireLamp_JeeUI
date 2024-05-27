@@ -2,8 +2,7 @@
     This file is a part of FireLamp_JeeUI project
     https://github.com/vortigont/FireLamp_JeeUI
 
-    Copyright © 2023 Emil Muratov (vortigont)
-    Copyright © 2020 Dmytro Korniienko (kDn)
+    Copyright © 2023-2024 Emil Muratov (Vortigont)
 
     FireLamp_JeeUI is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

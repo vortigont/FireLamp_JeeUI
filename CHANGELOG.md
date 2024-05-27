@@ -1,5 +1,11 @@
 # Change Log
 
+## 3.6.1 (2024-05-27)
+* fix demo time save/restore
+* fix displaying MP3 volume on TM1637 display
+- Remove LinkedList dependency
+* minor cleanup, readme update, links, etc...
+
 ## 3.6.0 (2024-05-13)
 + Factory firmware builds
   - on-demandfactory images builder CI pipeline

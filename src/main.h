@@ -1,6 +1,6 @@
 /*
+Copyright © 2023-2024 Emil Muratov (Vortigont)
 Copyright © 2020 Dmytro Korniienko (kDn)
-JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
     This file is part of FireLamp_JeeUI.
 
@@ -45,7 +45,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 #define LAMPFW_VERSION_MAJOR     3
 #define LAMPFW_VERSION_MINOR     6
-#define LAMPFW_VERSION_REVISION  0
+#define LAMPFW_VERSION_REVISION  1
 
 #define LAMPFW_VERSION_VALUE     (MAJ, MIN, REV) ((MAJ) << 16 | (MIN) << 8 | (REV))
 
