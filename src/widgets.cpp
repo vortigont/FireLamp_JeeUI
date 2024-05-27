@@ -126,7 +126,7 @@ GenericWidget::GenericWidget(const char* wlabel, unsigned periodic) : label(wlab
 }
 
 JsonVariant GenericWidget::load_cfg_from_NVS(const char* lbl){
-  DynamicJsonDocument doc(WIDGETS_CFG_JSIZE);
+  JsonDocument doc;
 
   // it does not matter if config file does not exist or requested object is missing
   // we should anyway call load_cfg to let derived class implement any default values configuration
@@ -137,9 +137,8 @@ JsonVariant GenericWidget::load_cfg_from_NVS(const char* lbl){
 JsonVariant GenericWidget::getConfig() const {
   LOGD(T_Widget, printf, "getConfig for widget:%s\n", label);
 
-  DynamicJsonDocument doc(WIDGETS_CFG_JSIZE);
-  //JsonObject cfg = doc.to<JsonObject>();
-  JsonVariant cfg( doc.createNestedObject(label) );
+  JsonDocument doc;
+  JsonVariant cfg( doc[label].to<JsonObject>() );
 
   generate_cfg(cfg);
   return cfg;
@@ -165,11 +164,11 @@ void GenericWidget::save(){
 
 void GenericWidget::save(JsonVariantConst cfg){
   // save supplied config to persistent storage
-  DynamicJsonDocument doc(WIDGETS_CFG_JSIZE);
+  JsonDocument doc;
   embuifs::deserializeFile(doc, T_widgets_cfg);
 
   // get/created nested object for specific widget
-  JsonVariant dst = doc[label].isNull() ? doc.createNestedObject(label) : doc[label];
+  JsonVariant dst = doc[label].isNull() ? doc[label].to<JsonObject>() : doc[label];
   JsonObjectConst o = cfg.as<JsonObjectConst>();
 
   for (JsonPairConst kvp : o){
@@ -384,6 +383,7 @@ void ClockWidget::_lmpChEventHandler(esp_event_base_t base, int32_t id, void* da
       LOGI(T_clock, println, "suspend widget");
       stop();
       break;
+    default:;
   }
 }
 
@@ -429,10 +429,10 @@ void AlarmClock::generate_cfg(JsonVariant cfg) const {
   cfg[T_off] = _cuckoo.off;
 
   // serialize _alarm array into Jdoc array of objects
-  JsonArray arr = cfg[T_event].isNull() ? cfg.createNestedArray(T_event) : cfg[T_event];
+  JsonArray arr = cfg[T_event].isNull() ? cfg[T_event].to<JsonArray>() : cfg[T_event];
   arr.clear();  // clear array, I'll replace it's content
   for (auto &e : _alarms){
-    JsonObject obj = arr.createNestedObject();
+    JsonObject obj = arr.add<JsonObject>();
     obj[T_on] = e.active;
     obj[T_type] = static_cast<uint16_t>(e.type);
     obj[T_hr] = e.hr;
@@ -533,7 +533,7 @@ void WidgetManager::start(const char* label){
     return;
   }
 
-  DynamicJsonDocument doc(WIDGETS_CFG_JSIZE);
+  JsonDocument doc;
   // it does not matter if config file does not exist or requested object is missing
   // we should anyway call load_cfg to let derived class implement any default values configuration
   embuifs::deserializeFile(doc, T_widgets_cfg);

@@ -84,7 +84,7 @@ Effcfg::~Effcfg(){
   }
 }
 
-bool Effcfg::_eff_cfg_deserialize(DynamicJsonDocument &doc, const char *folder){
+bool Effcfg::_eff_cfg_deserialize(JsonDocument &doc, const char *folder){
   LOGD(T_EffCfg, printf, "_eff_cfg_deserialize() eff:%u\n", num);
   String filename(fshlpr::getEffectCfgPath(num,folder));
 
@@ -110,7 +110,7 @@ bool Effcfg::_eff_cfg_deserialize(DynamicJsonDocument &doc, const char *folder){
 
 bool Effcfg::loadeffconfig(uint16_t nb, const char *folder){
   num = nb;
-  DynamicJsonDocument doc(DYNJSON_SIZE_EFF_CFG);
+  JsonDocument doc;
   if (!_eff_cfg_deserialize(doc, folder)) return false;   // error loading file
 
   version = doc["ver"];
@@ -171,7 +171,7 @@ void Effcfg::autosave(bool force) {
 }
 
 String Effcfg::getSerializedEffConfig(uint8_t replaceBright) const {
-  DynamicJsonDocument doc(DYNJSON_SIZE_EFF_CFG);
+  JsonDocument doc;
 
   doc["nb"] = num;
   doc["flags"] = flags.mask;
@@ -179,10 +179,10 @@ String Effcfg::getSerializedEffConfig(uint8_t replaceBright) const {
   doc["ver"] = version;
   //if (brt) doc["brt"] = brt;
   if (curve != luma::curve::cie1931) doc[A_dev_lcurve] = e2int(curve);
-  JsonArray arr = doc.createNestedArray(T_ctrls);
+  JsonArray arr = doc[T_ctrls].to<JsonArray>();
   for (auto c = controls.cbegin(); c != controls.cend(); ++c){
     auto ctrl = c->get();
-    JsonObject var = arr.createNestedObject();
+    JsonObject var = arr.add<JsonObject>();
     var[P_id]=ctrl->getId();
     var[P_type]=ctrl->getType();
     var[T_name] = ctrl->getName();
@@ -567,7 +567,7 @@ void EffectWorker::effectsReSort(SORT_TYPE _effSort)
 void EffectWorker::loadeffname(String& _effectName, const uint16_t nb, const char *folder)
 {
   String filename = fshlpr::getEffectCfgPath(nb,folder);
-  DynamicJsonDocument doc(DYNJSON_SIZE_EFF_CFG);
+  JsonDocument doc;
   bool ok = embuifs::deserializeFile(doc, filename.c_str());
   if (ok && doc[T_name]){
     _effectName = doc[T_name].as<const char*>(); // перенакрываем именем из конфига, если есть
@@ -827,7 +827,7 @@ uint16_t EffectWorker::effIndexByList(uint16_t val) {
     return 0;
 }
 
-bool Effcfg::_eff_ctrls_load_from_jdoc(DynamicJsonDocument &effcfg, std::vector<std::shared_ptr<UIControl>> &ctrls){
+bool Effcfg::_eff_ctrls_load_from_jdoc(JsonDocument &effcfg, std::vector<std::shared_ptr<UIControl>> &ctrls){
   LOGD(T_Effect, print, "_eff_ctrls_load_from_jdoc(), ");
   //LOG(printf_P, PSTR("Load MEM: %s - CFG: %s - DEF: %s\n"), effectName.c_str(), doc[T_name].as<String>().c_str(), worker->getName().c_str());
   // вычитываею список контроллов
@@ -916,7 +916,7 @@ void EffectWorker::_load_eff_list_from_idx_file(const char *folder){
     return _rebuild_eff_list();
   }
 
-  DynamicJsonDocument doc(4096);  // document for loading effects index from file
+  JsonDocument doc;  // document for loading effects index from file
 
   if (!embuifs::deserializeFile(doc, filename.c_str())){
     LittleFS.remove(filename);    // remove corrupted index file
@@ -968,13 +968,13 @@ void EffectWorker::_rebuild_eff_list(const char *folder){
 
   File dir = LittleFS.open(sourcedir);
   if (!dir || !dir.isDirectory()){
-    LOGE(T_EffWrkr, printf, "Can't open dir:%s\n", sourcedir);
+    LOGE(T_EffWrkr, printf, "Can't open dir:%s\n", sourcedir.c_str());
     return;
   }
 
   String fn;
 
-  DynamicJsonDocument doc(2048);
+  JsonDocument doc;
 
   File _f;
   while(_f = dir.openNextFile()){
@@ -1016,7 +1016,7 @@ void EffectWorker::_start_runner(){
                           (void *)this,
                           WRKR_TASK_PRIO,
                           &_runnerTask_h,
-                          WRKR_TASK_CORE) == pdPASS;
+                          WRKR_TASK_CORE);
 }
 
 void EffectWorker::_runnerHndlr(){

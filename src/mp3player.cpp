@@ -200,6 +200,7 @@ void MP3PlayerController::_lmpChEventHandler(esp_event_base_t base, int32_t id, 
       dfp->stop();
       flags.alarm = false;
       break;
+    default:;
   }
 }
 
@@ -218,12 +219,13 @@ void MP3PlayerController::_lmpSetEventHandler(esp_event_base_t base, int32_t id,
     case evt::lamp_t::mp3unmute :
       setSilent(false);
       break;
+    default:;
   }
 }
 
 void MP3PlayerController::_lmpGetEventHandler(esp_event_base_t base, int32_t id, void* data){
   // here I simply publish current player state
-  Interface interf(&embui.feeders, 1024);  
+  Interface interf(&embui.feeders);
   interf.json_frame_value();
   interf.value(T_mp3vol, _volume);
   interf.value(T_mp3mute, _mute);

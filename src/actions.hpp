@@ -48,8 +48,6 @@ those could be called either internaly or as a callbacks from WebUI/MQTT/HTTP
 #include "char_const.h"
 #include "main.h"
 
-#define ACTION_PARAM_SIZE   256     // Static json document size to pass the parameters to actions
-
 
 /**
  * @brief enumeration of the availbale named actions
@@ -127,9 +125,9 @@ void run_action(const String &key, const T& val);
 template<typename T>
 void run_action(ra act, const T& param) {
   LOG(printf_P, PSTR("run_action_p: %d\n"), static_cast<int>(act));
-  StaticJsonDocument<ACTION_PARAM_SIZE> jdoc;
+  JsonDocument jdoc;
   JsonObject obj = jdoc.to<JsonObject>();
-  JsonObject data = obj.createNestedObject(P_data);
+  JsonObject data = obj[P_data].to<JsonObject>();
 
   // action specific key:value setup
   switch (act){
@@ -212,10 +210,10 @@ void run_action(ra act, const T& param) {
 template<typename T>
 void run_action(const String &key, const T& val) {
   LOG(printf_P, PSTR("run_action_kv: %s\n"), key.c_str());
-  StaticJsonDocument<ACTION_PARAM_SIZE> jdoc;
+  JsonDocument jdoc;
   JsonObject obj = jdoc.to<JsonObject>();
   obj[P_action] = key;
-  JsonObject data = obj.createNestedObject(P_data);
+  JsonObject data = obj[P_data].to<JsonObject>();
   data[key] = val;
 
   embui.post(obj, true);                    // inject packet back into EmbUI action selector

@@ -102,7 +102,7 @@ void ButtonEventHandler::_btnEventHandler(ESPButton::event_t e, const EventMsg* 
   if (_btn_lock && !_alarm)
     return;
 
-  LOGD(T_btn_event, printf, "ID:%u gpio:%d, ctr:%d\n", e, msg->gpio, msg->cntr);
+  LOGD(T_btn_event, printf, "ID:%u gpio:%d, ctr:%d\n", static_cast<uint32_t>(e), msg->gpio, msg->cntr);
 
   // if Alarm flag is set, any button event will generate Alarm cancelling event
   if (_alarm){
@@ -212,6 +212,7 @@ void ButtonEventHandler::_lmpEventHandler(esp_event_base_t base, int32_t id, voi
       case evt::lamp_t::btnUnLock :
         lock(false);
         break;
+      default:;
     }
 }
 

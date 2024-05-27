@@ -186,7 +186,7 @@ void uidata_page_selector(Interface *interf, const JsonObject *data, const char*
         case page::wdgt_clock :   // настройки часов
             interf->uidata_pick( "lampui.pages.wdgt.ovrclock" );
             interf->json_frame_flush();
-            interf->json_frame_value(informer.getConfig(T_clock), true);
+            interf->json_frame_value(informer.getConfig(T_clock));
             break;
         case page::wdgt_alrmclock :   // настройки будильника
             interf->uidata_pick( "lampui.pages.wdgt.alrmclock" );
@@ -204,7 +204,7 @@ void uidata_page_selector(Interface *interf, const JsonObject *data, const char*
             //    interf->uidata_pick("lampui.sections.btn_exit_to_wdgt");
             interf->json_frame_flush();
             interf->json_frame_jscall("alarm_items_load");
-            interf->jobject(informer.getConfig(T_alrmclock), true);     // generate config with nested alarm event objects
+            interf->json_frame_add(informer.getConfig(T_alrmclock));     // generate config with nested alarm event objects
             //interf->json_frame_value(informer.getConfig(T_alrmclock), true);
             break;
         default:;                   // by default do nothing
@@ -435,7 +435,7 @@ void page_button_setup(Interface *interf, const JsonObject *data, const char* ac
     getset_button_gpio(interf, nullptr, NULL);
     getset_encoder_gpio(interf, nullptr, NULL);
 
-    DynamicJsonDocument doc(4096);
+    JsonDocument doc;
     if (!embuifs::deserializeFile(doc, T_benc_cfg)) return;      // config is missing, bad
     JsonArray bevents( doc[T_btn_events] );
 
@@ -512,7 +512,7 @@ void page_button_setup(Interface *interf, const JsonObject *data, const char* ac
 }
 
 void page_button_evtedit(Interface *interf, const JsonObject *data, const char* action){
-    DynamicJsonDocument doc(4096);
+    JsonDocument doc;
     if (!embuifs::deserializeFile(doc, T_benc_cfg)) return;
     JsonArray bevents( doc[T_btn_events] );
     int idx = (*data)[A_button_evt_edit];
@@ -527,17 +527,17 @@ void page_button_evtedit(Interface *interf, const JsonObject *data, const char* 
     interf->json_frame_flush();
 
     // fill the form with values
-    interf->json_frame_value(obj, true);
+    interf->json_frame_value(obj);
     interf->value(T_idx, idx);
     interf->json_frame_flush();
 }
 
 void page_button_evt_save(Interface *interf, const JsonObject *data, const char* action){
-    DynamicJsonDocument doc(4096);
+    JsonDocument doc;
     if (!embuifs::deserializeFile(doc, T_benc_cfg)) doc.clear();
     JsonArray bevents( doc[T_btn_events] );
     int idx = (*data)[T_idx];
-    JsonObject obj = idx < bevents.size() ? bevents[idx] : bevents.createNestedObject();
+    JsonObject obj = idx < bevents.size() ? bevents[idx] : bevents.add<JsonObject>();
 
     // copy keys from post'ed object
     for (JsonPair kvp : *data)
@@ -990,7 +990,7 @@ void set_settings_mic(Interface *interf, const JsonObject *data, const char* act
     float noise = (*data)[V_micNoise];
     mic_noise_reduce_level_t rdl = static_cast<mic_noise_reduce_level_t>((*data)[V_micRdcLvl].as<unsigned>());
 
-    LOG(printf_P, PSTR("Set mike: scale=%2.3f noise=%2.3f rdl=%d\n"),scale,noise,rdl);
+    LOGI(T_WebUI, printf, "Set mike: scale=%2.3f noise=%2.3f rdl=%d\n", scale, noise, rdl);
 
     embui.var(V_micScale, scale);
     embui.var_dropnulls(V_micNoise, noise);
@@ -1101,11 +1101,11 @@ void set_mp3volume(Interface *interf, const JsonObject *data, const char* action
 void getset_gpios(Interface *interf, const JsonObject *data, const char* action){
 
     if (!data || !(*data).size()){
-        DynamicJsonDocument doc(512);
+        JsonDocument doc;
         if (!embuifs::deserializeFile(doc, TCONST_fcfg_gpio)) doc.clear();     // reset if cfg is broken or missing
 
         // it's a request, send current configuration
-        interf->json_frame_value(doc, true);
+        interf->json_frame_value(doc);
         interf->json_frame_flush();
         return;
     }
@@ -1123,7 +1123,7 @@ void ui_page_drawing(Interface *interf, const JsonObject *data, const char* acti
     interf->json_frame_interface();  //TINTF_080);
     interf->json_section_main(A_ui_page_drawing, TINTF_0CE);
 
-    StaticJsonDocument<256>doc;
+    JsonDocument doc;
     JsonObject param = doc.to<JsonObject>();
 
     param[T_width] = display.getLayout().canvas_w();
@@ -1185,7 +1185,7 @@ void show_progress(Interface *interf, const JsonObject *data, const char* action
 }
 /*
 uint8_t uploadProgress(size_t len, size_t total){
-    DynamicJsonDocument doc(256);
+    JsonDocument doc;
     JsonObject obj = doc.to<JsonObject>();
     static int prev = 0; // используется чтобы не выводить повторно предыдущее значение, хрен с ней, пусть живет
     float part = total / 50.0;
@@ -1250,11 +1250,11 @@ void block_display_setup(Interface *interf, engine_t e){
         interf->uidata_pick( e == engine_t::hub75 ? "lampui.settings.hub75" : "lampui.settings.ws2812");
     interf->json_frame_flush();
 
-    DynamicJsonDocument doc(DISPLAY_JSIZE);
+    JsonDocument doc;
     // if config can't be loaded, then just quit
     if (!embuifs::deserializeFile(doc, TCONST_fcfg_display) || !doc.containsKey( e == engine_t::hub75 ? T_hub75 : T_ws2812)) return;
 
-    interf->json_frame_value(doc[e == engine_t::hub75 ? T_hub75 : T_ws2812], true);
+    interf->json_frame_value(doc[e == engine_t::hub75 ? T_hub75 : T_ws2812]);
     interf->json_frame_flush();
 
 /*
@@ -1325,7 +1325,7 @@ void rebuild_effect_list_files(lstfile_t lst){
                 case lstfile_t::full :
                     build_eff_names_list_file(myLamp.effwrkr, true);
                     if (embui.feeders.available()){  // refresh UI page with a regenerated list
-                        Interface interf(&embui.feeders, MEDIUM_JSON_SIZE);
+                        Interface interf(&embui.feeders);
                         show_effects_config(&interf, nullptr, NULL);
                     }
                     break;
@@ -1336,7 +1336,7 @@ void rebuild_effect_list_files(lstfile_t lst){
                 default :
                     build_eff_names_list_file(myLamp.effwrkr);
                     if (embui.feeders.available()){  // refresh UI page with a regenerated list
-                        Interface interf(&embui.feeders, MEDIUM_JSON_SIZE);
+                        Interface interf(&embui.feeders);
                         ui_page_main(&interf, nullptr, NULL);
                     }
             }

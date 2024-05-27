@@ -44,9 +44,6 @@ Copyright © 2023 Emil Muratov (vortigont)
 #pragma once
 #include "ui.h"
 
-#define DEVICES_CFG_JSIZE   2048
-#define DISPLAY_CFG_JSIZE   1500
-
 /**
  * @brief Read configuration and setup TM1637 Display if required
  * 

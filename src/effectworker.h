@@ -173,7 +173,7 @@ class Effcfg {
      * @return true - on success
      * @return false - on failure
      */
-    bool _eff_cfg_deserialize(DynamicJsonDocument &doc, const char *folder = NULL);
+    bool _eff_cfg_deserialize(JsonDocument &doc, const char *folder = NULL);
 
     /**
      * @brief serialize and write struct to json file
@@ -190,7 +190,7 @@ class Effcfg {
      * @return true - on success
      * @return false - on error
      */
-    bool _eff_ctrls_load_from_jdoc(DynamicJsonDocument &effcfg, std::vector<std::shared_ptr<UIControl>> &ctrls);
+    bool _eff_ctrls_load_from_jdoc(JsonDocument &effcfg, std::vector<std::shared_ptr<UIControl>> &ctrls);
 
 public:
     uint16_t num = 0;       // номер эффекта

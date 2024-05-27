@@ -63,7 +63,7 @@ PCNT_Encoder *encoder = nullptr;
 MP3PlayerController *mp3player = nullptr;
 
 void tm1637_setup(){
-  DynamicJsonDocument doc(DEVICES_CFG_JSIZE);
+  JsonDocument doc;
   if (!embuifs::deserializeFile(doc, TCONST_fcfg_display) || !doc.containsKey(T_tm1637)) return;      // config is missing, bad or has no TM1637 data
 
   JsonVariantConst cfg( doc[T_tm1637] );
@@ -132,7 +132,7 @@ void encoder_cfg_load(JsonVariantConst cfg){
 }
 
 void button_cfg_load(){
-  DynamicJsonDocument doc(BTN_EVENTS_CFG_JSIZE);
+  JsonDocument doc;
   if (!embuifs::deserializeFile(doc, T_benc_cfg)) return;      // config is missing, bad
 
   // setup encoder
@@ -218,19 +218,19 @@ void button_configure_events(JsonVariantConst cfg){
 
 void getset_button_gpio(Interface *interf, const JsonObject *data, const char* action){
   {
-    DynamicJsonDocument doc(BTN_EVENTS_CFG_JSIZE);
+    JsonDocument doc;
     if (!embuifs::deserializeFile(doc, T_benc_cfg)) doc.clear();
 
     // if this is a request with no data, then just provide existing configuration and quit
     if (!data || !(*data).size()){
         if (interf && doc.containsKey(T_btn_cfg)){
-            interf->json_frame_value(doc[T_btn_cfg], true);
+            interf->json_frame_value(doc[T_btn_cfg]);
             interf->json_frame_flush();
         }
         return;
     }
 
-    JsonVariant dst = doc[T_btn_cfg].isNull() ? doc.createNestedObject(T_btn_cfg) : doc[T_btn_cfg];
+    JsonVariant dst = doc[T_btn_cfg].isNull() ? doc[T_btn_cfg].to<JsonObject>() : doc[T_btn_cfg];
 
     // copy keys to a destination object
     for (JsonPair kvp : *data)
@@ -248,19 +248,19 @@ void getset_button_gpio(Interface *interf, const JsonObject *data, const char* a
 
 void getset_encoder_gpio(Interface *interf, const JsonObject *data, const char* action){
   {
-    DynamicJsonDocument doc(BTN_EVENTS_CFG_JSIZE);
+    JsonDocument doc;
     if (!embuifs::deserializeFile(doc, T_benc_cfg)) doc.clear();
 
     // if this is a request with no data, then just provide existing configuration and quit
     if (!data || !(*data).size()){
       if (interf && doc.containsKey(T_encoder)){
-          interf->json_frame_value(doc[T_encoder], true);
+          interf->json_frame_value(doc[T_encoder]);
           interf->json_frame_flush();
       }
       return;
     }
 
-    JsonVariant dst = doc[T_encoder].isNull() ? doc.createNestedObject(T_encoder) : doc[T_encoder];
+    JsonVariant dst = doc[T_encoder].isNull() ? doc[T_encoder].to<JsonObject>() : doc[T_encoder];
 
     // copy keys to a destination object
     for (JsonPair kvp : *data)
@@ -279,7 +279,7 @@ void getset_encoder_gpio(Interface *interf, const JsonObject *data, const char* 
 // *** DFPlayer
 
 void dfplayer_cfg_load(){
-  DynamicJsonDocument doc(DFPLAYER_JSON_CFG_JSIZE);
+  JsonDocument doc;
   if (!embuifs::deserializeFile(doc, T_dfplayer_cfg)) return;      // config is missing, bad
 
   {
@@ -327,19 +327,19 @@ void dfplayer_setup_opt(JsonVariantConst cfg){
 
 void getset_dfplayer_device(Interface *interf, const JsonObject *data, const char* action){
     {
-        DynamicJsonDocument doc(DFPLAYER_JSON_CFG_JSIZE);
+        JsonDocument doc;
         if (!embuifs::deserializeFile(doc, T_dfplayer_cfg)) doc.clear();
 
         // if this is a request with no data, then just provide existing configuration and quit
         if (!data || !(*data).size()){
             if (interf && doc.containsKey(T_device)){
-                interf->json_frame_value(doc[T_device], true);
+                interf->json_frame_value(doc[T_device]);
                 interf->json_frame_flush();
             }
             return;
         }
 
-        JsonVariant dst = doc[T_device].isNull() ? doc.createNestedObject(T_device) : doc[T_device];
+        JsonVariant dst = doc[T_device].isNull() ? doc[T_device].to<JsonObject>() : doc[T_device];
 
         // copy keys to a destination object
         for (JsonPair kvp : *data)
@@ -360,19 +360,19 @@ void getset_dfplayer_device(Interface *interf, const JsonObject *data, const cha
 
 void getset_dfplayer_opt(Interface *interf, const JsonObject *data, const char* action){
     {
-        DynamicJsonDocument doc(DFPLAYER_JSON_CFG_JSIZE);
+        JsonDocument doc;
         if (!embuifs::deserializeFile(doc, T_dfplayer_cfg)) doc.clear();
 
         // if this is a request with no data, then just provide existing configuration and quit
         if (!data || !(*data).size()){
             if (interf && doc.containsKey(T_opt)){
-                interf->json_frame_value(doc[T_opt], true);
+                interf->json_frame_value(doc[T_opt]);
                 interf->json_frame_flush();
             }
             return;
         }
 
-        JsonVariant dst = doc[T_opt].isNull() ? doc.createNestedObject(T_opt) : doc[T_opt];
+        JsonVariant dst = doc[T_opt].isNull() ? doc[T_opt].to<JsonObject>() : doc[T_opt];
 
         // copy keys to a destination object
         for (JsonPair kvp : *data)

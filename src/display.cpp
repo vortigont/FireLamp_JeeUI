@@ -53,7 +53,7 @@ An object file for LED output devices, backends and buffers
 bool LEDDisplay::start(){
     if (_dengine) return true;   // Overlay engine already running
 
-    DynamicJsonDocument doc(DISPLAY_CFG_JSIZE);
+    JsonDocument doc;
     // if config can't be loaded, then just quit, 'cause we need at least an engine type to run
     if (!embuifs::deserializeFile(doc, TCONST_fcfg_display)) return false;
 
@@ -64,7 +64,7 @@ bool LEDDisplay::start(){
     return _start_rmt(doc);
 }
 
-bool LEDDisplay::_start_rmt(const DynamicJsonDocument& doc){
+bool LEDDisplay::_start_rmt(const JsonDocument& doc){
     if (_dengine) return true;  // RMT already running
 
     LOGI(T_Display, println, "starting RMT engine");
@@ -126,7 +126,7 @@ bool LEDDisplay::_start_rmt_engine(){
     return true;
 }
 
-bool LEDDisplay::_start_hub75(const DynamicJsonDocument& doc){
+bool LEDDisplay::_start_hub75(const JsonDocument& doc){
     _etype = engine_t::hub75;
 
 
@@ -273,7 +273,7 @@ void LEDDisplay::setColorOrder(int order){
 }
 
 int LEDDisplay::getColorOrder() const {
-    switch(_color_ordr){
+    switch(static_cast<uint32_t>(_color_ordr)){
         case 1 :
             return RBG;
         case 2 :

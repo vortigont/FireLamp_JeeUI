@@ -102,7 +102,7 @@ void Lamp::lamp_init(){
   }
 
   // GPIO's
-  DynamicJsonDocument doc(512);
+  JsonDocument doc;
   if (embuifs::deserializeFile(doc, TCONST_fcfg_gpio)){
     // restore mic gpio
     _pins.mic = doc[T_mic] | static_cast<int>(GPIO_NUM_NC);

@@ -88,10 +88,6 @@ void set_lcurve(Interface *interf, const JsonObject *data, const char* action){
  */
 void set_pwrswitch(Interface *interf, const JsonObject *data, const char* action){
     myLamp.power((*data)[action]);
-    //EVT_POST(LAMP_SET_EVENTS, (*data)[A_dev_pwrswitch] ? e2int(evt::lamp_t::pwron) : e2int(evt::lamp_t::pwroff));
-
-        //if(myLamp.getLampFlagsStuct().isOnMP3)
-        //    mp3->setIsOn((*data)[A_dev_pwrswitch]);
 }
 
 /**
@@ -186,19 +182,19 @@ void set_effects_dynCtrl(Interface *interf, const JsonObject *data, const char* 
 */
 void set_ledstrip(Interface *interf, const JsonObject *data, const char* action){
     {
-        DynamicJsonDocument doc(DISPLAY_JSIZE);
+        JsonDocument doc;
         if (!embuifs::deserializeFile(doc, TCONST_fcfg_display)) doc.clear();
 
         // if this is a request with no data, then just provide existing configuration and quit
         if (!data || !(*data).size()){
             if (interf){
-                interf->json_frame_value(doc[T_ws2812], true);
+                interf->json_frame_value(doc[T_ws2812]);
                 interf->json_frame_flush();
             }
             return;
         }
 
-        JsonVariant dst = doc.containsKey(T_ws2812) ? doc[T_ws2812] : doc.createNestedObject(T_ws2812);
+        JsonVariant dst = doc.containsKey(T_ws2812) ? doc[T_ws2812] : doc[T_ws2812].to<JsonObject>();
 
         for (JsonPair kvp : *data)
             dst[kvp.key()] = kvp.value();
@@ -258,19 +254,19 @@ void set_ledstrip(Interface *interf, const JsonObject *data, const char* action)
 
 void set_hub75(Interface *interf, const JsonObject *data, const char* action){
     {
-        DynamicJsonDocument doc(DISPLAY_JSIZE);
+        JsonDocument doc;
         if (!embuifs::deserializeFile(doc, TCONST_fcfg_display)) doc.clear();
 
         // if this is a request with no data, then just provide existing configuration and quit
         if (!data || !(*data).size()){
             if (interf){
-                interf->json_frame_value(doc[T_hub75], true);
+                interf->json_frame_value(doc[T_hub75]);
                 interf->json_frame_flush();
             }
             return;
         }
 
-        JsonVariant dst = doc[T_hub75].isNull() ? doc.createNestedObject(T_hub75) : doc[T_hub75];
+        JsonVariant dst = doc[T_hub75].isNull() ? doc[T_hub75].to<JsonObject>() : doc[T_hub75];
 
         // copy keys to a destination object
         for (JsonPair kvp : *data)
@@ -291,19 +287,19 @@ void set_hub75(Interface *interf, const JsonObject *data, const char* action){
 
 void getset_tm1637(Interface *interf, const JsonObject *data, const char* action){
     {
-        DynamicJsonDocument doc(DISPLAY_CFG_JSIZE);
+        JsonDocument doc;
         if (!embuifs::deserializeFile(doc, TCONST_fcfg_display)) doc.clear();
 
         // if this is a request with no data, then just provide existing configuration and quit
         if (!data || !(*data).size()){
             if (interf && doc.containsKey(T_tm1637)){
-                interf->json_frame_value(doc[T_tm1637], true);
+                interf->json_frame_value(doc[T_tm1637]);
                 interf->json_frame_flush();
             }
             return;
         }
 
-        JsonVariant dst = doc[T_tm1637].isNull() ? doc.createNestedObject(T_tm1637) : doc[T_tm1637];
+        JsonVariant dst = doc[T_tm1637].isNull() ? doc[T_tm1637].to<JsonObject>() : doc[T_tm1637];
 
         // copy keys to a destination object
         for (JsonPair kvp : *data)
@@ -326,7 +322,7 @@ void event_publisher(void* handler_args, esp_event_base_t base, int32_t id, void
     if (!embui.feeders.available()) return;
 
     // create an interface obj, since we will mostly send value frames, then no need to create large object
-    Interface interf(&embui.feeders, 512);
+    Interface interf(&embui.feeders);
 
     switch (static_cast<evt::lamp_t>(id)){
         // Lamp Power change state

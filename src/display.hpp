@@ -73,9 +73,9 @@ class LEDDisplay {
     // Addresable led strip topology transformation object
     LedTiles tiles;
 
-    bool _start_rmt(const DynamicJsonDocument& doc);
+    bool _start_rmt(const JsonDocument& doc);
     bool _start_rmt_engine();
-    bool _start_hub75(const DynamicJsonDocument& doc);
+    bool _start_hub75(const JsonDocument& doc);
 
 public:
     bool start();
