@@ -1,6 +1,6 @@
 /*
+Copyright © 2023-2024 Emil Muratov (Vortigont)
 Copyright © 2020 Dmytro Korniienko (kDn)
-JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
     This file is part of FireLamp_JeeUI.
 
@@ -488,7 +488,6 @@ void Lamp::setDemoTime(uint32_t seconds){
   demoTime = seconds;
   if(demoTask){
     demoTask->setInterval(demoTime * TASK_SECOND);
-    return;
   }
   esp_err_t err;
   std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_lamp, NVS_READWRITE, &err);
