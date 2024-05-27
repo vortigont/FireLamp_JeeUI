@@ -1,6 +1,6 @@
 /*
+Copyright © 2023-2024 Emil Muratov (Vortigont)
 Copyright © 2020 Dmytro Korniienko (kDn)
-JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
     This file is part of FireLamp_JeeUI.
 
