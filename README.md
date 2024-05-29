@@ -12,9 +12,12 @@ __[CHANGELOG](/CHANGELOG.md)__ | [![PlatformIO CI](https://github.com/vortigont/
 
 </details>
 
-Обсуждение и поддержка данной прошивки идет [на форуме](https://community.alexgyver.ru/threads/wifi-lampa-budilnik-obsuzhdenie-proshivki-firelamp_embui.7257/)
-
 Канал в Telegram для общения пользователей прошивки - [LampDevs](https://t.me/LampDevs)
+
+Группа [ВКонтакте](https://vk.com/club226065124)
+
+Тема на [форуме Гайвера](https://community.alexgyver.ru/threads/wifi-lampa-budilnik-obsuzhdenie-proshivki-firelamp_embui.7257/)
+
 
 
 ### Галерея
