@@ -236,242 +236,242 @@ void EffectWorker::workerset(uint16_t effect){
   // create a new instance of effect child
   switch (static_cast<EFF_ENUM>(effect%256)) // номер может быть больше чем ENUM из-за копирований, находим эффект по модулю
   {
-  case EFF_ENUM::EFF_TIME :
+  case EFF_ENUM::EFF_TETRIS_CLOCK :
     worker = std::make_unique<TetrisClock>(display.getCanvas());
     break;
   case EFF_ENUM::EFF_SWIRL :
-    worker = std::unique_ptr<EffectSwirl>(new EffectSwirl(canvas));
+    worker = std::make_unique<EffectSwirl>(canvas);
     break;
   case EFF_ENUM::EFF_COMET :
-    worker = std::unique_ptr<EffectComet>(new EffectComet(canvas));
+    worker = std::make_unique<EffectComet>(canvas);
     break;
   case EFF_ENUM::EFF_FLOCK :
-    worker = std::unique_ptr<EffectFlock>(new EffectFlock(canvas));
+    worker = std::make_unique<EffectFlock>(canvas);
     break;
   case EFF_ENUM::EFF_PRIZMATA :
-    worker = std::unique_ptr<EffectPrismata>(new EffectPrismata(canvas));
+    worker = std::make_unique<EffectPrismata>(canvas);
     break;
   case EFF_ENUM::EFF_SPIRO :
-    worker = std::unique_ptr<EffectSpiro>(new EffectSpiro(canvas));
+    worker = std::make_unique<EffectSpiro>(canvas);
     break;
   case EFF_ENUM::EFF_METABALLS :
-    worker = std::unique_ptr<EffectMetaBalls>(new EffectMetaBalls(canvas));
+    worker = std::make_unique<EffectMetaBalls>(canvas);
     break;
   case EFF_ENUM::EFF_SINUSOID3 :
-    worker = std::unique_ptr<EffectSinusoid3>(new EffectSinusoid3(canvas));
+    worker = std::make_unique<EffectSinusoid3>(canvas);
     break;
   case EFF_ENUM::EFF_BBALS :
-    worker = std::unique_ptr<EffectBBalls>(new EffectBBalls(canvas));
+    worker = std::make_unique<EffectBBalls>(canvas);
     break;
   case EFF_ENUM::EFF_PAINTBALL :
-    worker = std::unique_ptr<EffectLightBalls>(new EffectLightBalls(canvas));
+    worker = std::make_unique<EffectLightBalls>(canvas);
     break;
   case EFF_ENUM::EFF_PULSE :
-    worker = std::unique_ptr<EffectPulse>(new EffectPulse(canvas));
+    worker = std::make_unique<EffectPulse>(canvas);
     break;
   case EFF_ENUM::EFF_CUBE :
-    worker = std::unique_ptr<EffectBall>(new EffectBall(canvas));
+    worker = std::make_unique<EffectBall>(canvas);
     break;
   case EFF_ENUM::EFF_LIGHTER_TRACES :
-    worker = std::unique_ptr<EffectLighterTracers>(new EffectLighterTracers(canvas));
+    worker = std::make_unique<EffectLighterTracers>(canvas);
     break;
   case EFF_ENUM::EFF_RAINBOW_2D :
-    worker = std::unique_ptr<EffectRainbow>(new EffectRainbow(canvas));
+    worker = std::make_unique<EffectRainbow>(canvas);
     break;
   case EFF_ENUM::EFF_COLORS :
-    worker = std::unique_ptr<EffectColors>(new EffectColors(canvas));
+    worker = std::make_unique<EffectColors>(canvas);
     break;
   case EFF_ENUM::EFF_WHITE_COLOR :
-    worker = std::unique_ptr<EffectWhiteColorStripe>(new EffectWhiteColorStripe(canvas));
+    worker = std::make_unique<EffectWhiteColorStripe>(canvas);
     break;
   case EFF_ENUM::EFF_MATRIX :
-    worker = std::unique_ptr<EffectMatrix>(new EffectMatrix(canvas));
+    worker = std::make_unique<EffectMatrix>(canvas);
     break;
   case EFF_ENUM::EFF_SPARKLES :
-    worker = std::unique_ptr<EffectSparcles>(new EffectSparcles(canvas));
+    worker = std::make_unique<EffectSparcles>(canvas);
     break;
   case EFF_ENUM::EFF_EVERYTHINGFALL :
-    worker = std::unique_ptr<EffectMira>(new EffectMira(canvas));
+    worker = std::make_unique<EffectMira>(canvas);
     break;
   case EFF_ENUM::EFF_FIRE2012 :
-    worker = std::unique_ptr<EffectFire2012>(new EffectFire2012(canvas));
+    worker = std::make_unique<EffectFire2012>(canvas);
     break;
   case EFF_ENUM::EFF_SNOWSTORMSTARFALL :
-    worker = std::unique_ptr<EffectStarFall>(new EffectStarFall(canvas));
+    worker = std::make_unique<EffectStarFall>(canvas);
     break;
   case EFF_ENUM::EFF_3DNOISE :
-    worker = std::unique_ptr<Effect3DNoise>(new Effect3DNoise(canvas));
+    worker = std::make_unique<Effect3DNoise>(canvas);
     break;
   case EFF_ENUM::EFF_CELL :
-    worker = std::unique_ptr<EffectCell>(new EffectCell(canvas));
+    worker = std::make_unique<EffectCell>(canvas);
     break;
   case EFF_ENUM::EFF_T_LEND :
-    worker = std::unique_ptr<EffectTLand>(new EffectTLand(canvas));
+    worker = std::make_unique<EffectTLand>(canvas);
     break;
   case EFF_ENUM::EFF_OSCIL :
-    worker = std::unique_ptr<EffectOscillator>(new EffectOscillator(canvas));
+    worker = std::make_unique<EffectOscillator>(canvas);
     break;
   case EFF_ENUM::EFF_WRAIN : 
-    worker = std::unique_ptr<EffectWrain>(new EffectWrain(canvas));
+    worker = std::make_unique<EffectWrain>(canvas);
     break;
   case EFF_ENUM::EFF_FAIRY : 
   case EFF_ENUM::EFF_FOUNT :
-    worker = std::unique_ptr<EffectFairy>(new EffectFairy(canvas));
+    worker = std::make_unique<EffectFairy>(canvas);
     break;
   case EFF_ENUM::EFF_CIRCLES :
-    worker = std::unique_ptr<EffectCircles>(new EffectCircles(canvas));
+    worker = std::make_unique<EffectCircles>(canvas);
     break;
   case EFF_ENUM::EFF_DRIFT :
-    worker = std::unique_ptr<EffectDrift>(new EffectDrift(canvas));
+    worker = std::make_unique<EffectDrift>(canvas);
     break;
   case EFF_ENUM::EFF_POPCORN :
-    worker = std::unique_ptr<EffectPopcorn>(new EffectPopcorn(canvas));
+    worker = std::make_unique<EffectPopcorn>(canvas);
     break;
   case EFF_ENUM::EFF_TWINKLES :
-    worker = std::unique_ptr<EffectTwinkles>(new EffectTwinkles(canvas));
+    worker = std::make_unique<EffectTwinkles>(canvas);
     break;
   case EFF_ENUM::EFF_WAVES :
-    worker = std::unique_ptr<EffectWaves>(new EffectWaves(canvas));
+    worker = std::make_unique<EffectWaves>(canvas);
     break;
   case EFF_ENUM::EFF_RADAR :
-    worker = std::unique_ptr<EffectRadar>(new EffectRadar(canvas));
+    worker = std::make_unique<EffectRadar>(canvas);
     break;
   case EFF_ENUM::EFF_BENGALL :
-    worker = std::unique_ptr<EffectBengalL>(new EffectBengalL(canvas));
+    worker = std::make_unique<EffectBengalL>(canvas);
     break;
   case EFF_ENUM::EFF_BALLS :
-    worker = std::unique_ptr<EffectBalls>(new EffectBalls(canvas));
+    worker = std::make_unique<EffectBalls>(canvas);
     break;
   case EFF_ENUM::EFF_FIRE2018 :
-    worker = std::unique_ptr<EffectFire2018>(new EffectFire2018(canvas));
+    worker = std::make_unique<EffectFire2018>(canvas);
     break;
   case EFF_ENUM::EFF_RINGS :
-    worker = std::unique_ptr<EffectRingsLock>(new EffectRingsLock(canvas));
+    worker = std::make_unique<EffectRingsLock>(canvas);
     break;
   case EFF_ENUM::EFF_CUBE2 :
-    worker = std::unique_ptr<EffectCube2d>(new EffectCube2d(canvas));
+    worker = std::make_unique<EffectCube2d>(canvas);
     break;
   case EFF_ENUM::EFF_PICASSO :
   case EFF_ENUM::EFF_PICASSO4 :
-    worker = std::unique_ptr<EffectPicasso>(new EffectPicasso(canvas));
+    worker = std::make_unique<EffectPicasso>(canvas);
     break;
   case EFF_ENUM::EFF_STARSHIPS :
-    worker = std::unique_ptr<EffectStarShips>(new EffectStarShips(canvas));
+    worker = std::make_unique<EffectStarShips>(canvas);
     break;
   case EFF_ENUM::EFF_FLAGS :
-    worker = std::unique_ptr<EffectFlags>(new EffectFlags(canvas));
+    worker = std::make_unique<EffectFlags>(canvas);
     break;
   case EFF_ENUM::EFF_LEAPERS :
-    worker = std::unique_ptr<EffectLeapers>(new EffectLeapers(canvas));
+    worker = std::make_unique<EffectLeapers>(canvas);
     break;
   case EFF_ENUM::EFF_LIQUIDLAMP :
-    worker = std::unique_ptr<EffectLiquidLamp>(new EffectLiquidLamp(canvas));
+    worker = std::make_unique<EffectLiquidLamp>(canvas);
     break;
   case EFF_ENUM::EFF_AQUARIUM :
-    worker = std::unique_ptr<EffectAquarium>(new EffectAquarium(canvas));
+    worker = std::make_unique<EffectAquarium>(canvas);
     break;
   case EFF_ENUM::EFF_WHIRL :
-    worker = std::unique_ptr<EffectWhirl>(new EffectWhirl(canvas));
+    worker = std::make_unique<EffectWhirl>(canvas);
     break;
   case EFF_ENUM::EFF_STAR :
-    worker = std::unique_ptr<EffectStar>(new EffectStar(canvas));
+    worker = std::make_unique<EffectStar>(canvas);
     break;
   case EFF_ENUM::EFF_FIREWORKS :
-    worker = std::unique_ptr<EffectFireworks>(new EffectFireworks(canvas));
+    worker = std::make_unique<EffectFireworks>(canvas);
     break;
   case EFF_ENUM::EFF_PACIFIC :
-    worker = std::unique_ptr<EffectPacific>(new EffectPacific(canvas));
+    worker = std::make_unique<EffectPacific>(canvas);
     break;
   case EFF_ENUM::EFF_MUNCH :
-    worker = std::unique_ptr<EffectMunch>(new EffectMunch(canvas));
+    worker = std::make_unique<EffectMunch>(canvas);
     break;
   case EFF_ENUM::EFF_NOISE :
-    worker = std::unique_ptr<EffectNoise>(new EffectNoise(canvas));
+    worker = std::make_unique<EffectNoise>(canvas);
     break;
   case EFF_ENUM::EFF_BUTTERFLY :
-    worker = std::unique_ptr<EffectButterfly>(new EffectButterfly(canvas));
+    worker = std::make_unique<EffectButterfly>(canvas);
     break;
   case EFF_ENUM::EFF_SHADOWS :
-    worker = std::unique_ptr<EffectShadows>(new EffectShadows(canvas));
+    worker = std::make_unique<EffectShadows>(canvas);
     break;
   case EFF_ENUM::EFF_PATTERNS :
-    worker = std::unique_ptr<EffectPatterns>(new EffectPatterns(canvas));
+    worker = std::make_unique<EffectPatterns>(canvas);
     break;
   case EFF_ENUM::EFF_ARROWS :
-    worker = std::unique_ptr<EffectArrows>(new EffectArrows(canvas));
+    worker = std::make_unique<EffectArrows>(canvas);
     break;
   case EFF_ENUM::EFF_NBALLS :
-    worker = std::unique_ptr<EffectNBals>(new EffectNBals(canvas));
+    worker = std::make_unique<EffectNBals>(canvas);
     break;
   case EFF_ENUM::EFF_ATTRACT :
-    worker = std::unique_ptr<EffectAttract>(new EffectAttract(canvas));
+    worker = std::make_unique<EffectAttract>(canvas);
     break;
   case EFF_ENUM::EFF_SNAKE :
-    worker = std::unique_ptr<EffectSnake>(new EffectSnake(canvas));
+    worker = std::make_unique<EffectSnake>(canvas);
     break;
   case EFF_ENUM::EFF_NEXUS :
-    worker = std::unique_ptr<EffectNexus>(new EffectNexus(canvas));
+    worker = std::make_unique<EffectNexus>(canvas);
     break;
   case EFF_ENUM::EFF_MAZE :
-    worker = std::unique_ptr<EffectMaze>(new EffectMaze(canvas));
+    worker = std::make_unique<EffectMaze>(canvas);
     break;
   case EFF_ENUM::EFF_FRIZZLES :
-    worker = std::unique_ptr<EffectFrizzles>(new EffectFrizzles(canvas));
+    worker = std::make_unique<EffectFrizzles>(canvas);
     break;
   case EFF_ENUM::EFF_POLARL :
-    worker = std::unique_ptr<EffectPolarL>(new EffectPolarL(canvas));
+    worker = std::make_unique<EffectPolarL>(canvas);
     break;
   case EFF_ENUM::EFF_SNAKEISLAND :
-    worker = std::unique_ptr<EffectSnakeIsland>(new EffectSnakeIsland(canvas));
+    worker = std::make_unique<EffectSnakeIsland>(canvas);
     break;
    case EFF_ENUM::EFF_SMOKEBALLS :
-    worker = std::unique_ptr<EffectSmokeballs>(new EffectSmokeballs(canvas));
+    worker = std::make_unique<EffectSmokeballs>(canvas);
     break;
    case EFF_ENUM::EFF_RACER :
-    worker = std::unique_ptr<EffectRacer>(new EffectRacer(canvas));
+    worker = std::make_unique<EffectRacer>(canvas);
     break;
    case EFF_ENUM::EFF_MAGMA :
-    worker = std::unique_ptr<EffectMagma>(new EffectMagma(canvas));
+    worker = std::make_unique<EffectMagma>(canvas);
     break;
    case EFF_ENUM::EFF_FIRE2021 :
-    worker = std::unique_ptr<EffectFire2021>(new EffectFire2021(canvas));
+    worker = std::make_unique<EffectFire2021>(canvas);
     break;
    case EFF_ENUM::EFF_PUZZLES :
-    worker = std::unique_ptr<EffectPuzzles>(new EffectPuzzles(canvas));
+    worker = std::make_unique<EffectPuzzles>(canvas);
     break;
    case EFF_ENUM::EFF_PILE :
-    worker = std::unique_ptr<EffectPile>(new EffectPile(canvas));
+    worker = std::make_unique<EffectPile>(canvas);
     break;
    case EFF_ENUM::EFF_DNA :
-    worker = std::unique_ptr<EffectDNA>(new EffectDNA(canvas));
+    worker = std::make_unique<EffectDNA>(canvas);
     break;
    case EFF_ENUM::EFF_SMOKER :
-    worker = std::unique_ptr<EffectSmoker>(new EffectSmoker(canvas));
+    worker = std::make_unique<EffectSmoker>(canvas);
     break;
   case EFF_ENUM::EFF_MIRAGE :
-    worker = std::unique_ptr<EffectMirage>(new EffectMirage(canvas));
+    worker = std::make_unique<EffectMirage>(canvas);
     break;
   case EFF_ENUM::EFF_WATERCOLORS :
-    worker = std::unique_ptr<EffectWcolor>(new EffectWcolor(canvas));
+    worker = std::make_unique<EffectWcolor>(canvas);
     break;
   case EFF_ENUM::EFF_RADIALFIRE :
-    worker = std::unique_ptr<EffectRadialFire>(new EffectRadialFire(canvas));
+    worker = std::make_unique<EffectRadialFire>(canvas);
     break;
   case EFF_ENUM::EFF_SPBALS :
-    worker = std::unique_ptr<EffectSplashBals>(new EffectSplashBals(canvas));
+    worker = std::make_unique<EffectSplashBals>(canvas);
     break;
   case EFF_ENUM::EFF_FLOWER :
-    worker = std::unique_ptr<EffectFlower>(new EffectFlower(canvas));
+    worker = std::make_unique<EffectFlower>(canvas);
     break;
   case EFF_ENUM::EFF_VU :
-    worker = std::unique_ptr<EffectVU>(new EffectVU(canvas, lampstate->mic_gpio));
+    worker = std::make_unique<EffectVU>(canvas, lampstate->mic_gpio);
     break;
   case EFF_ENUM::EFF_OSC :
-    worker = std::unique_ptr<EffectOsc>(new EffectOsc(canvas, lampstate->mic_gpio));
+    worker = std::make_unique<EffectOsc>(canvas, lampstate->mic_gpio);
     break;
 
   default:
-    worker = std::unique_ptr<EffectNone>(new EffectNone(canvas)); // std::unique_ptr<EffectCalc>(new EffectCalc());
+    worker = std::make_unique<EffectNone>(canvas); // std::make_unique<EffectCalc>(new EffectCalc());
   }
 
   if(worker){

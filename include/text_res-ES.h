@@ -123,9 +123,9 @@ static constexpr const char* TEFF_073  = "Corredor Espacial";
 static constexpr const char* TEFF_074  = "Humo";
 static constexpr const char* TEFF_075  = "Lampara de Fuego";
 static constexpr const char* TEFF_076  = "Espejismo";
-static constexpr const char* TEFF_250  = "Reloj";
-static constexpr const char* TEFF_254  = "Analizador de frecuencia";
-static constexpr const char* TEFF_255  = "Osciloscopio";
+static constexpr const char* TEFF_077  = "Tetris Clock";
+static constexpr const char* TEFF_078  = "Analizador de frecuencia";
+static constexpr const char* TEFF_079  = "Osciloscopio";
 
 
 // -------------------------

@@ -123,9 +123,9 @@ static constexpr const char* TEFF_073 = "Космо-Рейсер";
 static constexpr const char* TEFF_074 = "Дим";
 static constexpr const char* TEFF_075 = "Вогняна Лампа";
 static constexpr const char* TEFF_076 = "Міраж";
-static constexpr const char* TEFF_250 = "Годинник";
-static constexpr const char* TEFF_254 = "Частотний аналізатор";
-static constexpr const char* TEFF_255 = "Осцилограф";
+static constexpr const char* TEFF_077 = "Часы-Тетрис";
+static constexpr const char* TEFF_078 = "Частотний аналізатор";
+static constexpr const char* TEFF_079 = "Осцилограф";
 
 #define DFTINTF_00A "Ефект"
 #define DFTINTF_020 "Мікрофон"
