@@ -1015,7 +1015,7 @@ void EffectBBalls::load(){
     int xx = fb->w()/(balls.size()+1) * (++i);
     bball.x = xx;
     //LOG(printf_P, PSTR("Ball n:%d x:%d\n"), i, xx);
-    bball.vimpact = bballsVImpact0 + EffectMath::randomf( - 2., 2.);                   // And "pop" up at vImpact0
+    bball.vimpact = EffectMath::sqrt(-2 * bballsGRAVITY * bballsH0) + EffectMath::randomf( - 2., 2.);                   // And "pop" up at vImpact0
     bball.cor = 0.9 - float(i) / pow(balls.size(), 2);
     if (halo){
       bball.brightness = 200;
@@ -1052,12 +1052,12 @@ bool EffectBBalls::bBallsRoutine()
       bballsHi = 0.0f;                            // If the ball crossed the threshold of the "ground," put it back on the ground
       bball.vimpact = bball.cor * bball.vimpact ;   // and recalculate its new upward velocity as it's old velocity * COR
 
-      //if ( bball.vimpact < 0.01 ) bball.vimpact = bballsVImpact0;  // If the ball is barely moving, "pop" it back up at vImpact0
+      //if ( bball.vimpact < 0.01 ) bball.vimpact = EffectMath::sqrt(-2 * bballsGRAVITY * bballsH0);  // If the ball is barely moving, "pop" it back up at vImpact0
       if ( bball.vimpact < 0.1 ) // сделал, чтобы мячики меняли свою прыгучесть и положение каждый цикл
       {
         bball.cor = 0.90 - (EffectMath::randomf(0., 9.)) / pow(EffectMath::randomf(4., 9.), 2.); // сделал, чтобы мячики меняли свою прыгучесть каждый цикл
         bball.shift = bball.cor >= 0.85;                             // если мячик максимальной прыгучести, то разрешаем ему сдвинуться
-        bball.vimpact = bballsVImpact0;
+        bball.vimpact = EffectMath::sqrt(-2 * bballsGRAVITY * bballsH0);
       }
     }
 

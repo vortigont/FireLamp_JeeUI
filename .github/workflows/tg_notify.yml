@@ -1,0 +1,29 @@
+# Telegram notification sender
+
+# https://gist.github.com/nafiesl/4ad622f344cd1dc3bb1ecbe468ff9f8a                                                                                              
+# https://stackoverflow.com/questions/32423837/telegram-bot-how-to-get-a-group-chat-id                                                                          
+# https://stackoverflow.com/questions/75283870/how-to-send-telegram-message-to-a-topic-thread
+
+name: Telegram Release notifications
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    name: Send Message
+    runs-on: ubuntu-latest
+    steps:
+      - name: send Telegram Message about release
+        uses: Ofceab-Studio/telegram-action@1.0.1
+        with:
+          to: ${{ secrets.LAMPDEVS_GID }}
+          thread_id: ${{ secrets.LAMPDEVS_ANNOUNCE_TOPIC_ID }}
+          token: ${{ secrets.LAMPDEVS_BOT_TOKEN }}
+          disable_web_page_preview: true
+          format: markdown
+          message: |
+            *Новый выпуск!*
+            ${{ github.event.repository.name }} ${{ github.event.release.tag_name }}
+            ${{ github.event.release.body }}
+            [${{ github.repository }}](https://github.com/${{ github.repository }})

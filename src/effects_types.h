@@ -168,9 +168,9 @@ EFF_RACER,                                    // Космо-Гонщик
 EFF_SMOKER,                                   // Дым
 EFF_FIRE2021,                                 // Огонь от Степко
 EFF_MIRAGE,                                   // Мираж
-EFF_TIME = (250U),                             // Часы (служебный, смещаем в конец)
-EFF_VU = (254U),                              // Частотный анализатор (служебный, смещаем в конец)
-EFF_OSC = (255U)                             // Осциллограф
+EFF_TETRIS_CLOCK,                             // Часы-Тетрис
+EFF_VU,                                       // Частотный анализатор
+EFF_OSC                                       // Осциллограф
 } EFF_ENUM;
 
 /** набор указателей на строки с именами эффектов
@@ -182,7 +182,7 @@ static constexpr std::array<const char*, 256> T_EFFNAMEID = {
   TEFF_016, TEFF_017, TEFF_018, TEFF_019, TEFF_020, TEFF_021, TEFF_022, TEFF_023, TEFF_024, TEFF_025, TEFF_026, TEFF_027, TEFF_028, TEFF_029, TEFF_030, TEFF_031, // 16-31
   TEFF_032, TEFF_033, TEFF_034, TEFF_035, TEFF_036, TEFF_037, TEFF_038, TEFF_039, TEFF_040, TEFF_041, TEFF_042, TEFF_043, TEFF_044, TEFF_045, TEFF_046, TEFF_047, // 32 - 47
   TEFF_048, TEFF_049, TEFF_050, TEFF_051, TEFF_052, TEFF_053, TEFF_054, TEFF_055, TEFF_056, TEFF_057, TEFF_058, TEFF_059, TEFF_060, TEFF_061, TEFF_062, TEFF_063, // 48 - 63
-  TEFF_064, TEFF_065, TEFF_066, TEFF_067, TEFF_068, TEFF_069, TEFF_070, TEFF_071, TEFF_072, TEFF_073, TEFF_074, TEFF_075, TEFF_076, TEFF_000, TEFF_000, TEFF_000, // 64 - 79
+  TEFF_064, TEFF_065, TEFF_066, TEFF_067, TEFF_068, TEFF_069, TEFF_070, TEFF_071, TEFF_072, TEFF_073, TEFF_074, TEFF_075, TEFF_076, TEFF_077, TEFF_078, TEFF_079, // 64 - 79
   TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, // 80 - 95
   TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, // 96 - 111
   TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, // 112 - 127
@@ -193,7 +193,7 @@ static constexpr std::array<const char*, 256> T_EFFNAMEID = {
   TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, // 192 - 207
   TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, // 208 - 223
   TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, // 224 - 39
-  TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_250, TEFF_000, TEFF_000, TEFF_000, TEFF_254, TEFF_255  // 240 - 255
+  TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000  // 240 - 255
 };
 
 /**
@@ -206,7 +206,7 @@ static constexpr uint8_t T_EFFVER[] = {
   1, 1, 3, 1, 3, 7, 5, 2, 1, 5, 5, 7, 7, 2, 1, 5, // 16-31
   5, 5, 5, 3, 7, 3, 4, 3, 3, 1, 4, 5, 7, 1, 1, 3, // 32 - 47
   3, 6, 6, 6, 4, 7, 5, 4, 1, 5, 6, 3, 1, 5, 7, 6, // 48 - 63
-  5, 1, 1, 5, 4, 1,11, 1, 3, 1, 1, 1, 1, 0, 0, 0, // 64 - 79
+  5, 1, 1, 5, 4, 1,11, 1, 3, 1, 1, 1, 1, 1, 2, 2, // 64 - 79
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 80 - 95
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 96 - 111
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 112 - 127
@@ -217,7 +217,7 @@ static constexpr uint8_t T_EFFVER[] = {
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 192 - 207
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 208 - 223
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 224 - 239
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 0, 0, 2, 2, // 240 - 255
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 240 - 255
 };
 
 /**
@@ -354,10 +354,10 @@ static constexpr const char* E_TEST2     = "{" COTNROLS_PREFIX SF(SET_ALL_EFFFLA
  */
 static constexpr std::array<const char *, 256> T_EFFUICFG = {
   E_DEFUI, E_WHITE,   E_COLORS,   E_DEFMICUI, E_SPARCLES, E_4PAL, E_STARFAIL,   E_MATRIX,  E_WCOLOR,    E_LIGHT2,    E_CUBE,   E_PULS,  E_4PAL,   E_BBUSH,    E_2,        E_PALMICUI, // 0-15
-  E_CELL,  E_PUZZLES, E_TLAND,    E_SPBALS,   E_3PAL,     E_WRAIN, E_FAIRY,      E_FOUNT,  E_BBALLS,    E_SINUS,     E_4PAL,   E_3PAL,  E_COMET,  E_4PAL_MIC, E_PRIZMATA, E_FLOCK, // 16-31
-  E_3PAL,  E_DRIFT,   E_POPCORN,  E_4PAL,     E_RADAR255, E_WAVES, E_F2012_MIC,  E_FAIRY,  E_4PAL,      E_DNA,       E_F2018,  E_CLOCK, E_CUBE2D, E_NFIRE,    E_PICAS,    E_SSHIPS, // 32 - 47
-  E_FLAGS, E_LEAPERS, E_3PAL_MIC, E_3PAL_MIC, E_AQUARIUM, E_FWORK, E_2,          E_MUNCH,  E_CNOISE,    E_BUTTERFLY, E_SHAD,   E_PATT,  E_ARR,    E_NBAL,     E_ATTRACT,  E_SNAKE, // 48 - 63
-  E_NEXUS, E_DEFUI,   E_DEFUI,    E_POLAR,    E_2_MIC,    E_NEXUS, E_SMOKBALLS,  E_MBL,    E_LIQLAM,    E_3PAL,      E_SMOKER, E_NFIRE, E_MIRAGE, E_DEFUI,    E_DEFUI,    E_DEFUI, // 64 - 79
+  E_CELL,  E_PUZZLES, E_TLAND,    E_SPBALS,   E_3PAL,     E_WRAIN, E_FAIRY,      E_FOUNT,  E_BBALLS,    E_SINUS,     E_4PAL,   E_3PAL,  E_COMET,  E_4PAL_MIC, E_PRIZMATA, E_FLOCK,    // 16-31
+  E_3PAL,  E_DRIFT,   E_POPCORN,  E_4PAL,     E_RADAR255, E_WAVES, E_F2012_MIC,  E_FAIRY,  E_4PAL,      E_DNA,       E_F2018,  E_CLOCK, E_CUBE2D, E_NFIRE,    E_PICAS,    E_SSHIPS,   // 32 - 47
+  E_FLAGS, E_LEAPERS, E_3PAL_MIC, E_3PAL_MIC, E_AQUARIUM, E_FWORK, E_2,          E_MUNCH,  E_CNOISE,    E_BUTTERFLY, E_SHAD,   E_PATT,  E_ARR,    E_NBAL,     E_ATTRACT,  E_SNAKE,    // 48 - 63
+  E_NEXUS, E_DEFUI,   E_DEFUI,    E_POLAR,    E_2_MIC,    E_NEXUS, E_SMOKBALLS,  E_MBL,    E_LIQLAM,    E_3PAL,      E_SMOKER, E_NFIRE, E_MIRAGE, E_TETRIS_CLK,  E_FREQ,  E_OSC,      // 64 - 79
   E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, // 80 - 95
   E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, // 96 - 111
   E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, // 112 - 127
@@ -368,7 +368,7 @@ static constexpr std::array<const char *, 256> T_EFFUICFG = {
   E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, // 192 - 207
   E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, // 208 - 223
   E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, // 224 - 39
-  E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_TETRIS_CLK,  E_1,     E_DEFUI, E_DEFUI, E_FREQ,  E_OSC  // 240 - 255
+  E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI  // 240 - 255
 };
 
 /**
@@ -397,11 +397,6 @@ static constexpr std::array<const char *, 256> T_EFFUICFG = {
 //#define BALLS_AMOUNT         (7U)                 // максимальное количество "шариков"
 #define CLEAR_PATH             (1U)                 // очищать путь
 #define TRACK_STEP             (70U)                // длина хвоста шарика (чем больше цифра, тем хвост короче)
-
-// --------------------------- эффект мячики ----------------------
-#define bballsGRAVITY          (-9.7f)               // Downward (negative) acceleration of gravity in m/s^2
-#define bballsH0               (2)                   // Starting height, in meters, of the ball (strip length)
-#define bballsVImpact0         (EffectMath::sqrt(-2 * bballsGRAVITY * bballsH0))
 
 // ------------- метель -------------
 #define SNOW_DENSE             (60U)                 // плотность снега

@@ -377,7 +377,7 @@ void Lamp::_switcheffect(effswitch_t action, bool fade, uint16_t effnb) {
       return;
   }
 
-  LOGD(T_lamp, printf, "switcheffect() action=%d, fade=%d, effnb=%d\n", action, fade, _swState.pendingEffectNum);
+  LOGD(T_lamp, printf, "switcheffect() action=%u, fade=%d, effnb=%d\n", static_cast<uint32_t>(action), fade, _swState.pendingEffectNum);
 
   // проверяем нужно ли использовать затухание (только если лампа включена, и не идет разжигание)
   if (fade && vopts.pwrState && _swState.fadeState <1){

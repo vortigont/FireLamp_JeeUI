@@ -12,14 +12,17 @@ __[CHANGELOG](/CHANGELOG.md)__ | [![PlatformIO CI](https://github.com/vortigont/
 
 </details>
 
-Обсуждение и поддержка данной прошивки идет [на форуме](https://community.alexgyver.ru/threads/wifi-lampa-budilnik-obsuzhdenie-proshivki-firelamp_embui.7257/)
-
 Канал в Telegram для общения пользователей прошивки - [LampDevs](https://t.me/LampDevs)
+
+Группа [ВКонтакте](https://vk.com/club226065124)
+
+Тема на [форуме Гайвера](https://community.alexgyver.ru/threads/wifi-lampa-budilnik-obsuzhdenie-proshivki-firelamp_embui.7257/)
+
 
 
 ### Галерея
 
-[![ESP32 FireLamp RGB HUB75 Informer panel Demo](https://img.youtube.com/vi/wbU1bn6YsDw/0.jpg)](https://www.youtube.com/watch?v=wbU1bn6YsDw)
+[![ESP32 FireLamp RGB HUB75 Informer panel Demo](https://img.youtube.com/vi/ZrAhoebgl2Q/0.jpg)](https://www.youtube.com/watch?v=ZrAhoebgl2Q)
 
 
 ## Содержание
@@ -28,6 +31,7 @@ __[CHANGELOG](/CHANGELOG.md)__ | [![PlatformIO CI](https://github.com/vortigont/
 - [Содержание](#содержание)
   - [WiKi проекта](#wiki-проекта)
   - [Концепт](#концепт)
+  - [Библиотеки, используемые в проекте](#библиотеки-используемые-в-проекте)
   - [ESP8266 vs ESP32](#esp8266-vs-esp32)
 
 ### WiKi проекта

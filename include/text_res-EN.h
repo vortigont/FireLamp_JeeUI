@@ -124,9 +124,9 @@ static constexpr const char* TEFF_073 = "Space Racer";
 static constexpr const char* TEFF_074 = "Smoke" ;
 static constexpr const char* TEFF_075 = "Fire Lamp";
 static constexpr const char* TEFF_076 = "Mirage";
-static constexpr const char* TEFF_250 = "Clock";
-static constexpr const char* TEFF_254 = "Frequency Analyzer";
-static constexpr const char* TEFF_255 = "Oscilloscope";
+static constexpr const char* TEFF_077 = "Tetris Clock";
+static constexpr const char* TEFF_078 = "Frequency Analyzer";
+static constexpr const char* TEFF_079 = "Oscilloscope";
 
 // -------------------------
 #define DFTINTF_00A "Effect"

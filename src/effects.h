@@ -96,6 +96,9 @@ public:
 
 //----- Эффект "Прыгающие Мячики"
 // перевод на субпиксельную графику kostyamat
+#define bballsGRAVITY          (-9.7f)               // Downward (negative) acceleration of gravity in m/s^2
+#define bballsH0               (2)                   // Starting height, in meters, of the ball (strip length)
+
 class EffectBBalls : public EffectCalc {
     struct Ball {
         uint8_t color;              // прикручено при адаптации для разноцветных мячиков
