@@ -124,23 +124,21 @@ GenericWidget::GenericWidget(const char* wlabel, unsigned periodic) : label(wlab
   ts.addTask(*this);
 }
 
-JsonVariant GenericWidget::load_cfg_from_NVS(const char* lbl){
+void GenericWidget::load_cfg_from_NVS(JsonObject obj, const char* lbl){
   JsonDocument doc;
-
   // it does not matter if config file does not exist or requested object is missing
   // we should anyway call load_cfg to let derived class implement any default values configuration
   embuifs::deserializeFile(doc, T_widgets_cfg);
-  return doc[lbl];
+  JsonObjectConst o = doc[lbl];
+  for (JsonPairConst kvp : o){
+    obj[kvp.key()] = kvp.value();
+  }
 }
 
-JsonVariant GenericWidget::getConfig() const {
+void GenericWidget::getConfig(JsonObject obj) const {
   LOGD(T_Widget, printf, "getConfig for widget:%s\n", label);
 
-  JsonDocument doc;
-  JsonVariant cfg( doc[label].to<JsonObject>() );
-
-  generate_cfg(cfg);
-  return cfg;
+  generate_cfg(obj);
 }
 
 void GenericWidget::setConfig(JsonVariantConst cfg){
@@ -152,13 +150,23 @@ void GenericWidget::setConfig(JsonVariantConst cfg){
   save(cfg);
 }
 
+void GenericWidget::load(){
+  JsonDocument doc;
+  embuifs::deserializeFile(doc, T_widgets_cfg);
+  load_cfg(doc[label]);
+  start();
+}
+
 void GenericWidget::load(JsonVariantConst cfg){
   load_cfg(cfg);
   start();
 }
 
 void GenericWidget::save(){
-  save(getConfig());
+  JsonDocument doc;
+  embuifs::deserializeFile(doc, T_widgets_cfg);
+  getConfig(doc[label].to<JsonObject>());
+  embuifs::serialize2file(doc, T_widgets_cfg);
 }
 
 void GenericWidget::save(JsonVariantConst cfg){
@@ -585,16 +593,16 @@ void WidgetManager::stop(const char* label){
   }
 }
 
-JsonVariant WidgetManager::getConfig(const char* label){
+void WidgetManager::getConfig(JsonObject obj, const char* label){
   LOGV(T_WdgtMGR, printf, "getConfig for: %s\n", label);
 
   auto i = std::find_if(_widgets.begin(), _widgets.end(), MatchLabel<widget_pt>(label));
   if ( i != _widgets.end() ) {
-    return (*i)->getConfig();
+    return (*i)->getConfig(obj);
   }
 
   // widget instance is not created, try to load from FS config
-  return GenericWidget::load_cfg_from_NVS(label);
+  GenericWidget::load_cfg_from_NVS(obj, label);
 }
 
 void WidgetManager::setConfig(const char* label, JsonVariantConst cfg){
