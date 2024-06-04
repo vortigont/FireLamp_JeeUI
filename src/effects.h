@@ -2137,7 +2137,7 @@ class EffectFlower : public EffectCalc {
 /*
     Effect "Tetris clock"
     based on https://github.com/witnessmenow/WiFi-Tetris-Clock
-*/
+
 class TetrisClock : public EffectCalc {
     LedFB_GFX   screen;
     TetrisMatrixDraw t_clk;     // Main clock
@@ -2168,3 +2168,4 @@ class TetrisClock : public EffectCalc {
     void load() override; 
     bool run() override;
 };
+*/

@@ -61,9 +61,6 @@ class LEDDisplay {
     EOrder _color_ordr;     // FastLED color order for sw stripes
     uint8_t _brt{32};       // backend engine brightness, if supported
 
-    // An object ref I'll use to access LED device
-    DisplayEngine *_dengine = nullptr;
-
     // LED stripe matrix with a desired topology and layout  
     std::shared_ptr< LedFB<CRGB> > _canvas;
 
@@ -78,6 +75,10 @@ class LEDDisplay {
     bool _start_hub75(const JsonDocument& doc);
 
 public:
+    // An object ref I'll use to access LED rendering engine
+    DisplayEngine<CRGB> *_dengine = nullptr;
+
+    // load configuration and create objects for respective backend
     bool start();
 
     // *** Getters

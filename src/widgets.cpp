@@ -49,7 +49,7 @@
 
 // размеры шрифтов при выводе времени
 
-// Adfruit fonts
+// Adafruit fonts
 #include "Fonts/Org_01.h"                   // классный мелкий квадратный шрифт 5х5 /english/
 //#include "Fonts/Picopixel.h"                // proportional up to 5x5 3x5  /english/
 #include "Fonts/TomThumb.h"                 // 3x5 /english/
@@ -73,7 +73,6 @@
 #include "CrystalNormal8.h"                 // "01:33:30" - тонкий, 1-2 пикселя, занимает пол экрана в высоту, и почти весь в ширину
 #include "CrystalNormal10.h"                // "01:35:5" пушка! не влезает последний символ
 
-#define WIDGETS_CFG_JSIZE   4096
 
 #define CLOCK_DEFAULT_YOFFSET   14          // default offset for clock widget
 
@@ -196,6 +195,16 @@ void GenericGFXWidget::releaseOverlay(){
   delete(screen);
   screen = nullptr;
   //overlay.reset();
+}
+
+bool GenericGFXWidget::getCanvas(){
+  if (canvas) return true;
+  auto c = display.getCanvas();   // obtain canvas buffer
+  if (!c) return false;                 // failed to allocate overlay, i.e. display configuration has not been done yet
+  LOGD(T_Widget, printf, "%s obtain canvas\n", label);
+  canvas = std::make_unique<LedFB_GFX>(c);
+  //canvas->setRotation(2);            // adafruit coordinates are different from LedFB, so need to rotate it
+  return true;
 }
 
 
@@ -609,7 +618,8 @@ void WidgetManager::_spawn(const char* label, JsonVariantConst cfg, bool persist
   std::unique_ptr<GenericWidget> w;
 
   if(std::string_view(label).compare(T_clock) == 0){
-    w = std::make_unique<ClockWidget>();
+    w = std::make_unique<TextOverlay>();
+    //w = std::make_unique<ClockWidget>();
   } else if(std::string_view(label).compare(T_alrmclock) == 0){
     w = std::make_unique<AlarmClock>();
   } else
@@ -659,3 +669,150 @@ GenericWidget* WidgetManager::getWidgetPtr(const char* label){
 // Widgets Manager instance
 WidgetManager informer;
 
+// *** ClockWidget
+TextOverlay::TextOverlay() : GenericGFXWidget(T_clock, TASK_SECOND) {
+  esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, TextOverlay::_event_hndlr, this, &_hdlr_lmp_change_evt);
+  esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_STATE_EVENTS, ESP_EVENT_ANY_ID, TextOverlay::_event_hndlr, this, &_hdlr_lmp_state_evt);
+
+  fb = display.getCanvas();
+  ovr_fb = display.getOverlay();
+}
+
+TextOverlay::~TextOverlay(){
+  if (_hdlr_lmp_change_evt){
+    esp_event_handler_instance_unregister_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, _hdlr_lmp_change_evt);
+    _hdlr_lmp_change_evt = nullptr;
+  }
+  if (_hdlr_lmp_state_evt){
+    esp_event_handler_instance_unregister_with(evt::get_hndlr(), LAMP_STATE_EVENTS, ESP_EVENT_ANY_ID, _hdlr_lmp_state_evt);
+    _hdlr_lmp_state_evt = nullptr;
+  }
+}
+
+void TextOverlay::load_cfg(JsonVariantConst cfg){
+  getCanvas();
+
+  //u8g2_font_unifont_t_cyrillic
+  _textmask = std::make_unique<Arduino_Canvas_Mono>(_cw, _ch, canvas.get());
+  _textmask->begin();
+  _textmask->setFont(u8g2_font_unifont_t_cyrillic);
+  //_textmask->setFont(u8g2_font_crox1cb_tf);
+  _textmask->setUTF8Print(true);
+  //_textmask->setRotation(2);
+
+  texture_ovr_cb_t s { [&](){ _ovr_blend(); } }; 
+
+  display._dengine->_stack.push_back( s );
+
+  // start mode switcher timer
+  if (!_tmr_mode){
+    _tmr_mode = xTimerCreate("modeT",
+                              pdMS_TO_TICKS(250),
+                              pdTRUE,
+                              static_cast<void*>(this),
+                              [](TimerHandle_t h) { static_cast<TextOverlay*>(pvTimerGetTimerID(h))->_mode_switcher(); }
+                            );
+    if (_tmr_mode)
+      xTimerStart( _tmr_mode, portMAX_DELAY );
+  }
+
+}
+
+void TextOverlay::generate_cfg(JsonVariant cfg) const {
+
+}
+
+void TextOverlay::widgetRunner(){
+  _textmask->fillScreen(BLACK);
+  _textmask->setCursor(tpos_x, tpos_y);
+  //_textmask->printf("Магма:%d", cnt);
+  _textmask->print("Магма");
+  //_textmask->flush();
+}
+
+void TextOverlay::start(){
+  // request lamp's status to discover it's power state
+  EVT_POST(LAMP_GET_EVENTS, e2int(evt::lamp_t::pwr));
+}
+
+void TextOverlay::stop(){
+  disable();
+  releaseOverlay();
+}
+
+void TextOverlay::_event_hndlr(void* handler, esp_event_base_t base, int32_t id, void* event_data){
+  LOGV(T_clock, printf, "EVENT %s:%d\n", base, id);
+  //if ( base == LAMP_CHANGE_EVENTS )
+    return static_cast<TextOverlay*>(handler)->_lmpChEventHandler(base, id, event_data);
+}
+
+void TextOverlay::_lmpChEventHandler(esp_event_base_t base, int32_t id, void* data){
+  switch (static_cast<evt::lamp_t>(id)){
+    // Power control
+    case evt::lamp_t::pwron :
+      LOGI(T_clock, println, "activate widget");
+      redraw = true;
+      enable();
+      break;
+    case evt::lamp_t::pwroff :
+      LOGI(T_clock, println, "suspend widget");
+      stop();
+      break;
+    default:;
+  }
+}
+
+
+void TextOverlay::_ovr_blend(){
+  //auto b = _textmask->getFramebuffer();
+  blendBitMap(opos_x, opos_y, _textmask->getFramebuffer(), _cw, _ch);
+}
+
+
+void TextOverlay::blendBitMap(int16_t x, int16_t y, const uint8_t* bitmap, int16_t w, int16_t h){
+  int16_t byteWidth = (w + 7) / 8; // Bitmap scanline pad = whole byte
+  uint8_t byte = 0;
+
+  for (int16_t j = 0; j < h; j++, y++)
+  {
+    for (int16_t i = 0; i < w; i++)
+    {
+      if (i & 7)
+      {
+        byte <<= 1;
+      }
+      else
+      {
+        byte = bitmap[j * byteWidth + i / 8];
+      }
+
+      //canvas->writePixel(x+i, y, alphaBlend(fb->at(x+i, y), byte & 0x80 ? CRGB::Blue : CRGB::Gray,  byte & 0x80 ? 5 : 250 ) );
+      //fb->at( x+i, y) = alphaBlend(fb->at(x+i, y), byte & 0x80 ? CRGB::Blue : CRGB::Gray,  byte & 0x80 ? 5 : 250 );
+      nblend(fb->at( x+i, y), byte & 0x80 ? CRGB::Red : CRGB::White, byte & 0x80 ? 208 : 5);  // = alphaBlend(fb->at(x+i, y), byte & 0x80 ? CRGB::Blue : CRGB::Gray,  byte & 0x80 ? 5 : 250 );
+
+/*
+      if (byte & 0x80)
+      {
+        //writePixel(x + i, y, color);
+        fb->at(x+i, y) = ( alphaBlend(byte & 0x80 ? CRGB::Plum : CRGB::Gray, fb->at(x+i, y),  byte & 0x80 ? 64 : 192 ) );
+      }
+*/
+    }
+  }
+}
+
+
+void TextOverlay::_mode_switcher(){
+
+  tpos_x -= 3;
+  if (tpos_x < -30) tpos_x = 40;
+
+  opos_x += cx;
+  opos_y += cy;
+
+  if (opos_x == 32 || opos_x == -10 ) cx *= -1;
+
+  if (opos_y == 16 || opos_y == -5 ) cy *= -1;
+
+  widgetRunner();
+}

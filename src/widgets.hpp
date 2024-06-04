@@ -46,6 +46,7 @@
 #include "ui.h"
 #include "evtloop.h"
 #include "char_const.h"
+#include "canvas/Arduino_Canvas_Mono.h"
 
 #define DEFAULT_TEXT_COLOR  54000
 
@@ -157,9 +158,13 @@ class GenericGFXWidget : public GenericWidget {
 
 
 protected:
+    std::unique_ptr<LedFB_GFX> canvas;
     LedFB_GFX   *screen = nullptr;
     // буфер оверлея
     //std::shared_ptr<LedFB<CRGB> > overlay;
+
+    // obtain canvas pointer
+    bool getCanvas();
 
     // make/release display overlay
     bool getOverlay();
@@ -240,6 +245,55 @@ public:
     void start() override;
     void stop() override;
 };
+
+class TextOverlay : public GenericGFXWidget {
+    std::shared_ptr< LedFB<CRGB> > fb;
+    std::shared_ptr< LedFB<CRGB> > ovr_fb;
+
+    TimerHandle_t _tmr_mode = nullptr;
+
+    std::unique_ptr<Arduino_Canvas_Mono> _textmask;
+
+    int cnt{5}, tpos_x{48}, tpos_y{14}, opos_x{0}, opos_y{0};
+    uint32_t _cw{48}, _ch{16};
+
+    int cx = 1, cy = 1;
+
+    // flag that indicates screen needs a refresh
+    bool redraw;
+
+    esp_event_handler_instance_t _hdlr_lmp_change_evt = nullptr;
+    esp_event_handler_instance_t _hdlr_lmp_state_evt = nullptr;
+
+    // pack class configuration into JsonObject
+    void generate_cfg(JsonVariant cfg) const override;
+
+    // load class configuration into JsonObject
+    void load_cfg(JsonVariantConst cfg) override;
+
+    static void _event_hndlr(void* handler, esp_event_base_t base, int32_t id, void* event_data);
+
+    // change events handler
+    void _lmpChEventHandler(esp_event_base_t base, int32_t id, void* data);
+
+    // set events handler
+    //void _lmpSetEventHandler(esp_event_base_t base, int32_t id, void* data);
+    void _ovr_blend();
+
+    void _mode_switcher();
+
+public:
+    TextOverlay();
+    ~TextOverlay();
+
+    void widgetRunner() override;
+
+    void start() override;
+    void stop() override;
+
+    void blendBitMap(int16_t x, int16_t y, const uint8_t* bitmap, int16_t w, int16_t h);
+};
+
 
 class WidgetManager {
 
@@ -356,6 +410,13 @@ public:
  * 
  */
 void register_widgets_handlers();
+
+
+static uint8_t inline alphaBlend( uint8_t a, uint8_t b, uint8_t alpha ) { return scale8(a, 255-alpha) + scale8(b, alpha); }
+static CRGB alphaBlend( CRGB a, CRGB b, uint8_t alpha){
+    return CRGB( alphaBlend( a.r, b.r, alpha ), alphaBlend( a.g, b.g, alpha ), alphaBlend( a.b, b.b, alpha ) );
+};
+
 
 
 extern WidgetManager informer;
