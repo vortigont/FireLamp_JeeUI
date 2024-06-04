@@ -183,12 +183,15 @@ void uidata_page_selector(Interface *interf, const JsonObject *data, const char*
             interf->json_frame_flush();
             informer.getWidgetsState(interf);
             break;
-        case page::wdgt_clock :   // настройки часов
+        case page::wdgt_clock : {  // настройки часов
             interf->uidata_pick( "lampui.pages.wdgt.ovrclock" );
             interf->json_frame_flush();
-            interf->json_frame_value(informer.getConfig(T_clock));
+            JsonDocument doc;
+            informer.getConfig(doc.to<JsonObject>(), T_clock);
+            interf->json_frame_value(doc);
             break;
-        case page::wdgt_alrmclock :   // настройки будильника
+        }
+        case page::wdgt_alrmclock : {  // настройки будильника
             interf->uidata_pick( "lampui.pages.wdgt.alrmclock" );
             interf->json_frame_flush();
             // Main frame MUST be flushed before sending other ui_data sections
@@ -199,14 +202,13 @@ void uidata_page_selector(Interface *interf, const JsonObject *data, const char*
                 String idx(i);
                 interf->uidata_pick( "lampui.sections.wdgt_alarm_item", NULL, idx.c_str() );
             }
-            //interf->json_section_end();
-            //interf->json_section_uidata();
-            //    interf->uidata_pick("lampui.sections.btn_exit_to_wdgt");
             interf->json_frame_flush();
             interf->json_frame_jscall("alarm_items_load");
-            interf->json_frame_add(informer.getConfig(T_alrmclock));     // generate config with nested alarm event objects
-            //interf->json_frame_value(informer.getConfig(T_alrmclock), true);
+            JsonDocument doc;
+            informer.getConfig(doc.to<JsonObject>(), T_alrmclock);  // generate config with nested alarm event objects
+            interf->json_frame_add(doc);
             break;
+        }
         default:;                   // by default do nothing
     }
 

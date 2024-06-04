@@ -94,7 +94,7 @@ public:
      * @brief load widget config using widget name as a config selector key
      * 
      */
-    static JsonVariant load_cfg_from_NVS(const char* lbl);
+    static void load_cfg_from_NVS(JsonObject obj, const char* lbl);
 
     /**
      * @brief load widget's config from supplied config and calls start()
@@ -106,7 +106,7 @@ public:
      * @brief load widget's config from persistent storage and calls start()
      * 
      */
-    void load(){ load(load_cfg_from_NVS(label)); };
+    void load();
 
     /**
      * @brief save current widget's configuration to NVS
@@ -129,11 +129,10 @@ public:
     virtual void stop(){ disable(); };
 
     /**
-     * @brief Get widget's configuration packed into json object
+     * @brief Get widget's configuration packed into a nested json object ['widget_label']
      * used to feed control's values to WebUI/MQTT
-     * @return JsonVariant
      */
-    JsonVariant getConfig() const;
+    void getConfig(JsonObject obj) const;
 
     /**
      * @brief Set widget's configuration packed into json object
@@ -265,8 +264,8 @@ public:
     void register_handlers();
     void unregister_handlers();
 
-    // can't be const due to EmbUI's value method, TODO: fix it
-    JsonVariant getConfig(const char* widget_label);
+    // load widget's configuration into provided JsonObject
+    void getConfig(JsonObject obj, const char* widget_label);
     void setConfig(const char* widget_label, JsonVariantConst cfg);
 
     // generate values representing state of the active widgets
