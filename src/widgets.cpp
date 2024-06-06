@@ -708,7 +708,7 @@ void TextOverlay::load_cfg(JsonVariantConst cfg){
   _textmask->setUTF8Print(true);
   //_textmask->setRotation(2);
 
-  texture_ovr_cb_t s { [&](){ _ovr_blend(); } }; 
+  texture_ovr_cb_t<CRGB> s { [&](LedFB<CRGB>* canvas){ blendBitMap(canvas, opos_x, opos_y, _textmask->getFramebuffer(), _cw, _ch); } }; 
 
   display._dengine->_stack.push_back( s );
 
@@ -771,13 +771,13 @@ void TextOverlay::_lmpChEventHandler(esp_event_base_t base, int32_t id, void* da
 }
 
 
-void TextOverlay::_ovr_blend(){
+void TextOverlay::_ovr_blend(LedFB<CRGB>* canvas){
   //auto b = _textmask->getFramebuffer();
-  blendBitMap(opos_x, opos_y, _textmask->getFramebuffer(), _cw, _ch);
+  //blendBitMap(opos_x, opos_y, _textmask->getFramebuffer(), _cw, _ch);
 }
 
 
-void TextOverlay::blendBitMap(int16_t x, int16_t y, const uint8_t* bitmap, int16_t w, int16_t h){
+void TextOverlay::blendBitMap(LedFB<CRGB>* canvas, int16_t x, int16_t y, const uint8_t* bitmap, int16_t w, int16_t h){
   int16_t byteWidth = (w + 7) / 8; // Bitmap scanline pad = whole byte
   uint8_t byte = 0;
 
@@ -796,7 +796,7 @@ void TextOverlay::blendBitMap(int16_t x, int16_t y, const uint8_t* bitmap, int16
 
       //canvas->writePixel(x+i, y, alphaBlend(fb->at(x+i, y), byte & 0x80 ? CRGB::Blue : CRGB::Gray,  byte & 0x80 ? 5 : 250 ) );
       //fb->at( x+i, y) = alphaBlend(fb->at(x+i, y), byte & 0x80 ? CRGB::Blue : CRGB::Gray,  byte & 0x80 ? 5 : 250 );
-      nblend(fb->at( x+i, y), byte & 0x80 ? CRGB::Red : CRGB::White, byte & 0x80 ? 208 : 5);  // = alphaBlend(fb->at(x+i, y), byte & 0x80 ? CRGB::Blue : CRGB::Gray,  byte & 0x80 ? 5 : 250 );
+      nblend(canvas->at( x+i, y), byte & 0x80 ? CRGB::Red : CRGB::White, byte & 0x80 ? 208 : 5);  // = alphaBlend(fb->at(x+i, y), byte & 0x80 ? CRGB::Blue : CRGB::Gray,  byte & 0x80 ? 5 : 250 );
 
 /*
       if (byte & 0x80)

@@ -277,7 +277,8 @@ class TextOverlay : public GenericGFXWidget {
 
     // set events handler
     //void _lmpSetEventHandler(esp_event_base_t base, int32_t id, void* data);
-    void _ovr_blend();
+    //template <class COLOR_TYPE>
+    void _ovr_blend(LedFB<CRGB>* canvas);
 
     void _mode_switcher();
 
@@ -290,7 +291,7 @@ public:
     void start() override;
     void stop() override;
 
-    void blendBitMap(int16_t x, int16_t y, const uint8_t* bitmap, int16_t w, int16_t h);
+    void blendBitMap(LedFB<CRGB>* canvas, int16_t x, int16_t y, const uint8_t* bitmap, int16_t w, int16_t h);
 };
 
 
