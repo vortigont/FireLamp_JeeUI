@@ -696,7 +696,7 @@ void LEDFader::fadelight(int targetbrightness, uint32_t duration){
   }
 
   // calculate required steps
-  int _steps = (abs(_tgtbrt - _brt) > FADE_MININCREMENT * duration / FADE_MINSTEPTIME) ? duration / FADE_MINSTEPTIME : abs(_tgtbrt - _brt)/FADE_MININCREMENT;
+  uint32_t _steps = (abs(_tgtbrt - _brt) > FADE_MININCREMENT * duration / FADE_MINSTEPTIME) ? duration / FADE_MINSTEPTIME : abs(_tgtbrt - _brt)/FADE_MININCREMENT;
   if (_steps < 3) {   // no need to fade for such small difference
     LOGD(T_Fade, printf, "fast: %hhu->%hhu\n", _brt, _tgtbrt);
     lmp->_brightness(_tgtbrt, true);
@@ -735,7 +735,7 @@ void LEDFader::fadelight(int targetbrightness, uint32_t duration){
     );
   }
 
-  LOGD(T_Fade, printf, "lamp/display:%hhu/%hhu->%d/%hhu, steps/inc %d/%hhd\n", lmp->getBrightness(), lmp->_get_brightness(true), targetbrightness, _tgtbrt, _steps, _brtincrement);
+  LOGD(T_Fade, printf, "lamp/display:%hhu/%hhu->%d/%hhu, steps:%hu, inc:%hhd, interval:%u\n", lmp->getBrightness(), lmp->_get_brightness(true), targetbrightness, _tgtbrt, _steps, _brtincrement, interval);
   // send fader event
   EVT_POST(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::fadeStart));
 }

@@ -315,9 +315,14 @@ class AlarmClock : public GenericWidget {
         // track name to play for alarm
         int track;
         // sunrise
-        bool rise_on;   // enable light rise
+        bool rise_on;       // enable light rise
         int sunrise_offset, sunrise_startBr, sunrise_endBr;
         uint32_t sunrise_duration, sunrise_eff;
+        // sunset
+        bool dusk_on;       // enable light dusk
+        bool dusk_pwroff;   // shutdown lamp on dust fade end
+        int dusk_startBr, dusk_endBr;
+        uint32_t dusk_duration, dusk_eff;
     };
 
     // кукушка
@@ -333,6 +338,9 @@ class AlarmClock : public GenericWidget {
     // Cuckoo configuration
     Cuckoo _cuckoo{};
 
+    // flag that alarm is await for dusk fade-end
+    bool _fade_await{false};
+
     // cockoo/talking clock
     void _cockoo_events(std::tm *tm);
 
@@ -345,14 +353,14 @@ class AlarmClock : public GenericWidget {
     // load class configuration into JsonObject
     void load_cfg(JsonVariantConst cfg) override;
 
-    //esp_event_handler_instance_t _hdlr_lmp_change_evt = nullptr;
+    esp_event_handler_instance_t _hdlr_lmp_change_evt = nullptr;
 
     // change events handler
-    //void _lmpChEventHandler(esp_event_base_t base, int32_t id, void* data);
+    void _lmpChEventHandler(esp_event_base_t base, int32_t id, void* data);
 
 public:
-    AlarmClock() : GenericWidget(T_alrmclock, TASK_SECOND){};
-    //~AlarmClock();
+    AlarmClock();
+    ~AlarmClock();
 
     void widgetRunner() override;
 

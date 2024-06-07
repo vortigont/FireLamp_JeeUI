@@ -130,6 +130,12 @@ static constexpr const char* T_startBr = "startBr";
 static constexpr const char* T_endBr = "endBr";
 static constexpr const char* T_offset = "offset";
 static constexpr const char* T_duration = "duration";
+static constexpr const char* T_duskOn = "duskOn";
+static constexpr const char* T_duskPrwOff = "duskPrwOff";
+static constexpr const char* T_duskStartBr = "duskStartBr";
+static constexpr const char* T_duskEndBr = "duskEndBr";
+static constexpr const char* T_duskDuration = "duskDuration";
+static constexpr const char* T_duskEff = "duskEff";
 
 //static constexpr const char* T_quarter = "alarms";
 //static constexpr const char* TCONST_Alarm = "Alarm";

@@ -1820,7 +1820,7 @@
               "id":"eff_idx",
               "html":"input",
               "type":"number",
-              "label":"Включить эффект",
+              "label":"Переключить эффект",
               "min":0,
               "max":256,
               "step":1
@@ -1871,6 +1871,76 @@
               "label":"длительность, мин",
               "min":1,
               "max":60,
+              "step":1
+            }
+          ]
+        },
+        {
+          "html":"comment",
+          "label":"Закат"
+        },
+        {
+          "section":"alrm_dusk_sw",
+          "line": true,
+          "block":[
+            {
+              "id":"duskOn",
+              "html":"input",
+              "label":"Активен",
+              "type":"checkbox"
+            },
+            {
+              "id":"duskPrwOff",
+              "html":"input",
+              "label":"Выключать лампу по завершении",
+              "type":"checkbox"
+            }
+          ]
+        },
+        {
+          "section":"alrm_duskbr",
+          "line": true,
+          "block":[
+            {
+              "id":"duskStartBr",
+              "html":"input",
+              "type":"number",
+              "label":"Начальная яркость",
+              "min":-1,
+              "max":256,
+              "step":1
+            },
+            {
+              "id":"duskEndBr",
+              "html":"input",
+              "type":"number",
+              "label":"Конечная яркость",
+              "min":-1,
+              "max":256,
+              "step":1
+            }
+          ]
+        },
+        {
+          "section":"alrm_dusktime",
+          "line": true,
+          "block":[
+            {
+              "id":"duskDuration",
+              "html":"input",
+              "type":"number",
+              "label":"длительность, мин",
+              "min":1,
+              "max":60,
+              "step":1
+            },
+            {
+              "id":"duskEff",
+              "html":"input",
+              "type":"number",
+              "label":"Переключить эффект",
+              "min":0,
+              "max":256,
               "step":1
             }
           ]
