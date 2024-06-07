@@ -312,13 +312,12 @@ class AlarmClock : public GenericWidget {
         alarm_t type;
         // trigger time
         uint8_t hr{0}, min{0};
-        // sunrise
-        uint8_t sunrise_startBr, sunrise_endBr;
-        // start sunrise run x minutes before alarm, -1 - no rise
-        int sunrise_offset{-1};
-        uint32_t sunrise_duration, sunrise_eff;
         // track name to play for alarm
         int track;
+        // sunrise
+        bool rise_on;   // enable light rise
+        int sunrise_offset, sunrise_startBr, sunrise_endBr;
+        uint32_t sunrise_duration, sunrise_eff;
     };
 
     // кукушка

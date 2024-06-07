@@ -136,9 +136,9 @@ enum class lamp_t:int32_t {
    * 
    */
   struct gradual_fade_t {
-    uint8_t fromB;        // start with this brightness level, if -1 - use current brightness
-    uint8_t toB;          // end with this brightness level, if -1 - use current brightness
-    uint duration;        // fade duration in ms
+    int32_t fromB;        // start with this brightness level, if -1 - use current brightness
+    int32_t toB;          // end with this brightness level, if -1 - use current brightness
+    uint32_t duration;    // fade duration in ms
   };
 
 } // namespace evt

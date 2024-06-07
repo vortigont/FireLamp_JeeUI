@@ -52,7 +52,7 @@ Copyright © 2020 Dmytro Korniienko (kDn)
 #include "widgets.hpp"
 
 // версия ресурсов в стороннем джейсон файле
-#define UIDATA_VERSION      13
+#define UIDATA_VERSION      14
 
 #define DEMO_MIN_PERIOD     10
 #define DEMO_MAX_PERIOD     900

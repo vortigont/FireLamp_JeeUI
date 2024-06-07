@@ -1,6 +1,6 @@
 {
   "type":"interface",
-  "version":13,
+  "version":14,
   "descr":"FireLamp UI objects",
 
   "settings":{
@@ -1311,6 +1311,10 @@
         "main":true,
         "block":[
           {
+            "html":"comment",
+            "label":"Подробнее о параметрах настройки см. <a href=\"https://github.com/vortigont/FireLamp_JeeUI/wiki/%D0%91%D1%83%D0%B4%D0%B8%D0%BB%D1%8C%D0%BD%D0%B8%D0%BA\" target=\"_blank\">WiKi</a>"
+          },
+          {
             "section":"set_wdgt_alrmclock",
             "label":"Кукушка",
             "block":[
@@ -1738,7 +1742,7 @@
           "line": true,
           "block":[
             {
-              "id":"on",
+              "id":"active",
               "html":"input",
               "label":"Активен",
               "type":"checkbox"
@@ -1766,7 +1770,7 @@
               "html":"input",
               "type":"number",
               "label":"Мелодия",
-              "min":1,
+              "min":0,
               "max":9,
               "step":1,
               "value":1
@@ -1774,47 +1778,112 @@
           ]
         },
         {
-          "section":"alrm_item_btn",
-          "line": true,
+          "id":"type",
+          "html":"select",
+          "value":0,
+          "label":"Повтор",
+          "section":"options",
           "block":[
             {
-              "id":"type",
-              "html":"select",
               "value":0,
-              "label":"Повтор",
-              "section":"options",
-              "block":[
-                {
-                  "value":0,
-                  "label":"Однократно"
-                },
-                {
-                  "value":1,
-                  "label":"Ежедневно"
-                },
-                {
-                  "value":2,
-                  "label":"По будням"
-                },
-                {
-                  "value":3,
-                  "label":"По выходным"
-                }
-              ]
+              "label":"Однократно"
             },
             {
-              "id": "alrm_item",
-              "html": "button",
-              "type": 2,
-              "label":"Сохранить",
-              "function": "alarm_item_set",
-              "fa": "fas fa-circle-check"
+              "value":1,
+              "label":"Ежедневно"
+            },
+            {
+              "value":2,
+              "label":"По будням"
+            },
+            {
+              "value":3,
+              "label":"По выходным"
             }
           ]
         },
         {
-          "html":"spacer"
-        }
+          "html":"comment",
+          "label":"Рассвет"
+        },
+        {
+          "section":"alrm_rise_sw",
+          "line": true,
+          "block":[
+            {
+              "id":"riseOn",
+              "html":"input",
+              "label":"Активен",
+              "type":"checkbox"
+            },
+            {
+              "id":"eff_idx",
+              "html":"input",
+              "type":"number",
+              "label":"Включить эффект",
+              "min":0,
+              "max":256,
+              "step":1
+            }
+          ]
+        },
+        {
+          "section":"alrm_risebr",
+          "line": true,
+          "block":[
+            {
+              "id":"startBr",
+              "html":"input",
+              "type":"number",
+              "label":"Начальная яркость",
+              "min":-1,
+              "max":256,
+              "step":1
+            },
+            {
+              "id":"endBr",
+              "html":"input",
+              "type":"number",
+              "label":"Конечная яркость",
+              "min":-1,
+              "max":256,
+              "step":1
+            }
+          ]
+        },
+        {
+          "section":"alrm_risetime",
+          "line": true,
+          "block":[
+            {
+              "id":"offset",
+              "html":"input",
+              "type":"number",
+              "label":"до будильника, мин",
+              "min":0,
+              "max":60,
+              "step":5
+            },
+            {
+              "id":"duration",
+              "html":"input",
+              "type":"number",
+              "label":"длительность, мин",
+              "min":1,
+              "max":60,
+              "step":1
+            }
+          ]
+        },
+        {
+          "id": "alrm_item",
+          "html": "button",
+          "type": 2,
+          "label":"Сохранить",
+          "function": "alarm_item_set",
+          "fa": "fas fa-circle-check"
+        },
+        { "html":"spacer" }
      ]
     },
     "btn_exit_to_wdgt":{

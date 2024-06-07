@@ -344,6 +344,7 @@ void Lamp::setLumaCurve(luma::curve c){
 };
 
 void Lamp::gradualFade(evt::gradual_fade_t arg){
+  LOGI(T_lamp, println, "Initiate gradual fade");
   if (arg.fromB == -1) arg.fromB = getBrightness();
   if (arg.toB == -1) arg.toB = getBrightness();
   if (arg.fromB == arg.toB) return;
@@ -620,6 +621,10 @@ void Lamp::_event_picker_cmd(esp_event_base_t base, int32_t id, void* data){
         break;
       case evt::lamp_t::brightness_step :{
         setBrightness(constrain(getBrightness() + *((int*) data), 0, 255), fade_t::off);
+        break;
+      }
+      case evt::lamp_t::gradualFade :{
+        gradualFade(*reinterpret_cast<evt::gradual_fade_t*>(data));
         break;
       }
         

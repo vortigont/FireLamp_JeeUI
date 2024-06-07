@@ -120,10 +120,17 @@ static constexpr const char* T_x2offset = "x2off";
 static constexpr const char* T_y2offset = "y2off";
 // Widget Alarm clock
 static constexpr const char* T_seconds = "seconds";
-static constexpr const char* T_hr = "hr";                           // hourly cockoo
-static constexpr const char* T_hhr = "hhr";                         // half hour cockoo
+static constexpr const char* T_hr = "hr";                           // alarm hour
+static constexpr const char* T_cockoo_hr = "cockoo_hr";             // hourly cockoo
+static constexpr const char* T_cockoo_hhr = "cockoo_hhr";           // half hour cockoo
 static constexpr const char* T_quarter = "quarter";                 // quarter hour cockoo
 static constexpr const char* T_snd = "snd";                         // track number to play as alarm melody
+static constexpr const char* T_riseOn = "riseOn";
+static constexpr const char* T_startBr = "startBr";
+static constexpr const char* T_endBr = "endBr";
+static constexpr const char* T_offset = "offset";
+static constexpr const char* T_duration = "duration";
+
 //static constexpr const char* T_quarter = "alarms";
 //static constexpr const char* TCONST_Alarm = "Alarm";
 
@@ -133,6 +140,7 @@ static constexpr const char* T_event = "event";
 
 // Other
 static constexpr const char* T_Active = "Active";
+static constexpr const char* T_active = "active";
 static constexpr const char* T_arg = "arg";
 static constexpr const char* T_clicks = "clicks";
 static constexpr const char* T_ctrls = "ctrls";

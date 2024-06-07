@@ -167,6 +167,7 @@ void GenericWidget::save(){
   JsonDocument doc;
   embuifs::deserializeFile(doc, T_widgets_cfg);
   getConfig(doc[label].to<JsonObject>());
+  LOGD(T_Widget, printf, "%s: writing cfg to file\n", label);
   embuifs::serialize2file(doc, T_widgets_cfg);
 }
 
@@ -414,8 +415,8 @@ AlarmClock::~AlarmClock(){
 */
 void AlarmClock::load_cfg(JsonVariantConst cfg){
   // Cucoo
-  _cuckoo.hr = cfg[T_hr];
-  _cuckoo.hhr = cfg[T_hhr];
+  _cuckoo.hr = cfg[T_cockoo_hr];
+  _cuckoo.hhr = cfg[T_cockoo_hhr];
   _cuckoo.quater = cfg[T_quarter];
   _cuckoo.on = cfg[T_on];
   _cuckoo.off = cfg[T_off] | 24;
@@ -429,20 +430,29 @@ void AlarmClock::load_cfg(JsonVariantConst cfg){
   size_t cnt{0};
   for (JsonVariantConst e : al){
     if (cnt == _alarms.size()) return;  // array overflow
-    _alarms.at(cnt).active = e[T_on];
+    _alarms.at(cnt).active = e[T_active];
     _alarms.at(cnt).type = static_cast<alarm_t>(e[T_type].as<int>());
     _alarms.at(cnt).hr = e[T_hr];
     _alarms.at(cnt).min = e[T_min];
     _alarms.at(cnt).track = e[T_snd];
+    // sunrise
+    _alarms.at(cnt).rise_on = e[T_riseOn];
+    _alarms.at(cnt).sunrise_startBr = e[T_startBr];
+    _alarms.at(cnt).sunrise_endBr = e[T_endBr];
+    _alarms.at(cnt).sunrise_offset = e[T_offset];
+    _alarms.at(cnt).sunrise_duration = e[T_duration];
+    _alarms.at(cnt).sunrise_eff = e[V_effect_idx];
+
     LOGD(T_alrmclock, printf, "#%u active:%u, %u:%u, track:%d\n", cnt, _alarms.at(cnt).active, _alarms.at(cnt).hr, _alarms.at(cnt).min, _alarms.at(cnt).track );
     ++cnt;
   }
 }
 
 void AlarmClock::generate_cfg(JsonVariant cfg) const {
+  LOGD(T_alrmclock, println, "serializing alarm config");
   // Cucoo
-  cfg[T_hr] = _cuckoo.hr;
-  cfg[T_hhr] = _cuckoo.hhr;
+  cfg[T_cockoo_hr] = _cuckoo.hr;
+  cfg[T_cockoo_hhr] = _cuckoo.hhr;
   cfg[T_quarter] = _cuckoo.quater;
   cfg[T_on] = _cuckoo.on;
   cfg[T_off] = _cuckoo.off;
@@ -452,11 +462,18 @@ void AlarmClock::generate_cfg(JsonVariant cfg) const {
   arr.clear();  // clear array, I'll replace it's content
   for (auto &e : _alarms){
     JsonObject obj = arr.add<JsonObject>();
-    obj[T_on] = e.active;
+    obj[T_active] = e.active;
     obj[T_type] = static_cast<uint16_t>(e.type);
     obj[T_hr] = e.hr;
     obj[T_min] = e.min;
     obj[T_snd] = e.track;
+    // sunrise
+    obj[T_riseOn]   = e.rise_on;
+    obj[T_startBr] = e.sunrise_startBr;
+    obj[T_endBr] = e.sunrise_endBr;
+    obj[T_offset] = e.sunrise_offset;
+    obj[T_duration] = e.sunrise_duration;
+    obj[V_effect_idx] = e.sunrise_eff;
   }
 }
 
@@ -527,13 +544,21 @@ void AlarmClock::_cockoo_events(std::tm *tm){
 
 void AlarmClock::setAlarmItem(JsonVariant cfg){
   size_t idx = cfg[T_idx];
-  LOGD(T_alrmclock, printf, "save evetn:%u\n", idx);
+  LOGD(T_alrmclock, printf, "set alarm config for: %u\n", idx);
   if (idx >= _alarms.size() ) return;
-  _alarms.at(idx).active = cfg[T_on];
+  _alarms.at(idx).active = cfg[T_active];
   _alarms.at(idx).type = static_cast<alarm_t>(cfg[T_type].as<int>());
   _alarms.at(idx).hr = cfg[T_hr];
   _alarms.at(idx).min = cfg[T_min];
   _alarms.at(idx).track = cfg[T_snd];
+
+  // sunrise
+  _alarms.at(idx).rise_on = cfg[T_riseOn];
+  _alarms.at(idx).sunrise_startBr = cfg[T_startBr];
+  _alarms.at(idx).sunrise_endBr = cfg[T_endBr];
+  _alarms.at(idx).sunrise_offset = cfg[T_offset];
+  _alarms.at(idx).sunrise_duration = cfg[T_duration];
+  _alarms.at(idx).sunrise_eff = cfg[V_effect_idx];
   save();
 }
 
@@ -541,11 +566,11 @@ void AlarmClock::_sunrise_check(){
   std::time_t now;
 
   for (auto &e : _alarms){
-    if (!e.active || e.sunrise_offset == -1) continue;  // skip disabled alarms or no sunrise
+    if (!e.active || !e.rise_on) continue;  // skip disabled alarms or no sunrise
 
     std::time(&now);
     // сдвигаем время вперёд для расчета начала рассвета по будильнику
-    now += e.sunrise_offset;
+    now += e.sunrise_offset * 60;   // min to sec
     std::tm *tm = std::localtime(&now);
 
     if (tm->tm_hour != e.hr || tm->tm_min != e.min) continue;
@@ -557,17 +582,19 @@ void AlarmClock::_sunrise_check(){
     if ( e.type == alarm_t::workdays && (tm->tm_wday == 0 || tm->tm_wday == 6) ) continue;
 
     // если все проверки прошли, значит сейчас время рассвета для одного из будильников
-    evt::gradual_fade_t f{e.sunrise_startBr, e.sunrise_endBr, e.sunrise_duration};
+    evt::gradual_fade_t f{e.sunrise_startBr, e.sunrise_endBr, e.sunrise_duration * 60000};
+
+    LOGD(T_alrmclock, println, "initiate sun rise");
 
     // switch effect
     if (e.sunrise_eff)
-      EVT_POST_DATA(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::effSwitchTo), &e.sunrise_eff, sizeof(e.sunrise_eff));
+      EVT_POST_DATA(LAMP_SET_EVENTS, e2int(evt::lamp_t::effSwitchTo), &e.sunrise_eff, sizeof(e.sunrise_eff));
 
     // power-on lamp
-    EVT_POST(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::pwronengine));
+    EVT_POST(LAMP_SET_EVENTS, e2int(evt::lamp_t::pwronengine));
 
     // run gradual fade
-    EVT_POST_DATA(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::gradualFade), &f, sizeof(f));
+    EVT_POST_DATA(LAMP_SET_EVENTS, e2int(evt::lamp_t::gradualFade), &f, sizeof(f));
 
     // дальше не проверяем
     return;
