@@ -992,7 +992,7 @@ void set_settings_mic(Interface *interf, const JsonObject *data, const char* act
     float noise = (*data)[V_micNoise];
     mic_noise_reduce_level_t rdl = static_cast<mic_noise_reduce_level_t>((*data)[V_micRdcLvl].as<unsigned>());
 
-    LOGI(T_WebUI, printf, "Set mike: scale=%2.3f noise=%2.3f rdl=%d\n", scale, noise, rdl);
+    LOGI(T_WebUI, printf, "Set mike: scale=%2.3f noise=%2.3f rdl=%u\n", scale, noise, (uint32_t)rdl);
 
     embui.var(V_micScale, scale);
     embui.var_dropnulls(V_micNoise, noise);

@@ -64,6 +64,7 @@ enum class lamp_t:int32_t {
   pwron,                    // switch power on
   pwroff,                   // switch power off
   pwrtoggle,                // power toggle
+  pwronengine,              // run effect engine without restoring lamp state
 
   // brightness control, parameter value - int
   brightness = 20,          // set/get brightness according to current scale, param: int n
@@ -71,6 +72,7 @@ enum class lamp_t:int32_t {
   brightness_lcurve,        // set brightness luma curve
   brightness_scale,         // set brightness scale
   brightness_step,          // step brightness incr/decr w/o fade, param: int n - step to shift
+  gradualFade,              // start gradual brightness fade, param gradual_fade_t
 
   // effects switching
   effSwitchTo = 30,         // switch to specific effect num, param: unsigned n
@@ -128,4 +130,15 @@ enum class lamp_t:int32_t {
   void debug();
 
   void debug_hndlr(void* handler_args, esp_event_base_t base, int32_t id, void* event_data);
+
+  /**
+   * @brief data struct that defines gradual fade command
+   * 
+   */
+  struct gradual_fade_t {
+    uint8_t fromB;        // start with this brightness level, if -1 - use current brightness
+    uint8_t toB;          // end with this brightness level, if -1 - use current brightness
+    uint duration;        // fade duration in ms
+  };
+
 } // namespace evt

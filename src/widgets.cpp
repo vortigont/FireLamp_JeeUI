@@ -396,11 +396,22 @@ void ClockWidget::_lmpChEventHandler(esp_event_base_t base, int32_t id, void* da
 }
 
 // **** AlarmClock
+/*
 AlarmClock::AlarmClock() : GenericWidget(T_alrmclock, TASK_SECOND) {
-//  ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, AlarmClock::_event_hndlr, this, &_hdlr_lmp_change_evt));
+  esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::brightness),
+    [](void* self, esp_event_base_t base, int32_t id, void* data){ static_cast<AlarmClock*>(self)->_lmpChEventHandler(base, id, data); }, this, &_hdlr_lmp_change_evt
+  );
 //  ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_STATE_EVENTS, ESP_EVENT_ANY_ID, AlarmClock::_event_hndlr, this, &_hdlr_lmp_state_evt));
 }
-
+*/
+/*
+AlarmClock::~AlarmClock(){
+  if (_hdlr_lmp_change_evt){
+    esp_event_handler_instance_unregister_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::brightness), _hdlr_lmp_change_evt);
+    _hdlr_lmp_change_evt = nullptr;
+  }
+}
+*/
 void AlarmClock::load_cfg(JsonVariantConst cfg){
   // Cucoo
   _cuckoo.hr = cfg[T_hr];
@@ -456,6 +467,11 @@ void AlarmClock::widgetRunner(){
 
   // skip non 00 seconds
   if (tm->tm_sec) return;
+
+  _sunrise_check();
+  // reset time to now
+  std::time(&now);
+  tm = std::localtime(&now);
 
   // iterate alarms
   for (auto &e : _alarms){
@@ -520,6 +536,53 @@ void AlarmClock::setAlarmItem(JsonVariant cfg){
   _alarms.at(idx).track = cfg[T_snd];
   save();
 }
+
+void AlarmClock::_sunrise_check(){
+  std::time_t now;
+
+  for (auto &e : _alarms){
+    if (!e.active || e.sunrise_offset == -1) continue;  // skip disabled alarms or no sunrise
+
+    std::time(&now);
+    // сдвигаем время вперёд для расчета начала рассвета по будильнику
+    now += e.sunrise_offset;
+    std::tm *tm = std::localtime(&now);
+
+    if (tm->tm_hour != e.hr || tm->tm_min != e.min) continue;
+
+    // skip weekend alarms if today is not one of the weekend days
+    if ( e.type == alarm_t::weekends && (tm->tm_wday != 0 && tm->tm_wday != 6) ) continue;
+
+    // skip workday alarms if today is one of the weekend days
+    if ( e.type == alarm_t::workdays && (tm->tm_wday == 0 || tm->tm_wday == 6) ) continue;
+
+    // если все проверки прошли, значит сейчас время рассвета для одного из будильников
+    evt::gradual_fade_t f{e.sunrise_startBr, e.sunrise_endBr, e.sunrise_duration};
+
+    // switch effect
+    if (e.sunrise_eff)
+      EVT_POST_DATA(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::effSwitchTo), &e.sunrise_eff, sizeof(e.sunrise_eff));
+
+    // power-on lamp
+    EVT_POST(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::pwronengine));
+
+    // run gradual fade
+    EVT_POST_DATA(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::gradualFade), &f, sizeof(f));
+
+    // дальше не проверяем
+    return;
+  }
+
+}
+/*
+void AlarmClock::_lmpChEventHandler(esp_event_base_t base, int32_t id, void* data){
+  // currently only brightness event is tracked
+  if (_sunr.sunrise_running && (*reinterpret_cast<int*>(data) == _sunr.endBr) ){
+      // sunrise cycle ended
+      _sunr.sunrise_running = false;
+  }
+}
+*/
 
 // ****  Widget Manager methods
 

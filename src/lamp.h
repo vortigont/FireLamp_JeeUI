@@ -43,6 +43,7 @@ Copyright © 2020 Dmytro Korniienko (kDn)
 #include "char_const.h"
 #include "luma_curves.hpp"
 #include "micFFT.h"
+#include "evtloop.h"
 
 #ifndef DEFAULT_MQTTPUB_INTERVAL
     #define DEFAULT_MQTTPUB_INTERVAL 30
@@ -164,23 +165,6 @@ private:
     uint32_t demoTime{DEFAULT_DEMO_TIMER};
 
 
-    /**
-     * @brief set brightness value to Display backend
-     * method uses curve mapping to the applied value by default
-     * 
-     * @param _brt - brighntess value
-     * @param absolute - if true, than do not apply curve mapping
-     */
-    void _brightness(uint8_t brt, bool absolute=false);
-
-    /**
-     * @brief get actual matrix led brightness
-     * returns either scaled and curve-mapped or absolute value 
-     * @param absolute - get absolute brightness
-     * @return uint8_t - brightness value
-     */
-    uint8_t _get_brightness(bool absolute=false);
-
 
 public:
     // c-tor
@@ -219,9 +203,9 @@ public:
      * if fade flag for the lamp is set, than fade applied in non-blocking way unless skipfade param is set to 'true'
      * brightness is mapped to a current lamp's luma curve value
      * 
-     * @param uint8_t tgtbrt - target brigtness level 0-255
+     * @param uint8_t tgtbrt - target scaled brigtness level 0-255
      * @param fade_t fade - use/skip or use default fade effect
-     * @param bool bypass - set brightness as-шs directly to backend, skipping fader, scaling and do NOT save new value to NVS
+     * @param bool bypass - set brightness value as-is directly to backend device, skipping fader, scaling and do NOT save new value to NVS
      */
     void setBrightness(uint8_t tgtbrt, fade_t fade=fade_t::preset, bool bypass = false);
 
@@ -259,6 +243,16 @@ public:
      * see setBrightnessScale()
      */
     uint8_t getBrightnessScale() const { return _brightnessScale; };
+
+    /**
+     * @brief initiate gradual brightness fade
+     * will fade brightness without reporting intermediate values and saving result to NVS
+     * could be user for effects during power-on/off, sunrise, dusk, etc...
+     * 
+     * @param arg 
+     */
+    void gradualFade(evt::gradual_fade_t arg);
+
 
     // Loop cycle
     void handle();
@@ -363,7 +357,7 @@ public:
      *  lampEvtId_t::pwroff
      * 
      */
-    void power(bool);
+    void power(bool pwr, bool restore_state = true);
 
     /**
      * @brief toggle logical power state for the lamp
@@ -389,6 +383,23 @@ public:
     void effectsTimer(bool action);
 
 private:
+    /**
+     * @brief set brightness value to Display backend
+     * method uses curve mapping to the applied value by default
+     * 
+     * @param _brt - brighntess value
+     * @param absolute - if true, than do not apply curve mapping
+     */
+    void _brightness(uint8_t brt, bool absolute=false);
+
+    /**
+     * @brief get actual matrix led brightness
+     * returns either scaled and curve-mapped or absolute value 
+     * @param absolute - get absolute brightness
+     * @return uint8_t - brightness value
+     */
+    uint8_t _get_brightness(bool absolute=false);
+
     /**
      * @brief static event handler
      * wraps class members access for event loop
@@ -518,7 +529,7 @@ public:
      * @param uint8_t _targetbrightness - scaled end value for the brighness to fade to
      * @param uint32_t _duration - fade effect duraion, ms
      */
-    void fadelight(int _targetbrightness=0, uint32_t _duration=FADE_TIME);
+    void fadelight(int targetbrightness, uint32_t duration = FADE_TIME);
 
     /**
      * @brief check if fade is in progress

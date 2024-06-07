@@ -312,6 +312,11 @@ class AlarmClock : public GenericWidget {
         alarm_t type;
         // trigger time
         uint8_t hr{0}, min{0};
+        // sunrise
+        uint8_t sunrise_startBr, sunrise_endBr;
+        // start sunrise run x minutes before alarm, -1 - no rise
+        int sunrise_offset{-1};
+        uint32_t sunrise_duration, sunrise_eff;
         // track name to play for alarm
         int track;
     };
@@ -323,7 +328,6 @@ class AlarmClock : public GenericWidget {
         uint8_t on, off;
     };
 
-
     // a set of alarms
     std::array<AlarmCfg, 4> _alarms{};
 
@@ -333,14 +337,23 @@ class AlarmClock : public GenericWidget {
     // cockoo/talking clock
     void _cockoo_events(std::tm *tm);
 
+    // рассвет
+    void _sunrise_check();
+
     // pack class configuration into JsonObject
     void generate_cfg(JsonVariant cfg) const override;
 
     // load class configuration into JsonObject
     void load_cfg(JsonVariantConst cfg) override;
 
+    //esp_event_handler_instance_t _hdlr_lmp_change_evt = nullptr;
+
+    // change events handler
+    //void _lmpChEventHandler(esp_event_base_t base, int32_t id, void* data);
+
 public:
-    AlarmClock();
+    AlarmClock() : GenericWidget(T_alrmclock, TASK_SECOND){};
+    //~AlarmClock();
 
     void widgetRunner() override;
 

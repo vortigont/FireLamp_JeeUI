@@ -47,15 +47,10 @@ Copyright © 2020 Dmytro Korniienko (kDn)
 
 #define DEFAULT_EFFECT_NUM  13  // неопалимая купина
 
-#ifndef FADE_STEPTIME
-#define FADE_STEPTIME         (50U)                         // default time between fade steps, ms
-#endif
-#ifndef FADE_MININCREMENT
-#define FADE_MININCREMENT     (2U)                          // Minimal increment for fading steps
-#endif
-#ifndef FADE_LOWBRTFRACT
-#define FADE_LOWBRTFRACT      (5U)                         // доля от максимальной шкалы яркости, до которой работает затухание при смене эффектов. Если текущая яркость ниже двойной доли, то затухание пропускается
-#endif
+#define FADE_MINSTEPTIME      100U              // minimum time between fade steps, ms
+#define FADE_MININCREMENT     2U                // Minimal absolute increment for fading steps
+#define FADE_LOWBRTFRACT      5U                // доля от максимальной шкалы яркости, до которой работает затухание при смене эффектов. Если текущая яркость ниже двойной доли, то затухание пропускается
+
 
 Lamp::Lamp() : effwrkr(&lampState){
   lampState.micAnalyseDivider = 1; // анализ каждый раз
@@ -164,23 +159,31 @@ void Lamp::handle(){
 #endif
 }
 
-void Lamp::power(bool flag){
-  if (flag == vopts.pwrState) return;  // пропускаем холостые вызовы
-  LOGI(T_lamp, printf, "Powering %s\n", flag ? "On": "Off");
+void Lamp::power(bool pwr, bool restore_state){
+  if (pwr == vopts.pwrState) return;  // пропускаем холостые вызовы
+  LOGI(T_lamp, printf, "Powering %s\n", pwr ? "On": "Off");
 
-  if (flag){
+  if (pwr){
     // POWER ON
 
-    _swState.fadeState = 1;   // fade-in
-    vopts.pwrState = true;    // set the flag here, from now on lamp considers itself in "On" state
-    // вторично переключаемся на текущий же эффект, переключение вызовет фейдер (если необходимо)
-    _switcheffect(effswitch_t::num, getFaderFlag(), effwrkr.getCurrentEffectNumber());
+    if (restore_state){
+      _swState.fadeState = 1;   // fade-in
+      vopts.pwrState = true;    // set the flag here, from now on lamp considers itself in "On" state
+      // вторично переключаемся на текущий же эффект, переключение вызовет фейдер (если необходимо)
+      _switcheffect(effswitch_t::num, getFaderFlag(), effwrkr.getCurrentEffectNumber());
+      // включаем демотаймер если был режим демо
+      if(vopts.demoMode && demoTask)
+        demoTask->restartDelayed();
+    } else {
+      // no need to fade-in or demo, just run the engine
+      vopts.demoMode = false;
+      // гасим Демо-таймер
+      if(demoTask)
+        demoTask->disable();
+    }
+
     // запускаем планировщик движка эффектов
     effectsTimer(true);
-
-    // включаем демотаймер если был режим демо
-    if(vopts.demoMode && demoTask)
-      demoTask->restartDelayed();
 
     // generate pwr change state event 
     EVT_POST(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::pwron));
@@ -204,10 +207,10 @@ void Lamp::power(bool flag){
   }
 
   // update flag on last step to let other call understand in which state they were called
-  vopts.pwrState = flag;
+  vopts.pwrState = pwr;
   // save power state if required
-  if (opts.flag.restoreState && (opts.flag.pwrState != flag)){
-    opts.flag.pwrState = flag;
+  if (opts.flag.restoreState && (opts.flag.pwrState != pwr)){
+    opts.flag.pwrState = pwr;
     save_flags();
   }
 }
@@ -312,7 +315,6 @@ void Lamp::setBrightness(uint8_t tgtbrt, fade_t fade, bool bypass){
 /*
  * Set display brightness
  * note: this method is called by fader also
- * @param bool natural
  */
 void Lamp::_brightness(uint8_t brt, bool absolute){
     if (!absolute) brt = luma::curveMap(_curve, brt, MAX_BRIGHTNESS, _brightnessScale);
@@ -340,6 +342,15 @@ void Lamp::setLumaCurve(luma::curve c){
   _curve = c;
   setBrightness(getBrightness(), fade_t::off);    // switch to the adjusted brightness level
 };
+
+void Lamp::gradualFade(evt::gradual_fade_t arg){
+  if (arg.fromB == -1) arg.fromB = getBrightness();
+  if (arg.toB == -1) arg.toB = getBrightness();
+  if (arg.fromB == arg.toB) return;
+  // direct change start brightness value
+  _brightness(arg.fromB);
+  LEDFader::getInstance()->fadelight(arg.toB, arg.duration);
+}
 
 void Lamp::switcheffect(effswitch_t action, uint16_t effnb){
   _switcheffect(action, isLampOn() ? getFaderFlag() : false, effnb);
@@ -586,6 +597,9 @@ void Lamp::_event_picker_cmd(esp_event_base_t base, int32_t id, void* data){
       case evt::lamp_t::pwrtoggle :
         power();
         return;
+      case evt::lamp_t::pwronengine :
+        power(true, false);
+        return;
 
     // Brightness control
       case evt::lamp_t::brightness : {
@@ -663,12 +677,12 @@ void Lamp::_event_picker_state(esp_event_base_t base, int32_t id, void* data){
 // *********************************
 /*  LEDFader class implementation */
 
-void LEDFader::fadelight(int _targetbrightness, uint32_t _duration){
+void LEDFader::fadelight(int targetbrightness, uint32_t duration){
   if (!lmp) return;
-  LOGD(T_Fade, printf, "tgt:%u, lamp:%u/%u, _br scaled/abs:%u/%u\n", _targetbrightness, lmp->getBrightness(), lmp->getBrightnessScale(), lmp->_get_brightness(), lmp->_get_brightness(true));
+  LOGD(T_Fade, printf, "tgt:%u, lamp:%u/%u, _br scaled/abs:%u/%u\n", targetbrightness, lmp->getBrightness(), lmp->getBrightnessScale(), lmp->_get_brightness(), lmp->_get_brightness(true));
 
   _brt = lmp->_get_brightness(true);        // get current absolute Display brightness
-  _tgtbrt = luma::curveMap(lmp->_curve, _targetbrightness, MAX_BRIGHTNESS, lmp->_brightnessScale);
+  _tgtbrt = luma::curveMap(lmp->_curve, targetbrightness, MAX_BRIGHTNESS, lmp->_brightnessScale);
 
   if (_brt == _tgtbrt){
     // no need to fade, already at this brightness
@@ -677,17 +691,18 @@ void LEDFader::fadelight(int _targetbrightness, uint32_t _duration){
   }
 
   // calculate required steps
-  int _steps = (abs(_tgtbrt - _brt) > FADE_MININCREMENT * _duration / FADE_STEPTIME) ? _duration / FADE_STEPTIME : abs(_tgtbrt - _brt)/FADE_MININCREMENT;
+  int _steps = (abs(_tgtbrt - _brt) > FADE_MININCREMENT * duration / FADE_MINSTEPTIME) ? duration / FADE_MINSTEPTIME : abs(_tgtbrt - _brt)/FADE_MININCREMENT;
   if (_steps < 3) {   // no need to fade for such small difference
     LOGD(T_Fade, printf, "fast: %hhu->%hhu\n", _brt, _tgtbrt);
     lmp->_brightness(_tgtbrt, true);
     abort();
-    int b = _targetbrightness;
+    int b = targetbrightness;
     EVT_POST(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::fadeEnd));
     EVT_POST_DATA(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::fadeEnd), &b, sizeof(int));
     return;
   }
 
+  uint32_t interval = duration / _steps;
   _brtincrement = (_tgtbrt - _brt) / _steps;
 
   if (runner){
@@ -695,28 +710,27 @@ void LEDFader::fadelight(int _targetbrightness, uint32_t _duration){
     runner->setIterations(_steps);
     runner->restartDelayed();
   } else {
-    runner = new Task(FADE_STEPTIME,
+    runner = new Task(interval,
       _steps,
       [this](){ _brt += _brtincrement; lmp->_brightness(_brt, true);  // set absolute backend brightness here
                 /* LOG(printf_P, PSTR("fd brt %d/%d, glbr:%d, gbr:%d, vid:%d, vid2:%d\n"), _brt, _brtincrement, lmp->getBrightness(), lmp->getBrightness(), brighten8_video(FastLED.getBrightness()), brighten8_video(brighten8_video(FastLED.getBrightness()))  ); */
               },
       &ts, true, nullptr,
       // onDisable
-      [this, _targetbrightness](){
+      [this, targetbrightness](){
           lmp->_brightness(_tgtbrt, true);  // set exact target brightness value
           LOGD(T_Fade, printf, "to %hhu complete\n", _tgtbrt);
-          int b = _targetbrightness;
+          int b = targetbrightness;
           EVT_POST_DATA(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::fadeEnd), &b, sizeof(b));
-
           // use new task for callback, 'cause effect switching will immidiatetly respawn new fader from callback, so I need to release a Task instance
-          //if(_cb) { new Task(FADE_STEPTIME, TASK_ONCE, [this](){ if (_cb) { _cb(); _cb = nullptr; } }, &ts, true, nullptr, nullptr, true ); }
+          //if(_cb) { new Task(FADE_MINSTEPTIME, TASK_ONCE, [this](){ if (_cb) { _cb(); _cb = nullptr; } }, &ts, true, nullptr, nullptr, true ); }
           runner = nullptr;
       },
       true  // self-destruct
     );
   }
 
-  LOGD(T_Fade, printf, "lamp/display:%hhu/%hhu->%d/%hhu, steps/inc %d/%hhd\n", lmp->getBrightness(), lmp->_get_brightness(true), _targetbrightness, _tgtbrt, _steps, _brtincrement);
+  LOGD(T_Fade, printf, "lamp/display:%hhu/%hhu->%d/%hhu, steps/inc %d/%hhd\n", lmp->getBrightness(), lmp->_get_brightness(true), targetbrightness, _tgtbrt, _steps, _brtincrement);
   // send fader event
   EVT_POST(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::fadeStart));
 }
