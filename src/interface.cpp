@@ -261,7 +261,7 @@ void ui_section_menu(Interface *interf, const JsonObject *data, const char* acti
 
     interf->option(A_ui_page_effects, TINTF_000);        //  Эффекты
     //interf->option(TCONST_lamptext, TINTF_001);       //  Вывод текста
-    interf->option(A_ui_page_drawing, TINTF_0CE);        //  Рисование
+    //interf->option(A_ui_page_drawing, TINTF_0CE);        //  Рисование (оключено, т.к. используется старая схема с глобальным оверлеем)
     interf->option(A_ui_page_widgets, "Widgets");        //  Widgets
 #ifdef USE_STREAMING
     interf->option(TCONST_streaming, TINTF_0E2);      //  Трансляция
