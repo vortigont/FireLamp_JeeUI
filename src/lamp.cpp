@@ -684,7 +684,7 @@ void Lamp::_event_picker_state(esp_event_base_t base, int32_t id, void* data){
 
 void LEDFader::fadelight(int targetbrightness, uint32_t duration){
   if (!lmp) return;
-  LOGD(T_Fade, printf, "tgt:%u, lamp:%u/%u, _br scaled/abs:%u/%u\n", targetbrightness, lmp->getBrightness(), lmp->getBrightnessScale(), lmp->_get_brightness(), lmp->_get_brightness(true));
+  LOGD(T_Fade, printf, "tgt:%u, lamp:%u/%u, _br scaled/abs:%u/%u, time:%u\n", targetbrightness, lmp->getBrightness(), lmp->getBrightnessScale(), lmp->_get_brightness(), lmp->_get_brightness(true), duration);
 
   _brt = lmp->_get_brightness(true);        // get current absolute Display brightness
   _tgtbrt = luma::curveMap(lmp->_curve, targetbrightness, MAX_BRIGHTNESS, lmp->_brightnessScale);
@@ -696,9 +696,9 @@ void LEDFader::fadelight(int targetbrightness, uint32_t duration){
   }
 
   // calculate required steps
-  uint32_t _steps = (abs(_tgtbrt - _brt) > FADE_MININCREMENT * duration / FADE_MINSTEPTIME) ? duration / FADE_MINSTEPTIME : abs(_tgtbrt - _brt)/FADE_MININCREMENT;
+  int32_t _steps = ( abs(_tgtbrt - _brt) > (FADE_MININCREMENT * duration / FADE_MINSTEPTIME) ) ? duration / FADE_MINSTEPTIME : abs(_tgtbrt - _brt)/FADE_MININCREMENT;
   if (_steps < 3) {   // no need to fade for such small difference
-    LOGD(T_Fade, printf, "fast: %hhu->%hhu\n", _brt, _tgtbrt);
+    LOGD(T_Fade, printf, "fast: %hhu->%hhu, steps<:%u\n", _brt, _tgtbrt, _steps);
     lmp->_brightness(_tgtbrt, true);
     abort();
     int b = targetbrightness;
@@ -735,7 +735,7 @@ void LEDFader::fadelight(int targetbrightness, uint32_t duration){
     );
   }
 
-  LOGD(T_Fade, printf, "lamp/display:%hhu/%hhu->%d/%hhu, steps:%hu, inc:%hhd, interval:%u\n", lmp->getBrightness(), lmp->_get_brightness(true), targetbrightness, _tgtbrt, _steps, _brtincrement, interval);
+  LOGD(T_Fade, printf, "lamp/display:%hhu/%hhu->%d/%hhu, steps:%hu, inc:%hd, interval:%u\n", lmp->getBrightness(), lmp->_get_brightness(true), targetbrightness, _tgtbrt, _steps, _brtincrement, interval);
   // send fader event
   EVT_POST(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::fadeStart));
 }

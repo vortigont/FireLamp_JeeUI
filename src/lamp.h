@@ -487,9 +487,9 @@ private:
  */
 class LEDFader {
     Lamp *lmp = nullptr;
-    uint8_t _brt;                               // transient brightness
-    uint8_t  _tgtbrt{0};                        // target brightness
-    int8_t _brtincrement;                       // change step
+    int16_t _brt;                               // transient brightness
+    int16_t  _tgtbrt{0};                        // target brightness
+    int16_t _brtincrement;                      // change step
     std::function<void(void)> _cb = nullptr;    // callback func to call upon completition
     Task *runner = nullptr;
     LEDFader(){};     // hidden c-tor;

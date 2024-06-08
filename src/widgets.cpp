@@ -520,7 +520,7 @@ void AlarmClock::widgetRunner(){
     // check if dusk is activated for triggered alarm
     if (e.dusk_on){
       LOGD(T_alrmclock, println, "initiate dusk fade-out");
-      evt::gradual_fade_t f{e.dusk_startBr, e.dusk_endBr, e.sunrise_duration * 60000};
+      evt::gradual_fade_t f{e.dusk_startBr, e.dusk_endBr, e.dusk_duration * 60000};
 
       // switch effect
       if (e.dusk_eff)
