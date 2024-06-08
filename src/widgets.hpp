@@ -177,19 +177,21 @@ public:
 };
 
 
-class ClockWidget : public GenericGFXWidget {
+class ClockWidget : public GenericWidget {
 
 struct Clock {
     int16_t x, y;       // cursor to print Clock
-    uint16_t color{DEFAULT_TEXT_COLOR};     // color in 5-6-5 mode
+    uint16_t color_txt, color_bg;     // color in 5-6-5 mode
+    uint8_t alpha_tx, alpha_bg; // font to use
     uint8_t font_index; // font to use
     uint8_t seconds_font_index; // font to use
     bool show_seconds;          // show seconds
-    bool twelwehr;      // 12/24 hour clock
+    bool twelwehr;              // 12/24 hour clock
     // max text bounds - needed to track max block size to cover the clock text
-    uint16_t maxW{0}, smaxW{0};   //, maxH{0};
+    uint16_t maxW, maxH;   //, maxH{0};
     // save seconds starting position
-    int16_t scursor_x, scursor_y;
+    //int16_t scursor_x, scursor_y;
+    overlay_cb_t cb{};
 };
 
 struct Date {
@@ -198,7 +200,9 @@ struct Date {
     uint8_t font_index; // font to use
     bool show;          // show date
     // max text bounds - needed to track max block size to cover the clock text
-    uint16_t maxW{0};   //, maxH{0};
+    uint16_t maxW,  maxH;
+    uint8_t alpha_bg;
+    overlay_cb_t cb{};
 };
 
     // elements structs
@@ -208,6 +212,9 @@ struct Date {
     std::time_t last_date;
     // flag that indicates screen needs a refresh
     bool redraw;
+    // text mask buffer
+    std::unique_ptr<Arduino_Canvas_Mono> _textmask_clk;
+    std::unique_ptr<Arduino_Canvas_Mono> _textmask_date;
 
     esp_event_handler_instance_t _hdlr_lmp_change_evt = nullptr;
     esp_event_handler_instance_t _hdlr_lmp_state_evt = nullptr;
@@ -244,14 +251,14 @@ public:
     void start() override;
     void stop() override;
 };
-
+/*
 class TextOverlay : public GenericGFXWidget {
     std::shared_ptr< LedFB<CRGB> > fb;
-    std::shared_ptr< LedFB<CRGB> > ovr_fb;
+    std::shared_ptr< LedFB<uint16_t> > ovr_fb;
 
     TimerHandle_t _tmr_mode = nullptr;
 
-    std::unique_ptr<Arduino_Canvas_Mono> _textmask;
+    std::unique_ptr<Arduino_Canvas_Mono> _textmask_clk;
 
     int cnt{5}, tpos_x{48}, tpos_y{14}, opos_x{0}, opos_y{0};
     uint32_t _cw{48}, _ch{16};
@@ -291,9 +298,8 @@ public:
     void start() override;
     void stop() override;
 
-    void blendBitMap(LedFB<CRGB>* canvas, int16_t x, int16_t y, const uint8_t* bitmap, int16_t w, int16_t h);
 };
-
+*/
 
 class WidgetManager {
 

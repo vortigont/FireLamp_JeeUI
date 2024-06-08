@@ -64,19 +64,32 @@ class LEDDisplay {
     // LED stripe matrix with a desired topology and layout  
     std::shared_ptr< LedFB<CRGB> > _canvas;
 
+    std::unique_ptr< LedFB_GFX > _gfx;
+
     // overlay buffer
-    std::weak_ptr< LedFB<CRGB> > _ovr;
+    std::weak_ptr< LedFB<uint16_t> > _ovr;
 
     // Addresable led strip topology transformation object
     LedTiles tiles;
+
+    /**
+     * @brief flag that marks canvas buffer as persistent that should NOT be changed
+     * by overlay mixing operations. In that case overlay is applied on top of a canvas copy in back buffer (if possible)
+     * 
+     */
+    bool _use_db = false;
+
+    std::list< overlay_cb_t > _stack;
+
+    // An object ref I'll use to access LED rendering engine
+    DisplayEngine<CRGB> *_dengine = nullptr;
 
     bool _start_rmt(const JsonDocument& doc);
     bool _start_rmt_engine();
     bool _start_hub75(const JsonDocument& doc);
 
 public:
-    // An object ref I'll use to access LED rendering engine
-    DisplayEngine<CRGB> *_dengine = nullptr;
+
 
     // load configuration and create objects for respective backend
     bool start();
@@ -114,7 +127,7 @@ public:
                             bool snake, bool vert, bool vmirr, bool hmirr
     );
 
-    void canvasProtect(bool v){ if (_dengine) _dengine->canvasProtect(v); };
+    void canvasProtect(bool v);
 
     std::shared_ptr< LedFB<CRGB> > getCanvas() { return _canvas; }
 
@@ -124,10 +137,16 @@ public:
      * 
      * @return std::shared_ptr<LedStripe> 
      */
-    std::shared_ptr< LedFB<CRGB> > getOverlay();
+    std::shared_ptr< LedFB<uint16_t> > getOverlay();
 
     // draw data to display
-    void show(){ if (_dengine) _dengine->show(); };
+    void show();
+
+    /**
+     * @brief apply overlay to canvas
+     * 
+     */
+    void overlay_render();
 
     // Wipe all layers and buffers
     void clear(){ if (_dengine) _dengine->clear(); };
@@ -140,6 +159,12 @@ public:
 
     // print stripe configuration in debug mode
     void print_stripe_cfg();
+
+
+    void attachOverlay( overlay_cb_t f);
+
+    void detachOverlay( overlay_cb_t f);
+
 };
 
 extern LEDDisplay display;

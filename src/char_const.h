@@ -110,6 +110,12 @@ static constexpr const char* T_widgets = "widgets";                 // NVS names
 
 static constexpr const char* T_color1 = "color1";
 static constexpr const char* T_color2 = "color2";
+static constexpr const char* T_color3 = "color3";
+static constexpr const char* T_color4 = "color4";
+
+static constexpr const char* T_alpha_t = "alpha_t";                 // alpha transparency
+static constexpr const char* T_alpha_b = "alpha_b";
+static constexpr const char* T_alpha_b2 = "alpha_b2";
 // static constexpr const char* T_color3 = "color3";
 static constexpr const char* T_font1 = "font1";
 static constexpr const char* T_font2 = "font2";
@@ -142,6 +148,7 @@ static constexpr const char* T_Enable = "Enable";
 static constexpr const char* T_enabled = "enabled";
 static constexpr const char* T_id = "id";
 static constexpr const char* T_idx = "idx";
+static constexpr const char* T_invert = "invert";
 static constexpr const char* T_Main = "Main";                           // used as LOG tag
 static constexpr const char* T_max = "max";
 static constexpr const char* T_mic = "mic";                             // microphone key (gpio)

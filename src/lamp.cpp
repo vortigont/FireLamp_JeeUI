@@ -523,11 +523,11 @@ void Lamp::effectsTimer(bool action) {
 //-----------------------------
 
 void Lamp::fillDrawBuf(CRGB color) {
-  if(_overlay) _overlay->fill(color);
+  if(_overlay) _overlay->fill( LedFB_GFX::color565(color) );
 }
 
 void Lamp::writeDrawBuf(CRGB color, uint16_t x, uint16_t y){
-  if (_overlay) { _overlay->at(x,y) = color; }
+  if (_overlay) { _overlay->at(x,y) = LedFB_GFX::color565(color); }
 }
 
 void Lamp::save_flags(){

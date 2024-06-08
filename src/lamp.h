@@ -139,7 +139,7 @@ private:
     EffSwitch_state_t _swState;
     GPIO_pins _pins;
 
-    std::shared_ptr<LedFB<CRGB> > _overlay;     // буфер для оверлея
+    std::shared_ptr<LedFB<uint16_t> > _overlay;     // буфер для оверлея
 
     // a set of lamp options (flags)
     LampFlagsPack opts;
