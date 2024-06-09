@@ -167,6 +167,7 @@ void GenericWidget::save(){
   JsonDocument doc;
   embuifs::deserializeFile(doc, T_widgets_cfg);
   getConfig(doc[label].to<JsonObject>());
+  LOGD(T_Widget, printf, "%s: writing cfg to file\n", label);
   embuifs::serialize2file(doc, T_widgets_cfg);
 }
 
@@ -396,15 +397,25 @@ void ClockWidget::_lmpChEventHandler(esp_event_base_t base, int32_t id, void* da
 }
 
 // **** AlarmClock
+
 AlarmClock::AlarmClock() : GenericWidget(T_alrmclock, TASK_SECOND) {
-//  ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, AlarmClock::_event_hndlr, this, &_hdlr_lmp_change_evt));
+  esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::fadeEnd),
+    [](void* self, esp_event_base_t base, int32_t id, void* data){ static_cast<AlarmClock*>(self)->_lmpChEventHandler(base, id, data); }, this, &_hdlr_lmp_change_evt
+  );
 //  ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_STATE_EVENTS, ESP_EVENT_ANY_ID, AlarmClock::_event_hndlr, this, &_hdlr_lmp_state_evt));
+}
+
+AlarmClock::~AlarmClock(){
+  if (_hdlr_lmp_change_evt){
+    esp_event_handler_instance_unregister_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::fadeEnd), _hdlr_lmp_change_evt);
+    _hdlr_lmp_change_evt = nullptr;
+  }
 }
 
 void AlarmClock::load_cfg(JsonVariantConst cfg){
   // Cucoo
-  _cuckoo.hr = cfg[T_hr];
-  _cuckoo.hhr = cfg[T_hhr];
+  _cuckoo.hr = cfg[T_cockoo_hr];
+  _cuckoo.hhr = cfg[T_cockoo_hhr];
   _cuckoo.quater = cfg[T_quarter];
   _cuckoo.on = cfg[T_on];
   _cuckoo.off = cfg[T_off] | 24;
@@ -418,20 +429,36 @@ void AlarmClock::load_cfg(JsonVariantConst cfg){
   size_t cnt{0};
   for (JsonVariantConst e : al){
     if (cnt == _alarms.size()) return;  // array overflow
-    _alarms.at(cnt).active = e[T_on];
+    _alarms.at(cnt).active = e[T_active];
     _alarms.at(cnt).type = static_cast<alarm_t>(e[T_type].as<int>());
     _alarms.at(cnt).hr = e[T_hr];
     _alarms.at(cnt).min = e[T_min];
     _alarms.at(cnt).track = e[T_snd];
+    // sunrise
+    _alarms.at(cnt).rise_on = e[T_riseOn];
+    _alarms.at(cnt).sunrise_startBr = e[T_startBr];
+    _alarms.at(cnt).sunrise_endBr = e[T_endBr];
+    _alarms.at(cnt).sunrise_offset = e[T_offset];
+    _alarms.at(cnt).sunrise_duration = e[T_duration];
+    _alarms.at(cnt).sunrise_eff = e[V_effect_idx];
+    // dusk
+    _alarms.at(cnt).dusk_on = e[T_duskOn];
+    _alarms.at(cnt).dusk_pwroff = e[T_duskPrwOff];
+    _alarms.at(cnt).dusk_startBr = e[T_duskStartBr];
+    _alarms.at(cnt).dusk_endBr = e[T_duskEndBr];
+    _alarms.at(cnt).dusk_duration = e[T_duskDuration];
+    _alarms.at(cnt).dusk_eff = e[T_duskEff];
+
     LOGD(T_alrmclock, printf, "#%u active:%u, %u:%u, track:%d\n", cnt, _alarms.at(cnt).active, _alarms.at(cnt).hr, _alarms.at(cnt).min, _alarms.at(cnt).track );
     ++cnt;
   }
 }
 
 void AlarmClock::generate_cfg(JsonVariant cfg) const {
+  LOGD(T_alrmclock, println, "serializing alarm config");
   // Cucoo
-  cfg[T_hr] = _cuckoo.hr;
-  cfg[T_hhr] = _cuckoo.hhr;
+  cfg[T_cockoo_hr] = _cuckoo.hr;
+  cfg[T_cockoo_hhr] = _cuckoo.hhr;
   cfg[T_quarter] = _cuckoo.quater;
   cfg[T_on] = _cuckoo.on;
   cfg[T_off] = _cuckoo.off;
@@ -441,11 +468,25 @@ void AlarmClock::generate_cfg(JsonVariant cfg) const {
   arr.clear();  // clear array, I'll replace it's content
   for (auto &e : _alarms){
     JsonObject obj = arr.add<JsonObject>();
-    obj[T_on] = e.active;
+    obj[T_active] = e.active;
     obj[T_type] = static_cast<uint16_t>(e.type);
     obj[T_hr] = e.hr;
     obj[T_min] = e.min;
     obj[T_snd] = e.track;
+    // sunrise
+    obj[T_riseOn]   = e.rise_on;
+    obj[T_startBr] = e.sunrise_startBr;
+    obj[T_endBr] = e.sunrise_endBr;
+    obj[T_offset] = e.sunrise_offset;
+    obj[T_duration] = e.sunrise_duration;
+    obj[V_effect_idx] = e.sunrise_eff;
+    // dusk
+    obj[T_duskOn] = e.dusk_on;
+    obj[T_duskPrwOff] = e.dusk_pwroff;
+    obj[T_duskStartBr] = e.dusk_startBr;
+    obj[T_duskEndBr] = e.dusk_endBr;
+    obj[T_duskDuration] = e.dusk_duration;
+    obj[T_duskEff] = e.dusk_eff;
   }
 }
 
@@ -457,6 +498,11 @@ void AlarmClock::widgetRunner(){
   // skip non 00 seconds
   if (tm->tm_sec) return;
 
+  _sunrise_check();
+  // reset time to now
+  std::time(&now);
+  tm = std::localtime(&now);
+
   // iterate alarms
   for (auto &e : _alarms){
     if (!e.active || tm->tm_hour != e.hr || tm->tm_min != e.min) continue;  // skip disabled or alarms not matching current time
@@ -467,8 +513,27 @@ void AlarmClock::widgetRunner(){
     // skip workday alarms if today is one of the weekend days
     if ( e.type == alarm_t::workdays && (tm->tm_wday == 0 || tm->tm_wday == 6) ) continue;
 
-    // else it must be either an alarm_t::onetime or alarm_t::daily alarm, so I can trigger it
-    EVT_POST_DATA(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::alarmTrigger), &e.track, sizeof(int));
+    // else it must be either an alarm_t::onetime or alarm_t::daily alarm, so I can trigger it (if audio track is not zero)
+    if (e.track)
+      EVT_POST_DATA(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::alarmTrigger), &e.track, sizeof(int));
+
+    // check if dusk is activated for triggered alarm
+    if (e.dusk_on){
+      LOGD(T_alrmclock, println, "initiate dusk fade-out");
+      evt::gradual_fade_t f{e.dusk_startBr, e.dusk_endBr, e.dusk_duration * 60000};
+
+      // switch effect
+      if (e.dusk_eff)
+        EVT_POST_DATA(LAMP_SET_EVENTS, e2int(evt::lamp_t::effSwitchTo), &e.dusk_eff, sizeof(e.dusk_eff));
+
+      // power-on lamp's effect engine
+      EVT_POST(LAMP_SET_EVENTS, e2int(evt::lamp_t::pwronengine));
+
+      // run gradual fade
+      EVT_POST_DATA(LAMP_SET_EVENTS, e2int(evt::lamp_t::gradualFade), &f, sizeof(f));
+
+      _fade_await = e.dusk_pwroff;
+    }
 
     // if it was one-time alarm, disable it and save config
     if (e.type == alarm_t::onetime){
@@ -511,15 +576,79 @@ void AlarmClock::_cockoo_events(std::tm *tm){
 
 void AlarmClock::setAlarmItem(JsonVariant cfg){
   size_t idx = cfg[T_idx];
-  LOGD(T_alrmclock, printf, "save evetn:%u\n", idx);
+  LOGD(T_alrmclock, printf, "set alarm config for: %u\n", idx);
   if (idx >= _alarms.size() ) return;
-  _alarms.at(idx).active = cfg[T_on];
+  _alarms.at(idx).active = cfg[T_active];
   _alarms.at(idx).type = static_cast<alarm_t>(cfg[T_type].as<int>());
   _alarms.at(idx).hr = cfg[T_hr];
   _alarms.at(idx).min = cfg[T_min];
   _alarms.at(idx).track = cfg[T_snd];
+  // sunrise
+  _alarms.at(idx).rise_on = cfg[T_riseOn];
+  _alarms.at(idx).sunrise_startBr = cfg[T_startBr];
+  _alarms.at(idx).sunrise_endBr = cfg[T_endBr];
+  _alarms.at(idx).sunrise_offset = cfg[T_offset];
+  _alarms.at(idx).sunrise_duration = cfg[T_duration];
+  _alarms.at(idx).sunrise_eff = cfg[V_effect_idx];
+  // dusk
+  _alarms.at(idx).dusk_on = cfg[T_duskOn];
+  _alarms.at(idx).dusk_pwroff = cfg[T_duskPrwOff];
+  _alarms.at(idx).dusk_startBr = cfg[T_duskStartBr];
+  _alarms.at(idx).dusk_endBr = cfg[T_duskEndBr];
+  _alarms.at(idx).dusk_duration = cfg[T_duskDuration];
+  _alarms.at(idx).dusk_eff = cfg[T_duskEff];
+
   save();
 }
+
+void AlarmClock::_sunrise_check(){
+  std::time_t now;
+
+  for (auto &e : _alarms){
+    if (!e.active || !e.rise_on) continue;  // skip disabled alarms or no sunrise
+
+    std::time(&now);
+    // сдвигаем время вперёд для расчета начала рассвета по будильнику
+    now += e.sunrise_offset * 60;   // min to sec
+    std::tm *tm = std::localtime(&now);
+
+    if (tm->tm_hour != e.hr || tm->tm_min != e.min) continue;
+
+    // skip weekend alarms if today is not one of the weekend days
+    if ( e.type == alarm_t::weekends && (tm->tm_wday != 0 && tm->tm_wday != 6) ) continue;
+
+    // skip workday alarms if today is one of the weekend days
+    if ( e.type == alarm_t::workdays && (tm->tm_wday == 0 || tm->tm_wday == 6) ) continue;
+
+    // если все проверки прошли, значит сейчас время рассвета для одного из будильников
+    evt::gradual_fade_t f{e.sunrise_startBr, e.sunrise_endBr, e.sunrise_duration * 60000};
+
+    LOGD(T_alrmclock, println, "initiate sun rise");
+
+    // switch effect
+    if (e.sunrise_eff)
+      EVT_POST_DATA(LAMP_SET_EVENTS, e2int(evt::lamp_t::effSwitchTo), &e.sunrise_eff, sizeof(e.sunrise_eff));
+
+    // power-on lamp
+    EVT_POST(LAMP_SET_EVENTS, e2int(evt::lamp_t::pwronengine));
+
+    // run gradual fade
+    EVT_POST_DATA(LAMP_SET_EVENTS, e2int(evt::lamp_t::gradualFade), &f, sizeof(f));
+
+    // дальше не проверяем
+    return;
+  }
+
+}
+
+void AlarmClock::_lmpChEventHandler(esp_event_base_t base, int32_t id, void* data){
+  // currently only fade event is tracked, send powerdown command on fade end
+  if (_fade_await)
+    EVT_POST(LAMP_SET_EVENTS, e2int(evt::lamp_t::pwroff));
+
+  _fade_await = false;
+}
+
 
 // ****  Widget Manager methods
 
