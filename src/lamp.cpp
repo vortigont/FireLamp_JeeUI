@@ -513,12 +513,11 @@ void Lamp::setDemoTime(uint32_t seconds){
  * 
  */
 void Lamp::demoNext(){
-if (opts.flag.demoRandom)
+if (opts.flag.demoRndOrderSwitching)
   switcheffect(effswitch_t::rnd);
 else
   switcheffect(effswitch_t::next);
 }
-
 
 /*
  * включает/выключает таймер обработки эффектов

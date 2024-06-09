@@ -1135,7 +1135,7 @@ String EffectCalc::setDynCtrl(UIControl*_val){
   String ret_val = _val->getVal();
   //LOG(printf_P, PSTR("ctrlVal=%s\n"), ret_val.c_str());
   if ( usepalettes && starts_with(_val->getName().c_str(), TINTF_084) ){ // Начинается с Палитра
-    if(isRandDemo()){
+    if(demoRndEffControls()){
       paletteIdx = random(_val->getMin().toInt(),_val->getMax().toInt()+1);
     } else
       paletteIdx = ret_val.toInt();
@@ -1154,7 +1154,7 @@ String EffectCalc::setDynCtrl(UIControl*_val){
     }
 */
   } else {
-    if(isRandDemo()){ // для режима рандомного ДЕМО, если это не микрофон - то вернуть рандомное значение в пределах диапазона значений
+    if(demoRndEffControls()){ // для режима рандомного ДЕМО, если это не микрофон - то вернуть рандомное значение в пределах диапазона значений
       ret_val = String(random(_val->getMin().toInt(), _val->getMax().toInt()+1));
     }
   }
@@ -1251,7 +1251,7 @@ const String& EffectCalc::getCtrlVal(unsigned idx) {
     } else {
         for(unsigned i = 3; i<ctrls->size(); i++){
             if((*ctrls)[i]->getId()==idx){
-                if(isRandDemo()){
+                if(demoRndEffControls()){
                     dummy = random((*ctrls)[i]->getMin().toInt(),(*ctrls)[i]->getMax().toInt()+1);
                     return dummy;
                 }

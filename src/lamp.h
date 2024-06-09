@@ -77,19 +77,19 @@ enum class fade_t {
 
 struct LampFlags {
     // ВНИМАНИЕ: порядок следования не менять, флаги не исключать, переводить в reserved!!! используется как битовый массив в конфиге!
-    bool restoreState:1;    // restore lamp on/off/demo state on restart
-    bool pwrState:1;        // флаг включения/выключения
-    bool fadeEffects:1;     // признак использования затухания при смене эффектов/яркости
-    bool demoMode:1;        // demo state
-    bool demoRandom:1;
-    bool reserved5:1;
+    bool restoreState:1;            // restore lamp on/off/demo state on restart
+    bool pwrState:1;                // флаг включения/выключения
+    bool fadeEffects:1;             // признак использования затухания при смене эффектов/яркости
+    bool demoMode:1;                // demo state
+    bool demoRndOrderSwitching:1;   // переключать эффекты в случайном порядке в Демо
+    bool demoRndEffControls:1;      // в демо тассовать настройки эффекта случайным образом
     bool reserved6:1;
-    bool wipeOnEffChange:1; // признак очистки экрана при переходе с одного эффекта на другой
-    bool reserved8:1;           // признак режима отладки
-    bool reserved9:1;       // случайный порядок демо
-    bool reserved10:1;      // отображение имени в демо
-    bool isMicOn:1;         // включение/выключение микрофона
-    bool effHasMic:1;       // микрофон для эффекта
+    bool wipeOnEffChange:1;         // признак очистки экрана при переходе с одного эффекта на другой
+    bool reserved8:1;               // признак режима отладки
+    bool reserved9:1;               // случайный порядок демо
+    bool reserved10:1;              // отображение имени в демо
+    bool isMicOn:1;                 // включение/выключение микрофона
+    bool effHasMic:1;               // микрофон для эффекта
     bool reserved13:1;
     bool reserved14:1;
     bool reserved15:1;      //
@@ -182,7 +182,8 @@ public:
     // инициализация Лампы
     void lamp_init();
 
-    LampState &getLampState() {return lampState;}
+    LampState &getLampState(){ return lampState; }
+
     std::vector<std::shared_ptr<UIControl>>&getEffControls() { return effwrkr.getControls(); }
 
     void setMicOnOff(bool val);
@@ -321,6 +322,12 @@ public:
     void demoReset(){ if (demoTask) demoTask->restartDelayed(); }
 
     /**
+     * @brief switch to next effect in demo mode
+     * 
+     */
+    void demoNext();
+
+    /**
      * @brief Set the Demo Timer period
      * 
      * @param seconds 
@@ -331,17 +338,18 @@ public:
     uint32_t getDemoTime() const { return demoTime; }
 
     /**
-     * @brief switch to next effect in demo mode
-     * 
-     */
-    void demoNext();
-
-    /**
-     * @brief set Random demo mode
+     * @brief set random order when switching effects in Demo mode
      * 
      * @param flag 
      */
-    void setDRand(bool flag){ opts.flag.demoRandom = flag; lampState.isRandDemo = flag; }
+    void setDemoRndSwitch(bool flag){ opts.flag.demoRndOrderSwitching = flag; lampState.demoRndEffControls = flag; }
+
+    /**
+     * @brief shuffle effect controls randomly when in demo mode
+     * 
+     * @param v 
+     */
+    void setDemoRndEffControls(bool v){ opts.flag.demoRndEffControls = lampState.demoRndEffControls = v; };
 
 
     void setEffHasMic(bool flag){ opts.flag.effHasMic = flag; }

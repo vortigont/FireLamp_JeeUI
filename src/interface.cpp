@@ -717,7 +717,8 @@ void block_effect_controls(Interface *interf, const JsonObject *data, const char
             default: break;
         }
 
-        bool isRandDemo = myLamp.getLampFlagsStuct().demoRandom;
+        // если сейчас активен демо-режим и включена опция "случайные контролы в демо", добавлять префикс с имени контрола
+        bool rnd_prefix = myLamp.getLampFlagsStuct().demoRndEffControls && myLamp.getLampFlagsStuct().demoMode;
         String ctrlId(T_effect_dynCtrl);
         ctrlId += ctrl->getId();
         String ctrlName = ctrl->getId() ? ctrl->getName() : TINTF_00D;
@@ -725,8 +726,8 @@ void block_effect_controls(Interface *interf, const JsonObject *data, const char
         switch(ctrlCaseType&0x0F){
             case CONTROL_TYPE::RANGE :
                 {
-                    if(isRandDemo && ctrl->getId()>0 && !(ctrl->getId()==7 && ctrl->getName().startsWith(TINTF_020)==1))
-                        ctrlName=String(TINTF_0C9)+ctrlName;
+                    if(rnd_prefix && ctrl->getId()>0 && !(ctrl->getId()==7 && ctrl->getName().startsWith(TINTF_020)==1))
+                        ctrlName=String(TINTF_Rand)+ctrlName;
                     int value = ctrl->getId() ? ctrl->getVal().toInt() : myLamp.getBrightness();
                     if(interf) interf->range( ctrlId, (long)value, ctrl->getMin().toInt(), ctrl->getMax().toInt(), ctrl->getStep().toInt(), ctrlName, true);
                 }
@@ -734,8 +735,8 @@ void block_effect_controls(Interface *interf, const JsonObject *data, const char
             case CONTROL_TYPE::EDIT :
                 {
                     String ctrlName = ctrl->getName();
-                    if(isRandDemo && ctrl->getId()>0 && !(ctrl->getId()==7 && ctrl->getName().startsWith(TINTF_020)==1))
-                        ctrlName=String(TINTF_0C9)+ctrlName;
+                    if(rnd_prefix && ctrl->getId()>0 && !(ctrl->getId()==7 && ctrl->getName().startsWith(TINTF_020)==1))
+                        ctrlName=String(TINTF_Rand)+ctrlName;
                     
                     if(interf) interf->text(ctrlId
                     , ctrl->getVal()
@@ -746,8 +747,8 @@ void block_effect_controls(Interface *interf, const JsonObject *data, const char
             case CONTROL_TYPE::CHECKBOX :
                 {
                     String ctrlName = ctrl->getName();
-                    if(isRandDemo && ctrl->getId()>0 && !(ctrl->getId()==7 && ctrl->getName().startsWith(TINTF_020)==1))
-                        ctrlName=String(TINTF_0C9)+ctrlName;
+                    if(rnd_prefix && ctrl->getId()>0 && !(ctrl->getId()==7 && ctrl->getName().startsWith(TINTF_020)==1))
+                        ctrlName=String(TINTF_Rand)+ctrlName;
 
                     if(interf) interf->checkbox(ctrlId
                     , ctrl->getVal() == "1" ? true : false
@@ -927,8 +928,6 @@ void set_demoflag(Interface *interf, const JsonObject *data, const char* action)
     if (!data) return;
     bool newdemo = (*data)[K_demo];
     myLamp.demoMode(newdemo);
-    // this might not be working
-    myLamp.setDRand(myLamp.getLampFlagsStuct().demoRandom);
 }
 
 void set_auxflag(Interface *interf, const JsonObject *data, const char* action){
@@ -1019,58 +1018,50 @@ void set_micflag(Interface *interf, const JsonObject *data, const char* action){
  * 
  */
 void page_settings_other(Interface *interf, const JsonObject *data, const char* action){
+    interf->json_frame_interface();
+    interf->json_section_uidata();
+        interf->uidata_pick( "lampui.settings.otheropts" );
+    interf->json_frame_flush();
+
+    // call setter with no data, it will publish existing config values if any
+    getset_settings_other(interf, nullptr, NULL);
+}
+
+#ifdef DISABLED_CODE
+/**
+ * @brief WebUI страница "Настройки" - "другие" (устаревший код)
+ * 
+ */
+void page_settings_other(Interface *interf, const JsonObject *data, const char* action){
     if (!interf) return;
     interf->json_frame_interface();
-    interf->json_section_main(TCONST_set_other, TINTF_002);
+    interf->json_section_main(A_getset_other, TINTF_002);
     
     interf->spacer(TINTF_030);
 
-    interf->checkbox(TCONST_f_restore_state, myLamp.getLampFlagsStuct().restoreState, TINTF_f_restore_state, false);
-    interf->checkbox(TCONST_isFaderON, myLamp.getLampFlagsStuct().fadeEffects , TINTF_03D, false);
-    interf->checkbox(TCONST_isClearing, myLamp.getLampFlagsStuct().wipeOnEffChange , TINTF_083, false);
+    interf->checkbox(T_restoreState, myLamp.getLampFlagsStuct().restoreState, TINTF_f_restore_state, false);
+    interf->checkbox(T_swFade, myLamp.getLampFlagsStuct().fadeEffects , TINTF_03D, false);
+    interf->checkbox(T_swWipeScreen, myLamp.getLampFlagsStuct().wipeOnEffChange , TINTF_083, false);
     interf->json_section_line();
-        interf->checkbox(TCONST_DRand, myLamp.getLampFlagsStuct().demoRandom , TINTF_03E, false);
+        interf->checkbox(T_demoRndOrder, myLamp.getLampFlagsStuct().demoRandom , TINTF_03E, false);
     interf->json_section_end(); // line
 
     interf->number_constrained(V_dev_brtscale, static_cast<int>(myLamp.getBrightnessScale()), "Brightness Scale", 1, 5, static_cast<int>(MAX_BRIGHTNESS));
 
     interf->json_section_line();
         interf->range(T_DemoTime, static_cast<int>(myLamp.getDemoTime()), DEMO_MIN_PERIOD, DEMO_MAX_PERIOD, DEMO_PERIOD_STEP, TINTF_03F);
-        float sf = embui.paramVariant(TCONST_spdcf);
-        interf->range(TCONST_spdcf, sf, 0.25f, 4.0f, 0.25f, TINTF_0D3, false);
+        float sf = embui.paramVariant(T_effSpeedFactor);
+        interf->range(T_effSpeedFactor, sf, 0.25f, 4.0f, 0.25f, TINTF_0D3, false);
     interf->json_section_end(); // line
 
-    interf->button(button_t::submit, TCONST_set_other, TINTF_Save, P_GRAY);
+    interf->button(button_t::submit, A_getset_other, TINTF_Save, P_GRAY);
 
     interf->spacer();
     interf->button(button_t::generic, A_ui_page_settings, TINTF_exit);
 
     interf->json_frame_flush();
 }
-
-void set_settings_other(Interface *interf, const JsonObject *data, const char* action){
-    if (!data) return;
-    resetAutoTimers();
-    // LOG(printf_P,PSTR("Settings: %s\n"),tmpData.c_str());
-    myLamp.setFaderFlag((*data)[TCONST_isFaderON]);
-    myLamp.setClearingFlag((*data)[TCONST_isClearing]);
-    myLamp.setDRand((*data)[TCONST_DRand]);
-    myLamp.setRestoreState((*data)[TCONST_f_restore_state]);
-
-    myLamp.setDemoTime((*data)[T_DemoTime]);
-
-    float sf = (*data)[TCONST_spdcf];
-    SETPARAM(TCONST_spdcf);
-    myLamp.setSpeedFactor(sf);
-
-    // save non-default brightness scale
-    myLamp.setBrightnessScale( (*data)[V_dev_brtscale] );
-
-    myLamp.save_flags();
-
-    if(interf)
-        basicui::page_system_settings(interf, data, NULL);
-}
+#endif // DISABLED_CODE
 
 void set_debugflag(Interface *interf, const JsonObject *data, const char* action){
     if (!data) return;
@@ -1355,7 +1346,7 @@ void embui_actions_register(){
 
     embui.var_create(V_micScale, 1.28);
 
-    embui.var_create(TCONST_spdcf, 1.0);
+    embui.var_create(T_effSpeedFactor, 1.0);
 
     embui.var_create(T_mp3vol, 25); // громкость
     //embui.var_create(TCONST_mp3count, 255); // кол-во файлов в папке mp3 (установка убрана, используется значение по-умолчанию равное максимальному числу эффектов)
@@ -1399,6 +1390,7 @@ void embui_actions_register(){
     embui.action.add(T_mp3mute, set_mp3mute);
 
     embui.action.add(A_set_gpio, getset_gpios);                             // Get/Set gpios
+    embui.action.add(A_getset_other, getset_settings_other);                   // get/set settings "other" page handler
 
     // to be refactored
 
@@ -1411,7 +1403,6 @@ void embui_actions_register(){
     embui.action.add(TCONST_draw_dat, set_drawing);
     embui.action.add(TCONST_drawbuff, set_overlay_drawing);
 
-    embui.action.add(TCONST_set_other, set_settings_other);
     embui.action.add(T_display_type, page_display_setup);                // load display setup page depending on selected disp type (action for drop down list)
 
     embui.action.add(TCONST_set_mic, set_settings_mic);

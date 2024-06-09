@@ -998,6 +998,103 @@
           ]
         }
       ]
+    },
+    "otheropts":{
+      "section": "set_other",
+      "label": "Параметры",
+      "main": true,
+      "block": [
+        {
+          "html": "spacer",
+          "label": "Эффекты"
+        },
+        {
+          "id": "swFade",
+          "html": "input",
+          "label": "Плавное переключение эффектов",
+          "type": "checkbox"
+        },
+        {
+          "id": "swWipeScreen",
+          "html": "input",
+          "label": "Очищать экран при смене эффектов",
+          "type": "checkbox"
+        },
+        {
+          "id": "effSpeedFactor",
+          "html": "input",
+          "value": 1,
+          "type": "range",
+          "min": 0.25,
+          "max": 5,
+          "step": 0.25,
+          "label": "Коэф. скорости (1.0 по-умолчанию)"
+        },
+        {
+          "html": "spacer",
+          "label": "Демо эффектов"
+        },
+        {
+          "id": "demoRndOrder",
+          "html": "input",
+          "label": "переключать в случайном порядке",
+          "type": "checkbox"
+        },
+        {
+          "id": "demoRndCtrls",
+          "html": "input",
+          "label": "выставлять случайные параметры",
+          "type": "checkbox"
+        },
+        {
+          "id": "DemoTime",
+          "html": "input",
+          "value": 60,
+          "type": "range",
+          "min": 10,
+          "max": 900,
+          "step": 10,
+          "label": "Смена эффекта в Демо, сек"
+        },
+        {
+          "html": "spacer",
+          "label": "Прочее"
+        },
+        {
+          "id": "restoreState",
+          "html": "input",
+          "label": "Восстанавливать состояние при включении",
+          "type": "checkbox"
+        },
+        {
+          "id": "dev_brtscale",
+          "html": "input",
+          "value": 20,
+          "type": "number",
+          "label": "Brightness Scale",
+          "min": 5,
+          "max": 255,
+          "step": 1
+        },
+        {
+          "id": "set_other",
+          "html": "button",
+          "type": 1,
+          "label": "Сохранить",
+          "fa": "fas fa-circle-check"
+        },
+        {
+          "html": "spacer"
+        },
+        {
+          "id": "ui_page_settings",
+          "html": "button",
+          "color": "green",
+          "type":0,
+          "fa": "fas fa-door-open",
+          "label": "Выход"
+        }
+      ]
     }
   },
 

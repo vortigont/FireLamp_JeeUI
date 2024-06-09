@@ -60,7 +60,7 @@ struct LampState {
         struct {
             bool isMicOn:1;
             bool isDebug:1;
-            bool isRandDemo:1;
+            bool demoRndEffControls:1;
             uint8_t micAnalyseDivider:2; // делитель анализа микрофона 0 - выключен, 1 - каждый раз, 2 - каждый четвертый раз, 3 - каждый восьмой раз
         };
     };
@@ -78,23 +78,23 @@ struct LampState {
     uint8_t last_min_peak = 0; // последнее минимальное амплитудное значение (по модулю)
     mic_noise_reduce_level_t noise_reduce = mic_noise_reduce_level_t::NR_NONE; // уровень шумодава
 
-    float getCurVal() {return cur_val;}
-    void setMicAnalyseDivider(uint8_t val) {micAnalyseDivider = val&3;}
-    float getMicScale() {return mic_scale;}
-    void setMicScale(float scale) {mic_scale = scale;}
-    float getMicNoise() {return mic_noise;}
-    void setMicNoise(float noise) {mic_noise = noise;}
-    void setMicNoiseRdcLevel(mic_noise_reduce_level_t lvl) {noise_reduce = lvl;}
-    mic_noise_reduce_level_t getMicNoiseRdcLevel() {return noise_reduce;}
-    uint8_t getMicMaxPeak() {return isMicOn?last_max_peak:0;}
-    uint8_t getMicMapMaxPeak() {return isMicOn?((last_max_peak>(uint8_t)mic_noise)?(last_max_peak-(uint8_t)mic_noise)*2:1):0;}
-    float getMicFreq() {return isMicOn?last_freq:0;}
-    uint8_t getMicMapFreq() {
+    float getCurVal() const {return cur_val;}
+    float getMicScale() const {return mic_scale;}
+    float getMicNoise() const {return mic_noise;}
+    mic_noise_reduce_level_t getMicNoiseRdcLevel() const {return noise_reduce;}
+    uint8_t getMicMaxPeak() const {return isMicOn?last_max_peak:0;}
+    uint8_t getMicMapMaxPeak() const {return isMicOn?((last_max_peak>(uint8_t)mic_noise)?(last_max_peak-(uint8_t)mic_noise)*2:1):0;}
+    float getMicFreq() const {return isMicOn?last_freq:0;}
+    uint8_t getMicMapFreq() const {
         float minFreq=(log((float)(SAMPLING_FREQ>>1)/MicWorker::samples));
         float scale = 255.0 / (log((float)HIGH_MAP_FREQ) - minFreq); 
         return (uint8_t)(isMicOn?(log(last_freq)-minFreq)*scale:0);
     }
 
+    void setMicAnalyseDivider(uint8_t val) {micAnalyseDivider = val&3;}
+    void setMicScale(float scale) {mic_scale = scale;}
+    void setMicNoise(float noise) {mic_noise = noise;}
+    void setMicNoiseRdcLevel(mic_noise_reduce_level_t lvl) {noise_reduce = lvl;}
 };
 
 typedef union {
@@ -301,7 +301,7 @@ protected:
     LedFB<CRGB> *fb;          // Framebuffer to work on
     EFF_ENUM effect;        /**< энумератор эффекта */
     bool isDebug() {return _lampstate ? _lampstate->isDebug : false;}
-    bool isRandDemo() {return _lampstate ? _lampstate->isRandDemo : false;}
+    bool demoRndEffControls() {return _lampstate ? _lampstate->demoRndEffControls : false;}
 
     // коэффициент скорости эффектов (некоторых, блин!)
     float getBaseSpeedFactor() {return _lampstate ? _lampstate->speedfactor : 1.0;}
