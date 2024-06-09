@@ -1319,7 +1319,7 @@
             "label":"Кукушка",
             "block":[
               {
-                "id":"hr",
+                "id":"cockoo_hr",
                 "html":"select",
                 "value":0,
                 "label":"Ежечасно",
@@ -1368,7 +1368,7 @@
                 ]
               },
               {
-                "id":"hhr",
+                "id":"cockoo_hhr",
                 "html":"select",
                 "value":0,
                 "label":"Пол часа",
