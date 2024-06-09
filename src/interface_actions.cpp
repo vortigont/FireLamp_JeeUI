@@ -315,6 +315,46 @@ void getset_tm1637(Interface *interf, const JsonObject *data, const char* action
     if (interf) ui_page_setup_devices(interf, nullptr, NULL);
 }
 
+void getset_settings_other(Interface *interf, const JsonObject *data, const char* action){
+
+    // if this is a request with no data, then just provide existing configuration and quit
+    if (!data || !(*data).size()){
+        if (!interf) return;
+        interf->json_frame_value();
+            interf->value(T_swFade, myLamp.getFaderFlag());
+            interf->value(T_swWipeScreen, myLamp.getClearingFlag());
+            interf->value(T_demoRndOrder, myLamp.getLampFlagsStuct().demoRndOrderSwitching);
+            interf->value(T_demoRndCtrls, myLamp.getLampFlagsStuct().demoRndEffControls);
+            interf->value(T_restoreState, myLamp.getLampFlagsStuct().restoreState);
+            interf->value(T_DemoTime, myLamp.getDemoTime());
+            interf->value(V_dev_brtscale, myLamp.getBrightnessScale());
+            // speedfactor is not saved/restored
+            //interf->value(T_effSpeedFactor, myLamp.());
+        interf->json_frame_flush();
+        return;
+    }
+
+    // otherwise set supplied values
+
+    myLamp.setFaderFlag((*data)[T_swFade]);
+    myLamp.setClearingFlag((*data)[T_swWipeScreen]);
+    myLamp.setRestoreState((*data)[T_restoreState]);
+    myLamp.setBrightnessScale( (*data)[V_dev_brtscale] );
+
+    myLamp.setDemoRndSwitch((*data)[T_demoRndOrder]);
+    myLamp.setDemoRndEffControls((*data)[T_demoRndCtrls]);
+    myLamp.setDemoTime((*data)[T_DemoTime]);
+
+    // speedfactor is not saved/restored
+    //float sf = (*data)[T_effSpeedFactor];
+    //SETPARAM(T_effSpeedFactor);
+    //myLamp.setSpeedFactor(sf);
+
+    myLamp.save_flags();
+
+    if(interf)
+        basicui::page_system_settings(interf, data, NULL);
+}
 
 // a call-back handler that listens for status CHANGE events and publish it to EmbUI feeders
 void event_publisher(void* handler_args, esp_event_base_t base, int32_t id, void* event_data){

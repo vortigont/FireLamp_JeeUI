@@ -710,39 +710,32 @@ EffectListElem *EffectWorker::getNextEffect(EffectListElem *current){
     return nullptr; // NONE
 }
 
-// получить номер эффекта смещенного на количество шагов, к ближайшему большему при превышении (для DEMO)
-uint16_t EffectWorker::getByCnt(byte cnt)
-{
-  uint16_t firstfound = curEff.num;
-  bool found = false;
-  for(unsigned i=0; i<effects.size(); i++){
-      if(curEff.num == effects[i].eff_nb){
-          found = true;
-          continue;
-      }
-      if(effects[i].isFavorite() && firstfound == curEff.num){
-          firstfound = effects[i].eff_nb;
-      }
-      if(effects[i].isFavorite() && found  && effects[i].eff_nb != curEff.num){
-            --cnt;
-            if(!cnt){
-                firstfound = effects[i].eff_nb;
-                break;
-            }
-      }
+uint16_t EffectWorker::getNextEffIndexForDemo(bool rnd){
+  auto idx = curEff.num;
+  auto i = effects.begin();
+
+  if (rnd){
+    i += random(1, effects.size()-2);   // if need random effect, then shift iterator to random distance
+  } else {
+    i = std::find_if(effects.begin(), effects.end(), [idx](const EffectListElem &e){ return e.eff_nb == idx; }); // otherwise find current
   }
-  if(cnt){ // список кончился, но до сих пор не нашли... начинаем сначала
-      for(unsigned i=0; i<effects.size(); i++){
-          if(effects[i].isFavorite() && effects[i].eff_nb!=curEff.num){
-              --cnt;
-              if(!cnt){
-                  firstfound = effects[i].eff_nb;
-                  break;
-              }
-          }
-      }
+
+  // какая-то ошибка, не нашли текущий эффект
+  if (i == effects.end())
+    return idx;
+
+  // ищем следующий доступный эффект для демо после текущего
+  while ( ++i != effects.end()){
+    if (i->canBeSelected() && i->enabledInDemo())
+      return i->eff_nb;
   }
-  return firstfound;
+
+  // если не нашли, ищем с начала списка
+  i = effects.begin();
+  while ( ++i != effects.end()){
+    if (i->canBeSelected() && i->enabledInDemo())
+      return i->eff_nb;
+  }
 }
 
 // предыдущий эффект, кроме canBeSelected==false
@@ -1135,7 +1128,7 @@ String EffectCalc::setDynCtrl(UIControl*_val){
   String ret_val = _val->getVal();
   //LOG(printf_P, PSTR("ctrlVal=%s\n"), ret_val.c_str());
   if ( usepalettes && starts_with(_val->getName().c_str(), TINTF_084) ){ // Начинается с Палитра
-    if(isRandDemo()){
+    if(demoRndEffControls()){
       paletteIdx = random(_val->getMin().toInt(),_val->getMax().toInt()+1);
     } else
       paletteIdx = ret_val.toInt();
@@ -1154,7 +1147,7 @@ String EffectCalc::setDynCtrl(UIControl*_val){
     }
 */
   } else {
-    if(isRandDemo()){ // для режима рандомного ДЕМО, если это не микрофон - то вернуть рандомное значение в пределах диапазона значений
+    if(demoRndEffControls()){ // для режима рандомного ДЕМО, если это не микрофон - то вернуть рандомное значение в пределах диапазона значений
       ret_val = String(random(_val->getMin().toInt(), _val->getMax().toInt()+1));
     }
   }
@@ -1251,7 +1244,7 @@ const String& EffectCalc::getCtrlVal(unsigned idx) {
     } else {
         for(unsigned i = 3; i<ctrls->size(); i++){
             if((*ctrls)[i]->getId()==idx){
-                if(isRandDemo()){
+                if(demoRndEffControls()){
                     dummy = random((*ctrls)[i]->getMin().toInt(),(*ctrls)[i]->getMax().toInt()+1);
                     return dummy;
                 }
