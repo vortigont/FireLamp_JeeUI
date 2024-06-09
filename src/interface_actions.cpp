@@ -323,8 +323,8 @@ void getset_settings_other(Interface *interf, const JsonObject *data, const char
         interf->json_frame_value();
             interf->value(T_swFade, myLamp.getFaderFlag());
             interf->value(T_swWipeScreen, myLamp.getClearingFlag());
-            interf->value(T_demoRndOrder, myLamp.getLampFlagsStuct().demoRndEffControls);
-            interf->value(T_demoRndCtrls, myLamp.getLampFlagsStuct().demoRndOrderSwitching);
+            interf->value(T_demoRndOrder, myLamp.getLampFlagsStuct().demoRndOrderSwitching);
+            interf->value(T_demoRndCtrls, myLamp.getLampFlagsStuct().demoRndEffControls);
             interf->value(T_restoreState, myLamp.getLampFlagsStuct().restoreState);
             interf->value(T_DemoTime, myLamp.getDemoTime());
             interf->value(V_dev_brtscale, myLamp.getBrightnessScale());

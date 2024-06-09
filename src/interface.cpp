@@ -285,7 +285,7 @@ void ui_section_effects_list_configuration(Interface *interf, const JsonObject *
 
     interf->json_section_line();
         interf->checkbox(TCONST_eff_sel, confEff->canBeSelected(), TINTF_in_sel_lst);      // доступен для выбора в выпадающем списке на главной странице
-        interf->checkbox(TCONST_eff_fav, confEff->isFavorite(), TINTF_in_demo);            // доступен в демо-режиме
+        interf->checkbox(TCONST_eff_fav, confEff->enabledInDemo(), TINTF_in_demo);         // доступен в демо-режиме
     interf->json_section_end();
 
     interf->spacer();
@@ -633,7 +633,7 @@ void set_effects_config_param(Interface *interf, const JsonObject *data, const c
     }
 
     // could be used in demo
-    effect->isFavorite((*data)[TCONST_eff_fav]);
+    effect->enabledInDemo((*data)[TCONST_eff_fav]);
 
     // check if effect has been renamed
     if (!(*data)[TCONST_effname].isNull()){
@@ -671,7 +671,7 @@ void set_effects_config_list(Interface *interf, const JsonObject *data, const ch
     interf->json_frame_value();
 
     interf->value(TCONST_eff_sel, confEff->canBeSelected(), false);          // доступен для выбора в выпадающем списке на главной странице
-    interf->value(TCONST_eff_fav, confEff->isFavorite(), false);             // доступен в демо-режиме
+    interf->value(TCONST_eff_fav, confEff->enabledInDemo(), false);             // доступен в демо-режиме
 
     interf->json_frame_flush();
 }

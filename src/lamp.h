@@ -102,7 +102,7 @@ union LampFlagsPack {
     LampFlagsPack() : pack(4){}     // set fade
 };
 
-// this struct keeps volatile flags
+// this struct keeps volatile flags that are cleared on MCU reset
 struct VolatileFlags {
     bool pwrState:1;        // флаг включения/выключения
     bool demoMode:1;        // running demo
@@ -342,7 +342,7 @@ public:
      * 
      * @param flag 
      */
-    void setDemoRndSwitch(bool flag){ opts.flag.demoRndOrderSwitching = flag; lampState.demoRndEffControls = flag; }
+    void setDemoRndSwitch(bool flag){ opts.flag.demoRndOrderSwitching = flag; }
 
     /**
      * @brief shuffle effect controls randomly when in demo mode

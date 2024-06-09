@@ -100,8 +100,8 @@ struct LampState {
 typedef union {
     uint8_t mask;
     struct {
-        bool canBeSelected:1;
-        bool isFavorite:1;
+        bool canBeSelected:1;       // доступен в списке выбора на главной
+        bool enabledInDemo:1;       // доступен в демо-режиме
         bool renamed:1;
     };
 } EFFFLAGS;
@@ -274,8 +274,8 @@ public:
 
     bool canBeSelected() const { return flags.canBeSelected; }
     void canBeSelected(bool val){ flags.canBeSelected = val; }
-    bool isFavorite() const { return flags.isFavorite; }
-    void isFavorite(bool val){ flags.isFavorite = val; }
+    bool enabledInDemo() const { return flags.enabledInDemo; }
+    void enabledInDemo(bool val){ flags.enabledInDemo = val; }
     bool renamed() const { return flags.renamed; }
     void renamed(bool v){ flags.renamed = v; }
     uint8_t getMS() const { return ms; }
@@ -574,11 +574,12 @@ public:
     // предыдущий эффект, кроме canBeSelected==false
     uint16_t getPrev();
 
-    // перейти на количество шагов, к ближйшему большему (для DEMO)
-    void moveByCnt(byte cnt){ switchEffect(getByCnt(cnt)); }
-
-    // получить номер эффекта смещенного на количество шагов (для DEMO)
-    uint16_t getByCnt(byte cnt);
+    /**
+     * @brief найти следующий номер эффекта для демо режима
+     * 
+     * @return uint16_t 
+     */
+    uint16_t getNextEffIndexForDemo(bool rnd = false);
 
     bool validByList(int val);
 
