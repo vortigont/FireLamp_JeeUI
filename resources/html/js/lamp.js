@@ -24,7 +24,10 @@ function alarm_items_load(arg){
 
 // get section data for alarm item submission and reconstruct the object to structure acceptable for alarm widget
 function alarm_item_set(arg){
-  let id = arg.target.id;
+  //console.log("Alarm post arg:", arg)
+  // button click may return awesome icon item
+  let id = arg.target.id === "" ? arg.target.parentElement.id : arg.target.id;
+  //console.log("Alarm item to set:", id)
   let form = go("#"+id), data = go.formdata(go("input, textarea, select", form));
   let idx = Object.keys(data)[0];
   idx = idx.slice(-1)
