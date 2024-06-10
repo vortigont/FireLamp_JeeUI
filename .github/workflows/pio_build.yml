@@ -6,19 +6,6 @@ name: PlatformIO CI
 
 on:
   workflow_dispatch:      # Manual start
-  push:
-#    branches: [ master, feat ]
-    paths:
-      - '**.c'
-      - '**.cpp'
-      - '**.h'
-      - '**.hpp'
-      - '**.ini'
-      #- '**.yml'
-#    paths-ignore:
-#      - '**.md'             # Do no build if *.md files changes
-#      - 'data/**'           # Ignore changes in littlefs source files
-#      - 'resources/**'      # Ignore changes in web resource files
   pull_request:
     branches: [ master]
     paths:
@@ -28,6 +15,19 @@ on:
       - '**.c'
     #paths-ignore:
     #  - '.github/**'
+#  push:
+#    branches: [ master, feat ]
+#    paths:
+#      - '**.c'
+#      - '**.cpp'
+#      - '**.h'
+#      - '**.hpp'
+#      - '**.ini'
+#      - '**.yml'
+#    paths-ignore:
+#      - '**.md'             # Do no build if *.md files changes
+#      - 'data/**'           # Ignore changes in littlefs source files
+#      - 'resources/**'      # Ignore changes in web resource files
 
 # one task per branch/env at a time
 concurrency:
