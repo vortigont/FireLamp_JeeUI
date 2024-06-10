@@ -1,0 +1,84 @@
+# workdir
+# /home/runner/work/FireLamp_JeeUI/FireLamp_JeeUI
+
+name: test
+
+on:
+  workflow_dispatch:      # Manual start
+    inputs:
+      refToBuild:
+        description: 'Branch, tag or commit SHA to build'
+        required: true
+        type: string
+#  push:
+#    branches: [ master ]
+#    tags:
+#      - "v*.*.*"
+
+jobs:
+  PublishRelease:
+    runs-on: ubuntu-latest
+    if: github.repository == 'vortigont/FireLamp_JeeUI'
+    steps:
+      - name: Collect firmware images
+        id: prepare_bins
+        shell: bash
+        run: |
+          mkdir ~/artifacts
+          echo "some" > ~/artifacts.zip
+          echo "some" > ~/artifacts2.zip
+          pwd
+          ls -l ~/artifacts/
+          find /home/runner/work/FireLamp_JeeUI/FireLamp_JeeUI
+          cd ~/artifacts/
+          ls -l
+          pwd
+          echo "some" > artifacts.zip
+          mkdir blah
+          ls -l
+      - name: "Find release ID"
+        id: last_release
+        uses: Saras-IT/get-repo-release@v1
+        with:
+          token: ${{ secrets.FIRELAMP_READER }}
+          #filter: '${{ inputs.refToBuild }}'
+      - name: "Print result"
+        run: |
+          echo "id: ${{ steps.last_release.outputs.id }}"
+          echo "name: ${{ steps.last_release.outputs.name }}"
+          echo "tag_name: ${{ steps.last_release.outputs.tag_name }}"
+          echo "created_at: ${{ steps.last_release.outputs.created_atd }}"
+          echo "draft: ${{ steps.last_release.outputs.draft }}"
+          echo "prerelease: ${{ steps.last_release.outputs.prerelease }}"
+          echo "release: ${{ steps.last_release.outputs.release }}"
+      - name: "Find release ID"
+        id: last_release2
+        uses: Saras-IT/get-repo-release@v1
+        with:
+          token: ${{ secrets.FIRELAMP_READER }}
+          filter: "v3.6.2"
+      - name: "Print result"
+        run: |
+          echo "id: ${{ steps.last_release2.outputs.id }}"
+          echo "name: ${{ steps.last_release2.outputs.name }}"
+          echo "tag_name: ${{ steps.last_release2.outputs.tag_name }}"
+          echo "created_at: ${{ steps.last_release2.outputs.created_atd }}"
+          echo "draft: ${{ steps.last_release2.outputs.draft }}"
+          echo "prerelease: ${{ steps.last_release2.outputs.prerelease }}"
+          echo "release: ${{ steps.last_release2.outputs.release }}"
+      - name: "Find release ID"
+        id: last_release3
+        uses: Saras-IT/get-repo-release@v1
+        with:
+          token: ${{ secrets.FIRELAMP_READER }}
+          filter: "v3.6.*"
+      - name: "Print result"
+        run: |
+          echo "id: ${{ steps.last_release3.outputs.id }}"
+          echo "name: ${{ steps.last_release3.outputs.name }}"
+          echo "tag_name: ${{ steps.last_release3.outputs.tag_name }}"
+          echo "created_at: ${{ steps.last_release3.outputs.created_atd }}"
+          echo "draft: ${{ steps.last_release3.outputs.draft }}"
+          echo "prerelease: ${{ steps.last_release3.outputs.prerelease }}"
+          echo "release: ${{ steps.last_release3.outputs.release }}"
+
