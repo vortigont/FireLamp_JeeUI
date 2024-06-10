@@ -21,9 +21,8 @@ jobs:
           thread_id: ${{ secrets.LAMPDEVS_ANNOUNCE_TOPIC_ID }}
           token: ${{ secrets.LAMPDEVS_BOT_TOKEN }}
           disable_web_page_preview: true
-          format: markdown
           message: |
             *Новый выпуск*
             ${{ github.event.repository.name }} ${{ github.event.release.tag_name }}
             ${{ github.event.release.body }}
-            [${{ github.repository }}](https://github.com/${{ github.repository }})
+            https://github.com/${{ github.repository }}
