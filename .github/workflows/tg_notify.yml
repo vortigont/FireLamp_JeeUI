@@ -23,7 +23,7 @@ jobs:
           disable_web_page_preview: true
           format: markdown
           message: |
-            *Новый выпуск!*
+            *Новый выпуск*
             ${{ github.event.repository.name }} ${{ github.event.release.tag_name }}
             ${{ github.event.release.body }}
             [${{ github.repository }}](https://github.com/${{ github.repository }})
