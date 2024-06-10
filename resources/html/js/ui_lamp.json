@@ -1,6 +1,6 @@
 {
   "type":"interface",
-  "version":14,
+  "version":15,
   "descr":"FireLamp UI objects",
 
   "settings":{
