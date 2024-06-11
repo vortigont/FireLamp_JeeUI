@@ -2,7 +2,7 @@
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
 # https://docs.platformio.org/en/latest/integration/ci/github-actions.html
 
-name: PlatformIO CI
+name: PlatformIO test builds
 
 on:
   workflow_dispatch:      # Manual start
