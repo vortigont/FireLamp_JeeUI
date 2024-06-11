@@ -20,11 +20,12 @@ jobs:
       - name: send Telegram Message about release
         uses: Ofceab-Studio/telegram-action@1.0.1
         with:
-          to: ${{ secrets.TG_BOT_MYCHAT }}
-          #to: ${{ secrets.LAMPDEVS_GID }}
-          #thread_id: ${{ secrets.LAMPDEVS_ANNOUNCE_TOPIC_ID }}
+          #to: ${{ secrets.TG_BOT_MYCHAT }}
+          to: ${{ secrets.LAMPDEVS_GID }}
+          thread_id: ${{ secrets.LAMPDEVS_ANNOUNCE_TOPIC_ID }}
           token: ${{ secrets.LAMPDEVS_BOT_TOKEN }}
           disable_web_page_preview: true
+          disable_notification: true
           message: |
             <b>Новый выпуск:</b> 
 
