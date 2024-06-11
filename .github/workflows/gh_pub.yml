@@ -1,4 +1,4 @@
-name: GitHub pages publisher
+name: [Testing] GitHub pages publisher
 
 on:
   workflow_dispatch:      # Manual start
