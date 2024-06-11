@@ -4,8 +4,11 @@
 # https://stackoverflow.com/questions/32423837/telegram-bot-how-to-get-a-group-chat-id                                                                          
 # https://stackoverflow.com/questions/75283870/how-to-send-telegram-message-to-a-topic-thread
 
-name: Telegram Release notifications
+# GH release API https://docs.github.com/en/rest/releases/releases
+
+name: Telegram - Published Release notification
 on:
+  #workflow_dispatch:      # Manual start
   release:
     types: [published]
 
@@ -17,13 +20,17 @@ jobs:
       - name: send Telegram Message about release
         uses: Ofceab-Studio/telegram-action@1.0.1
         with:
+          #to: ${{ secrets.TG_BOT_MYCHAT }}
           to: ${{ secrets.LAMPDEVS_GID }}
           thread_id: ${{ secrets.LAMPDEVS_ANNOUNCE_TOPIC_ID }}
           token: ${{ secrets.LAMPDEVS_BOT_TOKEN }}
           disable_web_page_preview: true
-          format: markdown
+          disable_notification: true
           message: |
-            *Новый выпуск!*
-            ${{ github.event.repository.name }} ${{ github.event.release.tag_name }}
+            <b>Новый выпуск:</b> 
+
+            <a href="${{ github.event.release.html_url }}">${{ github.repository }}</a> <b>${{ github.event.release.tag_name }}</b>
+            
             ${{ github.event.release.body }}
-            [${{ github.repository }}](https://github.com/${{ github.repository }})
+            
+            прошить через <a href="https://vortigont.github.io/ESPWebFlasher/FireLamp/">WebFlasher</a> из браузера

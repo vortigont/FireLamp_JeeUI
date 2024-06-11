@@ -1,0 +1,31 @@
+name: [Testing] GitHub pages publisher
+
+on:
+  workflow_dispatch:      # Manual start
+
+jobs:
+  PublishRelease:
+    runs-on: ubuntu-latest
+    if: github.repository == 'vortigont/FireLamp_JeeUI'
+    continue-on-error: false
+    steps:
+      - uses: actions/checkout@v4
+      - name: GH content generator
+        id: prepare_bins
+        shell: bash
+        run: |
+          mkdir ~/artifacts
+          echo "somefile" > ~/artifacts/some
+          echo "somefile" > ~/artifacts/another_some.txt
+      - name: Deploy Docs
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          # This is the branch where the docs are deployed to
+          commit-message: test workflow
+          repository-name: vortigont/ESPWebFlasher
+          token: ${{ secrets.GH_PAGES_PUBLISHER }}
+          branch: main
+          folder: ~/artifacts
+          target-folder: FireLamp/bin
+          clean: false
+          #dry-run: true

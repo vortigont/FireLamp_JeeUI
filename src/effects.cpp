@@ -973,7 +973,7 @@ void Effect3DNoise::load(){
 }
 
 String Effect3DNoise::setDynCtrl(UIControl*_val) {
-  if(_val->getId()==3 && _val->getVal().toInt()==0 && !isRandDemo())
+  if(_val->getId()==3 && _val->getVal().toInt()==0 && !demoRndEffControls())
     curPalette = &ZeebraColors_p;
   else if(_val->getId()==4) blurIm = EffectCalc::setDynCtrl(_val).toInt();
    else if(_val->getId()==5) colorLoop = EffectCalc::setDynCtrl(_val).toInt();

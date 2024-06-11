@@ -1,0 +1,44 @@
+# Telegram Message sender
+
+# https://gist.github.com/nafiesl/4ad622f344cd1dc3bb1ecbe468ff9f8a                                                                                              
+# https://stackoverflow.com/questions/32423837/telegram-bot-how-to-get-a-group-chat-id                                                                          
+# https://stackoverflow.com/questions/75283870/how-to-send-telegram-message-to-a-topic-thread
+# https://gist.github.com/nafiesl/4ad622f344cd1dc3bb1ecbe468ff9f8a
+
+name: Telegram - message about latest public release
+on:
+  workflow_dispatch:      # Manual start
+
+jobs:
+  build:
+    name: Send Message
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get Release data
+        id: release_data
+        uses: KevinRohn/github-full-release-data@v2
+        with:
+          #repository: ${{ github.repository.name }}  # (Optional) Repository name to fetch release data.
+          token: ${{ secrets.FIRELAMP_READER }}       # ${{ secrets.GITHUB_TOKEN }} # (Optional) `token` of the private repository from which the release information should be retrieved.
+          version: latest                             # (Optional) The version from which the release information is to be retrieved.
+          #body-markdown-file-path: output/release-body-content.md # (Optional) Specify an output path where the body output should be saved.
+          #asset-file: '*.dat,picture.jpg'             # (Optional) Name of the asset files to download.
+          #asset-output: 'download-output/'            # (Optional) The output path in which the downloaded asset files should be placed.
+      - name: send Telegram Message about release
+        uses: Ofceab-Studio/telegram-action@1.0.1
+        with:
+          #to: ${{ secrets.TG_BOT_MYCHAT }}
+          to: ${{ secrets.LAMPDEVS_GID }}
+          thread_id: ${{ secrets.LAMPDEVS_ANNOUNCE_TOPIC_ID }}
+          token: ${{ secrets.LAMPDEVS_BOT_TOKEN }}
+          disable_web_page_preview: true
+          disable_notification: true
+          format: html                                # Telegram Bot API currently supports only <b>, <i>, <a>,<code> and <pre> tags, for HTML parse mode
+          message: |
+            <b>Новый выпуск:</b> 
+
+            <a href="${{ steps.release_data.outputs.html_url }}">${{ github.repository }}</a> <b>${{ steps.release_data.outputs.tag_name }}</b>
+            
+            ${{ fromJSON(steps.release_data.outputs.body) }}
+            
+            прошить через <a href="https://vortigont.github.io/ESPWebFlasher/FireLamp/">WebFlasher</a> из браузера

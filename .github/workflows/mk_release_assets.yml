@@ -1,0 +1,109 @@
+# workdir
+# /home/runner/work/FireLamp_JeeUI/FireLamp_JeeUI
+
+name: GitHub release creator pipeline
+
+on:
+  workflow_dispatch:      # Manual start
+    inputs:
+      refToBuild:
+        description: 'Branch, tag or commit SHA to build'
+        required: true
+        type: string
+#  push:
+#    branches: [ master ]
+#    tags:
+#      - "v*.*.*"
+
+jobs:
+  PublishRelease:
+    runs-on: ubuntu-latest
+    if: github.repository == 'vortigont/FireLamp_JeeUI'
+    continue-on-error: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.refToBuild }}
+      - name: PIP Cache
+        id: cache-pip
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-pip-pkgs
+        with:
+          path: |
+            ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{env.cache-name}}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+            ${{ runner.os }}-
+      - name: Platformio Cache
+        id: pio-pp
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-pio-pkgs
+        with:
+          path: |
+            ~/.platformio/platforms
+            ~/.platformio/packages
+          key: ${{ runner.os }}-pio-${{env.cache-name}}
+          restore-keys: |
+            ${{ runner.os }}-pio-
+#           Linux-pio-cache-pio-pkgs, Linux-pio-, Linux-
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Install Platformio
+        run: |
+          python -m pip install --upgrade pip
+          pip install --upgrade platformio
+          platformio run -t buildfs
+          #platformio pkg update
+      - name: Run PlatformIO build
+        run: |
+          platformio run -e esp32_4M -e esp32_16M -e esp32S3_4M -e esp32S3_16M
+#         platformio run -e ${{ matrix.variant }}
+      - name: Collect firmware images
+        id: prepare_bins
+        shell: bash
+        run: |
+          mkdir ~/artifacts
+          find .pio/build/ -type f -name 'f*.bin'
+          for i in $(find .pio/build/ -type f -name 'firmware*.bin'); do mv $i ~/artifacts/$(basename -s .bin $i)_${{ inputs.refToBuild }}.bin; done
+          for i in $(find .pio/build/ -type f -name 'factory*.bin');  do mv $i ~/artifacts/$(basename -s .bin $i)_${{ inputs.refToBuild }}.bin; done
+          fw_pkg_filename="firmware_${{ inputs.refToBuild }}.zip"
+          find ~/artifacts/ -name "firmware*.bin" -print | zip -9 ~/artifacts/$fw_pkg_filename -@
+          factory_pkg_filename="factory_${{ inputs.refToBuild }}.zip"
+          #factory_pkg_filename="factory_${{ github.ref_name }}.zip"
+          find ~/artifacts/ -name "factory*.bin" -print | zip -9 ~/artifacts/$factory_pkg_filename -@
+          ls -l ~/artifacts/
+      - name: "Find release ID"
+        id: last_release
+        uses: Saras-IT/get-repo-release@v1
+        with:
+          token: ${{ secrets.FIRELAMP_READER }}
+          filter: '${{ inputs.refToBuild }}'
+      - name: Upload assets to Release
+        uses: xresloader/upload-to-github-release@v1
+        with:
+          draft: true
+          verbose: true
+          #tags: true
+          release_id: ${{ steps.last_release.outputs.id }}"
+          file: "/home/runner/artifacts/*.zip"
+      - name: Prepare GH artefacts
+        shell: bash
+        run: |
+          rm -f ~/artifacts/*.zip
+      - name: Deploy BINs to GH-Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          # This is the branch where the docs are deployed to
+          commit-message: bin release workflow
+          repository-name: vortigont/ESPWebFlasher
+          token: ${{ secrets.GH_PAGES_PUBLISHER }}
+          branch: main
+          folder: ~/artifacts
+          target-folder: FireLamp/bin
+          clean: false
+          dry-run: true

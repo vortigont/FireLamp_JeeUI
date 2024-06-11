@@ -127,6 +127,9 @@ void Lamp::lamp_init(){
     vopts.isMicOn = lampState.isMicOn = opts.flag.isMicOn;
   }
 
+  // copy demo values to this ugly shared struct for EffectWorker
+  lampState.demoRndEffControls = opts.flag.demoRndEffControls;
+
   if (!opts.flag.restoreState)
     return;
 
@@ -373,18 +376,20 @@ void Lamp::_switcheffect(effswitch_t action, bool fade, uint16_t effnb) {
   // find real effect number we need to switch to
   switch (action) {
   case effswitch_t::next :
-      _swState.pendingEffectNum = effwrkr.getNext();
-      break;
+    // если в демо-режиме, ищем следующий эффект для демо, иначе просто следующий эффект
+    _swState.pendingEffectNum = opts.flag.demoMode ? effwrkr.getNextEffIndexForDemo() : effwrkr.getNext();
+    break;
   case effswitch_t::prev :
-      _swState.pendingEffectNum = effwrkr.getPrev();
-      break;
+    _swState.pendingEffectNum = effwrkr.getPrev();
+    break;
   case effswitch_t::num :
-      _swState.pendingEffectNum = effnb;
-      break;
+    _swState.pendingEffectNum = effnb;
+    break;
   case effswitch_t::rnd :
-      // do not include 0-empty effect
-      _swState.pendingEffectNum = effwrkr.getByCnt(random(1, effwrkr.getEffectsListSize()));
-      break;
+    // next random effect in demo mode
+    _swState.pendingEffectNum = effwrkr.getNextEffIndexForDemo(true);
+    //_swState.pendingEffectNum = effwrkr.getByCnt(random(1, effwrkr.getEffectsListSize()));
+    break;
   default:
       return;
   }
@@ -402,8 +407,6 @@ void Lamp::_switcheffect(effswitch_t action, bool fade, uint16_t effnb) {
       LEDFader::getInstance()->fadelight(FADE_LOWBRTFRACT);
       _swState.fadeState = -1;
       return;
-        // если текущая абсолютная яркость больше чем 2*FADE_MINCHANGEBRT, то затухаем не полностью, а только до значения FADE_MINCHANGEBRT, в противном случае гаснем полностью
-        //LEDFader::getInstance()->fadelight( _get_brightness(true) < 3*MAX_BRIGHTNESS/FADE_LOWBRTFRACT/2 ? 0 : _brightnessScale/FADE_LOWBRTFRACT, FADE_TIME );
     }
   }
 
@@ -513,12 +516,11 @@ void Lamp::setDemoTime(uint32_t seconds){
  * 
  */
 void Lamp::demoNext(){
-if (opts.flag.demoRandom)
+if (opts.flag.demoRndOrderSwitching)
   switcheffect(effswitch_t::rnd);
 else
   switcheffect(effswitch_t::next);
 }
-
 
 /*
  * включает/выключает таймер обработки эффектов

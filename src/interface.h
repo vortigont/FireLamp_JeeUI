@@ -86,6 +86,15 @@ void set_hub75(Interface *interf, const JsonObject *data, const char* action);
 void getset_tm1637(Interface *interf, const JsonObject *data, const char* action);
 
 /**
+ * @brief Get/Set other settings on page (прочие настройки, настройки эффектов)
+ * 
+ * @param interf 
+ * @param data 
+ * @param action 
+ */
+void getset_settings_other(Interface *interf, const JsonObject *data, const char* action);
+
+/**
  * @brief show page with buttons leading to confgigiration of additional devices attached
  * i.e. tm1637, mp3player, etc...
  * 
