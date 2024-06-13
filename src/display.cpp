@@ -101,35 +101,34 @@ bool LEDDisplay::_start_rmt(const JsonDocument& doc){
 }
 
 bool LEDDisplay::_start_rmt_engine(){
+  // RMT engine setup
+  if (_gpio == -1){
+      LOGW(T_Display, println, "Won't run on GPIO -1");
+      return false;      // won't run on disabled pin
+  }
 
-    // RMT engine setup
-    if (_gpio == -1){
-        LOGW(T_Display, println, "Won't run on GPIO -1");
-        return false;      // won't run on disabled pin
-    }
+  LOGD(T_Display, printf, "run on GPIO %d\n", _gpio);
 
-    LOGD(T_Display, printf, "run on GPIO %d\n", _gpio);
+  // create new led strip object using our configured pin
+  _dengine = new ESP32RMTDisplayEngine(_gpio, _color_ordr, tiles.canvas_w() * tiles.canvas_h());
 
-    // create new led strip object using our configured pin
-    _dengine = new ESP32RMTDisplayEngine(_gpio, _color_ordr, tiles.canvas_w() * tiles.canvas_h());
+  // attach buffer to an object that will perform matrix layout trasformation on buffer access
+  if (!_canvas){
+      _canvas = std::make_shared< LedFB<CRGB> >(tiles.canvas_w(), tiles.canvas_h(), _dengine->getBuffer());
+      _canvas->setRemapFunction( [this](unsigned w, unsigned h, unsigned x, unsigned y) -> size_t { return this->tiles.transpose(w, h, x, y); } );
+    _gfx = std::make_shared< LedFB_GFX >(_canvas);
+  }
 
-    // attach buffer to an object that will perform matrix layout trasformation on buffer access
-    if (!_canvas){
-        _canvas = std::make_shared< LedFB<CRGB> >(tiles.canvas_w(), tiles.canvas_h(), _dengine->getBuffer());
-        _canvas->setRemapFunction( [this](unsigned w, unsigned h, unsigned x, unsigned y) -> size_t { return this->tiles.transpose(w, h, x, y); } );
-    }
+  brightness(_brt);   // reset FastLED brightness level
 
-    brightness(_brt);   // reset FastLED brightness level
+  print_stripe_cfg();
 
-    print_stripe_cfg();
-
-    // create GFX object
-    _gfx = std::make_unique< LedFB_GFX >(_canvas);
-    //_gfx->setRotation(2);
-    return true;
+  return true;
 }
 
 bool LEDDisplay::_start_hub75(const JsonDocument& doc){
+  // do not mess with existing engine
+  if (_dengine) return false;
     _etype = engine_t::hub75;
 
 
@@ -167,20 +166,16 @@ bool LEDDisplay::_start_hub75(const JsonDocument& doc){
     _dengine = new ESP32HUB75_DisplayEngine(mxconfig);
 
     // attach buffer to an object that will perform matrix layout trasformation on buffer access
-    if (!_canvas){
-        _canvas = std::make_shared< LedFB<CRGB> >(o[T_width], o[T_height], _dengine->getBuffer());
-        // this is a simple flat matrix so I use default 2D transformation
-    }
+    _canvas = std::make_shared< LedFB<CRGB> >(o[T_width], o[T_height], _dengine->getBuffer());
+    // this is a simple flat matrix so I use default 2D transformation
+    _gfx = std::make_shared< LedFB_GFX >(_canvas);
 
     brightness(_brt);   // reset brightness level
-
-    // create GFX object
-    _gfx = std::make_unique< LedFB_GFX >(_canvas);
-    //_gfx->setRotation(2);
 
     return true;
 }
 
+/*
 std::shared_ptr< LedFB<uint16_t> > LEDDisplay::getOverlay(){
   auto instance = _ovr.lock();
 
@@ -203,6 +198,7 @@ std::shared_ptr< LedFB<uint16_t> > LEDDisplay::getOverlay(){
   }
   return instance;
 }
+*/
 
 void LEDDisplay::updateStripeLayout(uint16_t w, uint16_t h, uint16_t wcnt, uint16_t hcnt,
                             bool snake, bool vert, bool vmirr, bool hmirr,
@@ -224,8 +220,8 @@ void LEDDisplay::updateStripeLayout(uint16_t w, uint16_t h, uint16_t wcnt, uint1
 
         _dengine->clear();
         _canvas->resize(w*wcnt, h*hcnt);
-        auto instance = _ovr.lock();
-        if (instance) instance->resize(w*wcnt, h*hcnt);
+        //auto instance = _ovr.lock();
+        //if (instance) instance->resize(w*wcnt, h*hcnt);
         tiles.setTileDimensions(w, h, wcnt, hcnt);
     }
     print_stripe_cfg();
@@ -304,8 +300,11 @@ void LEDDisplay::show(){
     _dengine->copyFront2Back();
   }
 
+  // for all overlay structs in stack call a callback function that will render it over canvas
   for (auto &s : _stack)
     s.callback( _gfx.get() );
+
+
 
   _dengine->show();
 
@@ -321,33 +320,6 @@ void LEDDisplay::canvasProtect(bool v){
   _use_db = v;
 }
 
-void LEDDisplay::overlay_render(){
-  if (_ovr.expired()) return;
-
-  // need to apply overlay on canvas
-  auto ovr = _ovr.lock();
-  if (_canvas->size() != ovr->size()) return;  // a safe-check for buffer sizes
-
-  // since overlay has same remapping function, I could simply apply it pixel to pixel
-  for (size_t i = 0; i != _canvas->size();  ++i ){
-    _canvas->at(i) = LedFB_GFX::colorCRGB( ovr->at(i) );
-  }
-
-/*
-  // draw non key-color pixels from canvas, otherwise from overlay
-  for (size_t y = 0; y != _canvas->h();  ++y )
-    for (size_t x = 0; x != _canvas->w();  ++x ){
-      //CRGB c = ovr->at(i) == _transparent_color ? _canvas->at(i) : ovr->at(i);
-      if (ovr->at(x, y)) // if pixel in overlay is not 'black', draw it on canvas
-        _canvas->  at(x, y) = LedFB_GFX::colorCRGB( ovr->at(x, y) );
-        //_canvas->hub75.drawPixelRGB888( i % canvas->hub75.getCfg().mx_width, i / canvas->hub75.getCfg().mx_width, c.r, c.g, c.b);
-    }
-*/
-}
-
-
-// template to compare std::function pointee
-// https://stackoverflow.com/questions/20833453/comparing-stdfunctions-for-equality
 void LEDDisplay::attachOverlay( overlay_cb_t f){
   //LOGV(T_Display, printf, "new ovr:%u\n", &f);
   auto cb = std::find_if(_stack.begin(), _stack.end(), [&f](const overlay_cb_t& fn){ return f.id == fn.id; } );
@@ -369,6 +341,35 @@ void LEDDisplay::detachOverlay( overlay_cb_t f){
     LOGV(T_Display, println, "overlay cb not found!");
   }
 }
+
+
+// template to compare std::function pointee
+// https://stackoverflow.com/questions/20833453/comparing-stdfunctions-for-equality
+
+
+/*
+void LEDDisplay::overlay_render(){
+  if (_ovr.expired()) return;
+
+  // need to apply overlay on canvas
+  auto ovr = _ovr.lock();
+  if (_canvas->size() != ovr->size()) return;  // a safe-check for buffer sizes
+
+  // since overlay has same remapping function, I could simply apply it pixel to pixel
+  for (size_t i = 0; i != _canvas->size();  ++i ){
+    _canvas->at(i) = LedFB_GFX::colorCRGB( ovr->at(i) );
+  }
+
+  // draw non key-color pixels from canvas, otherwise from overlay
+  for (size_t y = 0; y != _canvas->h();  ++y )
+    for (size_t x = 0; x != _canvas->w();  ++x ){
+      //CRGB c = ovr->at(i) == _transparent_color ? _canvas->at(i) : ovr->at(i);
+      if (ovr->at(x, y)) // if pixel in overlay is not 'black', draw it on canvas
+        _canvas->  at(x, y) = LedFB_GFX::colorCRGB( ovr->at(x, y) );
+        //_canvas->hub75.drawPixelRGB888( i % canvas->hub75.getCfg().mx_width, i / canvas->hub75.getCfg().mx_width, c.r, c.g, c.b);
+    }
+}
+*/
 
 
 // my display object

@@ -41,7 +41,8 @@ A header file for LED output devices, backends and buffers
 */
 
 #pragma once
-#include "ledfb.hpp"
+#include "ledfb_esp32.hpp"
+#include "ledstripe.hpp"
 #include "ArduinoJson.h"
 
 #define FASTLED_CURRENT_LIMIT (2000U)                       // лимит по току для адресных лент в миллиамперах, 0 - выключить лимит
@@ -49,6 +50,18 @@ A header file for LED output devices, backends and buffers
 enum class engine_t:uint8_t  {
     ws2812 = 0,
     hub75
+};
+
+/**
+ * @brief structure for 2D overlay texture callback object
+ * 
+ */
+//using crgb_shared_buff = std::shared_ptr< PixelDataBuffer<CRGB> >;
+//template <class COLOR_TYPE>
+struct overlay_cb_t {
+    size_t id;
+    std::function <void (LedFB_GFX *buff)> callback;
+    //std::function <void (std::shared_ptr< PixelDataBuffer<COLOR_TYPE> > buff)> callback;
 };
 
 // My LED engine controller
@@ -61,28 +74,33 @@ class LEDDisplay {
     EOrder _color_ordr;     // FastLED color order for sw stripes
     uint8_t _brt{32};       // backend engine brightness, if supported
 
-    // LED stripe matrix with a desired topology and layout  
+    // flag marking use of a double buffer
+    bool _use_db = false;
+
+    // LED stripe matrix with a desired topology and layout / or HUB75 panel buffer
     std::shared_ptr< LedFB<CRGB> > _canvas;
 
-    std::unique_ptr< LedFB_GFX > _gfx;
+    // GFX object
+    std::shared_ptr< LedFB_GFX > _gfx;
 
     // overlay buffer
-    std::weak_ptr< LedFB<uint16_t> > _ovr;
+    //std::weak_ptr< LedFB<uint16_t> > _ovr;
 
     // Addresable led strip topology transformation object
     LedTiles tiles;
 
-    /**
-     * @brief flag that marks canvas buffer as persistent that should NOT be changed
-     * by overlay mixing operations. In that case overlay is applied on top of a canvas copy in back buffer (if possible)
-     * 
-     */
-    bool _use_db = false;
-
-    std::list< overlay_cb_t > _stack;
-
     // An object ref I'll use to access LED rendering engine
     DisplayEngine<CRGB> *_dengine = nullptr;
+
+    /**
+     * @brief a stack of overlay callback structs
+     * on buffer show, each struct in a stack is applied on top of canvas before rendering canvas to the engine
+     * 
+     */
+    std::list< overlay_cb_t > _stack;
+
+
+
 
     bool _start_rmt(const JsonDocument& doc);
     bool _start_rmt_engine();
@@ -137,7 +155,7 @@ public:
      * 
      * @return std::shared_ptr<LedStripe> 
      */
-    std::shared_ptr< LedFB<uint16_t> > getOverlay();
+    //std::shared_ptr< LedFB<uint16_t> > getOverlay();
 
     // draw data to display
     void show();
@@ -146,7 +164,7 @@ public:
      * @brief apply overlay to canvas
      * 
      */
-    void overlay_render();
+    //void overlay_render();
 
     // Wipe all layers and buffers
     void clear(){ if (_dengine) _dengine->clear(); };
@@ -160,9 +178,18 @@ public:
     // print stripe configuration in debug mode
     void print_stripe_cfg();
 
-
+    /**
+     * @brief attach overlay callback struct to stack
+     * 
+     * @param f 
+     */
     void attachOverlay( overlay_cb_t f);
 
+    /**
+     * @brief dettach overlay callback struct to stack
+     * 
+     * @param f 
+     */
     void detachOverlay( overlay_cb_t f);
 
 };

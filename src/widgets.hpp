@@ -166,13 +166,13 @@ protected:
     bool getCanvas();
 
     // make/release display overlay
-    bool getOverlay();
+    //bool getOverlay();
 
-    void releaseOverlay();
+    //void releaseOverlay();
 
 public:
     GenericGFXWidget(const char* wlabel, unsigned interval) : GenericWidget(wlabel, interval){};
-    virtual ~GenericGFXWidget(){ releaseOverlay(); };
+    virtual ~GenericGFXWidget(){ };
 
 };
 

@@ -188,7 +188,7 @@ void GenericWidget::save(JsonVariantConst cfg){
 
 
 // ****  GenericGFXWidget methods
-
+/*
 bool GenericGFXWidget::getOverlay(){
   if (screen) return true;
   auto overlay = display.getOverlay();  // obtain overlay buffer
@@ -205,7 +205,7 @@ void GenericGFXWidget::releaseOverlay(){
   screen = nullptr;
   //overlay.reset();
 }
-
+*/
 bool GenericGFXWidget::getCanvas(){
   if (canvas) return true;
   auto c = display.getCanvas();   // obtain canvas buffer
@@ -271,7 +271,6 @@ void ClockWidget::load_cfg(JsonVariantConst cfg){
   //texture_ovr_cb_t clkovr { [&](LedFB_GFX *gfx){ gfx->fadeBitmap(clk.x, clk.y, _textmask_clk->getFramebuffer(), 48, 16, clk.color, 64); } }; 
   if (clk.cb.id != (size_t)&clk){
     clk.cb.id = (size_t)&clk;
-    //clk.cb.callback = [&](LedFB_GFX *gfx){ gfx->fadeBitmap(clk.x, clk.y, _textmask_clk->getFramebuffer(), clk.maxW, clk.maxH, clk.color, 12); };
     clk.cb.callback = [&](LedFB_GFX *gfx){ gfx->blendBitmap(clk.x, clk.y, _textmask_clk->getFramebuffer(), clk.maxW, clk.maxH, clk.color_txt, clk.alpha_tx, clk.color_bg, clk.alpha_bg); };
     LOGV(T_Display, printf, "clk overlay: %u\n", (size_t)&clk);
     display.attachOverlay( clk.cb );

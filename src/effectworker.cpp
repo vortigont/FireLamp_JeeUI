@@ -736,6 +736,9 @@ uint16_t EffectWorker::getNextEffIndexForDemo(bool rnd){
     if (i->canBeSelected() && i->enabledInDemo())
       return i->eff_nb;
   }
+
+  // if nothing found, then return current effect
+  return curEff.num;
 }
 
 // предыдущий эффект, кроме canBeSelected==false

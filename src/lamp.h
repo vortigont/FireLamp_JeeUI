@@ -289,10 +289,10 @@ public:
     bool isDrawOn() const { return _overlay.get(); }
 
     // activate/disable overlay for drawing
-    void enableDrawing(bool state){ _overlay_buffer(state); };
+    //void enableDrawing(bool state){ _overlay_buffer(state); };
 
     // draw a pixel in overlay
-    void writeDrawBuf(CRGB color, uint16_t x, uint16_t y);
+    //void writeDrawBuf(CRGB color, uint16_t x, uint16_t y);
     //void writeDrawBuf(CRGB color, uint16_t num);
 
     /**
@@ -300,13 +300,13 @@ public:
      * 
      * @param color 
      */
-    void fillDrawBuf(CRGB color);
+    //void fillDrawBuf(CRGB color);
 
     /**
      * @brief fill DrawBuf with solid black (make it transparent)
      * 
      */
-    void clearDrawBuf() { CRGB c = CRGB::Black; fillDrawBuf(c); }
+    //void clearDrawBuf() { CRGB c = CRGB::Black; fillDrawBuf(c); }
 
     /**
      * @brief enable/disable demo mode
