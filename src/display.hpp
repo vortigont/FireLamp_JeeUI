@@ -59,7 +59,7 @@ enum class engine_t:uint8_t  {
 //using crgb_shared_buff = std::shared_ptr< PixelDataBuffer<CRGB> >;
 //template <class COLOR_TYPE>
 struct overlay_cb_t {
-    size_t id;
+    uint32_t id;
     std::function <void (LedFB_GFX *buff)> callback;
     //std::function <void (std::shared_ptr< PixelDataBuffer<COLOR_TYPE> > buff)> callback;
 };
@@ -149,14 +149,6 @@ public:
 
     std::shared_ptr< LedFB<CRGB> > getCanvas() { return _canvas; }
 
-    /**
-     * @brief Get a pointer to Overlay buffer
-     * Note: consumer MUST release a pointer once overlay operations is no longer needed to save RAM and CPU cycles on overlay mixing
-     * 
-     * @return std::shared_ptr<LedStripe> 
-     */
-    //std::shared_ptr< LedFB<uint16_t> > getOverlay();
-
     // draw data to display
     void show();
 
@@ -183,14 +175,14 @@ public:
      * 
      * @param f 
      */
-    void attachOverlay( overlay_cb_t f);
+    void attachOverlay(overlay_cb_t f);
 
     /**
      * @brief dettach overlay callback struct to stack
      * 
-     * @param f 
+     * @param id
      */
-    void detachOverlay( overlay_cb_t f);
+    void detachOverlay(uint32_t id);
 
 };
 

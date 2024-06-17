@@ -324,18 +324,18 @@ void LEDDisplay::attachOverlay( overlay_cb_t f){
   //LOGV(T_Display, printf, "new ovr:%u\n", &f);
   auto cb = std::find_if(_stack.begin(), _stack.end(), [&f](const overlay_cb_t& fn){ return f.id == fn.id; } );
   if (cb == _stack.end()){
-    LOGV(T_Display, printf, "add overlay: %u\n", f.id);
+    LOGD(T_Display, printf, "add overlay: %u\n", f.id);
     _stack.push_back(f);
   } else {
     LOGV(T_Display, println, "overlay cb already exist");
   }
 }
 
-void LEDDisplay::detachOverlay( overlay_cb_t f){
+void LEDDisplay::detachOverlay( uint32_t id){
   //LOGV(T_Display, printf, "try remove ovr:%u\n", *(long *)(char *)&f);
-  auto cb = std::find_if(_stack.cbegin(), _stack.cend(), [&f](const overlay_cb_t& fn){ return f.id == fn.id; } );
+  auto cb = std::find_if(_stack.cbegin(), _stack.cend(), [id](const overlay_cb_t& fn){ return id == fn.id; } );
   if ( cb != _stack.cend() ){
-    LOGV(T_Display, printf, "remove overlay: %u\n", f.id);
+    LOGD(T_Display, printf, "remove overlay: %u\n", id);
     _stack.erase(cb);
   } else {
     LOGV(T_Display, println, "overlay cb not found!");

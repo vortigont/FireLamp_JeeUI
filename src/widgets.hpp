@@ -177,6 +177,22 @@ public:
 };
 
 
+/**
+ * @brief configuration for text bitmap block
+ * 
+ */
+struct TextBitMapCfg {
+    int16_t x, y;           // cursor to print Clock
+    uint16_t color{DEFAULT_TEXT_COLOR};     // color in 5-6-5 mode
+    uint8_t font_index;     // font to use
+    uint8_t baseline_shift; // show date
+    // max text bounds - needed to track max block size to cover the clock text
+    uint16_t maxW,  maxH;
+    uint8_t alpha_bg;
+    overlay_cb_t cb{};
+};
+
+
 class ClockWidget : public GenericWidget {
 
 struct Clock {
@@ -194,20 +210,10 @@ struct Clock {
     overlay_cb_t cb{};
 };
 
-struct Date {
-    int16_t x, y;       // cursor to print Clock
-    uint16_t color{DEFAULT_TEXT_COLOR};     // color in 5-6-5 mode
-    uint8_t font_index; // font to use
-    bool show;          // show date
-    // max text bounds - needed to track max block size to cover the clock text
-    uint16_t maxW,  maxH;
-    uint8_t alpha_bg;
-    overlay_cb_t cb{};
-};
-
     // elements structs
     Clock clk{};
-    Date date{};
+    TextBitMapCfg date{};
+    bool date_show;
     // last timestamp
     std::time_t last_date;
     // flag that indicates screen needs a refresh
@@ -251,55 +257,6 @@ public:
     void start() override;
     void stop() override;
 };
-/*
-class TextOverlay : public GenericGFXWidget {
-    std::shared_ptr< LedFB<CRGB> > fb;
-    std::shared_ptr< LedFB<uint16_t> > ovr_fb;
-
-    TimerHandle_t _tmr_mode = nullptr;
-
-    std::unique_ptr<Arduino_Canvas_Mono> _textmask_clk;
-
-    int cnt{5}, tpos_x{48}, tpos_y{14}, opos_x{0}, opos_y{0};
-    uint32_t _cw{48}, _ch{16};
-
-    int cx = 1, cy = 1;
-
-    // flag that indicates screen needs a refresh
-    bool redraw;
-
-    esp_event_handler_instance_t _hdlr_lmp_change_evt = nullptr;
-    esp_event_handler_instance_t _hdlr_lmp_state_evt = nullptr;
-
-    // pack class configuration into JsonObject
-    void generate_cfg(JsonVariant cfg) const override;
-
-    // load class configuration into JsonObject
-    void load_cfg(JsonVariantConst cfg) override;
-
-    static void _event_hndlr(void* handler, esp_event_base_t base, int32_t id, void* event_data);
-
-    // change events handler
-    void _lmpChEventHandler(esp_event_base_t base, int32_t id, void* data);
-
-    // set events handler
-    //void _lmpSetEventHandler(esp_event_base_t base, int32_t id, void* data);
-    //template <class COLOR_TYPE>
-    void _ovr_blend(LedFB<CRGB>* canvas);
-
-    void _mode_switcher();
-
-public:
-    TextOverlay();
-    ~TextOverlay();
-
-    void widgetRunner() override;
-
-    void start() override;
-    void stop() override;
-
-};
-*/
 
 class WidgetManager {
 
@@ -431,18 +388,66 @@ public:
     //void stop() override;
 };
 
+
+
+class TextScrollerWgdt : public GenericWidget {
+
+struct WeatherCfg {
+  std::string city_id, apikey;
+  uint32_t refresh; // ms
+  bool retry{false};
+};
+
+  TextBitMapCfg _bitmapcfg;
+  WeatherCfg _weathercfg;
+
+  std::unique_ptr<Arduino_Canvas_Mono> _textmask;
+
+  int _cur_offset{0};
+  int _scrollrate;
+  uint32_t _last_redraw;
+  uint16_t _txt_pixlen;
+  bool _wupd{false};
+
+  overlay_cb_t _renderer;
+
+  std::string _txtstr{"обновление погоды..."};
+
+  static void _event_hndlr(void* handler, esp_event_base_t base, int32_t id, void* event_data);
+
+  // pack class configuration into JsonObject
+  void generate_cfg(JsonVariant cfg) const override;
+
+  // load class configuration into JsonObject
+  void load_cfg(JsonVariantConst cfg) override;
+
+  void _getOpenWeather();
+
+  // hook to check/update text sroller
+  void _scroll_line(LedFB_GFX *gfx);
+
+public:
+  TextScrollerWgdt();
+  ~TextScrollerWgdt();
+
+  void widgetRunner() override;
+
+  void start() override;
+  void stop() override;
+};
+
 /**
  * @brief register EmbUI action handlers for managing widgets
  * 
  */
 void register_widgets_handlers();
 
-
+/*
 static uint8_t inline alphaBlend( uint8_t a, uint8_t b, uint8_t alpha ) { return scale8(a, 255-alpha) + scale8(b, alpha); }
 static CRGB alphaBlend( CRGB a, CRGB b, uint8_t alpha){
     return CRGB( alphaBlend( a.r, b.r, alpha ), alphaBlend( a.g, b.g, alpha ), alphaBlend( a.b, b.b, alpha ) );
 };
-
+*/
 
 
 extern WidgetManager informer;

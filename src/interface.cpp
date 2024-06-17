@@ -82,6 +82,7 @@ enum class page : uint16_t {
     widgetslist = 101,      // available widgets page
     wdgt_clock,
     wdgt_alrmclock,
+    wdgt_txtsroll,
     setup_gpio
 };
 
@@ -207,6 +208,15 @@ void uidata_page_selector(Interface *interf, const JsonObject *data, const char*
             JsonDocument doc;
             informer.getConfig(doc.to<JsonObject>(), T_alrmclock);  // generate config with nested alarm event objects
             interf->json_frame_add(doc);
+            break;
+        }
+        // Text scroller
+        case page::wdgt_txtsroll : {
+            interf->uidata_pick( "lampui.pages.wdgt.txtscroll" );
+            interf->json_frame_flush();
+            JsonDocument doc;
+            informer.getConfig(doc.to<JsonObject>(), T_txtscroll);
+            interf->json_frame_value(doc);
             break;
         }
         default:;                   // by default do nothing
