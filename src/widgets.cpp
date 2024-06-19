@@ -920,6 +920,8 @@ void TextScrollerWgdt::load_cfg(JsonVariantConst cfg){
 
   _scrollrate = cfg[T_rate] | 2;
 
+  // grab a lock on bitmap canvas
+  std::lock_guard<std::mutex> lock(_mtx);
   _textmask = std::make_unique<Arduino_Canvas_Mono>(_bitmapcfg.maxW, _bitmapcfg.maxH, nullptr);
   _textmask->begin();
   _textmask->setUTF8Print(true);
@@ -929,11 +931,10 @@ void TextScrollerWgdt::load_cfg(JsonVariantConst cfg){
   //_textmask_clk->setRotation(2);
 
   if (cfg[T_cityid])
-    _weathercfg.city_id = cfg[T_cityid].as<String>().c_str();
+    _weathercfg.city_id = cfg[T_cityid].as<const char*>();
 
   if (cfg[T_apikey])
     _weathercfg.apikey =  cfg[T_apikey].as<const char*>();
-
 
   _weathercfg.refresh = (cfg[T_refresh] | 1) * 3600000;
 
@@ -949,18 +950,16 @@ void TextScrollerWgdt::generate_cfg(JsonVariant cfg) const {
   cfg[T_height]   = _bitmapcfg.maxH;
   cfg[T_x1offset] = _bitmapcfg.x;
   cfg[T_y1offset] = _bitmapcfg.y;
+  cfg[T_font1]    = _bitmapcfg.font_index;
   cfg[T_offset]   = _bitmapcfg.baseline_shift;
   cfg[T_color1]   = _bitmapcfg.color;
   cfg[T_alpha_b]  = _bitmapcfg.alpha_bg;
   cfg[T_rate]     = _scrollrate;
 
-  // weather
-  cfg[T_apikey]   = _weathercfg.apikey.data();
-  cfg[T_cityid]   = _weathercfg.city_id.data();
-
   //JsonObject weath = cfg[T_weather].isNull() ? cfg[T_weather].to<JsonObject>() : cfg[T_weather];
   //weath.clear();  // clear obj, I'll replace it's content
 
+  // weather
   if (_weathercfg.city_id.size())
     cfg[T_cityid] =  _weathercfg.city_id;
   if (_weathercfg.apikey.size())
@@ -976,12 +975,18 @@ void TextScrollerWgdt::widgetRunner(){
 }
 
 void TextScrollerWgdt::_scroll_line(LedFB_GFX *gfx){
+  // if canvas can't be locked, skip this run
+  std::unique_lock<std::mutex> lock(_mtx, std::defer_lock);
+  if (!lock.try_lock())
+    return;
+
   int32_t px_to_shift = (millis() - _last_redraw) * _scrollrate / 1000;
   _cur_offset -= px_to_shift;
   // добавляем ко времени последнего обновления столько интервалов заданной частоты на сколько пикселей мы продвинулись.
   // нужно оставить "хвосты" избыточного времени копиться до момента пока не набежит еще один високосный пиксель для сдвига
   _last_redraw += px_to_shift * 1000 / _scrollrate;
   
+
   _textmask->fillScreen(BLACK);
   _textmask->setCursor(_cur_offset, _bitmapcfg.maxH - _bitmapcfg.baseline_shift);
   _textmask->print(_txtstr.data());
@@ -1105,7 +1110,9 @@ void TextScrollerWgdt::_getOpenWeather(){
   pogoda += ":";
   pogoda += localtime(&sun)->tm_min;
 
-  LOGD(T_txtscroll, println, pogoda.c_str());
+  // ths lock was meant for canvas, but let's use for string update also,
+  // anyway string is also use when rendering text to bitmap
+  std::lock_guard<std::mutex> lock(_mtx);
   _txtstr = pogoda.c_str();
 
   // find text string width
@@ -1118,7 +1125,7 @@ void TextScrollerWgdt::_getOpenWeather(){
     setInterval(_weathercfg.refresh);
   }
 
-  LOGD(T_txtscroll, printf, "Got Weather: %s\n", pogoda.c_str());
+  LOGV(T_txtscroll, printf, "Weather update: %s\n", pogoda.c_str());
 }
 
 

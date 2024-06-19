@@ -83,8 +83,14 @@
               "value":-1,
               "min":-1,
               "step":1
-            },
-            {
+            }
+          ]
+        },
+        {
+          "section":"hub75_gpio_rgb2",
+          "line":true,
+          "block":[
+                {
               "id":"R2",
               "html":"input",
               "type":"number",
@@ -1264,7 +1270,7 @@
                   {
                     "id":"font2",
                     "html":"select",
-                    "value":6,
+                    "value":5,
                     "label":"Шрифт секунд",
                     "section":"options",
                     "block":[
@@ -1367,7 +1373,7 @@
               {
                 "id":"font3",
                 "html":"select",
-                "value":6,
+                "value":5,
                 "label":"Шрифт",
                 "section":"options",
                 "block":[

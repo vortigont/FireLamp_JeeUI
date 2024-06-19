@@ -47,6 +47,7 @@
 #include "evtloop.h"
 #include "char_const.h"
 #include "canvas/Arduino_Canvas_Mono.h"
+#include <mutex>
 
 #define DEFAULT_TEXT_COLOR  54000
 
@@ -402,6 +403,8 @@ struct WeatherCfg {
   WeatherCfg _weathercfg;
 
   std::unique_ptr<Arduino_Canvas_Mono> _textmask;
+  // _textmask access mutext
+  std::mutex _mtx;
 
   int _cur_offset{0};
   int _scrollrate;
