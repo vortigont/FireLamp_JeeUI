@@ -35,7 +35,7 @@ jobs:
           disable_notification: true
           format: html                                # Telegram Bot API currently supports only <b>, <i>, <a>,<code> and <pre> tags, for HTML parse mode
           message: |
-            <b>Новый выпуск:</b> 
+            <b>❗Новый выпуск❗</b>
 
             <a href="${{ steps.release_data.outputs.html_url }}">${{ github.repository }}</a> <b>${{ steps.release_data.outputs.tag_name }}</b>
             
