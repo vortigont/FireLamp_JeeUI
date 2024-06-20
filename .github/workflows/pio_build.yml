@@ -60,19 +60,19 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
             ${{ runner.os }}-
-      - name: Platformio Cache
-        id: cache-pio
-        uses: actions/cache@v4
-        env:
-          cache-name: cache-pio-pkgs
-        with:
-          path: |
-            ~/.platformio/platforms
-            ~/.platformio/packages
-          key: ${{ runner.os }}-pio-${{env.cache-name}}
-          restore-keys: |
-            ${{ runner.os }}-pio-
-#           Linux-pio-cache-pio-pkgs, Linux-pio-, Linux-
+#      - name: Platformio Cache
+#        id: cache-pio
+#        uses: actions/cache@v4
+#        env:
+#          cache-name: cache-pio-pkgs
+#        with:
+#          path: |
+#            ~/.platformio/platforms
+#            ~/.platformio/packages
+#          key: ${{ runner.os }}-pio-${{env.cache-name}}
+#          restore-keys: |
+#            ${{ runner.os }}-pio-
+##           Linux-pio-cache-pio-pkgs, Linux-pio-, Linux-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
