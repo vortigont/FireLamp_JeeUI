@@ -84,7 +84,7 @@ jobs:
           #platformio pkg update
       - name: Run PlatformIO build
         run: |
+          platformio run -v -e esp32debug
           #platformio run -t buildfs
-	  platformio run -v -e esp32debug
           #platformio run -e esp32 -e esp32debug -e esp32S3
           #platformio run -e ${{ matrix.variant }}
