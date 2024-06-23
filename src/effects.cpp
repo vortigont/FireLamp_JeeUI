@@ -8513,7 +8513,7 @@ bool EffectFlower::run() {
 }
 
 /* Эффект "Часы-тетрис" */
-
+/*
 TetrisClock::TetrisClock(std::shared_ptr< LedFB<CRGB> > framebuffer) : EffectCalc(framebuffer.get()), screen(framebuffer), t_clk(screen), t_m(screen), t_ap(screen) {
   screen.setRotation(2);
   seconds = new Task();
@@ -8636,3 +8636,4 @@ String TetrisClock::setDynCtrl(UIControl*_val){
   EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
   return String();
 }
+*/

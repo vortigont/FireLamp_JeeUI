@@ -44,12 +44,13 @@
 #include "widgets.hpp"
 #include "EmbUI.h"
 #include "nvs_handle.hpp"
+#include "NoTLSHTTPClient.h"
 #include "log.h"
 
 
 // размеры шрифтов при выводе времени
-
-// Adfruit fonts
+/*
+// Adafruit fonts
 #include "Fonts/Org_01.h"                   // классный мелкий квадратный шрифт 5х5 /english/
 //#include "Fonts/Picopixel.h"                // proportional up to 5x5 3x5  /english/
 #include "Fonts/TomThumb.h"                 // 3x5 /english/
@@ -72,16 +73,42 @@
 //#include "CrystalNormal6.h"                 // "01:33:30" - тонкий, 1 пиксель, занимает чуть больше половины экрана
 #include "CrystalNormal8.h"                 // "01:33:30" - тонкий, 1-2 пикселя, занимает пол экрана в высоту, и почти весь в ширину
 #include "CrystalNormal10.h"                // "01:35:5" пушка! не влезает последний символ
-
-#define WIDGETS_CFG_JSIZE   4096
+*/
 
 #define CLOCK_DEFAULT_YOFFSET   14          // default offset for clock widget
+#define DEF_BITMAP_WIDTH        64
+#define DEF_BITMAP_HEIGHT       8
+#define DEF_OVERLAY_ALPHA       32
+#define DEF_BITMAP_YOFFSET      28
+#define DEF_WEATHER_RETRY       5000
 
-//static const GFXfont* fonts[] = {&FreeMono9pt7b, &FreeMonoBold9pt7b, &FreeSans9pt7b, &FreeSansOblique9pt7b, &FreeSerif9pt7b,
-//  &FreeSerifBold9pt7b, &FreeSerifItalic9pt7b, &Org_01, &Picopixel, &TomThumb};
 
-// array of available fonts
-static constexpr std::array<const GFXfont*, 8> fonts = {&FreeSerif9pt8b, &FreeSerifBold9pt8b, &Cooper6pt8b, &Cooper8pt8b, &CrystalNormal8pt8b, &CrystalNormal10pt8b, &Org_01, &TomThumb};
+/*
+  List of used U8G2 fonts
+
+// Numeric only fonts
+u8g2_font_fewture_tn                - 14x14 https://github.com/olikraus/u8g2/wiki/fntgrptulamide
+u8g2_font_7x14B_tn                  - 7x14  https://github.com/olikraus/u8g2/wiki/fntgrpx11
+
+// latin fonts
+u8g2_font_tiny_simon_tr             - 3x7   https://github.com/olikraus/u8g2/wiki/fntgrpbitfontmaker2
+u8g2_font_doomalpha04_tr            - 13x13 https://github.com/olikraus/u8g2/wiki/fntgrpbitfontmaker2#font-pictures
+u8g2_font_greenbloodserif2_tr       - 15x16 https://github.com/olikraus/u8g2/wiki/fntgrpbitfontmaker2#font-pictures
+
+
+// cyrillic fonts
+u8g2_font_5x8_t_cyrillic            - 5x8 Lat/Cyrillic font
+u8g2_font_8x13_t_cyrillic           - 8x13 Lat/Cyrillic font  https://github.com/olikraus/u8g2/wiki/fntgrpx11
+u8g2_font_unifont_t_cyrillic        - 16x16 Lat/Cyrillic font https://github.com/olikraus/u8g2/wiki/fntgrpunifont
+*/
+
+// array of available U8G2 fonts
+static constexpr std::array<const uint8_t*, 8> fonts = { u8g2_font_5x8_t_cyrillic, u8g2_font_8x13_t_cyrillic, u8g2_font_unifont_t_cyrillic, u8g2_font_fewture_tn, u8g2_font_7x14B_tn, u8g2_font_tiny_simon_tr, u8g2_font_greenbloodserif2_tr, u8g2_font_doomalpha04_tr };
+
+
+// array of available Adafruit fonts
+//static constexpr std::array<const GFXfont*, 8> fonts = {&FreeSerif9pt8b, &FreeSerifBold9pt8b, &Cooper6pt8b, &Cooper8pt8b, &CrystalNormal8pt8b, &CrystalNormal10pt8b, &Org_01, &TomThumb};
+
 
 
 // *****
@@ -112,8 +139,8 @@ void set_alrm_item(Interface *interf, const JsonObject *data, const char* action
 
 void register_widgets_handlers(){
   embui.action.add(A_set_widget_onoff, set_widget_onoff);                 // start/stop widget
-  embui.action.add(A_set_wcfg_alrm, set_alrm_item);                       // set alarm item
   embui.action.add(A_set_widget, set_widget_cfg);                         // set widget configuration (this wildcard should be the last one)
+  embui.action.add(A_set_wcfg_alrm, set_alrm_item);                       // set alarm item
 }
 
 
@@ -189,7 +216,7 @@ void GenericWidget::save(JsonVariantConst cfg){
 
 
 // ****  GenericGFXWidget methods
-
+/*
 bool GenericGFXWidget::getOverlay(){
   if (screen) return true;
   auto overlay = display.getOverlay();  // obtain overlay buffer
@@ -206,20 +233,34 @@ void GenericGFXWidget::releaseOverlay(){
   screen = nullptr;
   //overlay.reset();
 }
+*/
+bool GenericGFXWidget::getCanvas(){
+  if (canvas) return true;
+  auto c = display.getCanvas();   // obtain canvas buffer
+  if (!c) return false;                 // failed to allocate overlay, i.e. display configuration has not been done yet
+  LOGD(T_Widget, printf, "%s obtain canvas\n", label);
+  canvas = std::make_unique<LedFB_GFX>(c);
+  //canvas->setRotation(2);            // adafruit coordinates are different from LedFB, so need to rotate it
+  return true;
+}
 
 
 
 // *** ClockWidget
-ClockWidget::ClockWidget() : GenericGFXWidget(T_clock, TASK_SECOND) {
+ClockWidget::ClockWidget() : GenericWidget(T_clock, TASK_SECOND) {
   ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, ClockWidget::_event_hndlr, this, &_hdlr_lmp_change_evt));
   ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_STATE_EVENTS, ESP_EVENT_ANY_ID, ClockWidget::_event_hndlr, this, &_hdlr_lmp_state_evt));
 }
 
 ClockWidget::~ClockWidget(){
+  display.detachOverlay( clk.cb.id );
+  display.detachOverlay( date.cb.id );
+
   if (_hdlr_lmp_change_evt){
     esp_event_handler_instance_unregister_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, _hdlr_lmp_change_evt);
     _hdlr_lmp_change_evt = nullptr;
   }
+
   if (_hdlr_lmp_state_evt){
     esp_event_handler_instance_unregister_with(evt::get_hndlr(), LAMP_STATE_EVENTS, ESP_EVENT_ANY_ID, _hdlr_lmp_state_evt);
     _hdlr_lmp_state_evt = nullptr;
@@ -235,19 +276,69 @@ void ClockWidget::load_cfg(JsonVariantConst cfg){
   clk.seconds_font_index = cfg[T_font2];
   clk.show_seconds = cfg[T_seconds];
   clk.twelwehr = cfg[T_tm_12h];
-  clk.color = cfg[T_color1] | DEFAULT_TEXT_COLOR;
+  clk.color_txt = cfg[T_color1] | DEFAULT_TEXT_COLOR;
+  clk.color_bg = cfg[T_color2] | DEFAULT_TEXT_COLOR;
+  clk.alpha_tx = cfg[T_alpha_t];
+  clk.alpha_bg = cfg[T_alpha_b];
+
+  // temporary object to calculate bitmap size
+  Arduino_Canvas_Mono helper(8, 1, nullptr);
+  helper.setTextWrap(false);
+
+  int16_t x,y;
+
+  helper.setFont(fonts[clk.font_index]);
+  helper.getTextBounds(clk.show_seconds ? "00:69:69" : "69:88", 0, 0, &x, &y, &clk.maxW, &clk.maxH);
+  ++clk.maxH;
+  LOGD(T_Widget, printf, "time canvas font:%u, clr:%u, bounds: %u, %u\n", clk.font_index, clk.color_txt, clk.maxW, clk.maxH);
+
+  _textmask_clk = std::make_unique<Arduino_Canvas_Mono>(clk.maxW, clk.maxH, nullptr);
+  _textmask_clk->begin();
+  _textmask_clk->setTextWrap(false);
+
+  //texture_ovr_cb_t clkovr { [&](LedFB_GFX *gfx){ gfx->fadeBitmap(clk.x, clk.y, _textmask_clk->getFramebuffer(), 48, 16, clk.color, 64); } }; 
+  if (clk.cb.id != (size_t)&clk){
+    clk.cb.id = (size_t)&clk;
+    clk.cb.callback = [&](LedFB_GFX *gfx){ gfx->blendBitmap(clk.x, clk.y, _textmask_clk->getFramebuffer(), clk.maxW, clk.maxH, clk.color_txt, clk.alpha_tx, clk.color_bg, clk.alpha_bg); };
+    LOGV(T_Display, printf, "clk overlay: %u\n", (size_t)&clk);
+    display.attachOverlay( clk.cb );
+  }
 
   // date
   date = {};
-  date.show = cfg[P_date];
+  date_show = cfg[P_date];
   date.x = cfg[T_x2offset];
   date.y = cfg[T_y2offset];
-  date.color = cfg[T_color2];
-  date.font_index = cfg[T_font3] | DEFAULT_TEXT_COLOR;
+  date.color = cfg[T_color3] | DEFAULT_TEXT_COLOR;
+  date.font_index = cfg[T_font3];
+  date.alpha_bg = cfg[T_alpha_b2];
 
-  if (!screen) return;  // overlay is not loaded yet
-  screen->setTextWrap(false);
-  screen->fillScreen(CRGB::Black);
+  if (date_show){
+    helper.setFont(fonts[date.font_index]);
+    helper.getTextBounds("2024-00-00", 0, 0, &x, &y, &date.maxW, &date.maxH);
+    ++date.maxH;
+    LOGD(T_Widget, printf, "date canvas font:%u, clr:%u, bounds: %u, %u\n", date.font_index, date.color, date.maxW, date.maxH);
+
+    _textmask_date = std::make_unique<Arduino_Canvas_Mono>(date.maxW, date.maxH, nullptr);
+    _textmask_date->begin();
+    _textmask_date->setTextWrap(false);
+
+    if (date.cb.id != (size_t)&date){
+      date.cb.id = (size_t)&date;
+      date.cb.callback = [&](LedFB_GFX *gfx){ gfx->fadeBitmap(date.x, date.y, _textmask_date->getFramebuffer(), date.maxW, date.maxH, date.color, date.alpha_bg); };
+      LOGV(T_Display, printf, "date overlay: %u\n", (size_t)&date);
+      display.attachOverlay( date.cb );
+    }
+  }
+
+  //_textmask_clk->setFont(u8g2_font_unifont_t_cyrillic);
+  //_textmask_clk->setFont(u8g2_font_crox1cb_tf);
+  //_textmask_clk->setUTF8Print(true);
+
+
+//  if (!screen) return;  // overlay is not loaded yet
+//  screen->setTextWrap(false);
+//  screen->fillScreen(CRGB::Black);
   redraw = true;
 }
 
@@ -259,22 +350,26 @@ void ClockWidget::generate_cfg(JsonVariant cfg) const {
   cfg[T_font2] = clk.seconds_font_index;
   cfg[T_seconds] = clk.show_seconds;
   cfg[T_tm_12h] = clk.twelwehr;
-  cfg[T_color1] = clk.color;
+  cfg[T_color1] = clk.color_txt;
+  cfg[T_color2] = clk.color_bg;
+  cfg[T_alpha_t] = clk.alpha_tx;
+  cfg[T_alpha_b] = clk.alpha_bg;
 
   // date
-  cfg[P_date] = date.show;
+  cfg[P_date] = date_show;
   cfg[T_x2offset] = date.x;
   cfg[T_y2offset] = date.y;
-  cfg[T_color2] = date.color;
+  cfg[T_color3] = date.color;
+  cfg[T_alpha_b2] = date.alpha_bg;
   cfg[T_font3] = date.font_index;
 }
 
 void ClockWidget::widgetRunner(){
   // make sure that we have screen to write to
-  if (!getOverlay()){
-    LOGW(T_Widget, println, "No overlay available");
-    return;
-  }
+//  if (!getOverlay()){
+//    LOGW(T_Widget, println, "No overlay available");
+//    return;
+//  }
 
   std::time_t now;
   std::time(&now);
@@ -288,7 +383,7 @@ void ClockWidget::widgetRunner(){
     _print_clock(tm);
 
   // check if I need to refresh date on display once in an hour
-  if (date.show && ( redraw || (tm->tm_min == 0 && tm->tm_sec == 0 ) ) )
+  if (date_show && ( redraw || (tm->tm_min == 0 && tm->tm_sec == 0 ) ) )
     _print_date(tm);
 
   last_date = now;
@@ -296,69 +391,65 @@ void ClockWidget::widgetRunner(){
 }
 
 void ClockWidget::_print_clock(std::tm *tm){
-  char result[std::size("20:23")];
+  _textmask_clk->fillScreen(0);
+  char result[std::size("20:69")];
 
-  int16_t x,y;
-  uint16_t w,h;
-  // print minutes only at :00 or stale screen
-  if (tm->tm_sec == 0 || redraw){
-    std::strftime(result, std::size(result), clk.twelwehr ? "%I:%M" : "%R", tm);    // "%R" equivalent to "%H:%M"
-    // put a space inplace of a leading zero
-    if (tm->tm_hour < 10)
-      result[0] = 0x20;
+  std::strftime(result, std::size(result), clk.twelwehr ? "%I:%M" : "%R", tm);    // "%R" equivalent to "%H:%M"
+  // put a space inplace of a leading zero
+  if (tm->tm_hour < 10)
+    result[0] = 0x20;
 
-    screen->setTextColor(clk.color);
-    screen->setFont(fonts[clk.font_index]);
-    screen->setCursor(clk.x, clk.y);
+  _textmask_clk->setTextColor(clk.color_txt);
+  _textmask_clk->setFont(fonts[clk.font_index]);
 
-    screen->getTextBounds(result, clk.x, clk.y, &x, &y, &w, &h);
-    clk.maxW = std::max( clk.maxW, static_cast<uint16_t>(w + (x-clk.x)) );   // (x-clk.x) is the offset from cursolr position to the nearest dot of the printed text
-    LOGV(T_Widget, printf, "fill time bounds: %d, %d, %u, %u\n", x, y, clk.maxW, h);
-    screen->fillRect(clk.x, y, clk.maxW, h, 0);
-    // для шрифта 3х5 откусываем незначащий ноль что бы текст влез на матрицу 16х16. Коряво, но люди просят.
-    if (clk.font_index == 7 && tm->tm_hour%12 < 10){
-      std::string_view s(result);
-      s.remove_prefix(1);
-      screen->print(s.data());
-    } else
-      screen->print(result);
-    // save cursor for seconds printing
-    clk.scursor_x = screen->getCursorX();
-    clk.scursor_y = screen->getCursorY();
-    LOGV(T_Widget, printf, "time: %s, font:%u, clr:%u, bounds: %d, %d, %u, %u\n", result, clk.font_index, clk.color, x, y, clk.maxW, h);
-  }
+  //_textmask_clk->getTextBounds(result, clk.x, clk.y, &x, &y, &w, &h);
+  _textmask_clk->setCursor(0, clk.maxH - 1);
+
+  //clk.maxW = std::max( clk.maxW, static_cast<uint16_t>(w + (x-clk.x)) );   // (x-clk.x) is the offset from cursolr position to the nearest dot of the printed text
+  //LOGV(T_Widget, printf, "fill time bounds: %d, %d, %u, %u\n", x, y, clk.maxW, h);
+  //screen->fillRect(clk.x, y, clk.maxW, h, 0);
+  // для шрифта 3х5 откусываем незначащий ноль что бы текст влез на матрицу 16х16. Коряво, но люди просят.
+  if (clk.font_index == 7 && tm->tm_hour%12 < 10){
+    std::string_view s(result);
+    s.remove_prefix(1);
+    _textmask_clk->print(s.data());
+  } else
+    _textmask_clk->print(result);
+  // save cursor for seconds printing
+  //clk.scursor_x = _textmask_clk->getCursorX();
+  //clk.scursor_y = _textmask_clk->getCursorY();
+  //LOGV(T_Widget, printf, "time: %s, font:%u, clr:%u, bounds: %d, %d, %u, %u\n", result, clk.font_index, clk.color, x, y, clk.maxW, h);
 
   if (clk.show_seconds){
-    screen->setFont(fonts[clk.seconds_font_index]);
-    screen->setCursor(clk.scursor_x, clk.scursor_y);
+    _textmask_clk->setFont(fonts[clk.seconds_font_index]);
+    //_textmask_clk->setCursor(clk.scursor_x, clk.scursor_y);
     std::strftime(result, std::size(result), ":%S", tm);
-    screen->getTextBounds(result, clk.scursor_x, clk.scursor_x, &x, &y, &w, &h);
-    clk.smaxW = std::max(clk.smaxW, static_cast<uint16_t>(clk.scursor_x+w));
-    LOGV(T_Widget, printf, "fill sec bounds: %d, %d, %u, %u\n", clk.scursor_x, clk.scursor_y-h+1, clk.smaxW-w, h);
-    screen->fillRect(clk.scursor_x, clk.scursor_y-h+1, clk.smaxW-clk.scursor_x, h, 0);
-    LOGV(T_Widget, printf, "sec: %s, font:%u, clr:%u, bounds: %d, %d, %u, %u\n", result, clk.seconds_font_index, clk.color, clk.scursor_x, clk.scursor_y, clk.smaxW, h);
-    screen->print(result);
+    //_textmask_clk->getTextBounds(result, clk.scursor_x, clk.scursor_x, &x, &y, &w, &h);
+    //clk.smaxW = std::max(clk.smaxW, static_cast<uint16_t>(clk.scursor_x+w));
+    //LOGV(T_Widget, printf, "fill sec bounds: %d, %d, %u, %u\n", clk.scursor_x, clk.scursor_y-h+1, clk.smaxW-w, h);
+    //_textmask_clk->fillRect(clk.scursor_x, clk.scursor_y-h+1, clk.smaxW-clk.scursor_x, h, 0);
+    //LOGV(T_Widget, printf, "sec: %s, font:%u, clr:%u, bounds: %d, %d, %u, %u\n", result, clk.seconds_font_index, clk.color, clk.scursor_x, clk.scursor_y, clk.smaxW, h);
+    _textmask_clk->print(result);
   }
 }
 
 void ClockWidget::_print_date(std::tm *tm){
+  _textmask_date->fillScreen(0);
   char result[std::size("2024-02-23")];
 
   std::strftime(result, std::size(result), "%F", tm);
   //std::strftime(result, buffsize, "%d %b, %a", tm);
-  screen->setFont(fonts[date.font_index]);
-  screen->setTextColor(date.color);
-  screen->setCursor(date.x, date.y);
+  _textmask_date->setTextColor(date.color);
+  _textmask_date->setFont(fonts[date.font_index]);
+  _textmask_date->setCursor(0, date.maxH - 1);
 
-  int16_t x,y;
-  uint16_t w,h;
-  screen->getTextBounds(result, date.x, date.y, &x, &y, &w, &h);
-  date.maxW = std::max(date.maxW, w);
+  //_textmask_date->getTextBounds(result, date.x, date.y, &x, &y, &w, &h);
+  //date.maxW = std::max(date.maxW, w);
 
-  screen->fillRect(x,y, date.maxW,h, 0);
-  screen->print(result);
+  //screen->fillRect(x,y, date.maxW,h, 0);
+  _textmask_date->print(result);
 
-  LOGD(T_Widget, printf, "Date: %s, font:%u, clr:%u, bounds: %d %d %u %u\n", result, date.font_index, date.color, x, y, date.maxW, h);
+  //LOGD(T_Widget, printf, "Date: %s, font:%u, clr:%u, bounds: %d %d %u %u\n", result, date.font_index, date.color, x, y, date.maxW, h);
 }
 
 void ClockWidget::start(){
@@ -368,7 +459,7 @@ void ClockWidget::start(){
 
 void ClockWidget::stop(){
   disable();
-  releaseOverlay();
+  //releaseOverlay();
 }
 
 void ClockWidget::_event_hndlr(void* handler, esp_event_base_t base, int32_t id, void* event_data){
@@ -741,7 +832,7 @@ void WidgetManager::setConfig(const char* label, JsonVariantConst cfg){
 }
 
 void WidgetManager::_spawn(const char* label, JsonVariantConst cfg, bool persistent){
-  LOGD(T_Widget, printf, "WM spawn: %s\n", label);
+  LOGD(T_WdgtMGR, printf, "spawn: %s\n", label);
   // spawn a new widget based on label
   std::unique_ptr<GenericWidget> w;
 
@@ -749,11 +840,13 @@ void WidgetManager::_spawn(const char* label, JsonVariantConst cfg, bool persist
     w = std::make_unique<ClockWidget>();
   } else if(std::string_view(label).compare(T_alrmclock) == 0){
     w = std::make_unique<AlarmClock>();
+  } else if(std::string_view(label).compare(T_txtscroll) == 0){
+    w = std::make_unique<TextScrollerWgdt>();
   } else
     return;   // no such widget exist
 
   if (cfg.isNull()){
-    // ask widget to read it's config from NVS, if any
+    // ask widget to read it's config from json, if any
     LOGV(T_Widget, println, "WM call widget load cfg from NVS");
     w->load();
   } else {
@@ -790,6 +883,253 @@ GenericWidget* WidgetManager::getWidgetPtr(const char* label){
 
   return (*i).get();
 }
+
+
+// *** Running Text overlay 
+
+TextScrollerWgdt::TextScrollerWgdt() : GenericWidget(T_txtscroll, 5000) {
+  //esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, TextScrollerWgdt::_event_hndlr, this, &_hdlr_lmp_change_evt);
+  //esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_STATE_EVENTS, ESP_EVENT_ANY_ID, TextScrollerWgdt::_event_hndlr, this, &_hdlr_lmp_state_evt);
+
+  _renderer = { (size_t)(this), [&](LedFB_GFX *gfx){ _scroll_line(gfx); } }; 
+}
+
+TextScrollerWgdt::~TextScrollerWgdt(){
+/*
+  if (_hdlr_lmp_change_evt){
+    esp_event_handler_instance_unregister_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, _hdlr_lmp_change_evt);
+    _hdlr_lmp_change_evt = nullptr;
+  }
+  if (_hdlr_lmp_state_evt){
+    esp_event_handler_instance_unregister_with(evt::get_hndlr(), LAMP_STATE_EVENTS, ESP_EVENT_ANY_ID, _hdlr_lmp_state_evt);
+    _hdlr_lmp_state_evt = nullptr;
+  }
+*/
+}
+
+void TextScrollerWgdt::load_cfg(JsonVariantConst cfg){
+  LOGV(T_txtscroll, println, "Configure text scroller");
+  _bitmapcfg.maxW             = cfg[T_width]    | DEF_BITMAP_WIDTH;
+  _bitmapcfg.maxH             = cfg[T_height]   | DEF_BITMAP_HEIGHT;
+  _bitmapcfg.x                = cfg[T_x1offset];
+  _bitmapcfg.y                = cfg[T_y1offset] | DEF_BITMAP_YOFFSET;
+  _bitmapcfg.baseline_shift   = cfg[T_offset];
+  _bitmapcfg.font_index       = cfg[T_font1];
+  _bitmapcfg.color            = cfg[T_color1]   | DEFAULT_TEXT_COLOR;
+  _bitmapcfg.alpha_bg         = cfg[T_alpha_b]  | DEF_OVERLAY_ALPHA;
+
+  _scrollrate = cfg[T_rate] | 2;
+
+  // grab a lock on bitmap canvas
+  std::lock_guard<std::mutex> lock(_mtx);
+  _textmask = std::make_unique<Arduino_Canvas_Mono>(_bitmapcfg.maxW, _bitmapcfg.maxH, nullptr);
+  _textmask->begin();
+  _textmask->setUTF8Print(true);
+  _textmask->setTextWrap(false);
+  _textmask->setFont(fonts.at(_bitmapcfg.font_index));
+  //_textmask->setTextBound();
+  //_textmask_clk->setRotation(2);
+
+  if (cfg[T_cityid])
+    _weathercfg.city_id = cfg[T_cityid].as<const char*>();
+
+  if (cfg[T_apikey])
+    _weathercfg.apikey =  cfg[T_apikey].as<const char*>();
+
+  _weathercfg.refresh = (cfg[T_refresh] | 1) * 3600000;
+
+  _last_redraw = millis();
+
+  // weather update
+  restart();
+}
+
+void TextScrollerWgdt::generate_cfg(JsonVariant cfg) const {
+  cfg.clear();
+  cfg[T_width]    = _bitmapcfg.maxW;
+  cfg[T_height]   = _bitmapcfg.maxH;
+  cfg[T_x1offset] = _bitmapcfg.x;
+  cfg[T_y1offset] = _bitmapcfg.y;
+  cfg[T_font1]    = _bitmapcfg.font_index;
+  cfg[T_offset]   = _bitmapcfg.baseline_shift;
+  cfg[T_color1]   = _bitmapcfg.color;
+  cfg[T_alpha_b]  = _bitmapcfg.alpha_bg;
+  cfg[T_rate]     = _scrollrate;
+
+  //JsonObject weath = cfg[T_weather].isNull() ? cfg[T_weather].to<JsonObject>() : cfg[T_weather];
+  //weath.clear();  // clear obj, I'll replace it's content
+
+  // weather
+  if (_weathercfg.city_id.size())
+    cfg[T_cityid] =  _weathercfg.city_id;
+  if (_weathercfg.apikey.size())
+    cfg[T_apikey] =  _weathercfg.apikey;
+  cfg[T_refresh] = _weathercfg.refresh / 3600000;   // ms in hr
+}
+
+void TextScrollerWgdt::widgetRunner(){
+  LOGV(T_txtscroll, printf, "pogoda %d\n", getInterval());
+  // this periodic runner needed only for weather update
+
+  _getOpenWeather();
+}
+
+void TextScrollerWgdt::_scroll_line(LedFB_GFX *gfx){
+  // if canvas can't be locked, skip this run
+  std::unique_lock<std::mutex> lock(_mtx, std::defer_lock);
+  if (!lock.try_lock())
+    return;
+
+  int32_t px_to_shift = (millis() - _last_redraw) * _scrollrate / 1000;
+  _cur_offset -= px_to_shift;
+  // добавляем ко времени последнего обновления столько интервалов заданной частоты на сколько пикселей мы продвинулись.
+  // нужно оставить "хвосты" избыточного времени копиться до момента пока не набежит еще один високосный пиксель для сдвига
+  _last_redraw += px_to_shift * 1000 / _scrollrate;
+  
+
+  _textmask->fillScreen(BLACK);
+  _textmask->setCursor(_cur_offset, _bitmapcfg.maxH - _bitmapcfg.baseline_shift);
+  _textmask->print(_txtstr.data());
+  //--_cur_offset;
+  if (_cur_offset <  -1*_txt_pixlen)
+    _cur_offset = _bitmapcfg.maxW;
+
+
+  gfx->fadeBitmap(_bitmapcfg.x, _bitmapcfg.y, _textmask->getFramebuffer(), _bitmapcfg.maxW, _bitmapcfg.maxH, _bitmapcfg.color, _bitmapcfg.alpha_bg );
+}
+
+void TextScrollerWgdt::start(){
+  // overlay rendering functor
+  display.attachOverlay( _renderer );
+
+  // enable timer
+  enable();
+  // request lamp's status to discover it's power state
+  //EVT_POST(LAMP_GET_EVENTS, e2int(evt::lamp_t::pwr));
+}
+
+void TextScrollerWgdt::stop(){
+  disable();
+  display.detachOverlay(_renderer.id);
+}
+
+void TextScrollerWgdt::_event_hndlr(void* handler, esp_event_base_t base, int32_t id, void* event_data){
+  LOGV(T_clock, printf, "EVENT %s:%d\n", base, id);
+  //if ( base == LAMP_CHANGE_EVENTS )
+  //  return static_cast<TextScrollerWgdt*>(handler)->_lmpChEventHandler(base, id, event_data);
+}
+/*
+void TextScrollerWgdt::_lmpChEventHandler(esp_event_base_t base, int32_t id, void* data){
+  switch (static_cast<evt::lamp_t>(id)){
+    // Power control
+    case evt::lamp_t::pwron :
+      LOGI(T_clock, println, "activate widget");
+      redraw = true;
+      enable();
+      break;
+    case evt::lamp_t::pwroff :
+      LOGI(T_clock, println, "suspend widget");
+      stop();
+      break;
+    default:;
+  }
+}
+*/
+
+void TextScrollerWgdt::_getOpenWeather(){
+  if (!_weathercfg.apikey.size() || !_weathercfg.city_id.size()) return;   // no API key - no weather
+
+  // http://api.openweathermap.org/data/2.5/weather?id=1850147&units=metric&lang=ru&APPID=your_API_KEY>
+  String url("http://api.openweathermap.org/data/2.5/weather?units=metric&lang=ru&id=");
+  url += _weathercfg.city_id.c_str();
+  url += "&APPID=";
+  url += _weathercfg.apikey.c_str();
+
+  HTTPClient http;
+  http.begin(url);
+  LOGV(T_txtscroll, printf, "get weather: %s\n", url.c_str());
+  int code = http.GET();
+  if (code != HTTP_CODE_OK) {
+    LOGD(T_txtscroll, printf, "HTTP Weather response code:%d\n", code);
+
+    // some HTTP error
+    if (_weathercfg.retry){
+      setInterval(getInterval() + DEF_WEATHER_RETRY);
+    } else {
+      _weathercfg.retry = true;
+      setInterval(DEF_WEATHER_RETRY);
+    }
+    return;
+  }
+
+  JsonDocument doc;
+  if ( deserializeJson(doc, *http.getStreamPtr()) != DeserializationError::Ok ) return;
+  http.end();
+
+  String pogoda;
+  pogoda.reserve(100);
+  pogoda = doc["name"].as<const char*>();
+  pogoda += ": сейчас ";
+  pogoda += doc[F("weather")][0][F("description")].as<const char*>();
+  pogoda += ", ";
+
+// Температура
+  int t = int(doc["main"]["temp"].as<float>() + 0.5);
+  if (t > 0)
+    pogoda += "+";
+  pogoda += t;
+
+// Влажность
+  pogoda += ", влажность:";
+  pogoda += doc["main"]["humidity"].as<int>();
+// Ветер
+  pogoda += "%, ветер ";
+  int deg = doc["wind"]["deg"];
+  if( deg >22 && deg <=68 ) pogoda += "сев-вост.";
+  else if( deg >68 && deg <=112 ) pogoda += "вост.";
+  else if( deg >112 && deg <=158 ) pogoda += "юг-вост.";
+  else if( deg >158 && deg <=202 ) pogoda += "юж.";
+  else if( deg >202 && deg <=248 ) pogoda += "юг-зап.";
+  else if( deg >248 && deg <=292 ) pogoda += "зап.";
+  else if( deg >292 && deg <=338 ) pogoda += "сев-зап.";
+  else pogoda += "сев.";
+  int wind = int(doc["wind"]["speed"].as<float>() + 0.5);
+  pogoda += wind;
+  pogoda += " м/с";
+
+  // sunrise/sunset
+  pogoda += ", восх.";
+  time_t sun = doc["sys"]["sunrise"].as<uint32_t>();
+  pogoda += localtime(&sun)->tm_hour;
+  pogoda += ":";
+  pogoda += localtime(&sun)->tm_min;
+
+  pogoda += ", закат";
+  sun = doc["sys"]["sunset"].as<uint32_t>();
+  pogoda += localtime(&sun)->tm_hour;
+  pogoda += ":";
+  pogoda += localtime(&sun)->tm_min;
+
+  // ths lock was meant for canvas, but let's use for string update also,
+  // anyway string is also use when rendering text to bitmap
+  std::lock_guard<std::mutex> lock(_mtx);
+  _txtstr = pogoda.c_str();
+
+  // find text string width
+  int16_t px, py; uint16_t pw;
+  _textmask->getTextBounds(_txtstr.data(), 0, _bitmapcfg.maxH, &px, &py, &_txt_pixlen, &pw);
+
+  // reset update
+  if(_weathercfg.retry){
+    _weathercfg.retry = false;
+    setInterval(_weathercfg.refresh);
+  }
+
+  LOGV(T_txtscroll, printf, "Weather update: %s\n", pogoda.c_str());
+}
+
+
+
 
 
 // ****

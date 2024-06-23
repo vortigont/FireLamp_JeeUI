@@ -535,15 +535,15 @@ void Lamp::effectsTimer(bool action) {
 }
 
 //-----------------------------
-
+/*
 void Lamp::fillDrawBuf(CRGB color) {
-  if(_overlay) _overlay->fill(color);
+  if(_overlay) _overlay->fill( LedFB_GFX::color565(color) );
 }
 
 void Lamp::writeDrawBuf(CRGB color, uint16_t x, uint16_t y){
-  if (_overlay) { _overlay->at(x,y) = color; }
+  if (_overlay) { _overlay->at(x,y) = LedFB_GFX::color565(color); }
 }
-
+*/
 void Lamp::save_flags(){
   esp_err_t err;
   std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_lamp, NVS_READWRITE, &err);
@@ -556,7 +556,7 @@ void Lamp::save_flags(){
 
   handle->set_item(V_lampFlags, opts.pack);
 }
-
+/*
 void Lamp::_overlay_buffer(bool activate) {
   if (activate && !_overlay){
     LOGD(T_lamp, println, "Create Display overlay");
@@ -567,7 +567,7 @@ void Lamp::_overlay_buffer(bool activate) {
     _overlay.reset();
   }
 }
-
+*/
 void Lamp::_events_subsribe(){
   ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), ESP_EVENT_ANY_BASE, ESP_EVENT_ANY_ID, Lamp::event_hndlr, this, &_events_lamp_cmd));
 }

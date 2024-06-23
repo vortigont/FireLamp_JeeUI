@@ -234,11 +234,11 @@ void EffectWorker::workerset(uint16_t effect){
   // grab mutex
   std::unique_lock<std::mutex> lock(_mtx);
   // create a new instance of effect child
-  switch (static_cast<EFF_ENUM>(effect%256)) // номер может быть больше чем ENUM из-за копирований, находим эффект по модулю
-  {
-  case EFF_ENUM::EFF_TETRIS_CLOCK :
-    worker = std::make_unique<TetrisClock>(display.getCanvas());
-    break;
+  switch (static_cast<EFF_ENUM>(effect%256)){ // номер может быть больше чем ENUM из-за копирований, находим эффект по модулю
+
+//  case EFF_ENUM::EFF_TETRIS_CLOCK :
+//    worker = std::make_unique<TetrisClock>(display.getCanvas());
+//    break;
   case EFF_ENUM::EFF_SWIRL :
     worker = std::make_unique<EffectSwirl>(canvas);
     break;
@@ -736,6 +736,9 @@ uint16_t EffectWorker::getNextEffIndexForDemo(bool rnd){
     if (i->canBeSelected() && i->enabledInDemo())
       return i->eff_nb;
   }
+
+  // if nothing found, then return current effect
+  return curEff.num;
 }
 
 // предыдущий эффект, кроме canBeSelected==false

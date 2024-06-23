@@ -82,6 +82,7 @@ enum class page : uint16_t {
     widgetslist = 101,      // available widgets page
     wdgt_clock,
     wdgt_alrmclock,
+    wdgt_txtsroll,
     setup_gpio
 };
 
@@ -209,6 +210,15 @@ void uidata_page_selector(Interface *interf, const JsonObject *data, const char*
             interf->json_frame_add(doc);
             break;
         }
+        // Text scroller
+        case page::wdgt_txtsroll : {
+            interf->uidata_pick( "lampui.pages.wdgt.txtscroll" );
+            interf->json_frame_flush();
+            JsonDocument doc;
+            informer.getConfig(doc.to<JsonObject>(), T_txtscroll);
+            interf->json_frame_value(doc);
+            break;
+        }
         default:;                   // by default do nothing
     }
 
@@ -261,7 +271,7 @@ void ui_section_menu(Interface *interf, const JsonObject *data, const char* acti
 
     interf->option(A_ui_page_effects, TINTF_000);        //  Эффекты
     //interf->option(TCONST_lamptext, TINTF_001);       //  Вывод текста
-    interf->option(A_ui_page_drawing, TINTF_0CE);        //  Рисование
+    //interf->option(A_ui_page_drawing, TINTF_0CE);        //  Рисование (оключено, т.к. используется старая схема с глобальным оверлеем)
     interf->option(A_ui_page_widgets, "Widgets");        //  Widgets
 #ifdef USE_STREAMING
     interf->option(TCONST_streaming, TINTF_0E2);      //  Трансляция
@@ -945,6 +955,7 @@ void set_auxflag(Interface *interf, const JsonObject *data, const char* action){
  * @brief UI Draw on screen function
  * 
  */
+/*
 void set_drawing(Interface *interf, const JsonObject *data, const char* action){
     // draw pixel
     if ((*data)[P_color]){
@@ -964,7 +975,7 @@ void set_clear(Interface *interf, const JsonObject *data, const char* action){
         CRGB color=CRGB::Black;
         myLamp.fillDrawBuf(color);
 }
-
+*/
 void show_settings_mic(Interface *interf, const JsonObject *data, const char* action){
     if (!interf) return;
     interf->json_frame_interface();
@@ -1070,11 +1081,12 @@ void set_debugflag(Interface *interf, const JsonObject *data, const char* action
 }
 
 // enable/disable overlay drawing
+/*
 void set_overlay_drawing(Interface *interf, const JsonObject *data, const char* action){
     if (!data) return;
     myLamp.enableDrawing((*data)[TCONST_drawbuff]);
 }
-
+*/
 void set_mp3mute(Interface *interf, const JsonObject *data, const char* action){
     if (!data) return;
 
@@ -1400,8 +1412,9 @@ void embui_actions_register(){
 
     embui.action.add(TCONST_AUX, set_auxflag);
 
-    embui.action.add(TCONST_draw_dat, set_drawing);
-    embui.action.add(TCONST_drawbuff, set_overlay_drawing);
+    // disable old overlay buffer
+    //embui.action.add(TCONST_draw_dat, set_drawing);
+    //embui.action.add(TCONST_drawbuff, set_overlay_drawing);
 
     embui.action.add(T_display_type, page_display_setup);                // load display setup page depending on selected disp type (action for drop down list)
 

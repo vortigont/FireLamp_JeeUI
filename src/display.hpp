@@ -41,7 +41,8 @@ A header file for LED output devices, backends and buffers
 */
 
 #pragma once
-#include "ledfb.hpp"
+#include "ledfb_esp32.hpp"
+#include "ledstripe.hpp"
 #include "ArduinoJson.h"
 
 #define FASTLED_CURRENT_LIMIT (2000U)                       // лимит по току для адресных лент в миллиамперах, 0 - выключить лимит
@@ -49,6 +50,18 @@ A header file for LED output devices, backends and buffers
 enum class engine_t:uint8_t  {
     ws2812 = 0,
     hub75
+};
+
+/**
+ * @brief structure for 2D overlay texture callback object
+ * 
+ */
+//using crgb_shared_buff = std::shared_ptr< PixelDataBuffer<CRGB> >;
+//template <class COLOR_TYPE>
+struct overlay_cb_t {
+    uint32_t id;
+    std::function <void (LedFB_GFX *buff)> callback;
+    //std::function <void (std::shared_ptr< PixelDataBuffer<COLOR_TYPE> > buff)> callback;
 };
 
 // My LED engine controller
@@ -61,23 +74,42 @@ class LEDDisplay {
     EOrder _color_ordr;     // FastLED color order for sw stripes
     uint8_t _brt{32};       // backend engine brightness, if supported
 
-    // An object ref I'll use to access LED device
-    DisplayEngine *_dengine = nullptr;
+    // flag marking use of a double buffer
+    bool _use_db = false;
 
-    // LED stripe matrix with a desired topology and layout  
+    // LED stripe matrix with a desired topology and layout / or HUB75 panel buffer
     std::shared_ptr< LedFB<CRGB> > _canvas;
 
+    // GFX object
+    std::shared_ptr< LedFB_GFX > _gfx;
+
     // overlay buffer
-    std::weak_ptr< LedFB<CRGB> > _ovr;
+    //std::weak_ptr< LedFB<uint16_t> > _ovr;
 
     // Addresable led strip topology transformation object
     LedTiles tiles;
+
+    // An object ref I'll use to access LED rendering engine
+    DisplayEngine<CRGB> *_dengine = nullptr;
+
+    /**
+     * @brief a stack of overlay callback structs
+     * on buffer show, each struct in a stack is applied on top of canvas before rendering canvas to the engine
+     * 
+     */
+    std::list< overlay_cb_t > _stack;
+
+
+
 
     bool _start_rmt(const JsonDocument& doc);
     bool _start_rmt_engine();
     bool _start_hub75(const JsonDocument& doc);
 
 public:
+
+
+    // load configuration and create objects for respective backend
     bool start();
 
     // *** Getters
@@ -113,20 +145,18 @@ public:
                             bool snake, bool vert, bool vmirr, bool hmirr
     );
 
-    void canvasProtect(bool v){ if (_dengine) _dengine->canvasProtect(v); };
+    void canvasProtect(bool v);
 
     std::shared_ptr< LedFB<CRGB> > getCanvas() { return _canvas; }
 
-    /**
-     * @brief Get a pointer to Overlay buffer
-     * Note: consumer MUST release a pointer once overlay operations is no longer needed to save RAM and CPU cycles on overlay mixing
-     * 
-     * @return std::shared_ptr<LedStripe> 
-     */
-    std::shared_ptr< LedFB<CRGB> > getOverlay();
-
     // draw data to display
-    void show(){ if (_dengine) _dengine->show(); };
+    void show();
+
+    /**
+     * @brief apply overlay to canvas
+     * 
+     */
+    //void overlay_render();
 
     // Wipe all layers and buffers
     void clear(){ if (_dengine) _dengine->clear(); };
@@ -139,6 +169,21 @@ public:
 
     // print stripe configuration in debug mode
     void print_stripe_cfg();
+
+    /**
+     * @brief attach overlay callback struct to stack
+     * 
+     * @param f 
+     */
+    void attachOverlay(overlay_cb_t f);
+
+    /**
+     * @brief dettach overlay callback struct to stack
+     * 
+     * @param id
+     */
+    void detachOverlay(uint32_t id);
+
 };
 
 extern LEDDisplay display;

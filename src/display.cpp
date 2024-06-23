@@ -101,32 +101,34 @@ bool LEDDisplay::_start_rmt(const JsonDocument& doc){
 }
 
 bool LEDDisplay::_start_rmt_engine(){
+  // RMT engine setup
+  if (_gpio == -1){
+      LOGW(T_Display, println, "Won't run on GPIO -1");
+      return false;      // won't run on disabled pin
+  }
 
-    // RMT engine setup
-    if (_gpio == -1){
-        LOGW(T_Display, println, "Won't run on GPIO -1");
-        return false;      // won't run on disabled pin
-    }
+  LOGD(T_Display, printf, "run on GPIO %d\n", _gpio);
 
-    LOGD(T_Display, printf, "run on GPIO %d\n", _gpio);
+  // create new led strip object using our configured pin
+  _dengine = new ESP32RMTDisplayEngine(_gpio, _color_ordr, tiles.canvas_w() * tiles.canvas_h());
 
-    // create new led strip object using our configured pin
-    _dengine = new ESP32RMTDisplayEngine(_gpio, _color_ordr, tiles.canvas_w() * tiles.canvas_h());
+  // attach buffer to an object that will perform matrix layout trasformation on buffer access
+  if (!_canvas){
+      _canvas = std::make_shared< LedFB<CRGB> >(tiles.canvas_w(), tiles.canvas_h(), _dengine->getBuffer());
+      _canvas->setRemapFunction( [this](unsigned w, unsigned h, unsigned x, unsigned y) -> size_t { return this->tiles.transpose(w, h, x, y); } );
+    _gfx = std::make_shared< LedFB_GFX >(_canvas);
+  }
 
-    // attach buffer to an object that will perform matrix layout trasformation on buffer access
-    if (!_canvas){
-        _canvas = std::make_shared< LedFB<CRGB> >(tiles.canvas_w(), tiles.canvas_h(), _dengine->getCanvas());
-        _canvas->setRemapFunction( [this](unsigned w, unsigned h, unsigned x, unsigned y) -> size_t { return this->tiles.transpose(w, h, x, y); } );
-    }
+  brightness(_brt);   // reset FastLED brightness level
 
-    brightness(_brt);   // reset FastLED brightness level
+  print_stripe_cfg();
 
-    print_stripe_cfg();
-
-    return true;
+  return true;
 }
 
 bool LEDDisplay::_start_hub75(const JsonDocument& doc){
+  // do not mess with existing engine
+  if (_dengine) return false;
     _etype = engine_t::hub75;
 
 
@@ -140,7 +142,7 @@ bool LEDDisplay::_start_hub75(const JsonDocument& doc){
     tiles.setTileDimensions(o[T_width], o[T_height], 1, 1);
 
     // HUB75 config struct
-    HUB75_I2S_CFG::i2s_pins _pins={ o[T_R1], o[T_G1], o[T_B1], o[T_R2], o[T_G2], o[T_B2],
+    HUB75_I2S_CFG::i2s_pins _pins{ o[T_R1], o[T_G1], o[T_B1], o[T_R2], o[T_G2], o[T_B2],
                                     o[T_A], o[T_B], o[T_C], o[T_D], o[T_E],
                                     o[T_LAT], o[T_OE], o[T_CLK]
     };
@@ -164,37 +166,39 @@ bool LEDDisplay::_start_hub75(const JsonDocument& doc){
     _dengine = new ESP32HUB75_DisplayEngine(mxconfig);
 
     // attach buffer to an object that will perform matrix layout trasformation on buffer access
-    if (!_canvas){
-        _canvas = std::make_shared< LedFB<CRGB> >(o[T_width], o[T_height], _dengine->getCanvas());
-        // this is a simple flat matrix so I use default 2D transformation
-    }
+    _canvas = std::make_shared< LedFB<CRGB> >(o[T_width], o[T_height], _dengine->getBuffer());
+    // this is a simple flat matrix so I use default 2D transformation
+    _gfx = std::make_shared< LedFB_GFX >(_canvas);
 
     brightness(_brt);   // reset brightness level
 
     return true;
 }
 
-std::shared_ptr< LedFB<CRGB> > LEDDisplay::getOverlay(){
-    auto instance = _ovr.lock();
+/*
+std::shared_ptr< LedFB<uint16_t> > LEDDisplay::getOverlay(){
+  auto instance = _ovr.lock();
 
-    // if engine or canvas does not exist (yet) just return empty obj here
-    if (!_dengine || !_canvas)
-        return instance;
-
-    if (!instance){
-        // no overlay exist at the moment, let's create one
-        instance = std::make_shared< LedFB<CRGB> >(LedFB<CRGB>(tiles.canvas_w(), tiles.canvas_h(), _dengine->getOverlay()));
-
-        if (_etype == engine_t::ws2812){
-            // set topology mapper
-            instance->setRemapFunction( [this](unsigned w, unsigned h, unsigned x, unsigned y) -> size_t { return this->tiles.transpose(w, h, x, y); } );
-        }
-
-        // add instance watcher
-        _ovr = instance;
-    }
+  // if engine or canvas does not exist (yet) just return empty obj here
+  if (!_dengine || !_canvas)
     return instance;
+
+  if (!instance){
+    // no overlay exist at the moment, let's create one
+    //instance = std::make_shared< LedFB<CRGB> >(tiles.canvas_w(), tiles.canvas_h(), _dengine->getOverlay());
+    instance = std::make_shared< LedFB<uint16_t> >( tiles.canvas_w(), tiles.canvas_h(), std::make_shared<PixelDataBuffer<uint16_t>>(tiles.canvas_w() * tiles.canvas_h()) );
+
+    if (_etype == engine_t::ws2812){
+        // set topology mapper
+        instance->setRemapFunction( [this](unsigned w, unsigned h, unsigned x, unsigned y) -> size_t { return this->tiles.transpose(w, h, x, y); } );
+    }
+
+    // add instance watcher
+    _ovr = instance;
+  }
+  return instance;
 }
+*/
 
 void LEDDisplay::updateStripeLayout(uint16_t w, uint16_t h, uint16_t wcnt, uint16_t hcnt,
                             bool snake, bool vert, bool vmirr, bool hmirr,
@@ -216,8 +220,8 @@ void LEDDisplay::updateStripeLayout(uint16_t w, uint16_t h, uint16_t wcnt, uint1
 
         _dengine->clear();
         _canvas->resize(w*wcnt, h*hcnt);
-        auto instance = _ovr.lock();
-        if (instance) instance->resize(w*wcnt, h*hcnt);
+        //auto instance = _ovr.lock();
+        //if (instance) instance->resize(w*wcnt, h*hcnt);
         tiles.setTileDimensions(w, h, wcnt, hcnt);
     }
     print_stripe_cfg();
@@ -230,7 +234,7 @@ uint8_t LEDDisplay::brightness(uint8_t brt){
 
 
 uint8_t LEDDisplay::brightness(){
-    return _etype == engine_t::hub75 ? _brt : FastLED.getBrightness();
+  return _etype == engine_t::hub75 ? _brt : FastLED.getBrightness();
 }
 
 void LEDDisplay::print_stripe_cfg(){
@@ -288,6 +292,85 @@ int LEDDisplay::getColorOrder() const {
             return RGB;
     };
 }
+
+void LEDDisplay::show(){
+  if (!_dengine) return;
+  if (_use_db){
+    // save buffer content
+    _dengine->copyFront2Back();
+  }
+
+  // for all overlay structs in stack call a callback function that will render it over canvas
+  for (auto &s : _stack)
+    s.callback( _gfx.get() );
+
+
+
+  _dengine->show();
+
+  if (_use_db){
+    // restore buffer content
+    _dengine->flipBuffer();
+  }
+};
+
+void LEDDisplay::canvasProtect(bool v){
+  if (_dengine)
+    _dengine->doubleBuffer(v);
+  _use_db = v;
+}
+
+void LEDDisplay::attachOverlay( overlay_cb_t f){
+  //LOGV(T_Display, printf, "new ovr:%u\n", &f);
+  auto cb = std::find_if(_stack.begin(), _stack.end(), [&f](const overlay_cb_t& fn){ return f.id == fn.id; } );
+  if (cb == _stack.end()){
+    LOGD(T_Display, printf, "add overlay: %u\n", f.id);
+    _stack.push_back(f);
+  } else {
+    LOGV(T_Display, println, "overlay cb already exist");
+  }
+}
+
+void LEDDisplay::detachOverlay( uint32_t id){
+  //LOGV(T_Display, printf, "try remove ovr:%u\n", *(long *)(char *)&f);
+  auto cb = std::find_if(_stack.cbegin(), _stack.cend(), [id](const overlay_cb_t& fn){ return id == fn.id; } );
+  if ( cb != _stack.cend() ){
+    LOGD(T_Display, printf, "remove overlay: %u\n", id);
+    _stack.erase(cb);
+  } else {
+    LOGV(T_Display, println, "overlay cb not found!");
+  }
+}
+
+
+// template to compare std::function pointee
+// https://stackoverflow.com/questions/20833453/comparing-stdfunctions-for-equality
+
+
+/*
+void LEDDisplay::overlay_render(){
+  if (_ovr.expired()) return;
+
+  // need to apply overlay on canvas
+  auto ovr = _ovr.lock();
+  if (_canvas->size() != ovr->size()) return;  // a safe-check for buffer sizes
+
+  // since overlay has same remapping function, I could simply apply it pixel to pixel
+  for (size_t i = 0; i != _canvas->size();  ++i ){
+    _canvas->at(i) = LedFB_GFX::colorCRGB( ovr->at(i) );
+  }
+
+  // draw non key-color pixels from canvas, otherwise from overlay
+  for (size_t y = 0; y != _canvas->h();  ++y )
+    for (size_t x = 0; x != _canvas->w();  ++x ){
+      //CRGB c = ovr->at(i) == _transparent_color ? _canvas->at(i) : ovr->at(i);
+      if (ovr->at(x, y)) // if pixel in overlay is not 'black', draw it on canvas
+        _canvas->  at(x, y) = LedFB_GFX::colorCRGB( ovr->at(x, y) );
+        //_canvas->hub75.drawPixelRGB888( i % canvas->hub75.getCfg().mx_width, i / canvas->hub75.getCfg().mx_width, c.r, c.g, c.b);
+    }
+}
+*/
+
 
 // my display object
 LEDDisplay display;

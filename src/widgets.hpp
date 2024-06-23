@@ -46,6 +46,8 @@
 #include "ui.h"
 #include "evtloop.h"
 #include "char_const.h"
+#include "canvas/Arduino_Canvas_Mono.h"
+#include <mutex>
 
 #define DEFAULT_TEXT_COLOR  54000
 
@@ -156,53 +158,70 @@ class GenericGFXWidget : public GenericWidget {
 
 
 protected:
+    std::unique_ptr<LedFB_GFX> canvas;
     LedFB_GFX   *screen = nullptr;
     // буфер оверлея
     //std::shared_ptr<LedFB<CRGB> > overlay;
 
-    // make/release display overlay
-    bool getOverlay();
+    // obtain canvas pointer
+    bool getCanvas();
 
-    void releaseOverlay();
+    // make/release display overlay
+    //bool getOverlay();
+
+    //void releaseOverlay();
 
 public:
     GenericGFXWidget(const char* wlabel, unsigned interval) : GenericWidget(wlabel, interval){};
-    virtual ~GenericGFXWidget(){ releaseOverlay(); };
+    virtual ~GenericGFXWidget(){ };
 
 };
 
 
-class ClockWidget : public GenericGFXWidget {
+/**
+ * @brief configuration for text bitmap block
+ * 
+ */
+struct TextBitMapCfg {
+    int16_t x, y;           // cursor to print Clock
+    uint16_t color{DEFAULT_TEXT_COLOR};     // color in 5-6-5 mode
+    uint8_t font_index;     // font to use
+    uint8_t baseline_shift; // show date
+    // max text bounds - needed to track max block size to cover the clock text
+    uint16_t maxW,  maxH;
+    uint8_t alpha_bg;
+    overlay_cb_t cb{};
+};
+
+
+class ClockWidget : public GenericWidget {
 
 struct Clock {
     int16_t x, y;       // cursor to print Clock
-    uint16_t color{DEFAULT_TEXT_COLOR};     // color in 5-6-5 mode
+    uint16_t color_txt, color_bg;     // color in 5-6-5 mode
+    uint8_t alpha_tx, alpha_bg; // font to use
     uint8_t font_index; // font to use
     uint8_t seconds_font_index; // font to use
     bool show_seconds;          // show seconds
-    bool twelwehr;      // 12/24 hour clock
+    bool twelwehr;              // 12/24 hour clock
     // max text bounds - needed to track max block size to cover the clock text
-    uint16_t maxW{0}, smaxW{0};   //, maxH{0};
+    uint16_t maxW, maxH;   //, maxH{0};
     // save seconds starting position
-    int16_t scursor_x, scursor_y;
-};
-
-struct Date {
-    int16_t x, y;       // cursor to print Clock
-    uint16_t color{DEFAULT_TEXT_COLOR};     // color in 5-6-5 mode
-    uint8_t font_index; // font to use
-    bool show;          // show date
-    // max text bounds - needed to track max block size to cover the clock text
-    uint16_t maxW{0};   //, maxH{0};
+    //int16_t scursor_x, scursor_y;
+    overlay_cb_t cb{};
 };
 
     // elements structs
     Clock clk{};
-    Date date{};
+    TextBitMapCfg date{};
+    bool date_show;
     // last timestamp
     std::time_t last_date;
     // flag that indicates screen needs a refresh
     bool redraw;
+    // text mask buffer
+    std::unique_ptr<Arduino_Canvas_Mono> _textmask_clk;
+    std::unique_ptr<Arduino_Canvas_Mono> _textmask_date;
 
     esp_event_handler_instance_t _hdlr_lmp_change_evt = nullptr;
     esp_event_handler_instance_t _hdlr_lmp_state_evt = nullptr;
@@ -370,11 +389,68 @@ public:
     //void stop() override;
 };
 
+
+
+class TextScrollerWgdt : public GenericWidget {
+
+struct WeatherCfg {
+  std::string city_id, apikey;
+  uint32_t refresh; // ms
+  bool retry{false};
+};
+
+  TextBitMapCfg _bitmapcfg;
+  WeatherCfg _weathercfg;
+
+  std::unique_ptr<Arduino_Canvas_Mono> _textmask;
+  // _textmask access mutext
+  std::mutex _mtx;
+
+  int _cur_offset{0};
+  int _scrollrate;
+  uint32_t _last_redraw;
+  uint16_t _txt_pixlen;
+  bool _wupd{false};
+
+  overlay_cb_t _renderer;
+
+  std::string _txtstr{"обновление погоды..."};
+
+  static void _event_hndlr(void* handler, esp_event_base_t base, int32_t id, void* event_data);
+
+  // pack class configuration into JsonObject
+  void generate_cfg(JsonVariant cfg) const override;
+
+  // load class configuration into JsonObject
+  void load_cfg(JsonVariantConst cfg) override;
+
+  void _getOpenWeather();
+
+  // hook to check/update text sroller
+  void _scroll_line(LedFB_GFX *gfx);
+
+public:
+  TextScrollerWgdt();
+  ~TextScrollerWgdt();
+
+  void widgetRunner() override;
+
+  void start() override;
+  void stop() override;
+};
+
 /**
  * @brief register EmbUI action handlers for managing widgets
  * 
  */
 void register_widgets_handlers();
+
+/*
+static uint8_t inline alphaBlend( uint8_t a, uint8_t b, uint8_t alpha ) { return scale8(a, 255-alpha) + scale8(b, alpha); }
+static CRGB alphaBlend( CRGB a, CRGB b, uint8_t alpha){
+    return CRGB( alphaBlend( a.r, b.r, alpha ), alphaBlend( a.g, b.g, alpha ), alphaBlend( a.b, b.b, alpha ) );
+};
+*/
 
 
 extern WidgetManager informer;

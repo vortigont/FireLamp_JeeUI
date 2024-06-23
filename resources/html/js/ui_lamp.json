@@ -1,6 +1,6 @@
 {
   "type":"interface",
-  "version":15,
+  "version":16,
   "descr":"FireLamp UI objects",
 
   "settings":{
@@ -83,8 +83,14 @@
               "value":-1,
               "min":-1,
               "step":1
-            },
-            {
+            }
+          ]
+        },
+        {
+          "section":"hub75_gpio_rgb2",
+          "line":true,
+          "block":[
+                {
               "id":"R2",
               "html":"input",
               "type":"number",
@@ -1143,6 +1149,26 @@
               "value": 103
             }
           ]
+        },
+        {
+          "section":"txtscroll",
+          "line":true,
+          "block":[
+            {
+              "id":"set_wdgtena_txtscroll",
+              "html":"input",
+              "label":"Слой бегущей строки",
+              "type":"checkbox",
+              "onChange": true
+            },
+            {
+              "id": "ui_page",
+              "html": "button",
+              "type": 0,
+              "label": "Параметры",
+              "value": 104
+            }
+          ]
         }
       ]
     },
@@ -1181,7 +1207,7 @@
                     "html":"input",
                     "value": 0,
                     "type": "number",
-                    "label": "CursorX",
+                    "label": "Позиция X",
                     "min": 0,
                     "step": 1
                   },
@@ -1190,7 +1216,7 @@
                     "html":"input",
                     "value": 15,
                     "type": "number",
-                    "label": "CursorY",
+                    "label": "Позиция Y",
                     "min": 0,
                     "step": 1
                   }
@@ -1209,88 +1235,128 @@
                     "block":[
                       {
                         "value":0,
-                        "label":"FreeSerif9"
+                        "label":"5x8 Сyrillic"
                       },
                       {
                         "value":1,
-                        "label":"FreeSerifBold9"
+                        "label":"8x13 Сyrillic"
                       },
                       {
                         "value":2,
-                        "label":"Cooper6"
+                        "label":"16x16 Unifont Cyrillic"
                       },
                       {
                         "value":3,
-                        "label":"Cooper8"
+                        "label":"14x14 Fewture (dgt)"
                       },
                       {
                         "value":4,
-                        "label":"CrystalNormal8"
+                        "label":"7x14 Bold (dgt)"
                       },
                       {
                         "value":5,
-                        "label":"CrystalNormal10"
+                        "label":"3x7 Tiny Simon (lat)"
                       },
                       {
                         "value":6,
-                        "label":"Org 5x5"
+                        "label":"13x13 doomalpha04(lat)"
                       },
                       {
                         "value":7,
-                        "label":"TomThumb 3x5"
+                        "label":"15x16 greenbloodserif2(lat)"
                       }
                     ]
                   },
                   {
                     "id":"font2",
                     "html":"select",
-                    "value":6,
+                    "value":5,
                     "label":"Шрифт секунд",
                     "section":"options",
                     "block":[
                       {
                         "value":0,
-                        "label":"FreeSerif9"
+                        "label":"5x8 Сyrillic"
                       },
                       {
                         "value":1,
-                        "label":"FreeSerifBold9"
+                        "label":"8x13 Сyrillic"
                       },
                       {
                         "value":2,
-                        "label":"Cooper6"
+                        "label":"16x16 Unifont Cyrillic"
                       },
                       {
                         "value":3,
-                        "label":"Cooper8"
+                        "label":"14x14 Fewture (dgt)"
                       },
                       {
                         "value":4,
-                        "label":"CrystalNormal8"
+                        "label":"7x14 Bold (dgt)"
                       },
                       {
                         "value":5,
-                        "label":"CrystalNormal10"
+                        "label":"3x7 Tiny Simon (lat)"
                       },
                       {
                         "value":6,
-                        "label":"Org 5x5"
+                        "label":"13x13 doomalpha04(lat)"
                       },
                       {
                         "value":7,
-                        "label":"TomThumb 3x5"
+                        "label":"15x16 greenbloodserif2(lat)"
                       }
                     ]
                   }
                 ]
               },
               {
-                "id": "color1",
-                "html":"input",
-                "value": 54000,
-                "type": "number",
-                "label": "Цвет 565",
-                "min": 1
+                "section":"clk_colors",
+                "line":true,
+                "block":[
+                  {
+                    "id": "color1",
+                    "html":"input",
+                    "value": 54000,
+                    "type": "number",
+                    "label": "Цвет текста (565)",
+                    "min": 0
+                  },
+                  {
+                    "id": "color2",
+                    "html":"input",
+                    "value": 4430,
+                    "type": "number",
+                    "label": "Цвет фона (565)",
+                    "min": 0
+                  }        
+                ]
+              },
+              {
+                "section":"clk_alpha",
+                "line":true,
+                "block":[
+                  {
+                    "id": "alpha_t",
+                    "html":"input",
+                    "value": 64,
+                    "type": "number",
+                    "label": "Прозрачность текста",
+                    "min": 0,
+                    "max": 255,
+                    "step": 1
+                  },
+                  {
+                    "id": "alpha_b",
+                    "html":"input",
+                    "value": 10,
+                    "type": "number",
+                    "label": "Прозрачность фона",
+                    "min": 0,
+                    "max": 255,
+                    "step": 1
+                  }
+                ]
               }
             ]
           },
@@ -1305,57 +1371,66 @@
                 "type":"checkbox"
               },
               {
+                "id":"font3",
+                "html":"select",
+                "value":5,
+                "label":"Шрифт",
+                "section":"options",
+                "block":[
+                  {
+                    "value":0,
+                    "label":"5x8 Сyrillic"
+                  },
+                  {
+                    "value":1,
+                    "label":"8x13 Сyrillic"
+                  },
+                  {
+                    "value":2,
+                    "label":"16x16 Unifont Cyrillic"
+                  },
+                  {
+                    "value":3,
+                    "label":"14x14 Fewture (dgt)"
+                  },
+                  {
+                    "value":4,
+                    "label":"7x14 Bold (dgt)"
+                  },
+                  {
+                    "value":5,
+                    "label":"3x7 Tiny Simon (lat)"
+                  },
+                  {
+                    "value":6,
+                    "label":"13x13 doomalpha04(lat)"
+                  },
+                  {
+                    "value":7,
+                    "label":"15x16 greenbloodserif2(lat)"
+                  }
+            ]
+              },
+              {
                 "section":"date_fonts",
                 "line":true,
                 "block":[
                   {
-                    "id":"font3",
-                    "html":"select",
-                    "value":6,
-                    "label":"Шрифт",
-                    "section":"options",
-                    "block":[
-                      {
-                        "value":0,
-                        "label":"FreeSerif9"
-                      },
-                      {
-                        "value":1,
-                        "label":"FreeSerifBold9"
-                      },
-                      {
-                        "value":2,
-                        "label":"Cooper6"
-                      },
-                      {
-                        "value":3,
-                        "label":"Cooper8"
-                      },
-                      {
-                        "value":4,
-                        "label":"CrystalNormal8"
-                      },
-                      {
-                        "value":5,
-                        "label":"CrystalNormal10"
-                      },
-                      {
-                        "value":6,
-                        "label":"Org 5x5"
-                      },
-                      {
-                        "value":7,
-                        "label":"TomThumb 3x5"
-                      }
-                    ]
-                  },
-                  {
-                    "id": "color2",
+                    "id": "color3",
                     "html":"input",
                     "value": 54000,
                     "type": "number",
                     "label": "Цвет 565",
                     "min": 1
+                  },
+                  {
+                    "id": "alpha_b2",
+                    "html":"input",
+                    "value": 128,
+                    "type": "number",
+                    "label": "затенение фона",
+                    "min": 0,
+                    "max": 255
                   }
                 ]
               },
@@ -1368,7 +1443,7 @@
                     "html":"input",
                     "value": 0,
                     "type": "number",
-                    "label": "CursorX",
+                    "label": "Позиция X",
                     "min": 0,
                     "step": 1
                   },
@@ -1377,7 +1452,7 @@
                     "html":"input",
                     "value": 31,
                     "type": "number",
-                    "label": "CursorY",
+                    "label": "Позиция Y",
                     "min": 0,
                     "step": 1
                   }
@@ -1601,6 +1676,192 @@
                 "fa": "fas fa-circle-check"
               }
            ]
+          }
+        ]
+      },
+      "txtscroll":{
+        "section":"set_wdgt_txtscroll",
+        "label":"Бегущая строка",
+        "main":true,
+        "block":[
+          {
+            "section":"wdgt_txtscroll",
+            "label":"Слой строки",
+            "block":[
+              {
+                "section":"txtscroll_fonts",
+                "line":true,
+                "block":[
+                  {
+                    "id":"font1",
+                    "html":"select",
+                    "value":5,
+                    "label":"Шрифт",
+                    "section":"options",
+                    "block":[
+                      {
+                        "value":0,
+                        "label":"5x8 Сyrillic"
+                      },
+                      {
+                        "value":1,
+                        "label":"8x13 Сyrillic"
+                      },
+                      {
+                        "value":2,
+                        "label":"16x16 Unifont Cyrillic"
+                      },
+                      {
+                        "value":3,
+                        "label":"14x14 Fewture (dgt)"
+                      },
+                      {
+                        "value":4,
+                        "label":"7x14 Bold (dgt)"
+                      },
+                      {
+                        "value":5,
+                        "label":"3x7 Tiny Simon (lat)"
+                      },
+                      {
+                        "value":6,
+                        "label":"13x13 doomalpha04(lat)"
+                      },
+                      {
+                        "value":7,
+                        "label":"15x16 greenbloodserif2(lat)"
+                      }
+                    ]
+                  },
+                  {
+                    "id":"offset",
+                    "html":"input",
+                    "type":"number",
+                    "label":"Смещение базовой линии",
+                    "min":0,
+                    "max":16,
+                    "step":1
+                  }
+                ]
+              },
+              {
+                "section":"txtscroll_size",
+                "line":true,
+                "block":[
+                  {
+                    "id":"width",
+                    "html":"input",
+                    "type":"number",
+                    "label":"Ширина блока",
+                    "min":4,
+                    "max":128,
+                    "step":4
+                  },
+                  {
+                    "id":"height",
+                    "html":"input",
+                    "type":"number",
+                    "label":"Высота блока",
+                    "min":4,
+                    "max":128,
+                    "step":4
+                  },
+                  {
+                    "id":"x1off",
+                    "html":"input",
+                    "type":"number",
+                    "label":"Привязка по X",
+                    "min":0,
+                    "max":256,
+                    "step":1
+                  },
+                  {
+                    "id":"y1off",
+                    "html":"input",
+                    "type":"number",
+                    "label":"Привязка по Y",
+                    "min":4,
+                    "max":256,
+                    "step":1
+                  }
+                ]
+              },
+              {
+                "section":"txtscroll_color",
+                "line":true,
+                "block":[
+                  {
+                    "id": "color1",
+                    "html":"input",
+                    "type": "number",
+                    "label": "Цвет текста (565)",
+                    "min": 0
+                  },
+                  {
+                    "id": "alpha_b",
+                    "html":"input",
+                    "type": "number",
+                    "label": "Прозрачность фона",
+                    "min": 0,
+                    "max": 255,
+                    "step": 1
+                  }
+                ]
+              },
+              {
+                "id": "rate",
+                "html":"input",
+                "type": "number",
+                "label": "Скорость прокрутки, пикс/с",
+                "min": 2,
+                "max": 200
+              }
+            ]
+          },
+          {
+            "html":"spacer"
+          },
+          {
+            "section":"set_wdgt_weather",
+            "label":"Погода OpenWeather",
+            "block":[
+              {
+                "id":"cityid",
+                "html":"input",
+                "label":"Код города в OpenWeather",
+                "type":"text"
+              },
+              {
+                "id":"apikey",
+                "html":"input",
+                "label":"Ключ API OpenWeather",
+                "type":"text"
+              },
+              {
+                "id":"refresh",
+                "html":"input",
+                "type":"number",
+                "label":"Обновление, ч.",
+                "min":1,
+                "max":12,
+                "step":1
+              }
+            ]
+          },
+          {
+            "id":"set_wdgt_txtscroll",
+            "html":"button",
+            "type":1,
+            "label":"Применить",
+            "fa": "fas fa-circle-check"
+          },
+          {
+            "id":"ui_page_widgets",
+            "html":"button",
+            "color": "green",
+            "type":0,
+            "fa": "fas fa-door-open",
+            "label":"Выход"
           }
         ]
       }
