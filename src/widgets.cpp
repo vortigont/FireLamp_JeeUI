@@ -547,7 +547,7 @@ void AlarmClock::widgetRunner(){
   }
 
   // cockoo clock
-  if (tm->tm_hour >= _cuckoo.on && tm->tm_hour < _cuckoo.off)
+  if (tm->tm_hour >= _cuckoo.on && tm->tm_hour <= _cuckoo.off)
     _cockoo_events(tm);
 
 }
