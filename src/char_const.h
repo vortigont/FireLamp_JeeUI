@@ -205,6 +205,7 @@ static constexpr const char* T_event = "event";
 static constexpr const char* T_Active = "Active";
 static constexpr const char* T_active = "active";
 static constexpr const char* T_arg = "arg";
+static constexpr const char* T_datefmt = "datefmt";
 static constexpr const char* T_clicks = "clicks";
 static constexpr const char* T_ctrls = "ctrls";
 static constexpr const char* T_demoRndOrder = "demoRndOrder";

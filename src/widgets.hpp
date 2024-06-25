@@ -190,6 +190,7 @@ struct TextBitMapCfg {
     // max text bounds - needed to track max block size to cover the clock text
     uint16_t maxW,  maxH;
     uint8_t alpha_bg;
+    std::string datefmt{"%F"};
     overlay_cb_t cb{};
 };
 
@@ -394,7 +395,7 @@ public:
 class TextScrollerWgdt : public GenericWidget {
 
 struct WeatherCfg {
-  std::string city_id, apikey;
+  String city_id, apikey;
   uint32_t refresh; // ms
   bool retry{false};
 };
