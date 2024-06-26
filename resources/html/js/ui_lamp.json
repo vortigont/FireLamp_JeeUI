@@ -1,6 +1,6 @@
 {
   "type":"interface",
-  "version":16,
+  "version":17,
   "descr":"FireLamp UI objects",
 
   "settings":{
@@ -1371,6 +1371,12 @@
                 "type":"checkbox"
               },
               {
+                "id":"datefmt",
+                "html":"input",
+                "label":"<a href=\"https://en.cppreference.com/w/cpp/chrono/c/strftime\" target=\"_blank\">Формат даты</a>",
+                "type":"text"
+              },
+              {
                 "id":"font3",
                 "html":"select",
                 "value":5,
@@ -1829,7 +1835,7 @@
                 "id":"cityid",
                 "html":"input",
                 "label":"Код города в OpenWeather",
-                "type":"text"
+                "type":"number"
               },
               {
                 "id":"apikey",

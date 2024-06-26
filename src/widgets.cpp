@@ -312,6 +312,8 @@ void ClockWidget::load_cfg(JsonVariantConst cfg){
   date.color = cfg[T_color3] | DEFAULT_TEXT_COLOR;
   date.font_index = cfg[T_font3];
   date.alpha_bg = cfg[T_alpha_b2];
+  if (cfg[T_datefmt])
+    date.datefmt = cfg[T_datefmt].as<const char*>();
 
   if (date_show){
     helper.setFont(fonts[date.font_index]);
@@ -362,6 +364,7 @@ void ClockWidget::generate_cfg(JsonVariant cfg) const {
   cfg[T_color3] = date.color;
   cfg[T_alpha_b2] = date.alpha_bg;
   cfg[T_font3] = date.font_index;
+  cfg[T_datefmt] = date.datefmt;
 }
 
 void ClockWidget::widgetRunner(){
@@ -435,10 +438,11 @@ void ClockWidget::_print_clock(std::tm *tm){
 
 void ClockWidget::_print_date(std::tm *tm){
   _textmask_date->fillScreen(0);
-  char result[std::size("2024-02-23")];
+  //char result[std::size("2024-02-23")];
+  char result[20];
 
-  std::strftime(result, std::size(result), "%F", tm);
-  //std::strftime(result, buffsize, "%d %b, %a", tm);
+  std::strftime(result, std::size(result), date.datefmt.c_str(), tm);
+  //std::strftime(result, std::size(result), "%F", tm);
   _textmask_date->setTextColor(date.color);
   _textmask_date->setFont(fonts[date.font_index]);
   _textmask_date->setCursor(0, date.maxH - 1);
@@ -930,10 +934,9 @@ void TextScrollerWgdt::load_cfg(JsonVariantConst cfg){
   //_textmask->setTextBound();
   //_textmask_clk->setRotation(2);
 
-  if (cfg[T_cityid])
-    _weathercfg.city_id = cfg[T_cityid].as<const char*>();
+  _weathercfg.city_id = cfg[T_cityid].as<unsigned>();
 
-  if (cfg[T_apikey])
+  if (cfg[T_apikey].is<const char*>())
     _weathercfg.apikey =  cfg[T_apikey].as<const char*>();
 
   _weathercfg.refresh = (cfg[T_refresh] | 1) * 3600000;
@@ -960,15 +963,14 @@ void TextScrollerWgdt::generate_cfg(JsonVariant cfg) const {
   //weath.clear();  // clear obj, I'll replace it's content
 
   // weather
-  if (_weathercfg.city_id.size())
-    cfg[T_cityid] =  _weathercfg.city_id;
-  if (_weathercfg.apikey.size())
+  cfg[T_cityid] =  _weathercfg.city_id;
+  if (_weathercfg.apikey.length())
     cfg[T_apikey] =  _weathercfg.apikey;
   cfg[T_refresh] = _weathercfg.refresh / 3600000;   // ms in hr
 }
 
 void TextScrollerWgdt::widgetRunner(){
-  LOGV(T_txtscroll, printf, "pogoda %d\n", getInterval());
+  LOGV(T_txtscroll, printf, "pogoda %u\n", getInterval());
   // this periodic runner needed only for weather update
 
   _getOpenWeather();
@@ -1037,7 +1039,7 @@ void TextScrollerWgdt::_lmpChEventHandler(esp_event_base_t base, int32_t id, voi
 */
 
 void TextScrollerWgdt::_getOpenWeather(){
-  if (!_weathercfg.apikey.size() || !_weathercfg.city_id.size()) return;   // no API key - no weather
+  if (!_weathercfg.apikey.length() || !_weathercfg.city_id) return;   // no API key - no weather
 
   // http://api.openweathermap.org/data/2.5/weather?id=1850147&units=metric&lang=ru&APPID=your_API_KEY>
   String url("http://api.openweathermap.org/data/2.5/weather?units=metric&lang=ru&id=");
@@ -1080,7 +1082,7 @@ void TextScrollerWgdt::_getOpenWeather(){
   pogoda += t;
 
 // Влажность
-  pogoda += ", влажность:";
+  pogoda += "°C, влажность:";
   pogoda += doc["main"]["humidity"].as<int>();
 // Ветер
   pogoda += "%, ветер ";
@@ -1098,13 +1100,13 @@ void TextScrollerWgdt::_getOpenWeather(){
   pogoda += " м/с";
 
   // sunrise/sunset
-  pogoda += ", восх.";
+  pogoda += ", восх:";
   time_t sun = doc["sys"]["sunrise"].as<uint32_t>();
   pogoda += localtime(&sun)->tm_hour;
   pogoda += ":";
   pogoda += localtime(&sun)->tm_min;
 
-  pogoda += ", закат";
+  pogoda += ", закат:";
   sun = doc["sys"]["sunset"].as<uint32_t>();
   pogoda += localtime(&sun)->tm_hour;
   pogoda += ":";

@@ -2,8 +2,8 @@
 
 # embui branch/tag name to fetch
 embuirepo='https://github.com/vortigont/EmbUI'
-embuitag="main"
-#embuitag="v3.1"
+#embuitag="main"
+embuitag="v3.2.1"
 
 #####
 # no changes below this point!
@@ -13,7 +13,7 @@ optstring=":hfwt:c:"
 # etag file
 tags=etags.txt
 compressor="gz"
-compress_cmd=""
+compress_cmd="zopfli"
 compress_args=""
 refresh_data=0
 refresh_js=0
@@ -22,7 +22,7 @@ with_workers=0
 embuijs_files='lib.js maker.js dyncss.js'
 
 usage(){
-  echo "Usage: `basename $0` [-h] [-t embuitag] [-f] [-c br|gz] [-w]"
+  echo "Usage: `basename $0` [-h] [-t embuitag] [-f] [-c zopfli|gz|br] [-w]"
 cat <<EOF
 Options:
     -f          force update all resoruces
@@ -39,7 +39,7 @@ while getopts ${optstring} OPT; do
     case "$OPT" in
         c)
             echo "Set compressor to: $OPTARG"
-            compressor=$OPTARG
+            compress_cmd=$OPTARG
             ;;
         f)
             echo "Force refresh"
@@ -71,14 +71,20 @@ while getopts ${optstring} OPT; do
     esac
 done
 
-if [[ "$compressor" = "gz" ]] ; then
+if [[ "$compress_cmd" = "gz" ]] ; then
     compress_cmd=`which gzip`
     if [ "x$compress_cmd" = "x" ]; then
         echo "ERROR: gzip compressor not found!"
         exit 1
     fi
     compress_args="-9"
-elif [[ "$compressor" = "br" ]] ; then
+elif [[ "$compress_cmd" = "zopfli" ]] ; then
+    compress_cmd=`which zopfli`
+    if [ "x$compress_cmd" = "x" ]; then
+        echo "ERROR: zopfli compressor not found!"
+        exit 1
+    fi
+elif [[ "$compress_cmd" = "br" ]] ; then
     compress_cmd=`which brotli`
     if [ "x$compress_cmd" = "x" ]; then
         echo "ERROR: brotli compressor not found!"
@@ -198,7 +204,7 @@ if [ $refresh_js -eq 1 ] ; then
 fi
 
 echo "Update local resources"
-lamp_files='index.html favicon.ico extras/edit.htm css/wp_dark.svg css/wp_light.svg'
+lamp_files='index.html favicon.ico extras/edit.htm css/wp_dark.svg css/wp_light.svg js/ui_lamp.json'
 for f in ${lamp_files}
 do
     updlocalarchive $f
@@ -219,8 +225,8 @@ do
 done
 
 # обновляем скрипты/стили специфичные для лампы
-[ ! -f ../data/css/lamp.css.gz ] || [ html/css/custom_drawing.css -nt ../data/css/lamp.css.gz ] && gzip -9k html/css/custom_drawing.css && mv -f html/css/custom_drawing.css.gz ../data/css/lamp.css.gz
-# update lamp's js sripts
+[ ! -f ../data/css/lamp.css.${compressor} ] || [ html/css/custom_drawing.css -nt ../data/css/lamp.css.${compressor} ] && ${compress_cmd} ${compress_args} html/css/custom_drawing.css && mv -f html/css/custom_drawing.css.${compressor} ../data/css/lamp.css.${compressor}
+# update lamp's js scripts
 cat html/js/*.js | ${compress_cmd} ${compress_args} > ../data/js/lamp.js.${compressor}
 
 
