@@ -117,4 +117,4 @@ jobs:
           folder: ~/artifacts
           target-folder: FireLamp/bin
           clean: false
-          dry-run: true
+          dry-run: false
