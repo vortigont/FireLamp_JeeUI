@@ -970,7 +970,7 @@ void TextScrollerWgdt::generate_cfg(JsonVariant cfg) const {
 }
 
 void TextScrollerWgdt::widgetRunner(){
-  LOGV(T_txtscroll, printf, "pogoda %u\n", getInterval());
+  LOGV(T_txtscroll, printf, "pogoda %lu\n", getInterval());
   // this periodic runner needed only for weather update
 
   _getOpenWeather();

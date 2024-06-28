@@ -3,7 +3,7 @@
 # embui branch/tag name to fetch
 embuirepo='https://github.com/vortigont/EmbUI'
 #embuitag="main"
-embuitag="v3.2.1"
+embuitag="v3.2"
 
 #####
 # no changes below this point!
@@ -71,12 +71,30 @@ while getopts ${optstring} OPT; do
     esac
 done
 
+compress_zopfli(){
+    local src="$1"
+    zopfli ${compress_args} ${src}
+    rm -f ${src}
+}
+
+compress_gz(){
+    local src="$1"
+    gzip ${compress_args} ${src}
+}
+
+compress_br(){
+    local src="$1"
+    brotli ${compress_args} ${src}
+}
+
+
 if [[ "$compress_cmd" = "gz" ]] ; then
     compress_cmd=`which gzip`
     if [ "x$compress_cmd" = "x" ]; then
         echo "ERROR: gzip compressor not found!"
         exit 1
     fi
+    compress_cmd=compress_gz
     compress_args="-9"
 elif [[ "$compress_cmd" = "zopfli" ]] ; then
     compress_cmd=`which zopfli`
@@ -84,12 +102,14 @@ elif [[ "$compress_cmd" = "zopfli" ]] ; then
         echo "ERROR: zopfli compressor not found!"
         exit 1
     fi
+    compress_cmd=compress_zopfli
 elif [[ "$compress_cmd" = "br" ]] ; then
     compress_cmd=`which brotli`
     if [ "x$compress_cmd" = "x" ]; then
         echo "ERROR: brotli compressor not found!"
         exit 1
     fi
+    compress_cmd=compress_br
     compress_args="--best"
 fi
 echo "Using compressor: $compress_cmd"
@@ -118,16 +138,20 @@ getRes(){
     local res=$1
     local url="${embuirepo}/raw/$embuitag/resources/html/${res}"
     if freshtag ${url} ; then
-        curl -sL $url | ${compress_cmd} ${compress_args} > ../data/${res}.${compressor}
+        curl -sL $url  > ../data/${res}
+        ${compress_cmd} ../data/${res}
     fi
 }
 
-# update local file
+# update local file if source has newer version
 updlocalarchive(){
     local res=$1
     echo "check: $res"
     [ ! -f html/${res} ] && return
-    [ ! -f ../data/${res}.${compressor} ] || [ html/${res} -nt ../data/${res}.${compressor} ] && ${compress_cmd} ${compress_args} -c html/${res} > ../data/${res}.${compressor} && touch -r html/${res} ../data/${res}.${compressor}
+    if [ ! -f ../data/${res}.${compressor} ] || [ html/${res} -nt ../data/${res}.${compressor} ] ; then
+        cp html/${res} ../data/${res}
+        ${compress_cmd}  ../data/${res} && touch -r html/${res} ../data/${res}.${compressor}
+    fi
 }
 
 
@@ -159,7 +183,7 @@ if [ $refresh_data -eq 1 ] ; then
     echo "Refreshing EmbUI css files/pics..."
 
     curl -sL ${embuirepo}/raw/$embuitag/resources/data.zip > embui.zip
-    unzip -o -d ../data/ embui.zip "css/*" "js/*" "locale/*"
+    unzip -o -d ../data/ embui.zip "css/*" "js/*"
 
     # append our local styles to the embui
     for f in html/css/style_*
@@ -170,20 +194,11 @@ if [ $refresh_data -eq 1 ] ; then
         gzip -df ../data/css/$( basename $f).gz
         # append our file
         cat $f >> ../data/css/$( basename $f)
-        ${compress_cmd} ${compress_args} -f ../data/css/$( basename $f)
+        ${compress_cmd} ../data/css/$( basename $f)
         touch -r $f ../data/css/$( basename $f).${compressor}
         rm -f ../data/css/$( basename $f)
     done
 
-    embui_gzs="css/embui_dark.svg css/embui_light.svg"
-    # repack some of the EmbUI resources
-    if [[ "$compressor" = "br" ]] ; then
-        for f in ${embui_gzs}
-        do
-            gzip -df ../data/${f}.gz
-            ${compress_cmd} ${compress_args} --rm -f ../data/${f}
-        done
-    fi
     rm -f embui.zip
 fi
 
@@ -198,13 +213,14 @@ if [ $refresh_js -eq 1 ] ; then
         curl -sL ${embuirepo}/raw/$embuitag/resources/html/js/${f} >> embui.js
         #echo "fetch $f"
     done
-    ${compress_cmd} ${compress_args} embui.js -c > ../data/js/embui.js.${compressor} && rm -f embui.js
+    ${compress_cmd} embui.js && mv embui.js.${compressor} ../data/js/ && rm -f embui.js
 
-    curl -sL ${embuirepo}/raw/$embuitag/resources/html/js/ui_sys.json | ${compress_cmd} ${compress_args} > ../data/js/ui_sys.json.${compressor}
+    curl -sL ${embuirepo}/raw/$embuitag/resources/html/js/ui_sys.json > ../data/js/ui_sys.json
+    ${compress_cmd} ../data/js/ui_sys.json
 fi
 
 echo "Update local resources"
-lamp_files='index.html favicon.ico extras/edit.htm css/wp_dark.svg css/wp_light.svg js/ui_lamp.json'
+lamp_files='index.html favicon.ico css/wp_dark.svg css/wp_light.svg js/ui_lamp.json'
 for f in ${lamp_files}
 do
     updlocalarchive $f
@@ -219,21 +235,21 @@ done
 #done
 
 # обновить файлы в /login/
-for f in html/login/*
-do
-    updlocalarchive login/$( basename $f)
-done
+#for f in html/login/*
+#do
+#    updlocalarchive login/$( basename $f)
+#done
 
 # обновляем скрипты/стили специфичные для лампы
-[ ! -f ../data/css/lamp.css.${compressor} ] || [ html/css/custom_drawing.css -nt ../data/css/lamp.css.${compressor} ] && ${compress_cmd} ${compress_args} html/css/custom_drawing.css && mv -f html/css/custom_drawing.css.${compressor} ../data/css/lamp.css.${compressor}
+[ ! -f ../data/css/lamp.css.${compressor} ] || [ html/css/custom_drawing.css -nt ../data/css/lamp.css.${compressor} ] && cat html/css/custom_drawing.css | ${compress_cmd} ${compress_args} > ../data/css/lamp.css.${compressor}
 # update lamp's js scripts
-cat html/js/*.js | ${compress_cmd} ${compress_args} > ../data/js/lamp.js.${compressor}
+cat html/js/*.js > ../data/js/lamp.js && ${compress_cmd} ../data/js/lamp.js
 
 
 # update plain files
 #cp -u html/.exclude.files ../data/
 cp -u html/manifest.webmanifest ../data/
-cp -u html/css/*.png ../data/css/
+cp -u html/css/*.webp ../data/css/
 
 #cp -u html/events_config.json ../data/
 #cp -u html/buttons_config.json ../data/
