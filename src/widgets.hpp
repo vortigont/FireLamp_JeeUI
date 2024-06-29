@@ -100,7 +100,7 @@ public:
 
     /**
      * @brief load widget's config from supplied config and calls start()
-     * 
+     * usually this config is supplied from WebUI/MQTT
      */
     void load(JsonVariantConst cfg);
 
@@ -177,6 +177,9 @@ public:
 
 };
 
+class GenericWidgetProfiles : public GenericWidget {
+
+};
 
 /**
  * @brief configuration for text bitmap block
@@ -260,6 +263,11 @@ public:
     void stop() override;
 };
 
+/**
+ * @brief a container object start spawns/destroys Widgets
+ * on start/demand
+ * 
+ */
 class WidgetManager {
 
     // widgets container
@@ -278,18 +286,56 @@ public:
     //WidgetManager();
     //~WidgetManager(){};
 
+    /**
+     * @brief start widget
+     * if label is not given, then start all widgets based on settings from NVRAM
+     * 
+     * @param label 
+     */
     void start(const char* label = NULL);
+
+    /**
+     * @brief Stop specific widget if it's instance is exist
+     * 
+     * @param label 
+     */
     void stop(const char* label);
 
-    void register_handlers();
-    void unregister_handlers();
+    //void register_handlers();
+    //void unregister_handlers();
 
-    // load widget's configuration into provided JsonObject
+    /**
+     * @brief load widget's configuration into provided JsonObject
+     * usually called from a WebUI/MQTT handler
+     * @param obj 
+     * @param widget_label 
+     */
     void getConfig(JsonObject obj, const char* widget_label);
+
+    /**
+     * @brief Set the Configuration for specifit widget object
+     * 
+     * @param widget_label 
+     * @param cfg 
+     */
     void setConfig(const char* widget_label, JsonVariantConst cfg);
 
-    // generate values representing state of the active widgets
+    /**
+     * @brief generate Interface values object representing boolen states
+     * of currently active/inactive widgets
+     * 
+     * @param interf 
+     */
     void getWidgetsState(Interface *interf) const;
+
+    /**
+     * @brief Get state of the specific Widget active/inactive
+     * 
+     * @param label widget's label
+     * @return true
+     * @return false 
+     */
+    bool getWidgetStatus(const char* label);
 
     /**
      * @brief Get pointer to the instance of an active Widget by it's label

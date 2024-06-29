@@ -154,6 +154,11 @@ GenericWidget::GenericWidget(const char* wlabel, unsigned periodic) : label(wlab
 
 void GenericWidget::load_cfg_from_NVS(JsonObject obj, const char* lbl){
   JsonDocument doc;
+
+  // make file name
+  //String fname( lbl ? lbl : T_widgets_cfg);
+  //fname += ".json";
+
   // it does not matter if config file does not exist or requested object is missing
   // we should anyway call load_cfg to let derived class implement any default values configuration
   embuifs::deserializeFile(doc, T_widgets_cfg);
@@ -888,6 +893,11 @@ GenericWidget* WidgetManager::getWidgetPtr(const char* label){
   return (*i).get();
 }
 
+bool WidgetManager::getWidgetStatus(const char* label){
+  auto i = std::find_if(_widgets.begin(), _widgets.end(), MatchLabel<widget_pt>(label));
+  return (i != _widgets.end());
+}
+
 
 // *** Running Text overlay 
 
@@ -899,6 +909,7 @@ TextScrollerWgdt::TextScrollerWgdt() : GenericWidget(T_txtscroll, 5000) {
 }
 
 TextScrollerWgdt::~TextScrollerWgdt(){
+  stop();
 /*
   if (_hdlr_lmp_change_evt){
     esp_event_handler_instance_unregister_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, _hdlr_lmp_change_evt);
@@ -1012,6 +1023,7 @@ void TextScrollerWgdt::start(){
 
 void TextScrollerWgdt::stop(){
   disable();
+  std::lock_guard<std::mutex> lock(_mtx);
   display.detachOverlay(_renderer.id);
 }
 
@@ -1122,12 +1134,9 @@ void TextScrollerWgdt::_getOpenWeather(){
   _textmask->getTextBounds(_txtstr.data(), 0, _bitmapcfg.maxH, &px, &py, &_txt_pixlen, &pw);
 
   // reset update
-  if(_weathercfg.retry){
-    _weathercfg.retry = false;
-    setInterval(_weathercfg.refresh);
-  }
-
-  LOGV(T_txtscroll, printf, "Weather update: %s\n", pogoda.c_str());
+  _weathercfg.retry = false;
+  setInterval(_weathercfg.refresh);
+  LOGD(T_txtscroll, printf, "Weather update: %s\n", pogoda.c_str());
 }
 
 
