@@ -51,7 +51,7 @@ private:
     //void load() override { fb->clear(); };
 public:
     EffectNone(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){ fb->clear(); }
-    bool run() override { return true; };
+    bool run() override { fb->clear(); return true; };
 };
 
 /*
@@ -269,7 +269,7 @@ private:
     uint8_t cooling = 80U; // 70
   // SPARKING: What chance (out of 255) is there that a new spark will be lit?
   // Higher chance = more roaring fire.  Lower chance = more flickery fire.
-    uint8_t sparking = 90U; // 130
+    uint32_t sparking = 90U; // 130
   // SMOOTHING; How much blending should be done between frames
   // Lower = more blending and smoother flames. Higher = less blending and flickery flames
     uint8_t _scale = 1;
@@ -277,10 +277,6 @@ private:
     Vector2D<uint8_t> noise;
     bool fire2012Routine();
     String setDynCtrl(UIControl*_val) override;
-
-    /** полезные обертки **/
-    uint8_t wrapX(int8_t x){ return (x + fb->w()) % fb->w(); }
-    uint8_t wrapY(int8_t y){ return (y + fb->h()) % fb->h(); }
 
 public:
     EffectFire2012(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer), noise(fb->w(), fb->h()) {}
@@ -1885,12 +1881,11 @@ public:
 // sparks (c) kostyamat 10.01.2022 https://editor.soulmatelights.com/gallery/1619-fire-with-sparks
 class EffectFire2021 : public EffectCalc {
 private:
-    byte _pal = 8;
-    byte _scale = 32;
-    uint32_t t;
+    byte _pal{8}, _fill{10};
+    byte _scale{32};
+    uint16_t t{0};
     bool withSparks = false;
 
-    const uint8_t sparksCount = fb->w() / 4;
     const uint8_t spacer = fb->h()/4;
 
     class Spark {
@@ -1910,7 +1905,7 @@ private:
         void draw(LedFB<CRGB> *fb);
     }; 
 
-    std::vector<Spark> sparks{std::vector<Spark>(sparksCount, Spark())};
+    std::vector<Spark> sparks{std::vector<Spark>(fb->w() / 4, Spark())};
 
     String setDynCtrl(UIControl*_val) override;
     void palettesload() override;

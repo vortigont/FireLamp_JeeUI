@@ -2159,28 +2159,30 @@ String EffectFire2012::setDynCtrl(UIControl*_val){
 }
 
 bool EffectFire2012::run() {
-  if (curPalette == nullptr) {
+  if (curPalette == nullptr){
     return false;
   }
-  if (dryrun(4.0))
+
+  if ( dryrun(4.0)) {
     return false;
+  }
   cooling = isMicOn() ? 255 - getMicMapMaxPeak() : 130;
   return fire2012Routine();
 }
 
 bool EffectFire2012::fire2012Routine() {
-  sparking = 64 + _scale;
+  sparking = 8 + _scale;
   int fire_base = (fb->h()/6)>6 ? 6 : fb->h()/6 + 1;
 
   // Loop for each column individually
-  for (uint8_t x = 0; x < fb->w(); x++)
+  for (size_t x = 0; x != noise.w(); ++x)
   {
     // Step 1.  Cool down every cell a little
-    for (uint8_t y = 0; y < fb->h(); y++)
-      noise.at(x,y) = qsub8(noise.at(x,y), random(0, ((cooling * 10) / fb->h()) + 2));
+    for (size_t y = 0; y != noise.h(); ++y)
+      noise.at(x,y) = qsub8(noise.at(x,y), random(0, cooling * 10 / noise.h() + 2));
 
     // Step 2.  Heat from each cell drifts 'up' and diffuses a little
-    for (uint8_t k = fb->maxHeightIndex(); k > 2; k--)
+    for (size_t k = noise.h()-1; k != 3; k--)
       noise.at(x,k) = (noise.at(x,k - 1) + noise.at(x,k - 2) + noise.at(x,k - 3)) / 3;
 
     // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
@@ -2190,10 +2192,11 @@ bool EffectFire2012::fire2012Routine() {
       noise.at(x,j) = qadd8(noise.at(x,j), random(96, 255)); // 196, 255
     }
 
-    // Step 4.  Map from heat cells to LED colors
-    for (uint8_t y = 0; y < fb->h(); y++)
-      nblend(fb->at(x, y), ColorFromPalette(*curPalette, ((noise.at(x,y) * 0.7) + noise.at( wrapX(x + 1), y) * 0.3)), fireSmoothing);
+    // Step 4.  Map from heat cells to LED colors (invert Y)
+    for (size_t y = 0; y != fb->h(); ++y)
+      nblend(fb->at(x, fb->maxHeightIndex() - y), ColorFromPalette(*curPalette, noise.at(x,y)/4 + noise.at( (x + 1)%fb->w(), y)/3 ), fireSmoothing);
   }
+
   return true;
 }
 
@@ -7832,16 +7835,17 @@ void EffectFire2021::palettesload(){
   usepalettes = true; // включаем флаг палитр
   scale2pallete();    // выставляем текущую палитру
   
-  sparks.resize(sparksCount);
-  for (byte i = 0; i < sparksCount; i++) 
+  //sparks.resize(sparksCount);
+  for (byte i = 0; i != sparks.size(); i++) 
     sparks[i].reset(fb);
 }
 
 // !++
 String EffectFire2021::setDynCtrl(UIControl*_val) {
   if(_val->getId()==1) speedFactor = map(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 20, 100) * getBaseSpeedFactor();
-  else if(_val->getId()==3) _scale = map(EffectCalc::setDynCtrl(_val).toInt(), 1, 100, 32, 132);
+  else if(_val->getId()==3) _scale = EffectCalc::setDynCtrl(_val).toInt(); //map(EffectCalc::setDynCtrl(_val).toInt(), 1, 100, 10, 132);
   else if(_val->getId()==5) withSparks = EffectCalc::setDynCtrl(_val).toInt();
+  else if(_val->getId()==6) _fill = EffectCalc::setDynCtrl(_val).toInt();
   else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
   return String();
 }
@@ -7850,7 +7854,7 @@ bool EffectFire2021::run() {
   t += speedFactor;
 
   if (withSparks)
-    for (byte i = 0; i < sparksCount; i++) {
+    for (byte i = 0; i != sparks.size(); i++) {
       sparks[i].addXY((float)random(-1, 2) / 2, 0.5 * speedFactor, fb);
       if (sparks[i].getY() > fb->h() && !random(0, 50))
         sparks[i].reset(fb);
@@ -7858,13 +7862,19 @@ bool EffectFire2021::run() {
         sparks[i].draw(fb);
     }
 
-  for (byte x = 0; x < fb->w(); x++) {
-    for (byte y = 0; y < fb->h(); y++) {
+  for (size_t x = 0; x != fb->w(); ++x) {
+    for (size_t y = 0; y != fb->h(); ++y) {
      
-      int16_t bri= inoise8(x * _scale, (y * _scale) - t) - ((withSparks ? y + spacer : y) * (256 / fb->w()));
+      int16_t bri = inoise8(x * _scale, y*_scale - t) - ((withSparks ? y + spacer : y) * _fill);
       byte col = bri;
-      if(bri<0){bri= 0;} if(bri!=0) {bri= 256 - (bri* 0.2);}
-      nblend(fb->at(x, y), ColorFromPalette(*curPalette, col, bri), speedFactor);}
+      if( bri < 0 )
+        bri = 0;
+
+      if( bri != 0 )
+        {bri = 256 - bri/5;}
+
+      nblend(fb->at(x, fb->maxHeightIndex() - y), ColorFromPalette(*curPalette, col, bri), speedFactor);
+    }
   }
   return true;
 }

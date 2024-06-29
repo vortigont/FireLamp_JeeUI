@@ -1105,7 +1105,7 @@ bool EffectCalc::run(){
  * проверка на холостой вызов для эффектов с доп. задержкой
  */
 bool EffectCalc::dryrun(float n, uint8_t delay){
-  if((millis() - lastrun - delay) < (unsigned)(float(255 - speed) / n)) {
+  if((millis() - lastrun - delay) < (unsigned)((255 - speed) / n)) {
     active=false;
   } else {
     lastrun = millis();
