@@ -2154,47 +2154,49 @@ void EffectFire2012::load(){
 
 String EffectFire2012::setDynCtrl(UIControl*_val){
   if(_val->getId()==3) _scale = EffectCalc::setDynCtrl(_val).toInt();
+  else if(_val->getId()==5) cooling = 120 - 10*EffectCalc::setDynCtrl(_val).toInt();
   else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
   return String();
 }
 
 bool EffectFire2012::run() {
-  if (curPalette == nullptr){
+  if (curPalette == nullptr || dryrun(4.0)){
     return false;
   }
 
-  if ( dryrun(4.0)) {
-    return false;
-  }
-  cooling = isMicOn() ? 255 - getMicMapMaxPeak() : 130;
   return fire2012Routine();
 }
 
 bool EffectFire2012::fire2012Routine() {
-  sparking = 8 + _scale;
+  sparking = qadd8(8, _scale);
   int fire_base = (fb->h()/6)>6 ? 6 : fb->h()/6 + 1;
 
   // Loop for each column individually
   for (size_t x = 0; x != noise.w(); ++x)
   {
+
+    uint8_t col_cooling = random8(cooling - deviation, cooling + deviation); 
+    uint8_t col_sparkling = random8(sparking - deviation, sparking + deviation); 
+
     // Step 1.  Cool down every cell a little
     for (size_t y = 0; y != noise.h(); ++y)
-      noise.at(x,y) = qsub8(noise.at(x,y), random(0, cooling * 10 / noise.h() + 2));
+      noise.at(x,y) = qsub8(noise.at(x,y), random8(0, col_cooling * 10 / noise.h() + 2));
 
     // Step 2.  Heat from each cell drifts 'up' and diffuses a little
     for (size_t k = noise.h()-1; k != 3; k--)
       noise.at(x,k) = (noise.at(x,k - 1) + noise.at(x,k - 2) + noise.at(x,k - 3)) / 3;
 
     // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
-    if (random(255) < sparking)
+    if (random8() < col_sparkling)
     {
-      int j = random(fire_base);
-      noise.at(x,j) = qadd8(noise.at(x,j), random(96, 255)); // 196, 255
+      int j = random8(fire_base);
+      noise.at(x,j) = qadd8(noise.at(x,j), random8() | spark_min_T); // 196, 255
     }
 
     // Step 4.  Map from heat cells to LED colors (invert Y)
     for (size_t y = 0; y != fb->h(); ++y)
-      nblend(fb->at(x, fb->maxHeightIndex() - y), ColorFromPalette(*curPalette, noise.at(x,y)/4 + noise.at( (x + 1)%fb->w(), y)/3 ), fireSmoothing);
+      fb->at(x, fb->maxHeightIndex() - y) = ColorFromPalette(*curPalette, scale8(noise.at(x,y), 240));
+//      nblend(fb->at(x, fb->maxHeightIndex() - y), ColorFromPalette(*curPalette, noise.at(x,y)*3/4 + noise.at( (x + 1)%fb->w(), y)/3 ), fireSmoothing);
   }
 
   return true;

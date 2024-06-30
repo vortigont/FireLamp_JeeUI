@@ -266,10 +266,13 @@ class EffectFire2012 : public EffectCalc {
 private:
   // COOLING: How much does the air cool as it rises?
   // Less cooling = taller flames.  More cooling = shorter flames.
-    uint8_t cooling = 80U; // 70
+    uint8_t cooling = 120U;
   // SPARKING: What chance (out of 255) is there that a new spark will be lit?
   // Higher chance = more roaring fire.  Lower chance = more flickery fire.
-    uint32_t sparking = 90U; // 130
+    uint8_t sparking = 90U; // 130
+    uint8_t deviation{20};  // how much to devoate cooling and sparkling
+    const uint8_t spark_min_T{150};     // miimum Temp of a new sparks
+
   // SMOOTHING; How much blending should be done between frames
   // Lower = more blending and smoother flames. Higher = less blending and flickery flames
     uint8_t _scale = 1;
