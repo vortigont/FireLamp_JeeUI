@@ -73,7 +73,8 @@ protected:
 
     /**
      * @brief load configuration from a json object
-     * 
+     * method should be implemented in derived class to process
+     * class specific json object
      * @param cfg 
      */
     virtual void load_cfg(JsonVariantConst cfg) = 0;

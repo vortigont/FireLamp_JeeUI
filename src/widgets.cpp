@@ -757,8 +757,10 @@ void WidgetManager::start(const char* label){
   if (label){
     // check if such widget is already spawned
     auto i = std::find_if(_widgets.cbegin(), _widgets.cend(), MatchLabel<widget_pt>(label));
-    if ( i != _widgets.cend() )
+    if ( i != _widgets.cend() ){
+      LOGD(T_WdgtMGR, println, "already running");
       return;
+    }
   }
 
   esp_err_t err;
@@ -786,6 +788,9 @@ void WidgetManager::start(const char* label){
       // save "activated" flag to eeprom
       handle->set_item(kvp.key().c_str(), 1UL);
       return;
+    } else {
+      // no widget configuration
+      _spawn(kvp.key().c_str(), v);
     }
 
     // if no label given, then check for NVS state key and start widget if activated
@@ -1138,7 +1143,6 @@ void TextScrollerWgdt::_getOpenWeather(){
   setInterval(_weathercfg.refresh);
   LOGD(T_txtscroll, printf, "Weather update: %s\n", pogoda.c_str());
 }
-
 
 
 
