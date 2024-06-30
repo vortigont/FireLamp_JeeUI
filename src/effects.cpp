@@ -7178,9 +7178,9 @@ bool EffectMagma::run() {
     EffectMath::drawPixelXYF(i.posX, i.posY, ColorFromPalette(*curPalette, i.hue), fb, 0);
   }
 
-  for (uint8_t i = 0; i < fb->w(); i++) {
-    for (uint8_t j = 0; j < fb->h(); j++) {
-     fb->at(i, fb->maxHeightIndex() - j) += ColorFromPalette(*curPalette, qsub8(inoise8(i * deltaValue, (j + ff_y + random8(2)) * deltaHue, ff_z), shiftHue[j]), 127U);
+  for (uint8_t i = 0; i != fb->w(); ++i) {
+    for (uint8_t j = 0; j != fb->h(); ++j) {
+     fb->at(i, j) += ColorFromPalette(*curPalette, qsub8(inoise8(i * deltaValue, (j + ff_y + random8(2)) * deltaHue, ff_z), shiftHue[j]), 127U);
     }
   }
 
@@ -7193,33 +7193,34 @@ bool EffectMagma::run() {
 void EffectMagma::leapersMove_leaper(Magma &l) {
 
   l.posX += l.speedX * speedFactor;
-  l.posY += l.shift * speedFactor;
+  l.posY -= l.shift * speedFactor;
 
-  // bounce off the ceiling?
-  if (l.posY > fb->h() + fb->h()/4) {
+  // bounce off the ceiling (floor inverted) with some probability
+  if (l.posY < fb->h()/5 && random8()<32) {
+
     l.shift *= -1;
   }
-  
-  // settled on the floor?
-  if (l.posY <= (fb->h()/8-1)) {
+
+  // settled on the floor (ceiling inverted)?
+  if (l.posY > fb->h() - fb->h()/8) {
     leapersRestart_leaper(l);
   }
 
   // bounce off the sides of the screen?
-  if (l.posX < 0 || l.posX > fb->maxWidthIndex()) {
+  if (l.posX < 0 || l.posX > fb->w() && random8()<32) {
     leapersRestart_leaper(l);
   }
   
-  l.shift -= gravity * speedFactor;
+  l.shift += gravity * speedFactor;
 }
 
 void EffectMagma::leapersRestart_leaper(Magma &l) {
   randomSeed(millis());
   // leap up and to the side with some random component
-  l.speedX = EffectMath::randomf(-0.75, 0.75);
+  l.speedX = EffectMath::randomf(-0.5, 0.5);
   l.shift = EffectMath::randomf(0.50, 0.85);
   l.posX = EffectMath::randomf(0, fb->w());
-  l.posY = EffectMath::randomf(0, (float)fb->h()/4-1);
+  l.posY = EffectMath::randomf(fb->h() - fb->h()/4, fb->h());
 
   // for variety, sometimes go 100% faster
   if (random8() < 12) {
