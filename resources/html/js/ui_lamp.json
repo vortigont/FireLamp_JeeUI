@@ -1281,6 +1281,22 @@
                       {
                         "value":7,
                         "label":"15x16 greenbloodserif2(lat)"
+                      },
+                      {
+                        "value":8,
+                        "label":"logisoso20 (dig)"
+                      },
+                      {
+                        "value":9,
+                        "label":"mystery_quest_48 (dig)"
+                      },
+                      {
+                        "value":10,
+                        "label":"maniac(lat) (dig)"
+                      },
+                      {
+                        "value":11,
+                        "label":"lucasarts_scumm (dig)"
                       }
                     ]
                   },
@@ -1322,6 +1338,18 @@
                       {
                         "value":7,
                         "label":"15x16 greenbloodserif2(lat)"
+                      },
+                      {
+                        "value":8,
+                        "label":"logisoso20 (dig)"
+                      },
+                      {
+                        "value":10,
+                        "label":"maniac(lat) (dig)"
+                      },
+                      {
+                        "value":11,
+                        "label":"lucasarts_scumm (dig)"
                       }
                     ]
                   }
@@ -1431,6 +1459,22 @@
                   {
                     "value":7,
                     "label":"15x16 greenbloodserif2(lat)"
+                  },
+                  {
+                    "value":8,
+                    "label":"logisoso20 (dig)"
+                  },
+                  {
+                    "value":9,
+                    "label":"mystery_quest_48 (dig)"
+                  },
+                  {
+                    "value":10,
+                    "label":"maniac(lat) (dig)"
+                  },
+                  {
+                    "value":11,
+                    "label":"lucasarts_scumm (dig)"
                   }
             ]
               },
@@ -1758,14 +1802,6 @@
                       {
                         "value":2,
                         "label":"16x16 Unifont Cyrillic"
-                      },
-                      {
-                        "value":3,
-                        "label":"14x14 Fewture (dgt)"
-                      },
-                      {
-                        "value":4,
-                        "label":"7x14 Bold (dgt)"
                       },
                       {
                         "value":5,

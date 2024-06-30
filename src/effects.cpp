@@ -2154,46 +2154,51 @@ void EffectFire2012::load(){
 
 String EffectFire2012::setDynCtrl(UIControl*_val){
   if(_val->getId()==3) _scale = EffectCalc::setDynCtrl(_val).toInt();
+  else if(_val->getId()==5) cooling = 120 - 10*EffectCalc::setDynCtrl(_val).toInt();
   else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
   return String();
 }
 
 bool EffectFire2012::run() {
-  if (curPalette == nullptr) {
+  if (curPalette == nullptr || dryrun(4.0)){
     return false;
   }
-  if (dryrun(4.0))
-    return false;
-  cooling = isMicOn() ? 255 - getMicMapMaxPeak() : 130;
+
   return fire2012Routine();
 }
 
 bool EffectFire2012::fire2012Routine() {
-  sparking = 64 + _scale;
+  sparking = qadd8(8, _scale);
   int fire_base = (fb->h()/6)>6 ? 6 : fb->h()/6 + 1;
 
   // Loop for each column individually
-  for (uint8_t x = 0; x < fb->w(); x++)
+  for (size_t x = 0; x != noise.w(); ++x)
   {
+
+    uint8_t col_cooling = random8(cooling - deviation, cooling + deviation); 
+    uint8_t col_sparkling = random8(sparking - deviation, sparking + deviation); 
+
     // Step 1.  Cool down every cell a little
-    for (uint8_t y = 0; y < fb->h(); y++)
-      noise.at(x,y) = qsub8(noise.at(x,y), random(0, ((cooling * 10) / fb->h()) + 2));
+    for (size_t y = 0; y != noise.h(); ++y)
+      noise.at(x,y) = qsub8(noise.at(x,y), random8(0, col_cooling * 10 / noise.h() + 2));
 
     // Step 2.  Heat from each cell drifts 'up' and diffuses a little
-    for (uint8_t k = fb->maxHeightIndex(); k > 2; k--)
+    for (size_t k = noise.h()-1; k != 3; k--)
       noise.at(x,k) = (noise.at(x,k - 1) + noise.at(x,k - 2) + noise.at(x,k - 3)) / 3;
 
     // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
-    if (random(255) < sparking)
+    if (random8() < col_sparkling)
     {
-      int j = random(fire_base);
-      noise.at(x,j) = qadd8(noise.at(x,j), random(96, 255)); // 196, 255
+      int j = random8(fire_base);
+      noise.at(x,j) = qadd8(noise.at(x,j), random8() | spark_min_T); // 196, 255
     }
 
-    // Step 4.  Map from heat cells to LED colors
-    for (uint8_t y = 0; y < fb->h(); y++)
-      nblend(fb->at(x, y), ColorFromPalette(*curPalette, ((noise.at(x,y) * 0.7) + noise.at( wrapX(x + 1), y) * 0.3)), fireSmoothing);
+    // Step 4.  Map from heat cells to LED colors (invert Y)
+    for (size_t y = 0; y != fb->h(); ++y)
+      fb->at(x, fb->maxHeightIndex() - y) = ColorFromPalette(*curPalette, scale8(noise.at(x,y), 240));
+//      nblend(fb->at(x, fb->maxHeightIndex() - y), ColorFromPalette(*curPalette, noise.at(x,y)*3/4 + noise.at( (x + 1)%fb->w(), y)/3 ), fireSmoothing);
   }
+
   return true;
 }
 
@@ -7173,9 +7178,9 @@ bool EffectMagma::run() {
     EffectMath::drawPixelXYF(i.posX, i.posY, ColorFromPalette(*curPalette, i.hue), fb, 0);
   }
 
-  for (uint8_t i = 0; i < fb->w(); i++) {
-    for (uint8_t j = 0; j < fb->h(); j++) {
-     fb->at(i, fb->maxHeightIndex() - j) += ColorFromPalette(*curPalette, qsub8(inoise8(i * deltaValue, (j + ff_y + random8(2)) * deltaHue, ff_z), shiftHue[j]), 127U);
+  for (uint8_t i = 0; i != fb->w(); ++i) {
+    for (uint8_t j = 0; j != fb->h(); ++j) {
+     fb->at(i, j) += ColorFromPalette(*curPalette, qsub8(inoise8(i * deltaValue, (j + ff_y + random8(2)) * deltaHue, ff_z), shiftHue[j]), 127U);
     }
   }
 
@@ -7188,33 +7193,34 @@ bool EffectMagma::run() {
 void EffectMagma::leapersMove_leaper(Magma &l) {
 
   l.posX += l.speedX * speedFactor;
-  l.posY += l.shift * speedFactor;
+  l.posY -= l.shift * speedFactor;
 
-  // bounce off the ceiling?
-  if (l.posY > fb->h() + fb->h()/4) {
+  // bounce off the ceiling (floor inverted) with some probability
+  if (l.posY < fb->h()/5 && random8()<32) {
+
     l.shift *= -1;
   }
-  
-  // settled on the floor?
-  if (l.posY <= (fb->h()/8-1)) {
+
+  // settled on the floor (ceiling inverted)?
+  if (l.posY > fb->h() - fb->h()/8) {
     leapersRestart_leaper(l);
   }
 
   // bounce off the sides of the screen?
-  if (l.posX < 0 || l.posX > fb->maxWidthIndex()) {
+  if (l.posX < 0 || l.posX > fb->w() && random8()<32) {
     leapersRestart_leaper(l);
   }
   
-  l.shift -= gravity * speedFactor;
+  l.shift += gravity * speedFactor;
 }
 
 void EffectMagma::leapersRestart_leaper(Magma &l) {
   randomSeed(millis());
   // leap up and to the side with some random component
-  l.speedX = EffectMath::randomf(-0.75, 0.75);
+  l.speedX = EffectMath::randomf(-0.5, 0.5);
   l.shift = EffectMath::randomf(0.50, 0.85);
   l.posX = EffectMath::randomf(0, fb->w());
-  l.posY = EffectMath::randomf(0, (float)fb->h()/4-1);
+  l.posY = EffectMath::randomf(fb->h() - fb->h()/4, fb->h());
 
   // for variety, sometimes go 100% faster
   if (random8() < 12) {
@@ -7832,16 +7838,17 @@ void EffectFire2021::palettesload(){
   usepalettes = true; // включаем флаг палитр
   scale2pallete();    // выставляем текущую палитру
   
-  sparks.resize(sparksCount);
-  for (byte i = 0; i < sparksCount; i++) 
+  //sparks.resize(sparksCount);
+  for (byte i = 0; i != sparks.size(); i++) 
     sparks[i].reset(fb);
 }
 
 // !++
 String EffectFire2021::setDynCtrl(UIControl*_val) {
   if(_val->getId()==1) speedFactor = map(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 20, 100) * getBaseSpeedFactor();
-  else if(_val->getId()==3) _scale = map(EffectCalc::setDynCtrl(_val).toInt(), 1, 100, 32, 132);
+  else if(_val->getId()==3) _scale = EffectCalc::setDynCtrl(_val).toInt(); //map(EffectCalc::setDynCtrl(_val).toInt(), 1, 100, 10, 132);
   else if(_val->getId()==5) withSparks = EffectCalc::setDynCtrl(_val).toInt();
+  else if(_val->getId()==6) _fill = EffectCalc::setDynCtrl(_val).toInt();
   else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
   return String();
 }
@@ -7850,7 +7857,7 @@ bool EffectFire2021::run() {
   t += speedFactor;
 
   if (withSparks)
-    for (byte i = 0; i < sparksCount; i++) {
+    for (byte i = 0; i != sparks.size(); i++) {
       sparks[i].addXY((float)random(-1, 2) / 2, 0.5 * speedFactor, fb);
       if (sparks[i].getY() > fb->h() && !random(0, 50))
         sparks[i].reset(fb);
@@ -7858,13 +7865,19 @@ bool EffectFire2021::run() {
         sparks[i].draw(fb);
     }
 
-  for (byte x = 0; x < fb->w(); x++) {
-    for (byte y = 0; y < fb->h(); y++) {
+  for (size_t x = 0; x != fb->w(); ++x) {
+    for (size_t y = 0; y != fb->h(); ++y) {
      
-      int16_t bri= inoise8(x * _scale, (y * _scale) - t) - ((withSparks ? y + spacer : y) * (256 / fb->w()));
+      int16_t bri = inoise8(x * _scale, y*_scale - t) - ((withSparks ? y + spacer : y) * _fill);
       byte col = bri;
-      if(bri<0){bri= 0;} if(bri!=0) {bri= 256 - (bri* 0.2);}
-      nblend(fb->at(x, y), ColorFromPalette(*curPalette, col, bri), speedFactor);}
+      if( bri < 0 )
+        bri = 0;
+
+      if( bri != 0 )
+        {bri = 256 - bri/5;}
+
+      nblend(fb->at(x, fb->maxHeightIndex() - y), ColorFromPalette(*curPalette, col, bri), speedFactor);
+    }
   }
   return true;
 }

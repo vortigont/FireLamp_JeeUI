@@ -44,7 +44,7 @@
 #include "widgets.hpp"
 #include "EmbUI.h"
 #include "nvs_handle.hpp"
-#include "NoTLSHTTPClient.h"
+#include "HTTPClient.h"
 #include "log.h"
 
 
@@ -103,7 +103,20 @@ u8g2_font_unifont_t_cyrillic        - 16x16 Lat/Cyrillic font https://github.com
 */
 
 // array of available U8G2 fonts
-static constexpr std::array<const uint8_t*, 8> fonts = { u8g2_font_5x8_t_cyrillic, u8g2_font_8x13_t_cyrillic, u8g2_font_unifont_t_cyrillic, u8g2_font_fewture_tn, u8g2_font_7x14B_tn, u8g2_font_tiny_simon_tr, u8g2_font_greenbloodserif2_tr, u8g2_font_doomalpha04_tr };
+static constexpr std::array<const uint8_t*, 12> fonts = {
+  u8g2_font_5x8_t_cyrillic,
+  u8g2_font_8x13_t_cyrillic,
+  u8g2_font_unifont_t_cyrillic,
+  u8g2_font_fewture_tn,
+  u8g2_font_7x14B_tn,
+  u8g2_font_tiny_simon_tr,
+  u8g2_font_greenbloodserif2_tr,
+  u8g2_font_doomalpha04_tr,
+  u8g2_font_logisoso20_tn,
+  u8g2_font_mystery_quest_48_tn,
+  u8g2_font_maniac_tn,
+  u8g2_font_lucasarts_scumm_subtitle_o_tn
+};
 
 
 // array of available Adafruit fonts
