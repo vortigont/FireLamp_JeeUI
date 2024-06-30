@@ -1,6 +1,6 @@
 {
   "type":"interface",
-  "version":17,
+  "version":18,
   "descr":"FireLamp UI objects",
 
   "settings":{
@@ -1183,6 +1183,23 @@
             "label":"Параметры настройки см. в <a href=\"https://github.com/vortigont/FireLamp_JeeUI/wiki/%D0%92%D0%B8%D0%B4%D0%B6%D0%B5%D1%82-%D1%87%D0%B0%D1%81%D1%8B\">WiKi</a>"
           },
           {
+            "section":"profile_selector",
+            "label":"Профиль",
+            "block":[
+              {
+                "id": "wdgt_profile_clock",
+                "html":"input",
+                "type": "number",
+                "onChange": true,
+                "label": "Профиль настроек",
+                "value": 0,
+                "min": 0,
+                "max": 9,
+                "step": 1
+              }
+            ]
+          },
+          {
             "section":"wdgt_clock_time",
             "label":"Часы",
             "block":[
@@ -1698,6 +1715,23 @@
         "label":"Бегущая строка",
         "main":true,
         "block":[
+          {
+            "section":"profile_selector",
+            "label":"Профиль",
+            "block":[
+              {
+                "id": "wdgt_profile_txtscroll",
+                "html":"input",
+                "type": "number",
+                "onChange": true,
+                "label": "Профиль настроек",
+                "value": 0,
+                "min": 0,
+                "max": 9,
+                "step": 1
+              }
+            ]
+          },
           {
             "section":"wdgt_txtscroll",
             "label":"Слой строки",
