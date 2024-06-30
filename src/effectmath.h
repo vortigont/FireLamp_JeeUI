@@ -494,6 +494,9 @@ public:
         v.assign(_w*_h, val);
         v.shrink_to_fit();
     };
+
+    // set all vector elements to specific value
+    void set(T value){ for ( auto &val : v){ val = value; } };
 };
 
 // 3D Noise map structure

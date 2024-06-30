@@ -44,7 +44,7 @@
 #include "widgets.hpp"
 #include "EmbUI.h"
 #include "nvs_handle.hpp"
-#include "NoTLSHTTPClient.h"
+#include "HTTPClient.h"
 #include "log.h"
 
 
