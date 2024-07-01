@@ -1284,19 +1284,27 @@
                       },
                       {
                         "value":8,
-                        "label":"logisoso20 (dig)"
+                        "label":"logisoso20 (dgt)"
                       },
                       {
                         "value":9,
-                        "label":"mystery_quest_48 (dig)"
+                        "label":"mystery_quest_32 (dgt)"
                       },
                       {
                         "value":10,
-                        "label":"maniac(lat) (dig)"
+                        "label":"mystery_quest_56 (dgt)"
                       },
                       {
                         "value":11,
-                        "label":"lucasarts_scumm (dig)"
+                        "label":"maniac(lat) (dgt)"
+                      },
+                      {
+                        "value":12,
+                        "label":"lucasarts_scumm (dgt)"
+                      },
+                      {
+                        "value":13,
+                        "label":"osb21_tn (dgt)"
                       }
                     ]
                   },
@@ -1341,15 +1349,15 @@
                       },
                       {
                         "value":8,
-                        "label":"logisoso20 (dig)"
+                        "label":"logisoso20 (dgt)"
                       },
                       {
                         "value":10,
-                        "label":"maniac(lat) (dig)"
+                        "label":"maniac(lat) (dgt)"
                       },
                       {
                         "value":11,
-                        "label":"lucasarts_scumm (dig)"
+                        "label":"lucasarts_scumm (dgt)"
                       }
                     ]
                   }
@@ -1462,19 +1470,27 @@
                   },
                   {
                     "value":8,
-                    "label":"logisoso20 (dig)"
+                    "label":"logisoso20 (dgt)"
                   },
                   {
                     "value":9,
-                    "label":"mystery_quest_48 (dig)"
+                    "label":"mystery_quest_32 (dgt)"
                   },
                   {
                     "value":10,
-                    "label":"maniac(lat) (dig)"
+                    "label":"mystery_quest_56 (dgt)"
                   },
                   {
                     "value":11,
-                    "label":"lucasarts_scumm (dig)"
+                    "label":"maniac(lat) (dgt)"
+                  },
+                  {
+                    "value":12,
+                    "label":"lucasarts_scumm (dgt)"
+                  },
+                  {
+                    "value":13,
+                    "label":"osb21_tn (dgt)"
                   }
             ]
               },
