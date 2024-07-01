@@ -103,7 +103,7 @@ u8g2_font_unifont_t_cyrillic        - 16x16 Lat/Cyrillic font https://github.com
 */
 
 // array of available U8G2 fonts
-static constexpr std::array<const uint8_t*, 12> fonts = {
+static constexpr std::array<const uint8_t*, 14> fonts = {
   u8g2_font_5x8_t_cyrillic,
   u8g2_font_8x13_t_cyrillic,
   u8g2_font_unifont_t_cyrillic,
@@ -113,11 +113,12 @@ static constexpr std::array<const uint8_t*, 12> fonts = {
   u8g2_font_greenbloodserif2_tr,
   u8g2_font_doomalpha04_tr,
   u8g2_font_logisoso20_tn,
+  u8g2_font_mystery_quest_32_tn,
   u8g2_font_mystery_quest_48_tn,
   u8g2_font_maniac_tn,
-  u8g2_font_lucasarts_scumm_subtitle_o_tn
+  u8g2_font_lucasarts_scumm_subtitle_o_tn,
+  u8g2_font_osb21_tn
 };
-
 
 // array of available Adafruit fonts
 //static constexpr std::array<const GFXfont*, 8> fonts = {&FreeSerif9pt8b, &FreeSerifBold9pt8b, &Cooper6pt8b, &Cooper8pt8b, &CrystalNormal8pt8b, &CrystalNormal10pt8b, &Org_01, &TomThumb};
