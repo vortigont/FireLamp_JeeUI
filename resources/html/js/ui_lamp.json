@@ -1,6 +1,6 @@
 {
   "type":"interface",
-  "version":18,
+  "version":19,
   "descr":"FireLamp UI objects",
 
   "settings":{
@@ -1218,9 +1218,15 @@
                     "html":"input",
                     "label":"12-часовой формат",
                     "type":"checkbox"
-                  },
+                  }
+                ]
+              },
+              {
+                "section":"clk_dim",
+                "line":true,
+                "block":[
                   {
-                    "id": "x1off",
+                    "id": "x1pos",
                     "html":"input",
                     "value": 0,
                     "type": "number",
@@ -1229,12 +1235,48 @@
                     "step": 1
                   },
                   {
-                    "id": "y1off",
+                    "id": "y1pos",
                     "html":"input",
                     "value": 15,
                     "type": "number",
                     "label": "Позиция Y",
                     "min": 0,
+                    "step": 1
+                  },
+                  {
+                    "id": "clkw",
+                    "html":"input",
+                    "type": "number",
+                    "label": "Ширина поля",
+                    "min": 8,
+                    "step": 1
+                  },
+                  {
+                    "id": "clkh",
+                    "html":"input",
+                    "type": "number",
+                    "label": "Высота поля",
+                    "min": 4,
+                    "step": 1
+                  }
+                ]
+              },
+              {
+                "section":"clk_offset",
+                "line":true,
+                "block":[
+                  {
+                    "id": "x1offset",
+                    "html":"input",
+                    "type": "number",
+                    "label": "смещение X",
+                    "step": 1
+                  },
+                  {
+                    "id": "y1offset",
+                    "html":"input",
+                    "type": "number",
+                    "label": "Смещение Y",
                     "step": 1
                   }
                 ]
@@ -1534,21 +1576,55 @@
                 "line":true,
                 "block":[
                   {
-                    "id": "x2off",
+                    "id": "x2pos",
                     "html":"input",
-                    "value": 0,
                     "type": "number",
                     "label": "Позиция X",
                     "min": 0,
                     "step": 1
                   },
                   {
-                    "id": "y2off",
+                    "id": "y2pos",
                     "html":"input",
-                    "value": 31,
                     "type": "number",
                     "label": "Позиция Y",
                     "min": 0,
+                    "step": 1
+                  },
+                  {
+                    "id": "datew",
+                    "html":"input",
+                    "type": "number",
+                    "label": "Ширина поля",
+                    "min": 8,
+                    "step": 1
+                  },
+                  {
+                    "id": "dateh",
+                    "html":"input",
+                    "type": "number",
+                    "label": "Высота поля",
+                    "min": 4,
+                    "step": 1
+                  }
+                ]
+              },
+              {
+                "section":"date_offset",
+                "line":true,
+                "block":[
+                  {
+                    "id": "x2offset",
+                    "html":"input",
+                    "type": "number",
+                    "label": "Смещение X",
+                    "step": 1
+                  },
+                  {
+                    "id": "y2offset",
+                    "html":"input",
+                    "type": "number",
+                    "label": "Смещение Y",
                     "step": 1
                   }
                 ]
@@ -1879,7 +1955,7 @@
                     "step":4
                   },
                   {
-                    "id":"x1off",
+                    "id":"x1pos",
                     "html":"input",
                     "type":"number",
                     "label":"Привязка по X",
@@ -1888,7 +1964,7 @@
                     "step":1
                   },
                   {
-                    "id":"y1off",
+                    "id":"y1pos",
                     "html":"input",
                     "type":"number",
                     "label":"Привязка по Y",
