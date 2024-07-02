@@ -244,12 +244,13 @@ public:
  * 
  */
 struct TextBitMapCfg {
-    int16_t x, y;           // cursor to print Clock
+    int16_t x, y;           // top left corner to place bitmap to
+    uint16_t w,  h;         // bitmap WxH
     uint16_t color{DEFAULT_TEXT_COLOR};     // color in 5-6-5 mode
     uint8_t font_index;     // font to use
-    uint8_t baseline_shift; // show date
+    int8_t baseline_shift_x;       // offset from left side of bitmap
+    int8_t baseline_shift_y;       // ofset from bottom of bitmap
     // max text bounds - needed to track max block size to cover the clock text
-    uint16_t maxW,  maxH;
     uint8_t alpha_bg;
     std::string datefmt{"%F"};
     overlay_cb_t cb{};
@@ -259,17 +260,17 @@ struct TextBitMapCfg {
 class ClockWidget : public GenericWidgetProfiles {
 
 struct Clock {
-    int16_t x, y;       // cursor to print Clock
-    uint16_t color_txt, color_bg;     // color in 5-6-5 mode
-    uint8_t alpha_tx, alpha_bg; // font to use
-    uint8_t font_index; // font to use
-    uint8_t seconds_font_index; // font to use
-    bool show_seconds;          // show seconds
-    bool twelwehr;              // 12/24 hour clock
+    int16_t x, y;                       // top left corner to place bitmap to
+    uint16_t w, h;                      // bitmap WxH
+    uint8_t baseline_shift_x, baseline_shift_y;
+//    int16_t baseline
+    uint16_t color_txt, color_bg;       // color in 5-6-5 mode
+    uint8_t alpha_tx, alpha_bg;         // transparency
+    uint8_t font_index;                 // font to use
+    uint8_t seconds_font_index;         // font to use
+    bool show_seconds;                  // show seconds
+    bool twelwehr;                      // 12/24 hour clock
     // max text bounds - needed to track max block size to cover the clock text
-    uint16_t maxW, maxH;   //, maxH{0};
-    // save seconds starting position
-    //int16_t scursor_x, scursor_y;
     overlay_cb_t cb{};
 };
 
