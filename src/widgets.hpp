@@ -50,6 +50,7 @@
 #include <mutex>
 
 #define DEFAULT_TEXT_COLOR  54000
+#define MAX_NUM_OF_PROFILES 10
 
 /**
  * @brief an abstract class to implement small "apps" or widgets
@@ -73,7 +74,8 @@ protected:
 
     /**
      * @brief load configuration from a json object
-     * 
+     * method should be implemented in derived class to process
+     * class specific json object
      * @param cfg 
      */
     virtual void load_cfg(JsonVariantConst cfg) = 0;
@@ -96,32 +98,26 @@ public:
      * @brief load widget config using widget name as a config selector key
      * 
      */
-    static void load_cfg_from_NVS(JsonObject obj, const char* lbl);
-
-    /**
-     * @brief load widget's config from supplied config and calls start()
-     * usually this config is supplied from WebUI/MQTT
-     */
-    void load(JsonVariantConst cfg);
+    //static void load_cfg_from_NVS(JsonObject obj, const char* lbl);
 
     /**
      * @brief load widget's config from persistent storage and calls start()
      * 
      */
-    void load();
+    virtual void load();
 
     /**
-     * @brief save current widget's configuration to NVS
+     * @brief save current widget's configuration to file
      * 
      */
-    void save();
+    virtual void save();
 
     /**
      * @brief save supplied widget's configuration to NVS
      * it will actually try to merge supplied object with the one stored in NVS
      * @param cfg 
      */
-    void save(JsonVariantConst cfg);
+    //void save(JsonVariantConst cfg);
 
 
     // start widget ticker
@@ -149,6 +145,30 @@ public:
      */
     const char* getLabel() const { return label; }
 
+    // Configuration profiles handling
+
+    /**
+     * @brief switch to specific profile number
+     * 
+     * @param value 
+     * @return true on success
+     * @return false if profile does not exist
+     */
+    virtual void switchProfile(int32_t value){};
+
+    /**
+     * @brief Get the Current Profile Num value
+     * 
+     * @return uint32_t 
+     */
+    virtual uint32_t getCurrentProfileNum() const { return 0; };
+
+    /**
+     * @brief returns number of available slots for stored profiles
+     * 
+     * @return uint32_t number of slots, if 0 is returned then profiles are not supported
+     */
+    virtual uint32_t profilesAvailable() const { return 0; }
 };
 
 using widget_pt = std::unique_ptr<GenericWidget>;
@@ -179,6 +199,44 @@ public:
 
 class GenericWidgetProfiles : public GenericWidget {
 
+    int32_t _profilenum{0};
+
+    String _mkFileName();
+
+    void _load_profile(int idx);
+
+public:
+    GenericWidgetProfiles(const char* wlabel, unsigned interval) : GenericWidget(wlabel, interval){}
+
+    /**
+     * @brief load widget's config from persistent storage and calls start()
+     * here it loads last used profile
+     */
+    void load() override final { switchProfile(-1); };
+
+    void save() override final;
+
+    /**
+     * @brief switch to specific profile number
+     * loads profile config from file, if specified argument is <0 or wrong, loads last used profile
+     * @param value 
+     */
+    void switchProfile(int32_t value) final;
+
+    /**
+     * @brief Get the Current Profile Num value
+     * 
+     * @return uint32_t 
+     */
+    uint32_t getCurrentProfileNum() const final { return _profilenum; };
+
+    /**
+     * @brief returns number of available slots for stored profiles
+     * 
+     * @return uint32_t number of slots, if 0 is returned then profiles are not supported
+     */
+    uint32_t profilesAvailable() const override { return MAX_NUM_OF_PROFILES; }
+
 };
 
 /**
@@ -198,7 +256,7 @@ struct TextBitMapCfg {
 };
 
 
-class ClockWidget : public GenericWidget {
+class ClockWidget : public GenericWidgetProfiles {
 
 struct Clock {
     int16_t x, y;       // cursor to print Clock
@@ -280,7 +338,7 @@ class WidgetManager {
      * @param cfg whether to use a supplied configuration or load from NVS
      * @param persistent if 'true' a spawned widget will save supplied configuration to NVS, set this to false if spawning widget with cfg FROM NVS to avoid exta writes
      */
-    void _spawn(const char* widget_label, JsonVariantConst cfg, bool persistent = false);
+    void _spawn(const char* widget_label);
 
 public:
     //WidgetManager();
@@ -335,7 +393,7 @@ public:
      * @return true
      * @return false 
      */
-    bool getWidgetStatus(const char* label);
+    bool getWidgetStatus(const char* label) const;
 
     /**
      * @brief Get pointer to the instance of an active Widget by it's label
@@ -348,6 +406,14 @@ public:
      * @return GenericWidget* 
      */
     GenericWidget* getWidgetPtr(const char* label);
+
+    /**
+     * @brief switch widget's configuration profile
+     * 
+     * @param label 
+     * @param idx 
+     */
+    void switchProfile(const char* label, int32_t idx);
 };
 
 
@@ -438,7 +504,7 @@ public:
 
 
 
-class TextScrollerWgdt : public GenericWidget {
+class TextScrollerWgdt : public GenericWidgetProfiles {
 
 struct WeatherCfg {
   String city_id, apikey;

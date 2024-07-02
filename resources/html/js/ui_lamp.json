@@ -1,6 +1,6 @@
 {
   "type":"interface",
-  "version":17,
+  "version":18,
   "descr":"FireLamp UI objects",
 
   "settings":{
@@ -1183,6 +1183,23 @@
             "label":"Параметры настройки см. в <a href=\"https://github.com/vortigont/FireLamp_JeeUI/wiki/%D0%92%D0%B8%D0%B4%D0%B6%D0%B5%D1%82-%D1%87%D0%B0%D1%81%D1%8B\">WiKi</a>"
           },
           {
+            "section":"profile_selector",
+            "label":"Профиль",
+            "block":[
+              {
+                "id": "wdgt_profile_clock",
+                "html":"input",
+                "type": "number",
+                "onChange": true,
+                "label": "Профиль настроек",
+                "value": 0,
+                "min": 0,
+                "max": 9,
+                "step": 1
+              }
+            ]
+          },
+          {
             "section":"wdgt_clock_time",
             "label":"Часы",
             "block":[
@@ -1264,6 +1281,30 @@
                       {
                         "value":7,
                         "label":"15x16 greenbloodserif2(lat)"
+                      },
+                      {
+                        "value":8,
+                        "label":"logisoso20 (dgt)"
+                      },
+                      {
+                        "value":9,
+                        "label":"Mystery Quest 32 (dgt)"
+                      },
+                      {
+                        "value":10,
+                        "label":"Mystery Quest 48 (dgt)"
+                      },
+                      {
+                        "value":11,
+                        "label":"maniac(lat) (dgt)"
+                      },
+                      {
+                        "value":12,
+                        "label":"lucasarts_scumm (dgt)"
+                      },
+                      {
+                        "value":13,
+                        "label":"osb21_tn (dgt)"
                       }
                     ]
                   },
@@ -1305,6 +1346,30 @@
                       {
                         "value":7,
                         "label":"15x16 greenbloodserif2(lat)"
+                      },
+                      {
+                        "value":8,
+                        "label":"logisoso20 (dgt)"
+                      },
+                      {
+                        "value":9,
+                        "label":"Mystery Quest 32 (dgt)"
+                      },
+                      {
+                        "value":10,
+                        "label":"Mystery Quest 48 (dgt)"
+                      },
+                      {
+                        "value":11,
+                        "label":"maniac(lat) (dgt)"
+                      },
+                      {
+                        "value":12,
+                        "label":"lucasarts_scumm (dgt)"
+                      },
+                      {
+                        "value":13,
+                        "label":"osb21_tn (dgt)"
                       }
                     ]
                   }
@@ -1414,6 +1479,30 @@
                   {
                     "value":7,
                     "label":"15x16 greenbloodserif2(lat)"
+                  },
+                  {
+                    "value":8,
+                    "label":"logisoso20 (dgt)"
+                  },
+                  {
+                    "value":9,
+                    "label":"Mystery Quest 32 (dgt)"
+                  },
+                  {
+                    "value":10,
+                    "label":"Mystery Quest 48 (dgt)"
+                  },
+                  {
+                    "value":11,
+                    "label":"maniac(lat) (dgt)"
+                  },
+                  {
+                    "value":12,
+                    "label":"lucasarts_scumm (dgt)"
+                  },
+                  {
+                    "value":13,
+                    "label":"osb21_tn (dgt)"
                   }
             ]
               },
@@ -1682,6 +1771,14 @@
                 "fa": "fas fa-circle-check"
               }
            ]
+          },
+          {
+            "id":"ui_page_widgets",
+            "html":"button",
+            "color": "green",
+            "type":0,
+            "fa": "fas fa-door-open",
+            "label":"Выход"
           }
         ]
       },
@@ -1690,6 +1787,23 @@
         "label":"Бегущая строка",
         "main":true,
         "block":[
+          {
+            "section":"profile_selector",
+            "label":"Профиль",
+            "block":[
+              {
+                "id": "wdgt_profile_txtscroll",
+                "html":"input",
+                "type": "number",
+                "onChange": true,
+                "label": "Профиль настроек",
+                "value": 0,
+                "min": 0,
+                "max": 9,
+                "step": 1
+              }
+            ]
+          },
           {
             "section":"wdgt_txtscroll",
             "label":"Слой строки",
@@ -1716,14 +1830,6 @@
                       {
                         "value":2,
                         "label":"16x16 Unifont Cyrillic"
-                      },
-                      {
-                        "value":3,
-                        "label":"14x14 Fewture (dgt)"
-                      },
-                      {
-                        "value":4,
-                        "label":"7x14 Bold (dgt)"
                       },
                       {
                         "value":5,
@@ -2089,236 +2195,247 @@
         }
       ]
     },
-    "wdgt_alarm_hdr":{
-      "section":"alrm_items_hdr",
-      "block":[
-        {
-          "html":"comment",
-          "label":"Установки будильников"
-        }
+    "wdgt_alarm":{
+      "hdr":{
+        "section":"alrm_items_hdr",
+        "block":[
+          {
+            "html":"comment",
+            "label":"Установки будильников"
+          }
+        ]
+      },
+      "item":{
+        "section":"alrm_item",
+        "block":[
+          {
+            "section":"alrm_item_num",
+            "line": true,
+            "block":[
+              {
+                "id":"active",
+                "html":"input",
+                "label":"Активен",
+                "type":"checkbox"
+              },
+              {
+                "id":"hr",
+                "html":"input",
+                "type":"number",
+                "label":"Часы",
+                "min":0,
+                "max":23,
+                "step":1
+              },
+              {
+                "id":"min",
+                "html":"input",
+                "type":"number",
+                "label":"Минуты",
+                "min":0,
+                "max":59,
+                "step":1
+              },
+              {
+                "id":"snd",
+                "html":"input",
+                "type":"number",
+                "label":"Мелодия",
+                "min":0,
+                "max":9,
+                "step":1,
+                "value":1
+              }
+            ]
+          },
+          {
+            "id":"type",
+            "html":"select",
+            "value":0,
+            "label":"Повтор",
+            "section":"options",
+            "block":[
+              {
+                "value":0,
+                "label":"Однократно"
+              },
+              {
+                "value":1,
+                "label":"Ежедневно"
+              },
+              {
+                "value":2,
+                "label":"По будням"
+              },
+              {
+                "value":3,
+                "label":"По выходным"
+              }
+            ]
+          },
+          {
+            "html":"comment",
+            "label":"Рассвет"
+          },
+          {
+            "section":"alrm_rise_sw",
+            "line": true,
+            "block":[
+              {
+                "id":"riseOn",
+                "html":"input",
+                "label":"Активен",
+                "type":"checkbox"
+              },
+              {
+                "id":"eff_idx",
+                "html":"input",
+                "type":"number",
+                "label":"Переключить эффект",
+                "min":0,
+                "max":256,
+                "step":1
+              }
+            ]
+          },
+          {
+            "section":"alrm_risebr",
+            "line": true,
+            "block":[
+              {
+                "id":"startBr",
+                "html":"input",
+                "type":"number",
+                "label":"Начальная яркость",
+                "min":-1,
+                "max":256,
+                "step":1
+              },
+              {
+                "id":"endBr",
+                "html":"input",
+                "type":"number",
+                "label":"Конечная яркость",
+                "min":-1,
+                "max":256,
+                "step":1
+              }
+            ]
+          },
+          {
+            "section":"alrm_risetime",
+            "line": true,
+            "block":[
+              {
+                "id":"offset",
+                "html":"input",
+                "type":"number",
+                "label":"до будильника, мин",
+                "min":0,
+                "max":60,
+                "step":5
+              },
+              {
+                "id":"duration",
+                "html":"input",
+                "type":"number",
+                "label":"длительность, мин",
+                "min":1,
+                "max":60,
+                "step":1
+              }
+            ]
+          },
+          {
+            "html":"comment",
+            "label":"Закат"
+          },
+          {
+            "section":"alrm_dusk_sw",
+            "line": true,
+            "block":[
+              {
+                "id":"duskOn",
+                "html":"input",
+                "label":"Активен",
+                "type":"checkbox"
+              },
+              {
+                "id":"duskPrwOff",
+                "html":"input",
+                "label":"Выключать лампу по завершении",
+                "type":"checkbox"
+              }
+            ]
+          },
+          {
+            "section":"alrm_duskbr",
+            "line": true,
+            "block":[
+              {
+                "id":"duskStartBr",
+                "html":"input",
+                "type":"number",
+                "label":"Начальная яркость",
+                "min":-1,
+                "max":256,
+                "step":1
+              },
+              {
+                "id":"duskEndBr",
+                "html":"input",
+                "type":"number",
+                "label":"Конечная яркость",
+                "min":-1,
+                "max":256,
+                "step":1
+              }
+            ]
+          },
+          {
+            "section":"alrm_dusktime",
+            "line": true,
+            "block":[
+              {
+                "id":"duskDuration",
+                "html":"input",
+                "type":"number",
+                "label":"длительность, мин",
+                "min":1,
+                "max":60,
+                "step":1
+              },
+              {
+                "id":"duskEff",
+                "html":"input",
+                "type":"number",
+                "label":"Переключить эффект",
+                "min":0,
+                "max":256,
+                "step":1
+              }
+            ]
+          },
+          {
+            "id": "alrm_item",
+            "html": "button",
+            "type": 2,
+            "label":"Сохранить",
+            "function": "alarm_item_set",
+            "fa": "fas fa-circle-check"
+          },
+          { "html":"spacer" }
       ]
-    },
-    "wdgt_alarm_item":{
-      "section":"alrm_item",
-      "block":[
-        {
-          "section":"alrm_item_num",
-          "line": true,
-          "block":[
-            {
-              "id":"active",
-              "html":"input",
-              "label":"Активен",
-              "type":"checkbox"
-            },
-            {
-              "id":"hr",
-              "html":"input",
-              "type":"number",
-              "label":"Часы",
-              "min":0,
-              "max":23,
-              "step":1
-            },
-            {
-              "id":"min",
-              "html":"input",
-              "type":"number",
-              "label":"Минуты",
-              "min":0,
-              "max":59,
-              "step":1
-            },
-            {
-              "id":"snd",
-              "html":"input",
-              "type":"number",
-              "label":"Мелодия",
-              "min":0,
-              "max":9,
-              "step":1,
-              "value":1
-            }
-          ]
-        },
-        {
-          "id":"type",
-          "html":"select",
-          "value":0,
-          "label":"Повтор",
-          "section":"options",
-          "block":[
-            {
-              "value":0,
-              "label":"Однократно"
-            },
-            {
-              "value":1,
-              "label":"Ежедневно"
-            },
-            {
-              "value":2,
-              "label":"По будням"
-            },
-            {
-              "value":3,
-              "label":"По выходным"
-            }
-          ]
-        },
-        {
-          "html":"comment",
-          "label":"Рассвет"
-        },
-        {
-          "section":"alrm_rise_sw",
-          "line": true,
-          "block":[
-            {
-              "id":"riseOn",
-              "html":"input",
-              "label":"Активен",
-              "type":"checkbox"
-            },
-            {
-              "id":"eff_idx",
-              "html":"input",
-              "type":"number",
-              "label":"Переключить эффект",
-              "min":0,
-              "max":256,
-              "step":1
-            }
-          ]
-        },
-        {
-          "section":"alrm_risebr",
-          "line": true,
-          "block":[
-            {
-              "id":"startBr",
-              "html":"input",
-              "type":"number",
-              "label":"Начальная яркость",
-              "min":-1,
-              "max":256,
-              "step":1
-            },
-            {
-              "id":"endBr",
-              "html":"input",
-              "type":"number",
-              "label":"Конечная яркость",
-              "min":-1,
-              "max":256,
-              "step":1
-            }
-          ]
-        },
-        {
-          "section":"alrm_risetime",
-          "line": true,
-          "block":[
-            {
-              "id":"offset",
-              "html":"input",
-              "type":"number",
-              "label":"до будильника, мин",
-              "min":0,
-              "max":60,
-              "step":5
-            },
-            {
-              "id":"duration",
-              "html":"input",
-              "type":"number",
-              "label":"длительность, мин",
-              "min":1,
-              "max":60,
-              "step":1
-            }
-          ]
-        },
-        {
-          "html":"comment",
-          "label":"Закат"
-        },
-        {
-          "section":"alrm_dusk_sw",
-          "line": true,
-          "block":[
-            {
-              "id":"duskOn",
-              "html":"input",
-              "label":"Активен",
-              "type":"checkbox"
-            },
-            {
-              "id":"duskPrwOff",
-              "html":"input",
-              "label":"Выключать лампу по завершении",
-              "type":"checkbox"
-            }
-          ]
-        },
-        {
-          "section":"alrm_duskbr",
-          "line": true,
-          "block":[
-            {
-              "id":"duskStartBr",
-              "html":"input",
-              "type":"number",
-              "label":"Начальная яркость",
-              "min":-1,
-              "max":256,
-              "step":1
-            },
-            {
-              "id":"duskEndBr",
-              "html":"input",
-              "type":"number",
-              "label":"Конечная яркость",
-              "min":-1,
-              "max":256,
-              "step":1
-            }
-          ]
-        },
-        {
-          "section":"alrm_dusktime",
-          "line": true,
-          "block":[
-            {
-              "id":"duskDuration",
-              "html":"input",
-              "type":"number",
-              "label":"длительность, мин",
-              "min":1,
-              "max":60,
-              "step":1
-            },
-            {
-              "id":"duskEff",
-              "html":"input",
-              "type":"number",
-              "label":"Переключить эффект",
-              "min":0,
-              "max":256,
-              "step":1
-            }
-          ]
-        },
-        {
-          "id": "alrm_item",
-          "html": "button",
-          "type": 2,
-          "label":"Сохранить",
-          "function": "alarm_item_set",
-          "fa": "fas fa-circle-check"
-        },
-        { "html":"spacer" }
-     ]
+      },
+      "msg_inactive":{
+        "section":"alrm_inactive",
+        "block":[
+          {
+            "html":"comment",
+            "label":"Настройки будильников доступны только при активном виджете"
+          }
+        ]
+      }
     },
     "btn_exit_to_wdgt":{
       "section":"btn_exit_to_wdgt",

@@ -198,16 +198,23 @@ void uidata_page_selector(Interface *interf, const JsonObject *data, const char*
             // Main frame MUST be flushed before sending other ui_data sections
             interf->json_frame_interface();
             interf->json_section_uidata();
-            interf->uidata_pick("lampui.sections.wdgt_alarm_hdr");
-            for (int i = 0; i !=4; ++i){
-                String idx(i);
-                interf->uidata_pick( "lampui.sections.wdgt_alarm_item", NULL, idx.c_str() );
+            if (informer.getWidgetStatus(T_alrmclock)){
+                // if alarm widget is active - load alarms config
+                interf->uidata_pick("lampui.sections.wdgt_alarm.hdr");
+                for (int i = 0; i !=4; ++i){
+                    String idx(i);
+                    interf->uidata_pick( "lampui.sections.wdgt_alarm.item", NULL, idx.c_str() );
+                }
+                interf->json_frame_flush();
+                // prepare an object with alarms setups, loaded via js from WebUI
+                interf->json_frame_jscall("alarm_items_load");
+                JsonDocument doc;
+                informer.getConfig(doc.to<JsonObject>(), T_alrmclock);  // generate config with nested alarm event objects
+                interf->json_frame_add(doc);
+            } else {
+                // otherwise just show a message that no config could be set w/o activating the widget
+                interf->uidata_pick("lampui.sections.wdgt_alarm.msg_inactive");
             }
-            interf->json_frame_flush();
-            interf->json_frame_jscall("alarm_items_load");
-            JsonDocument doc;
-            informer.getConfig(doc.to<JsonObject>(), T_alrmclock);  // generate config with nested alarm event objects
-            interf->json_frame_add(doc);
             break;
         }
         // Text scroller

@@ -103,11 +103,29 @@ u8g2_font_unifont_t_cyrillic        - 16x16 Lat/Cyrillic font https://github.com
 */
 
 // array of available U8G2 fonts
-static constexpr std::array<const uint8_t*, 8> fonts = { u8g2_font_5x8_t_cyrillic, u8g2_font_8x13_t_cyrillic, u8g2_font_unifont_t_cyrillic, u8g2_font_fewture_tn, u8g2_font_7x14B_tn, u8g2_font_tiny_simon_tr, u8g2_font_greenbloodserif2_tr, u8g2_font_doomalpha04_tr };
-
+static constexpr std::array<const uint8_t*, 14> fonts = {
+  u8g2_font_5x8_t_cyrillic,
+  u8g2_font_8x13_t_cyrillic,
+  u8g2_font_unifont_t_cyrillic,
+  u8g2_font_fewture_tn,
+  u8g2_font_7x14B_tn,
+  u8g2_font_tiny_simon_tr,
+  u8g2_font_greenbloodserif2_tr,
+  u8g2_font_doomalpha04_tr,
+  u8g2_font_logisoso20_tn,
+  u8g2_font_mystery_quest_32_tn,
+  u8g2_font_mystery_quest_48_tn,
+  u8g2_font_maniac_tn,
+  u8g2_font_lucasarts_scumm_subtitle_o_tn,
+  u8g2_font_osb21_tn
+};
 
 // array of available Adafruit fonts
 //static constexpr std::array<const GFXfont*, 8> fonts = {&FreeSerif9pt8b, &FreeSerifBold9pt8b, &Cooper6pt8b, &Cooper8pt8b, &CrystalNormal8pt8b, &CrystalNormal10pt8b, &Org_01, &TomThumb};
+
+
+// array with all available widget names (labels) we can run
+static constexpr std::array<const char*, 3> wdg_list = {T_clock, T_alrmclock, T_txtscroll};
 
 
 
@@ -137,10 +155,25 @@ void set_alrm_item(Interface *interf, const JsonObject *data, const char* action
   ptr->setAlarmItem((*data));
 }
 
+static void switch_profile(Interface *interf, const JsonObject *data, const char* action){
+
+  std::string_view lbl(action);
+  lbl.remove_prefix(std::string_view("wdgt_profile_").length()); // chop off prefix
+
+  informer.switchProfile(lbl.data(), (*data)[action]);
+
+  // send to webUI refreshed widget's config
+  JsonDocument doc;
+  informer.getConfig(doc.to<JsonObject>(), lbl.data());
+  interf->json_frame_value(doc);
+  interf->json_frame_flush();
+}
+
 void register_widgets_handlers(){
   embui.action.add(A_set_widget_onoff, set_widget_onoff);                 // start/stop widget
   embui.action.add(A_set_widget, set_widget_cfg);                         // set widget configuration (this wildcard should be the last one)
   embui.action.add(A_set_wcfg_alrm, set_alrm_item);                       // set alarm item
+  embui.action.add(A_wdgt_profile, switch_profile);                       // switch widget's config profile
 }
 
 
@@ -150,22 +183,6 @@ void register_widgets_handlers(){
 GenericWidget::GenericWidget(const char* wlabel, unsigned periodic) : label(wlabel) {
   set( periodic, TASK_FOREVER, [this](){ widgetRunner(); } );
   ts.addTask(*this);
-}
-
-void GenericWidget::load_cfg_from_NVS(JsonObject obj, const char* lbl){
-  JsonDocument doc;
-
-  // make file name
-  //String fname( lbl ? lbl : T_widgets_cfg);
-  //fname += ".json";
-
-  // it does not matter if config file does not exist or requested object is missing
-  // we should anyway call load_cfg to let derived class implement any default values configuration
-  embuifs::deserializeFile(doc, T_widgets_cfg);
-  JsonObjectConst o = doc[lbl];
-  for (JsonPairConst kvp : o){
-    obj[kvp.key()] = kvp.value();
-  }
 }
 
 void GenericWidget::getConfig(JsonObject obj) const {
@@ -180,18 +197,13 @@ void GenericWidget::setConfig(JsonVariantConst cfg){
   // apply supplied configuration to widget 
   load_cfg(cfg);
   // save supplied config to NVS
-  save(cfg);
+  save();
 }
 
 void GenericWidget::load(){
   JsonDocument doc;
   embuifs::deserializeFile(doc, T_widgets_cfg);
   load_cfg(doc[label]);
-  start();
-}
-
-void GenericWidget::load(JsonVariantConst cfg){
-  load_cfg(cfg);
   start();
 }
 
@@ -202,7 +214,7 @@ void GenericWidget::save(){
   LOGD(T_Widget, printf, "%s: writing cfg to file\n", label);
   embuifs::serialize2file(doc, T_widgets_cfg);
 }
-
+/*
 void GenericWidget::save(JsonVariantConst cfg){
   // save supplied config to persistent storage
   JsonDocument doc;
@@ -218,7 +230,59 @@ void GenericWidget::save(JsonVariantConst cfg){
 
   embuifs::serialize2file(doc, T_widgets_cfg);
 }
+*/
 
+
+
+// ****  GenericWidgetProfiles methods
+
+String GenericWidgetProfiles::_mkFileName(){
+  // make file name
+  String fname( "/" );
+  fname += label;
+  fname += ".json";
+  return fname;
+}
+
+void GenericWidgetProfiles::switchProfile(int idx){
+  JsonDocument doc;
+  embuifs::deserializeFile(doc, _mkFileName().c_str());
+
+  // restore last used profile if specified one is wrong or < 0
+  if (idx < 0 || idx > MAX_NUM_OF_PROFILES)
+    _profilenum = doc[T_last_profile];
+  else
+    _profilenum = idx;
+
+  LOGD(T_Widget, printf, "%s switch profile:%d\n", label, _profilenum);
+  JsonArray profiles = doc[T_profiles].as<JsonArray>();
+  load_cfg(profiles[_profilenum][T_cfg]);
+  start();
+}
+
+void GenericWidgetProfiles::save(){
+  JsonDocument doc;
+  embuifs::deserializeFile(doc, _mkFileName().c_str());
+
+  JsonVariant arr = doc[T_profiles].isNull() ? doc[T_profiles].to<JsonArray>() : doc[T_profiles];
+  // if array does not have proper num of objects, prefill it with empty ones
+  if (arr.size() < MAX_NUM_OF_PROFILES){
+    size_t s = arr.size();
+    JsonObject empty;
+    do {
+      arr.add(empty);
+    } while (s++ != MAX_NUM_OF_PROFILES);
+  }
+
+  // generate config to current profile cell
+  JsonObject o = arr[_profilenum].to<JsonObject>();
+  getConfig(o[T_cfg].to<JsonObject>());    // place config under {"cfg":{}} object
+
+  doc[T_last_profile] = _profilenum;
+
+  LOGD(T_Widget, printf, "%s: writing cfg to file\n", label);
+  embuifs::serialize2file(doc, _mkFileName().c_str());
+}
 
 // ****  GenericGFXWidget methods
 /*
@@ -252,7 +316,7 @@ bool GenericGFXWidget::getCanvas(){
 
 
 // *** ClockWidget
-ClockWidget::ClockWidget() : GenericWidget(T_clock, TASK_SECOND) {
+ClockWidget::ClockWidget() : GenericWidgetProfiles(T_clock, TASK_SECOND) {
   ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, ClockWidget::_event_hndlr, this, &_hdlr_lmp_change_evt));
   ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_STATE_EVENTS, ESP_EVENT_ANY_ID, ClockWidget::_event_hndlr, this, &_hdlr_lmp_state_evt));
 }
@@ -274,7 +338,6 @@ ClockWidget::~ClockWidget(){
 
 void ClockWidget::load_cfg(JsonVariantConst cfg){
   // clk
-  clk = {};
   clk.x = cfg[T_x1offset];
   clk.y = cfg[T_y1offset] | CLOCK_DEFAULT_YOFFSET;     // if not defined, then set y offset to default value
   clk.font_index = cfg[T_font1];
@@ -282,9 +345,9 @@ void ClockWidget::load_cfg(JsonVariantConst cfg){
   clk.show_seconds = cfg[T_seconds];
   clk.twelwehr = cfg[T_tm_12h];
   clk.color_txt = cfg[T_color1] | DEFAULT_TEXT_COLOR;
-  clk.color_bg = cfg[T_color2] | DEFAULT_TEXT_COLOR;
-  clk.alpha_tx = cfg[T_alpha_t];
-  clk.alpha_bg = cfg[T_alpha_b];
+  clk.color_bg = cfg[T_color2];
+  clk.alpha_tx = cfg[T_alpha_t] | 128;
+  clk.alpha_bg = cfg[T_alpha_b] | 128;
 
   // temporary object to calculate bitmap size
   Arduino_Canvas_Mono helper(8, 1, nullptr);
@@ -757,12 +820,14 @@ void WidgetManager::start(const char* label){
   if (label){
     // check if such widget is already spawned
     auto i = std::find_if(_widgets.cbegin(), _widgets.cend(), MatchLabel<widget_pt>(label));
-    if ( i != _widgets.cend() )
+    if ( i != _widgets.cend() ){
+      LOGD(T_WdgtMGR, println, "already running");
       return;
+    }
   }
 
   esp_err_t err;
-  std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_widgets, NVS_READWRITE, &err);
+  std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_widgets, NVS_READONLY, &err);
 
   if (err != ESP_OK) {
     // if NVS handle is unavailable then just quit
@@ -770,33 +835,19 @@ void WidgetManager::start(const char* label){
     return;
   }
 
-  JsonDocument doc;
-  // it does not matter if config file does not exist or requested object is missing
-  // we should anyway call load_cfg to let derived class implement any default values configuration
-  embuifs::deserializeFile(doc, T_widgets_cfg);
-  JsonObject obj = doc.as<JsonObject>();
-
-  for (JsonPair kvp : obj){
-    // check if widget is enabled at all
-    JsonVariant v = kvp.value();
-    // if only specific widget needs to be started, check if it's label match 
-    if (label && std::string_view(kvp.key().c_str()).compare(label) == 0){
-      // spawn a new widget based on label and loaded configuration
-      _spawn(kvp.key().c_str(), v);
-      // save "activated" flag to eeprom
-      handle->set_item(kvp.key().c_str(), 1UL);
-      return;
-    }
-
-    // if no label given, then check for NVS state key and start widget if activated
-    if (!label){
+  // check if it's a boot-up and need start all widgets based on previous state in NVS
+  if (!label){
+    for (auto l : wdg_list){
       uint32_t state = 0; // value will default to 0, if not yet set in NVS
-      handle->get_item(kvp.key().c_str(), state);
-      LOGD(T_WdgtMGR, printf, "Boot state for %s: %u\n", kvp.key().c_str(), state);
+      handle->get_item(l, state);
+      LOGD(T_WdgtMGR, printf, "Boot state for %s: %u\n", l, state);
       // if saved state is >0 then widget is active, we can restore it
       if (state)
-        _spawn(kvp.key().c_str(), v);
+        _spawn(l);
     }
+  } else {
+    // start a specific widget
+    _spawn(label);
   }
 }
 
@@ -818,11 +869,17 @@ void WidgetManager::getConfig(JsonObject obj, const char* label){
 
   auto i = std::find_if(_widgets.begin(), _widgets.end(), MatchLabel<widget_pt>(label));
   if ( i != _widgets.end() ) {
-    return (*i)->getConfig(obj);
+    (*i)->getConfig(obj);
+    String l("wdgt_profile_");
+    l += label;
+    obj[l] = (*i)->getCurrentProfileNum();
+    
+    return;
   }
 
-  // widget instance is not created, try to load from FS config
-  GenericWidget::load_cfg_from_NVS(obj, label);
+  // widget instance is not created, spawn a widget and call to return it's config again
+  _spawn(label);
+  getConfig(obj, label);
 }
 
 void WidgetManager::setConfig(const char* label, JsonVariantConst cfg){
@@ -831,8 +888,9 @@ void WidgetManager::setConfig(const char* label, JsonVariantConst cfg){
   auto i = std::find_if(_widgets.begin(), _widgets.end(), MatchLabel<widget_pt>(label));
   if ( i == _widgets.end() ) {
     LOGV(T_WdgtMGR, println, "widget does not exist, spawn a new one");
-    // such widget does not exist currently, spawn a new one with supplied config and store cfg to NVS
-    _spawn(label, cfg, true);
+    // such widget does not exist currently, spawn a new one and run same call again
+    _spawn(label);
+    setConfig(label, cfg);
     return;
   }
 
@@ -840,7 +898,7 @@ void WidgetManager::setConfig(const char* label, JsonVariantConst cfg){
   (*i)->setConfig(cfg);
 }
 
-void WidgetManager::_spawn(const char* label, JsonVariantConst cfg, bool persistent){
+void WidgetManager::_spawn(const char* label){
   LOGD(T_WdgtMGR, printf, "spawn: %s\n", label);
   // spawn a new widget based on label
   std::unique_ptr<GenericWidget> w;
@@ -854,21 +912,19 @@ void WidgetManager::_spawn(const char* label, JsonVariantConst cfg, bool persist
   } else
     return;   // no such widget exist
 
-  if (cfg.isNull()){
-    // ask widget to read it's config from json, if any
-    LOGV(T_Widget, println, "WM call widget load cfg from NVS");
-    w->load();
-  } else {
-    if (persistent){
-      w->setConfig(cfg);
-      w->start();
-    } else
-      w->load(cfg);
-  }
-
+  // load widget's config from file
+  w->load();
+  // move it into container
   _widgets.emplace_back(std::move(w));
 
-// some other widgets to be done
+  esp_err_t err;
+  std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_widgets, NVS_READWRITE, &err);
+
+  if (err != ESP_OK)
+    return;
+
+  uint32_t state = 1;
+  handle->set_item(label, state);
 }
 
 void WidgetManager::getWidgetsState(Interface *interf) const {
@@ -893,15 +949,22 @@ GenericWidget* WidgetManager::getWidgetPtr(const char* label){
   return (*i).get();
 }
 
-bool WidgetManager::getWidgetStatus(const char* label){
-  auto i = std::find_if(_widgets.begin(), _widgets.end(), MatchLabel<widget_pt>(label));
+bool WidgetManager::getWidgetStatus(const char* label) const {
+  auto i = std::find_if(_widgets.cbegin(), _widgets.cend(), MatchLabel<widget_pt>(label));
   return (i != _widgets.end());
 }
+
+void WidgetManager::switchProfile(const char* label, int32_t idx){
+  auto i = std::find_if(_widgets.begin(), _widgets.end(), MatchLabel<widget_pt>(label));
+  if (i != _widgets.end())
+    (*i)->switchProfile(idx);
+}
+
 
 
 // *** Running Text overlay 
 
-TextScrollerWgdt::TextScrollerWgdt() : GenericWidget(T_txtscroll, 5000) {
+TextScrollerWgdt::TextScrollerWgdt() : GenericWidgetProfiles(T_txtscroll, 5000) {
   //esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, TextScrollerWgdt::_event_hndlr, this, &_hdlr_lmp_change_evt);
   //esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_STATE_EVENTS, ESP_EVENT_ANY_ID, TextScrollerWgdt::_event_hndlr, this, &_hdlr_lmp_state_evt);
 
@@ -1138,7 +1201,6 @@ void TextScrollerWgdt::_getOpenWeather(){
   setInterval(_weathercfg.refresh);
   LOGD(T_txtscroll, printf, "Weather update: %s\n", pogoda.c_str());
 }
-
 
 
 
