@@ -1289,65 +1289,29 @@
                     "id":"font1",
                     "html":"select",
                     "value":5,
-                    "label":"Шрифт",
+                    "label":"Шрифт часов",
                     "section":"options",
                     "block":[
-                      {
-                        "value":0,
-                        "label":"5x8 Сyrillic"
-                      },
-                      {
-                        "value":1,
-                        "label":"8x13 Сyrillic"
-                      },
-                      {
-                        "value":2,
-                        "label":"16x16 Unifont Cyrillic"
-                      },
-                      {
-                        "value":3,
-                        "label":"14x14 Fewture (dgt)"
-                      },
-                      {
-                        "value":4,
-                        "label":"7x14 Bold (dgt)"
-                      },
-                      {
-                        "value":5,
-                        "label":"3x7 Tiny Simon (lat)"
-                      },
-                      {
-                        "value":6,
-                        "label":"13x13 doomalpha04(lat)"
-                      },
-                      {
-                        "value":7,
-                        "label":"15x16 greenbloodserif2(lat)"
-                      },
-                      {
-                        "value":8,
-                        "label":"logisoso20 (dgt)"
-                      },
-                      {
-                        "value":9,
-                        "label":"Mystery Quest 32 (dgt)"
-                      },
-                      {
-                        "value":10,
-                        "label":"Mystery Quest 48 (dgt)"
-                      },
-                      {
-                        "value":11,
-                        "label":"maniac(lat) (dgt)"
-                      },
-                      {
-                        "value":12,
-                        "label":"lucasarts_scumm (dgt)"
-                      },
-                      {
-                        "value":13,
-                        "label":"osb21_tn (dgt)"
-                      }
+                      { "value":0, "label":"5x8 Сyrillic" },
+                      { "value":1, "label":"8x13 Сyrillic" },
+                      { "value":2, "label":"16x16 Unifont Cyrillic" },
+                      { "value":3, "label":"14x14 Fewture (dgt)" },
+                      { "value":4, "label":"7x14 Bold (dgt)" },
+                      { "value":5, "label":"3x7 Tiny Simon (lat)" },
+                      { "value":6, "label":"13x13 doomalpha04(lat)" },
+                      { "value":7, "label":"15x16 greenbloodserif2(lat)" },
+                      { "value":8, "label":"freedoomr25 (lat)" },
+                      { "value":9, "label":"logisoso20 (dgt)" },
+                      { "value":10, "label":"logisoso42 (dgt)" },
+                      { "value":11, "label":"Mystery Quest 32 (dgt)" },
+                      { "value":12, "label":"Mystery Quest 48 (dgt)" },
+                      { "value":13, "label":"maniac(lat) (dgt)" },
+                      { "value":14, "label":"lucasarts_scumm (dgt)" },
+                      { "value":15, "label":"Bubble (dgt)" },
+                      { "value":16, "label":"osr21 (dgt)" },
+                      { "value":17, "label":"osr29 (dgt)" },
+                      { "value":18, "label":"osb21_tn (dgt)" },
+                      { "value":19, "label":"osb29 (dgt)" }
                     ]
                   },
                   {
@@ -1357,62 +1321,26 @@
                     "label":"Шрифт секунд",
                     "section":"options",
                     "block":[
-                      {
-                        "value":0,
-                        "label":"5x8 Сyrillic"
-                      },
-                      {
-                        "value":1,
-                        "label":"8x13 Сyrillic"
-                      },
-                      {
-                        "value":2,
-                        "label":"16x16 Unifont Cyrillic"
-                      },
-                      {
-                        "value":3,
-                        "label":"14x14 Fewture (dgt)"
-                      },
-                      {
-                        "value":4,
-                        "label":"7x14 Bold (dgt)"
-                      },
-                      {
-                        "value":5,
-                        "label":"3x7 Tiny Simon (lat)"
-                      },
-                      {
-                        "value":6,
-                        "label":"13x13 doomalpha04(lat)"
-                      },
-                      {
-                        "value":7,
-                        "label":"15x16 greenbloodserif2(lat)"
-                      },
-                      {
-                        "value":8,
-                        "label":"logisoso20 (dgt)"
-                      },
-                      {
-                        "value":9,
-                        "label":"Mystery Quest 32 (dgt)"
-                      },
-                      {
-                        "value":10,
-                        "label":"Mystery Quest 48 (dgt)"
-                      },
-                      {
-                        "value":11,
-                        "label":"maniac(lat) (dgt)"
-                      },
-                      {
-                        "value":12,
-                        "label":"lucasarts_scumm (dgt)"
-                      },
-                      {
-                        "value":13,
-                        "label":"osb21_tn (dgt)"
-                      }
+                      { "value":0, "label":"5x8 Сyrillic" },
+                      { "value":1, "label":"8x13 Сyrillic" },
+                      { "value":2, "label":"16x16 Unifont Cyrillic" },
+                      { "value":3, "label":"14x14 Fewture (dgt)" },
+                      { "value":4, "label":"7x14 Bold (dgt)" },
+                      { "value":5, "label":"3x7 Tiny Simon (lat)" },
+                      { "value":6, "label":"13x13 doomalpha04(lat)" },
+                      { "value":7, "label":"15x16 greenbloodserif2(lat)" },
+                      { "value":8, "label":"freedoomr25 (lat)" },
+                      { "value":9, "label":"logisoso20 (dgt)" },
+                      { "value":10, "label":"logisoso42 (dgt)" },
+                      { "value":11, "label":"Mystery Quest 32 (dgt)" },
+                      { "value":12, "label":"Mystery Quest 48 (dgt)" },
+                      { "value":13, "label":"maniac(lat) (dgt)" },
+                      { "value":14, "label":"lucasarts_scumm (dgt)" },
+                      { "value":15, "label":"Bubble (dgt)" },
+                      { "value":16, "label":"osr21 (dgt)" },
+                      { "value":17, "label":"osr29 (dgt)" },
+                      { "value":18, "label":"osb21_tn (dgt)" },
+                      { "value":19, "label":"osb29 (dgt)" }
                     ]
                   }
                 ]
@@ -1490,63 +1418,27 @@
                 "label":"Шрифт",
                 "section":"options",
                 "block":[
-                  {
-                    "value":0,
-                    "label":"5x8 Сyrillic"
-                  },
-                  {
-                    "value":1,
-                    "label":"8x13 Сyrillic"
-                  },
-                  {
-                    "value":2,
-                    "label":"16x16 Unifont Cyrillic"
-                  },
-                  {
-                    "value":3,
-                    "label":"14x14 Fewture (dgt)"
-                  },
-                  {
-                    "value":4,
-                    "label":"7x14 Bold (dgt)"
-                  },
-                  {
-                    "value":5,
-                    "label":"3x7 Tiny Simon (lat)"
-                  },
-                  {
-                    "value":6,
-                    "label":"13x13 doomalpha04(lat)"
-                  },
-                  {
-                    "value":7,
-                    "label":"15x16 greenbloodserif2(lat)"
-                  },
-                  {
-                    "value":8,
-                    "label":"logisoso20 (dgt)"
-                  },
-                  {
-                    "value":9,
-                    "label":"Mystery Quest 32 (dgt)"
-                  },
-                  {
-                    "value":10,
-                    "label":"Mystery Quest 48 (dgt)"
-                  },
-                  {
-                    "value":11,
-                    "label":"maniac(lat) (dgt)"
-                  },
-                  {
-                    "value":12,
-                    "label":"lucasarts_scumm (dgt)"
-                  },
-                  {
-                    "value":13,
-                    "label":"osb21_tn (dgt)"
-                  }
-            ]
+                  { "value":0, "label":"5x8 Сyrillic" },
+                  { "value":1, "label":"8x13 Сyrillic" },
+                  { "value":2, "label":"16x16 Unifont Cyrillic" },
+                  { "value":3, "label":"14x14 Fewture (dgt)" },
+                  { "value":4, "label":"7x14 Bold (dgt)" },
+                  { "value":5, "label":"3x7 Tiny Simon (lat)" },
+                  { "value":6, "label":"13x13 doomalpha04(lat)" },
+                  { "value":7, "label":"15x16 greenbloodserif2(lat)" },
+                  { "value":8, "label":"freedoomr25 (lat)" },
+                  { "value":9, "label":"logisoso20 (dgt)" },
+                  { "value":10, "label":"logisoso42 (dgt)" },
+                  { "value":11, "label":"Mystery Quest 32 (dgt)" },
+                  { "value":12, "label":"Mystery Quest 48 (dgt)" },
+                  { "value":13, "label":"maniac(lat) (dgt)" },
+                  { "value":14, "label":"lucasarts_scumm (dgt)" },
+                  { "value":15, "label":"Bubble (dgt)" },
+                  { "value":16, "label":"osr21 (dgt)" },
+                  { "value":17, "label":"osr29 (dgt)" },
+                  { "value":18, "label":"osb21_tn (dgt)" },
+                  { "value":19, "label":"osb29 (dgt)" }
+                ]
               },
               {
                 "section":"date_fonts",
@@ -1913,11 +1805,11 @@
                       },
                       {
                         "value":6,
-                        "label":"13x13 doomalpha04(lat)"
+                        "label":"13x13 doomalpha04 (lat)"
                       },
                       {
                         "value":7,
-                        "label":"15x16 greenbloodserif2(lat)"
+                        "label":"15x16 greenbloodserif2 (lat)"
                       }
                     ]
                   },
