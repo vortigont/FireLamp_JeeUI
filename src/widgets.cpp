@@ -79,7 +79,7 @@
 #define DEF_BITMAP_WIDTH        64
 #define DEF_BITMAP_HEIGHT       8
 #define DEF_OVERLAY_ALPHA       32
-#define DEF_BITMAP_YOFFSET      28
+#define DEF_BITMAP_YOFFSET      20
 #define DEF_WEATHER_RETRY       5000
 
 
@@ -103,21 +103,27 @@ u8g2_font_unifont_t_cyrillic        - 16x16 Lat/Cyrillic font https://github.com
 */
 
 // array of available U8G2 fonts
-static constexpr std::array<const uint8_t*, 14> fonts = {
+static constexpr std::array<const uint8_t*, 20> fonts = {
   u8g2_font_5x8_t_cyrillic,
   u8g2_font_8x13_t_cyrillic,
   u8g2_font_unifont_t_cyrillic,
   u8g2_font_fewture_tn,
   u8g2_font_7x14B_tn,
   u8g2_font_tiny_simon_tr,
-  u8g2_font_greenbloodserif2_tr,
   u8g2_font_doomalpha04_tr,
+  u8g2_font_greenbloodserif2_tr,
+  u8g2_font_freedoomr25_tn,
   u8g2_font_logisoso20_tn,
+  u8g2_font_logisoso42_tn,
   u8g2_font_mystery_quest_32_tn,
   u8g2_font_mystery_quest_48_tn,
   u8g2_font_maniac_tn,
   u8g2_font_lucasarts_scumm_subtitle_o_tn,
-  u8g2_font_osb21_tn
+  u8g2_font_bubble_tn,
+  u8g2_font_osr21_tn,
+  u8g2_font_osr29_tn,
+  u8g2_font_osb21_tn,
+  u8g2_font_osb29_tn
 };
 
 // array of available Adafruit fonts
@@ -338,8 +344,12 @@ ClockWidget::~ClockWidget(){
 
 void ClockWidget::load_cfg(JsonVariantConst cfg){
   // clk
-  clk.x = cfg[T_x1offset];
-  clk.y = cfg[T_y1offset] | CLOCK_DEFAULT_YOFFSET;     // if not defined, then set y offset to default value
+  clk.x = cfg[T_x1pos];
+  clk.y = cfg[T_y1pos];
+  clk.w = cfg[T_clkw] | 16;
+  clk.h = cfg[T_clkh] | 8;
+  clk.baseline_shift_x = cfg[T_x1offset];
+  clk.baseline_shift_y = cfg[T_y1offset];
   clk.font_index = cfg[T_font1];
   clk.seconds_font_index = cfg[T_font2];
   clk.show_seconds = cfg[T_seconds];
@@ -349,6 +359,7 @@ void ClockWidget::load_cfg(JsonVariantConst cfg){
   clk.alpha_tx = cfg[T_alpha_t] | 128;
   clk.alpha_bg = cfg[T_alpha_b] | 128;
 
+/*
   // temporary object to calculate bitmap size
   Arduino_Canvas_Mono helper(8, 1, nullptr);
   helper.setTextWrap(false);
@@ -359,24 +370,28 @@ void ClockWidget::load_cfg(JsonVariantConst cfg){
   helper.getTextBounds(clk.show_seconds ? "00:69:69" : "69:88", 0, 0, &x, &y, &clk.maxW, &clk.maxH);
   ++clk.maxH;
   LOGD(T_Widget, printf, "time canvas font:%u, clr:%u, bounds: %u, %u\n", clk.font_index, clk.color_txt, clk.maxW, clk.maxH);
+*/
 
-  _textmask_clk = std::make_unique<Arduino_Canvas_Mono>(clk.maxW, clk.maxH, nullptr);
+  _textmask_clk = std::make_unique<Arduino_Canvas_Mono>(clk.w, clk.h, nullptr);
   _textmask_clk->begin();
   _textmask_clk->setTextWrap(false);
 
   //texture_ovr_cb_t clkovr { [&](LedFB_GFX *gfx){ gfx->fadeBitmap(clk.x, clk.y, _textmask_clk->getFramebuffer(), 48, 16, clk.color, 64); } }; 
   if (clk.cb.id != (size_t)&clk){
     clk.cb.id = (size_t)&clk;
-    clk.cb.callback = [&](LedFB_GFX *gfx){ gfx->blendBitmap(clk.x, clk.y, _textmask_clk->getFramebuffer(), clk.maxW, clk.maxH, clk.color_txt, clk.alpha_tx, clk.color_bg, clk.alpha_bg); };
+    clk.cb.callback = [&](LedFB_GFX *gfx){ gfx->blendBitmap(clk.x, clk.y, _textmask_clk->getFramebuffer(), clk.w, clk.h, clk.color_txt, clk.alpha_tx, clk.color_bg, clk.alpha_bg); };
     LOGV(T_Display, printf, "clk overlay: %u\n", (size_t)&clk);
     display.attachOverlay( clk.cb );
   }
 
   // date
-  date = {};
   date_show = cfg[P_date];
-  date.x = cfg[T_x2offset];
-  date.y = cfg[T_y2offset];
+  date.x = cfg[T_x2pos];
+  date.y = cfg[T_y2pos] | 8;
+  date.w = cfg[T_datew] | 16;
+  date.h = cfg[T_dateh] | 8;
+  date.baseline_shift_x = cfg[T_x2offset];
+  date.baseline_shift_y = cfg[T_y2offset];
   date.color = cfg[T_color3] | DEFAULT_TEXT_COLOR;
   date.font_index = cfg[T_font3];
   date.alpha_bg = cfg[T_alpha_b2];
@@ -384,38 +399,35 @@ void ClockWidget::load_cfg(JsonVariantConst cfg){
     date.datefmt = cfg[T_datefmt].as<const char*>();
 
   if (date_show){
+/*
     helper.setFont(fonts[date.font_index]);
     helper.getTextBounds("2024-00-00", 0, 0, &x, &y, &date.maxW, &date.maxH);
     ++date.maxH;
     LOGD(T_Widget, printf, "date canvas font:%u, clr:%u, bounds: %u, %u\n", date.font_index, date.color, date.maxW, date.maxH);
-
-    _textmask_date = std::make_unique<Arduino_Canvas_Mono>(date.maxW, date.maxH, nullptr);
+*/
+    _textmask_date = std::make_unique<Arduino_Canvas_Mono>(date.w, date.h, nullptr);
     _textmask_date->begin();
     _textmask_date->setTextWrap(false);
 
     if (date.cb.id != (size_t)&date){
       date.cb.id = (size_t)&date;
-      date.cb.callback = [&](LedFB_GFX *gfx){ gfx->fadeBitmap(date.x, date.y, _textmask_date->getFramebuffer(), date.maxW, date.maxH, date.color, date.alpha_bg); };
+      date.cb.callback = [&](LedFB_GFX *gfx){ gfx->fadeBitmap(date.x, date.y, _textmask_date->getFramebuffer(), date.w, date.h, date.color, date.alpha_bg); };
       LOGV(T_Display, printf, "date overlay: %u\n", (size_t)&date);
       display.attachOverlay( date.cb );
     }
   }
 
-  //_textmask_clk->setFont(u8g2_font_unifont_t_cyrillic);
-  //_textmask_clk->setFont(u8g2_font_crox1cb_tf);
-  //_textmask_clk->setUTF8Print(true);
-
-
-//  if (!screen) return;  // overlay is not loaded yet
-//  screen->setTextWrap(false);
-//  screen->fillScreen(CRGB::Black);
   redraw = true;
 }
 
 void ClockWidget::generate_cfg(JsonVariant cfg) const {
   // clk
-  cfg[T_x1offset] = clk.x;
-  cfg[T_y1offset] = clk.y;
+  cfg[T_x1pos] = clk.x;
+  cfg[T_y1pos] = clk.y;
+  cfg[T_clkw] = clk.w;
+  cfg[T_clkh] = clk.h;
+  cfg[T_x1offset] = clk.baseline_shift_x;
+  cfg[T_y1offset] = clk.baseline_shift_y;
   cfg[T_font1] = clk.font_index;
   cfg[T_font2] = clk.seconds_font_index;
   cfg[T_seconds] = clk.show_seconds;
@@ -427,8 +439,12 @@ void ClockWidget::generate_cfg(JsonVariant cfg) const {
 
   // date
   cfg[P_date] = date_show;
-  cfg[T_x2offset] = date.x;
-  cfg[T_y2offset] = date.y;
+  cfg[T_x2pos] = date.x;
+  cfg[T_y2pos] = date.y;
+  cfg[T_datew] = date.w;
+  cfg[T_dateh] = date.h;
+  cfg[T_x2offset] = date.baseline_shift_x;
+  cfg[T_y2offset] = date.baseline_shift_y;
   cfg[T_color3] = date.color;
   cfg[T_alpha_b2] = date.alpha_bg;
   cfg[T_font3] = date.font_index;
@@ -463,7 +479,7 @@ void ClockWidget::widgetRunner(){
 
 void ClockWidget::_print_clock(std::tm *tm){
   _textmask_clk->fillScreen(0);
-  char result[std::size("20:69")];
+  char result[std::size("20:00")];
 
   std::strftime(result, std::size(result), clk.twelwehr ? "%I:%M" : "%R", tm);    // "%R" equivalent to "%H:%M"
   // put a space inplace of a leading zero
@@ -474,11 +490,8 @@ void ClockWidget::_print_clock(std::tm *tm){
   _textmask_clk->setFont(fonts[clk.font_index]);
 
   //_textmask_clk->getTextBounds(result, clk.x, clk.y, &x, &y, &w, &h);
-  _textmask_clk->setCursor(0, clk.maxH - 1);
+  _textmask_clk->setCursor(clk.baseline_shift_x, clk.h - clk.baseline_shift_y);
 
-  //clk.maxW = std::max( clk.maxW, static_cast<uint16_t>(w + (x-clk.x)) );   // (x-clk.x) is the offset from cursolr position to the nearest dot of the printed text
-  //LOGV(T_Widget, printf, "fill time bounds: %d, %d, %u, %u\n", x, y, clk.maxW, h);
-  //screen->fillRect(clk.x, y, clk.maxW, h, 0);
   // для шрифта 3х5 откусываем незначащий ноль что бы текст влез на матрицу 16х16. Коряво, но люди просят.
   if (clk.font_index == 7 && tm->tm_hour%12 < 10){
     std::string_view s(result);
@@ -486,14 +499,9 @@ void ClockWidget::_print_clock(std::tm *tm){
     _textmask_clk->print(s.data());
   } else
     _textmask_clk->print(result);
-  // save cursor for seconds printing
-  //clk.scursor_x = _textmask_clk->getCursorX();
-  //clk.scursor_y = _textmask_clk->getCursorY();
-  //LOGV(T_Widget, printf, "time: %s, font:%u, clr:%u, bounds: %d, %d, %u, %u\n", result, clk.font_index, clk.color, x, y, clk.maxW, h);
 
   if (clk.show_seconds){
     _textmask_clk->setFont(fonts[clk.seconds_font_index]);
-    //_textmask_clk->setCursor(clk.scursor_x, clk.scursor_y);
     std::strftime(result, std::size(result), ":%S", tm);
     //_textmask_clk->getTextBounds(result, clk.scursor_x, clk.scursor_x, &x, &y, &w, &h);
     //clk.smaxW = std::max(clk.smaxW, static_cast<uint16_t>(clk.scursor_x+w));
@@ -506,19 +514,14 @@ void ClockWidget::_print_clock(std::tm *tm){
 
 void ClockWidget::_print_date(std::tm *tm){
   _textmask_date->fillScreen(0);
-  //char result[std::size("2024-02-23")];
   char result[20];
 
   std::strftime(result, std::size(result), date.datefmt.c_str(), tm);
   //std::strftime(result, std::size(result), "%F", tm);
   _textmask_date->setTextColor(date.color);
   _textmask_date->setFont(fonts[date.font_index]);
-  _textmask_date->setCursor(0, date.maxH - 1);
+  _textmask_date->setCursor(date.baseline_shift_x, date.h - date.baseline_shift_y);
 
-  //_textmask_date->getTextBounds(result, date.x, date.y, &x, &y, &w, &h);
-  //date.maxW = std::max(date.maxW, w);
-
-  //screen->fillRect(x,y, date.maxW,h, 0);
   _textmask_date->print(result);
 
   //LOGD(T_Widget, printf, "Date: %s, font:%u, clr:%u, bounds: %d %d %u %u\n", result, date.font_index, date.color, x, y, date.maxW, h);
@@ -987,20 +990,20 @@ TextScrollerWgdt::~TextScrollerWgdt(){
 
 void TextScrollerWgdt::load_cfg(JsonVariantConst cfg){
   LOGV(T_txtscroll, println, "Configure text scroller");
-  _bitmapcfg.maxW             = cfg[T_width]    | DEF_BITMAP_WIDTH;
-  _bitmapcfg.maxH             = cfg[T_height]   | DEF_BITMAP_HEIGHT;
-  _bitmapcfg.x                = cfg[T_x1offset];
-  _bitmapcfg.y                = cfg[T_y1offset] | DEF_BITMAP_YOFFSET;
-  _bitmapcfg.baseline_shift   = cfg[T_offset];
+  _bitmapcfg.w                = cfg[T_width]    | DEF_BITMAP_WIDTH;
+  _bitmapcfg.h                = cfg[T_height]   | DEF_BITMAP_HEIGHT;
+  _bitmapcfg.x                = cfg[T_x1pos];
+  _bitmapcfg.y                = cfg[T_y1pos]    | DEF_BITMAP_YOFFSET;
   _bitmapcfg.font_index       = cfg[T_font1];
+  _bitmapcfg.baseline_shift_y = cfg[T_offset];
   _bitmapcfg.color            = cfg[T_color1]   | DEFAULT_TEXT_COLOR;
   _bitmapcfg.alpha_bg         = cfg[T_alpha_b]  | DEF_OVERLAY_ALPHA;
 
-  _scrollrate = cfg[T_rate] | 2;
+  _scrollrate = cfg[T_rate] | 10;
 
   // grab a lock on bitmap canvas
   std::lock_guard<std::mutex> lock(_mtx);
-  _textmask = std::make_unique<Arduino_Canvas_Mono>(_bitmapcfg.maxW, _bitmapcfg.maxH, nullptr);
+  _textmask = std::make_unique<Arduino_Canvas_Mono>(_bitmapcfg.w, _bitmapcfg.h, nullptr);
   _textmask->begin();
   _textmask->setUTF8Print(true);
   _textmask->setTextWrap(false);
@@ -1023,12 +1026,12 @@ void TextScrollerWgdt::load_cfg(JsonVariantConst cfg){
 
 void TextScrollerWgdt::generate_cfg(JsonVariant cfg) const {
   cfg.clear();
-  cfg[T_width]    = _bitmapcfg.maxW;
-  cfg[T_height]   = _bitmapcfg.maxH;
-  cfg[T_x1offset] = _bitmapcfg.x;
-  cfg[T_y1offset] = _bitmapcfg.y;
+  cfg[T_width]    = _bitmapcfg.w;
+  cfg[T_height]   = _bitmapcfg.h;
+  cfg[T_x1pos] = _bitmapcfg.x;
+  cfg[T_y1pos] = _bitmapcfg.y;
   cfg[T_font1]    = _bitmapcfg.font_index;
-  cfg[T_offset]   = _bitmapcfg.baseline_shift;
+  cfg[T_offset]   = _bitmapcfg.baseline_shift_y;
   cfg[T_color1]   = _bitmapcfg.color;
   cfg[T_alpha_b]  = _bitmapcfg.alpha_bg;
   cfg[T_rate]     = _scrollrate;
@@ -1064,14 +1067,13 @@ void TextScrollerWgdt::_scroll_line(LedFB_GFX *gfx){
   
 
   _textmask->fillScreen(BLACK);
-  _textmask->setCursor(_cur_offset, _bitmapcfg.maxH - _bitmapcfg.baseline_shift);
+  _textmask->setCursor(_cur_offset, _bitmapcfg.h - _bitmapcfg.baseline_shift_y);
   _textmask->print(_txtstr.data());
-  //--_cur_offset;
   if (_cur_offset <  -1*_txt_pixlen)
-    _cur_offset = _bitmapcfg.maxW;
+    _cur_offset = _bitmapcfg.w;
 
 
-  gfx->fadeBitmap(_bitmapcfg.x, _bitmapcfg.y, _textmask->getFramebuffer(), _bitmapcfg.maxW, _bitmapcfg.maxH, _bitmapcfg.color, _bitmapcfg.alpha_bg );
+  gfx->fadeBitmap(_bitmapcfg.x, _bitmapcfg.y, _textmask->getFramebuffer(), _bitmapcfg.w, _bitmapcfg.h, _bitmapcfg.color, _bitmapcfg.alpha_bg );
 }
 
 void TextScrollerWgdt::start(){
@@ -1194,7 +1196,7 @@ void TextScrollerWgdt::_getOpenWeather(){
 
   // find text string width
   int16_t px, py; uint16_t pw;
-  _textmask->getTextBounds(_txtstr.data(), 0, _bitmapcfg.maxH, &px, &py, &_txt_pixlen, &pw);
+  _textmask->getTextBounds(_txtstr.data(), 0, _bitmapcfg.h, &px, &py, &_txt_pixlen, &pw);
 
   // reset update
   _weathercfg.retry = false;
