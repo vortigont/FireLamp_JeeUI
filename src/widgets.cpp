@@ -415,6 +415,11 @@ void ClockWidget::load_cfg(JsonVariantConst cfg){
       LOGV(T_Display, printf, "date overlay: %u\n", (size_t)&date);
       display.attachOverlay( date.cb );
     }
+  } else {
+    // check if need to release existing date bitmap
+    if (_textmask_date)
+      display.detachOverlay(date.cb.id);
+      _textmask_date.reset();
   }
 
   redraw = true;
