@@ -497,13 +497,7 @@ void ClockWidget::_print_clock(std::tm *tm){
   //_textmask_clk->getTextBounds(result, clk.x, clk.y, &x, &y, &w, &h);
   _textmask_clk->setCursor(clk.baseline_shift_x, clk.h - clk.baseline_shift_y);
 
-  // для шрифта 3х5 откусываем незначащий ноль что бы текст влез на матрицу 16х16. Коряво, но люди просят.
-  if (clk.font_index == 7 && tm->tm_hour%12 < 10){
-    std::string_view s(result);
-    s.remove_prefix(1);
-    _textmask_clk->print(s.data());
-  } else
-    _textmask_clk->print(result);
+  _textmask_clk->print(result);
 
   if (clk.show_seconds){
     _textmask_clk->setFont(fonts[clk.seconds_font_index]);
