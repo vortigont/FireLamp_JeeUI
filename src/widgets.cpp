@@ -1027,8 +1027,8 @@ void TextScrollerWgdt::generate_cfg(JsonVariant cfg) const {
   cfg.clear();
   cfg[T_width]    = _bitmapcfg.w;
   cfg[T_height]   = _bitmapcfg.h;
-  cfg[T_x1pos] = _bitmapcfg.x;
-  cfg[T_y1pos] = _bitmapcfg.y;
+  cfg[T_x1pos]    = _bitmapcfg.x;
+  cfg[T_y1pos]    = _bitmapcfg.y;
   cfg[T_font1]    = _bitmapcfg.font_index;
   cfg[T_offset]   = _bitmapcfg.baseline_shift_y;
   cfg[T_color1]   = _bitmapcfg.color;
@@ -1119,7 +1119,7 @@ void TextScrollerWgdt::_getOpenWeather(){
 
   // http://api.openweathermap.org/data/2.5/weather?id=1850147&units=metric&lang=ru&APPID=your_API_KEY>
   String url("http://api.openweathermap.org/data/2.5/weather?units=metric&lang=ru&id=");
-  url += _weathercfg.city_id.c_str();
+  url += _weathercfg.city_id;
   url += "&APPID=";
   url += _weathercfg.apikey.c_str();
 

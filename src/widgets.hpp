@@ -508,8 +508,8 @@ public:
 class TextScrollerWgdt : public GenericWidgetProfiles {
 
 struct WeatherCfg {
-  String city_id, apikey;
-  uint32_t refresh; // ms
+  String apikey;
+  uint32_t city_id, refresh; // ms
   bool retry{false};
 };
 
