@@ -417,9 +417,10 @@ void ClockWidget::load_cfg(JsonVariantConst cfg){
     }
   } else {
     // check if need to release existing date bitmap
-    if (_textmask_date)
+    if (_textmask_date){
       display.detachOverlay(date.cb.id);
       _textmask_date.reset();
+    }
   }
 
   redraw = true;

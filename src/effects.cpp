@@ -7207,7 +7207,7 @@ void EffectMagma::leapersMove_leaper(Magma &l) {
   }
 
   // bounce off the sides of the screen?
-  if (l.posX < 0 || l.posX > fb->w() && random8()<32) {
+  if ((l.posX < 0 || l.posX > fb->w()) && random8()<32) {
     leapersRestart_leaper(l);
   }
   
