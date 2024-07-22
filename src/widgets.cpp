@@ -120,7 +120,7 @@ static constexpr std::array<const uint8_t*, 20> fonts = {
   u8g2_font_maniac_tn,
   u8g2_font_lucasarts_scumm_subtitle_o_tn,
   u8g2_font_bubble_tn,
-  u8g2_font_osr21_tn,
+  u8g2_font_moosenooks_tr,
   u8g2_font_osr29_tn,
   u8g2_font_osb21_tn,
   u8g2_font_osb29_tn
@@ -325,6 +325,8 @@ bool GenericGFXWidget::getCanvas(){
 ClockWidget::ClockWidget() : GenericWidgetProfiles(T_clock, TASK_SECOND) {
   ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, ClockWidget::_event_hndlr, this, &_hdlr_lmp_change_evt));
   ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_STATE_EVENTS, ESP_EVENT_ANY_ID, ClockWidget::_event_hndlr, this, &_hdlr_lmp_state_evt));
+  clk.cb.id = (size_t)&clk;   // make unique id for clock overlay
+  date.cb.id = (size_t)&date; // make unique id for date overlay
 }
 
 ClockWidget::~ClockWidget(){
@@ -343,11 +345,16 @@ ClockWidget::~ClockWidget(){
 }
 
 void ClockWidget::load_cfg(JsonVariantConst cfg){
+  // try to detach any existing overlay
+  display.detachOverlay(clk.cb.id);
+
   // clk
   clk.x = cfg[T_x1pos];
   clk.y = cfg[T_y1pos];
   clk.w = cfg[T_clkw] | 16;
   clk.h = cfg[T_clkh] | 8;
+  clk.mixer = static_cast<ovrmixer_t>( cfg[T_mixer].as<unsigned>() );
+  LOGV(T_Display, printf, "ovr mix:%u\n", e2int(clk.mixer));
   clk.baseline_shift_x = cfg[T_x1offset];
   clk.baseline_shift_y = cfg[T_y1offset];
   clk.font_index = cfg[T_font1];
@@ -358,6 +365,11 @@ void ClockWidget::load_cfg(JsonVariantConst cfg){
   clk.color_bg = cfg[T_color2];
   clk.alpha_tx = cfg[T_alpha_t] | 128;
   clk.alpha_bg = cfg[T_alpha_b] | 128;
+  clk.eff_num  = cfg[V_effect_idx] | -1;    // buy default '-1' for no change
+
+  // switch effect if defined
+  if (clk.eff_num > -1)
+    EVT_POST_DATA(LAMP_SET_EVENTS, e2int(evt::lamp_t::effSwitchTo), &clk.eff_num, sizeof(clk.eff_num));
 
 /*
   // temporary object to calculate bitmap size
@@ -374,15 +386,44 @@ void ClockWidget::load_cfg(JsonVariantConst cfg){
 
   _textmask_clk = std::make_unique<Arduino_Canvas_Mono>(clk.w, clk.h, nullptr);
   _textmask_clk->begin();
+  _textmask_clk->setTextColor(65535); // draw with 'white' although it will be a mask on '1's
   _textmask_clk->setTextWrap(false);
 
   //texture_ovr_cb_t clkovr { [&](LedFB_GFX *gfx){ gfx->fadeBitmap(clk.x, clk.y, _textmask_clk->getFramebuffer(), 48, 16, clk.color, 64); } }; 
-  if (clk.cb.id != (size_t)&clk){
-    clk.cb.id = (size_t)&clk;
-    clk.cb.callback = [&](LedFB_GFX *gfx){ gfx->blendBitmap(clk.x, clk.y, _textmask_clk->getFramebuffer(), clk.w, clk.h, clk.color_txt, clk.alpha_tx, clk.color_bg, clk.alpha_bg); };
-    LOGV(T_Display, printf, "clk overlay: %u\n", (size_t)&clk);
-    display.attachOverlay( clk.cb );
+
+  switch (clk.mixer){
+    case ovrmixer_t::alphablend :
+      clk.cb.callback = [&](LedFB_GFX *gfx){
+        gfx->drawBitmap_alphablend( clk.x, clk.y, _textmask_clk->getFramebuffer(), clk.w, clk.h,
+                                    LedFB_GFX::colorCRGB(clk.color_txt), clk.alpha_tx,
+                                    LedFB_GFX::colorCRGB(clk.color_bg), clk.alpha_bg);
+      };
+      LOGV(T_Display, println, "Use alpha blend mixer");
+      break;
+
+    case ovrmixer_t::color_scale :
+      clk.cb.callback = [&](LedFB_GFX *gfx){
+        gfx->drawBitmap_scale_colors( clk.x, clk.y, _textmask_clk->getFramebuffer(), clk.w, clk.h,
+                                      LedFB_GFX::colorCRGB(clk.color_txt), LedFB_GFX::colorCRGB(clk.color_bg));
+      };
+      LOGV(T_Display, println, "Use color scale mixer");
+      break;
+
+    default :
+      clk.cb.callback = [&](LedFB_GFX *gfx){
+        gfx->drawBitmap_bgfade( clk.x, clk.y, _textmask_clk->getFramebuffer(), clk.w, clk.h,
+                                      LedFB_GFX::colorCRGB(clk.color_txt), clk.alpha_tx);
+      };
+      LOGV(T_Display, println, "Use bg dim mixer");
   }
+
+  //clk.cb.callback = [&](LedFB_GFX *gfx){ gfx->blendBitmap(clk.x, clk.y, _textmask_clk->getFramebuffer(), clk.w, clk.h, clk.color_txt, clk.alpha_tx, clk.color_bg, clk.alpha_bg); };
+  //clk.cb.callback = [&](LedFB_GFX *gfx){ gfx->drawBitmap_scale_colors(clk.x, clk.y, _textmask_clk->getFramebuffer(), clk.w, clk.h, LedFB_GFX::colorCRGB(clk.color_txt), LedFB_GFX::colorCRGB(clk.color_bg)); };
+  //CRGB cf = LedFB_GFX::colorCRGB(clk.color_txt);
+  //CRGB cb = LedFB_GFX::colorCRGB(clk.color_bg);
+  //LOGV(T_Display, printf, "Clk colors: %u/%u front:%u,%u,%u, back:%u,%u,%u\n", clk.color_txt, clk.color_bg, cf.r, cf.g, cf.b, cb.r, cb.g, cb.b);
+  //LOGV(T_Display, printf, "clk overlay: %u\n", (size_t)&clk);
+  display.attachOverlay( clk.cb );
 
   // date
   date_show = cfg[P_date];
@@ -398,27 +439,21 @@ void ClockWidget::load_cfg(JsonVariantConst cfg){
   if (cfg[T_datefmt])
     date.datefmt = cfg[T_datefmt].as<const char*>();
 
+
+  // detach existing date overlay
+  display.detachOverlay(date.cb.id);
+
   if (date_show){
-/*
-    helper.setFont(fonts[date.font_index]);
-    helper.getTextBounds("2024-00-00", 0, 0, &x, &y, &date.maxW, &date.maxH);
-    ++date.maxH;
-    LOGD(T_Widget, printf, "date canvas font:%u, clr:%u, bounds: %u, %u\n", date.font_index, date.color, date.maxW, date.maxH);
-*/
     _textmask_date = std::make_unique<Arduino_Canvas_Mono>(date.w, date.h, nullptr);
     _textmask_date->begin();
     _textmask_date->setTextWrap(false);
 
-    if (date.cb.id != (size_t)&date){
-      date.cb.id = (size_t)&date;
-      date.cb.callback = [&](LedFB_GFX *gfx){ gfx->fadeBitmap(date.x, date.y, _textmask_date->getFramebuffer(), date.w, date.h, date.color, date.alpha_bg); };
-      LOGV(T_Display, printf, "date overlay: %u\n", (size_t)&date);
-      display.attachOverlay( date.cb );
-    }
+    date.cb.callback = [&](LedFB_GFX *gfx){ gfx->drawBitmap_bgfade(date.x, date.y, _textmask_date->getFramebuffer(), date.w, date.h, date.color, date.alpha_bg); };
+    LOGV(T_Display, printf, "date overlay: %u\n", (size_t)&date);
+    display.attachOverlay( date.cb );
   } else {
     // check if need to release existing date bitmap
     if (_textmask_date){
-      display.detachOverlay(date.cb.id);
       _textmask_date.reset();
     }
   }
@@ -432,6 +467,7 @@ void ClockWidget::generate_cfg(JsonVariant cfg) const {
   cfg[T_y1pos] = clk.y;
   cfg[T_clkw] = clk.w;
   cfg[T_clkh] = clk.h;
+  cfg[T_mixer] = e2int(clk.mixer);
   cfg[T_x1offset] = clk.baseline_shift_x;
   cfg[T_y1offset] = clk.baseline_shift_y;
   cfg[T_font1] = clk.font_index;
@@ -442,6 +478,7 @@ void ClockWidget::generate_cfg(JsonVariant cfg) const {
   cfg[T_color2] = clk.color_bg;
   cfg[T_alpha_t] = clk.alpha_tx;
   cfg[T_alpha_b] = clk.alpha_bg;
+  cfg[V_effect_idx] = clk.eff_num;
 
   // date
   cfg[P_date] = date_show;
@@ -488,11 +525,10 @@ void ClockWidget::_print_clock(std::tm *tm){
   char result[std::size("20:00")];
 
   std::strftime(result, std::size(result), clk.twelwehr ? "%I:%M" : "%R", tm);    // "%R" equivalent to "%H:%M"
-  // put a space inplace of a leading zero
-  if (tm->tm_hour < 10)
+  // put a space inplace of a leading zero when in 24h mode
+  if (!clk.twelwehr && tm->tm_hour < 10)
     result[0] = 0x20;
 
-  _textmask_clk->setTextColor(clk.color_txt);
   _textmask_clk->setFont(fonts[clk.font_index]);
 
   //_textmask_clk->getTextBounds(result, clk.x, clk.y, &x, &y, &w, &h);
@@ -518,7 +554,6 @@ void ClockWidget::_print_date(std::tm *tm){
 
   std::strftime(result, std::size(result), date.datefmt.c_str(), tm);
   //std::strftime(result, std::size(result), "%F", tm);
-  _textmask_date->setTextColor(date.color);
   _textmask_date->setFont(fonts[date.font_index]);
   _textmask_date->setCursor(date.baseline_shift_x, date.h - date.baseline_shift_y);
 
@@ -1073,7 +1108,7 @@ void TextScrollerWgdt::_scroll_line(LedFB_GFX *gfx){
     _cur_offset = _bitmapcfg.w;
 
 
-  gfx->fadeBitmap(_bitmapcfg.x, _bitmapcfg.y, _textmask->getFramebuffer(), _bitmapcfg.w, _bitmapcfg.h, _bitmapcfg.color, _bitmapcfg.alpha_bg );
+  gfx->drawBitmap_bgfade(_bitmapcfg.x, _bitmapcfg.y, _textmask->getFramebuffer(), _bitmapcfg.w, _bitmapcfg.h, _bitmapcfg.color, _bitmapcfg.alpha_bg );
 }
 
 void TextScrollerWgdt::start(){

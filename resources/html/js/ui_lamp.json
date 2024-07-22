@@ -1,6 +1,6 @@
 {
   "type":"interface",
-  "version":19,
+  "version":20,
   "descr":"FireLamp UI objects",
 
   "settings":{
@@ -1308,7 +1308,7 @@
                       { "value":13, "label":"maniac(lat) (dgt)" },
                       { "value":14, "label":"lucasarts_scumm (dgt)" },
                       { "value":15, "label":"Bubble (dgt)" },
-                      { "value":16, "label":"osr21 (dgt)" },
+                      { "value":16, "label":"moosenooks (lat)" },
                       { "value":17, "label":"osr29 (dgt)" },
                       { "value":18, "label":"osb21_tn (dgt)" },
                       { "value":19, "label":"osb29 (dgt)" }
@@ -1337,12 +1337,24 @@
                       { "value":13, "label":"maniac(lat) (dgt)" },
                       { "value":14, "label":"lucasarts_scumm (dgt)" },
                       { "value":15, "label":"Bubble (dgt)" },
-                      { "value":16, "label":"osr21 (dgt)" },
+                      { "value":16, "label":"moosenooks (lat)" },
                       { "value":17, "label":"osr29 (dgt)" },
                       { "value":18, "label":"osb21_tn (dgt)" },
                       { "value":19, "label":"osb29 (dgt)" }
                     ]
                   }
+                ]
+              },
+              {
+                "id":"mixer",
+                "html":"select",
+                "value":0,
+                "label":"Алгоритм наложения",
+                "section":"options",
+                "block":[
+                  { "value":0, "label":"Затенение фона" },
+                  { "value":1, "label":"Альфа прозрачность" },
+                  { "value":2, "label":"Цветовая маска"}
                 ]
               },
               {
@@ -1392,6 +1404,16 @@
                     "step": 1
                   }
                 ]
+              },
+              {
+                "id": "eff_idx",
+                "html":"input",
+                "value": -1,
+                "type": "number",
+                "label": "Включить эффект № (-1 оставить текущий)",
+                "min": -1,
+                "max": 255,
+                "step": 1
               }
             ]
           },
@@ -1434,7 +1456,7 @@
                   { "value":13, "label":"maniac(lat) (dgt)" },
                   { "value":14, "label":"lucasarts_scumm (dgt)" },
                   { "value":15, "label":"Bubble (dgt)" },
-                  { "value":16, "label":"osr21 (dgt)" },
+                  { "value":16, "label":"moosenooks (lat)" },
                   { "value":17, "label":"osr29 (dgt)" },
                   { "value":18, "label":"osb21_tn (dgt)" },
                   { "value":19, "label":"osb29 (dgt)" }

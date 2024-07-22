@@ -259,17 +259,25 @@ struct TextBitMapCfg {
 
 class ClockWidget : public GenericWidgetProfiles {
 
+enum class ovrmixer_t {
+    bgfade,
+    alphablend,
+    color_scale
+};
+
 struct Clock {
     int16_t x, y;                       // top left corner to place bitmap to
     uint16_t w, h;                      // bitmap WxH
+    ovrmixer_t mixer;
     uint8_t baseline_shift_x, baseline_shift_y;
 //    int16_t baseline
     uint16_t color_txt, color_bg;       // color in 5-6-5 mode
     uint8_t alpha_tx, alpha_bg;         // transparency
-    uint8_t font_index;                 // font to use
-    uint8_t seconds_font_index;         // font to use
+    uint8_t font_index;                 // font to use for hr:min
+    uint8_t seconds_font_index;         // font to use for seconds
     bool show_seconds;                  // show seconds
     bool twelwehr;                      // 12/24 hour clock
+    int16_t eff_num;                    // switch to effect number 'num'
     // max text bounds - needed to track max block size to cover the clock text
     overlay_cb_t cb{};
 };
