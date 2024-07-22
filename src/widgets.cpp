@@ -526,7 +526,7 @@ void ClockWidget::_print_clock(std::tm *tm){
 
   std::strftime(result, std::size(result), clk.twelwehr ? "%I:%M" : "%R", tm);    // "%R" equivalent to "%H:%M"
   // put a space inplace of a leading zero when in 24h mode
-  if (!clk.twelwehr && tm->tm_hour < 10)
+  if (tm->tm_hour < 10 || (clk.twelwehr && (tm->tm_hour % 12 < 10)) )
     result[0] = 0x20;
 
   _textmask_clk->setFont(fonts[clk.font_index]);
