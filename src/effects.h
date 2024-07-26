@@ -40,7 +40,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "color_palette.h"
 #include "effectworker.h"
 #include "effectmath.h"
-#include <TetrisMatrixDraw.h>
+//#include <TetrisMatrixDraw.h>
 
 #define NUMPALETTES 10
 #define NUM_LAYERS  1       // layers for noice effetcs
