@@ -7148,7 +7148,7 @@ String EffectMagma::setDynCtrl(UIControl*_val){
     speedFactor = EffectMath::fmap(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 0.075, .5) * getBaseSpeedFactor();
   }
   else if(_val->getId()==3) {
-    long scale = map(EffectCalc::setDynCtrl(_val).toInt(), 1, 100, MAGMA_MIN_OBJ, MAGMA_MAX_OBJ);
+    int scale = map(EffectCalc::setDynCtrl(_val).toInt(), 1, 100, MAGMA_MIN_OBJ, MAGMA_MAX_OBJ);
     particles.assign(scale, Magma());
   }
   else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
@@ -7158,6 +7158,7 @@ String EffectMagma::setDynCtrl(UIControl*_val){
 }
 
 void EffectMagma::regen() {
+  randomSeed(millis());
   for (uint8_t j = 0; j != shiftHue.size(); ++j){
     shiftHue[j] = map(j, 0, fb->h()+fb->h()/4, 255, 0);// init colorfade table
   }
@@ -7215,9 +7216,9 @@ void EffectMagma::leapersMove_leaper(Magma &l) {
 }
 
 void EffectMagma::leapersRestart_leaper(Magma &l) {
-  randomSeed(millis());
   // leap up and to the side with some random component
-  l.speedX = EffectMath::randomf(-0.5, 0.5);
+  l.speedX = EffectMath::randomf(0.2, 2.5);
+  if (random8() % 2) l.speedX *= -1;
   l.shift = EffectMath::randomf(0.50, 0.85);
   l.posX = EffectMath::randomf(0, fb->w());
   l.posY = EffectMath::randomf(fb->h() - fb->h()/4, fb->h());

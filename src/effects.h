@@ -1716,8 +1716,8 @@ public:
 // ----------------- Эффект "Магма"
 // (c) Сотнег (SottNick) 2021
 // адаптация и доводка до ума - kostyamat
-#define MAGMA_MIN_OBJ   (fb->w()/4)
-#define MAGMA_MAX_OBJ   (fb->w()*2)
+#define MAGMA_MIN_OBJ   4   //(fb->w()/4)
+#define MAGMA_MAX_OBJ   (fb->w()/2)
 class EffectMagma: public EffectCalc {
 private:
 
