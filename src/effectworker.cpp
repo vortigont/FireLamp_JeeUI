@@ -790,7 +790,7 @@ void EffectWorker::switchEffect(uint16_t effnb){
 
   curEff.flushcfg();  // сохраняем конфигурацию предыдущего эффекта если были несохраненные изменения
 
-  LOGD(T_EffWrkr, printf, "switch to %u", effnb);
+  LOGD(T_EffWrkr, printf, "switchEffect:%u\n", effnb);
   workerset(effnb);
 }
 

@@ -61,6 +61,9 @@
 class GenericWidget : public Task {
 
 protected:
+  // widget's access mutex
+  std::mutex mtx;
+
     // widget label or "name"
     const char* label;
 
@@ -525,8 +528,6 @@ struct WeatherCfg {
   WeatherCfg _weathercfg;
 
   std::unique_ptr<Arduino_Canvas_Mono> _textmask;
-  // _textmask access mutext
-  std::mutex _mtx;
 
   int _cur_offset{0};
   int _scrollrate;

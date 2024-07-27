@@ -345,6 +345,9 @@ ClockWidget::~ClockWidget(){
 }
 
 void ClockWidget::load_cfg(JsonVariantConst cfg){
+  // grab a lock on bitmap canvas
+  std::lock_guard<std::mutex> lock(mtx);
+
   // try to detach any existing overlay
   display.detachOverlay(clk.cb.id);
 
@@ -366,10 +369,6 @@ void ClockWidget::load_cfg(JsonVariantConst cfg){
   clk.alpha_tx = cfg[T_alpha_t] | 128;
   clk.alpha_bg = cfg[T_alpha_b] | 128;
   clk.eff_num  = cfg[V_effect_idx] | -1;    // buy default '-1' for no change
-
-  // switch effect if defined
-  if (clk.eff_num > -1)
-    EVT_POST_DATA(LAMP_SET_EVENTS, e2int(evt::lamp_t::effSwitchTo), &clk.eff_num, sizeof(clk.eff_num));
 
 /*
   // temporary object to calculate bitmap size
@@ -394,25 +393,34 @@ void ClockWidget::load_cfg(JsonVariantConst cfg){
   switch (clk.mixer){
     case ovrmixer_t::alphablend :
       clk.cb.callback = [&](LedFB_GFX *gfx){
+        std::unique_lock<std::mutex> lock(mtx, std::defer_lock);
+        if (!lock.try_lock()) return;
         gfx->drawBitmap_alphablend( clk.x, clk.y, _textmask_clk->getFramebuffer(), clk.w, clk.h,
                                     LedFB_GFX::colorCRGB(clk.color_txt), clk.alpha_tx,
                                     LedFB_GFX::colorCRGB(clk.color_bg), clk.alpha_bg);
+        lock.unlock();
       };
       LOGV(T_Display, println, "Use alpha blend mixer");
       break;
 
     case ovrmixer_t::color_scale :
       clk.cb.callback = [&](LedFB_GFX *gfx){
+        std::unique_lock<std::mutex> lock(mtx, std::defer_lock);
+        if (!lock.try_lock()) return;
         gfx->drawBitmap_scale_colors( clk.x, clk.y, _textmask_clk->getFramebuffer(), clk.w, clk.h,
                                       LedFB_GFX::colorCRGB(clk.color_txt), LedFB_GFX::colorCRGB(clk.color_bg));
+        lock.unlock();
       };
       LOGV(T_Display, println, "Use color scale mixer");
       break;
 
     default :
       clk.cb.callback = [&](LedFB_GFX *gfx){
+        std::unique_lock<std::mutex> lock(mtx, std::defer_lock);
+        if (!lock.try_lock()) return;
         gfx->drawBitmap_bgfade( clk.x, clk.y, _textmask_clk->getFramebuffer(), clk.w, clk.h,
                                       LedFB_GFX::colorCRGB(clk.color_txt), clk.alpha_tx);
+        lock.unlock();
       };
       LOGV(T_Display, println, "Use bg dim mixer");
   }
@@ -448,7 +456,12 @@ void ClockWidget::load_cfg(JsonVariantConst cfg){
     _textmask_date->begin();
     _textmask_date->setTextWrap(false);
 
-    date.cb.callback = [&](LedFB_GFX *gfx){ gfx->drawBitmap_bgfade(date.x, date.y, _textmask_date->getFramebuffer(), date.w, date.h, date.color, date.alpha_bg); };
+    date.cb.callback = [&](LedFB_GFX *gfx){
+      std::unique_lock<std::mutex> lock(mtx, std::defer_lock);
+      if (!lock.try_lock()) return;
+      gfx->drawBitmap_bgfade(date.x, date.y, _textmask_date->getFramebuffer(), date.w, date.h, date.color, date.alpha_bg);
+      lock.unlock();
+    };
     LOGV(T_Display, printf, "date overlay: %u\n", (size_t)&date);
     display.attachOverlay( date.cb );
   } else {
@@ -459,6 +472,10 @@ void ClockWidget::load_cfg(JsonVariantConst cfg){
   }
 
   redraw = true;
+
+  // switch effect if defined
+  if (clk.eff_num > -1)
+    EVT_POST_DATA(LAMP_SET_EVENTS, e2int(evt::lamp_t::effSwitchTo), &clk.eff_num, sizeof(clk.eff_num));
 }
 
 void ClockWidget::generate_cfg(JsonVariant cfg) const {
@@ -521,6 +538,9 @@ void ClockWidget::widgetRunner(){
 }
 
 void ClockWidget::_print_clock(std::tm *tm){
+  // grab a lock on bitmap canvas
+  std::lock_guard<std::mutex> lock(mtx);
+
   _textmask_clk->fillScreen(0);
   char result[std::size("20:00")];
 
@@ -539,26 +559,22 @@ void ClockWidget::_print_clock(std::tm *tm){
   if (clk.show_seconds){
     _textmask_clk->setFont(fonts[clk.seconds_font_index]);
     std::strftime(result, std::size(result), ":%S", tm);
-    //_textmask_clk->getTextBounds(result, clk.scursor_x, clk.scursor_x, &x, &y, &w, &h);
-    //clk.smaxW = std::max(clk.smaxW, static_cast<uint16_t>(clk.scursor_x+w));
     //LOGV(T_Widget, printf, "fill sec bounds: %d, %d, %u, %u\n", clk.scursor_x, clk.scursor_y-h+1, clk.smaxW-w, h);
-    //_textmask_clk->fillRect(clk.scursor_x, clk.scursor_y-h+1, clk.smaxW-clk.scursor_x, h, 0);
     //LOGV(T_Widget, printf, "sec: %s, font:%u, clr:%u, bounds: %d, %d, %u, %u\n", result, clk.seconds_font_index, clk.color, clk.scursor_x, clk.scursor_y, clk.smaxW, h);
     _textmask_clk->print(result);
   }
 }
 
 void ClockWidget::_print_date(std::tm *tm){
+  std::lock_guard<std::mutex> lock(mtx);
   _textmask_date->fillScreen(0);
   char result[20];
 
   std::strftime(result, std::size(result), date.datefmt.c_str(), tm);
-  //std::strftime(result, std::size(result), "%F", tm);
   _textmask_date->setFont(fonts[date.font_index]);
   _textmask_date->setCursor(date.baseline_shift_x, date.h - date.baseline_shift_y);
 
   _textmask_date->print(result);
-
   //LOGD(T_Widget, printf, "Date: %s, font:%u, clr:%u, bounds: %d %d %u %u\n", result, date.font_index, date.color, x, y, date.maxW, h);
 }
 
@@ -1037,7 +1053,7 @@ void TextScrollerWgdt::load_cfg(JsonVariantConst cfg){
   _scrollrate = cfg[T_rate] | 10;
 
   // grab a lock on bitmap canvas
-  std::lock_guard<std::mutex> lock(_mtx);
+  std::lock_guard<std::mutex> lock(mtx);
   _textmask = std::make_unique<Arduino_Canvas_Mono>(_bitmapcfg.w, _bitmapcfg.h, nullptr);
   _textmask->begin();
   _textmask->setUTF8Print(true);
@@ -1090,7 +1106,7 @@ void TextScrollerWgdt::widgetRunner(){
 
 void TextScrollerWgdt::_scroll_line(LedFB_GFX *gfx){
   // if canvas can't be locked, skip this run
-  std::unique_lock<std::mutex> lock(_mtx, std::defer_lock);
+  std::unique_lock<std::mutex> lock(mtx, std::defer_lock);
   if (!lock.try_lock())
     return;
 
@@ -1123,7 +1139,7 @@ void TextScrollerWgdt::start(){
 
 void TextScrollerWgdt::stop(){
   disable();
-  std::lock_guard<std::mutex> lock(_mtx);
+  std::lock_guard<std::mutex> lock(mtx);
   display.detachOverlay(_renderer.id);
 }
 
@@ -1226,7 +1242,7 @@ void TextScrollerWgdt::_getOpenWeather(){
 
   // ths lock was meant for canvas, but let's use for string update also,
   // anyway string is also use when rendering text to bitmap
-  std::lock_guard<std::mutex> lock(_mtx);
+  std::lock_guard<std::mutex> lock(mtx);
   _txtstr = pogoda.c_str();
 
   // find text string width
