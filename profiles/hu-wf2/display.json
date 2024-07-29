@@ -1,1 +1,1 @@
-{"hub75":{"width":64,"height":32,"R1":2,"G1":6,"B1":10,"R2":3,"G2":7,"B2":11,"A":39,"B":38,"C":37,"D":36,"E":21,"CLK":34,"OE":35,"LAT":33,"clkphase":false,"driver":0,"clkrate":20000000,"colordpth":5,"minrr":60,"latblank":2},"dtype":1}
+{"hub75":{"width":64,"height":32,"R1":2,"G1":6,"B1":10,"R2":3,"G2":7,"B2":11,"A":39,"B":38,"C":37,"D":36,"E":21,"CLK":34,"OE":35,"LAT":33,"clkphase":false,"driver":0,"clkrate":15000000,"colordpth":5,"minrr":60,"latblank":2},"dtype":1}
