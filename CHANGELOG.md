@@ -1,5 +1,21 @@
 # Change Log
 
+## 3.7.2
++ Add profile and configs for Huidu HD‐WF2 board
++ add release builder scritps for HD-WF2 boards
+* change some default values for I2S
+* fix garbage on profiles changes
+* fix crashes on clock profiles switching
+* some improvements for "Magma" effect
+* some fixes in clock widget
+* часы: дополнительные параметры наложения
+   - в профиле часов теперь сохраняется номер эффекта оптимальный для профиля
+   - в профиле часов доступен выбор алгоритма наложения
+   - алгоритм наложения "Цветовая маска"
+   - исправлены ошибки в реализации прозрачности
+* weather city code is handled as integer instead of string
+
+
 ## 3.7.1
 + добавлены шрифты для часов разных размеров
 + настраиваемые размеры области под слои с часами/датой/строкой
