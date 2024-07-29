@@ -26,8 +26,9 @@ jobs:
           token: ${{ secrets.LAMPDEVS_BOT_TOKEN }}
           disable_web_page_preview: true
           disable_notification: true
+          format: html                                # Telegram Bot API currently supports only <b>, <i>, <a>,<code> and <pre> tags, for HTML parse mode
           message: |
-            <b>Новый выпуск:</b> 
+            <b>❗Новый выпуск:❗</b> 
 
             <a href="${{ github.event.release.html_url }}">${{ github.repository }}</a> <b>${{ github.event.release.tag_name }}</b>
             

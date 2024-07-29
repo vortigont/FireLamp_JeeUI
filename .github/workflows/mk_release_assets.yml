@@ -72,7 +72,7 @@ jobs:
           cd $GITHUB_WORKSPACE
       - name: Run PlatformIO build
         run: |
-          platformio run -e esp32_4M -e esp32_16M -e esp32S3_4M -e esp32S3_16M
+          platformio run -e esp32_4M -e esp32_16M -e esp32S3_4M -e esp32S3_16M -e hdwf2_rel
 #         platformio run -e ${{ matrix.variant }}
       - name: Collect firmware images
         id: prepare_bins
