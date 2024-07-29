@@ -273,7 +273,7 @@
             {
               "id":"clkrate",
               "html":"select",
-              "value":15000000,
+              "value":8000000,
               "label":"Частота Clk",
               "section":"options",
               "block":[

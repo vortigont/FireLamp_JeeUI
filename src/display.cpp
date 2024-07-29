@@ -47,8 +47,9 @@ An object file for LED output devices, backends and buffers
 #include "ESP32-HUB75-MatrixPanel-I2S-DMA.h"
 #include "log.h"
 
-#define FASTLED_VOLTAGE     5
-#define FASTLED_MIN_CURRENT 1000
+#define FASTLED_VOLTAGE         5
+#define FASTLED_MIN_CURRENT     1000
+#define DEFAULT_I2S_CLOCK_RATE  8000000
 
 bool LEDDisplay::start(){
     if (_dengine) return true;   // Overlay engine already running
@@ -153,7 +154,7 @@ bool LEDDisplay::_start_hub75(const JsonDocument& doc){
                         _pins,   // pin mapping
                         static_cast<HUB75_I2S_CFG::shift_driver>( o[T_shift_drv] ),     // driver chip
                         false,              // double buff (we do not need it)
-                        static_cast<HUB75_I2S_CFG::clk_speed>( o[T_clk_rate] ),
+                        static_cast<HUB75_I2S_CFG::clk_speed>( o[T_clk_rate] | DEFAULT_I2S_CLOCK_RATE ),
                         o[T_lat_blank],
                         o[T_clk_phase],
                         o[T_min_refresh],
