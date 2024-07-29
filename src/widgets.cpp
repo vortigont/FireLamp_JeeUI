@@ -387,6 +387,7 @@ void ClockWidget::load_cfg(JsonVariantConst cfg){
   _textmask_clk->begin();
   _textmask_clk->setTextColor(65535); // draw with 'white' although it will be a mask on '1's
   _textmask_clk->setTextWrap(false);
+  _textmask_clk->fillScreen(0);
 
   //texture_ovr_cb_t clkovr { [&](LedFB_GFX *gfx){ gfx->fadeBitmap(clk.x, clk.y, _textmask_clk->getFramebuffer(), 48, 16, clk.color, 64); } }; 
 
