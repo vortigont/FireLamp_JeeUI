@@ -67,7 +67,13 @@ void mqttOnMessageCallback(char* topic, char* payload, AsyncMqttClientMessagePro
 // Arduino setup
 void setup() {
     // debug console
+#if ARDUINO_USB_CDC_ON_BOOT == 1
+    Serial.setTxTimeoutMs(0);
+    Serial.begin();
+#else
     Serial.begin(115200);
+#endif
+
     LOGI(T_Main, printf, "Setup: free heap: %uk, PSRAM:%uk\n\n", ESP.getFreeHeap()/1024, ESP.getFreePsram()/1024);
 
     // cap ADC resolution to 10 bit
