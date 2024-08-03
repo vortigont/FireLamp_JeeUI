@@ -47,7 +47,11 @@ Copyright © 2020 Dmytro Korniienko (kDn)
 #include "evtloop.h"
 #include "devices.h"
 #include "components.hpp"
+#include "log.h"
 #include LANG_FILE                  //"text_res.h"
+
+// modules
+#include "modules/clock/mod_clock.hpp"
 
 
 // версия ресурсов в стороннем джейсон файле
