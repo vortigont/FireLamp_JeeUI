@@ -43,13 +43,15 @@ Copyright © 2020 Dmytro Korniienko (kDn)
 #include "actions.hpp"
 #include "evtloop.h"
 #include "devices.h"
-#include "widgets.hpp"
+#include "components.hpp"
 #include "log.h"
 
 #ifdef EMBUI_USE_MQTT
 #include "AsyncMqttClient/Callbacks.hpp"
 String ha_autodiscovery();
 #endif
+
+
 
 
 // restores LED fb config from file
@@ -68,6 +70,7 @@ void mqttOnMessageCallback(char* topic, char* payload, AsyncMqttClientMessagePro
 void setup() {
     // debug console
     Serial.begin(115200);
+    delay(3000);
     LOGI(T_Main, printf, "Setup: free heap: %uk, PSRAM:%uk\n\n", ESP.getFreeHeap()/1024, ESP.getFreePsram()/1024);
 
     // cap ADC resolution to 10 bit
@@ -89,6 +92,9 @@ void setup() {
     // change periodic WebUI publish interval
     embui.setPubInterval(30);
 
+    // OmniCron Scheduler - activate on time sync
+    //TimeProcessor::getInstance().attach_callback( [](){ omnicron.start(); } );
+
     // Add mDNS CB handler for WLED app
     embui.wifi->mdns_cb = wled_announce;
 
@@ -104,11 +110,6 @@ void setup() {
     // Load DFPlayer support if enabled
     dfplayer_cfg_load();
 
-    // attach Informer handlers
-    register_widgets_handlers();
-    // spawn widgets from saved configurations, this must be done AFTER display initialisation
-    informer.start();
-
     // Lamp object initialization must be done AFTER display.start(), so that display object could create pixel buffer first
     // TODO: this is ugly
     //myLamp.effwrkr.setEffSortType((SORT_TYPE)embui.paramVariant(V_effSort).as<int>()); // сортировка должна быть определена до заполнения
@@ -117,6 +118,9 @@ void setup() {
 
     // Hookup IPC event publisher callback
     ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, event_publisher, NULL, NULL));
+
+    // spawn Modules instances from saved configurations, this must be done AFTER display initialisation
+    zookeeper.start();
 
     LOGI(T_Main, printf, "Setup complete: free heap: %uk, PSRAM:%uk\n\n", ESP.getFreeHeap()/1024, ESP.getFreePsram()/1024);
 }   // End setup()

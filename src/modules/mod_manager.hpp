@@ -53,96 +53,82 @@
 #define MAX_NUM_OF_PROFILES 10
 
 /**
- * @brief an abstract class to implement small "apps" or widgets
+ * @brief an abstract class to implement dynamically loaded components or modules
  * practically it is just a class that is able to load/save it's state serialized,
  * has a periodic timer ticker and could attach/detach to event bus
  * 
  */
-class GenericWidget : public Task {
+class GenericModule : public Task {
 
 protected:
-  // widget's access mutex
+  // module's access mutex
   std::mutex mtx;
 
-    // widget label or "name"
-    const char* label;
+	// module label or "name"
+	const char* label;
 
-    /**
-     * @brief derived method should generate object's configuration into provided JsonVariant
-     * 
-     * @param cfg 
-     * @return JsonVariantConst 
-     */
-    virtual void generate_cfg(JsonVariant cfg) const = 0;
+	/**
+	 * @brief derived method should generate object's configuration into provided JsonVariant
+	 * 
+	 * @param cfg 
+	 * @return JsonVariantConst 
+	 */
+	virtual void generate_cfg(JsonVariant cfg) const = 0;
 
-    /**
-     * @brief load configuration from a json object
-     * method should be implemented in derived class to process
-     * class specific json object
-     * @param cfg 
-     */
-    virtual void load_cfg(JsonVariantConst cfg) = 0;
+	/**
+	 * @brief load configuration from a json object
+	 * method should be implemented in derived class to process
+	 * class specific json object
+	 * @param cfg 
+	 */
+	virtual void load_cfg(JsonVariantConst cfg) = 0;
 
 public:
 
     /**
-     * @brief Construct a new Generic Widget object
+     * @brief Construct a new Generic Module object
      * 
-     * @param wlabel - widget label identifier
+     * @param label - module label identifier
      * @param interval - ticker execution interval in ms
      */
-    GenericWidget(const char* wlabel, unsigned interval);
-    virtual ~GenericWidget(){};
+    GenericModule(const char* label, unsigned interval);
+    virtual ~GenericModule(){};
 
     // function to run on ticker call 
-    virtual void widgetRunner() = 0;
+    virtual void moduleRunner() = 0;
 
     /**
-     * @brief load widget config using widget name as a config selector key
-     * 
-     */
-    //static void load_cfg_from_NVS(JsonObject obj, const char* lbl);
-
-    /**
-     * @brief load widget's config from persistent storage and calls start()
+     * @brief load module's config from persistent storage and calls start()
      * 
      */
     virtual void load();
 
     /**
-     * @brief save current widget's configuration to file
+     * @brief save current module's configuration to file
      * 
      */
     virtual void save();
 
-    /**
-     * @brief save supplied widget's configuration to NVS
-     * it will actually try to merge supplied object with the one stored in NVS
-     * @param cfg 
-     */
-    //void save(JsonVariantConst cfg);
-
-
-    // start widget ticker
+    // start module ticker
     virtual void start(){ enable(); };
 
-    // stop widget ticker
+    // stop module ticker
     virtual void stop(){ disable(); };
 
     /**
-     * @brief Get widget's configuration packed into a nested json object ['widget_label']
+     * @brief Get module's configuration packed into a nested json object ['module_label']
      * used to feed control's values to WebUI/MQTT
      */
     void getConfig(JsonObject obj) const;
 
     /**
-     * @brief Set widget's configuration packed into json object
+     * @brief Set module's configuration packed into json object
      * this call will also SAVE supplied configuration to persistent storage
      */
     void setConfig(JsonVariantConst cfg);
 
     /**
-     * @brief Get widget's Label
+     * @brief Get module's Label
      * 
      * @return const char* 
      */
@@ -174,10 +160,10 @@ public:
     virtual uint32_t profilesAvailable() const { return 0; }
 };
 
-using widget_pt = std::unique_ptr<GenericWidget>;
+using module_pt = std::unique_ptr<GenericModule>;
 
-
-class GenericGFXWidget : public GenericWidget {
+/*
+class GenericGFXModule : public GenericModule {
 
 
 protected:
@@ -195,12 +181,18 @@ protected:
     //void releaseOverlay();
 
 public:
-    GenericGFXWidget(const char* wlabel, unsigned interval) : GenericWidget(wlabel, interval){};
-    virtual ~GenericGFXWidget(){ };
+    GenericGFXModule(const char* wlabel, unsigned interval) : GenericModule(wlabel, interval){};
+    virtual ~GenericGFXModule(){ };
 
 };
+*/
 
-class GenericWidgetProfiles : public GenericWidget {
+/**
+ * @brief Module with a set of configuration profiles that could be 
+ * stored and switched on-demand
+ * 
+ */
+class GenericModuleProfiles : public GenericModule {
 
     int32_t _profilenum{0};
 
@@ -209,10 +201,10 @@ class GenericWidgetProfiles : public GenericWidget {
     void _load_profile(int idx);
 
 public:
-    GenericWidgetProfiles(const char* wlabel, unsigned interval) : GenericWidget(wlabel, interval){}
+    GenericModuleProfiles(const char* wlabel, unsigned interval) : GenericModule(wlabel, interval){}
 
     /**
-     * @brief load widget's config from persistent storage and calls start()
+     * @brief load module's config from persistent storage and calls start()
      * here it loads last used profile
      */
     void load() override final { switchProfile(-1); };
@@ -260,7 +252,7 @@ struct TextBitMapCfg {
 };
 
 
-class ClockWidget : public GenericWidgetProfiles {
+class ClockModule : public GenericModuleProfiles {
 
 enum class ovrmixer_t {
     bgfade,
@@ -324,48 +316,48 @@ struct Clock {
     //void _lmpSetEventHandler(esp_event_base_t base, int32_t id, void* data);
 
 public:
-    ClockWidget();
-    ~ClockWidget();
+    ClockModule();
+    ~ClockModule();
 
-    void widgetRunner() override;
+    void moduleRunner() override;
 
     void start() override;
     void stop() override;
 };
 
 /**
- * @brief a container object start spawns/destroys Widgets
+ * @brief a container object start spawns/destroys Modules
  * on start/demand
  * 
  */
-class WidgetManager {
+class ModuleManager {
 
-    // widgets container
-    std::list<widget_pt> _widgets;
+    // module instances container
+    std::list<module_pt> _modules;
 
     /**
-     * @brief spawn a new instance of a widget with supplied config
-     * used with configuration is suplied via webui for non existing widgets
-     * @param widget_label 
+     * @brief spawn a new instance of a module with supplied config
+     * used with configuration is suplied via webui for non existing modules
+     * @param label 
      * @param cfg whether to use a supplied configuration or load from NVS
-     * @param persistent if 'true' a spawned widget will save supplied configuration to NVS, set this to false if spawning widget with cfg FROM NVS to avoid exta writes
+     * @param persistent if 'true' a spawned module will save supplied configuration to NVS, set this to false if spawning module with cfg FROM NVS to avoid exta writes
      */
-    void _spawn(const char* widget_label);
+    void _spawn(const char* label);
 
 public:
-    //WidgetManager();
-    //~WidgetManager(){};
+    //ModuleManager();
+    //~ModuleManager(){};
 
     /**
-     * @brief start widget
-     * if label is not given, then start all widgets based on settings from NVRAM
+     * @brief start module
+     * if label is not given, then start all modules based on settings from NVRAM
      * 
      * @param label 
      */
     void start(const char* label = NULL);
 
     /**
-     * @brief Stop specific widget if it's instance is exist
+     * @brief Stop specific module if it's instance is exist
      * 
      * @param label 
      */
@@ -375,52 +367,52 @@ public:
     //void unregister_handlers();
 
     /**
-     * @brief load widget's configuration into provided JsonObject
+     * @brief load module's configuration into provided JsonObject
      * usually called from a WebUI/MQTT handler
      * @param obj 
-     * @param widget_label 
+     * @param label 
      */
-    void getConfig(JsonObject obj, const char* widget_label);
+    void getConfig(JsonObject obj, const char* label);
 
     /**
-     * @brief Set the Configuration for specifit widget object
+     * @brief Set the Configuration for specifit module object
      * 
-     * @param widget_label 
+     * @param label 
      * @param cfg 
      */
-    void setConfig(const char* widget_label, JsonVariantConst cfg);
+    void setConfig(const char* label, JsonVariantConst cfg);
 
     /**
      * @brief generate Interface values object representing boolen states
-     * of currently active/inactive widgets
+     * of currently active/inactive modules
      * 
      * @param interf 
      */
-    void getWidgetsState(Interface *interf) const;
+    void getModulesStatuses(Interface *interf) const;
 
     /**
-     * @brief Get state of the specific Widget active/inactive
+     * @brief Get state of the specific Module active/inactive
      * 
-     * @param label widget's label
+     * @param label module's label
      * @return true
      * @return false 
      */
-    bool getWidgetStatus(const char* label) const;
+    bool getModuleStatus(const char* label) const;
 
     /**
-     * @brief Get pointer to the instance of an active Widget by it's label
-     * returns nullptr if requested widget is not currently runnning
-     * @note a care should be taken when widget pointer is used outside of manager object,
-     * currently there is no exclusive locking performed and widget instance could deleted any time via other call
+     * @brief Get pointer to the instance of an active Module by it's label
+     * returns nullptr if requested module is not currently runnning
+     * @note a care should be taken when module pointer is used outside of manager object,
+     * currently there is no exclusive locking performed and module instance could deleted any time via other call
      * 
      * 
      * @param[in] label 
-     * @return GenericWidget* 
+     * @return GenericModule* 
      */
-    GenericWidget* getWidgetPtr(const char* label);
+    GenericModule* getModulePtr(const char* label);
 
     /**
-     * @brief switch widget's configuration profile
+     * @brief switch module's configuration profile
      * 
      * @param label 
      * @param idx 
@@ -429,19 +421,19 @@ public:
 };
 
 
-// Unary predicate for Widget's label search match
+// Unary predicate for Module's label search match
 template <class T>
 class MatchLabel : public std::unary_function<T, bool>{
     std::string_view _lookup;
 public:
     explicit MatchLabel(const char* label) : _lookup(label) {}
     bool operator() (const T& item ){
-        // T is widget_pt
+        // T is module_pt
         return _lookup.compare(item->getLabel()) == 0;
     }
 };
 
-class AlarmClock : public GenericWidget {
+class AlarmClock : public GenericModule {
     // типы будильника
     enum class alarm_t {
         onetime = 0,
@@ -506,7 +498,7 @@ public:
     AlarmClock();
     ~AlarmClock();
 
-    void widgetRunner() override;
+    void moduleRunner() override;
 
     void setAlarmItem(JsonVariant cfg);
 
@@ -516,7 +508,7 @@ public:
 
 
 
-class TextScrollerWgdt : public GenericWidgetProfiles {
+class TextScrollerWgdt : public GenericModuleProfiles {
 
 struct WeatherCfg {
   String apikey;
@@ -556,17 +548,11 @@ public:
   TextScrollerWgdt();
   ~TextScrollerWgdt();
 
-  void widgetRunner() override;
+  void moduleRunner() override;
 
   void start() override;
   void stop() override;
 };
-
-/**
- * @brief register EmbUI action handlers for managing widgets
- * 
- */
-void register_widgets_handlers();
 
 /*
 static uint8_t inline alphaBlend( uint8_t a, uint8_t b, uint8_t alpha ) { return scale8(a, 255-alpha) + scale8(b, alpha); }
@@ -576,4 +562,4 @@ static CRGB alphaBlend( CRGB a, CRGB b, uint8_t alpha){
 */
 
 
-extern WidgetManager informer;
+extern ModuleManager informer;

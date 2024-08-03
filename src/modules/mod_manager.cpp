@@ -36,12 +36,12 @@
 */
 
 /*
-    Informer that draws data to display overlay
+    zookeeper that draws data to display overlay
 */
 
 #include <ctime>
 #include <string_view>
-#include "widgets.hpp"
+#include "mod_manager.hpp"
 #include "EmbUI.h"
 #include "nvs_handle.hpp"
 #include "HTTPClient.h"
@@ -75,7 +75,7 @@
 #include "CrystalNormal10.h"                // "01:35:5" пушка! не влезает последний символ
 */
 
-#define CLOCK_DEFAULT_YOFFSET   14          // default offset for clock widget
+#define CLOCK_DEFAULT_YOFFSET   14          // default offset for clock module
 #define DEF_BITMAP_WIDTH        64
 #define DEF_BITMAP_HEIGHT       8
 #define DEF_OVERLAY_ALPHA       32
@@ -130,7 +130,7 @@ static constexpr std::array<const uint8_t*, 20> fonts = {
 //static constexpr std::array<const GFXfont*, 8> fonts = {&FreeSerif9pt8b, &FreeSerifBold9pt8b, &Cooper6pt8b, &Cooper8pt8b, &CrystalNormal8pt8b, &CrystalNormal10pt8b, &Org_01, &TomThumb};
 
 
-// array with all available widget names (labels) we can run
+// array with all available module names (labels) we can run
 static constexpr std::array<const char*, 3> wdg_list = {T_clock, T_alrmclock, T_txtscroll};
 
 
@@ -138,95 +138,51 @@ static constexpr std::array<const char*, 3> wdg_list = {T_clock, T_alrmclock, T_
 // *****
 // EmbUI handlers
 
-// start/stop widget EmbUI command
-void set_widget_onoff(Interface *interf, const JsonObject *data, const char* action){
-  if (!data || !(*data).size()) return;   // call with no data
-  bool state = (*data)[action];
-  //set_wdgtena_*
-  std::string_view lbl = std::string_view (action).substr(12);
-  // start / stop widget
-  state ? informer.start(lbl.data()) : informer.stop(lbl.data());
-}
-
-// set widget's configuration from WebUI
-void set_widget_cfg(Interface *interf, const JsonObject *data, const char* action){
-  if (!data || !(*data).size()) return;   // call with no data
-  // "set_wdgt_*" - action mask
-  informer.setConfig(std::string_view (action).substr(9).data(), *data);  // set_wdgt_
-}
-
-void set_alrm_item(Interface *interf, const JsonObject *data, const char* action){
-  AlarmClock* ptr = reinterpret_cast<AlarmClock*>( informer.getWidgetPtr(T_alrmclock) );
-  if (!ptr) return;
-  ptr->setAlarmItem((*data));
-}
-
-static void switch_profile(Interface *interf, const JsonObject *data, const char* action){
-
-  std::string_view lbl(action);
-  lbl.remove_prefix(std::string_view("wdgt_profile_").length()); // chop off prefix
-
-  informer.switchProfile(lbl.data(), (*data)[action]);
-
-  // send to webUI refreshed widget's config
-  JsonDocument doc;
-  informer.getConfig(doc.to<JsonObject>(), lbl.data());
-  interf->json_frame_value(doc);
-  interf->json_frame_flush();
-}
-
-void register_widgets_handlers(){
-  embui.action.add(A_set_widget_onoff, set_widget_onoff);                 // start/stop widget
-  embui.action.add(A_set_widget, set_widget_cfg);                         // set widget configuration (this wildcard should be the last one)
-  embui.action.add(A_set_wcfg_alrm, set_alrm_item);                       // set alarm item
-  embui.action.add(A_wdgt_profile, switch_profile);                       // switch widget's config profile
-}
 
 
+// ****  GenericModule methods
 
-// ****  GenericWidget methods
-
-GenericWidget::GenericWidget(const char* wlabel, unsigned periodic) : label(wlabel) {
-  set( periodic, TASK_FOREVER, [this](){ widgetRunner(); } );
+GenericModule::GenericModule(const char* wlabel, unsigned periodic) : label(wlabel) {
+  set( periodic, TASK_FOREVER, [this](){ moduleRunner(); } );
   ts.addTask(*this);
 }
 
-void GenericWidget::getConfig(JsonObject obj) const {
-  LOGD(T_Widget, printf, "getConfig for widget:%s\n", label);
+void GenericModule::getConfig(JsonObject obj) const {
+  LOGD(T_Module, printf, "getConfig for module:%s\n", label);
 
   generate_cfg(obj);
 }
 
-void GenericWidget::setConfig(JsonVariantConst cfg){
-  LOGD(T_Widget, printf, "%s: setConfig()\n", label);
+void GenericModule::setConfig(JsonVariantConst cfg){
+  LOGD(T_Module, printf, "%s: setConfig()\n", label);
 
-  // apply supplied configuration to widget 
+  // apply supplied configuration to module 
   load_cfg(cfg);
   // save supplied config to NVS
   save();
 }
 
-void GenericWidget::load(){
+void GenericModule::load(){
   JsonDocument doc;
-  embuifs::deserializeFile(doc, T_widgets_cfg);
+  embuifs::deserializeFile(doc, T_mod_mgr_cfg);
   load_cfg(doc[label]);
   start();
 }
 
-void GenericWidget::save(){
+void GenericModule::save(){
   JsonDocument doc;
-  embuifs::deserializeFile(doc, T_widgets_cfg);
+  embuifs::deserializeFile(doc, T_mod_mgr_cfg);
   getConfig(doc[label].to<JsonObject>());
-  LOGD(T_Widget, printf, "%s: writing cfg to file\n", label);
-  embuifs::serialize2file(doc, T_widgets_cfg);
+  LOGD(T_Module, printf, "%s: writing cfg to file\n", label);
+  embuifs::serialize2file(doc, T_mod_mgr_cfg);
 }
 /*
-void GenericWidget::save(JsonVariantConst cfg){
+void GenericModule::save(JsonVariantConst cfg){
   // save supplied config to persistent storage
   JsonDocument doc;
-  embuifs::deserializeFile(doc, T_widgets_cfg);
+  embuifs::deserializeFile(doc, T_mod_mgr_cfg);
 
-  // get/created nested object for specific widget
+  // get/created nested object for specific module
   JsonVariant dst = doc[label].isNull() ? doc[label].to<JsonObject>() : doc[label];
   JsonObjectConst o = cfg.as<JsonObjectConst>();
 
@@ -234,15 +190,15 @@ void GenericWidget::save(JsonVariantConst cfg){
     dst[kvp.key()] = kvp.value();
   }
 
-  embuifs::serialize2file(doc, T_widgets_cfg);
+  embuifs::serialize2file(doc, T_mod_mgr_cfg);
 }
 */
 
 
 
-// ****  GenericWidgetProfiles methods
+// ****  GenericModuleProfiles methods
 
-String GenericWidgetProfiles::_mkFileName(){
+String GenericModuleProfiles::_mkFileName(){
   // make file name
   String fname( "/" );
   fname += label;
@@ -250,7 +206,7 @@ String GenericWidgetProfiles::_mkFileName(){
   return fname;
 }
 
-void GenericWidgetProfiles::switchProfile(int idx){
+void GenericModuleProfiles::switchProfile(int idx){
   JsonDocument doc;
   embuifs::deserializeFile(doc, _mkFileName().c_str());
 
@@ -260,13 +216,13 @@ void GenericWidgetProfiles::switchProfile(int idx){
   else
     _profilenum = idx;
 
-  LOGD(T_Widget, printf, "%s switch profile:%d\n", label, _profilenum);
+  LOGD(T_Module, printf, "%s switch profile:%d\n", label, _profilenum);
   JsonArray profiles = doc[T_profiles].as<JsonArray>();
   load_cfg(profiles[_profilenum][T_cfg]);
   start();
 }
 
-void GenericWidgetProfiles::save(){
+void GenericModuleProfiles::save(){
   JsonDocument doc;
   embuifs::deserializeFile(doc, _mkFileName().c_str());
 
@@ -286,50 +242,50 @@ void GenericWidgetProfiles::save(){
 
   doc[T_last_profile] = _profilenum;
 
-  LOGD(T_Widget, printf, "%s: writing cfg to file\n", label);
+  LOGD(T_Module, printf, "%s: writing cfg to file\n", label);
   embuifs::serialize2file(doc, _mkFileName().c_str());
 }
 
-// ****  GenericGFXWidget methods
+// ****  GenericGFXModule methods
 /*
-bool GenericGFXWidget::getOverlay(){
+bool GenericGFXModule::getOverlay(){
   if (screen) return true;
   auto overlay = display.getOverlay();  // obtain overlay buffer
   if (!overlay) return false;   // failed to allocate overlay, i.e. display configuration has not been done yet
-  LOGD(T_Widget, printf, "%s obtain overlay\n", label);
+  LOGD(T_Module, printf, "%s obtain overlay\n", label);
   screen = new LedFB_GFX(overlay);
   screen->setRotation(2);            // adafruit coordinates are different from LedFB, so need to rotate it
   return true;
 }
 
-void GenericGFXWidget::releaseOverlay(){
-  LOGD(T_Widget, printf, "%s release overlay\n", label);
+void GenericGFXModule::releaseOverlay(){
+  LOGD(T_Module, printf, "%s release overlay\n", label);
   delete(screen);
   screen = nullptr;
   //overlay.reset();
 }
-*/
-bool GenericGFXWidget::getCanvas(){
+
+bool GenericGFXModule::getCanvas(){
   if (canvas) return true;
   auto c = display.getCanvas();   // obtain canvas buffer
   if (!c) return false;                 // failed to allocate overlay, i.e. display configuration has not been done yet
-  LOGD(T_Widget, printf, "%s obtain canvas\n", label);
+  LOGD(T_Module, printf, "%s obtain canvas\n", label);
   canvas = std::make_unique<LedFB_GFX>(c);
   //canvas->setRotation(2);            // adafruit coordinates are different from LedFB, so need to rotate it
   return true;
 }
+*/
 
 
-
-// *** ClockWidget
-ClockWidget::ClockWidget() : GenericWidgetProfiles(T_clock, TASK_SECOND) {
-  ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, ClockWidget::_event_hndlr, this, &_hdlr_lmp_change_evt));
-  ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_STATE_EVENTS, ESP_EVENT_ANY_ID, ClockWidget::_event_hndlr, this, &_hdlr_lmp_state_evt));
+// *** ClockModule
+ClockModule::ClockModule() : GenericModuleProfiles(T_clock, TASK_SECOND) {
+  ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, ClockModule::_event_hndlr, this, &_hdlr_lmp_change_evt));
+  ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_STATE_EVENTS, ESP_EVENT_ANY_ID, ClockModule::_event_hndlr, this, &_hdlr_lmp_state_evt));
   clk.cb.id = (size_t)&clk;   // make unique id for clock overlay
   date.cb.id = (size_t)&date; // make unique id for date overlay
 }
 
-ClockWidget::~ClockWidget(){
+ClockModule::~ClockModule(){
   display.detachOverlay( clk.cb.id );
   display.detachOverlay( date.cb.id );
 
@@ -344,7 +300,7 @@ ClockWidget::~ClockWidget(){
   }
 }
 
-void ClockWidget::load_cfg(JsonVariantConst cfg){
+void ClockModule::load_cfg(JsonVariantConst cfg){
   // grab a lock on bitmap canvas
   std::lock_guard<std::mutex> lock(mtx);
 
@@ -380,7 +336,7 @@ void ClockWidget::load_cfg(JsonVariantConst cfg){
   helper.setFont(fonts[clk.font_index]);
   helper.getTextBounds(clk.show_seconds ? "00:69:69" : "69:88", 0, 0, &x, &y, &clk.maxW, &clk.maxH);
   ++clk.maxH;
-  LOGD(T_Widget, printf, "time canvas font:%u, clr:%u, bounds: %u, %u\n", clk.font_index, clk.color_txt, clk.maxW, clk.maxH);
+  LOGD(T_Module, printf, "time canvas font:%u, clr:%u, bounds: %u, %u\n", clk.font_index, clk.color_txt, clk.maxW, clk.maxH);
 */
 
   _textmask_clk = std::make_unique<Arduino_Canvas_Mono>(clk.w, clk.h, nullptr);
@@ -479,7 +435,7 @@ void ClockWidget::load_cfg(JsonVariantConst cfg){
     EVT_POST_DATA(LAMP_SET_EVENTS, e2int(evt::lamp_t::effSwitchTo), &clk.eff_num, sizeof(clk.eff_num));
 }
 
-void ClockWidget::generate_cfg(JsonVariant cfg) const {
+void ClockModule::generate_cfg(JsonVariant cfg) const {
   // clk
   cfg[T_x1pos] = clk.x;
   cfg[T_y1pos] = clk.y;
@@ -512,10 +468,10 @@ void ClockWidget::generate_cfg(JsonVariant cfg) const {
   cfg[T_datefmt] = date.datefmt;
 }
 
-void ClockWidget::widgetRunner(){
+void ClockModule::moduleRunner(){
   // make sure that we have screen to write to
 //  if (!getOverlay()){
-//    LOGW(T_Widget, println, "No overlay available");
+//    LOGW(T_Module, println, "No overlay available");
 //    return;
 //  }
 
@@ -538,7 +494,7 @@ void ClockWidget::widgetRunner(){
   redraw = false;
 }
 
-void ClockWidget::_print_clock(std::tm *tm){
+void ClockModule::_print_clock(std::tm *tm){
   // grab a lock on bitmap canvas
   std::lock_guard<std::mutex> lock(mtx);
 
@@ -560,13 +516,13 @@ void ClockWidget::_print_clock(std::tm *tm){
   if (clk.show_seconds){
     _textmask_clk->setFont(fonts[clk.seconds_font_index]);
     std::strftime(result, std::size(result), ":%S", tm);
-    //LOGV(T_Widget, printf, "fill sec bounds: %d, %d, %u, %u\n", clk.scursor_x, clk.scursor_y-h+1, clk.smaxW-w, h);
-    //LOGV(T_Widget, printf, "sec: %s, font:%u, clr:%u, bounds: %d, %d, %u, %u\n", result, clk.seconds_font_index, clk.color, clk.scursor_x, clk.scursor_y, clk.smaxW, h);
+    //LOGV(T_Module, printf, "fill sec bounds: %d, %d, %u, %u\n", clk.scursor_x, clk.scursor_y-h+1, clk.smaxW-w, h);
+    //LOGV(T_Module, printf, "sec: %s, font:%u, clr:%u, bounds: %d, %d, %u, %u\n", result, clk.seconds_font_index, clk.color, clk.scursor_x, clk.scursor_y, clk.smaxW, h);
     _textmask_clk->print(result);
   }
 }
 
-void ClockWidget::_print_date(std::tm *tm){
+void ClockModule::_print_date(std::tm *tm){
   std::lock_guard<std::mutex> lock(mtx);
   _textmask_date->fillScreen(0);
   char result[20];
@@ -576,38 +532,38 @@ void ClockWidget::_print_date(std::tm *tm){
   _textmask_date->setCursor(date.baseline_shift_x, date.h - date.baseline_shift_y);
 
   _textmask_date->print(result);
-  //LOGD(T_Widget, printf, "Date: %s, font:%u, clr:%u, bounds: %d %d %u %u\n", result, date.font_index, date.color, x, y, date.maxW, h);
+  //LOGD(T_Module, printf, "Date: %s, font:%u, clr:%u, bounds: %d %d %u %u\n", result, date.font_index, date.color, x, y, date.maxW, h);
 }
 
-void ClockWidget::start(){
+void ClockModule::start(){
   // request lamp's status to discover it's power state
   EVT_POST(LAMP_GET_EVENTS, e2int(evt::lamp_t::pwr));
 }
 
-void ClockWidget::stop(){
+void ClockModule::stop(){
   disable();
   //releaseOverlay();
 }
 
-void ClockWidget::_event_hndlr(void* handler, esp_event_base_t base, int32_t id, void* event_data){
+void ClockModule::_event_hndlr(void* handler, esp_event_base_t base, int32_t id, void* event_data){
   LOGV(T_clock, printf, "EVENT %s:%d\n", base, id);
   //if ( base == LAMP_CHANGE_EVENTS )
-    return static_cast<ClockWidget*>(handler)->_lmpChEventHandler(base, id, event_data);
+    return static_cast<ClockModule*>(handler)->_lmpChEventHandler(base, id, event_data);
 
   //if ( base == LAMP_STATE_EVENTS )
-  //  return static_cast<ClockWidget*>(handler)->_lmpChEventHandler(base, id, event_data);
+  //  return static_cast<ClockModule*>(handler)->_lmpChEventHandler(base, id, event_data);
 }
 
-void ClockWidget::_lmpChEventHandler(esp_event_base_t base, int32_t id, void* data){
+void ClockModule::_lmpChEventHandler(esp_event_base_t base, int32_t id, void* data){
   switch (static_cast<evt::lamp_t>(id)){
     // Power control
     case evt::lamp_t::pwron :
-      LOGI(T_clock, println, "activate widget");
+      LOGI(T_clock, println, "activate module");
       redraw = true;
       enable();
       break;
     case evt::lamp_t::pwroff :
-      LOGI(T_clock, println, "suspend widget");
+      LOGI(T_clock, println, "suspend module");
       stop();
       break;
     default:;
@@ -616,7 +572,7 @@ void ClockWidget::_lmpChEventHandler(esp_event_base_t base, int32_t id, void* da
 
 // **** AlarmClock
 
-AlarmClock::AlarmClock() : GenericWidget(T_alrmclock, TASK_SECOND) {
+AlarmClock::AlarmClock() : GenericModule(T_alrmclock, TASK_SECOND) {
   esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::fadeEnd),
     [](void* self, esp_event_base_t base, int32_t id, void* data){ static_cast<AlarmClock*>(self)->_lmpChEventHandler(base, id, data); }, this, &_hdlr_lmp_change_evt
   );
@@ -708,7 +664,7 @@ void AlarmClock::generate_cfg(JsonVariant cfg) const {
   }
 }
 
-void AlarmClock::widgetRunner(){
+void AlarmClock::moduleRunner(){
   std::time_t now;
   std::time(&now);
   std::tm *tm = std::localtime(&now);
@@ -868,62 +824,62 @@ void AlarmClock::_lmpChEventHandler(esp_event_base_t base, int32_t id, void* dat
 }
 
 
-// ****  Widget Manager methods
+// ****  Module Manager methods
 
-void WidgetManager::start(const char* label){
-  LOGD(T_WdgtMGR, printf, "start: %s\n", label ? label : "ALL");
+void ModuleManager::start(const char* label){
+  LOGD(T_ModMGR, printf, "start: %s\n", label ? label : "ALL");
   if (label){
-    // check if such widget is already spawned
-    auto i = std::find_if(_widgets.cbegin(), _widgets.cend(), MatchLabel<widget_pt>(label));
-    if ( i != _widgets.cend() ){
-      LOGD(T_WdgtMGR, println, "already running");
+    // check if such module is already spawned
+    auto i = std::find_if(_modules.cbegin(), _modules.cend(), MatchLabel<module_pt>(label));
+    if ( i != _modules.cend() ){
+      LOGD(T_ModMGR, println, "already running");
       return;
     }
   }
 
   esp_err_t err;
-  std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_widgets, NVS_READONLY, &err);
+  std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_module, NVS_READONLY, &err);
 
   if (err != ESP_OK) {
     // if NVS handle is unavailable then just quit
-    LOGD(T_WdgtMGR, printf, "Err opening NVS handle: %s\n", esp_err_to_name(err));
+    LOGD(T_ModMGR, printf, "Err opening NVS handle: %s\n", esp_err_to_name(err));
     return;
   }
 
-  // check if it's a boot-up and need start all widgets based on previous state in NVS
+  // check if it's a boot-up and need start all modules based on previous state in NVS
   if (!label){
     for (auto l : wdg_list){
       uint32_t state = 0; // value will default to 0, if not yet set in NVS
       handle->get_item(l, state);
-      LOGD(T_WdgtMGR, printf, "Boot state for %s: %u\n", l, state);
-      // if saved state is >0 then widget is active, we can restore it
+      LOGD(T_ModMGR, printf, "Boot state for %s: %u\n", l, state);
+      // if saved state is >0 then module is active, we can restore it
       if (state)
         _spawn(l);
     }
   } else {
-    // start a specific widget
+    // start a specific module
     _spawn(label);
   }
 }
 
-void WidgetManager::stop(const char* label){
+void ModuleManager::stop(const char* label){
   if (!label) return;
-  // check if such widget is already spawned
-  auto i = std::find_if(_widgets.cbegin(), _widgets.cend(), MatchLabel<widget_pt>(label));
-  if ( i != _widgets.cend() ){
-    LOGI(T_WdgtMGR, printf, "deactivate %s\n", label);
-    _widgets.erase(i);
+  // check if such module is already spawned
+  auto i = std::find_if(_modules.cbegin(), _modules.cend(), MatchLabel<module_pt>(label));
+  if ( i != _modules.cend() ){
+    LOGI(T_ModMGR, printf, "deactivate %s\n", label);
+    _modules.erase(i);
     // remove state flag from NVS
-    std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_widgets, NVS_READWRITE);
+    std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_module, NVS_READWRITE);
     handle->erase_item(label);
   }
 }
 
-void WidgetManager::getConfig(JsonObject obj, const char* label){
-  LOGV(T_WdgtMGR, printf, "getConfig for: %s\n", label);
+void ModuleManager::getConfig(JsonObject obj, const char* label){
+  LOGV(T_ModMGR, printf, "getConfig for: %s\n", label);
 
-  auto i = std::find_if(_widgets.begin(), _widgets.end(), MatchLabel<widget_pt>(label));
-  if ( i != _widgets.end() ) {
+  auto i = std::find_if(_modules.begin(), _modules.end(), MatchLabel<module_pt>(label));
+  if ( i != _modules.end() ) {
     (*i)->getConfig(obj);
     String l("wdgt_profile_");
     l += label;
@@ -932,48 +888,48 @@ void WidgetManager::getConfig(JsonObject obj, const char* label){
     return;
   }
 
-  // widget instance is not created, spawn a widget and call to return it's config again
+  // module instance is not created, spawn a module and call to return it's config again
   _spawn(label);
   getConfig(obj, label);
 }
 
-void WidgetManager::setConfig(const char* label, JsonVariantConst cfg){
-  LOGD(T_WdgtMGR, printf, "setConfig for: %s\n", label);
+void ModuleManager::setConfig(const char* label, JsonVariantConst cfg){
+  LOGD(T_ModMGR, printf, "setConfig for: %s\n", label);
 
-  auto i = std::find_if(_widgets.begin(), _widgets.end(), MatchLabel<widget_pt>(label));
-  if ( i == _widgets.end() ) {
-    LOGV(T_WdgtMGR, println, "widget does not exist, spawn a new one");
-    // such widget does not exist currently, spawn a new one and run same call again
+  auto i = std::find_if(_modules.begin(), _modules.end(), MatchLabel<module_pt>(label));
+  if ( i == _modules.end() ) {
+    LOGV(T_ModMGR, println, "module does not exist, spawn a new one");
+    // such module does not exist currently, spawn a new one and run same call again
     _spawn(label);
     setConfig(label, cfg);
     return;
   }
 
-  // apply and save widget's configuration
+  // apply and save module's configuration
   (*i)->setConfig(cfg);
 }
 
-void WidgetManager::_spawn(const char* label){
-  LOGD(T_WdgtMGR, printf, "spawn: %s\n", label);
-  // spawn a new widget based on label
-  std::unique_ptr<GenericWidget> w;
+void ModuleManager::_spawn(const char* label){
+  LOGD(T_ModMGR, printf, "spawn: %s\n", label);
+  // spawn a new module based on label
+  std::unique_ptr<GenericModule> w;
 
   if(std::string_view(label).compare(T_clock) == 0){
-    w = std::make_unique<ClockWidget>();
+    w = std::make_unique<ClockModule>();
   } else if(std::string_view(label).compare(T_alrmclock) == 0){
     w = std::make_unique<AlarmClock>();
   } else if(std::string_view(label).compare(T_txtscroll) == 0){
     w = std::make_unique<TextScrollerWgdt>();
   } else
-    return;   // no such widget exist
+    return;   // no such module exist
 
-  // load widget's config from file
+  // load module's config from file
   w->load();
   // move it into container
-  _widgets.emplace_back(std::move(w));
+  _modules.emplace_back(std::move(w));
 
   esp_err_t err;
-  std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_widgets, NVS_READWRITE, &err);
+  std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_module, NVS_READWRITE, &err);
 
   if (err != ESP_OK)
     return;
@@ -982,36 +938,36 @@ void WidgetManager::_spawn(const char* label){
   handle->set_item(label, state);
 }
 
-void WidgetManager::getWidgetsState(Interface *interf) const {
-  if (!_widgets.size()) return;
+void ModuleManager::getModulesStatuses(Interface *interf) const {
+  if (!_modules.size()) return;
 
   interf->json_frame_value();
   // generate values 
-  for ( auto i = _widgets.cbegin(); i != _widgets.cend(); ++i){
-    String s(A_set_widget_onoff, 12 );   // truncate '*' "set_wdgtena_*"
+  for ( auto i = _modules.cbegin(); i != _modules.cend(); ++i){
+    String s(A_set_mod_state, std::size_t(A_set_mod_state)-1 );   // chop '*' out of "set_modstate_*"
     interf->value( const_cast<char*>( (s + (*i)->getLabel()).c_str() ), true);
   }
   // not needed
   //interf->json_frame_flush();
 }
 
-GenericWidget* WidgetManager::getWidgetPtr(const char* label){
-  if (!_widgets.size()) return nullptr;
-  auto i = std::find_if(_widgets.begin(), _widgets.end(), MatchLabel<widget_pt>(label));
-  if ( i == _widgets.end() )
+GenericModule* ModuleManager::getModulePtr(const char* label){
+  if (!_modules.size()) return nullptr;
+  auto i = std::find_if(_modules.begin(), _modules.end(), MatchLabel<module_pt>(label));
+  if ( i == _modules.end() )
     return nullptr;
 
   return (*i).get();
 }
 
-bool WidgetManager::getWidgetStatus(const char* label) const {
-  auto i = std::find_if(_widgets.cbegin(), _widgets.cend(), MatchLabel<widget_pt>(label));
-  return (i != _widgets.end());
+bool ModuleManager::getModuleStatus(const char* label) const {
+  auto i = std::find_if(_modules.cbegin(), _modules.cend(), MatchLabel<module_pt>(label));
+  return (i != _modules.end());
 }
 
-void WidgetManager::switchProfile(const char* label, int32_t idx){
-  auto i = std::find_if(_widgets.begin(), _widgets.end(), MatchLabel<widget_pt>(label));
-  if (i != _widgets.end())
+void ModuleManager::switchProfile(const char* label, int32_t idx){
+  auto i = std::find_if(_modules.begin(), _modules.end(), MatchLabel<module_pt>(label));
+  if (i != _modules.end())
     (*i)->switchProfile(idx);
 }
 
@@ -1019,7 +975,7 @@ void WidgetManager::switchProfile(const char* label, int32_t idx){
 
 // *** Running Text overlay 
 
-TextScrollerWgdt::TextScrollerWgdt() : GenericWidgetProfiles(T_txtscroll, 5000) {
+TextScrollerWgdt::TextScrollerWgdt() : GenericModuleProfiles(T_txtscroll, 5000) {
   //esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, TextScrollerWgdt::_event_hndlr, this, &_hdlr_lmp_change_evt);
   //esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_STATE_EVENTS, ESP_EVENT_ANY_ID, TextScrollerWgdt::_event_hndlr, this, &_hdlr_lmp_state_evt);
 
@@ -1098,7 +1054,7 @@ void TextScrollerWgdt::generate_cfg(JsonVariant cfg) const {
   cfg[T_refresh] = _weathercfg.refresh / 3600000;   // ms in hr
 }
 
-void TextScrollerWgdt::widgetRunner(){
+void TextScrollerWgdt::moduleRunner(){
   LOGV(T_txtscroll, printf, "pogoda %lu\n", getInterval());
   // this periodic runner needed only for weather update
 
@@ -1154,12 +1110,12 @@ void TextScrollerWgdt::_lmpChEventHandler(esp_event_base_t base, int32_t id, voi
   switch (static_cast<evt::lamp_t>(id)){
     // Power control
     case evt::lamp_t::pwron :
-      LOGI(T_clock, println, "activate widget");
+      LOGI(T_clock, println, "activate module");
       redraw = true;
       enable();
       break;
     case evt::lamp_t::pwroff :
-      LOGI(T_clock, println, "suspend widget");
+      LOGI(T_clock, println, "suspend module");
       stop();
       break;
     default:;
@@ -1257,9 +1213,4 @@ void TextScrollerWgdt::_getOpenWeather(){
 }
 
 
-
-
-// ****
-// Widgets Manager instance
-WidgetManager informer;
 

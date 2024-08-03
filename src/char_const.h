@@ -45,15 +45,6 @@
 /** набор служебных текстовых констант (не для локализации)
  */
 
-// LOG tags
-static constexpr const char* T_Effect = "Effect";
-static constexpr const char* T_EffCfg = "EffCfg";
-static constexpr const char* T_EffWrkr = "EffWrkr";
-static constexpr const char* T_Fade = "Fade";
-static constexpr const char* T_Widget = "Widget";
-static constexpr const char* T_WebUI = "WebUI";
-static constexpr const char* T_WdgtMGR = "WdgtMGR";
-
 // NVS ns
 static constexpr const char* T_lamp = "lamp";
 
@@ -144,13 +135,15 @@ static constexpr const char* T_eff_tracks_loop = "eff_tracks_loop";
 static constexpr const char* T_mp3mute = "mp3mute";
 
 
-// Widgets
-static constexpr const char* T_widgets_cfg = "/widgets.json";
-static constexpr const char* T_clock = "clock";                     // LABEL Clock widget
+// Modules
+static constexpr const char* T_mod_mgr_cfg = "/modules.json";
+static constexpr const char* T_module = "module";                  // NVS namespace
+// Module labels
+static constexpr const char* T_clock = "clock";                     // LABEL Clock module
 static constexpr const char* T_alrmclock = "alrmclock";             // LABEL Alarm Clock / Cockoo
-static constexpr const char* T_txtscroll = "txtscroll";             // LABEL Text Scroller widget
-static constexpr const char* T_widgets = "widgets";                 // NVS namespace
+static constexpr const char* T_txtscroll = "txtscroll";             // LABEL Text Scroller module
 static constexpr const char* T_weather = "weather";
+
 
 static constexpr const char* T_color1 = "color1";
 static constexpr const char* T_color2 = "color2";
@@ -172,12 +165,12 @@ static constexpr const char* T_x1pos = "x1pos";
 static constexpr const char* T_y1pos = "y1pos";
 static constexpr const char* T_x2pos = "x2pos";
 static constexpr const char* T_y2pos = "y2pos";
-// Widget Clock
+// module Clock
 static constexpr const char* T_clkw = "clkw";
 static constexpr const char* T_clkh = "clkh";
 static constexpr const char* T_datew = "datew";
 static constexpr const char* T_dateh = "dateh";
-// Widget Alarm clock
+// module Alarm clock
 static constexpr const char* T_seconds = "seconds";
 static constexpr const char* T_hr = "hr";                           // alarm hour
 static constexpr const char* T_cockoo_hr = "cockoo_hr";             // hourly cockoo
@@ -208,6 +201,7 @@ static constexpr const char* T_refresh = "refresh";
 
 // Events
 static constexpr const char* T_event = "event";
+static constexpr const char* T_crontab = "crontab";
 
 
 // Other
@@ -217,9 +211,11 @@ static constexpr const char* T_arg = "arg";
 static constexpr const char* T_datefmt = "datefmt";
 static constexpr const char* T_cfg = "cfg";
 static constexpr const char* T_clicks = "clicks";
+static constexpr const char* T_cmd = "cmd";
 static constexpr const char* T_ctrls = "ctrls";
 static constexpr const char* T_demoRndOrder = "demoRndOrder";
 static constexpr const char* T_demoRndCtrls = "demoRndCtrls";
+static constexpr const char* T_descr = "descr";
 static constexpr const char* T_device = "device";
 static constexpr const char* T_edit = "edit";
 static constexpr const char* T_Enable = "Enable";
@@ -405,7 +401,7 @@ static constexpr const char* A_ui_page_effects = "ui_page_effects";             
 static constexpr const char* A_ui_page_drawing = "ui_page_drawing";             // Contstruct UI page - drawing panel
 static constexpr const char* A_ui_block_switches = "ui_block_switches";         // Contstruct UI block - show extended switches at effects page
 static constexpr const char* A_ui_page_setupdevs = "ui_page_setupdevs";         // periferal devices setup menu page
-static constexpr const char* A_ui_page_widgets = "ui_page_widgets";             // Widgets page
+static constexpr const char* A_ui_page_modules = "ui_page_modules";             // modules page
 static constexpr const char* A_effect_switch = "eff_sw_*";                      // Wildcard Effect switcher action
 static constexpr const char* A_effect_switch_idx = "eff_sw_idx";                // Switch Effect to specified index
 static constexpr const char* A_effect_switch_next = "eff_sw_next";              // Switch to next effect
@@ -425,11 +421,11 @@ static constexpr const char* A_encoder_gpio = "*et_encoder_gpio";               
 // DFPlayer
 static constexpr const char* A_dfplayer_dev = "*et_dfplayer_device";            // get/set DFPlayer device configuration
 static constexpr const char* A_dfplayer_opt = "*et_dfplayer_opt";               // get/set DFPlayer functions
-// Widgets
-static constexpr const char* A_set_widget = "set_wdgt_*";                       // set Widget's configuration
-static constexpr const char* A_set_widget_onoff = "set_wdgtena_*";              // enable/disable Widget by name
-static constexpr const char* A_wdgt_profile = "wdgt_profile_*";                 // switch widget's profile
-static constexpr const char* A_set_wcfg_alrm = "set_wcfg_alrm";                 // set alarm widget item configuration
+// Modules
+static constexpr const char* A_set_mod_cfg = "set_modcfg_*";                    // set Modules's configuration
+static constexpr const char* A_set_mod_state = "set_modstate_*";                // enable/disable Module by label
+static constexpr const char* A_set_mod_preset = "set_modpreset_*";              // switch module's preset
+static constexpr const char* A_set_mod_alrm = "set_mod_alrm";                   // set alarm module item's configuration
 
 static constexpr const char* A_set_gpio = "*et_gpio";                           // get/set gpios action
 static constexpr const char* A_getset_other = "*et_other";                      // get/set settings "other" page handler

@@ -550,7 +550,7 @@ void Lamp::save_flags(){
 
   if (err != ESP_OK) {
     // if NVS handle is unavailable then just quit
-    LOGD(T_WdgtMGR, printf, "Err opening NVS handle: %s\n", esp_err_to_name(err));
+    LOGD(T_ModMGR, printf, "Err opening NVS handle: %s\n", esp_err_to_name(err));
     return;
   }
 

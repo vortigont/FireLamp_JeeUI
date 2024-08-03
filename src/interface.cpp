@@ -41,15 +41,14 @@ Copyright © 2020 Dmytro Korniienko (kDn)
 #include "devices.h"
 #include "effects.h"
 #include "templates.hpp"
-
-#include LANG_FILE                  //"text_res.h"
-
 #include "basicui.h"
 #include "actions.hpp"
 #include <type_traits>
 #include "evtloop.h"
 #include "devices.h"
-#include "widgets.hpp"
+#include "components.hpp"
+#include LANG_FILE                  //"text_res.h"
+
 
 // версия ресурсов в стороннем джейсон файле
 #define UIDATA_VERSION      20
@@ -174,31 +173,35 @@ void uidata_page_selector(Interface *interf, const JsonObject *data, const char*
     interf->json_section_uidata();
 
     switch (idx){
-        case page::setup_gpio :   // настрока gpio
+        // настрока gpio
+        case page::setup_gpio :
             interf->uidata_pick( "lampui.pages.gpiosetup" );
             interf->json_frame_flush();
             getset_gpios(interf,  nullptr, NULL);
             break;
-        case page::widgetslist :   // список виджетов
+        // список виджетов
+        case page::widgetslist :
             interf->uidata_pick( "lampui.pages.wdgtslist" );
             interf->json_frame_flush();
-            informer.getWidgetsState(interf);
+            zookeeper.getModulesStatuses(interf);
             break;
-        case page::wdgt_clock : {  // настройки часов
+        // настройки часов
+        case page::wdgt_clock : {
             interf->uidata_pick( "lampui.pages.wdgt.ovrclock" );
             interf->json_frame_flush();
             JsonDocument doc;
-            informer.getConfig(doc.to<JsonObject>(), T_clock);
+            zookeeper.getConfig(doc.to<JsonObject>(), T_clock);
             interf->json_frame_value(doc);
             break;
         }
-        case page::wdgt_alrmclock : {  // настройки будильника
+        // настройки будильника
+        case page::wdgt_alrmclock : {
             interf->uidata_pick( "lampui.pages.wdgt.alrmclock" );
             interf->json_frame_flush();
             // Main frame MUST be flushed before sending other ui_data sections
             interf->json_frame_interface();
             interf->json_section_uidata();
-            if (informer.getWidgetStatus(T_alrmclock)){
+            if (zookeeper.getModuleStatus(T_alrmclock)){
                 // if alarm widget is active - load alarms config
                 interf->uidata_pick("lampui.sections.wdgt_alarm.hdr");
                 for (int i = 0; i !=4; ++i){
@@ -209,7 +212,7 @@ void uidata_page_selector(Interface *interf, const JsonObject *data, const char*
                 // prepare an object with alarms setups, loaded via js from WebUI
                 interf->json_frame_jscall("alarm_items_load");
                 JsonDocument doc;
-                informer.getConfig(doc.to<JsonObject>(), T_alrmclock);  // generate config with nested alarm event objects
+                zookeeper.getConfig(doc.to<JsonObject>(), T_alrmclock);  // generate config with nested alarm event objects
                 interf->json_frame_add(doc);
             } else {
                 // otherwise just show a message that no config could be set w/o activating the widget
@@ -222,7 +225,7 @@ void uidata_page_selector(Interface *interf, const JsonObject *data, const char*
             interf->uidata_pick( "lampui.pages.wdgt.txtscroll" );
             interf->json_frame_flush();
             JsonDocument doc;
-            informer.getConfig(doc.to<JsonObject>(), T_txtscroll);
+            zookeeper.getConfig(doc.to<JsonObject>(), T_txtscroll);
             interf->json_frame_value(doc);
             break;
         }
@@ -276,15 +279,10 @@ void ui_section_menu(Interface *interf, const JsonObject *data, const char* acti
     // создаем меню
     interf->json_section_menu();
 
-    interf->option(A_ui_page_effects, TINTF_000);        //  Эффекты
-    //interf->option(TCONST_lamptext, TINTF_001);       //  Вывод текста
+    interf->option(A_ui_page_effects, TINTF_000);           //  Эффекты
     //interf->option(A_ui_page_drawing, TINTF_0CE);        //  Рисование (оключено, т.к. используется старая схема с глобальным оверлеем)
-    interf->option(A_ui_page_widgets, "Widgets");        //  Widgets
-#ifdef USE_STREAMING
-    interf->option(TCONST_streaming, TINTF_0E2);      //  Трансляция
-#endif
-    //interf->option(TCONST_show_event, TINTF_011);     //  События
-    basicui::menuitem_settings(interf);               //  настройки
+    interf->option(A_ui_page_modules, "Modules");           //  Modules
+    basicui::menuitem_settings(interf);                     //  настройки
 
     interf->json_section_end();
 }
@@ -436,7 +434,7 @@ void ui_page_tm1637_setup(Interface *interf, const JsonObject *data, const char*
 }
 
 // this will trigger widgets list page opening
-void ui_page_widgets(Interface *interf, const JsonObject *data, const char* action){
+void ui_page_modules(Interface *interf, const JsonObject *data, const char* action){
   uidata_page_selector(interf, data, action, page::widgetslist);
 }
 
@@ -1357,6 +1355,44 @@ void rebuild_effect_list_files(lstfile_t lst){
     );
 }
 
+// start/stop module EmbUI command
+static void set_module_state(Interface *interf, const JsonObject *data, const char* action){
+  if (!data || !(*data).size()) return;   // call with no data
+  bool state = (*data)[action];
+  //set_wdgtena_*
+  std::string_view lbl = std::string_view (action).substr(12);
+  // start / stop module
+  state ? zookeeper.start(lbl.data()) : zookeeper.stop(lbl.data());
+}
+
+// set module's configuration from WebUI
+static void set_module_cfg(Interface *interf, const JsonObject *data, const char* action){
+  if (!data || !(*data).size()) return;   // call with no data
+  // "set_wdgt_*" - action mask
+  zookeeper.setConfig(std::string_view (action).substr(9).data(), *data);  // set_wdgt_
+}
+
+static void set_alrm_item(Interface *interf, const JsonObject *data, const char* action){
+  AlarmClock* ptr = reinterpret_cast<AlarmClock*>( zookeeper.getModulePtr(T_alrmclock) );
+  if (!ptr) return;
+  ptr->setAlarmItem((*data));
+}
+
+static void switch_profile(Interface *interf, const JsonObject *data, const char* action){
+
+  std::string_view lbl(action);
+  lbl.remove_prefix(std::string_view("wdgt_profile_").length()); // chop off prefix
+
+  zookeeper.switchProfile(lbl.data(), (*data)[action]);
+
+  // send to webUI refreshed module's config
+  JsonDocument doc;
+  zookeeper.getConfig(doc.to<JsonObject>(), lbl.data());
+  interf->json_frame_value(doc);
+  interf->json_frame_flush();
+}
+
+
 /**
  * Набор конфигурационных переменных и callback-обработчиков EmbUI
  */
@@ -1377,7 +1413,7 @@ void embui_actions_register(){
     embui.action.add(A_ui_page, ui_page_selector);                          // ui page switcher, same as in basicui::
     embui.action.add(A_ui_page_effects, ui_page_effects);                   // меню: переход на страницу "Эффекты"
     embui.action.add(A_ui_page_drawing, ui_page_drawing);                   // меню: переход на страницу "Рисование"
-    embui.action.add(A_ui_page_widgets, ui_page_widgets);                   // меню: переход на страницу "Виджеты"
+    embui.action.add(A_ui_page_modules, ui_page_modules);                   // меню: переход на страницу "Модули"
     embui.action.add(A_ui_block_switches, ui_block_mainpage_switches);      // нажатие кнопки "еще..." на странице "Эффекты"
 
     // device controls
@@ -1427,4 +1463,10 @@ void embui_actions_register(){
 
     embui.action.add(TCONST_set_mic, set_settings_mic);
     embui.action.add(A_dev_mike, set_micflag);
+
+    // Modules - action handlers for managing modules
+    embui.action.add(A_set_mod_state, set_module_state);                // start/stop module
+    embui.action.add(A_set_mod_cfg, set_module_cfg);                    // set module configuration (this wildcard should be the last one)
+    embui.action.add(A_set_mod_alrm, set_alrm_item);                    // set alarm item
+    embui.action.add(A_set_mod_preset, switch_profile);                 // switch module's config profile
 }
