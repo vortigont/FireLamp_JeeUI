@@ -39,11 +39,13 @@
 #include "fonts.h"
 
 // *** ClockModule
-ClockModule::ClockModule() : GenericModuleProfiles(T_clock, TASK_SECOND) {
+ClockModule::ClockModule() : GenericModuleProfiles(T_clock) {
   ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, ClockModule::_event_hndlr, this, &_hdlr_lmp_change_evt));
   ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_STATE_EVENTS, ESP_EVENT_ANY_ID, ClockModule::_event_hndlr, this, &_hdlr_lmp_state_evt));
   clk.cb.id = (size_t)&clk;   // make unique id for clock overlay
   date.cb.id = (size_t)&date; // make unique id for date overlay
+  set( TASK_SECOND, TASK_FOREVER, [this](){ moduleRunner(); } );
+  ts.addTask(*this);
 }
 
 ClockModule::~ClockModule(){
@@ -297,13 +299,15 @@ void ClockModule::_print_date(std::tm *tm){
 }
 
 void ClockModule::start(){
+  // run Task scheduler
+  enable();
   // request lamp's status to discover it's power state
   EVT_POST(LAMP_GET_EVENTS, e2int(evt::lamp_t::pwr));
 }
 
 void ClockModule::stop(){
+  // stop Task scheduler
   disable();
-  //releaseOverlay();
 }
 
 void ClockModule::_event_hndlr(void* handler, esp_event_base_t base, int32_t id, void* event_data){
@@ -333,11 +337,13 @@ void ClockModule::_lmpChEventHandler(esp_event_base_t base, int32_t id, void* da
 
 // **** AlarmClock
 
-AlarmClock::AlarmClock() : GenericModule(T_alrmclock, TASK_SECOND) {
+AlarmClock::AlarmClock() : GenericModule(T_alrmclock) {
   esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::fadeEnd),
     [](void* self, esp_event_base_t base, int32_t id, void* data){ static_cast<AlarmClock*>(self)->_lmpChEventHandler(base, id, data); }, this, &_hdlr_lmp_change_evt
   );
 //  ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_STATE_EVENTS, ESP_EVENT_ANY_ID, AlarmClock::_event_hndlr, this, &_hdlr_lmp_state_evt));
+  set( TASK_SECOND, TASK_FOREVER, [this](){ moduleRunner(); } );
+  ts.addTask(*this);
 }
 
 AlarmClock::~AlarmClock(){

@@ -55,7 +55,7 @@ Copyright © 2020 Dmytro Korniienko (kDn)
 
 
 // версия ресурсов в стороннем джейсон файле
-#define UIDATA_VERSION      20
+#define UIDATA_VERSION      21
 
 #define DEMO_MIN_PERIOD     10
 #define DEMO_MAX_PERIOD     900
@@ -82,10 +82,10 @@ enum class page : uint16_t {
     setup_tm1637,
     setup_devices,      // page with configuration links to external devices
 
-    widgetslist = 101,      // available widgets page
-    wdgt_clock,
-    wdgt_alrmclock,
-    wdgt_txtsroll,
+    modules = 101,      // available widgets page
+    mod_clock,
+    mod_alrmclock,
+    mod_txtsroll,
     setup_gpio
 };
 
@@ -184,14 +184,14 @@ void uidata_page_selector(Interface *interf, const JsonObject *data, const char*
             getset_gpios(interf,  nullptr, NULL);
             break;
         // список виджетов
-        case page::widgetslist :
-            interf->uidata_pick( "lampui.pages.wdgtslist" );
+        case page::modules :
+            interf->uidata_pick( "lampui.pages.modules_list" );
             interf->json_frame_flush();
             zookeeper.getModulesStatuses(interf);
             break;
         // настройки часов
-        case page::wdgt_clock : {
-            interf->uidata_pick( "lampui.pages.wdgt.ovrclock" );
+        case page::mod_clock : {
+            interf->uidata_pick( "lampui.pages.module.ovrclock" );
             interf->json_frame_flush();
             JsonDocument doc;
             zookeeper.getConfig(doc.to<JsonObject>(), T_clock);
@@ -199,18 +199,18 @@ void uidata_page_selector(Interface *interf, const JsonObject *data, const char*
             break;
         }
         // настройки будильника
-        case page::wdgt_alrmclock : {
-            interf->uidata_pick( "lampui.pages.wdgt.alrmclock" );
+        case page::mod_alrmclock : {
+            interf->uidata_pick( "lampui.pages.module.alrmclock" );
             interf->json_frame_flush();
             // Main frame MUST be flushed before sending other ui_data sections
             interf->json_frame_interface();
             interf->json_section_uidata();
             if (zookeeper.getModuleStatus(T_alrmclock)){
                 // if alarm widget is active - load alarms config
-                interf->uidata_pick("lampui.sections.wdgt_alarm.hdr");
+                interf->uidata_pick("lampui.sections.mod_alarm.hdr");
                 for (int i = 0; i !=4; ++i){
                     String idx(i);
-                    interf->uidata_pick( "lampui.sections.wdgt_alarm.item", NULL, idx.c_str() );
+                    interf->uidata_pick( "lampui.sections.mod_alarm.item", NULL, idx.c_str() );
                 }
                 interf->json_frame_flush();
                 // prepare an object with alarms setups, loaded via js from WebUI
@@ -220,13 +220,13 @@ void uidata_page_selector(Interface *interf, const JsonObject *data, const char*
                 interf->json_frame_add(doc);
             } else {
                 // otherwise just show a message that no config could be set w/o activating the widget
-                interf->uidata_pick("lampui.sections.wdgt_alarm.msg_inactive");
+                interf->uidata_pick("lampui.sections.mod_alarm.msg_inactive");
             }
             break;
         }
         // Text scroller
-        case page::wdgt_txtsroll : {
-            interf->uidata_pick( "lampui.pages.wdgt.txtscroll" );
+        case page::mod_txtsroll : {
+            interf->uidata_pick( "lampui.pages.module.txtscroll" );
             interf->json_frame_flush();
             JsonDocument doc;
             zookeeper.getConfig(doc.to<JsonObject>(), T_txtscroll);
@@ -439,7 +439,7 @@ void ui_page_tm1637_setup(Interface *interf, const JsonObject *data, const char*
 
 // this will trigger widgets list page opening
 void ui_page_modules(Interface *interf, const JsonObject *data, const char* action){
-  uidata_page_selector(interf, data, action, page::widgetslist);
+  uidata_page_selector(interf, data, action, page::modules);
 }
 
 /**
@@ -1363,8 +1363,9 @@ void rebuild_effect_list_files(lstfile_t lst){
 static void set_module_state(Interface *interf, const JsonObject *data, const char* action){
   if (!data || !(*data).size()) return;   // call with no data
   bool state = (*data)[action];
-  //set_wdgtena_*
-  std::string_view lbl = std::string_view (action).substr(12);
+  // set_mod_state_*
+  std::string_view lbl(action);
+  lbl.remove_prefix(std::string_view(A_set_mod_state).length()-1);    // chop off prefix before '*'
   // start / stop module
   state ? zookeeper.start(lbl.data()) : zookeeper.stop(lbl.data());
 }
@@ -1372,8 +1373,10 @@ static void set_module_state(Interface *interf, const JsonObject *data, const ch
 // set module's configuration from WebUI
 static void set_module_cfg(Interface *interf, const JsonObject *data, const char* action){
   if (!data || !(*data).size()) return;   // call with no data
-  // "set_wdgt_*" - action mask
-  zookeeper.setConfig(std::string_view (action).substr(9).data(), *data);  // set_wdgt_
+  // "set_modcfg_*"
+  std::string_view lbl(action);
+  lbl.remove_prefix(std::string_view(A_set_mod_cfg).length()-1);    // chop off prefix before '*'
+  zookeeper.setConfig(std::string_view (action).substr(9).data(), *data);  // set_modcfg_
 }
 
 static void set_alrm_item(Interface *interf, const JsonObject *data, const char* action){
@@ -1385,7 +1388,7 @@ static void set_alrm_item(Interface *interf, const JsonObject *data, const char*
 static void switch_profile(Interface *interf, const JsonObject *data, const char* action){
 
   std::string_view lbl(action);
-  lbl.remove_prefix(std::string_view("wdgt_profile_").length()); // chop off prefix
+  lbl.remove_prefix(std::string_view(A_set_mod_preset).length()-1); // chop off prefix before '*'
 
   zookeeper.switchProfile(lbl.data(), (*data)[action]);
 

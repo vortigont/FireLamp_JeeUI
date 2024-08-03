@@ -119,6 +119,8 @@ void setup() {
     // Hookup IPC event publisher callback
     ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, event_publisher, NULL, NULL));
 
+    omnicron.start();
+
     // spawn Modules instances from saved configurations, this must be done AFTER display initialisation
     zookeeper.start();
 

@@ -87,13 +87,16 @@
 #define DEF_WEATHER_RETRY       5000
 
 // array with all available module names (labels) we can run
-static constexpr std::array<const char*, 3> wdg_list = {T_clock, T_alrmclock, T_txtscroll};
+static constexpr std::array<const char*, 4> wdg_list = {
+  T_clock,
+  T_alrmclock,
+  T_txtscroll,
+  T_omnicron
+};
 
 // ****  GenericModule methods
 
-GenericModule::GenericModule(const char* wlabel, unsigned periodic) : label(wlabel) {
-  set( periodic, TASK_FOREVER, [this](){ moduleRunner(); } );
-  ts.addTask(*this);
+GenericModule::GenericModule(const char* wlabel) : label(wlabel) {
 }
 
 void GenericModule::getConfig(JsonObject obj) const {
@@ -284,7 +287,7 @@ void ModuleManager::getConfig(JsonObject obj, const char* label){
   auto i = std::find_if(_modules.begin(), _modules.end(), MatchLabel<module_pt>(label));
   if ( i != _modules.end() ) {
     (*i)->getConfig(obj);
-    String l("wdgt_profile_");
+    String l(A_set_mod_preset, strlen(A_set_mod_preset) - 1 );   // chop last '*'
     l += label;
     obj[l] = (*i)->getCurrentProfileNum();
     
@@ -347,7 +350,7 @@ void ModuleManager::getModulesStatuses(Interface *interf) const {
   interf->json_frame_value();
   // generate values 
   for ( auto i = _modules.cbegin(); i != _modules.cend(); ++i){
-    String s(A_set_mod_state, std::size_t(A_set_mod_state)-1 );   // chop '*' out of "set_modstate_*"
+    String s(A_set_mod_state, std::string_view(A_set_mod_state).length() - 1 );   // chop '*' out of "set_modstate_*"
     interf->value( const_cast<char*>( (s + (*i)->getLabel()).c_str() ), true);
   }
   // not needed
@@ -378,11 +381,14 @@ void ModuleManager::switchProfile(const char* label, int32_t idx){
 
 // *** Running Text overlay 
 
-TextScrollerWgdt::TextScrollerWgdt() : GenericModuleProfiles(T_txtscroll, 5000) {
+TextScrollerWgdt::TextScrollerWgdt() : GenericModuleProfiles(T_txtscroll) {
   //esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, TextScrollerWgdt::_event_hndlr, this, &_hdlr_lmp_change_evt);
   //esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_STATE_EVENTS, ESP_EVENT_ANY_ID, TextScrollerWgdt::_event_hndlr, this, &_hdlr_lmp_state_evt);
 
   _renderer = { (size_t)(this), [&](LedFB_GFX *gfx){ _scroll_line(gfx); } }; 
+
+  set( 5000, TASK_FOREVER, [this](){ moduleRunner(); } );
+  ts.addTask(*this);
 }
 
 TextScrollerWgdt::~TextScrollerWgdt(){

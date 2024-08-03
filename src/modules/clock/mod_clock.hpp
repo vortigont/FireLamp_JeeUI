@@ -37,7 +37,7 @@
 
 #include "modules/mod_manager.hpp"
 
-class ClockModule : public GenericModuleProfiles {
+class ClockModule : public GenericModuleProfiles, public Task {
 
 enum class ovrmixer_t {
     bgfade,
@@ -104,13 +104,13 @@ public:
     ClockModule();
     ~ClockModule();
 
-    void moduleRunner() override;
+    void moduleRunner();
 
     void start() override;
     void stop() override;
 };
 
-class AlarmClock : public GenericModule {
+class AlarmClock : public GenericModule, public Task {
     // типы будильника
     enum class alarm_t {
         onetime = 0,
@@ -175,11 +175,11 @@ public:
     AlarmClock();
     ~AlarmClock();
 
-    void moduleRunner() override;
+    void moduleRunner();
 
     void setAlarmItem(JsonVariant cfg);
 
-    //void start() override;
-    //void stop() override;
+    void start() override { enable(); };
+    void stop() override { disable(); };
 };
 

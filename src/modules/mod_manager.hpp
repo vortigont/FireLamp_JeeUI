@@ -54,7 +54,7 @@
  * has a periodic timer ticker and could attach/detach to event bus
  * 
  */
-class GenericModule : public Task {
+class GenericModule {
 
 protected:
   // module's access mutex
@@ -87,11 +87,8 @@ public:
      * @param label - module label identifier
      * @param interval - ticker execution interval in ms
      */
-    GenericModule(const char* label, unsigned interval);
+    GenericModule(const char* label);
     virtual ~GenericModule(){};
-
-    // function to run on ticker call 
-    virtual void moduleRunner() = 0;
 
     /**
      * @brief load module's config from persistent storage and calls start()
@@ -106,10 +103,10 @@ public:
     virtual void save();
 
     // start module ticker
-    virtual void start(){ enable(); };
+    virtual void start() = 0;
 
     // stop module ticker
-    virtual void stop(){ disable(); };
+    virtual void stop() = 0;
 
     /**
      * @brief Get module's configuration packed into a nested json object ['module_label']
@@ -197,7 +194,7 @@ class GenericModuleProfiles : public GenericModule {
     void _load_profile(int idx);
 
 public:
-    GenericModuleProfiles(const char* wlabel, unsigned interval) : GenericModule(wlabel, interval){}
+    GenericModuleProfiles(const char* label) : GenericModule(label){}
 
     /**
      * @brief load module's config from persistent storage and calls start()
@@ -358,7 +355,7 @@ public:
 
 
 
-class TextScrollerWgdt : public GenericModuleProfiles {
+class TextScrollerWgdt : public GenericModuleProfiles, public Task {
 
 struct WeatherCfg {
   String apikey;
@@ -398,7 +395,7 @@ public:
   TextScrollerWgdt();
   ~TextScrollerWgdt();
 
-  void moduleRunner() override;
+  void moduleRunner();
 
   void start() override;
   void stop() override;

@@ -39,3 +39,6 @@
 
 // Module Manager instance
 ModuleManager zookeeper;
+
+// Cron scheduler
+OmniCron omnicron;

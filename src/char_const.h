@@ -143,6 +143,7 @@ static constexpr const char* T_clock = "clock";                     // LABEL Clo
 static constexpr const char* T_alrmclock = "alrmclock";             // LABEL Alarm Clock / Cockoo
 static constexpr const char* T_txtscroll = "txtscroll";             // LABEL Text Scroller module
 static constexpr const char* T_weather = "weather";
+static constexpr const char* T_omnicron = "omnicron";               // CronoS scheduler
 
 
 static constexpr const char* T_color1 = "color1";
