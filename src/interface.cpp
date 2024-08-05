@@ -183,7 +183,7 @@ void uidata_page_selector(Interface *interf, const JsonObject *data, const char*
             interf->json_frame_flush();
             getset_gpios(interf,  nullptr, NULL);
             break;
-        // список виджетов
+        // show a page with a list of available modules
         case page::modules :
             interf->uidata_pick( "lampui.pages.modules_list" );
             interf->json_frame_flush();
@@ -1385,7 +1385,7 @@ static void set_alrm_item(Interface *interf, const JsonObject *data, const char*
   ptr->setAlarmItem((*data));
 }
 
-static void switch_profile(Interface *interf, const JsonObject *data, const char* action){
+static void switch_module_preset(Interface *interf, const JsonObject *data, const char* action){
 
   std::string_view lbl(action);
   lbl.remove_prefix(std::string_view(A_set_mod_preset).length()-1); // chop off prefix before '*'
@@ -1475,5 +1475,5 @@ void embui_actions_register(){
     embui.action.add(A_set_mod_state, set_module_state);                // start/stop module
     embui.action.add(A_set_mod_cfg, set_module_cfg);                    // set module configuration (this wildcard should be the last one)
     embui.action.add(A_set_mod_alrm, set_alrm_item);                    // set alarm item
-    embui.action.add(A_set_mod_preset, switch_profile);                 // switch module's config profile
+    embui.action.add(A_set_mod_preset, switch_module_preset);           // switch module's config preset
 }

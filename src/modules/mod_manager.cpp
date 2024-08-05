@@ -40,6 +40,7 @@
 */
 
 #include <ctime>
+#include "time.h"
 #include <string_view>
 #include "mod_manager.hpp"
 #include "EmbUI.h"
@@ -50,34 +51,8 @@
 // modules
 #include "fonts.h"
 #include "clock/mod_clock.hpp"
+#include "omnicron/omnicron.hpp"
 
-
-// размеры шрифтов при выводе времени
-/*
-// Adafruit fonts
-#include "Fonts/Org_01.h"                   // классный мелкий квадратный шрифт 5х5 /english/
-//#include "Fonts/Picopixel.h"                // proportional up to 5x5 3x5  /english/
-#include "Fonts/TomThumb.h"                 // 3x5 /english/
-//#include "Fonts/FreeSerif9pt7b.h"           // "01:33:30" влезает время целиком
-//#include "Fonts/FreeSerifBold9pt7b.h"       // "01:35:5 " толстый аккуратный шрифт, последня цифра не всегда влезает /english/
-
-  //#include "Fonts/FreeMono9pt7b.h"           // моноширинный тонкий шрифт оставляет много свободного места между символами, влезает "01:09:"
-  //#include "Fonts/FreeMonoBold9pt7b.h"       // "01:11:"
-  //#include "Fonts/FreeSans9pt7b.h"           // "01:33:2", некрасивые тонкие точки в ":"
-  //#include "Fonts/FreeSansOblique9pt7b.h"    // "01:33:2" очень тонкий шрифт, курсив 
-  //#include "Fonts/FreeSerifItalic9pt7b.h"     // "01:33:30" влезает время целиком, курсив /english/
-
-
-// Russian fonts
-#include "FreeSerif9.h"                        // "01:35:5" не лезет последний символ
-#include "FreeSerifBold9.h"                    // "01:35:5" не лезет последний символ
-
-#include "Cooper6.h"                        // "01:35:5" не лезет последний символ
-#include "Cooper8.h"                        // "01:35:5" не лезет последний символ
-//#include "CrystalNormal6.h"                 // "01:33:30" - тонкий, 1 пиксель, занимает чуть больше половины экрана
-#include "CrystalNormal8.h"                 // "01:33:30" - тонкий, 1-2 пикселя, занимает пол экрана в высоту, и почти весь в ширину
-#include "CrystalNormal10.h"                // "01:35:5" пушка! не влезает последний символ
-*/
 
 #define CLOCK_DEFAULT_YOFFSET   14          // default offset for clock module
 #define DEF_BITMAP_WIDTH        64
@@ -96,7 +71,7 @@ static constexpr std::array<const char*, 4> wdg_list = {
 
 // ****  GenericModule methods
 
-GenericModule::GenericModule(const char* wlabel) : label(wlabel) {
+GenericModule::GenericModule(const char* label, bool default_cfg_file) : label(label), _def_config(default_cfg_file) {
 }
 
 void GenericModule::getConfig(JsonObject obj) const {
@@ -128,39 +103,22 @@ void GenericModule::save(){
   LOGD(T_Module, printf, "%s: writing cfg to file\n", label);
   embuifs::serialize2file(doc, T_mod_mgr_cfg);
 }
-/*
-void GenericModule::save(JsonVariantConst cfg){
-  // save supplied config to persistent storage
-  JsonDocument doc;
-  embuifs::deserializeFile(doc, T_mod_mgr_cfg);
 
-  // get/created nested object for specific module
-  JsonVariant dst = doc[label].isNull() ? doc[label].to<JsonObject>() : doc[label];
-  JsonObjectConst o = cfg.as<JsonObjectConst>();
-
-  for (JsonPairConst kvp : o){
-    dst[kvp.key()] = kvp.value();
-  }
-
-  embuifs::serialize2file(doc, T_mod_mgr_cfg);
-}
-*/
-
-
-
-// ****  GenericModuleProfiles methods
-
-String GenericModuleProfiles::_mkFileName(){
+String GenericModule::mkFileName(){
   // make file name
   String fname( "/" );
-  fname += label;
+  fname += _def_config ? T_mod_mgr_cfg : label;
   fname += ".json";
   return fname;
 }
 
+
+// ****  GenericModuleProfiles methods
+
+
 void GenericModuleProfiles::switchProfile(int idx){
   JsonDocument doc;
-  embuifs::deserializeFile(doc, _mkFileName().c_str());
+  embuifs::deserializeFile(doc, mkFileName().c_str());
 
   // restore last used profile if specified one is wrong or < 0
   if (idx < 0 || idx > MAX_NUM_OF_PROFILES)
@@ -176,7 +134,7 @@ void GenericModuleProfiles::switchProfile(int idx){
 
 void GenericModuleProfiles::save(){
   JsonDocument doc;
-  embuifs::deserializeFile(doc, _mkFileName().c_str());
+  embuifs::deserializeFile(doc, mkFileName().c_str());
 
   JsonVariant arr = doc[T_profiles].isNull() ? doc[T_profiles].to<JsonArray>() : doc[T_profiles];
   // if array does not have proper num of objects, prefill it with empty ones
@@ -195,7 +153,7 @@ void GenericModuleProfiles::save(){
   doc[T_last_profile] = _profilenum;
 
   LOGD(T_Module, printf, "%s: writing cfg to file\n", label);
-  embuifs::serialize2file(doc, _mkFileName().c_str());
+  embuifs::serialize2file(doc, mkFileName().c_str());
 }
 
 // ****  GenericGFXModule methods

@@ -60,8 +60,11 @@ protected:
   // module's access mutex
   std::mutex mtx;
 
-	// module label or "name"
-	const char* label;
+	// module label or "name", can't be changed once defined
+	const char* const label;
+
+	// use shared module's config file for settings, or save in module's own config named as '${label}.json'
+	const bool _def_config;
 
 	/**
 	 * @brief derived method should generate object's configuration into provided JsonVariant
@@ -79,78 +82,88 @@ protected:
 	 */
 	virtual void load_cfg(JsonVariantConst cfg) = 0;
 
+    /**
+     * @brief generate configuration file's name
+     * 
+     * @return String 
+     */
+	String mkFileName();
+
+
 public:
 
-    /**
-     * @brief Construct a new Generic Module object
-     * 
-     * @param label - module label identifier
-     * @param interval - ticker execution interval in ms
-     */
-    GenericModule(const char* label);
-    virtual ~GenericModule(){};
+	/**
+	 * @brief Construct a new Generic Module object
+	 * 
+	 * @param label - module label identifier
+	 * @param interval - ticker execution interval in ms
+	 */
+	GenericModule(const char* label, bool default_cfg_file = true);
+	virtual ~GenericModule(){};
 
-    /**
-     * @brief load module's config from persistent storage and calls start()
-     * 
-     */
-    virtual void load();
+	/**
+	 * @brief load module's config from persistent storage and calls start()
+	 * 
+	 */
+	virtual void load();
 
-    /**
-     * @brief save current module's configuration to file
-     * 
-     */
-    virtual void save();
+	/**
+	 * @brief save current module's configuration to file
+	 * 
+	 */
+	virtual void save();
 
-    // start module ticker
-    virtual void start() = 0;
+	// start module ticker
+	virtual void start() = 0;
 
-    // stop module ticker
-    virtual void stop() = 0;
+	// stop module ticker
+	virtual void stop() = 0;
 
-    /**
-     * @brief Get module's configuration packed into a nested json object ['module_label']
-     * used to feed control's values to WebUI/MQTT
-     */
-    void getConfig(JsonObject obj) const;
+	/**
+	 * @brief Get module's configuration packed into a nested json object ['module_label']
+	 * used to feed control's values to WebUI/MQTT
+	 */
+	void getConfig(JsonObject obj) const;
 
-    /**
-     * @brief Set module's configuration packed into json object
-     * this call will also SAVE supplied configuration to persistent storage
-     */
-    void setConfig(JsonVariantConst cfg);
+	/**
+	 * @brief Set module's configuration packed into json object
+	 * this call will also SAVE supplied configuration to persistent storage
+	 */
+	void setConfig(JsonVariantConst cfg);
 
-    /**
-     * @brief Get module's Label
-     * 
-     * @return const char* 
-     */
-    const char* getLabel() const { return label; }
+	/**
+	 * @brief Get module's Label
+	 * 
+	 * @return const char* 
+	 */
+	const char* getLabel() const { return label; }
 
-    // Configuration profiles handling
+	// Configuration profiles handling
 
-    /**
-     * @brief switch to specific profile number
-     * 
-     * @param value 
-     * @return true on success
-     * @return false if profile does not exist
-     */
-    virtual void switchProfile(int32_t value){};
+	/**
+	 * @brief switch to specific profile number
+	 * 
+	 * @param value 
+	 * @return true on success
+	 * @return false if profile does not exist
+	 */
+	virtual void switchProfile(int32_t value){};
 
-    /**
-     * @brief Get the Current Profile Num value
-     * 
-     * @return uint32_t 
-     */
-    virtual uint32_t getCurrentProfileNum() const { return 0; };
+	/**
+	 * @brief Get the Current Profile Num value
+	 * 
+	 * @return uint32_t 
+	 */
+	virtual uint32_t getCurrentProfileNum() const { return 0; };
 
-    /**
-     * @brief returns number of available slots for stored profiles
-     * 
-     * @return uint32_t number of slots, if 0 is returned then profiles are not supported
-     */
-    virtual uint32_t profilesAvailable() const { return 0; }
+	/**
+	 * @brief returns number of available slots for stored profiles
+	 * 
+	 * @return uint32_t number of slots, if 0 is returned then profiles are not supported
+	 */
+	virtual uint32_t profilesAvailable() const { return 0; }
+
+
 };
 
 using module_pt = std::unique_ptr<GenericModule>;
@@ -189,12 +202,10 @@ class GenericModuleProfiles : public GenericModule {
 
     int32_t _profilenum{0};
 
-    String _mkFileName();
-
     void _load_profile(int idx);
 
 public:
-    GenericModuleProfiles(const char* label) : GenericModule(label){}
+    GenericModuleProfiles(const char* label) : GenericModule(label, false){}
 
     /**
      * @brief load module's config from persistent storage and calls start()
