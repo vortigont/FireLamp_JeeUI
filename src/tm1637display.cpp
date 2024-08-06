@@ -178,7 +178,13 @@ void TMDisplay::_event_picker(esp_event_base_t base, int32_t id, void* data){
 
 void TMDisplay::_onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info){
     switch (event){
-      case SYSTEM_EVENT_STA_GOT_IP: {
+
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+      case ARDUINO_EVENT_WIFI_STA_GOT_IP:
+#else
+      case SYSTEM_EVENT_STA_GOT_IP:
+#endif
+      {
         String ip("IP Addr ");
         ip.concat(WiFi.localIP().toString());
         ip.replace( (char)0x2e, (char)0x6f ); // replace '.' with 'o'
