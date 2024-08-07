@@ -121,6 +121,7 @@ void setup() {
 
     // spawn Modules instances from saved configurations, this must be done AFTER display initialisation
     zookeeper.start();
+    zookeeper.setHandlers();
 
     LOGI(T_Main, printf, "Setup complete: free heap: %uk, PSRAM:%uk\n\n", ESP.getFreeHeap()/1024, ESP.getFreePsram()/1024);
 }   // End setup()

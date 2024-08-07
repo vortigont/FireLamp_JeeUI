@@ -181,5 +181,15 @@ public:
 
     void start() override { enable(); };
     void stop() override { disable(); };
+
+    /**
+     * @brief Construct an EmbUI page with module's state/configuration
+     * 
+     * @param interf 
+     * @param data 
+     * @param action 
+     */
+    void mkEmbUIpage(Interface *interf, const JsonObject *data, const char* action) override;
+
 };
 

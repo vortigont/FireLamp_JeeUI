@@ -1122,11 +1122,10 @@
               "onChange": true
             },
             {
-              "id": "ui_page",
+              "id": "ui_page_module_clock",
               "html": "button",
               "type": 0,
-              "label": "Параметры",
-              "value": 102
+              "label": "🔨 Параметры"
             }
           ]
         },
@@ -1142,11 +1141,10 @@
               "onChange": true
             },
             {
-              "id": "ui_page",
+              "id": "ui_page_module_alrmclock",
               "html": "button",
               "type": 0,
-              "label": "Параметры",
-              "value": 103
+              "label": "🔨 Параметры"
             }
           ]
         },
@@ -1157,25 +1155,43 @@
             {
               "id":"set_modstate_txtscroll",
               "html":"input",
-              "label":"Слой бегущей строки",
+              "label":"🔤 Слой бегущей строки",
               "type":"checkbox",
               "onChange": true
             },
             {
-              "id": "ui_page",
+              "id": "ui_page_module_txtscroll",
               "html": "button",
               "type": 0,
-              "label": "Параметры",
-              "value": 104
+              "label": "🔨 Параметры"
+            }
+          ]
+        },
+        {
+          "section":"omnicron",
+          "line":true,
+          "block":[
+            {
+              "id":"set_modstate_omnicron",
+              "html":"input",
+              "label":"🗒 Планировщик OmniCron",
+              "type":"checkbox",
+              "onChange": true
+            },
+            {
+              "id": "ui_page_module_omnicron",
+              "html": "button",
+              "type": 0,
+              "label": "Параметры"
             }
           ]
         }
       ]
     },
     "module":{
-      "ovrclock":{
+      "clock":{
         "section":"set_modcfg_clock",
-        "label":"Часы в наложении",
+        "label":"🕓 Часы в наложении",
         "main":true,
         "block":[
           {
@@ -1564,7 +1580,7 @@
       },
       "alrmclock":{
         "section":"mod_alrmclock",
-        "label":"Будильник / Кукушка",
+        "label":"🔔 Будильник / Кукушка",
         "main":true,
         "block":[
           {
@@ -1774,7 +1790,7 @@
       },
       "txtscroll":{
         "section":"set_modcfg_txtscroll",
-        "label":"Бегущая строка",
+        "label":"🔤 Бегущая строка",
         "main":true,
         "block":[
           {
@@ -2191,7 +2207,7 @@
         "block":[
           {
             "html":"comment",
-            "label":"Установки будильников"
+            "label":"Установки будильников 🔔"
           }
         ]
       },

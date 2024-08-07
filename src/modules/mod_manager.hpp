@@ -48,6 +48,8 @@
 #define DEFAULT_TEXT_COLOR  54000
 #define MAX_NUM_OF_PROFILES 10
 
+static constexpr const char* T_ui_pages_module_prefix = "lampui.pages.module.";
+
 /**
  * @brief an abstract class to implement dynamically loaded components or modules
  * practically it is just a class that is able to load/save it's state serialized,
@@ -163,6 +165,14 @@ public:
 	 */
 	virtual uint32_t profilesAvailable() const { return 0; }
 
+    /**
+     * @brief Construct an EmbUI page with module's state/configuration
+     * 
+     * @param interf 
+     * @param data 
+     * @param action 
+     */
+    virtual void mkEmbUIpage(Interface *interf, const JsonObject *data, const char* action);
 
 };
 
@@ -263,21 +273,22 @@ struct TextBitMapCfg {
  */
 class ModuleManager {
 
-    // module instances container
-    std::list<module_pt> _modules;
+public:
+    ModuleManager(){};
+    ~ModuleManager();
+
+    // copy semantics forbidden
+    ModuleManager(const ModuleManager&) = delete;
+    ModuleManager& operator=(const ModuleManager &) = delete;
+    ModuleManager(ModuleManager &&) = delete;
+    ModuleManager & operator=(ModuleManager &&) = delete;
 
     /**
-     * @brief spawn a new instance of a module with supplied config
-     * used with configuration is suplied via webui for non existing modules
-     * @param label 
-     * @param cfg whether to use a supplied configuration or load from NVS
-     * @param persistent if 'true' a spawned module will save supplied configuration to NVS, set this to false if spawning module with cfg FROM NVS to avoid exta writes
+     * @brief register handlers for EmbUI
+     * required to enable EmbbUI control actions for UI pages, etc...
+     * 
      */
-    void _spawn(const char* label);
-
-public:
-    //ModuleManager();
-    //~ModuleManager(){};
+    void setHandlers();
 
     /**
      * @brief start module
@@ -349,6 +360,38 @@ public:
      * @param idx 
      */
     void switchProfile(const char* label, int32_t idx);
+
+private:
+
+    // module instances container
+    std::list<module_pt> _modules;
+
+    /**
+     * @brief spawn a new instance of a module with supplied config
+     * used with configuration is suplied via webui for non existing modules
+     * @param label 
+     * @param cfg whether to use a supplied configuration or load from NVS
+     * @param persistent if 'true' a spawned module will save supplied configuration to NVS, set this to false if spawning module with cfg FROM NVS to avoid exta writes
+     */
+    void _spawn(const char* label);
+
+    /**
+     * @brief a callback method for EmbUI to generate modules UI pages
+     * will render a default module's setup/state page based on serialized configuration data 
+     * 
+     * @param interf 
+     * @param data 
+     * @param action 
+     */
+    void _make_embui_page(Interface *interf, const JsonObject *data, const char* action);
+
+    // EmbUI's handler to spawn/shutdown modules
+    void _set_module_state(Interface *interf, const JsonObject *data, const char* action);
+
+    void _set_module_cfg(Interface *interf, const JsonObject *data, const char* action);
+
+    void _switch_module_preset(Interface *interf, const JsonObject *data, const char* action);
+
 };
 
 

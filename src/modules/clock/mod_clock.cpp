@@ -37,6 +37,10 @@
 
 #include "mod_clock.hpp"
 #include "fonts.h"
+#include "EmbUI.h"
+
+static constexpr const char* A_set_mod_alrm           = "set_mod_alrm";                   // set alarm module item's configuration
+
 
 // *** ClockModule
 ClockModule::ClockModule() : GenericModuleProfiles(T_clock) {
@@ -344,6 +348,9 @@ AlarmClock::AlarmClock() : GenericModule(T_alrmclock) {
 //  ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_STATE_EVENTS, ESP_EVENT_ANY_ID, AlarmClock::_event_hndlr, this, &_hdlr_lmp_state_evt));
   set( TASK_SECOND, TASK_FOREVER, [this](){ moduleRunner(); } );
   ts.addTask(*this);
+
+  // add EmbUI's handler to set Alarm's config
+  embui.action.add(A_set_mod_alrm, [this](Interface *interf, const JsonObject *data, const char* action){ setAlarmItem((*data)); } );
 }
 
 AlarmClock::~AlarmClock(){
@@ -351,6 +358,8 @@ AlarmClock::~AlarmClock(){
     esp_event_handler_instance_unregister_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::fadeEnd), _hdlr_lmp_change_evt);
     _hdlr_lmp_change_evt = nullptr;
   }
+
+  embui.action.remove(A_set_mod_alrm);
 }
 
 void AlarmClock::load_cfg(JsonVariantConst cfg){
@@ -590,3 +599,34 @@ void AlarmClock::_lmpChEventHandler(esp_event_base_t base, int32_t id, void* dat
   _fade_await = false;
 }
 
+void AlarmClock::mkEmbUIpage(Interface *interf, const JsonObject *data, const char* action){
+  String key(T_ui_pages_module_prefix);
+  key += label;
+  // load Module's structure from a EmbUI's UI data
+  interf->json_frame_interface();
+  interf->json_section_uidata();
+  interf->uidata_pick( key.c_str() );
+  // Main frame MUST be flushed before sending other ui_data sections
+  interf->json_frame_flush();
+
+  interf->json_frame_interface();
+  interf->json_section_uidata();
+
+  interf->uidata_pick("lampui.sections.mod_alarm.hdr");
+  for (int i = 0; i !=_alarms.size(); ++i){
+    String idx(i);
+    interf->uidata_pick( "lampui.sections.mod_alarm.item", NULL, idx.c_str() );
+  }
+  interf->json_frame_flush();
+  // prepare an object with alarms setups, loaded via js from WebUI
+  interf->json_frame_jscall("alarm_items_load");
+
+  JsonDocument doc;
+  getConfig(doc.to<JsonObject>());
+  interf->json_frame_add(doc);
+
+  // otherwise just show a message that no config could be set w/o activating the widget
+  //interf->uidata_pick("lampui.sections.mod_alarm.msg_inactive");
+
+  interf->json_frame_flush();
+}

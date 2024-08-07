@@ -422,11 +422,6 @@ static constexpr const char* A_encoder_gpio = "*et_encoder_gpio";               
 // DFPlayer
 static constexpr const char* A_dfplayer_dev = "*et_dfplayer_device";            // get/set DFPlayer device configuration
 static constexpr const char* A_dfplayer_opt = "*et_dfplayer_opt";               // get/set DFPlayer functions
-// Modules
-static constexpr const char* A_set_mod_cfg = "set_modcfg_*";                    // set Modules's configuration
-static constexpr const char* A_set_mod_state = "set_modstate_*";                // enable/disable Module by label
-static constexpr const char* A_set_mod_preset = "set_modpreset_*";              // switch module's preset
-static constexpr const char* A_set_mod_alrm = "set_mod_alrm";                   // set alarm module item's configuration
 
 static constexpr const char* A_set_gpio = "*et_gpio";                           // get/set gpios action
 static constexpr const char* A_getset_other = "*et_other";                      // get/set settings "other" page handler

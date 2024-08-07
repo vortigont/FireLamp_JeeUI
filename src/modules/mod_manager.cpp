@@ -40,7 +40,7 @@
 */
 
 #include <ctime>
-#include "time.h"
+//#include "time.h"
 #include <string_view>
 #include "mod_manager.hpp"
 #include "EmbUI.h"
@@ -68,6 +68,14 @@ static constexpr std::array<const char*, 4> wdg_list = {
   T_txtscroll,
   T_omnicron
 };
+
+static constexpr const char* T_ui_page_module_mask    = "ui_page_module_*";
+static constexpr const char* T_ui_pages_modlist       = "lampui.pages.modules_list";
+
+static constexpr const char* A_set_mod_state          = "set_modstate_*";                 // enable/disable Module by label
+static constexpr const char* A_set_mod_cfg            = "set_modcfg_*";                   // set Modules's configuration
+static constexpr const char* A_set_mod_preset         = "set_modpreset_*";                // switch module's preset
+
 
 // ****  GenericModule methods
 
@@ -110,6 +118,21 @@ String GenericModule::mkFileName(){
   fname += _def_config ? T_mod_mgr_cfg : label;
   fname += ".json";
   return fname;
+}
+
+void GenericModule::mkEmbUIpage(Interface *interf, const JsonObject *data, const char* action){
+  String key(T_ui_pages_module_prefix);
+  key += label;
+  // load Module's structure from a EmbUI's UI data
+  interf->json_frame_interface();
+  interf->json_section_uidata();
+  interf->uidata_pick( key.c_str() );
+  interf->json_frame_flush();
+  // serialize and send module's configuration as a 'value' frame
+  JsonDocument doc;
+  getConfig(doc.to<JsonObject>());
+  interf->json_frame_value(doc);
+  interf->json_frame_flush();
 }
 
 
@@ -190,6 +213,36 @@ bool GenericGFXModule::getCanvas(){
 
 // ****  Module Manager methods
 
+ModuleManager::~ModuleManager(){
+  embui.action.remove(T_ui_page_module_mask);
+  embui.action.remove(A_ui_page_modules);
+}
+
+void ModuleManager::setHandlers(){
+  // handler for modules list page
+  embui.action.add(A_ui_page_modules,
+    [this](Interface *interf, const JsonObject *data, const char* action){
+      interf->json_frame_interface();
+      interf->json_section_uidata();
+      interf->uidata_pick( T_ui_pages_modlist );
+      interf->json_frame_flush();
+      getModulesStatuses(interf);
+      interf->json_frame_flush();
+    }
+  );
+
+  // handler for module's confiration page generators
+  embui.action.add(A_set_mod_state, [this](Interface *interf, const JsonObject *data, const char* action){ _set_module_state(interf, data, action); } );
+
+  // handler to start/stop module via EmbUI
+  embui.action.add(T_ui_page_module_mask, [this](Interface *interf, const JsonObject *data, const char* action){ _make_embui_page(interf, data, action); } );
+
+  // handler to set module's configuration
+  embui.action.add(A_set_mod_cfg, [this](Interface *interf, const JsonObject *data, const char* action){ _set_module_cfg(interf, data, action); } );
+
+}
+
+
 void ModuleManager::start(const char* label){
   LOGD(T_ModMGR, printf, "start: %s\n", label ? label : "ALL");
   if (label){
@@ -206,12 +259,13 @@ void ModuleManager::start(const char* label){
 
   if (err != ESP_OK) {
     // if NVS handle is unavailable then just quit
-    LOGD(T_ModMGR, printf, "Err opening NVS handle: %s\n", esp_err_to_name(err));
+    LOGW(T_ModMGR, printf, "Err opening NVS handle:%s (%d)\n", esp_err_to_name(err), err);
     return;
   }
 
   // check if it's a boot-up and need start all modules based on previous state in NVS
   if (!label){
+    if (err != ESP_OK) return;    // NVS namespace is not available, won't run any modules
     for (auto l : wdg_list){
       uint32_t state = 0; // value will default to 0, if not yet set in NVS
       handle->get_item(l, state);
@@ -335,6 +389,57 @@ void ModuleManager::switchProfile(const char* label, int32_t idx){
     (*i)->switchProfile(idx);
 }
 
+void ModuleManager::_make_embui_page(Interface *interf, const JsonObject *data, const char* action){
+  std::string_view lbl(action);
+  lbl.remove_prefix(std::string_view(T_ui_page_module_mask).length()-1);    // chop off prefix string
+
+  // check if such module instance exist, if not - then spawn it
+  if (!getModuleStatus(lbl.data()))
+    _spawn(lbl.data());
+
+  auto p = getModulePtr(lbl.data());
+  if (p){
+    // call module's method to build it's UI page
+    LOGD(T_ModMGR, printf, "mk mod page:%s\n", lbl.data());
+    p->mkEmbUIpage(interf, data, action);
+  }
+}
+
+// start/stop module EmbUI command
+void ModuleManager::_set_module_state(Interface *interf, const JsonObject *data, const char* action){
+  //if (!data || !(*data).size()) return;   // call with no data
+  bool state = (*data)[action];
+  // set_mod_state_*
+  std::string_view lbl(action);
+  lbl.remove_prefix(std::string_view(A_set_mod_state).length()-1);    // chop off prefix before '*'
+  // start / stop module
+  state ? start(lbl.data()) : stop(lbl.data());
+}
+
+// set module's configuration from WebUI
+void ModuleManager::_set_module_cfg(Interface *interf, const JsonObject *data, const char* action){
+  //if (!data || !(*data).size()) return;   // call with no data
+  std::string_view lbl(action);
+  lbl.remove_prefix(std::string_view(A_set_mod_cfg).length()-1);    // chop off prefix before '*'
+  setConfig(lbl.data(), *data);
+}
+
+void ModuleManager::_switch_module_preset(Interface *interf, const JsonObject *data, const char* action){
+
+  std::string_view lbl(action);
+  lbl.remove_prefix(std::string_view(A_set_mod_preset).length()-1); // chop off prefix before '*'
+
+  switchProfile(lbl.data(), (*data)[action]);
+
+  // send to webUI refreshed module's config
+  JsonDocument doc;
+  getConfig(doc.to<JsonObject>(), lbl.data());
+  interf->json_frame_value(doc);
+  interf->json_frame_flush();
+}
+
+
+
 
 
 // *** Running Text overlay 
@@ -396,7 +501,8 @@ void TextScrollerWgdt::load_cfg(JsonVariantConst cfg){
   _last_redraw = millis();
 
   // weather update
-  restart();
+  enableIfNot();
+  forceNextIteration();
 }
 
 void TextScrollerWgdt::generate_cfg(JsonVariant cfg) const {
@@ -491,7 +597,7 @@ void TextScrollerWgdt::_lmpChEventHandler(esp_event_base_t base, int32_t id, voi
 */
 
 void TextScrollerWgdt::_getOpenWeather(){
-  if (!_weathercfg.apikey.length() || !_weathercfg.city_id) return;   // no API key - no weather
+  if (!_weathercfg.apikey.length() || !_weathercfg.city_id) { disable(); return; }   // no API key - no weather
 
   // http://api.openweathermap.org/data/2.5/weather?id=1850147&units=metric&lang=ru&APPID=your_API_KEY>
   String url("http://api.openweathermap.org/data/2.5/weather?units=metric&lang=ru&id=");
