@@ -136,6 +136,15 @@ void GenericModule::mkEmbUIpage(Interface *interf, const JsonObject *data, const
   getConfig(doc.to<JsonObject>());
   interf->json_frame_value(doc);
   interf->json_frame_flush();
+  // if this module is multi-profile, then send current profile's value
+  if (profilesAvailable()){
+    interf->json_frame_value();
+    String s(A_set_mod_preset);
+    s.remove(s.length()-1, 1);
+    s += getLabel();
+    interf->value(s, getCurrentProfileNum());
+    interf->json_frame_flush();
+  }
 }
 
 
@@ -217,9 +226,10 @@ bool GenericGFXModule::getCanvas(){
 // ****  Module Manager methods
 
 ModuleManager::~ModuleManager(){
-  embui.action.remove(T_ui_page_module_mask);
-  embui.action.remove(A_ui_page_modules);
+  unsetHandlers();
 }
+
+
 
 void ModuleManager::setHandlers(){
   // handler for modules list page
@@ -243,6 +253,24 @@ void ModuleManager::setHandlers(){
   // handler to set module's configuration
   embui.action.add(A_set_mod_cfg, [this](Interface *interf, const JsonObject *data, const char* action){ _set_module_cfg(interf, data, action); } );
 
+  // switch module presets
+  embui.action.add(A_set_mod_preset, [this](Interface *interf, const JsonObject *data, const char* action){ _switch_module_preset(interf, data, action); } );
+
+  esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_SET_EVENTS, ESP_EVENT_ANY_ID,
+    [](void* self, esp_event_base_t base, int32_t id, void* data){ static_cast<ModuleManager*>(self)->_cmdEventHandler(base, id, data); },
+    this, &_hdlr_cmd_evt
+  );
+}
+
+// sunsribe from event bus
+void ModuleManager::unsetHandlers(){
+  embui.action.remove(A_ui_page_modules);
+  embui.action.remove(A_set_mod_state);
+  embui.action.remove(T_ui_page_module_mask);
+  embui.action.remove(A_set_mod_cfg);
+
+  esp_event_handler_instance_unregister_with(evt::get_hndlr(), LAMP_SET_EVENTS, ESP_EVENT_ANY_ID, _hdlr_cmd_evt);
+  _hdlr_cmd_evt = nullptr;
 }
 
 
@@ -394,6 +422,14 @@ void ModuleManager::switchProfile(const char* label, int32_t idx){
     (*i)->switchProfile(idx);
 }
 
+uint32_t ModuleManager::profilesAvailable(const char* label) const {
+  auto i = std::find_if(_modules.begin(), _modules.end(), MatchLabel<module_pt>(label));
+  if (i != _modules.end())
+    return (*i)->profilesAvailable();
+
+  return 0;
+}
+
 void ModuleManager::_make_embui_page(Interface *interf, const JsonObject *data, const char* action){
   std::string_view lbl(action);
   lbl.remove_prefix(std::string_view(T_ui_page_module_mask).length()-1);    // chop off prefix string
@@ -443,6 +479,45 @@ void ModuleManager::_switch_module_preset(Interface *interf, const JsonObject *d
   interf->json_frame_flush();
 }
 
+void ModuleManager::_cmdEventHandler(esp_event_base_t base, int32_t id, void* data){
+  switch (static_cast<evt::lamp_t>(id)){
+    // Preset control
+    case evt::lamp_t::modClk : {
+      if (*reinterpret_cast<int32_t*>(data))
+        start(T_clock);
+      else
+        stop(T_clock);
+      break;
+    }
+
+    case evt::lamp_t::modClkPreset : {
+      int idx = *reinterpret_cast<int*>(data);
+      if (idx == -1)
+        switchProfile(T_clock, random(profilesAvailable(T_clock)));
+      else
+        switchProfile(T_clock, idx);
+      break;
+    }
+
+    case evt::lamp_t::modTxtScroller : {
+      if (*reinterpret_cast<int32_t*>(data))
+        start(T_txtscroll);
+      else
+        stop(T_txtscroll);
+      break;
+    }
+
+    case evt::lamp_t::modTxtScrollerPreset : {
+      int idx = *reinterpret_cast<int*>(data);
+      if (idx == -1)
+        switchProfile(T_txtscroll, random(profilesAvailable(T_txtscroll)));
+      else
+        switchProfile(T_txtscroll, idx);
+      break;
+    }
+    default:;
+  }
+}
 
 
 

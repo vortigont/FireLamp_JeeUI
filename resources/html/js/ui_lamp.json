@@ -1796,7 +1796,7 @@
             "label":"Профиль",
             "block":[
               {
-                "id": "modpreset_txtscroll",
+                "id": "set_modpreset_txtscroll",
                 "html":"input",
                 "type": "number",
                 "onChange": true,

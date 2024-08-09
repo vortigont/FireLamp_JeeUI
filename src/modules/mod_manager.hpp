@@ -237,7 +237,7 @@ public:
      * 
      * @return uint32_t 
      */
-    uint32_t getCurrentProfileNum() const final { return _profilenum; };
+    uint32_t getCurrentProfileNum() const override final { return _profilenum; };
 
     /**
      * @brief returns number of available slots for stored profiles
@@ -284,11 +284,14 @@ public:
     ModuleManager & operator=(ModuleManager &&) = delete;
 
     /**
-     * @brief register handlers for EmbUI
+     * @brief register handlers for EmbUI and event bus
      * required to enable EmbbUI control actions for UI pages, etc...
      * 
      */
     void setHandlers();
+
+    // unregister handlers
+    void unsetHandlers();
 
     /**
      * @brief start module
@@ -361,10 +364,18 @@ public:
      */
     void switchProfile(const char* label, int32_t idx);
 
+    uint32_t profilesAvailable(const char* label) const;
+
+
 private:
 
     // module instances container
     std::list<module_pt> _modules;
+
+    esp_event_handler_instance_t _hdlr_cmd_evt = nullptr;
+
+    // command events handler
+    void _cmdEventHandler(esp_event_base_t base, int32_t id, void* data);
 
     /**
      * @brief spawn a new instance of a module with supplied config

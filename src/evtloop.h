@@ -93,12 +93,23 @@ enum class lamp_t:int32_t {
   alarmTrigger,             // Alarm event. Play alarm track. param int - track to play
   alarmStop,                // Stop alarm actions event
 
+  // Demo
+  demo = 60,                // Demo enable/disable. Param int p: 0 - off, 1 - off, 2 - pwrtoggle
+  demoTimer,                // Set Demo timer. Param insigned p: >0, time in seconds
+
   // ext devices control
   btnLock = 100,            // Lock button
   btnUnLock,                // UnLock button
   btnLockState,             // request for button lock state, ButtonEventHandler will reply with LAMP_STATE_EVENTS:: btnUnLock/btnLock
 
   encoderMode = 110,        // change event, which mode encoder has switched to, param: unsigned
+
+  // Module manager
+  modClk = 250,             // Enable/disable Clock module. param: unsigned n, if zero, disable, other - enable
+  modClkPreset,             // switch Clock preset, param: signed n, if negative switch to random profile
+  modTxtScroller,           // Enable/disable Text module. param: unsigned n, if zero, disable, other - enable
+  modTxtScrollerPreset,     // switch TextScroller preset, param: signed n, if negative switch to random profile
+
 
   // **** state change / notification events ****
   fadeStart = 1000,

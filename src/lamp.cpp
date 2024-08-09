@@ -574,8 +574,11 @@ void Lamp::_events_subsribe(){
 
 void Lamp::event_hndlr(void* handler_args, esp_event_base_t base, int32_t id, void* event_data){
   LOGV(T_lamp, printf, "event_hndlr %s:%d\n", base, id);
-  if (base == LAMP_SET_EVENTS || base == LAMP_GET_EVENTS )
+  if (base == LAMP_SET_EVENTS)
     return reinterpret_cast<Lamp*>(handler_args)->_event_picker_cmd(base, id, event_data);
+
+  if (base == LAMP_GET_EVENTS )
+    return reinterpret_cast<Lamp*>(handler_args)->_event_picker_get(base, id, event_data);
 
   if (base == LAMP_CHANGE_EVENTS || base == LAMP_STATE_EVENTS )
     return reinterpret_cast<Lamp*>(handler_args)->_event_picker_state(base, id, event_data);
@@ -584,6 +587,7 @@ void Lamp::event_hndlr(void* handler_args, esp_event_base_t base, int32_t id, vo
 
 void Lamp::events_unsubsribe(){
   esp_event_handler_instance_unregister_with(evt::get_hndlr(), ESP_EVENT_ANY_BASE, ESP_EVENT_ANY_ID, _events_lamp_cmd);
+  _events_lamp_cmd = nullptr;
 }
 
 // handle command events and react accordingly with lamp actions
@@ -591,6 +595,14 @@ void Lamp::_event_picker_cmd(esp_event_base_t base, int32_t id, void* data){
 
     switch (static_cast<evt::lamp_t>(id)){
     // Power control
+      case evt::lamp_t::pwr : {
+        uint32_t v = *reinterpret_cast<uint32_t*>(data);
+        if (v == 2)
+          power();
+        else
+          power(v);
+        return;
+      }
       case evt::lamp_t::pwron :
         power(true);
         return;
@@ -651,14 +663,33 @@ void Lamp::_event_picker_cmd(esp_event_base_t base, int32_t id, void* data){
         break;
       }
 
-    // Get State Commands
-      case evt::lamp_t::pwr :
-        EVT_POST(LAMP_STATE_EVENTS, vopts.pwrState ? e2int(evt::lamp_t::pwron) : e2int(evt::lamp_t::pwroff));
+    // Demo control
+      case evt::lamp_t::demo : {
+        uint32_t v = *reinterpret_cast<uint32_t*>(data);
+        if (v == 2)
+          demoMode(!getDemoMode());
+        else
+          demoMode(v);
+        return;
+      }
+      case evt::lamp_t::demoTimer :
+        setDemoTime(*reinterpret_cast<uint32_t*>(data));
         break;
 
       default:;
     }
 
+}
+
+void Lamp::_event_picker_get(esp_event_base_t base, int32_t id, void* data){
+  switch (static_cast<evt::lamp_t>(id)){
+  // Get State Commands
+    case evt::lamp_t::pwr :
+      EVT_POST(LAMP_STATE_EVENTS, vopts.pwrState ? e2int(evt::lamp_t::pwron) : e2int(evt::lamp_t::pwroff));
+      break;
+
+    default:;
+  }
 }
 
 void Lamp::_event_picker_state(esp_event_base_t base, int32_t id, void* data){
