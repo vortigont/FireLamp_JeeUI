@@ -871,7 +871,7 @@
     "dfplayer":{
       "section":"set_dfplayer",
       "main": true,
-      "label":"Параметры MP3 DFPlayer",
+      "label":"🔊 Параметры MP3 DFPlayer",
       "block":[
         {
           "section": "set_dfplayer_device",
@@ -1117,7 +1117,7 @@
             {
               "id":"set_modstate_clock",
               "html":"input",
-              "label":"Слой с часами",
+              "label":"🕰 Часы поверх эффекта",
               "type":"checkbox",
               "onChange": true
             },
@@ -1125,7 +1125,7 @@
               "id": "ui_page_module_clock",
               "html": "button",
               "type": 0,
-              "label": "🔨 Параметры"
+              "label": "🛠 Параметры"
             }
           ]
         },
@@ -1136,7 +1136,7 @@
             {
               "id":"set_modstate_alrmclock",
               "html":"input",
-              "label":"Будильник/Кукушка",
+              "label":"⏰ Будильник/Кукушка",
               "type":"checkbox",
               "onChange": true
             },
@@ -1144,7 +1144,7 @@
               "id": "ui_page_module_alrmclock",
               "html": "button",
               "type": 0,
-              "label": "🔨 Параметры"
+              "label": "🛠 Параметры"
             }
           ]
         },
@@ -1163,7 +1163,7 @@
               "id": "ui_page_module_txtscroll",
               "html": "button",
               "type": 0,
-              "label": "🔨 Параметры"
+              "label": "🛠 Параметры"
             }
           ]
         },
@@ -1174,7 +1174,7 @@
             {
               "id":"set_modstate_omnicron",
               "html":"input",
-              "label":"🗒 Планировщик OmniCron",
+              "label":"📅⏱ Планировщик OmniCron",
               "type":"checkbox",
               "onChange": true
             },
@@ -1182,7 +1182,7 @@
               "id": "ui_page_module_omnicron",
               "html": "button",
               "type": 0,
-              "label": "Параметры"
+              "label": "🛠 Параметры"
             }
           ]
         }
@@ -1191,7 +1191,7 @@
     "module":{
       "clock":{
         "section":"set_modcfg_clock",
-        "label":"🕓 Часы в наложении",
+        "label":"🕓 Часы поверх эффекта",
         "main":true,
         "block":[
           {
@@ -1246,7 +1246,7 @@
                     "html":"input",
                     "value": 0,
                     "type": "number",
-                    "label": "Позиция X",
+                    "label": "↦ Позиция X",
                     "min": 0,
                     "step": 1
                   },
@@ -1255,7 +1255,7 @@
                     "html":"input",
                     "value": 15,
                     "type": "number",
-                    "label": "Позиция Y",
+                    "label": "↧ Позиция Y",
                     "min": 0,
                     "step": 1
                   },
@@ -1263,7 +1263,7 @@
                     "id": "clkw",
                     "html":"input",
                     "type": "number",
-                    "label": "Ширина поля",
+                    "label": "⇱⇲ Ширина поля",
                     "min": 8,
                     "step": 1
                   },
@@ -1271,7 +1271,7 @@
                     "id": "clkh",
                     "html":"input",
                     "type": "number",
-                    "label": "Высота поля",
+                    "label": "⇱⇲ Высота поля",
                     "min": 4,
                     "step": 1
                   }
@@ -1285,14 +1285,14 @@
                     "id": "x1offset",
                     "html":"input",
                     "type": "number",
-                    "label": "смещение X",
+                    "label": "⍈ смещение X",
                     "step": 1
                   },
                   {
                     "id": "y1offset",
                     "html":"input",
                     "type": "number",
-                    "label": "Смещение Y",
+                    "label": "⍗ Смещение Y",
                     "step": 1
                   }
                 ]
@@ -1580,7 +1580,7 @@
       },
       "alrmclock":{
         "section":"mod_alrmclock",
-        "label":"🔔 Будильник / Кукушка",
+        "label":"⏰ Будильник / Кукушка",
         "main":true,
         "block":[
           {
@@ -1604,7 +1604,7 @@
                   },
                   {
                     "value":1,
-                    "label":"Говорящие часы"
+                    "label":"🗣 Говорящие часы"
                   },
                   {
                     "value":2,
@@ -1773,7 +1773,7 @@
                 "id":"set_modcfg_alrmclock",
                 "html":"button",
                 "type":1,
-                "label":"Применить",
+                "label":"✅ Применить",
                 "fa": "fas fa-circle-check"
               }
            ]
@@ -1980,6 +1980,17 @@
             "type":0,
             "fa": "fas fa-door-open",
             "label":"Выход"
+          }
+        ]
+      },
+      "omnicron":{
+        "section":"mod_omnicron",
+        "label":"📅⏱ Планировщик ОмниКрон",
+        "main":true,
+        "block":[
+          {
+            "html":"comment",
+            "label":"Подробнее о планировщике см. <a href=\"https://github.com/vortigont/FireLamp_JeeUI/wiki/OmniCron\" target=\"_blank\">WiKi</a>"
           }
         ]
       }
@@ -2443,6 +2454,46 @@
         ]
       }
     },
+    "mod_omnicron":{
+      "brief":{
+        "section":"tasks",
+        "block":[
+          {
+            "section":"omni_task",
+            "line": true,
+            "block":[
+              {
+                "id":"active",
+                "html":"input",
+                "label":"⏻🔛",
+                "type":"checkbox",
+                "class":"pure-u-1-5 pure-u-lg-1-12"
+              },
+              {
+                "id":"descr",
+                "html":"constbtn",
+                "class":"pure-u-4-5 pure-u-lg-7-12"
+              },
+              {
+                "id": "omniron_task_get",
+                "html": "button",
+                "type": 0,
+                "label":"🛠 настроить",
+                "class":"pure-u-1-2 pure-u-lg-1-6"
+              },
+              {
+                "id": "omniron_task_del",
+                "html": "button",
+                "type": 0,
+                "color": "red",
+                "label":"🗑 удалить",
+                "class":"pure-u-1-2 pure-u-lg-1-6"
+              }
+            ]
+          }
+      ]
+      }
+    },
     "btn_exit_modlist":{
       "section":"btn_page_modules",
       "block":[
@@ -2452,7 +2503,7 @@
           "color": "green",
           "type":0,
           "fa": "fas fa-door-open",
-          "label":"Выход"
+          "label":"🔙 Выход"
        }
       ]
     },
@@ -2466,7 +2517,7 @@
             {
               "id": "dev_pwrswitch",
               "html": "input",
-              "label": "Включить",
+              "label": "⏻ Включить",
               "type": "checkbox",
               "onChange": true
             },
@@ -2487,7 +2538,7 @@
             {
               "id": "dev_mike",
               "html": "input",
-              "label": "Микрофон",
+              "label": "🎤 Микрофон",
               "type": "checkbox",
               "onChange": true
             },
@@ -2541,7 +2592,7 @@
           "min": 1,
           "max": 30,
           "step": 1,
-          "label": "MP3 Громкость",
+          "label": "📢 MP3 Громкость",
           "onChange": true
         },
         {

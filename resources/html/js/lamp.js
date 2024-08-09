@@ -38,9 +38,28 @@ function alarm_item_set(arg){
   newdata["idx"] = Number(idx)
 
   //console.log("Collected form newdata:", newdata)
-  ws.send_post("set_wcfg_alrm", newdata);
+  ws.send_post("set_mod_alrm", newdata);
+}
+
+// get section data for alarm item submission and reconstruct the object to structure acceptable for alarm widget
+function omnicron_task_set(arg){
+  // button click may return awesome icon item
+  let id = arg.target.id === "" ? arg.target.parentElement.id : arg.target.id;
+  //console.log("Task item to set:", id)
+  let form = go("#"+id), data = go.formdata(go("input, textarea, select", form));
+  let idx = Object.keys(data)[0];
+  idx = idx.slice(-1)
+  let newdata = {}
+  for (let key in data ){
+    newdata[key.slice(0, key.length - 1)] = data[key]
+  }
+  newdata["idx"] = Number(idx)
+
+  //console.log("Collected form newdata:", newdata)
+  ws.send_post("set_mod_omnicron_task", newdata);
 }
 
 // add our fuction to custom funcs that could be called for js_func frames
 customFuncs["alarm_items_load"] = alarm_items_load;
 customFuncs["alarm_item_set"] = alarm_item_set;
+customFuncs["omniron_task_set"] = omnicron_task_set;

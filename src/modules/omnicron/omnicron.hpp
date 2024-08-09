@@ -68,7 +68,7 @@ class OmniCron : public GenericModule {
 public:
 	OmniCron() : GenericModule(T_omnicron, false){};
 
-	void start() override;
+  void start() override;
   void stop() override;
 
 	// load tasks from json file on FS
@@ -84,5 +84,15 @@ private:
 	void _parse_actions(cronos_tid id, const char* expr);
 
 	void _purge_actions(cronos_tid id);
+
+    /**
+     * @brief Construct an EmbUI page with module's state/configuration
+     * 
+     * @param interf 
+     * @param data 
+     * @param action 
+     */
+    void mkEmbUIpage(Interface *interf, const JsonObject *data, const char* action) override;
+
 };
 

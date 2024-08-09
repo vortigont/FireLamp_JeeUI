@@ -77,7 +77,7 @@ void OmniCron::_cron_callback(cronos_tid id, void* arg){
     if (i.id != id)
       continue;
 
-    //LOGV(T_crontab, printf, "cmd:%d, arg:%d\n", i.cmd, i.param);
+    LOGV(T_crontab, printf, "cmd:%d, arg:%d\n", i.cmd, i.param);
     // send command via event bus
     EVT_POST_DATA(LAMP_SET_EVENTS, i.cmd, &i.param, sizeof(i.param));
   }
@@ -92,8 +92,8 @@ void OmniCron::_parse_actions(cronos_tid id, const char* expr){
   char ch1, ch2;  // '=' and ',' sepparators
 
   /*
-    WARN! This sstream pulls locales into firmware, it grows around 100k in size and 4 DRAM
-    I need to rewrite this parser
+    WARN! This sstream pulls locales into firmware, it grows around 100k in size and 4k DRAM
+    I need to rewrite this parser!
     wlocale-inst.o
     locale-inst.o
     cxx11-wlocale-inst.o
@@ -129,5 +129,37 @@ void OmniCron::generate_cfg(JsonVariant cfg) const {
     item[T_descr] = i.descr;
     //items[T_crontab] = i.
   }
+
+}
+
+void OmniCron::mkEmbUIpage(Interface *interf, const JsonObject *data, const char* action){
+  String key(T_ui_pages_module_prefix);
+  key += label;
+  // load Module's structure from a EmbUI's UI data
+  interf->json_frame_interface();
+  interf->json_section_uidata();
+  interf->uidata_pick( key.c_str() );
+  // Main frame MUST be flushed before sending other ui_data sections
+  interf->json_frame_flush();
+
+  interf->json_frame_interface();
+  interf->json_section_uidata();
+
+  for (int i = 0; i !=_tasks.size(); ++i){
+    String idx(i);
+    interf->uidata_pick( "lampui.sections.mod_omnicron.brief", NULL, idx.c_str() );
+  }
+  interf->json_frame_flush();
+  // prepare an object with alarms setups, loaded via js from WebUI
+  interf->json_frame_jscall("alarm_items_load");
+
+  JsonDocument doc;
+  getConfig(doc.to<JsonObject>());
+  interf->json_frame_add(doc);
+
+  // otherwise just show a message that no config could be set w/o activating the widget
+  //interf->uidata_pick("lampui.sections.mod_alarm.msg_inactive");
+
+  interf->json_frame_flush();
 
 }

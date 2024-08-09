@@ -102,8 +102,10 @@
 	</script>
 
 	<script type="text/html" id="tmpl_content">
-		{{#if _this.line && _this.section!="line124"}}<div class="pure-u-sm-1-2 {{#if2 _this.block.length > 2}}pure-u-sm-1-3{{/if2}} {{#if2 _this.block.length > 3}}pure-u-md-1-4{{/if2}} {{#if2 _this.block.length > 4}}pure-u-lg-1-5{{/if2}}">{{/if}}
-		{{#if _this.line && _this.section=="line124"}}<div class="pure-u-sm-1-2 {{#if2 _this.block.length > 2}}pure-u-lg-1-4{{/if2}}">{{/if}}
+<!--
+		{{#if _this.line && !_this.class}}<div class="pure-u-sm-1-2 {{#if2 _this.block.length > 2}}pure-u-md-1-3{{/if2}} {{#if2 _this.block.length > 3}}pure-u-lg-1-4{{/if2}} {{#if2 _this.block.length > 4}}pure-u-xl-1-5{{/if2}} {{#if2 _this.block.length > 5}}pure-u-xxl-1-6{{/if2}}">{{/if}}
+-->
+		{{#if _this.line}}<div class="{{#class}}{{class}}{{/class}}{{^class}}pure-u-sm-1-2 {{#if2 _this.block.length > 2}}pure-u-md-1-3{{/if2}} {{#if2 _this.block.length > 3}}pure-u-lg-1-4{{/if2}} {{#if2 _this.block.length > 4}}pure-u-xl-1-5{{/if2}} {{#if2 _this.block.length > 5}}pure-u-xxl-1-6{{/if2}}{{/class}}">{{/if}}
 		{{#if !_this.line}}<div class="pure-u-1" {{#if2 html == "hidden"}}style="display:hidden;"{{/if2}}>{{/if}}
 
 		{{#if html != "select" && block}}{{>tmpl_section _this}}{{/if}}
@@ -127,6 +129,9 @@
 		{{/if}}
 		{{#if html == "const"}}
 			<div id="{{id}}" class="pure-u-1 pure-button mr">{{#if2 fa}}<i class="{{fa}}"></i>{{/if2}}{{label}}{{#if2 value}}<input type="hidden" name="{{id}}" value="{{value}}">{{/if2}}</div>
+		{{/if}}
+		{{#if html == "constbtn"}}
+			<input id="{{id}}" disabled {{#if2 color}}style="background-color: {{color}}"{{/if2}} class="pure-u-1 pure-button pure-button-primary mr" type="button" value="-" />
 		{{/if}}
 		{{#if html == "comment"}}
 			<div id="{{id}}" class="comment">{{label}}</div>
