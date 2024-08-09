@@ -99,23 +99,26 @@ void GenericModule::setConfig(JsonVariantConst cfg){
 
 void GenericModule::load(){
   JsonDocument doc;
-  embuifs::deserializeFile(doc, T_mod_mgr_cfg);
-  load_cfg(doc[label]);
+  embuifs::deserializeFile(doc, mkFileName().c_str());
+  load_cfg(_def_config ? doc[label] : doc);
   start();
 }
 
 void GenericModule::save(){
   JsonDocument doc;
-  embuifs::deserializeFile(doc, T_mod_mgr_cfg);
-  getConfig(doc[label].to<JsonObject>());
+  embuifs::deserializeFile(doc, mkFileName().c_str());
+  getConfig(_def_config ? doc[label].to<JsonObject>() : doc.as<JsonObject>());
   LOGD(T_Module, printf, "%s: writing cfg to file\n", label);
-  embuifs::serialize2file(doc, T_mod_mgr_cfg);
+  embuifs::serialize2file(doc, mkFileName().c_str());
 }
 
 String GenericModule::mkFileName(){
+  if (_def_config)
+    return String(T_mod_mgr_cfg);
+
   // make file name
   String fname( "/" );
-  fname += _def_config ? T_mod_mgr_cfg : label;
+  fname += label;
   fname += ".json";
   return fname;
 }
@@ -338,6 +341,8 @@ void ModuleManager::_spawn(const char* label){
     w = std::make_unique<AlarmClock>();
   } else if(std::string_view(label).compare(T_txtscroll) == 0){
     w = std::make_unique<TextScrollerWgdt>();
+  } else if(std::string_view(label).compare(T_omnicron) == 0){
+    w = std::make_unique<OmniCron>();
   } else
     return;   // no such module exist
 
