@@ -66,3 +66,13 @@ static constexpr const char* S_E = "E: ";
 #else
 	#define LOGE(...)
 #endif
+
+
+// LOG tags
+static constexpr const char* T_Effect = "Effect";
+static constexpr const char* T_EffCfg = "EffCfg";
+static constexpr const char* T_EffWrkr = "EffWrkr";
+static constexpr const char* T_Fade = "Fade";
+static constexpr const char* T_Module = "Module";
+static constexpr const char* T_WebUI = "WebUI";
+static constexpr const char* T_ModMGR = "ModMGR";

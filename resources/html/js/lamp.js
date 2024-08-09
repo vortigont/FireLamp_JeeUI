@@ -38,9 +38,42 @@ function alarm_item_set(arg){
   newdata["idx"] = Number(idx)
 
   //console.log("Collected form newdata:", newdata)
-  ws.send_post("set_wcfg_alrm", newdata);
+  ws.send_post("set_mod_alrm", newdata);
 }
+
+// builds OmniCron tasks list brief UI page
+function omnicron_tasks_load(arg){
+  if (typeof arg != 'object' || typeof arg.block[0].event != 'object'){
+      console.log("omnicron_items_load() got wrong argument type", arg)
+      return
+  }
+  let tasks_data = arg.block[0]
+  let pkg = {
+    "pkg": "interface",
+    "final": true,
+    "section": "omnicron_tasks",
+    "block": []
+  };
+
+  // make a deep copy, 'cause we'll modify the object
+  let ui_obj = JSON.parse(JSON.stringify(_.get(uiblocks, "lampui.sections.mod_omnicron.task_brief")));
+
+  // rename keys for each array's elements in 'event' obj
+  tasks_data.event.forEach((obj, idx, array) => {
+    ui_obj.section = "omni_task" + idx
+    ui_obj.block[0]["value"] = obj.active
+    ui_obj.block[1]["value"] = obj.descr
+    ui_obj.block[2]["value"] = idx        // edit btn
+    ui_obj.block[3]["value"] = idx        // del btn
+    pkg.block.push(JSON.parse(JSON.stringify(ui_obj)))
+  });
+
+  var r = render();
+  r.make(pkg);
+}
+
 
 // add our fuction to custom funcs that could be called for js_func frames
 customFuncs["alarm_items_load"] = alarm_items_load;
 customFuncs["alarm_item_set"] = alarm_item_set;
+customFuncs["omnicron_tasks_load"] = omnicron_tasks_load;
