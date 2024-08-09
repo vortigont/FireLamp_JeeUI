@@ -55,7 +55,7 @@ Copyright © 2020 Dmytro Korniienko (kDn)
 
 
 // версия ресурсов в стороннем джейсон файле
-#define UIDATA_VERSION      21
+#define UIDATA_VERSION      22
 
 #define DEMO_MIN_PERIOD     10
 #define DEMO_MAX_PERIOD     900

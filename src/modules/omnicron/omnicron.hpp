@@ -48,6 +48,8 @@ class OmniCron : public GenericModule {
 		bool active;
 		cronos_tid tid;
 		std::string descr;
+		std::string crontab;
+		std::string cmd;
 	};
 
 	struct omni_cmd_t {
@@ -66,7 +68,7 @@ class OmniCron : public GenericModule {
 	std::vector<omni_cmd_t> _actions;
 
 public:
-	OmniCron() : GenericModule(T_omnicron, false){};
+	OmniCron();
 
   void start() override;
   void stop() override;
@@ -85,14 +87,20 @@ private:
 
 	void _purge_actions(cronos_tid id);
 
-    /**
-     * @brief Construct an EmbUI page with module's state/configuration
-     * 
-     * @param interf 
-     * @param data 
-     * @param action 
-     */
-    void mkEmbUIpage(Interface *interf, const JsonObject *data, const char* action) override;
+	/**
+	 * @brief Construct an EmbUI page with module's state/configuration
+	 * 
+	 * @param interf 
+	 * @param data 
+	 * @param action 
+	 */
+	void mkEmbUIpage(Interface *interf, const JsonObject *data, const char* action) override;
+
+	void _task_get(Interface *interf, const JsonObject *data, const char* action);
+
+	void _task_set(Interface *interf, const JsonObject *data, const char* action);
+
+	void _task_remove(Interface *interf, const JsonObject *data, const char* action);
 
 };
 

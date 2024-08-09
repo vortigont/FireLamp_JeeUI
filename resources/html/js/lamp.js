@@ -41,25 +41,39 @@ function alarm_item_set(arg){
   ws.send_post("set_mod_alrm", newdata);
 }
 
-// get section data for alarm item submission and reconstruct the object to structure acceptable for alarm widget
-function omnicron_task_set(arg){
-  // button click may return awesome icon item
-  let id = arg.target.id === "" ? arg.target.parentElement.id : arg.target.id;
-  //console.log("Task item to set:", id)
-  let form = go("#"+id), data = go.formdata(go("input, textarea, select", form));
-  let idx = Object.keys(data)[0];
-  idx = idx.slice(-1)
-  let newdata = {}
-  for (let key in data ){
-    newdata[key.slice(0, key.length - 1)] = data[key]
+// builds OmniCron tasks list brief UI page
+function omnicron_tasks_load(arg){
+  if (typeof arg != 'object' || typeof arg.block[0].event != 'object'){
+      console.log("omnicron_items_load() got wrong argument type", arg)
+      return
   }
-  newdata["idx"] = Number(idx)
+  let tasks_data = arg.block[0]
+  let pkg = {
+    "pkg": "interface",
+    "final": true,
+    "section": "omnicron_tasks",
+    "block": []
+  };
 
-  //console.log("Collected form newdata:", newdata)
-  ws.send_post("set_mod_omnicron_task", newdata);
+  // make a deep copy, 'cause we'll modify the object
+  let ui_obj = JSON.parse(JSON.stringify(_.get(uiblocks, "lampui.sections.mod_omnicron.task_brief")));
+
+  // rename keys for each array's elements in 'event' obj
+  tasks_data.event.forEach((obj, idx, array) => {
+    ui_obj.section = "omni_task" + idx
+    ui_obj.block[0]["value"] = obj.active
+    ui_obj.block[1]["value"] = obj.descr
+    ui_obj.block[2]["value"] = idx        // edit btn
+    ui_obj.block[3]["value"] = idx        // del btn
+    pkg.block.push(JSON.parse(JSON.stringify(ui_obj)))
+  });
+
+  var r = render();
+  r.make(pkg);
 }
+
 
 // add our fuction to custom funcs that could be called for js_func frames
 customFuncs["alarm_items_load"] = alarm_items_load;
 customFuncs["alarm_item_set"] = alarm_item_set;
-customFuncs["omniron_task_set"] = omnicron_task_set;
+customFuncs["omnicron_tasks_load"] = omnicron_tasks_load;

@@ -1,6 +1,6 @@
 {
   "type":"interface",
-  "version":21,
+  "version":22,
   "descr":"FireLamp UI objects",
 
   "settings":{
@@ -1565,8 +1565,7 @@
             "id":"set_modcfg_clock",
             "html":"button",
             "type":1,
-            "label":"Применить",
-            "fa": "fas fa-circle-check"
+            "label":"✅ Применить"
           },
           {
             "id":"ui_page_modules",
@@ -1773,8 +1772,7 @@
                 "id":"set_modcfg_alrmclock",
                 "html":"button",
                 "type":1,
-                "label":"✅ Применить",
-                "fa": "fas fa-circle-check"
+                "label":"✅ Применить"
               }
            ]
           },
@@ -1970,8 +1968,7 @@
             "id":"set_modcfg_txtscroll",
             "html":"button",
             "type":1,
-            "label":"Применить",
-            "fa": "fas fa-circle-check"
+            "label":"✅ Применить"
           },
           {
             "id":"ui_page_modules",
@@ -1985,12 +1982,67 @@
       },
       "omnicron":{
         "section":"mod_omnicron",
-        "label":"📅⏱ Планировщик ОмниКрон",
+        "label":"📅 Планировщик ОмниКрон",
         "main":true,
         "block":[
           {
             "html":"comment",
             "label":"Подробнее о планировщике см. <a href=\"https://github.com/vortigont/FireLamp_JeeUI/wiki/OmniCron\" target=\"_blank\">WiKi</a>"
+          }
+        ]
+      },
+      "omnicron_task":{
+        "section":"set_mod_omnicron_task",
+        "label":"⏱ ОмниКрон - задача",
+        "main":true,
+        "block":[
+          {
+            "html":"comment",
+            "label":"Подробнее о планировщике см. <a href=\"https://github.com/vortigont/FireLamp_JeeUI/wiki/OmniCron\" target=\"_blank\">WiKi</a>"
+          },
+          {
+            "id": "idx",
+            "html": "hidden",
+            "value": -1
+          },
+          {
+            "id": "active",
+            "html":"input",
+            "label":"Активна",
+            "type":"checkbox",
+            "class":"pure-u-1-5 pure-u-lg-1-12"
+          },
+          {
+            "id": "descr",
+            "html":"input",
+            "type": "text",
+            "label":"Название"
+          },
+          {
+            "id": "crontab",
+            "html":"input",
+            "type": "text",
+            "label":"Crontab правило"
+          },
+          {
+            "id": "cmd",
+            "html":"input",
+            "type": "text",
+            "label":"Выполняемые команды"
+          },
+          { "html":"spacer" },
+          {
+            "id": "set_mod_omnicron_task",
+            "html": "button",
+            "type": 1,
+            "label":"🖫 Сохранить"
+          },
+          {
+            "id": "ui_page_module_omnicron",
+            "html": "button",
+            "type": 0,
+            "color": "green",
+            "label":"🔙 Выход"
           }
         ]
       }
@@ -2079,8 +2131,7 @@
           "id": "set_gpio",
           "html": "button",
           "type": 1,
-          "label":"Применить",
-          "fa": "fas fa-circle-check"
+          "label":"✅ Применить"
         },
         {
           "id": "ui_page_settings",
@@ -2455,43 +2506,56 @@
       }
     },
     "mod_omnicron":{
-      "brief":{
-        "section":"tasks",
+      "task_brief":{
+        "section":"omni_task",
+        "line": true,
         "block":[
           {
-            "section":"omni_task",
-            "line": true,
-            "block":[
-              {
-                "id":"active",
-                "html":"input",
-                "label":"⏻🔛",
-                "type":"checkbox",
-                "class":"pure-u-1-5 pure-u-lg-1-12"
-              },
-              {
-                "id":"descr",
-                "html":"constbtn",
-                "class":"pure-u-4-5 pure-u-lg-7-12"
-              },
-              {
-                "id": "omniron_task_get",
-                "html": "button",
-                "type": 0,
-                "label":"🛠 настроить",
-                "class":"pure-u-1-2 pure-u-lg-1-6"
-              },
-              {
-                "id": "omniron_task_del",
-                "html": "button",
-                "type": 0,
-                "color": "red",
-                "label":"🗑 удалить",
-                "class":"pure-u-1-2 pure-u-lg-1-6"
-              }
-            ]
+            "html":"input",
+            "label":"⏱",
+            "type":"checkbox",
+            "disabled": true,
+            "class":"pure-u-1-5 pure-u-lg-1-12"
+          },
+          {
+            "html":"constbtn",
+            "class":"pure-u-4-5 pure-u-lg-7-12"
+          },
+          {
+            "id": "get_mod_omnicron_task",
+            "html": "button",
+            "type": 0,
+            "label":"🛠 настроить",
+            "class":"pure-u-1-2 pure-u-lg-1-6"
+          },
+          {
+            "id": "set_mod_omnicron_task_rm",
+            "html": "button",
+            "type": 0,
+            "color": "red",
+            "label":"🗑 удалить",
+            "class":"pure-u-1-2 pure-u-lg-1-6"
           }
-      ]
+        ]
+      },
+      "bottom":{
+        "section":"omni_btm",
+        "block":[
+          {
+            "id": "get_mod_omnicron_task",
+            "html": "button",
+            "type": 0,
+            "value": -1,
+            "label":"Новая задача"
+          },
+          {
+            "id":"ui_page_modules",
+            "html":"button",
+            "color": "green",
+            "type":0,
+            "label":"🔙 Выход"
+          }
+        ]  
       }
     },
     "btn_exit_modlist":{
