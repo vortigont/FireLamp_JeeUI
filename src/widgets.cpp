@@ -250,7 +250,7 @@ String GenericWidgetProfiles::_mkFileName(){
   return fname;
 }
 
-void GenericWidgetProfiles::switchProfile(int idx){
+void GenericWidgetProfiles::switchProfile(int32_t idx){
   JsonDocument doc;
   embuifs::deserializeFile(doc, _mkFileName().c_str());
 
