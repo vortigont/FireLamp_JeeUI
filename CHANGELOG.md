@@ -1,5 +1,12 @@
 # Change Log
 
+## 3.8.0
++ планировщик OmniCron
++ Switch to Arduino Core 3.0.2 (Tasmota's)
++ lightweight Arduino_GFX lib
++ WebUI improvements
++ Widgets are replaced with unified "Module" classes
+
 ## 3.7.2
 + Add profile and configs for Huidu HD‐WF2 board
 + add release builder scritps for HD-WF2 boards
