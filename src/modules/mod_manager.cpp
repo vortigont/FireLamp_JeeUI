@@ -151,7 +151,7 @@ void GenericModule::mkEmbUIpage(Interface *interf, const JsonObject *data, const
 // ****  GenericModuleProfiles methods
 
 
-void GenericModuleProfiles::switchProfile(int idx){
+void GenericModuleProfiles::switchProfile(int32_t idx){
   JsonDocument doc;
   embuifs::deserializeFile(doc, mkFileName().c_str());
 
