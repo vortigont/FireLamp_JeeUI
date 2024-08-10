@@ -2588,14 +2588,14 @@
             {
               "id": "demo",
               "html": "input",
-              "label": "Демо",
+              "label": "🔁 Демо",
               "type": "checkbox",
               "onChange": true
             },
             {
               "id": "dev_btnlock",
               "html": "input",
-              "label": "Блок. кнопку",
+              "label": "🗶 Блок. кнопку",
               "type": "checkbox",
               "onChange": true
             },
@@ -2609,7 +2609,7 @@
             {
               "id": "mp3mute",
               "html": "input",
-              "label": "Откл. мелодии",
+              "label": "🔇 Откл. мелодии",
               "type": "checkbox",
               "onChange": true
             },
