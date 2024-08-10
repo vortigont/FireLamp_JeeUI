@@ -487,6 +487,15 @@ private:
      */
     void _event_picker_state(esp_event_base_t base, int32_t id, void* data);
 
+    /**
+     * @brief event picker method, processes incoming get events from a event_hndlr wrapper
+     * 
+     * @param base 
+     * @param id 
+     * @param event_data 
+     */
+    void _event_picker_get(esp_event_base_t base, int32_t id, void* data);
+
 };
 
 /**

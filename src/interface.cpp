@@ -41,18 +41,21 @@ Copyright © 2020 Dmytro Korniienko (kDn)
 #include "devices.h"
 #include "effects.h"
 #include "templates.hpp"
-
-#include LANG_FILE                  //"text_res.h"
-
 #include "basicui.h"
 #include "actions.hpp"
 #include <type_traits>
 #include "evtloop.h"
 #include "devices.h"
-#include "widgets.hpp"
+#include "components.hpp"
+#include "log.h"
+#include LANG_FILE                  //"text_res.h"
+
+// modules
+#include "modules/clock/mod_clock.hpp"
+
 
 // версия ресурсов в стороннем джейсон файле
-#define UIDATA_VERSION      20
+#define UIDATA_VERSION      22
 
 #define DEMO_MIN_PERIOD     10
 #define DEMO_MAX_PERIOD     900
@@ -79,11 +82,8 @@ enum class page : uint16_t {
     setup_tm1637,
     setup_devices,      // page with configuration links to external devices
 
-    widgetslist = 101,      // available widgets page
-    wdgt_clock,
-    wdgt_alrmclock,
-    wdgt_txtsroll,
-    setup_gpio
+    modules = 101,      // available widgets page
+    setup_gpio = 105
 };
 
 // enumerator for gpio setup form
@@ -174,58 +174,13 @@ void uidata_page_selector(Interface *interf, const JsonObject *data, const char*
     interf->json_section_uidata();
 
     switch (idx){
-        case page::setup_gpio :   // настрока gpio
+        // настрока gpio
+        case page::setup_gpio :
             interf->uidata_pick( "lampui.pages.gpiosetup" );
             interf->json_frame_flush();
             getset_gpios(interf,  nullptr, NULL);
             break;
-        case page::widgetslist :   // список виджетов
-            interf->uidata_pick( "lampui.pages.wdgtslist" );
-            interf->json_frame_flush();
-            informer.getWidgetsState(interf);
-            break;
-        case page::wdgt_clock : {  // настройки часов
-            interf->uidata_pick( "lampui.pages.wdgt.ovrclock" );
-            interf->json_frame_flush();
-            JsonDocument doc;
-            informer.getConfig(doc.to<JsonObject>(), T_clock);
-            interf->json_frame_value(doc);
-            break;
-        }
-        case page::wdgt_alrmclock : {  // настройки будильника
-            interf->uidata_pick( "lampui.pages.wdgt.alrmclock" );
-            interf->json_frame_flush();
-            // Main frame MUST be flushed before sending other ui_data sections
-            interf->json_frame_interface();
-            interf->json_section_uidata();
-            if (informer.getWidgetStatus(T_alrmclock)){
-                // if alarm widget is active - load alarms config
-                interf->uidata_pick("lampui.sections.wdgt_alarm.hdr");
-                for (int i = 0; i !=4; ++i){
-                    String idx(i);
-                    interf->uidata_pick( "lampui.sections.wdgt_alarm.item", NULL, idx.c_str() );
-                }
-                interf->json_frame_flush();
-                // prepare an object with alarms setups, loaded via js from WebUI
-                interf->json_frame_jscall("alarm_items_load");
-                JsonDocument doc;
-                informer.getConfig(doc.to<JsonObject>(), T_alrmclock);  // generate config with nested alarm event objects
-                interf->json_frame_add(doc);
-            } else {
-                // otherwise just show a message that no config could be set w/o activating the widget
-                interf->uidata_pick("lampui.sections.wdgt_alarm.msg_inactive");
-            }
-            break;
-        }
-        // Text scroller
-        case page::wdgt_txtsroll : {
-            interf->uidata_pick( "lampui.pages.wdgt.txtscroll" );
-            interf->json_frame_flush();
-            JsonDocument doc;
-            informer.getConfig(doc.to<JsonObject>(), T_txtscroll);
-            interf->json_frame_value(doc);
-            break;
-        }
+
         default:;                   // by default do nothing
     }
 
@@ -276,15 +231,10 @@ void ui_section_menu(Interface *interf, const JsonObject *data, const char* acti
     // создаем меню
     interf->json_section_menu();
 
-    interf->option(A_ui_page_effects, TINTF_000);        //  Эффекты
-    //interf->option(TCONST_lamptext, TINTF_001);       //  Вывод текста
+    interf->option(A_ui_page_effects, TINTF_000);           //  Эффекты
     //interf->option(A_ui_page_drawing, TINTF_0CE);        //  Рисование (оключено, т.к. используется старая схема с глобальным оверлеем)
-    interf->option(A_ui_page_widgets, "Widgets");        //  Widgets
-#ifdef USE_STREAMING
-    interf->option(TCONST_streaming, TINTF_0E2);      //  Трансляция
-#endif
-    //interf->option(TCONST_show_event, TINTF_011);     //  События
-    basicui::menuitem_settings(interf);               //  настройки
+    interf->option(A_ui_page_modules, "Modules");           //  Modules
+    basicui::menuitem_settings(interf);                     //  настройки
 
     interf->json_section_end();
 }
@@ -436,8 +386,8 @@ void ui_page_tm1637_setup(Interface *interf, const JsonObject *data, const char*
 }
 
 // this will trigger widgets list page opening
-void ui_page_widgets(Interface *interf, const JsonObject *data, const char* action){
-  uidata_page_selector(interf, data, action, page::widgetslist);
+void ui_page_modules(Interface *interf, const JsonObject *data, const char* action){
+  uidata_page_selector(interf, data, action, page::modules);
 }
 
 /**
@@ -1357,6 +1307,7 @@ void rebuild_effect_list_files(lstfile_t lst){
     );
 }
 
+
 /**
  * Набор конфигурационных переменных и callback-обработчиков EmbUI
  */
@@ -1377,7 +1328,7 @@ void embui_actions_register(){
     embui.action.add(A_ui_page, ui_page_selector);                          // ui page switcher, same as in basicui::
     embui.action.add(A_ui_page_effects, ui_page_effects);                   // меню: переход на страницу "Эффекты"
     embui.action.add(A_ui_page_drawing, ui_page_drawing);                   // меню: переход на страницу "Рисование"
-    embui.action.add(A_ui_page_widgets, ui_page_widgets);                   // меню: переход на страницу "Виджеты"
+    embui.action.add(A_ui_page_modules, ui_page_modules);                   // меню: переход на страницу "Модули"
     embui.action.add(A_ui_block_switches, ui_block_mainpage_switches);      // нажатие кнопки "еще..." на странице "Эффекты"
 
     // device controls
@@ -1411,6 +1362,7 @@ void embui_actions_register(){
     embui.action.add(A_set_gpio, getset_gpios);                             // Get/Set gpios
     embui.action.add(A_getset_other, getset_settings_other);                   // get/set settings "other" page handler
 
+
     // to be refactored
 
     embui.action.add(TCONST_effListConf, set_effects_config_list);
@@ -1427,4 +1379,5 @@ void embui_actions_register(){
 
     embui.action.add(TCONST_set_mic, set_settings_mic);
     embui.action.add(A_dev_mike, set_micflag);
+
 }
