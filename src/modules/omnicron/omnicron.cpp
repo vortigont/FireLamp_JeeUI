@@ -199,17 +199,15 @@ void OmniCron::_task_get(Interface *interf, const JsonObject *data, const char* 
   if (idx < 0 || idx >= _tasks.size())
     return;
 
-  auto t = _tasks.begin() + idx;
-  if (t == _tasks.end())
-    return;
+  auto t = _tasks.at(idx);
 
   interf->json_frame_value();
 
-  interf->value(T_active, t->active);
-  interf->value(T_descr, t->descr);
-  interf->value(T_crontab, t->crontab);
+  interf->value(T_active, t.active);
+  interf->value(T_descr, t.descr);
+  interf->value(T_crontab, t.crontab);
   interf->value(T_idx, idx);
-  interf->value(T_cmd, t->cmd);
+  interf->value(T_cmd, t.cmd);
 
 /*
   String cmd;
