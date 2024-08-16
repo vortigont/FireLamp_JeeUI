@@ -230,11 +230,10 @@ void OmniCron::_task_get(Interface *interf, const JsonObject *data, const char* 
 void OmniCron::_task_set(Interface *interf, const JsonObject *data, const char* action){
   int idx = (*data)[T_idx];
   LOGD(T_crontab, printf, "Set crontab rule:%d\n", idx);
-  if (idx < 0 || idx >= _tasks.size())
+  if (idx >= _tasks.size())
     return;
-  auto t = _tasks.begin() + idx;
 
-  if (t == _tasks.end()){
+  if (idx == -1){
     // this is a NEW rule
     omni_task_t t({(*data)[T_active].as<bool>(), 0, (*data)[T_descr].as<const char*>(), (*data)[T_crontab].as<const char*>(), (*data)[T_cmd].as<const char*>()});
     if (t.active){
@@ -246,33 +245,34 @@ void OmniCron::_task_set(Interface *interf, const JsonObject *data, const char* 
     _tasks.emplace_back(std::move(t));
   } else {
     // it's an update for existing rule
+    auto t = _tasks.at(idx);
 
     // first purge all tasks's rules
-    _purge_actions(t->tid);
-    t->descr = (*data)[T_descr].as<const char*>();
-    t->crontab = (*data)[T_crontab].as<const char*>();
-    t->cmd = (*data)[T_cmd].as<const char*>();
+    _purge_actions(t.tid);
+    t.descr = (*data)[T_descr].as<const char*>();
+    t.crontab = (*data)[T_crontab].as<const char*>();
+    t.cmd = (*data)[T_cmd].as<const char*>();
 
     // if tasks's state has changed
     bool new_state = (*data)[T_active].as<bool>();
 
     if (new_state){
-      if (t->active){
+      if (t.active){
         // task has been active already, need to update the expression only
-        _cronos.setExpr(t->tid, t->crontab.data());
+        _cronos.setExpr(t.tid, t.crontab.data());
       } else {
         // need to create a new task
-        t->tid = _cronos.addCallback((*data)[T_crontab], [this](cronos_tid id, void* arg){ _cron_callback(id, arg); });
+        t.tid = _cronos.addCallback((*data)[T_crontab], [this](cronos_tid id, void* arg){ _cron_callback(id, arg); });
       }
-      _parse_actions(t->tid, t->cmd.data());
+      _parse_actions(t.tid, t.cmd.data());
     } else {
       // new task's state if inactive, simply remove task from cronos if any
-      _cronos.removeTask(t->tid);
-      t->tid = 0;
+      _cronos.removeTask(t.tid);
+      t.tid = 0;
     }
 
     // update new task's state
-    t->active = new_state;
+    t.active = new_state;
   }
 
   _cronos.reload();
