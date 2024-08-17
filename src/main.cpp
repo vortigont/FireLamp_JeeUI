@@ -57,10 +57,6 @@ String ha_autodiscovery();
 // restores LED fb config from file
 void led_fb_setup();
 
-// mDNS announce for WLED app
-void wled_announce();
-// 404 handler
-bool http_notfound(AsyncWebServerRequest *request);
 // MQTT callback
 void mqttOnMessageCallback(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total);
 
@@ -71,6 +67,10 @@ void setup() {
     // debug console
 #if ARDUINO_USB_CDC_ON_BOOT == 1
     Serial.begin();
+    // Needed in OTG Mode
+#if ARDUINO_USB_MODE == 0
+    Serial.setDebugOutput(true);
+#endif
     // let USB-serial connect
     #if EMBUI_DEBUG_LEVEL > 3 || LAMP_DEBUG_LEVEL > 3
         delay(4000);
@@ -79,7 +79,7 @@ void setup() {
     Serial.begin(115200);
 #endif
 
-    LOGI(T_Main, printf, "Setup: free heap: %uk, PSRAM:%uk\n\n", ESP.getFreeHeap()/1024, ESP.getFreePsram()/1024);
+    LOGI(T_Main, printf, "Setup: free heap: %luk, PSRAM:%luk\n\n", ESP.getFreeHeap()/1024, ESP.getFreePsram()/1024);
 
     // cap ADC resolution to 10 bit
     analogReadResolution(10);
@@ -89,22 +89,11 @@ void setup() {
     // event bus sniffer
     //evt::debug();
 
-    // add WLED mobile app handler
-    embui.server.on("/win", HTTP_ANY, [](AsyncWebServerRequest *request){ wled_handle(request); } );
-    // special 404 handler to workaround WLED bug 
-    embui.on_notfound( [](AsyncWebServerRequest *r){ return http_notfound(r);} );
-
     //  *** EmbUI ***
     // Инициализируем EmbUI фреймворк - загружаем конфиг, запускаем WiFi и все зависимые от него службы
     embui.begin();
     // change periodic WebUI publish interval
     embui.setPubInterval(30);
-
-    // OmniCron Scheduler - activate on time sync
-    //TimeProcessor::getInstance().attach_callback( [](){ omnicron.start(); } );
-
-    // Add mDNS CB handler for WLED app
-    embui.wifi->mdns_cb = wled_announce;
 
     // register EmbUI action callbacks
     embui_actions_register();
@@ -273,21 +262,3 @@ void sendData(){
     embui.publish(TCONST_state, out.c_str(), true); // отправляем обратно в MQTT в топик embui/pub/
 }
 #endif
-
-void wled_announce(){
-    MDNS.addService("wled", "tcp", 80);
-    MDNS.addServiceTxt("wled", "tcp", "mac", (const char*)embui.macid());
-}
-
-// rewriter for buggy WLED app
-// https://github.com/Aircoookie/WLED-App/issues/37
-bool http_notfound(AsyncWebServerRequest *request){
-    if (request->url().indexOf("win&") != -1){
-        String req(request->url());
-        req.replace("win&", "win?");
-        request->redirect(req);
-        return true;
-    }
-    // not our case, no action was made
-    return false;
-}
