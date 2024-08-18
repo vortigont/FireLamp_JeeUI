@@ -617,16 +617,9 @@ void Lamp::_event_picker_cmd(esp_event_base_t base, int32_t id, void* data){
         return;
 
     // Brightness control
-      case evt::lamp_t::brightness : {
-        if (base == LAMP_SET_EVENTS){
-          setBrightness(*((int*) data));
-        } else {
-          // otherwise it's a GET event, publish current brightness
-          int32_t b = getBrightness();
-          EVT_POST_DATA( LAMP_STATE_EVENTS, e2int(evt::lamp_t::brightness), &b, sizeof(int32_t) );
-        }
+      case evt::lamp_t::brightness :
+        setBrightness(*((int*) data));
         return;
-      }
       case evt::lamp_t::brightness_nofade :
         setBrightness(*((int*) data), fade_t::off);
         break;
@@ -687,6 +680,12 @@ void Lamp::_event_picker_get(esp_event_base_t base, int32_t id, void* data){
     case evt::lamp_t::pwr :
       EVT_POST(LAMP_STATE_EVENTS, vopts.pwrState ? e2int(evt::lamp_t::pwron) : e2int(evt::lamp_t::pwroff));
       break;
+
+    case evt::lamp_t::brightness :{
+      int32_t b = getBrightness();
+      EVT_POST_DATA( LAMP_STATE_EVENTS, e2int(evt::lamp_t::brightness), &b, sizeof(int32_t) );
+      break;
+    }
 
     default:;
   }
