@@ -152,14 +152,6 @@ void Lamp::handle(){
     micHandler();
     mic_check = millis();
   }
-
-#if defined(LAMP_DEBUG_LEVEL) && LAMP_DEBUG_LEVEL>2
-  EVERY_N_SECONDS(15){
-    // fps counter
-    LOGD(T_lamp, printf, "Eff:%d, FastLED FPS: %u\n", effwrkr.getCurrentEffectNumber(), FastLED.getFPS());
-    LOGD(T_lamp, printf, "MEM stat: %d, Time: %s\n", ESP.getFreeHeap(), TimeProcessor::getInstance().getFormattedShortTime().c_str());
-  }
-#endif
 }
 
 void Lamp::power(bool pwr, bool restore_state){

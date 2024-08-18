@@ -1020,6 +1020,10 @@ void EffectWorker::_runnerHndlr(){
   // make a defered mutex lock
   std::unique_lock<std::mutex> lock(_mtx, std::defer_lock);
 
+#if defined(LAMP_DEBUG_LEVEL) && LAMP_DEBUG_LEVEL>2
+  uint32_t fps{0}, t = millis();
+#endif
+
   for (;;){
     // if task has been delayed, than we can't keep up with desired frame rate, let's give other tasks time to run anyway
     if ( xTaskDelayUntil( &xLastWakeTime, pdMS_TO_TICKS(interframe_delay_ms) ) ) taskYIELD();
@@ -1040,6 +1044,18 @@ void EffectWorker::_runnerHndlr(){
     if (worker->run()){
       // effect has rendered a data in buffer, need to call the engine draw it
       display.show();
+
+    // fps counter in debug mode
+#if defined(LAMP_DEBUG_LEVEL) && LAMP_DEBUG_LEVEL>2
+      ++fps;
+      // once per 10 sec
+      if(millis()-t > 10000){
+        LOGD(T_lamp, printf, "Eff:%u, FPS: %u\n", getCurrentEffectNumber(), fps/10);
+        fps = 0;
+        t = millis();
+      }
+#endif
+
     }
     // effectcalc returned no data
 
