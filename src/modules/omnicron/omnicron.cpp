@@ -150,7 +150,7 @@ void OmniCron::_purge_actions(cronos_tid id){
 
 void OmniCron::generate_cfg(JsonVariant cfg) const {
   JsonArray arr = cfg[T_event].to<JsonArray>();
-  LOGV(T_crontab, printf, "saving %u tasks\n", _tasks.size());
+  LOGV(T_crontab, printf, "serializing %u tasks\n", _tasks.size());
   for (const auto& i : _tasks){
     JsonObject item = arr.add<JsonObject>();
     item[T_active] = i.active;
@@ -173,14 +173,13 @@ void OmniCron::mkEmbUIpage(Interface *interf, const JsonObject *data, const char
   // prepare an object with cron rules, loaded via js from WebUI
   interf->json_frame_jscall("omnicron_tasks_load");
     JsonDocument doc;
-    getConfig(doc.to<JsonObject>());
+    generate_cfg(doc.to<JsonObject>());
     interf->json_frame_add(doc);
   interf->json_frame_flush();
 
   // 'new' and 'exit' buttons
   interf->json_frame_interface();
   interf->json_section_uidata();
-  key = T_ui_pages_module_prefix;
   interf->uidata_pick( T_mod_omnicron_bottom );
   interf->json_frame_flush();
 }

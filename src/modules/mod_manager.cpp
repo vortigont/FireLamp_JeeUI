@@ -107,8 +107,8 @@ void GenericModule::load(){
 void GenericModule::save(){
   JsonDocument doc;
   embuifs::deserializeFile(doc, mkFileName().c_str());
-  getConfig(_def_config ? doc[label].to<JsonObject>() : doc.as<JsonObject>());
-  LOGD(T_Module, printf, "%s: writing cfg to file\n", label);
+  getConfig(_def_config ? doc[label].to<JsonObject>() : doc.to<JsonObject>());
+  LOGD(T_Module, printf, "writing cfg to file: %s\n", mkFileName().c_str());
   embuifs::serialize2file(doc, mkFileName().c_str());
 }
 
