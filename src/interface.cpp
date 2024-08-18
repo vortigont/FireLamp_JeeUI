@@ -232,8 +232,8 @@ void ui_section_menu(Interface *interf, const JsonObject *data, const char* acti
     interf->json_section_menu();
 
     interf->option(A_ui_page_effects, TINTF_000);           //  Эффекты
-    //interf->option(A_ui_page_drawing, TINTF_0CE);        //  Рисование (оключено, т.к. используется старая схема с глобальным оверлеем)
-    interf->option(A_ui_page_modules, "Modules");           //  Modules
+    //interf->option(A_ui_page_drawing, TINTF_0CE);         //  Рисование (оключено, т.к. используется старая схема с глобальным оверлеем)
+    interf->option(A_ui_page_modules, "🏗 Модули");         //  Modules
     basicui::menuitem_settings(interf);                     //  настройки
 
     interf->json_section_end();
@@ -1079,7 +1079,7 @@ void getset_gpios(Interface *interf, const JsonObject *data, const char* action)
     basicui::page_system_settings(interf, nullptr, NULL);
 }
 
-//Страница "Рисование"
+/* Страница "Рисование"
 void ui_page_drawing(Interface *interf, const JsonObject *data, const char* action){
     if (!interf) return;
     interf->json_frame_interface();  //TINTF_080);
@@ -1098,7 +1098,7 @@ void ui_page_drawing(Interface *interf, const JsonObject *data, const char* acti
 
     interf->json_frame_flush();
 }
-
+*/
 // Create Additional buttons on "Settings" page
 void user_settings_frame(Interface *interf, const JsonObject *data, const char* action){
     // periferal devices
@@ -1327,7 +1327,7 @@ void embui_actions_register(){
 
     embui.action.add(A_ui_page, ui_page_selector);                          // ui page switcher, same as in basicui::
     embui.action.add(A_ui_page_effects, ui_page_effects);                   // меню: переход на страницу "Эффекты"
-    embui.action.add(A_ui_page_drawing, ui_page_drawing);                   // меню: переход на страницу "Рисование"
+    //embui.action.add(A_ui_page_drawing, ui_page_drawing);                   // меню: переход на страницу "Рисование"
     embui.action.add(A_ui_page_modules, ui_page_modules);                   // меню: переход на страницу "Модули"
     embui.action.add(A_ui_block_switches, ui_block_mainpage_switches);      // нажатие кнопки "еще..." на странице "Эффекты"
 
