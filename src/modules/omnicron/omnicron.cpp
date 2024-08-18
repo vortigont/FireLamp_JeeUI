@@ -150,7 +150,7 @@ void OmniCron::_purge_actions(cronos_tid id){
 
 void OmniCron::generate_cfg(JsonVariant cfg) const {
   JsonArray arr = cfg[T_event].to<JsonArray>();
-
+  LOGV(T_crontab, printf, "saving %u tasks\n", _tasks.size());
   for (const auto& i : _tasks){
     JsonObject item = arr.add<JsonObject>();
     item[T_active] = i.active;
@@ -229,9 +229,12 @@ void OmniCron::_task_get(Interface *interf, const JsonObject *data, const char* 
 
 void OmniCron::_task_set(Interface *interf, const JsonObject *data, const char* action){
   int idx = (*data)[T_idx];
-  LOGD(T_crontab, printf, "Set crontab rule:%d\n", idx);
-  if (idx >= _tasks.size())
+
+  if (idx >= static_cast<int>(_tasks.size())){
+    LOGV(T_crontab, printf, "Wrong task idx:%d\n", idx);
     return;
+  }
+  LOGD(T_crontab, printf, "Set task with idx:%d\n", idx);
 
   if (idx == -1){
     // this is a NEW rule
