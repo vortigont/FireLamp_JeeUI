@@ -120,6 +120,14 @@ void setup() {
     zookeeper.start();
     zookeeper.setHandlers();
 
+
+    // this does not work at all
+    // https://forum.arduino.cc/t/locale-and-parsing-of-time/1216452
+    // https://www.esp32.com/viewtopic.php?t=6335
+    //setlocale(LC_TIME, "ru_RU.utf8");
+    //setlocale(LC_ALL, "ru_RU.utf8");
+    //std::locale::global(std::locale("C"));
+
     LOGI(T_Main, printf, "Setup complete: free heap: %uk, PSRAM:%uk\n\n", ESP.getFreeHeap()/1024, ESP.getFreePsram()/1024);
 }   // End setup()
 

@@ -248,7 +248,7 @@ void OmniCron::_task_set(Interface *interf, const JsonObject *data, const char* 
     _tasks.emplace_back(std::move(t));
   } else {
     // it's an update for existing rule
-    auto t = _tasks.at(idx);
+    omni_task_t& t = _tasks.at(idx);
 
     // first purge all tasks's rules
     _purge_actions(t.tid);
