@@ -336,16 +336,14 @@
           "id":"display_hub75",
           "html":"button",
           "type":1,
-          "fa": "fas fa-circle-check",
-          "label":"Сохранить"
+          "label":"🖫 Сохранить"
         },
         {
           "id":"ui_page_settings",
           "html":"button",
           "color": "green",
           "type":0,
-          "fa": "fas fa-door-open",
-          "label":"Выход"
+          "label":"🔙 Выход"
         }
       ]
     },
@@ -557,15 +555,13 @@
           "html": "button",
           "type": 1,
           "color": "green",
-          "fa": "fas fa-circle-check",
-          "label": "Сохранить"
+          "label": "🖫 Сохранить"
         },
         {
           "id": "ui_page_settings",
           "html": "button",
           "type": 0,
-          "fa": "fas fa-door-open",
-          "label": "Выход"
+          "label": "🔙 Выход"
         }
       ]
     },
@@ -647,15 +643,13 @@
           "html": "button",
           "type": 1,
           "color": "green",
-          "fa": "fas fa-circle-check",
-          "label": "Сохранить"
+          "label": "🖫 Сохранить"
         },
         {
           "id": "ui_page_settings",
           "html": "button",
           "type": 0,
-          "fa": "fas fa-door-open",
-          "label": "Выход"
+          "label": "🔙 Выход"
         }
       ]
     },
@@ -757,8 +751,7 @@
                   "html": "button",
                   "type": 1,
                   "color": "green",
-                  "fa": "fas fa-circle-check",
-                  "label": "Сохранить"
+                  "label": "🖫 Сохранить"
                 }
               ]
             }
@@ -841,8 +834,7 @@
                   "html": "button",
                   "type": 1,
                   "color": "green",
-                  "fa": "fas fa-circle-check",
-                  "label": "Сохранить"
+                  "label": "🖫 Сохранить"
                 }
               ]
             }
@@ -863,8 +855,7 @@
           "id": "ui_page_settings",
           "html": "button",
           "type": 0,
-          "fa": "fas fa-door-open",
-          "label": "Выход"
+          "label": "🔙 Выход"
         }
       ]
     },
@@ -950,15 +941,13 @@
               "html": "button",
               "type": 1,
               "color": "green",
-              "fa": "fas fa-circle-check",
-              "label": "Сохранить"
+              "label": "🖫 Сохранить"
             },
             {
               "id": "ui_page_settings",
               "html": "button",
               "type": 0,
-              "fa": "fas fa-door-open",
-              "label": "Выход"
+              "label": "🔙 Выход"
             }
           ]
         },
@@ -990,15 +979,13 @@
               "html": "button",
               "type": 1,
               "color": "green",
-              "fa": "fas fa-circle-check",
-              "label": "Сохранить"
+              "label": "🖫 Сохранить"
             },
             {
               "id": "ui_page_settings",
               "html": "button",
               "type": 0,
-              "fa": "fas fa-door-open",
-              "label": "Выход"
+              "label": "🔙 Выход"
             }
 
           ]
@@ -1086,7 +1073,7 @@
           "id": "set_other",
           "html": "button",
           "type": 1,
-          "label": "Сохранить",
+          "label": "🖫 Сохранить",
           "fa": "fas fa-circle-check"
         },
         {
@@ -1097,8 +1084,7 @@
           "html": "button",
           "color": "green",
           "type":0,
-          "fa": "fas fa-door-open",
-          "label": "Выход"
+          "label": "🔙 Выход"
         }
       ]
     }
@@ -1107,7 +1093,7 @@
   "pages":{
     "modules_list":{
       "section":"modules",
-      "label":"Модули",
+      "label":"🏗 Модули",
       "main":true,
       "block":[
         {
@@ -1572,8 +1558,7 @@
             "html":"button",
             "color": "green",
             "type":0,
-            "fa": "fas fa-door-open",
-            "label":"Выход"
+            "label":"🔙 Выход"
           }
         ]
       },
@@ -1781,8 +1766,7 @@
             "html":"button",
             "color": "green",
             "type":0,
-            "fa": "fas fa-door-open",
-            "label":"Выход"
+            "label":"🔙 Выход"
           }
         ]
       },
@@ -1975,8 +1959,7 @@
             "html":"button",
             "color": "green",
             "type":0,
-            "fa": "fas fa-door-open",
-            "label":"Выход"
+            "label":"🔙 Выход"
           }
         ]
       },
@@ -2138,8 +2121,7 @@
           "html":"button",
           "color": "green",
           "type":0,
-          "fa": "fas fa-door-open",
-          "label":"Выход"
+          "label":"🔙 Выход"
         }
       ]
     }
@@ -2488,9 +2470,8 @@
             "id": "alrm_item",
             "html": "button",
             "type": 2,
-            "label":"Сохранить",
-            "function": "alarm_item_set",
-            "fa": "fas fa-circle-check"
+            "label":"🖫 Сохранить",
+            "function": "alarm_item_set"
           },
           { "html":"spacer" }
       ]
@@ -2566,7 +2547,6 @@
           "html":"button",
           "color": "green",
           "type":0,
-          "fa": "fas fa-door-open",
           "label":"🔙 Выход"
        }
       ]
