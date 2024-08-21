@@ -1,5 +1,13 @@
 # Change Log
 
+## 3.8.1
++ update icons for buttons in UI objects
+* bump platform package to 3.0.4
+* fix: tm display does not display brightness change value when controlled via encoder Closes #127
+* omnicron - multiple fixes
+* Use Arduino Core 2.x for Huidu boards build
+- remove WLED app discovery
+
 ## 3.8.0
 + планировщик OmniCron
 + Switch to Arduino Core 3.0.2 (Tasmota's)
