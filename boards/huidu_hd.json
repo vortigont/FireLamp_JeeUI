@@ -5,7 +5,7 @@
     },
     "core": "esp32",
     "extra_flags": [
-      "-DARDUINO_HuiduHD",
+      "-DARDUINO_HuiduHDWFX",
       "-DARDUINO_USB_MODE=1",
       "-DARDUINO_RUNNING_CORE=1",
       "-DARDUINO_EVENT_RUNNING_CORE=1"
@@ -33,7 +33,7 @@
     "arduino",
     "espidf"
   ],
-  "name": "Huidu HD",
+  "name": "Huidu HD-WFX",
   "upload": {
     "flash_size": "8MB",
     "maximum_ram_size": 327680,
