@@ -1,22 +1,17 @@
 __[CHANGELOG](/CHANGELOG.md)__ | [![PlatformIO CI](https://github.com/vortigont/FireLamp_JeeUI/actions/workflows/pio_build.yml/badge.svg)](https://github.com/vortigont/FireLamp_JeeUI/actions/workflows/pio_build.yml)
 
 ## Огненная лампа FireLamp_EmbUI
-Лампа, гирлянда, информер с поддержкой светодиодных матриц/лент ws2812 и HUB75 RGB панелей.
-
-Деполитизированный форк проекта "огненной" лампы [FireLamp_EmbUI](https://github.com/DmytroKorniienko/FireLamp_EmbUI).
-
-<details>
-  <summary>Project Manifest</summary>
-
-Проект был пересобран из старых форков и архивов репозитория пользователей и участников разработки на момент примерно 2021 года. В [исходном](https://github.com/DmytroKorniienko/FireLamp_EmbUI) проекте был полностью вырезан русский язык, задним числом переписана история разработки в Git и удалена соотвествующая тема [форума](https://community.alexgyver.ru/threads/wifi-lampa-budilnik-obsuzhdenie-proekta.1411/). Данный форк это не срез исходного репозитория, хотя сохранил часть общей истории до определенного момента.
-
-</details>
+Информер, лампа, гирлянда с поддержкой светодиодных матриц/лент ws2812 и HUB75 RGB панелей.
 
 Канал в Telegram для общения пользователей прошивки - [LampDevs](https://t.me/LampDevs)
 
 Группа [ВКонтакте](https://vk.com/club226065124)
 
-Тема на [форуме Гайвера](https://community.alexgyver.ru/threads/wifi-lampa-budilnik-obsuzhdenie-proshivki-firelamp_embui.7257/)
+<details>
+  <summary>Project Manifest</summary>
+Деполитизированный форк проекта "огненной" лампы [FireLamp_EmbUI](https://github.com/DmytroKorniienko/FireLamp_EmbUI).
+Проект был пересобран из старых форков и архивов репозитория пользователей и участников разработки на момент примерно 2021 года. В [исходном](https://github.com/DmytroKorniienko/FireLamp_EmbUI) проекте был полностью вырезан русский язык, задним числом переписана история разработки в Git и удалена соотвествующая тема [форума](https://community.alexgyver.ru/threads/wifi-lampa-budilnik-obsuzhdenie-proekta.1411/). Данный форк это не срез исходного репозитория, хотя сохранил часть общей истории до определенного момента.
+</details>
 
 
 
@@ -57,6 +52,8 @@ __[CHANGELOG](/CHANGELOG.md)__ | [![PlatformIO CI](https://github.com/vortigont/
  - [esp32-flashz](https://github.com/vortigont/esp32-flashz) - zlib compressed OTA firmware update for ESP32. Implements on-the-fly OTA images decompression on upload/flashing
  - [TM1637](https://github.com/vortigont/TM1637) - адаптированная библиотека от [AKJ7](https://github.com/AKJ7/TM1637) переработанная для дополнительных эффектов анимации
  - [ESP32-DNSServerAsync](https://github.com/vortigont/ESP32-DNSServerAsync) - Async version of ESP32's DNSServer based on AsyncUDP lib 
+ - [CronoS]https://github.com/vortigont/CronoS) - task scheduler for ESP32 based on RTOS with CRON syntax sugar
+
 
 ### ESP8266 vs ESP32
 Разработка ведется под контроллеры семейства **esp32**. ESP8266 морально устарел, было принято решение не тратить время на поддержку совместимости и уделить больше времени и ресурсов актуальной платформе.
