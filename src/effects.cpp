@@ -3536,7 +3536,7 @@ bool EffectStar::run() {
 
 //---------- Эффект "Фейерверк"
 //адаптация и переписал - kostyamat
-//https://gist.github.com/jasoncoon/0cccc5ba7ab108c0a373
+//https://gist.github.com/jasoncoon/0cccc5ba7a0b108c0a373
 // !++
 String EffectFireworks::setDynCtrl(UIControl*_val) {
   if(_val->getId()==3) {
@@ -4706,7 +4706,7 @@ void EffectArrows::arrowSetup_mode4() {
 }
 
 // ------ Эффект "Дикие шарики"
-// (с) https://gist.github.com/bonjurroughs/9c107fa5f428fb01d484#file-noise-balls
+// (с) https://gist.github.com/bonjurroughs/9c107fa5f428f0b01d484#file-noise-balls
 // !++
 String EffectNBals::setDynCtrl(UIControl*_val){
   if(_val->getId()==1) beat1 = map(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 8, 128);
@@ -5108,7 +5108,7 @@ void EffectSnakeIsland::regen() {
     i.speedY = EffectMath::randomf(0.2, 1.5);
     //snakeTurn[i] = 0;
     i.color = random8(map(snakes.size(), 1, 10, 2, MAX_SNAKES) * 255/map(snakes.size(), 1, 10, 2, MAX_SNAKES));
-    i.direct = random8(4); //     B00           направление головы змейки
+    i.direct = random8(4); //     0b00           направление головы змейки
   }
 }
 
@@ -5123,32 +5123,32 @@ bool EffectSnakeIsland::run() {
       if (random8(8) <= 1U)
         if (random8(2U))
         {                                           // <- поворот налево
-          i.last = (i.last << 2) | B01; // младший бит = поворот
+          i.last = (i.last << 2) | 0b01; // младший бит = поворот
           switch (i.direct)
           {
-          case B10:
-            i.direct = B01;
+          case 0b10:
+            i.direct = 0b01;
             if (i.posY == 0U)
               i.posY = fb->maxHeightIndex();
             else
               i.posY--;
             break;
-          case B11:
-            i.direct = B00;
+          case 0b11:
+            i.direct = 0b00;
             if (i.posY >= fb->maxHeightIndex())
               i.posY = 0U;
             else
               i.posY++;
             break;
-          case B00:
-            i.direct = B10;
+          case 0b00:
+            i.direct = 0b10;
             if (i.posX == 0U)
               i.posX = fb->maxWidthIndex();
             else
               i.posX--;
             break;
-          case B01:
-            i.direct = B11;
+          case 0b01:
+            i.direct = 0b11;
             if (i.posX >= fb->maxWidthIndex())
               i.posX = 0U;
             else
@@ -5156,32 +5156,32 @@ bool EffectSnakeIsland::run() {
             break;
           }
         } else {                                           // -> поворот направо
-          i.last = (i.last << 2) | B11; // младший бит = поворот, старший = направо
+          i.last = (i.last << 2) | 0b11; // младший бит = поворот, старший = направо
           switch (i.direct)
           {
-          case B11:
-            i.direct = B01;
+          case 0b11:
+            i.direct = 0b01;
             if (i.posY == 0U)
               i.posY = fb->maxHeightIndex();
             else
               i.posY--;
             break;
-          case B10:
-            i.direct = B00;
+          case 0b10:
+            i.direct = 0b00;
             if (i.posY >= fb->maxHeightIndex())
               i.posY = 0U;
             else
               i.posY++;
             break;
-          case B01:
-            i.direct = B10;
+          case 0b01:
+            i.direct = 0b10;
             if (i.posX == 0U)
               i.posX = fb->maxWidthIndex();
             else
               i.posX--;
             break;
-          case B00:
-            i.direct = B11;
+          case 0b00:
+            i.direct = 0b11;
             if (i.posX >= fb->maxWidthIndex())
               i.posX = 0U;
             else
@@ -5193,25 +5193,25 @@ bool EffectSnakeIsland::run() {
         i.last = (i.last << 2);
         switch (i.direct)
         {
-        case B01:
+        case 0b01:
           if (i.posY == 0U)
             i.posY = fb->maxHeightIndex();
           else
             i.posY--;
           break;
-        case B00:
+        case 0b00:
           if (i.posY >= fb->maxHeightIndex())
             i.posY = 0U;
           else
             i.posY++;
           break;
-        case B10:
+        case 0b10:
           if (i.posX == 0U)
             i.posX = fb->maxWidthIndex();
           else
             i.posX--;
           break;
-        case B11:
+        case 0b11:
           if (i.posX >= fb->maxWidthIndex())
             i.posX = 0U;
           else
@@ -5222,19 +5222,19 @@ bool EffectSnakeIsland::run() {
     }
     switch (i.direct)
     {
-    case B01:
+    case 0b01:
       dy = 1;
       dx = 0;
       break;
-    case B00:
+    case 0b00:
       dy = -1;
       dx = 0;
       break;
-    case B10:
+    case 0b10:
       dy = 0;
       dx = 1;
       break;
-    case B11:
+    case 0b11:
       dy = 0;
       dx = -1;
       break;
@@ -5250,10 +5250,10 @@ bool EffectSnakeIsland::run() {
       y = (fb->h() + y + dy) % fb->h();  
       EffectMath::drawPixelXYF(x, y, ColorFromPalette(*curPalette, i.color + m * 4U, 255U), fb);
 
-      if (temp & B01)
+      if (temp & 0b01)
       { // младший бит = поворот, старший = направо
         temp = temp >> 1;
-        if (temp & B01)
+        if (temp & 0b01)
         { // старший бит = направо
           if (dx == 0)
           {
