@@ -177,10 +177,10 @@ bool EffectWhiteColorStripe::whiteColorStripeRoutine()
         for (int16_t y = 0; y < (int16_t)fb->h(); y++){
           for (int16_t x = 0; x < (int16_t)fb->w(); x++){
             CRGB color = CHSV(
-              45U,                                                       // определяем тон
-              (brightness>=0 ? map(_speed, 0U, 255U, 0U, 170U) : 0),     // определяем насыщенность
+              45U,                                                  // определяем тон
+              map(_speed, 0U, 255U, 0U, 170U),                      // определяем насыщенность
               (MAX_BRIGHTNESS));
-            fb->at(x, y) = color;                        // 127 - заливка полная
+            fb->at(x, y) = color;                                   // 127 - заливка полная
           }
         }
     }
