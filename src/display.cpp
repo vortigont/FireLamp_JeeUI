@@ -70,11 +70,10 @@ bool LEDDisplay::_start_rmt(const JsonDocument& doc){
 
     LOGI(T_Display, println, "starting RMT engine");
 
-
-    if (!doc.containsKey(T_ws2812)) return false;    // no object with stripe config
-
     // shortcut
     JsonVariantConst o = doc[T_ws2812];
+
+    if (o == nullptr) return false;    // no object with stripe config
 
     // load gpio value, if defined
     int gpio = o[T_mx_gpio] | -1;
