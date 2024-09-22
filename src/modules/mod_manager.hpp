@@ -408,7 +408,7 @@ private:
 
 // Unary predicate for Module's label search match
 template <class T>
-class MatchLabel : public std::unary_function<T, bool>{
+class MatchLabel {
     std::string_view _lookup;
 public:
     explicit MatchLabel(const char* label) : _lookup(label) {}

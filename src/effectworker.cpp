@@ -841,9 +841,10 @@ bool Effcfg::_eff_ctrls_load_from_jdoc(JsonDocument &effcfg, std::vector<std::sh
       if ( !(id_tst&(1<<id)) ){   // проверка на существование контрола
           id_tst |= 1<<id;        // закладываемся не более чем на 8 контролов, этого хватит более чем :)
           // формируем имя контрола
+          JsonVariant v = item[T_name];
           String name;
-          if (item.containsKey(T_name))
-            name = item[T_name].as<const char*>();
+          if (v.is<const char*>())
+            name = v.as<const char*>();
           else if (id == 1){
             name = TINTF_087;
           } else if (id == 2)
@@ -853,10 +854,14 @@ bool Effcfg::_eff_ctrls_load_from_jdoc(JsonDocument &effcfg, std::vector<std::sh
             name += id;
           }
 
-          String val( item.containsKey(T_val) ? item[T_val].as<int>() : 128 );
-          String min( item.containsKey(T_min) && id>2 ? item[T_min].as<int>() : 1 );
-          String max( item.containsKey(T_max) && id>2 ? item[T_max].as<int>() : 255 );
-          String step( item.containsKey(T_step) && id>2 ?  item[T_step].as<int>() : 1);
+          v = item[T_val];
+          String val( v.is<int>() ? v.as<int>() : 128 );
+          v = item[T_min];
+          String min( v.is<int>() && id>2 ? v.as<int>() : 1 );
+          v = item[T_max];
+          String max( v.is<int>() && id>2 ? v.as<int>() : 255 );
+          v = item[T_step];
+          String step( v.is<int>() && id>2 ?  v.as<int>() : 1);
           CONTROL_TYPE type = item["type"].as<CONTROL_TYPE>();
           type = ((type & 0x0F)!=CONTROL_TYPE::RANGE) && id<3 ? CONTROL_TYPE::RANGE : type;
           min = ((type & 0x0F)==CONTROL_TYPE::CHECKBOX) ? "0" : min;
@@ -928,7 +933,7 @@ void EffectWorker::_load_eff_list_from_idx_file(const char *folder){
 
   effects.clear();
   for (JsonObject item : arr){
-      if(item.containsKey("n")){
+      if(item["n"].is<int>()){
         effects.emplace_back(item["n"].as<uint16_t>(), item["f"].as<uint8_t>());
       }
       //LOG(printf_P,PSTR("%d : %d\n"),item["n"].as<uint16_t>(), item["f"].as<uint8_t>());

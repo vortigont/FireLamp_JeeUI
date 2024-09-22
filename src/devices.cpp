@@ -64,7 +64,7 @@ MP3PlayerController *mp3player = nullptr;
 
 void tm1637_setup(){
   JsonDocument doc;
-  if (!embuifs::deserializeFile(doc, TCONST_fcfg_display) || !doc.containsKey(T_tm1637)) return;      // config is missing, bad or has no TM1637 data
+  if (!embuifs::deserializeFile(doc, TCONST_fcfg_display) || doc[T_tm1637] == nullptr) return;      // config is missing, bad or has no TM1637 data
 
   JsonVariantConst cfg( doc[T_tm1637] );
   tm1637_configure(cfg);
@@ -223,7 +223,7 @@ void getset_button_gpio(Interface *interf, const JsonObject *data, const char* a
 
     // if this is a request with no data, then just provide existing configuration and quit
     if (!data || !(*data).size()){
-        if (interf && doc.containsKey(T_btn_cfg)){
+        if (interf && doc[T_btn_cfg] != nullptr){
             interf->json_frame_value(doc[T_btn_cfg]);
             interf->json_frame_flush();
         }
@@ -253,7 +253,7 @@ void getset_encoder_gpio(Interface *interf, const JsonObject *data, const char* 
 
     // if this is a request with no data, then just provide existing configuration and quit
     if (!data || !(*data).size()){
-      if (interf && doc.containsKey(T_encoder)){
+      if (interf && doc[T_encoder] != nullptr){
           interf->json_frame_value(doc[T_encoder]);
           interf->json_frame_flush();
       }
@@ -332,7 +332,7 @@ void getset_dfplayer_device(Interface *interf, const JsonObject *data, const cha
 
         // if this is a request with no data, then just provide existing configuration and quit
         if (!data || !(*data).size()){
-            if (interf && doc.containsKey(T_device)){
+            if (interf && doc[T_device] != nullptr){
                 interf->json_frame_value(doc[T_device]);
                 interf->json_frame_flush();
             }
@@ -365,7 +365,7 @@ void getset_dfplayer_opt(Interface *interf, const JsonObject *data, const char* 
 
         // if this is a request with no data, then just provide existing configuration and quit
         if (!data || !(*data).size()){
-            if (interf && doc.containsKey(T_opt)){
+            if (interf && doc[T_opt] != nullptr){
                 interf->json_frame_value(doc[T_opt]);
                 interf->json_frame_flush();
             }

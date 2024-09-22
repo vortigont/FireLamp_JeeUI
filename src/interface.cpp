@@ -1176,7 +1176,7 @@ void page_display_setup(Interface *interf, const JsonObject *data, const char* a
     interf->json_section_main(P_EMPTY, TINTF_display_setup);
 
     // determine which value we should set drop-down list to
-    int select_val = data && (*data).containsKey(T_display_type) ? (*data)[T_display_type] : e2int(display.get_engine_type());
+    int select_val = data && (*data)[T_display_type].is<int>() ? (*data)[T_display_type] : e2int(display.get_engine_type());
 
     interf->select(T_display_type, select_val, TINTF_display_type, true);
         interf->option(0, "ws2812b LED stripe");
@@ -1186,7 +1186,7 @@ void page_display_setup(Interface *interf, const JsonObject *data, const char* a
     interf->spacer();
 
     // if parameter for the specific page has been given
-    if (data && (*data).containsKey(T_display_type)){
+    if (data && (*data)[T_display_type].is<int>()){
         if ((*data)[T_display_type] == e2int(engine_t::hub75))
             block_display_setup(interf, engine_t::hub75);
         else
@@ -1214,9 +1214,10 @@ void block_display_setup(Interface *interf, engine_t e){
 
     JsonDocument doc;
     // if config can't be loaded, then just quit
-    if (!embuifs::deserializeFile(doc, TCONST_fcfg_display) || !doc.containsKey( e == engine_t::hub75 ? T_hub75 : T_ws2812)) return;
+    auto key = e == engine_t::hub75 ? T_hub75 : T_ws2812;
+    if (!embuifs::deserializeFile(doc, TCONST_fcfg_display) || doc[key] == nullptr ) return;
 
-    interf->json_frame_value(doc[e == engine_t::hub75 ? T_hub75 : T_ws2812]);
+    interf->json_frame_value(doc[key]);
     interf->json_frame_flush();
 
 /*
