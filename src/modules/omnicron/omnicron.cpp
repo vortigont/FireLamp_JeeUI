@@ -51,11 +51,11 @@ static constexpr const char* T_mod_omnicron_task = "lampui.pages.module.omnicron
 
 OmniCron::OmniCron() : GenericModule(T_omnicron, false){
   // add EmbUI's handler to get Cron's task config
-  embui.action.add(A_get_mod_omnicron_task, [this](Interface *interf, const JsonObject *data, const char* action){ _task_get(interf, data, action); } );
+  embui.action.add(A_get_mod_omnicron_task, [this](Interface *interf, JsonObjectConst data, const char* action){ _task_get(interf, data, action); } );
 
-  embui.action.add(A_set_mod_omnicron_task, [this](Interface *interf, const JsonObject *data, const char* action){ _task_set(interf, data, action); } );
+  embui.action.add(A_set_mod_omnicron_task, [this](Interface *interf, JsonObjectConst data, const char* action){ _task_set(interf, data, action); } );
 
-  embui.action.add(A_set_mod_omnicron_task_rm, [this](Interface *interf, const JsonObject *data, const char* action){ _task_remove(interf, data, action); } );
+  embui.action.add(A_set_mod_omnicron_task_rm, [this](Interface *interf, JsonObjectConst data, const char* action){ _task_remove(interf, data, action); } );
 
 }
 
@@ -160,22 +160,23 @@ void OmniCron::generate_cfg(JsonVariant cfg) const {
   }
 }
 
-void OmniCron::mkEmbUIpage(Interface *interf, const JsonObject *data, const char* action){
+void OmniCron::mkEmbUIpage(Interface *interf, JsonObjectConst data, const char* action){
   String key(T_ui_pages_module_prefix);
   key += label;
   // load Module's structure from a EmbUI's UI data
   interf->json_frame_interface();
   interf->json_section_uidata();
   interf->uidata_pick( key.c_str() );
+/*
   // Main frame MUST be flushed before sending other ui_data sections
   interf->json_frame_flush();
-
+*/
   // prepare an object with cron rules, loaded via js from WebUI
   interf->json_frame_jscall("omnicron_tasks_load");
     JsonDocument doc;
     generate_cfg(doc.to<JsonObject>());
-    interf->json_frame_add(doc);
-  interf->json_frame_flush();
+    interf->json_object_add(doc);
+//  interf->json_frame_flush();
 
   // 'new' and 'exit' buttons
   interf->json_frame_interface();
@@ -184,8 +185,8 @@ void OmniCron::mkEmbUIpage(Interface *interf, const JsonObject *data, const char
   interf->json_frame_flush();
 }
 
-void OmniCron::_task_get(Interface *interf, const JsonObject *data, const char* action){
-  int idx = (*data)[action];
+void OmniCron::_task_get(Interface *interf, JsonObjectConst data, const char* action){
+  int idx = data[action];
   LOGD(T_crontab, printf, "Get crontab task:%d\n", idx);
 
   // first, build a page with task's setup
@@ -226,8 +227,8 @@ void OmniCron::_task_get(Interface *interf, const JsonObject *data, const char* 
   interf->json_frame_flush();
 }
 
-void OmniCron::_task_set(Interface *interf, const JsonObject *data, const char* action){
-  int idx = (*data)[T_idx];
+void OmniCron::_task_set(Interface *interf, JsonObjectConst data, const char* action){
+  int idx = data[T_idx];
 
   if (idx >= static_cast<int>(_tasks.size())){
     LOGV(T_crontab, printf, "Wrong task idx:%d\n", idx);
@@ -237,10 +238,10 @@ void OmniCron::_task_set(Interface *interf, const JsonObject *data, const char* 
 
   if (idx == -1){
     // this is a NEW rule
-    omni_task_t t({(*data)[T_active].as<bool>(), 0, (*data)[T_descr].as<const char*>(), (*data)[T_crontab].as<const char*>(), (*data)[T_cmd].as<const char*>()});
+    omni_task_t t({data[T_active].as<bool>(), 0, data[T_descr].as<const char*>(), data[T_crontab].as<const char*>(), data[T_cmd].as<const char*>()});
     if (t.active){
       // load task and it's actions to cronos
-      t.tid = _cronos.addCallback((*data)[T_crontab], [this](cronos_tid id, void* arg){ _cron_callback(id, arg); });
+      t.tid = _cronos.addCallback(data[T_crontab], [this](cronos_tid id, void* arg){ _cron_callback(id, arg); });
       _parse_actions(t.tid, t.cmd.data());
     }
 
@@ -251,12 +252,12 @@ void OmniCron::_task_set(Interface *interf, const JsonObject *data, const char* 
 
     // first purge all tasks's rules
     _purge_actions(t.tid);
-    t.descr = (*data)[T_descr].as<const char*>();
-    t.crontab = (*data)[T_crontab].as<const char*>();
-    t.cmd = (*data)[T_cmd].as<const char*>();
+    t.descr = data[T_descr].as<const char*>();
+    t.crontab = data[T_crontab].as<const char*>();
+    t.cmd = data[T_cmd].as<const char*>();
 
     // if tasks's state has changed
-    bool new_state = (*data)[T_active].as<bool>();
+    bool new_state = data[T_active].as<bool>();
 
     if (new_state){
       if (t.active){
@@ -264,7 +265,7 @@ void OmniCron::_task_set(Interface *interf, const JsonObject *data, const char* 
         _cronos.setExpr(t.tid, t.crontab.data());
       } else {
         // need to create a new task
-        t.tid = _cronos.addCallback((*data)[T_crontab], [this](cronos_tid id, void* arg){ _cron_callback(id, arg); });
+        t.tid = _cronos.addCallback(data[T_crontab], [this](cronos_tid id, void* arg){ _cron_callback(id, arg); });
       }
       _parse_actions(t.tid, t.cmd.data());
     } else {
@@ -280,14 +281,14 @@ void OmniCron::_task_set(Interface *interf, const JsonObject *data, const char* 
   _cronos.reload();
 
   // load OmniCron's tasks list page
-  mkEmbUIpage(interf, nullptr, NULL);
+  mkEmbUIpage(interf, {}, NULL);
 
   // save tasks to file
   save();
 }
 
-void OmniCron::_task_remove(Interface *interf, const JsonObject *data, const char* action){
-  auto i = _tasks.begin() + (*data)[action].as<int>();
+void OmniCron::_task_remove(Interface *interf, JsonObjectConst data, const char* action){
+  auto i = _tasks.begin() + data[action].as<int>();
 
   if (i == _tasks.end())
     return;
@@ -297,5 +298,5 @@ void OmniCron::_task_remove(Interface *interf, const JsonObject *data, const cha
   _tasks.erase(i);
 
   // load OmniCron's tasks list page
-  mkEmbUIpage(interf, nullptr, NULL);
+  mkEmbUIpage(interf, {}, NULL);
 }

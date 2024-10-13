@@ -102,11 +102,11 @@ void tm1637_configure(JsonVariantConst cfg){
 // ========== Button
 
 // set button lock
-void getset_btn_lock(Interface *interf, const JsonObject *data, const char* action){
+void getset_btn_lock(Interface *interf, const JsonObjectConst data, const char* action){
   if (!button_handler) return;
-  if (data && data->size()){
+  if (!data.isNull()){
     // set lock state from provided data if there is no interf object
-    EVT_POST(LAMP_SET_EVENTS, (*data)[A_dev_btnlock] ? e2int(evt::lamp_t::btnLock) : e2int(evt::lamp_t::btnUnLock));
+    EVT_POST(LAMP_SET_EVENTS, data[A_dev_btnlock] ? e2int(evt::lamp_t::btnLock) : e2int(evt::lamp_t::btnUnLock));
   } else if (interf && button_handler) {
     // request current state from Button object and send it to the provided Interface
     interf->value(A_dev_btnlock, button_handler->lock());
@@ -216,13 +216,13 @@ void button_configure_events(JsonVariantConst cfg){
     button_handler->load(cfg);     // load config
 }
 
-void getset_button_gpio(Interface *interf, const JsonObject *data, const char* action){
+void getset_button_gpio(Interface *interf, const JsonObjectConst data, const char* action){
   {
     JsonDocument doc;
     if (!embuifs::deserializeFile(doc, T_benc_cfg)) doc.clear();
 
     // if this is a request with no data, then just provide existing configuration and quit
-    if (!data || !(*data).size()){
+    if (data.isNull()){
         if (interf && doc[T_btn_cfg] != nullptr){
             interf->json_frame_value(doc[T_btn_cfg]);
             interf->json_frame_flush();
@@ -233,7 +233,7 @@ void getset_button_gpio(Interface *interf, const JsonObject *data, const char* a
     JsonVariant dst = doc[T_btn_cfg].isNull() ? doc[T_btn_cfg].to<JsonObject>() : doc[T_btn_cfg];
 
     // copy keys to a destination object
-    for (JsonPair kvp : *data)
+    for (JsonPairConst kvp : data)
         dst[kvp.key()] = kvp.value();
 
     embuifs::serialize2file(doc, T_benc_cfg);
@@ -243,16 +243,16 @@ void getset_button_gpio(Interface *interf, const JsonObject *data, const char* a
     button_configure_gpio(cfg);
   }
 
-  if (interf) ui_page_setup_devices(interf, nullptr, NULL);
+  if (interf) ui_page_setup_devices(interf, {});
 }
 
-void getset_encoder_gpio(Interface *interf, const JsonObject *data, const char* action){
+void getset_encoder_gpio(Interface *interf, const JsonObjectConst data, const char* action){
   {
     JsonDocument doc;
     if (!embuifs::deserializeFile(doc, T_benc_cfg)) doc.clear();
 
     // if this is a request with no data, then just provide existing configuration and quit
-    if (!data || !(*data).size()){
+    if (data.isNull()){
       if (interf && doc[T_encoder] != nullptr){
           interf->json_frame_value(doc[T_encoder]);
           interf->json_frame_flush();
@@ -263,7 +263,7 @@ void getset_encoder_gpio(Interface *interf, const JsonObject *data, const char* 
     JsonVariant dst = doc[T_encoder].isNull() ? doc[T_encoder].to<JsonObject>() : doc[T_encoder];
 
     // copy keys to a destination object
-    for (JsonPair kvp : *data)
+    for (JsonPairConst kvp : data)
         dst[kvp.key()] = kvp.value();
 
     embuifs::serialize2file(doc, T_benc_cfg);
@@ -273,7 +273,7 @@ void getset_encoder_gpio(Interface *interf, const JsonObject *data, const char* 
     encoder_cfg_load(cfg);
   }
 
-  if (interf) ui_page_setup_devices(interf, nullptr, NULL);
+  if (interf) ui_page_setup_devices(interf, {});
 }
 
 // *** DFPlayer
@@ -325,13 +325,13 @@ void dfplayer_setup_opt(JsonVariantConst cfg){
   mp3player->setLoopEffects(cfg[T_eff_tracks_loop]);
 }
 
-void getset_dfplayer_device(Interface *interf, const JsonObject *data, const char* action){
+void getset_dfplayer_device(Interface *interf, const JsonObjectConst data, const char* action){
     {
         JsonDocument doc;
         if (!embuifs::deserializeFile(doc, T_dfplayer_cfg)) doc.clear();
 
         // if this is a request with no data, then just provide existing configuration and quit
-        if (!data || !(*data).size()){
+        if (data.isNull()){
             if (interf && doc[T_device] != nullptr){
                 interf->json_frame_value(doc[T_device]);
                 interf->json_frame_flush();
@@ -342,7 +342,7 @@ void getset_dfplayer_device(Interface *interf, const JsonObject *data, const cha
         JsonVariant dst = doc[T_device].isNull() ? doc[T_device].to<JsonObject>() : doc[T_device];
 
         // copy keys to a destination object
-        for (JsonPair kvp : *data)
+        for (JsonPairConst kvp : data)
             dst[kvp.key()] = kvp.value();
 
         embuifs::serialize2file(doc, T_dfplayer_cfg);
@@ -355,16 +355,16 @@ void getset_dfplayer_device(Interface *interf, const JsonObject *data, const cha
         dfplayer_setup_opt(cfg);
     }
 
-    if (interf) ui_page_setup_devices(interf, nullptr, NULL);
+    if (interf) ui_page_setup_devices(interf, {});
 }
 
-void getset_dfplayer_opt(Interface *interf, const JsonObject *data, const char* action){
+void getset_dfplayer_opt(Interface *interf, const JsonObjectConst data, const char* action){
     {
         JsonDocument doc;
         if (!embuifs::deserializeFile(doc, T_dfplayer_cfg)) doc.clear();
 
         // if this is a request with no data, then just provide existing configuration and quit
-        if (!data || !(*data).size()){
+        if (data.isNull()){
             if (interf && doc[T_opt] != nullptr){
                 interf->json_frame_value(doc[T_opt]);
                 interf->json_frame_flush();
@@ -375,7 +375,7 @@ void getset_dfplayer_opt(Interface *interf, const JsonObject *data, const char* 
         JsonVariant dst = doc[T_opt].isNull() ? doc[T_opt].to<JsonObject>() : doc[T_opt];
 
         // copy keys to a destination object
-        for (JsonPair kvp : *data)
+        for (JsonPairConst kvp : data)
             dst[kvp.key()] = kvp.value();
 
         embuifs::serialize2file(doc, T_dfplayer_cfg);
@@ -385,6 +385,6 @@ void getset_dfplayer_opt(Interface *interf, const JsonObject *data, const char* 
         dfplayer_setup_opt(cfg);
     }
 
-    if (interf) ui_page_setup_devices(interf, nullptr, NULL);
+    if (interf) ui_page_setup_devices(interf, {});
 }
 

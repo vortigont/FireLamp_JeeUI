@@ -94,13 +94,13 @@ private:
 	 * @param data 
 	 * @param action 
 	 */
-	void mkEmbUIpage(Interface *interf, const JsonObject *data, const char* action) override;
+	void mkEmbUIpage(Interface *interf, JsonObjectConst data, const char* action) override;
 
-	void _task_get(Interface *interf, const JsonObject *data, const char* action);
+	void _task_get(Interface *interf, JsonObjectConst data, const char* action);
 
-	void _task_set(Interface *interf, const JsonObject *data, const char* action);
+	void _task_set(Interface *interf, JsonObjectConst data, const char* action);
 
-	void _task_remove(Interface *interf, const JsonObject *data, const char* action);
+	void _task_remove(Interface *interf, JsonObjectConst data, const char* action);
 
 };
 

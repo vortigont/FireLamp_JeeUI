@@ -177,7 +177,7 @@ public:
 
     void moduleRunner();
 
-    void setAlarmItem(JsonVariant cfg);
+    void setAlarmItem(JsonVariantConst cfg);
 
     void start() override { enable(); };
     void stop() override { disable(); };
@@ -189,7 +189,7 @@ public:
      * @param data 
      * @param action 
      */
-    void mkEmbUIpage(Interface *interf, const JsonObject *data, const char* action) override;
+    void mkEmbUIpage(Interface *interf, const JsonObjectConst data, const char* action) override;
 
 };
 

@@ -428,7 +428,7 @@ void Lamp::_switcheffect(effswitch_t action, bool fade, uint16_t effnb) {
   }
 
   // publish new effect's control to all available feeders
-  publish_effect_controls(nullptr, nullptr, NULL);
+  publish_effect_controls(nullptr, {}, NULL);
   LOGD(T_lamp, println, "eof switcheffect()");
 }
 

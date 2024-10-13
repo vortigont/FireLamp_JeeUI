@@ -172,7 +172,7 @@ public:
      * @param data 
      * @param action 
      */
-    virtual void mkEmbUIpage(Interface *interf, const JsonObject *data, const char* action);
+    virtual void mkEmbUIpage(Interface *interf, JsonObjectConst data, const char* action);
 
 };
 
@@ -394,14 +394,14 @@ private:
      * @param data 
      * @param action 
      */
-    void _make_embui_page(Interface *interf, const JsonObject *data, const char* action);
+    void _make_embui_page(Interface *interf, JsonObjectConst data, const char* action);
 
     // EmbUI's handler to spawn/shutdown modules
-    void _set_module_state(Interface *interf, const JsonObject *data, const char* action);
+    void _set_module_state(Interface *interf, JsonObjectConst data, const char* action);
 
-    void _set_module_cfg(Interface *interf, const JsonObject *data, const char* action);
+    void _set_module_cfg(Interface *interf, JsonObjectConst data, const char* action);
 
-    void _switch_module_preset(Interface *interf, const JsonObject *data, const char* action);
+    void _switch_module_preset(Interface *interf, JsonObjectConst data, const char* action);
 
 };
 

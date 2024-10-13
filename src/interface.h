@@ -31,26 +31,26 @@ void resetAutoTimers(bool isEffects);
  * @brief Lamp's PowerSwitch
  * handles powerswitch event
  */
-void set_pwrswitch(Interface *interf, const JsonObject *data, const char* action);
+void set_pwrswitch(Interface *interf, JsonObjectConst data, const char* action = NULL);
 
 /**
  * @brief Set device display brightness
  * 
  */
-void getset_brightness(Interface *interf, const JsonObject *data, const char* action);
+void getset_brightness(Interface *interf, JsonObjectConst data, const char* action = NULL);
 
 /**
  * @brief Set luma curve brightness adjustment value
  * 
  */
-void set_lcurve(Interface *interf, const JsonObject *data, const char* action);
+void set_lcurve(Interface *interf, JsonObjectConst data, const char* action = NULL);
 
 /**
  * @brief Switch to specific effect
  * could be triggered via WebUI's selector list or via ra::eff_switch
  * if switched successfully, than this function calls contorls publishing via MQTT
  */
-void effect_switch(Interface *interf, const JsonObject *data, const char* action);
+void effect_switch(Interface *interf, JsonObjectConst data, const char* action = NULL);
 
 /**
  * @brief this function is a wrapper for block_effect_controls() to publish current effect controls to various feeders
@@ -58,32 +58,32 @@ void effect_switch(Interface *interf, const JsonObject *data, const char* action
  * from an internal fuctions not a post callbacks
  * 
  */
-void publish_effect_controls(Interface *interf, const JsonObject *data, const char* action);
+void publish_effect_controls(Interface *interf, JsonObjectConst data, const char* action = NULL);
 
 /**
  * @brief effects controls handler
  * it picks "dynCtrl*" actions and adjusts current effect parameters
  * 
  */
-void set_effects_dynCtrl(Interface *interf, const JsonObject *data, const char* action);
+void set_effects_dynCtrl(Interface *interf, JsonObjectConst data, const char* action = NULL);
 
 /**
  * @brief Set/get ledstrip configuration values
  * 
  */
-void set_ledstrip(Interface *interf, const JsonObject *data, const char* action);
+void set_ledstrip(Interface *interf, JsonObjectConst data, const char* action = NULL);
 
 /**
  * @brief Set/get HUB75 configuration values
  * 
  */
-void set_hub75(Interface *interf, const JsonObject *data, const char* action);
+void set_hub75(Interface *interf, JsonObjectConst data, const char* action = NULL);
 
 /**
  * @brief Set/get tm1637 configuration values
  * 
  */
-void getset_tm1637(Interface *interf, const JsonObject *data, const char* action);
+void getset_tm1637(Interface *interf, JsonObjectConst data, const char* action = NULL);
 
 /**
  * @brief Get/Set other settings on page (прочие настройки, настройки эффектов)
@@ -92,7 +92,7 @@ void getset_tm1637(Interface *interf, const JsonObject *data, const char* action
  * @param data 
  * @param action 
  */
-void getset_settings_other(Interface *interf, const JsonObject *data, const char* action);
+void getset_settings_other(Interface *interf, JsonObjectConst data, const char* action = NULL);
 
 /**
  * @brief show page with buttons leading to confgigiration of additional devices attached
@@ -102,7 +102,7 @@ void getset_settings_other(Interface *interf, const JsonObject *data, const char
  * @param data 
  * @param action 
  */
-void ui_page_setup_devices(Interface *interf, const JsonObject *data, const char* action);
+void ui_page_setup_devices(Interface *interf, JsonObjectConst data, const char* action = NULL);
 
 /**
  * @brief a call-back handler that listens for status change events and publish it to EmbUI feeders
@@ -121,7 +121,7 @@ void event_publisher(void* handler_args, esp_event_base_t base, int32_t id, void
  * @brief webui page with button configuration
  * 
  */
-void page_button_setup(Interface *interf, const JsonObject *data, const char* action);
+void page_button_setup(Interface *interf, JsonObjectConst data, const char* action = NULL);
 
 
 // ========== DFPlayer
@@ -130,35 +130,31 @@ void page_button_setup(Interface *interf, const JsonObject *data, const char* ac
  * @brief DFPlayer configuration page
  * 
  */
-void page_dfplayer_setup(Interface *interf, const JsonObject *data, const char* action);
-// DFPlayer get/set device form handler
-void getset_dfplayer_device(Interface *interf, const JsonObject *data, const char* action);
-// DFPlayer get/set options form handler
-void getset_dfplayer_opt(Interface *interf, const JsonObject *data, const char* action);
+void page_dfplayer_setup(Interface *interf, JsonObjectConst data, const char* action = NULL);
 
 
 // ==========
 
 
-void section_effects_frame(Interface *interf, const JsonObject *data, const char* action);
-void section_text_frame(Interface *interf, const JsonObject *data, const char* action);
+void section_effects_frame(Interface *interf, JsonObjectConst data, const char* action = NULL);
+void section_text_frame(Interface *interf, JsonObjectConst data, const char* action = NULL);
 // реализация настроек тут своя, отличная от фреймворка
-void section_settings_frame(Interface *interf, const JsonObject *data, const char* action);
+void section_settings_frame(Interface *interf, JsonObjectConst data, const char* action = NULL);
 void pubCallback(Interface *interf);
 //void save_lamp_flags();
 
 // disabled as not handled by external lib
 //uint8_t uploadProgress(size_t len, size_t total);
 
-void show_effects_config_param(Interface *interf, const JsonObject *data, const char* action);
+void show_effects_config_param(Interface *interf, JsonObjectConst data, const char* action = NULL);
 
 /**
  * блок формирования страницы с контролами для настроек параметров эффектов
  * здесь выводится ПОЛНЫЙ сипсок эффектов
  */
-void block_effects_config(Interface *interf, const JsonObject *data, const char* action);
+void block_effects_config(Interface *interf, JsonObjectConst data, const char* action = NULL);
 
-void show_settings_mic(Interface *interf, const JsonObject *data, const char* action);
+void show_settings_mic(Interface *interf, JsonObjectConst data, const char* action = NULL);
 
 /**
  * @brief load events configuarion from file

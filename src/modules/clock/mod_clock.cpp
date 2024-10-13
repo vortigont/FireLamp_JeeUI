@@ -350,7 +350,7 @@ AlarmClock::AlarmClock() : GenericModule(T_alrmclock) {
   ts.addTask(*this);
 
   // add EmbUI's handler to set Alarm's config
-  embui.action.add(A_set_mod_alrm, [this](Interface *interf, const JsonObject *data, const char* action){ setAlarmItem((*data)); } );
+  embui.action.add(A_set_mod_alrm, [this](Interface *interf, JsonObjectConst data, const char* action){ setAlarmItem(data); } );
 }
 
 AlarmClock::~AlarmClock(){
@@ -524,7 +524,7 @@ void AlarmClock::_cockoo_events(std::tm *tm){
   }
 }
 
-void AlarmClock::setAlarmItem(JsonVariant cfg){
+void AlarmClock::setAlarmItem(JsonVariantConst cfg){
   size_t idx = cfg[T_idx];
   LOGD(T_alrmclock, printf, "set alarm config for: %u\n", idx);
   if (idx >= _alarms.size() ) return;
@@ -599,31 +599,32 @@ void AlarmClock::_lmpChEventHandler(esp_event_base_t base, int32_t id, void* dat
   _fade_await = false;
 }
 
-void AlarmClock::mkEmbUIpage(Interface *interf, const JsonObject *data, const char* action){
+void AlarmClock::mkEmbUIpage(Interface *interf, JsonObjectConst data, const char* action){
   String key(T_ui_pages_module_prefix);
   key += label;
   // load Module's structure from a EmbUI's UI data
   interf->json_frame_interface();
   interf->json_section_uidata();
   interf->uidata_pick( key.c_str() );
+/*
   // Main frame MUST be flushed before sending other ui_data sections
   interf->json_frame_flush();
 
   interf->json_frame_interface();
   interf->json_section_uidata();
-
+*/
   interf->uidata_pick("lampui.sections.mod_alarm.hdr");
   for (int i = 0; i !=_alarms.size(); ++i){
     String idx(i);
     interf->uidata_pick( "lampui.sections.mod_alarm.item", NULL, idx.c_str() );
   }
-  interf->json_frame_flush();
+//  interf->json_frame_flush();
   // prepare an object with alarms setups, loaded via js from WebUI
   interf->json_frame_jscall("alarm_items_load");
 
   JsonDocument doc;
   getConfig(doc.to<JsonObject>());
-  interf->json_frame_add(doc);
+  interf->json_object_add(doc);
 
   // otherwise just show a message that no config could be set w/o activating the widget
   //interf->uidata_pick("lampui.sections.mod_alarm.msg_inactive");

@@ -123,7 +123,7 @@ String GenericModule::mkFileName(){
   return fname;
 }
 
-void GenericModule::mkEmbUIpage(Interface *interf, const JsonObject *data, const char* action){
+void GenericModule::mkEmbUIpage(Interface *interf, JsonObjectConst data, const char* action){
   String key(T_ui_pages_module_prefix);
   key += label;
   // load Module's structure from a EmbUI's UI data
@@ -234,7 +234,7 @@ ModuleManager::~ModuleManager(){
 void ModuleManager::setHandlers(){
   // handler for modules list page
   embui.action.add(A_ui_page_modules,
-    [this](Interface *interf, const JsonObject *data, const char* action){
+    [this](Interface *interf, JsonObjectConst data, const char* action){
       interf->json_frame_interface();
       interf->json_section_uidata();
       interf->uidata_pick( T_ui_pages_modlist );
@@ -245,16 +245,16 @@ void ModuleManager::setHandlers(){
   );
 
   // handler for module's confiration page generators
-  embui.action.add(A_set_mod_state, [this](Interface *interf, const JsonObject *data, const char* action){ _set_module_state(interf, data, action); } );
+  embui.action.add(A_set_mod_state, [this](Interface *interf, JsonObjectConst data, const char* action){ _set_module_state(interf, data, action); } );
 
   // handler to start/stop module via EmbUI
-  embui.action.add(T_ui_page_module_mask, [this](Interface *interf, const JsonObject *data, const char* action){ _make_embui_page(interf, data, action); } );
+  embui.action.add(T_ui_page_module_mask, [this](Interface *interf, JsonObjectConst data, const char* action){ _make_embui_page(interf, data, action); } );
 
   // handler to set module's configuration
-  embui.action.add(A_set_mod_cfg, [this](Interface *interf, const JsonObject *data, const char* action){ _set_module_cfg(interf, data, action); } );
+  embui.action.add(A_set_mod_cfg, [this](Interface *interf, JsonObjectConst data, const char* action){ _set_module_cfg(interf, data, action); } );
 
   // switch module presets
-  embui.action.add(A_set_mod_preset, [this](Interface *interf, const JsonObject *data, const char* action){ _switch_module_preset(interf, data, action); } );
+  embui.action.add(A_set_mod_preset, [this](Interface *interf, JsonObjectConst data, const char* action){ _switch_module_preset(interf, data, action); } );
 
   esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_SET_EVENTS, ESP_EVENT_ANY_ID,
     [](void* self, esp_event_base_t base, int32_t id, void* data){ static_cast<ModuleManager*>(self)->_cmdEventHandler(base, id, data); },
@@ -430,7 +430,7 @@ uint32_t ModuleManager::profilesAvailable(const char* label) const {
   return 0;
 }
 
-void ModuleManager::_make_embui_page(Interface *interf, const JsonObject *data, const char* action){
+void ModuleManager::_make_embui_page(Interface *interf, JsonObjectConst data, const char* action){
   std::string_view lbl(action);
   lbl.remove_prefix(std::string_view(T_ui_page_module_mask).length()-1);    // chop off prefix string
 
@@ -447,9 +447,8 @@ void ModuleManager::_make_embui_page(Interface *interf, const JsonObject *data, 
 }
 
 // start/stop module EmbUI command
-void ModuleManager::_set_module_state(Interface *interf, const JsonObject *data, const char* action){
-  //if (!data || !(*data).size()) return;   // call with no data
-  bool state = (*data)[action];
+void ModuleManager::_set_module_state(Interface *interf, JsonObjectConst data, const char* action){
+  bool state = data[action];
   // set_mod_state_*
   std::string_view lbl(action);
   lbl.remove_prefix(std::string_view(A_set_mod_state).length()-1);    // chop off prefix before '*'
@@ -458,19 +457,18 @@ void ModuleManager::_set_module_state(Interface *interf, const JsonObject *data,
 }
 
 // set module's configuration from WebUI
-void ModuleManager::_set_module_cfg(Interface *interf, const JsonObject *data, const char* action){
-  //if (!data || !(*data).size()) return;   // call with no data
+void ModuleManager::_set_module_cfg(Interface *interf, JsonObjectConst data, const char* action){
   std::string_view lbl(action);
   lbl.remove_prefix(std::string_view(A_set_mod_cfg).length()-1);    // chop off prefix before '*'
-  setConfig(lbl.data(), *data);
+  setConfig(lbl.data(), data);
 }
 
-void ModuleManager::_switch_module_preset(Interface *interf, const JsonObject *data, const char* action){
+void ModuleManager::_switch_module_preset(Interface *interf, JsonObjectConst data, const char* action){
 
   std::string_view lbl(action);
   lbl.remove_prefix(std::string_view(A_set_mod_preset).length()-1); // chop off prefix before '*'
 
-  switchProfile(lbl.data(), (*data)[action]);
+  switchProfile(lbl.data(), data[action]);
 
   // send to webUI refreshed module's config
   JsonDocument doc;
@@ -536,16 +534,6 @@ TextScrollerWgdt::TextScrollerWgdt() : GenericModuleProfiles(T_txtscroll) {
 
 TextScrollerWgdt::~TextScrollerWgdt(){
   stop();
-/*
-  if (_hdlr_lmp_change_evt){
-    esp_event_handler_instance_unregister_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, _hdlr_lmp_change_evt);
-    _hdlr_lmp_change_evt = nullptr;
-  }
-  if (_hdlr_lmp_state_evt){
-    esp_event_handler_instance_unregister_with(evt::get_hndlr(), LAMP_STATE_EVENTS, ESP_EVENT_ANY_ID, _hdlr_lmp_state_evt);
-    _hdlr_lmp_state_evt = nullptr;
-  }
-*/
 }
 
 void TextScrollerWgdt::load_cfg(JsonVariantConst cfg){
