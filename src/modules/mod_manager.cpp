@@ -843,12 +843,16 @@ void TextScrollerWgdt::_getOpenWeather(){
   time_t sun = doc["sys"]["sunrise"].as<uint32_t>();
   pogoda += localtime(&sun)->tm_hour;
   pogoda += ":";
+  if (localtime(&sun)->tm_min < 10)
+    pogoda += static_cast<char>(0x30);  // '0'
   pogoda += localtime(&sun)->tm_min;
 
   pogoda += ", закат:";
   sun = doc["sys"]["sunset"].as<uint32_t>();
   pogoda += localtime(&sun)->tm_hour;
   pogoda += ":";
+  if (localtime(&sun)->tm_min < 10)
+    pogoda += static_cast<char>(0x30);  // '0'
   pogoda += localtime(&sun)->tm_min;
 
   // ths lock was meant for canvas, but let's use for string update also,
