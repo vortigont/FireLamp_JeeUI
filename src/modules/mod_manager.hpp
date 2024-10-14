@@ -145,11 +145,10 @@ public:
 	/**
 	 * @brief switch to specific profile number
 	 * 
-	 * @param value 
-	 * @return true on success
-	 * @return false if profile does not exist
+	 * @param value preset number to swich to
+     * @param keepcurrent - if true, then do not load preset's setting, just change the index and keep current config
 	 */
-	virtual void switchProfile(int32_t value){};
+	virtual void switchPreset(int32_t value, bool keepcurrent = false){};
 
 	/**
 	 * @brief Get the Current Profile Num value
@@ -166,6 +165,13 @@ public:
 	virtual uint32_t profilesAvailable() const { return 0; }
 
     /**
+     * @brief set name for currently loaded preset
+     * 
+     * @param lbl 
+     */
+    virtual void setPresetLabel(const char* lbl){};
+
+    /**
      * @brief Construct an EmbUI page with module's state/configuration
      * 
      * @param interf 
@@ -173,6 +179,23 @@ public:
      * @param action 
      */
     virtual void mkEmbUIpage(Interface *interf, JsonObjectConst data, const char* action);
+
+    /**
+     * @brief generate content frame for presets drop-down list
+     * 
+     * @param interf 
+     */
+    virtual void mkEmbUI_preset(Interface *interf){};
+
+    /**
+     * @brief fills provided array with a list of available config profiles
+     * it generates data for drop-down selector list for EmbUI in a form of:
+     * [ { "value":0, "label":"SomeProfile" } ]
+     * 
+     * @param arr Json array reference to fill-in
+     * @return size_t number of elements in index
+     */
+    virtual size_t mkProfilesIndex(JsonArray arr) { return 0; };
 
 };
 
@@ -211,6 +234,7 @@ public:
 class GenericModuleProfiles : public GenericModule {
 
     int32_t _profilenum{0};
+    String _profilename;
 
     void _load_profile(int idx);
 
@@ -221,7 +245,7 @@ public:
      * @brief load module's config from persistent storage and calls start()
      * here it loads last used profile
      */
-    void load() override final { switchProfile(-1); };
+    void load() override final { switchPreset(-1); };
 
     void save() override final;
 
@@ -230,7 +254,7 @@ public:
      * loads profile config from file, if specified argument is <0 or wrong, loads last used profile
      * @param value 
      */
-    void switchProfile(int32_t value) final;
+    void switchPreset(int32_t value, bool keepcurrent = false) override final;
 
     /**
      * @brief Get the Current Profile Num value
@@ -245,6 +269,27 @@ public:
      * @return uint32_t number of slots, if 0 is returned then profiles are not supported
      */
     uint32_t profilesAvailable() const override { return MAX_NUM_OF_PROFILES; }
+
+    /**
+     * @copydoc GenericModule::setPresetLabel(const char* lbl)
+     */
+    void setPresetLabel(const char* lbl) override;
+
+    /**
+     * @brief Construct an EmbUI page with module's state/configuration
+     * this override will additionally load profile's selector list
+     */
+    virtual void mkEmbUIpage(Interface *interf, JsonObjectConst data, const char* action) override;
+
+    /**
+     * @copydoc GenericModule::mkEmbUI_preset(Interface *interf)
+     */
+    virtual void mkEmbUI_preset(Interface *interf) override;
+
+    /**
+     * @copydoc GenericModule::mkProfilesIndex(JsonArray arr)
+     */
+    size_t mkProfilesIndex(JsonArray arr) override;
 
 };
 
@@ -362,7 +407,7 @@ public:
      * @param label 
      * @param idx 
      */
-    void switchProfile(const char* label, int32_t idx);
+    void switchPreset(const char* label, int32_t idx);
 
     uint32_t profilesAvailable(const char* label) const;
 
@@ -402,6 +447,12 @@ private:
     void _set_module_cfg(Interface *interf, JsonObjectConst data, const char* action);
 
     void _switch_module_preset(Interface *interf, JsonObjectConst data, const char* action);
+
+    // rename current preset for the module
+    void _set_module_preset_lbl(Interface *interf, JsonObjectConst data, const char* action);
+
+    // save current config into another preset slot
+    void _set_module_preset_clone(Interface *interf, JsonObjectConst data, const char* action);
 
 };
 

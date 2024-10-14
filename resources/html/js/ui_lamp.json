@@ -1,6 +1,6 @@
 {
   "type":"interface",
-  "version":22,
+  "version":23,
   "descr":"FireLamp UI objects",
 
   "settings":{
@@ -1185,19 +1185,70 @@
             "label":"Параметры настройки см. в <a href=\"https://github.com/vortigont/FireLamp_JeeUI/wiki/%D0%92%D0%B8%D0%B4%D0%B6%D0%B5%D1%82-%D1%87%D0%B0%D1%81%D1%8B\">WiKi</a>"
           },
           {
-            "section":"profile_selector",
+            "section":"ui_modpreset",
             "label":"Профиль",
             "block":[
               {
                 "id": "set_modpreset_clock",
                 "html":"input",
                 "type": "number",
-                "onChange": true,
-                "label": "Профиль настроек",
-                "value": 0,
-                "min": 0,
-                "max": 9,
-                "step": 1
+                "label": "Профиль настроек"
+              },
+              {
+                "section":"preset_ctrls",
+                "label":"Profile controls",
+                "hidden": true,
+                "block":[
+                  {
+                    "section":"set_modpresetname",
+                    "line":true,
+                    "block":[
+                      {
+                        "id":"modpreset_lbl",
+                        "html":"input",
+                        "label":"Profile name",
+                        "type":"text"
+                      },
+                      {
+                        "id":"set_modpresetname",
+                        "html":"button",
+                        "type":1,
+                        "label":"✅ Rename"
+                      },
+                      {
+                        "id":"module",
+                        "html":"hidden",
+                        "value":"clock"
+                      }
+                    ]
+                  },
+                  {
+                    "section":"set_modpresetclone",
+                    "line":true,
+                    "block":[
+                      {
+                        "id":"modpreset_clone",
+                        "html":"input",
+                        "label":"Clone settings into another preset",
+                        "type":"number",
+                        "min": 0,
+                        "max": 9,
+                        "step": 1
+                      },
+                      {
+                        "id":"set_modpresetclone",
+                        "html":"button",
+                        "type":1,
+                        "label":"✅ Clone to"
+                      },
+                      {
+                        "id":"module",
+                        "html":"hidden",
+                        "value":"clock"
+                      }
+                    ]
+                  }
+                ]
               }
             ]
           },
@@ -1776,19 +1827,70 @@
         "main":true,
         "block":[
           {
-            "section":"profile_selector",
+            "section":"ui_modpreset",
             "label":"Профиль",
             "block":[
               {
                 "id": "set_modpreset_txtscroll",
                 "html":"input",
                 "type": "number",
-                "onChange": true,
-                "label": "Профиль настроек",
-                "value": 0,
-                "min": 0,
-                "max": 9,
-                "step": 1
+                "label": "Профиль настроек"
+              },
+              {
+                "section":"preset_ctrls",
+                "label":"Profile controls",
+                "hidden": true,
+                "block":[
+                  {
+                    "section":"set_modpresetname",
+                    "line":true,
+                    "block":[
+                      {
+                        "id":"modpreset_lbl",
+                        "html":"input",
+                        "label":"Profile name",
+                        "type":"text"
+                      },
+                      {
+                        "id":"set_modpresetname",
+                        "html":"button",
+                        "type":1,
+                        "label":"✅ Rename"
+                      },
+                      {
+                        "id":"module",
+                        "html":"hidden",
+                        "value":"txtscroll"
+                      }
+                    ]
+                  },
+                  {
+                    "section":"set_modpresetclone",
+                    "line":true,
+                    "block":[
+                      {
+                        "id":"modpreset_clone",
+                        "html":"input",
+                        "label":"Clone settings into another preset",
+                        "type":"number",
+                        "min": 0,
+                        "max": 9,
+                        "step": 1
+                      },
+                      {
+                        "id":"set_modpresetclone",
+                        "html":"button",
+                        "type":1,
+                        "label":"✅ Clone to"
+                      },
+                      {
+                        "id":"module",
+                        "html":"hidden",
+                        "value":"txtscroll"
+                      }
+                    ]
+                  }
+                ]
               }
             ]
           },

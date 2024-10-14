@@ -71,11 +71,14 @@ static constexpr std::array<const char*, 4> wdg_list = {
 
 static constexpr const char* T_ui_page_module_mask    = "ui_page_module_*";
 static constexpr const char* T_ui_pages_modlist       = "lampui.pages.modules_list";
+static constexpr const char* T_modpreset_lbl          = "modpreset_lbl";
+static constexpr const char* T_modpreset_clone        = "modpreset_clone";
 
 static constexpr const char* A_set_mod_state          = "set_modstate_*";                 // enable/disable Module by label
 static constexpr const char* A_set_mod_cfg            = "set_modcfg_*";                   // set Modules's configuration
 static constexpr const char* A_set_mod_preset         = "set_modpreset_*";                // switch module's preset
-
+static constexpr const char* A_set_modpresetname      = "set_modpresetname";              // rename module's preset
+static constexpr const char* A_set_modpresetclone     = "set_modpresetclone";             // clone current settings to another preset
 
 // ****  GenericModule methods
 
@@ -151,18 +154,35 @@ void GenericModule::mkEmbUIpage(Interface *interf, JsonObjectConst data, const c
 // ****  GenericModuleProfiles methods
 
 
-void GenericModuleProfiles::switchProfile(int32_t idx){
+void GenericModuleProfiles::switchPreset(int32_t idx, bool keepcurrent){
+  // check I do not need to load preset's config
+  if (keepcurrent){
+    if (idx >= 0 && idx < MAX_NUM_OF_PROFILES)
+      _profilenum = idx;
+    return;
+  }
+
   JsonDocument doc;
   embuifs::deserializeFile(doc, mkFileName().c_str());
 
   // restore last used profile if specified one is wrong or < 0
-  if (idx < 0 || idx > MAX_NUM_OF_PROFILES)
+  if (idx < 0 || idx >= MAX_NUM_OF_PROFILES)
     _profilenum = doc[T_last_profile];
   else
     _profilenum = idx;
 
+
   LOGD(T_Module, printf, "%s switch profile:%d\n", label, _profilenum);
   JsonArray profiles = doc[T_profiles].as<JsonArray>();
+  // load name
+  JsonVariant v = profiles[_profilenum][P_label];
+  if (v.is<const char*>())
+    _profilename = v.as<const char*>();
+  else {
+    _profilename = T_profile;
+    _profilename += idx;
+  }
+  // load module's config
   load_cfg(profiles[_profilenum][T_cfg]);
   start();
 }
@@ -183,6 +203,7 @@ void GenericModuleProfiles::save(){
 
   // generate config to current profile cell
   JsonObject o = arr[_profilenum].to<JsonObject>();
+  o[P_label] = _profilename;
   getConfig(o[T_cfg].to<JsonObject>());    // place config under {"cfg":{}} object
 
   doc[T_last_profile] = _profilenum;
@@ -190,6 +211,66 @@ void GenericModuleProfiles::save(){
   LOGD(T_Module, printf, "%s: writing cfg to file\n", label);
   embuifs::serialize2file(doc, mkFileName().c_str());
 }
+
+void GenericModuleProfiles::mkEmbUIpage(Interface *interf, JsonObjectConst data, const char* action){
+  // load generic page
+  GenericModule::mkEmbUIpage(interf, data, action);
+
+  // in addition need to update profile's drop-down selector
+  mkEmbUI_preset(interf);
+}
+
+void GenericModuleProfiles::mkEmbUI_preset(Interface *interf){
+  interf->json_frame_interface();
+  interf->json_section_content();
+
+  // make selector's id
+  String id(T_set_modpreset_);
+  id += getLabel();
+
+  JsonVariant d = interf->select(id, getCurrentProfileNum(), P_EMPTY, true);
+  // fill in drop-down list with available profiles
+  mkProfilesIndex(d[P_block]);
+  interf->json_frame_flush();
+}
+
+size_t GenericModuleProfiles::mkProfilesIndex(JsonArray arr){
+  JsonDocument doc;
+  embuifs::deserializeFile(doc, mkFileName().c_str());
+
+  JsonArray profiles = doc[T_profiles];
+
+  size_t idx{0};
+  String p;
+  for(JsonVariant v : profiles) {
+    JsonObject d = arr.add<JsonObject>();
+
+    // check if profile config and label exists indeed
+    if (v[P_label].is<JsonVariant>()){
+      p = idx;
+      p += " - ";
+      p += v[P_label].as<const char*>();
+    } else {
+      // generate "profile1" string
+      p = T_profile;
+      p += idx;
+    }
+
+    d[P_label] = p;
+    d[P_value] = idx;
+    ++idx;
+  }
+
+  LOGD(T_Module, printf, "make index of %u profiles\n", idx);
+
+  return idx;
+}
+
+void GenericModuleProfiles::setPresetLabel(const char* lbl){
+  if (!lbl) return;
+  _profilename = lbl;
+}
+
 
 // ****  GenericGFXModule methods
 /*
@@ -256,18 +337,26 @@ void ModuleManager::setHandlers(){
   // switch module presets
   embui.action.add(A_set_mod_preset, [this](Interface *interf, JsonObjectConst data, const char* action){ _switch_module_preset(interf, data, action); } );
 
+  // rename module's preset
+  embui.action.add(A_set_modpresetname, [this](Interface *interf, JsonObjectConst data, const char* action){ _set_module_preset_lbl(interf, data, action); } );
+
+  // clone module preset configuration
+  embui.action.add(A_set_modpresetclone, [this](Interface *interf, JsonObjectConst data, const char* action){ _set_module_preset_clone(interf, data, action); } );
+
   esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_SET_EVENTS, ESP_EVENT_ANY_ID,
     [](void* self, esp_event_base_t base, int32_t id, void* data){ static_cast<ModuleManager*>(self)->_cmdEventHandler(base, id, data); },
     this, &_hdlr_cmd_evt
   );
 }
 
-// sunsribe from event bus
 void ModuleManager::unsetHandlers(){
   embui.action.remove(A_ui_page_modules);
   embui.action.remove(A_set_mod_state);
   embui.action.remove(T_ui_page_module_mask);
   embui.action.remove(A_set_mod_cfg);
+  embui.action.remove(A_set_modpresetname);
+  embui.action.remove(A_set_modpresetclone);
+
 
   esp_event_handler_instance_unregister_with(evt::get_hndlr(), LAMP_SET_EVENTS, ESP_EVENT_ANY_ID, _hdlr_cmd_evt);
   _hdlr_cmd_evt = nullptr;
@@ -416,10 +505,10 @@ bool ModuleManager::getModuleStatus(const char* label) const {
   return (i != _modules.end());
 }
 
-void ModuleManager::switchProfile(const char* label, int32_t idx){
+void ModuleManager::switchPreset(const char* label, int32_t idx){
   auto i = std::find_if(_modules.begin(), _modules.end(), MatchLabel<module_pt>(label));
   if (i != _modules.end())
-    (*i)->switchProfile(idx);
+    (*i)->switchPreset(idx);
 }
 
 uint32_t ModuleManager::profilesAvailable(const char* label) const {
@@ -468,13 +557,37 @@ void ModuleManager::_switch_module_preset(Interface *interf, JsonObjectConst dat
   std::string_view lbl(action);
   lbl.remove_prefix(std::string_view(A_set_mod_preset).length()-1); // chop off prefix before '*'
 
-  switchProfile(lbl.data(), data[action]);
+  switchPreset(lbl.data(), data[action]);
 
   // send to webUI refreshed module's config
   JsonDocument doc;
   getConfig(doc.to<JsonObject>(), lbl.data());
   interf->json_frame_value(doc);
   interf->json_frame_flush();
+}
+
+void ModuleManager::_set_module_preset_lbl(Interface *interf, JsonObjectConst data, const char* action){
+  JsonVariantConst v = data[T_module];
+  if (!v.is<const char*>()) return;
+
+  auto i = std::find_if(_modules.begin(), _modules.end(), MatchLabel<module_pt>(v.as<const char*>()));
+  if (i == _modules.end()) return;
+
+  (*i)->setPresetLabel(data[T_modpreset_lbl]);
+  (*i)->save();
+  (*i)->mkEmbUI_preset(interf);
+}
+
+void ModuleManager::_set_module_preset_clone(Interface *interf, JsonObjectConst data, const char* action){
+  JsonVariantConst v = data[T_module];
+  if (!v.is<const char*>()) return;
+
+  auto i = std::find_if(_modules.begin(), _modules.end(), MatchLabel<module_pt>(v.as<const char*>()));
+  if (i == _modules.end()) return;
+
+  (*i)->switchPreset(data[T_modpreset_clone], true);
+  (*i)->save();
+  (*i)->mkEmbUI_preset(interf);
 }
 
 void ModuleManager::_cmdEventHandler(esp_event_base_t base, int32_t id, void* data){
@@ -491,9 +604,9 @@ void ModuleManager::_cmdEventHandler(esp_event_base_t base, int32_t id, void* da
     case evt::lamp_t::modClkPreset : {
       int idx = *reinterpret_cast<int*>(data);
       if (idx == -1)
-        switchProfile(T_clock, random(profilesAvailable(T_clock)));
+        switchPreset(T_clock, random(profilesAvailable(T_clock)));
       else
-        switchProfile(T_clock, idx);
+        switchPreset(T_clock, idx);
       break;
     }
 
@@ -508,9 +621,9 @@ void ModuleManager::_cmdEventHandler(esp_event_base_t base, int32_t id, void* da
     case evt::lamp_t::modTxtScrollerPreset : {
       int idx = *reinterpret_cast<int*>(data);
       if (idx == -1)
-        switchProfile(T_txtscroll, random(profilesAvailable(T_txtscroll)));
+        switchPreset(T_txtscroll, random(profilesAvailable(T_txtscroll)));
       else
-        switchProfile(T_txtscroll, idx);
+        switchPreset(T_txtscroll, idx);
       break;
     }
     default:;

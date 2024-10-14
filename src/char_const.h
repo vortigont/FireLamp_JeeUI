@@ -137,7 +137,10 @@ static constexpr const char* T_mp3mute = "mp3mute";
 
 // Modules
 static constexpr const char* T_mod_mgr_cfg = "/modules.json";
-static constexpr const char* T_module = "module";                  // NVS namespace
+static constexpr const char* T_module = "module";                   // NVS namespace
+static constexpr const char* T_set_modpreset_ = "set_modpreset_";   // prefix for profile selector DOM id
+//static constexpr const char* T_profile_selector = "profile_selector"; // section name for profile selector
+
 // Module labels
 static constexpr const char* T_clock = "clock";                     // LABEL Clock module
 static constexpr const char* T_alrmclock = "alrmclock";             // LABEL Alarm Clock / Cockoo
@@ -238,6 +241,7 @@ static constexpr const char* T_Notification = "Notification";
 static constexpr const char* T_on = "on";
 static constexpr const char* T_off = "off";
 static constexpr const char* T_opt = "opt";
+static constexpr const char* T_profile = "profile";
 static constexpr const char* T_profiles = "profiles";
 static constexpr const char* T_pwr = "pwr";
 static constexpr const char* T_restoreState = "restoreState";          // Lamp flag "restore state"
