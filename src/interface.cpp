@@ -51,11 +51,10 @@ Copyright © 2020 Dmytro Korniienko (kDn)
 #include LANG_FILE                  //"text_res.h"
 
 // modules
-#include "modules/clock/mod_clock.hpp"
 
 
 // версия ресурсов в стороннем джейсон файле
-#define UIDATA_VERSION      22
+#define UIDATA_VERSION      23
 
 #define DEMO_MIN_PERIOD     10
 #define DEMO_MAX_PERIOD     900
