@@ -35,19 +35,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
    <https://www.gnu.org/licenses/>.)
 */
 
-#ifndef __EFFECTS_TYPES_H
-#define __EFFECTS_TYPES_H
-
-#include "config.h"
-#include <FastLED.h>
-#include LANG_FILE                //"text_res.h"
-#include "color_palette.h"
-
-#define SF(s) __SFSTR(s)
-#define __SFSTR(s) #s
-//#define SF(...) #__VA_ARGS__
-
-
 /*
  * Aurora: https://github.com/pixelmatix/aurora
  * Copyright (c) 2014 Jason Coon
@@ -70,6 +57,16 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#pragma once
+#include "config.h"
+#include <FastLED.h>
+#include LANG_FILE                //"text_res.h"
+#include "color_palette.h"
+
+#define SF(s) __SFSTR(s)
+#define __SFSTR(s) #s
+
+
 /**
  * типы/определения для палитр
  */
@@ -84,7 +81,7 @@ typedef const TProgmemRGBPalette16 PGMPalette;
  * 
  */
 typedef enum : uint8_t {
-EFF_NONE = (0U),                              // Специальный служебный эффект, не комментировать и индекс не менять константу!
+EFF_NONE = (0U),                              // пустой черный квадрат :)
 EFF_WHITE_COLOR,                              // Белый свет
 EFF_COLORS,                                   // Смена цвета
 EFF_RAINBOW_2D,                               // Радуга универсальная
@@ -102,13 +99,13 @@ EFF_RADIALFIRE,                               // Радиальный Огонь
 EFF_PAINTBALL,                                // Пейнтбол
 EFF_3DNOISE,                                  // 3D-шум
 EFF_CELL,                                     // Клеточки
-EFF_PUZZLES,                                  // Пятнашки
-EFF_T_LEND,                                   // Тикси Ленд
+//EFF_PUZZLES,                                // Пятнашки
+EFF_T_LEND = 18,                              // Тикси Ленд
 EFF_SPBALS,                                   // Н.Тесла
 //20
 EFF_OSCIL,                                    // Осциллятор 
-EFF_WRAIN,                                    // Шторм 
-EFF_FAIRY,                                    // Фея
+//EFF_WRAIN,                                  // Шторм 
+EFF_FAIRY = 22,                               // Фея
 EFF_FOUNT,                                    // Источник
 EFF_BBALS,                                    // Прыгающие мячики
 EFF_SINUSOID3,                                // Синусоид
@@ -117,30 +114,31 @@ EFF_SPIRO,                                    // Спираль
 EFF_COMET,                                    // Кометы, Парящие огни +
 EFF_CIRCLES,                                  // Бульбулятор
 //30
-EFF_PRIZMATA,                                 // Призмата
-EFF_FLOCK,                                    // Стая и Хищник
-EFF_SWIRL,                                    // Водоворот
-EFF_DRIFT,                                    // Дрифт
-EFF_POPCORN,                                  // Попкорн
-EFF_TWINKLES,                                 // Мерцание
-EFF_RADAR,                                    // Радар
-EFF_WAVES,                                    // Волны
+//EFF_PRIZMATA,                               // Призмата
+EFF_FLOCK = 31,                               // Стая и Хищник
+//EFF_SWIRL,                                  // Водоворот
+EFF_DRIFT = 33,                               // Дрифт
+//EFF_POPCORN,                                // Попкорн
+EFF_TWINKLES = 35,                            // Мерцание
+//EFF_RADAR,                                  // Радар
+EFF_WAVES = 37,                               // Волны
 EFF_FIRE2012,                                 // Огонь 2012
-EFF_BENGALL,                                  // Бенгальские Огни
+//EFF_BENGALL,                                // Бенгальские Огни
 //40
-EFF_BALLS,                                    // Шары
+EFF_BALLS = 40,                               // Шары
 EFF_DNA,                                      // ДНК
-EFF_FIRE2018,                                 // Огонь 2018
-EFF_RINGS,                                    // Кодовый замок
+//EFF_FIRE2018,                               // Огонь 2018
+EFF_RINGS = 43,                               // Кодовый замок
 EFF_CUBE2,                                    // Куб 2D
 EFF_MAGMA,                                    // Магма
 EFF_PICASSO,                                  // Пикассо
 EFF_STARSHIPS,                                // Звездный Десант
 EFF_FLAGS,                                    // Флаги
-EFF_LEAPERS,                                  // Прыгуны
+//EFF_LEAPERS,                                // Прыгуны
 //50
-EFF_WHIRL,                                    // Вихри
+EFF_WHIRL = 50,                               // Вихри
 EFF_STAR,                                     // Звезды
+/*
 EFF_AQUARIUM,                                 // Аквариум
 EFF_FIREWORKS,                                // Фейерверк
 EFF_PACIFIC,                                  // Тихий Океан
@@ -151,27 +149,30 @@ EFF_SHADOWS,                                  // Тени
 EFF_PATTERNS,                                 // Узоры
 //60
 EFF_ARROWS,                                   // Стрелки
-EFF_NBALLS,                                   // Дикие шарики
+*/
+EFF_NBALLS = 62,                              // Дикие шарики
 EFF_ATTRACT,                                  // Притяжение
 EFF_SNAKE,                                    // Змейки by kDn
 EFF_NEXUS,                                    // Nexus
 EFF_MAZE,                                     // Лабиринт
 EFF_FRIZZLES,                                 // Вьющийся цвет (с) Stepko
-EFF_POLARL,                                   // Северное Сияние
-EFF_FLOWER,                                   // Цветение
-EFF_SNAKEISLAND,                              // Змеиный Остров
+//EFF_POLARL,                                 // Северное Сияние
+//EFF_FLOWER,                                 // Цветение
+//EFF_SNAKEISLAND,                            // Змеиный Остров
 //70
-EFF_SMOKEBALLS,                               // Детские Сны (stepko)
+EFF_SMOKEBALLS = 70,                          // Детские Сны (stepko)
 EFF_PICASSO4,                                 // Меташары
 EFF_LIQUIDLAMP,                               // Лаваламп 
-EFF_RACER,                                    // Космо-Гонщик
-EFF_SMOKER,                                   // Дым
+//EFF_RACER,                                  // Космо-Гонщик
+EFF_SMOKER = 74,                              // Дым
 EFF_FIRE2021,                                 // Огонь от Степко
-EFF_MIRAGE,                                   // Мираж
-//EFF_TETRIS_CLOCK,                             // Часы-Тетрис
-EFF_VU,                                       // Частотный анализатор
-EFF_OSC                                       // Осциллограф
+//EFF_MIRAGE,                                 // Мираж
+//EFF_TETRIS_CLOCK,                           // Часы-Тетрис
+//EFF_VU,                                     // Частотный анализатор
+//EFF_OSC                                     // Осциллограф
 } EFF_ENUM;
+
+//static constexpr std::array<uint8_t, 256> effects_list = {}
 
 /** набор указателей на строки с именами эффектов
  * индекс элемента массива составляет id из EFF_ENUM
@@ -179,10 +180,10 @@ EFF_OSC                                       // Осциллограф
  */
 static constexpr std::array<const char*, 256> T_EFFNAMEID = {
   TEFF_blank, TEFF_001, TEFF_002, TEFF_003, TEFF_004, TEFF_005, TEFF_006, TEFF_007, TEFF_008, TEFF_009, TEFF_010, TEFF_011, TEFF_012, TEFF_013, TEFF_014, TEFF_015, // 0-15
-  TEFF_016, TEFF_017, TEFF_018, TEFF_019, TEFF_020, TEFF_021, TEFF_022, TEFF_023, TEFF_024, TEFF_025, TEFF_026, TEFF_027, TEFF_028, TEFF_029, TEFF_030, TEFF_031, // 16-31
-  TEFF_032, TEFF_033, TEFF_034, TEFF_035, TEFF_036, TEFF_037, TEFF_038, TEFF_039, TEFF_040, TEFF_041, TEFF_042, TEFF_043, TEFF_044, TEFF_045, TEFF_046, TEFF_047, // 32 - 47
-  TEFF_048, TEFF_049, TEFF_050, TEFF_051, TEFF_052, TEFF_053, TEFF_054, TEFF_055, TEFF_056, TEFF_057, TEFF_058, TEFF_059, TEFF_060, TEFF_061, TEFF_062, TEFF_063, // 48 - 63
-  TEFF_064, TEFF_065, TEFF_066, TEFF_067, TEFF_068, TEFF_069, TEFF_070, TEFF_071, TEFF_072, TEFF_073, TEFF_074, TEFF_075, TEFF_076, TEFF_000, TEFF_078, TEFF_079, // 64 - 79
+  TEFF_016, TEFF_000, TEFF_018, TEFF_019, TEFF_020, TEFF_000, TEFF_022, TEFF_023, TEFF_024, TEFF_025, TEFF_026, TEFF_027, TEFF_028, TEFF_029, TEFF_000, TEFF_031, // 16-31
+  TEFF_000, TEFF_033, TEFF_000, TEFF_035, TEFF_000, TEFF_037, TEFF_038, TEFF_000, TEFF_040, TEFF_041, TEFF_000, TEFF_000, TEFF_044, TEFF_045, TEFF_046, TEFF_047, // 32 - 47
+  TEFF_048, TEFF_000, TEFF_050, TEFF_051, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_062, TEFF_063, // 48 - 63
+  TEFF_064, TEFF_065, TEFF_066, TEFF_000, TEFF_000, TEFF_000, TEFF_070, TEFF_071, TEFF_072, TEFF_000, TEFF_074, TEFF_075, TEFF_000, TEFF_000, TEFF_000, TEFF_000, // 64 - 79
   TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, // 80 - 95
   TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, // 96 - 111
   TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, // 112 - 127
@@ -412,7 +413,6 @@ static constexpr std::array<const char *, 256> T_EFFUICFG = {
 // refactored by Vortigont
 #define CUBE2D_MAX_SIZE 7       // максимальный размер обрабатываемых квадратов (AxA)
 #define CUBE2D_PAUSE_FRAMES 20   // число кадров паузы между трансформациями
-#endif
 
 // ----------- Эффект "Звезды" адаптация SottNick
 #define CENTER_DRIFT_SPEED 6U         // скорость перемещения плавающего центра возникновения звёзд

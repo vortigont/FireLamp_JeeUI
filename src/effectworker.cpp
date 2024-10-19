@@ -236,20 +236,11 @@ void EffectWorker::workerset(uint16_t effect){
   // create a new instance of effect child
   switch (static_cast<EFF_ENUM>(effect%256)){ // номер может быть больше чем ENUM из-за копирований, находим эффект по модулю
 
-//  case EFF_ENUM::EFF_TETRIS_CLOCK :
-//    worker = std::make_unique<TetrisClock>(display.getCanvas());
-//    break;
-  case EFF_ENUM::EFF_SWIRL :
-    worker = std::make_unique<EffectSwirl>(canvas);
-    break;
   case EFF_ENUM::EFF_COMET :
     worker = std::make_unique<EffectComet>(canvas);
     break;
   case EFF_ENUM::EFF_FLOCK :
     worker = std::make_unique<EffectFlock>(canvas);
-    break;
-  case EFF_ENUM::EFF_PRIZMATA :
-    worker = std::make_unique<EffectPrismata>(canvas);
     break;
   case EFF_ENUM::EFF_SPIRO :
     worker = std::make_unique<EffectSpiro>(canvas);
@@ -305,14 +296,8 @@ void EffectWorker::workerset(uint16_t effect){
   case EFF_ENUM::EFF_CELL :
     worker = std::make_unique<EffectCell>(canvas);
     break;
-  case EFF_ENUM::EFF_T_LEND :
-    worker = std::make_unique<EffectTLand>(canvas);
-    break;
   case EFF_ENUM::EFF_OSCIL :
     worker = std::make_unique<EffectOscillator>(canvas);
-    break;
-  case EFF_ENUM::EFF_WRAIN : 
-    worker = std::make_unique<EffectWrain>(canvas);
     break;
   case EFF_ENUM::EFF_FAIRY : 
   case EFF_ENUM::EFF_FOUNT :
@@ -321,32 +306,14 @@ void EffectWorker::workerset(uint16_t effect){
   case EFF_ENUM::EFF_CIRCLES :
     worker = std::make_unique<EffectCircles>(canvas);
     break;
-  case EFF_ENUM::EFF_DRIFT :
-    worker = std::make_unique<EffectDrift>(canvas);
-    break;
-  case EFF_ENUM::EFF_POPCORN :
-    worker = std::make_unique<EffectPopcorn>(canvas);
-    break;
   case EFF_ENUM::EFF_TWINKLES :
     worker = std::make_unique<EffectTwinkles>(canvas);
     break;
   case EFF_ENUM::EFF_WAVES :
     worker = std::make_unique<EffectWaves>(canvas);
     break;
-  case EFF_ENUM::EFF_RADAR :
-    worker = std::make_unique<EffectRadar>(canvas);
-    break;
-  case EFF_ENUM::EFF_BENGALL :
-    worker = std::make_unique<EffectBengalL>(canvas);
-    break;
   case EFF_ENUM::EFF_BALLS :
     worker = std::make_unique<EffectBalls>(canvas);
-    break;
-  case EFF_ENUM::EFF_FIRE2018 :
-    worker = std::make_unique<EffectFire2018>(canvas);
-    break;
-  case EFF_ENUM::EFF_RINGS :
-    worker = std::make_unique<EffectRingsLock>(canvas);
     break;
   case EFF_ENUM::EFF_CUBE2 :
     worker = std::make_unique<EffectCube2d>(canvas);
@@ -361,47 +328,14 @@ void EffectWorker::workerset(uint16_t effect){
   case EFF_ENUM::EFF_FLAGS :
     worker = std::make_unique<EffectFlags>(canvas);
     break;
-  case EFF_ENUM::EFF_LEAPERS :
-    worker = std::make_unique<EffectLeapers>(canvas);
-    break;
   case EFF_ENUM::EFF_LIQUIDLAMP :
     worker = std::make_unique<EffectLiquidLamp>(canvas);
-    break;
-  case EFF_ENUM::EFF_AQUARIUM :
-    worker = std::make_unique<EffectAquarium>(canvas);
     break;
   case EFF_ENUM::EFF_WHIRL :
     worker = std::make_unique<EffectWhirl>(canvas);
     break;
   case EFF_ENUM::EFF_STAR :
     worker = std::make_unique<EffectStar>(canvas);
-    break;
-  case EFF_ENUM::EFF_FIREWORKS :
-    worker = std::make_unique<EffectFireworks>(canvas);
-    break;
-  case EFF_ENUM::EFF_PACIFIC :
-    worker = std::make_unique<EffectPacific>(canvas);
-    break;
-  case EFF_ENUM::EFF_MUNCH :
-    worker = std::make_unique<EffectMunch>(canvas);
-    break;
-  case EFF_ENUM::EFF_NOISE :
-    worker = std::make_unique<EffectNoise>(canvas);
-    break;
-  case EFF_ENUM::EFF_BUTTERFLY :
-    worker = std::make_unique<EffectButterfly>(canvas);
-    break;
-  case EFF_ENUM::EFF_SHADOWS :
-    worker = std::make_unique<EffectShadows>(canvas);
-    break;
-  case EFF_ENUM::EFF_PATTERNS :
-    worker = std::make_unique<EffectPatterns>(canvas);
-    break;
-  case EFF_ENUM::EFF_ARROWS :
-    worker = std::make_unique<EffectArrows>(canvas);
-    break;
-  case EFF_ENUM::EFF_NBALLS :
-    worker = std::make_unique<EffectNBals>(canvas);
     break;
   case EFF_ENUM::EFF_ATTRACT :
     worker = std::make_unique<EffectAttract>(canvas);
@@ -418,26 +352,14 @@ void EffectWorker::workerset(uint16_t effect){
   case EFF_ENUM::EFF_FRIZZLES :
     worker = std::make_unique<EffectFrizzles>(canvas);
     break;
-  case EFF_ENUM::EFF_POLARL :
-    worker = std::make_unique<EffectPolarL>(canvas);
-    break;
-  case EFF_ENUM::EFF_SNAKEISLAND :
-    worker = std::make_unique<EffectSnakeIsland>(canvas);
-    break;
    case EFF_ENUM::EFF_SMOKEBALLS :
     worker = std::make_unique<EffectSmokeballs>(canvas);
-    break;
-   case EFF_ENUM::EFF_RACER :
-    worker = std::make_unique<EffectRacer>(canvas);
     break;
    case EFF_ENUM::EFF_MAGMA :
     worker = std::make_unique<EffectMagma>(canvas);
     break;
    case EFF_ENUM::EFF_FIRE2021 :
     worker = std::make_unique<EffectFire2021>(canvas);
-    break;
-   case EFF_ENUM::EFF_PUZZLES :
-    worker = std::make_unique<EffectPuzzles>(canvas);
     break;
    case EFF_ENUM::EFF_PILE :
     worker = std::make_unique<EffectPile>(canvas);
@@ -448,9 +370,6 @@ void EffectWorker::workerset(uint16_t effect){
    case EFF_ENUM::EFF_SMOKER :
     worker = std::make_unique<EffectSmoker>(canvas);
     break;
-  case EFF_ENUM::EFF_MIRAGE :
-    worker = std::make_unique<EffectMirage>(canvas);
-    break;
   case EFF_ENUM::EFF_WATERCOLORS :
     worker = std::make_unique<EffectWcolor>(canvas);
     break;
@@ -460,18 +379,9 @@ void EffectWorker::workerset(uint16_t effect){
   case EFF_ENUM::EFF_SPBALS :
     worker = std::make_unique<EffectSplashBals>(canvas);
     break;
-  case EFF_ENUM::EFF_FLOWER :
-    worker = std::make_unique<EffectFlower>(canvas);
-    break;
-  case EFF_ENUM::EFF_VU :
-    worker = std::make_unique<EffectVU>(canvas, lampstate->mic_gpio);
-    break;
-  case EFF_ENUM::EFF_OSC :
-    worker = std::make_unique<EffectOsc>(canvas, lampstate->mic_gpio);
-    break;
 
   default:
-    worker = std::make_unique<EffectNone>(canvas); // std::make_unique<EffectCalc>(new EffectCalc());
+    worker = std::make_unique<EffectNone>(canvas);
   }
 
   if(worker){
@@ -497,21 +407,6 @@ void EffectWorker::initDefault(const char *folder)
 {
   if(!LittleFS.exists("/eff")){
     LittleFS.mkdir("/eff");
-  }
-  if(!LittleFS.exists("/backup")){
-    LittleFS.mkdir("/backup");
-  }
-  if(!LittleFS.exists("/backup/btn")){
-    LittleFS.mkdir("/backup/btn");
-  }
-  if(!LittleFS.exists("/backup/evn")){
-    LittleFS.mkdir("/backup/evn");
-  }
-  if(!LittleFS.exists("/backup/glb")){
-    LittleFS.mkdir("/backup/glb");
-  }
-  if(!LittleFS.exists("/backup/idx")){
-    LittleFS.mkdir("/backup/idx");
   }
 
   // try to load effects index from FS, or default index from FW if FS index is missing or corrupted
