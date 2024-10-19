@@ -855,13 +855,13 @@ bool Effcfg::_eff_ctrls_load_from_jdoc(JsonDocument &effcfg, std::vector<std::sh
           }
 
           v = item[T_val];
-          String val( v.is<int>() ? v.as<int>() : 128 );
+          String val( v.is<JsonVariant>() ? v.as<int>() : 128 );
           v = item[T_min];
-          String min( v.is<int>() && id>2 ? v.as<int>() : 1 );
+          String min( v.is<JsonVariant>() && id>2 ? v.as<int>() : 1 );
           v = item[T_max];
-          String max( v.is<int>() && id>2 ? v.as<int>() : 255 );
+          String max( v.is<JsonVariant>() && id>2 ? v.as<int>() : 255 );
           v = item[T_step];
-          String step( v.is<int>() && id>2 ?  v.as<int>() : 1);
+          String step( v.is<JsonVariant>() && id>2 ?  v.as<int>() : 1);
           CONTROL_TYPE type = item["type"].as<CONTROL_TYPE>();
           type = ((type & 0x0F)!=CONTROL_TYPE::RANGE) && id<3 ? CONTROL_TYPE::RANGE : type;
           min = ((type & 0x0F)==CONTROL_TYPE::CHECKBOX) ? "0" : min;
