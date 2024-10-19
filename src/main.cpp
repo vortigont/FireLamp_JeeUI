@@ -134,7 +134,6 @@ void setup() {
 
 void loop() {
     embui.handle(); // цикл, необходимый фреймворку
-    myLamp.handle(); // цикл, обработка лампы
     // do not have anything usefull there except mike and ftp
     vTaskDelay(1);
 }

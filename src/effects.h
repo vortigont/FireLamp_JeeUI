@@ -195,7 +195,6 @@ class EffectRainbow : public EffectCalc {
 private:
     float hue; // вещественное для малых скоростей, нужно приведение к uint8_t по месту
     float twirlFactor;
-    float micCoef;
 
     bool rainbowHorVertRoutine(bool isVertical);
     bool rainbowDiagonalRoutine();
@@ -614,7 +613,6 @@ private:
     float ff_z;
     float hue;
     std::vector<Boid> boids;
-    uint8_t micPick = 0;
 	
     const uint8_t ff_speed = 1; // чем выше этот параметр, тем короче переходы (градиенты) между цветами. 1 - это самое красивое
     const uint8_t ff_scale = 26; // чем больше этот параметр, тем больше "языков пламени" или как-то так. 26 - это норм
@@ -646,7 +644,6 @@ private:
     float counter = 0;                                // счетчик для реализации смещений, нарастания и т.д.
 	float _speed;
     bool setup = true;
-    uint8_t micPick = 0;
     const uint8_t spirocenterX = fb->w() / 2;
     const uint8_t spirocenterY = fb->h() / 2;
     std::vector<Star> stars{std::vector<Star>(STARS_NUM)};

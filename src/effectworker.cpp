@@ -1059,12 +1059,6 @@ String EffectCalc::setDynCtrl(UIControl*_val){
   if( _val->getId()==7 && starts_with(_val->getName().c_str(), TINTF_020) ){
     // не будем заниматься ерундой и включать/выключать микрофон из конфига эффекта, для этого есть глобальный флажек
     // 
-/*
-    if(_lampstate){
-      _lampstate->isMicOn = ret_val.toInt() && (_lampstate->mic_gpio != GPIO_NUM_NC);
-      _lampstate->setMicAnalyseDivider(_lampstate->isMicOn);
-    }
-*/
   } else {
     if(demoRndEffControls()){ // для режима рандомного ДЕМО, если это не микрофон - то вернуть рандомное значение в пределах диапазона значений
       ret_val = String(random(_val->getMin().toInt(), _val->getMax().toInt()+1));
@@ -1242,7 +1236,7 @@ void build_eff_names_list_file(EffectWorker &w, bool full){
     // create number prefix for effect name in list, i.e.  '8. '
     // for effect copies it will append clone number suffix, i.e. '75.0 '
     String name(EFF_NUMBER(itr->eff_nb));
-    name += effname + MIC_SYMBOL(itr->eff_nb);    // add microphone symbol for effects that support it
+    //name += effname + MIC_SYMBOL(itr->eff_nb);    // add microphone symbol for effects that support it
     //name + (eff->eff_nb>255 ? String(" (") + String(eff->eff_nb&0xFF) + String(")") : String("")) + String(". ")
 
     offset += sprintf_P(buff->data()+offset, PSTR("{\"label\":\"%s\",\"value\":\"%d\"},"), name.c_str(), itr->eff_nb);

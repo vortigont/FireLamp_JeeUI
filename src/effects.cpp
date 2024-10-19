@@ -65,13 +65,7 @@ String EffectSparcles::setDynCtrl(UIControl*_val){
 
 bool EffectSparcles::sparklesRoutine()
 {
-
-  uint8_t mic = getMicMapMaxPeak();
-  uint8_t mic_f = map(getMicMapFreq(), LOW_FREQ_MAP_VAL, HI_FREQ_MAP_VAL, 0, 255);
-  if (isMicOn() && eff > 5)
-    fb->fade(255 - mic);
-
-  fb->fade(isMicOn() ? map(scale, 1, 255, 100, 1) : map(scale, 1, 255, 50, 1));
+  fb->fade(map(scale, 1, 255, 50, 1));
 
   CHSV currentHSV;
 
@@ -79,36 +73,7 @@ bool EffectSparcles::sparklesRoutine()
     uint8_t x = random8(0U, fb->w());
     uint8_t y = random8(0U, fb->h());
 
-    switch (eff)
-  {
-  case 1 :
-  case 6 :
-    mic_f = getMicMapFreq();
-    break;
-  case 2 :
-  case 7 :
-    mic_f = map(getMicMapFreq(), LOW_FREQ_MAP_VAL, HI_FREQ_MAP_VAL, 0, 255);
-    break;
-  case 3 :
-  case 8 :
-    mic_f = sin8(getMicMapFreq());
-    break;
-  case 4 :
-  case 9 :
-    mic_f = cos8(getMicMapFreq());
-    break;
-  case 5 :
-  case 10 :
-    mic_f = random8(255U);
-    break;
-  }
-
-
     if (!fb->at(x, y)) {
-      if (isMicOn()) {
-        currentHSV = CHSV(mic_f, 255U - getMicMapMaxPeak()/3, constrain(mic * 1.25f, 48, 255));
-      }
-      else
         currentHSV = CHSV(random8(1U, 255U), random8(192U, 255U), random8(192U, 255U));
       fb->at(x, y) = currentHSV;
     }
@@ -133,15 +98,15 @@ bool EffectWhiteColorStripe::whiteColorStripeRoutine()
 {
   fb->clear();
 
-  byte _scale = isMicOn() ? (256.0/getMicMapMaxPeak()+0.3)*scale : scale;
-  byte _speed = isMicOn() ? (256.0/getMicMapFreq()+0.3)*speed : speed;
+  byte _scale = scale;
+  byte _speed = speed;
 
     if(_scale < 126){
         uint8_t centerY = fb->maxHeightIndex() / 2U;
         for (int16_t y = centerY; y >= 0; y--)
         {
           int br = (MAX_BRIGHTNESS)-constrain(map(_scale,126,1,1,15)*(centerY-y)*((centerY-y)/(fb->h()*(0.0005*brightness))),1,MAX_BRIGHTNESS); if(br<0) br=0;
-          int _shift = isMicOn() ? 0 : map(shift,1,255,-centerY,centerY);
+          int _shift = map(shift,1,255,-centerY,centerY);
 
             CRGB color = CHSV(
               45U,                                                        // определяем тон
@@ -160,7 +125,7 @@ bool EffectWhiteColorStripe::whiteColorStripeRoutine()
         for (int16_t y = 0U; y < (int16_t)fb->h(); y++){
           for (int16_t x = centerX; x >= 0; x--){
             int br = (MAX_BRIGHTNESS)-constrain(map(_scale,128,255,1,15)*(centerX-x)*((centerX-x)/(fb->w()*(0.0005*brightness))),1,MAX_BRIGHTNESS); if(br<0) br=0;
-            int _shift = isMicOn() ? 0 : map(shift,1,255,-centerX,centerX);
+            int _shift = map(shift,1,255,-centerX,centerX);
 
             CRGB color = CHSV(
               45U,                                                        // определяем тон
@@ -256,10 +221,6 @@ bool EffectPulse::run() {
   palette = RainbowColors_p;
   uint8_t _scale = scale;
 
-  #define FADE 255U - (isMicOn() ? getMicMapMaxPeak()*2 : 248U) // (isMicOn() ? 300U - getMicMapMaxPeak() : 5U)
-  #define BLUR (isMicOn() ? getMicMapMaxPeak()/3 : 10U) //(isMicOn() ? map(getMicMapMaxPeak(), 1, 255, 1, 30) : 10U)
-
-  //fb->fade(FADE);
   if (pulse_step <= currentRadius) {
     for (uint8_t i = 0; i < pulse_step; i++ ) {
       uint8_t _dark = qmul8( 2U, cos8 (128U / (pulse_step + 1U) * (i + 1U))) ;
@@ -302,7 +263,7 @@ bool EffectPulse::run() {
       EffectMath::drawCircle(centerX, centerY, i, _pulse_color, fb);
     }
   } else {
-    fb->fade(FADE);
+    fb->fade(7);
     centerX = random8(fb->w() - 5U) + 3U;
     centerY = random8(fb->h() - 5U) + 3U;
     _pulse_hueall += _pulse_delta;
@@ -311,7 +272,7 @@ bool EffectPulse::run() {
     pulse_step = 0;
   }
   pulse_step+=speedFactor;
-  EffectMath::blur2d(fb, BLUR);
+  EffectMath::blur2d(fb, 10);
   return true;
 }
 
@@ -321,9 +282,7 @@ bool EffectRainbow::run(){
   // коэф. влияния замаплен на скорость, 4 ползунок нафиг не нужен
   hue += (6.0 * (speed / 255.0) + 0.05 ); // скорость смещения цвета зависит от кривизны наклна линии, коэф. 6.0 и 0.05
 
-    micCoef = (getMicMapMaxPeak() > map(speed, 1, 255, 100, 10) and isMicOn() ? getMicMapMaxPeak() : 100.0)/100.0;
     twirlFactor = EffectMath::fmap((float)scale, 85, 170, 8.3, 24);      // на сколько оборотов будет закручена матрица, [0..3]
-    twirlFactor *= getMicMapMaxPeak() > map(speed, 1, 255, 80, 10) and isMicOn() ? 1.5f * ((float)getMicMapFreq() / 255.0f) : 1.0f;
 
   if(scale<85){
     return rainbowHorVertRoutine(false);
@@ -340,7 +299,7 @@ bool EffectRainbow::rainbowHorVertRoutine(bool isVertical)
   {
     for (uint8_t j = 0U; j < (isVertical?fb->h():fb->w()); j++)
     {
-      CHSV thisColor = CHSV(((hue + i * scale) * micCoef), 255, 255);
+      CHSV thisColor = CHSV((hue + i * scale), 255, 255);
       fb->at((isVertical?i:j), (isVertical?j:i)) = thisColor;
     }
   }
@@ -392,33 +351,6 @@ bool EffectColors::colorsRoutine()
 
   if(step!=delay) {
 
-  uint16_t mmf = getMicMapFreq();
-  uint16_t mmp = getMicMapMaxPeak();
-/*
-#if defined(LAMP_DEBUG)
-EVERY_N_SECONDS(1){
-  LOG(printf_P,PSTR("MF: %5.2f MMF: %d MMP: %d scale %d speed: %d\n"), getMicFreq(), mmf, mmp, scale, speed);
-}
-#endif
-*/
-  if(isMicOn()){
-    // включен микрофон
-    if(scale>=127){
-      uint8_t pos = (round(3.0*(mmf+(25.0*speed/255.0))/255.0))*fb->h()/8; // двигаем частоты по диапазону в зависимости от скорости и делим на 4 части 0...3
-      for(uint8_t y=pos;y<pos+fb->h()/8;y++){
-        for(uint8_t x=0; x<fb->w(); x++){
-          fb->at(x, y) = CHSV(mmf / 1.5, 255U, constrain(mmp * (2.0 * (scale >> 1) / 127.0 + 0.33), 1, 255));
-          fb->at(x, fb->maxHeightIndex() - y) = CHSV(mmf / 1.5, 255U, constrain(mmp * (2.0 * (scale >> 1) / 127.0 + 0.33), 1, 255));
-        }
-      }
-      fb->dim(254); // плавно гасим
-    } else {
-      if(mmp>scale) // если амплитуда превышает масштаб
-        fb->fill(CHSV(constrain(mmf*(2.0*speed/255.0),1,255), 255U, constrain(mmp*(2.0*scale/127.0+1.5),1,255))); // превышает минимаьный уровень громкости, значит выводим текущую частоту
-      else
-        fb->dim(252); // плавно гасим
-    }
-  } else {
     // выключен микрофон
     switch(mode){
       case 1:
@@ -448,7 +380,6 @@ EVERY_N_SECONDS(1){
       default:
         fb->fill(CHSV(ihue, 255U, 255U));      
     }
-  }
 
   } else {
     ihue += scale; // смещаемся на следущий
@@ -983,10 +914,8 @@ String Effect3DNoise::setDynCtrl(UIControl*_val) {
 }
 
 bool Effect3DNoise::run(){
-    uint8_t mmf = isMicOn() ? getMicMapFreq() : 0;
-    uint8_t mmp = isMicOn() ? getMicMapMaxPeak() : 0;
-    _scale = (NOISE_SCALE_AMP*(float)scale/255.0+NOISE_SCALE_ADD)*(mmf>0?(1.5*mmf/255.0):1);
-    _speed = NOISE_SCALE_AMP*(float)speed/512.0*(mmf<LOW_FREQ_MAP_VAL && mmp>MIN_PEAK_LEVEL?10:2.5*mmp/255.0+1);
+    _scale = NOISE_SCALE_AMP*(float)scale/255.0 + NOISE_SCALE_ADD;
+    _speed = NOISE_SCALE_AMP*(float)speed/512.0;
 
   fillNoiseLED();
   return true;
@@ -2817,7 +2746,6 @@ String EffectWhirl::setDynCtrl(UIControl*_val){
 }
 
 bool EffectWhirl::whirlRoutine() {
-  micPick = isMicOn() ? getMicMaxPeak() : 0;
   fb->fade(15. * speedFactor);
 
   for (auto &boid : boids){
@@ -2830,10 +2758,7 @@ bool EffectWhirl::whirlRoutine() {
     boid.velocity.y = -((float)cos8(angle) * 0.0078125 - speedFactor);
     boid.update();
 
-    if (!isMicOn())
       EffectMath::drawPixelXYF(boid.location.x, boid.location.y, ColorFromPalette(*curPalette, angle + (uint8_t)hue), fb); // + hue постепенно сдвигает палитру по кругу
-    else
-      EffectMath::drawPixelXYF(boid.location.x, boid.location.y, CHSV(getMicMapFreq(), 255-micPick, constrain(micPick * EffectMath::fmap(scale, 1.0f, 255.0f, 1.25f, 5.0f), 48, 255)), fb); // + hue постепенно сдвигает палитру по кругу
 
     if (boid.location.x < 0 || boid.location.x >= fb->w() || boid.location.y < 0 || boid.location.y >= fb->h()) {
       boid.location.x = EffectMath::randomf(0, fb->w());
@@ -2899,21 +2824,19 @@ void EffectStar::drawStar(float xlocl, float ylocl, float biggy, float little, i
                           static_cast<int16_t>(ylocl + ((little * (cos8(i * radius2 + radius2 / 2 - dangle) - 128.0)) / 128)),
                           static_cast<int16_t>(xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128)),
                           static_cast<int16_t>(ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128)),
-                          isMicOn() ? CHSV(koler+getMicMapFreq(),255-micPick, constrain(micPick * EffectMath::fmap(scale, 1.0f, 255.0f, 1.25f, 5.0f), 48, 255)) : ColorFromPalette(*curPalette, koler),
+                          ColorFromPalette(*curPalette, koler),
                           fb);
     EffectMath::drawLine( static_cast<int16_t>(xlocl + ((little * (sin8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128)),
                           static_cast<int16_t>(ylocl + ((little * (cos8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128)),
                           static_cast<int16_t>(xlocl + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128)),
                           static_cast<int16_t>(ylocl + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128)),
-                          isMicOn() ? CHSV(koler+getMicMapFreq(), 255-micPick, constrain(micPick * EffectMath::fmap(scale, 1.0f, 255.0f, 1.25f, 5.0f), 48, 255)) : ColorFromPalette(*curPalette, koler),
+                          ColorFromPalette(*curPalette, koler),
                           fb);
   }
 }
 
 bool EffectStar::run() {
-
-  micPick = getMicMaxPeak();
-  fb->fade(255U - (isMicOn() ? micPick*2 : 90)); // работает быстрее чем dimAll
+  fb->fade(255U -  90); // работает быстрее чем dimAll
 
   speedFactor = ((float)speed/380.0+0.05);
 
@@ -2945,7 +2868,7 @@ bool EffectStar::run() {
     }
   }
 
-  EffectMath::blur2d(fb, isMicOn() ? micPick/2 : 30U); //fadeToBlackBy() сам блурит, уменьшил блур под микрофон
+  EffectMath::blur2d(fb, 30U); //fadeToBlackBy() сам блурит, уменьшил блур под микрофон
 
   return true;
 }
@@ -3040,7 +2963,7 @@ String EffectSnake::setDynCtrl(UIControl*_val) {
 bool EffectSnake::run() {
   fb->fade(speed<25 ? 5 : speed/2 ); // длина хвоста будет зависеть от скорости
 
-  hue+=(speedFactor/snakes.size()+(isMicOn() ? getMicMapFreq()/127.0 : 0));
+  hue += speedFactor/snakes.size();
 
   hue = hue>255? hue-255 : hue;
 
@@ -3056,9 +2979,7 @@ bool EffectSnake::run() {
     }
     snake.shuffleDown(speedFactor, subPix);
 
-    if(getMicMapMaxPeak()>speed/3.0+75.0 && isMicOn()) {
-      snake.newDirection();
-    } else if (random((speed<25)?speed*50:speed*10) < speed && !isMicOn()) {// как часто будут повороты :), логика загадочная, но на малой скорости лучше змейкам круги не наматывать :)
+    if (random((speed<25)?speed*50:speed*10) < speed) {// как часто будут повороты :), логика загадочная, но на малой скорости лучше змейкам круги не наматывать :)
       snake.newDirection();
     }
 
@@ -3630,10 +3551,7 @@ void EffectFairy::fountEmit(TObject &i) {
   if(random8(2U)) i.speedY=-i.speedY;
 
   i.state = EffectMath::randomf(50, 250); 
-  if (type)
-    i.hue = isMicOn() ? getMicMapFreq() : hue2;
-  else 
-    i.hue = random8(getMicMapFreq(), 255);
+  i.hue = hue2;
 
   i.isShift = true; 
 }
@@ -3771,7 +3689,7 @@ bool EffectFairy::fairy() {
 }
 
 bool EffectFairy::run() {
-  _video = isMicOn() ? constrain(getMicMaxPeak() * EffectMath::fmap(gain, 1.0f, 255.0f, 1.25f, 5.0f), 48U, 255U) : 255;
+  _video = 255;
 
   switch (effect)
   {
@@ -3880,14 +3798,14 @@ void EffectCircles::drawCircle(LedFB<CRGB> *fb, Circle &circle) {
 }
 
 bool EffectCircles::run() {
-  _video = isMicOn() ? constrain(getMicMaxPeak() * EffectMath::fmap(gain, 1.0f, 255.0f, 1.25f, 5.0f), 48U, 255U) : 255;
+  _video = 255;
 
   randomSeed(millis());
   fb->clear();
   for (auto &i : circles){
     i.bpm += speedFactor;
     if (i.radius() < 0.001) {
-      i.hue = isMicOn() ? getMicMapFreq() : random(0, fb->w()) * 255 / circles.size();
+      i.hue = random(0, fb->w()) * 255 / circles.size();
 
       move(i);
     }

@@ -60,7 +60,6 @@ Copyright © 2020 Dmytro Korniienko (kDn)
 #define DEMO_MAX_PERIOD     900
 #define DEMO_PERIOD_STEP    10
 
-#define MIC_SCALE_DEFAULT   1.28
 #define SPEEDFACTOR_DEFAULT 1.0
 
 // placeholder for effect list rebuilder task
@@ -202,9 +201,6 @@ void ui_page_selector(Interface *interf, JsonObjectConst data, const char* actio
         case page::eff_config :   // страница "Управление списком эффектов"
             show_effects_config(interf, {}, NULL);
             return;
-        case page::mike :         // страница настроек микрофона
-            show_settings_mic(interf, {}, NULL);
-            return;
         case page::setup_bttn :    // страница настроек кнопки
             return page_button_setup(interf, {}, NULL);
         case page::setup_other :    // страница "настройки"-"другие"
@@ -256,23 +252,8 @@ void ui_section_effects_list_configuration(Interface *interf, JsonObjectConst da
 
     interf->spacer();
 
-    // sorting option
-/*
-    interf->select(V_effSort, TINTF_040);
-        interf->option(SORT_TYPE::ST_BASE, TINTF_041);
-        interf->option(SORT_TYPE::ST_END, TINTF_042);
-        interf->option(SORT_TYPE::ST_IDX, TINTF_043);
-        interf->option(SORT_TYPE::ST_AB, TINTF_085);
-        interf->option(SORT_TYPE::ST_AB2, TINTF_08A);
-        interf->option(SORT_TYPE::ST_MIC, TINTF_08D);  // эффекты с микрофоном
-    interf->json_section_end();
-*/
-
     interf->button(button_t::submit, TCONST_set_effect, TINTF_Save, P_GRAY);            // Save btn
     interf->button_value(button_t::submit, TCONST_set_effect, TCONST_copy, TINTF_005);  // Copy button
-    //if (confEff->eff_nb&0xFF00) { // пока удаление только для копий, но в теории можно удалять что угодно
-        // interf->button_value(button_t::submit, TCONST_set_effect, TCONST_del_, TINTF_006, P_RED);
-    //}
 
     interf->json_section_line();
         interf->button_value(button_t::submit, TCONST_set_effect, TCONST_delfromlist, TINTF_0B5, P_RED);    // удалить эффект из списка
@@ -538,15 +519,6 @@ void set_effects_config_param(Interface *interf, JsonObjectConst data, const cha
     if (!confEff || !data) return;
     EffectListElem *effect = confEff;
     
-    //bool isNumInList =  data[TCONST_numInList] == "1";
-
-    bool isEffHasMic = data[TCONST_effHasMic];
-    myLamp.setEffHasMic(isEffHasMic);
-
-    // sorting is removed
-    //SORT_TYPE st = data[V_effSort].as<SORT_TYPE>();
-    //embui.var(V_effSort, data[V_effSort]); 
-    //myLamp.effwrkr.setEffSortType(st);
     myLamp.save_flags();
     
     String act = data[TCONST_set_effect];
@@ -659,13 +631,9 @@ void block_effect_controls(Interface *interf, JsonObjectConst data, const char* 
     std::vector<std::shared_ptr<UIControl>> &controls = myLamp.effwrkr.getControls();
     uint8_t ctrlCaseType; // тип контрола, старшие 4 бита соответствуют CONTROL_CASE, младшие 4 - CONTROL_TYPE
 
-    bool isMicOn = myLamp.getLampFlagsStuct().isMicOn;
     LOGD(T_WebUI, printf, "Make UI for %d controls\n", controls.size());
-    for(unsigned i=0; i<controls.size();i++)
-        if(controls[i]->getId()==7 && controls[i]->getName().startsWith(TINTF_020))
-            isMicOn = isMicOn && controls[i]->getVal().toInt();
-
     LOGD(T_WebUI, printf, "block_effect_controls() got %u ctrls\n", controls.size());
+
     for (const auto &ctrl : controls){
         if (!ctrl->getId()) continue;       // skip old "brightness control"
 
@@ -675,10 +643,10 @@ void block_effect_controls(Interface *interf, JsonObjectConst data, const char* 
                 continue;
                 break;
             case CONTROL_CASE::ISMICON :
-                if(!isMicOn && (!myLamp.getLampFlagsStuct().isMicOn || !(ctrl->getId()==7 && ctrl->getName().startsWith(TINTF_020)==1) )) continue;
+                //if(!isMicOn && (!myLamp.getLampFlagsStuct().isMicOn || !(ctrl->getId()==7 && ctrl->getName().startsWith(TINTF_020)==1) )) continue;
                 break;
             case CONTROL_CASE::ISMICOFF :
-                if(isMicOn && (myLamp.getLampFlagsStuct().isMicOn || !(ctrl->getId()==7 && ctrl->getName().startsWith(TINTF_020)==1) )) continue;
+                //if(isMicOn && (myLamp.getLampFlagsStuct().isMicOn || !(ctrl->getId()==7 && ctrl->getName().startsWith(TINTF_020)==1) )) continue;
                 break;
             default: break;
         }
@@ -785,59 +753,12 @@ void ui_block_mainpage_switches(Interface *interf, JsonObjectConst data, const c
         interf->value(K_demo, myLamp.getDemoMode());
         // button lock
         getset_btn_lock(interf, {}, NULL);
-        // Mike
-        interf->value(A_dev_mike, myLamp.getMicState());
         // current effect's luma curve
         interf->value(A_dev_lcurve, e2int(myLamp.effwrkr.getEffCfg().curve));
     interf->json_frame_flush();
 
     // request state publishing from MP3Player
     EVT_POST(LAMP_GET_EVENTS, e2int(evt::lamp_t::mp3state));
-
-
-#ifdef DISABLED_CODE
-    interf->json_frame_interface("content");    // replace sections on existing main page
-
-    interf->json_section_begin(T_switches);   // section to replace
-    interf->json_section_line();
-    interf->checkbox(A_dev_pwrswitch, myLamp.isLampOn(), TINTF_00E, true);
-    interf->checkbox(K_demo, myLamp.getMode() == LAMPMODE::MODE_DEMO, TINTF_00F, true);
-    interf->checkbox(TCONST_drawbuff, myLamp.isDrawOn(), TINTF_0CE, true);
-    interf->checkbox(TCONST_Mic, myLamp.isMicOnOff(), TINTF_012, true);
-    interf->checkbox(TCONST_AUX, embui.paramVariant(TCONST_AUX), TCONST_AUX, true);
-    interf->checkbox(T_mp3mute, myLamp.isMP3mute(), "MP3 Mute" /*TINTF_099*/, true);
-
-#ifdef LAMP_DEBUG
-    interf->checkbox(TCONST_debug, myLamp.isDebugOn(), TINTF_08E, true);
-#endif
-    // curve selector
-    interf->select(A_dev_lcurve, e2int(myLamp.effwrkr.getEffCfg().curve), "Luma curve", true);  // luma curve selector
-        interf->option(0, "binary");
-        interf->option(1, "linear");
-        interf->option(2, "cie1931");
-        interf->option(3, "exponent");
-        interf->option(4, "sine");
-        interf->option(5, "square");
-    interf->json_section_end();     // select
-
-    interf->json_section_end();     // json_section_line()
-/*
-    if(mp3->isMP3Mode()){
-        interf->json_section_line("line124"); // спец. имя - разбирается внутри html
-        interf->button(button_t::generic, CMD_MP3_PREV, TINTF_0BD, P_GRAY);
-        interf->button(button_t::generic, CMD_MP3_NEXT, TINTF_0BE, P_GRAY);
-        interf->button(button_t::generic, TCONST_mp3_p5, TINTF_0BF, P_GRAY);
-        interf->button(button_t::generic, TCONST_mp3_n5, TINTF_0C0, P_GRAY);
-        interf->json_section_end(); // line
-    }
-*/
-    // регулятор громкости mp3 плеера
-    interf->range(T_mp3vol, embui.paramVariant(T_mp3vol).as<int>(), 1, 30, 1, TINTF_09B, true);
-
-    interf->button(button_t::generic, A_ui_page_effects, TINTF_exit);
-    interf->json_frame_flush();
-#endif  // DISABLED_CODE
-
 }
 
 /*  Страница "Эффекты" (заглавная страница)
@@ -933,53 +854,7 @@ void set_clear(Interface *interf, JsonObjectConst data, const char* action){
         myLamp.fillDrawBuf(color);
 }
 */
-void show_settings_mic(Interface *interf, JsonObjectConst data, const char* action){
-    if (!interf) return;
-    interf->json_frame_interface();
-    interf->json_section_main(TCONST_settings_mic, TINTF_020);
 
-    interf->checkbox(A_dev_mike, myLamp.getLampFlagsStuct().isMicOn, TINTF_012, true);
-
-    interf->json_section_begin(TCONST_set_mic);
-        interf->number_constrained(V_micScale, round(myLamp.getLampState().getMicScale() * 10) / 10, TINTF_022, 0.1f, 0.1f, 4.0f);
-        interf->number_constrained(V_micNoise, round(myLamp.getLampState().getMicNoise() * 10) / 10, TINTF_023, 0.1f, 0.0f, 32.0f);
-        interf->range (V_micRdcLvl, (int)myLamp.getLampState().getMicNoiseRdcLevel(), 0, 4, 1, TINTF_024, false);
-        interf->button(button_t::submit, TCONST_set_mic, TINTF_Save, P_GRAY);
-    interf->json_section_end();
-
-    interf->spacer();
-    interf->button(button_t::generic, A_ui_page_settings, TINTF_exit);
-
-    interf->json_frame_flush();
-}
-
-void set_settings_mic(Interface *interf, JsonObjectConst data, const char* action){
-    if (!data) return;
-    float scale = data[V_micScale];
-    float noise = data[V_micNoise];
-    mic_noise_reduce_level_t rdl = static_cast<mic_noise_reduce_level_t>(data[V_micRdcLvl].as<unsigned>());
-
-    LOGI(T_WebUI, printf, "Set mike: scale=%2.3f noise=%2.3f rdl=%u\n", scale, noise, (uint32_t)rdl);
-
-    embui.getConfig()[V_micScale] = scale;
-    embui.getConfig()[V_micNoise] = noise;
-    embui.getConfig()[V_micRdcLvl] = data[V_micRdcLvl];
-
-    // apply to running configuration
-    myLamp.getLampState().setMicScale(scale);
-    myLamp.getLampState().setMicNoise(noise);
-    myLamp.getLampState().setMicNoiseRdcLevel(rdl);
-    // mike has onChange control and does not work here
-    //myLamp.setMicOnOff(data[T_mic]);
-
-    basicui::page_system_settings(interf, data, NULL);
-}
-
-void set_micflag(Interface *interf, JsonObjectConst data, const char* action){
-    if (!data) return;
-    myLamp.setMicOnOff(data[A_dev_mike]);
-    LOGD(T_WebUI, printf, "Set mike: %u/%u\n", data[T_mic].as<bool>(), myLamp.getLampFlagsStuct().isMicOn);
-}
 
 /**
  * @brief WebUI страница "Настройки" - "другие"
@@ -1314,11 +1189,7 @@ void embui_actions_register(){
     // создаем конфигурационные параметры и регистрируем обработчики активностей
 
     // create defailt values for some vars
-    JsonVariant v = embui.getConfig()[V_micScale];
-    if (!v.is<float>())
-        embui.getConfig()[V_micScale] = MIC_SCALE_DEFAULT;
-
-    v = embui.getConfig()[T_effSpeedFactor];
+    JsonVariant v = embui.getConfig()[T_effSpeedFactor];
     if (!v.is<float>())
         embui.getConfig()[T_effSpeedFactor] = SPEEDFACTOR_DEFAULT;
 
@@ -1377,8 +1248,5 @@ void embui_actions_register(){
     //embui.action.add(TCONST_drawbuff, set_overlay_drawing);
 
     embui.action.add(T_display_type, page_display_setup);                // load display setup page depending on selected disp type (action for drop down list)
-
-    embui.action.add(TCONST_set_mic, set_settings_mic);
-    embui.action.add(A_dev_mike, set_micflag);
 
 }

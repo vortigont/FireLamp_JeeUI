@@ -42,7 +42,6 @@ Copyright © 2020 Dmytro Korniienko (kDn)
 #include "EmbUI.h"
 #include "char_const.h"
 #include "luma_curves.hpp"
-#include "micFFT.h"
 #include "evtloop.h"
 
 #ifndef DEFAULT_MQTTPUB_INTERVAL
@@ -88,8 +87,8 @@ struct LampFlags {
     bool reserved8:1;               // признак режима отладки
     bool reserved9:1;               // случайный порядок демо
     bool reserved10:1;              // отображение имени в демо
-    bool isMicOn:1;                 // включение/выключение микрофона
-    bool effHasMic:1;               // микрофон для эффекта
+    bool reserved11:1;              // включение/выключение микрофона
+    bool reserved12:1;              // микрофон для эффекта
     bool reserved13:1;
     bool reserved14:1;
     bool reserved15:1;      //
@@ -106,7 +105,7 @@ union LampFlagsPack {
 struct VolatileFlags {
     bool pwrState:1;        // флаг включения/выключения
     bool demoMode:1;        // running demo
-    bool isMicOn:1;         // включение/выключение микрофона
+    //bool isMicOn:1;         // включение/выключение микрофона
     bool debug:1;           // some debug flag
 };
 
@@ -125,8 +124,6 @@ private:
 
     // used auxilary GPIOs 
     struct GPIO_pins {
-        // Analog pin for microphone
-        int32_t mic{GPIO_NUM_NC};
         // matrix power switch FET
         int32_t fet{GPIO_NUM_NC};
         // some uknown AUX pin
@@ -155,10 +152,6 @@ private:
 
     uint16_t storedEffect = (uint16_t)EFF_ENUM::EFF_NONE;
 
-    // Microphone
-    MicWorker *mw = nullptr;
-    void micHandler();
-
     // Таймер смены эффектов в ДЕМО
     Task *demoTask = nullptr;
     // Demo change period
@@ -185,11 +178,6 @@ public:
     LampState &getLampState(){ return lampState; }
 
     std::vector<std::shared_ptr<UIControl>>&getEffControls() { return effwrkr.getControls(); }
-
-    void setMicOnOff(bool val);
-
-    // return if Microphone enabled state
-    bool getMicState() const { return vopts.isMicOn; }
 
     void setSpeedFactor(float val) {
         lampState.speedfactor = val;
@@ -351,8 +339,6 @@ public:
      */
     void setDemoRndEffControls(bool v){ opts.flag.demoRndEffControls = lampState.demoRndEffControls = v; };
 
-
-    void setEffHasMic(bool flag){ opts.flag.effHasMic = flag; }
 
 
     // ---------- служебные функции -------------

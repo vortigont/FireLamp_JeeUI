@@ -2201,18 +2201,6 @@
           "html":"spacer"
         },
         {
-          "id": "mic",
-          "html": "input",
-          "value": -1,
-          "type": "number",
-          "label": "Microphone gpio",
-          "min": -1,
-          "step": 1
-        },
-        {
-          "html":"spacer"
-        },
-        {
           "id": "set_gpio",
           "html": "button",
           "type": 1,

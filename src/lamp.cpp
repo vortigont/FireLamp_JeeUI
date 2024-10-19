@@ -53,7 +53,6 @@ Copyright © 2020 Dmytro Korniienko (kDn)
 
 
 Lamp::Lamp() : effwrkr(&lampState){
-  lampState.micAnalyseDivider = 1; // анализ каждый раз
   lampState.flags = 0; // сборосить все флаги состояния
   lampState.speedfactor = 1.0; // дефолтное значение
 }
@@ -99,10 +98,6 @@ void Lamp::lamp_init(){
   // GPIO's
   JsonDocument doc;
   if (embuifs::deserializeFile(doc, TCONST_fcfg_gpio)){
-    // restore mic gpio
-    _pins.mic = doc[T_mic] | static_cast<int>(GPIO_NUM_NC);
-    // copy gpio value to this ugly shared struct for EffectWorker
-    lampState.mic_gpio = _pins.mic;
 
     // restore fet gpio
     _pins.fet = doc[TCONST_mosfet_gpio] | static_cast<int>(GPIO_NUM_NC);
@@ -122,10 +117,6 @@ void Lamp::lamp_init(){
     }
   }
 
-  // restore mike on/off state
-  if (_pins.mic != GPIO_NUM_NC){
-    vopts.isMicOn = lampState.isMicOn = opts.flag.isMicOn;
-  }
 
   // copy demo values to this ugly shared struct for EffectWorker
   lampState.demoRndEffControls = opts.flag.demoRndEffControls;
@@ -143,14 +134,6 @@ void Lamp::lamp_init(){
   if (opts.flag.pwrState){
     power(true);
     // return
-  }
-}
-
-void Lamp::handle(){
-  static unsigned long mic_check = 0;
-  if(effwrkr.status() && vopts.isMicOn && vopts.pwrState && (mic_check + MIC_POLLRATE < millis()) ){
-    micHandler();
-    mic_check = millis();
   }
 }
 
@@ -210,72 +193,6 @@ void Lamp::power(bool pwr, bool restore_state){
   }
 }
 
-void Lamp::micHandler()
-{
-  static uint8_t counter=0;
-  if(effwrkr.getCurrentEffectNumber()==EFF_ENUM::EFF_NONE)
-    return;
-
-  if (!mw && vopts.isMicOn && lampState.micAnalyseDivider){
-    //create micfft object
-    mw = new(std::nothrow) MicWorker(_pins.mic, lampState.mic_scale,lampState.mic_noise,true);   // создаем полноценный объект и держим в памяти
-    if(!mw) {
-      return; // не удалось выделить память, на выход
-    }
-  } else {
-    // delete object
-    if (mw){
-      delete mw;
-      mw = nullptr;
-    }
-    return;
-  }
-
-  lampState.samp_freq = mw->process(lampState.noise_reduce); // возвращаемое значение - частота семплирования
-  lampState.last_min_peak = mw->getMinPeak();
-  lampState.last_max_peak = mw->getMaxPeak();
-  lampState.cur_val = mw->getCurVal();
-
-  if(!counter) // раз на N измерений берем частоту, т.к. это требует обсчетов
-    lampState.last_freq = mw->analyse(); // возвращаемое значение - частота главной гармоники
-  if(lampState.micAnalyseDivider)
-    counter = (counter+1)%(0x01<<(lampState.micAnalyseDivider-1)); // как часто выполнять анализ
-  else
-    counter = 1; // при micAnalyseDivider == 0 - отключено
-}
-
-void Lamp::setMicOnOff(bool val) {
-  if (_pins.mic == GPIO_NUM_NC){
-    // force disable mic if proper gpio has not been set
-    vopts.isMicOn = opts.flag.isMicOn = lampState.isMicOn = false;
-    return;
-  }
-
-  vopts.isMicOn = opts.flag.isMicOn = lampState.isMicOn = val;
-
-// have no idea what that bullshit means, I just set the flag that mike is enabled
-/*
-    unsigned foundc7 = 0;
-    LList<std::shared_ptr<UIControl>>&controls = effwrkr.getControls();
-    if(val){
-        for(unsigned i=3; i<controls.size(); i++) {
-            if(controls[i]->getId()==7 && controls[i]->getName().startsWith(TINTF_020)==1){
-                effwrkr.setDynCtrl(controls[i].get());
-                return;
-            } else if(controls[i]->getId()==7) {
-                foundc7 = i;
-            }
-        }
-    }
-
-    UIControl ctrl(7,(CONTROL_TYPE)18,String(TINTF_020), val ? "1" : "0", "0", "1", "1");
-    effwrkr.setDynCtrl(&ctrl);
-    if(foundc7){ // был найден 7 контрол, но не микрофон
-        effwrkr.setDynCtrl(controls[foundc7].get());
-    }
-*/
-  save_flags();
-}
 
 void Lamp::setBrightness(uint8_t tgtbrt, fade_t fade, bool bypass){
     LOGD(T_lamp, printf, "setBrightness(%u,%u,%u)\n", tgtbrt, static_cast<uint8_t>(fade), bypass);
@@ -363,7 +280,6 @@ void Lamp::switcheffect(effswitch_t action, uint16_t effnb){
  * @param fade - переключаться через фейдер или сразу
  */
 void Lamp::_switcheffect(effswitch_t action, bool fade, uint16_t effnb) {
-  lampState.setMicAnalyseDivider(1); // восстановить делитель, при любой активности (поскольку эффекты могут его перенастраивать под себя)
 
   // find real effect number we need to switch to
   switch (action) {

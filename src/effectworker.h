@@ -43,11 +43,10 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "effects_types.h"
 #include "ledfb.hpp"
 #include "luma_curves.hpp"
-#include "micFFT.h"
 #include "ts.h"
 
 // Вывод значка микрофона в списке эффектов
-#define MIC_SYMBOL(N) (pgm_read_byte(T_EFFVER + (uint8_t)N) % 2 ? "" : " \U0001F399")
+//#define MIC_SYMBOL(N) (pgm_read_byte(T_EFFVER + (uint8_t)N) % 2 ? "" : " \U0001F399")
 // Вывод номеров эффектов в списке, в WebUI
 #define EFF_NUMBER(N)   N <= 255 ? (String(N) + ". ") : (String((byte)(N & 0xFF)) + "." + String((byte)(N >> 8) - 1U) + " ")
 
@@ -58,43 +57,12 @@ struct LampState {
     union {
         uint32_t flags{0};
         struct {
-            bool isMicOn:1;
             bool isDebug:1;
             bool demoRndEffControls:1;
-            uint8_t micAnalyseDivider:2; // делитель анализа микрофона 0 - выключен, 1 - каждый раз, 2 - каждый четвертый раз, 3 - каждый восьмой раз
         };
     };
 
     float speedfactor{1.0};
-
-    // Mike related
-    int   mic_gpio{GPIO_NUM_NC};     // пин микрофона
-    float mic_noise = 0.0; // уровень шума в ед.
-    float mic_scale = 1.0; // коэф. смещения
-    float last_freq = 0.0; // последняя измеренная часота
-    float samp_freq = 0.0; // часота семплирования
-    float cur_val = 0.0;   // текущее значение
-    uint8_t last_max_peak = 0; // последнее максимальное амплитудное значение (по модулю)
-    uint8_t last_min_peak = 0; // последнее минимальное амплитудное значение (по модулю)
-    mic_noise_reduce_level_t noise_reduce = mic_noise_reduce_level_t::NR_NONE; // уровень шумодава
-
-    float getCurVal() const {return cur_val;}
-    float getMicScale() const {return mic_scale;}
-    float getMicNoise() const {return mic_noise;}
-    mic_noise_reduce_level_t getMicNoiseRdcLevel() const {return noise_reduce;}
-    uint8_t getMicMaxPeak() const {return isMicOn?last_max_peak:0;}
-    uint8_t getMicMapMaxPeak() const {return isMicOn?((last_max_peak>(uint8_t)mic_noise)?(last_max_peak-(uint8_t)mic_noise)*2:1):0;}
-    float getMicFreq() const {return isMicOn?last_freq:0;}
-    uint8_t getMicMapFreq() const {
-        float minFreq=(log((float)(SAMPLING_FREQ>>1)/MicWorker::samples));
-        float scale = 255.0 / (log((float)HIGH_MAP_FREQ) - minFreq); 
-        return (uint8_t)(isMicOn?(log(last_freq)-minFreq)*scale:0);
-    }
-
-    void setMicAnalyseDivider(uint8_t val) {micAnalyseDivider = val&3;}
-    void setMicScale(float scale) {mic_scale = scale;}
-    void setMicNoise(float noise) {mic_noise = noise;}
-    void setMicNoiseRdcLevel(mic_noise_reduce_level_t lvl) {noise_reduce = lvl;}
 };
 
 typedef union {
@@ -106,7 +74,7 @@ typedef union {
     };
 } EFFFLAGS;
 
-typedef enum : uint8_t {ST_BASE=0,ST_END, ST_IDX, ST_AB, ST_AB2, ST_MIC} SORT_TYPE; // виды сортировки
+typedef enum : uint8_t {ST_BASE=0,ST_END, ST_IDX, ST_AB, ST_AB2} SORT_TYPE; // виды сортировки
 
 class UIControl{
 private:
@@ -305,18 +273,7 @@ protected:
 
     // коэффициент скорости эффектов (некоторых, блин!)
     float getBaseSpeedFactor() {return _lampstate ? _lampstate->speedfactor : 1.0;}
-    //float getBrightness() {return _lampstate ? _lampstate->brightness : 127;}
 
-    void setMicAnalyseDivider(uint8_t val) {if(_lampstate) _lampstate->micAnalyseDivider = val&3;}
-    uint8_t getMicMapMaxPeak() {return _lampstate ? _lampstate->getMicMapMaxPeak() : 0;}
-    uint8_t getMicMapFreq() {return _lampstate ? _lampstate->getMicMapFreq() : 0;}
-    uint8_t getMicMaxPeak() {return _lampstate ? _lampstate->getMicMaxPeak() : 0;}
-    
-    float getCurVal() {return _lampstate ? _lampstate->getCurVal() : 0;}
-    float getMicFreq() {return _lampstate ? _lampstate->getMicFreq() : 0;}
-    float getMicScale() {return _lampstate ? _lampstate->getMicScale() : 1;}
-    float getMicNoise() {return _lampstate ? _lampstate->getMicNoise() : 0;}
-    mic_noise_reduce_level_t getMicNoiseRdcLevel() {return _lampstate ? _lampstate->getMicNoiseRdcLevel() : mic_noise_reduce_level_t::NR_NONE;}
     
     bool isActive() {return active;}
     void setActive(bool flag) {active=flag;}
@@ -353,7 +310,6 @@ public:
      */
     virtual ~EffectCalc() = default;
 
-    bool isMicOn() { return ( _lampstate ? _lampstate->isMicOn : false); }
 
     /**
      * intit метод, вызывается отдельно после создания экземпляра эффекта для установки базовых переменных
@@ -654,8 +610,6 @@ public:
      * (exist for compatibility for the time of refactoring control's code)
      */
     String setDynCtrl(UIControl*_val){ return worker ? worker->setDynCtrl(_val) : String(); };  // damn String()
-
-    bool isMicOn(){ return worker ? worker->isMicOn() : false; }
 
 
 };
