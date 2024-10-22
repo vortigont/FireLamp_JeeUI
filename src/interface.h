@@ -65,7 +65,7 @@ void publish_effect_controls(Interface *interf, JsonObjectConst data, const char
  * it picks "dynCtrl*" actions and adjusts current effect parameters
  * 
  */
-void set_effects_dynCtrl(Interface *interf, JsonObjectConst data, const char* action = NULL);
+void set_effect_control(Interface *interf, JsonObjectConst data, const char* action = NULL);
 
 /**
  * @brief Set/get ledstrip configuration values

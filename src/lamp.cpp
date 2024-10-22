@@ -52,10 +52,7 @@ Copyright © 2020 Dmytro Korniienko (kDn)
 #define FADE_LOWBRTFRACT      5U                // доля от максимальной шкалы яркости, до которой работает затухание при смене эффектов. Если текущая яркость ниже двойной доли, то затухание пропускается
 
 
-Lamp::Lamp() : effwrkr(&lampState){
-  lampState.flags = 0; // сборосить все флаги состояния
-  lampState.speedfactor = 1.0; // дефолтное значение
-}
+Lamp::Lamp() {}
 
 Lamp::~Lamp(){
   events_unsubsribe();
@@ -87,17 +84,10 @@ void Lamp::lamp_init(){
 
   _brightness(0, true);          // начинаем с полностью потушеной матрицы 0-й яркости
 
-  // switch to last running effect
-  if (err == ESP_OK) {
-    uint16_t eff_idx{DEFAULT_EFFECT_NUM};
-    handle->get_item(V_effect_idx, eff_idx);
-    // switch to last running effect
-    run_action(ra::eff_switch, eff_idx);
-  }
 
   // GPIO's
   JsonDocument doc;
-  if (embuifs::deserializeFile(doc, TCONST_fcfg_gpio)){
+  if (!embuifs::deserializeFile(doc, TCONST_fcfg_gpio)){
 
     // restore fet gpio
     _pins.fet = doc[TCONST_mosfet_gpio] | static_cast<int>(GPIO_NUM_NC);
@@ -117,9 +107,16 @@ void Lamp::lamp_init(){
     }
   }
 
+  effwrkr.loadIndex();
 
-  // copy demo values to this ugly shared struct for EffectWorker
-  lampState.demoRndEffControls = opts.flag.demoRndEffControls;
+  // switch to last running effect
+  if (err == ESP_OK) {
+    uint16_t eff_idx{DEFAULT_EFFECT_NUM};
+    handle->get_item(V_effect_idx, eff_idx);
+    // switch to last running effect
+    //run_action(ra::eff_switch, eff_idx);
+    switcheffect(effswitch_t::num, effect_t::magma);
+  }
 
   if (!opts.flag.restoreState)
     return;
@@ -133,7 +130,6 @@ void Lamp::lamp_init(){
   // if panel was On, switch it back to On
   if (opts.flag.pwrState){
     power(true);
-    // return
   }
 }
 
@@ -265,7 +261,7 @@ void Lamp::gradualFade(evt::gradual_fade_t arg){
   LEDFader::getInstance()->fadelight(arg.toB, arg.duration);
 }
 
-void Lamp::switcheffect(effswitch_t action, uint16_t effnb){
+void Lamp::switcheffect(effswitch_t action, effect_t effnb){
   _switcheffect(action, isLampOn() ? getFaderFlag() : false, effnb);
   // if in demo mode, and this switch came NOT from demo timer, delay restart demo timer
   // a bit hakish but will work. Otherwise I have to segregate demo switches from all other
@@ -279,7 +275,7 @@ void Lamp::switcheffect(effswitch_t action, uint16_t effnb){
  * @param effswitch_t action - вид переключения (пред, след, случ.)
  * @param fade - переключаться через фейдер или сразу
  */
-void Lamp::_switcheffect(effswitch_t action, bool fade, uint16_t effnb) {
+void Lamp::_switcheffect(effswitch_t action, bool fade, effect_t effnb) {
 
   // find real effect number we need to switch to
   switch (action) {
@@ -296,13 +292,12 @@ void Lamp::_switcheffect(effswitch_t action, bool fade, uint16_t effnb) {
   case effswitch_t::rnd :
     // next random effect in demo mode
     _swState.pendingEffectNum = effwrkr.getNextEffIndexForDemo(true);
-    //_swState.pendingEffectNum = effwrkr.getByCnt(random(1, effwrkr.getEffectsListSize()));
     break;
   default:
       return;
   }
 
-  LOGD(T_lamp, printf, "switcheffect() action=%u, fade=%d, effnb=%d\n", static_cast<uint32_t>(action), fade, _swState.pendingEffectNum);
+  LOGD(T_lamp, printf, "switcheffect() action=%u, fade=%d, effnb=%u\n", static_cast<uint32_t>(action), fade, _swState.pendingEffectNum);
 
   // проверяем нужно ли использовать затухание (только если лампа включена, и не идет разжигание)
   if (fade && vopts.pwrState && _swState.fadeState <1){
@@ -319,12 +314,27 @@ void Lamp::_switcheffect(effswitch_t action, bool fade, uint16_t effnb) {
   }
 
   // затухание не требуется, переключаемся непосредственно на нужный эффект
-  if(opts.flag.wipeOnEffChange || !effwrkr.getCurrentEffectNumber()){ // для EFF_NONE или для случая когда включена опция - чистим матрицу
+  if(opts.flag.wipeOnEffChange || effwrkr.getCurrentEffectNumber() == effect_t::empty){ // для пустышки или для случая когда включена опция - чистим матрицу
     if (display.getCanvas())
       display.getCanvas()->clear();
   }
 
-  effwrkr.switchEffect(_swState.pendingEffectNum);
+  // if current worker's effect is same as the target one, then I do not need to do actual switch
+  if (effwrkr.getCurrentEffectNumber() != _swState.pendingEffectNum){
+    effwrkr.switchEffect(_swState.pendingEffectNum);
+
+    // if lamp is not in Demo mode, then need to save new effect in config
+    if(!vopts.demoMode){
+      esp_err_t err;
+      std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_lamp, NVS_READWRITE, &err);
+      if (err == ESP_OK)
+        handle->set_item(V_effect_idx, _swState.pendingEffectNum);
+      //embui.var(V_effect_idx, _swState.pendingEffectNum);
+    }
+
+    // publish new effect's control to all available feeders
+    publish_effect_controls(nullptr, {}, NULL);
+  }
 
   // need to reapply brightness as effect's curve might have changed and we might also need a fader
   // I use direct access to fader and _brightness, 'cause I do not want to re-publishing brightness value and re-save it to permanent storage
@@ -334,21 +344,10 @@ void Lamp::_switcheffect(effswitch_t action, bool fade, uint16_t effnb) {
     _brightness(globalBrightness);
   }
 
-  // if lamp is not in Demo mode, then need to save new effect in config
-  if(!vopts.demoMode){
-    esp_err_t err;
-    std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_lamp, NVS_READWRITE, &err);
-    if (err == ESP_OK)
-      handle->set_item(V_effect_idx, _swState.pendingEffectNum);
-    //embui.var(V_effect_idx, _swState.pendingEffectNum);
-  }
-
-  // publish new effect's control to all available feeders
-  publish_effect_controls(nullptr, {}, NULL);
   LOGD(T_lamp, println, "eof switcheffect()");
 }
 
-uint16_t Lamp::_getRealativeEffectNum(){
+effect_t Lamp::_getRealativeEffectNum(){
   return (_swState.fadeState != -1) ? effwrkr.getCurrentEffectNumber() : _swState.pendingEffectNum;
 }
 
@@ -553,14 +552,16 @@ void Lamp::_event_picker_cmd(esp_event_base_t base, int32_t id, void* data){
       case evt::lamp_t::effSwitchRnd :
         switcheffect(effswitch_t::rnd);
         break;
-      case evt::lamp_t::effSwitchTo :
-        switcheffect(effswitch_t::num, *((int*) data));
+      case evt::lamp_t::effSwitchTo :{
+        int n = *((int*) data);
+        switcheffect(effswitch_t::num, static_cast<effect_t>(n));
         break;
+      }
       case evt::lamp_t::effSwitchStep : {
-        int32_t shift = _getRealativeEffectNum() + *((int*) data);
+        int32_t shift = e2int(_getRealativeEffectNum()) + *((int*) data);
         if (shift < 0) shift += effwrkr.getEffectsListSize();
         shift %= effwrkr.getEffectsListSize();
-        switcheffect(effswitch_t::num, shift);
+        switcheffect(effswitch_t::num, static_cast<effect_t>(shift));
         break;
       }
 

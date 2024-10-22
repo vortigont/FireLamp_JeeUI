@@ -70,7 +70,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 /**
  * типы/определения для палитр
  */
-typedef const TProgmemRGBPalette16 PGMPalette;
+//typedef const TProgmemRGBPalette16 PGMPalette;
 
 // все установленные биты для EFFFLAGS
 // 3rd bit must be '0'!
@@ -80,99 +80,179 @@ typedef const TProgmemRGBPalette16 PGMPalette;
  * @brief enumerated list of visual effects
  * 
  */
-typedef enum : uint8_t {
-EFF_NONE = (0U),                              // пустой черный квадрат :)
-EFF_WHITE_COLOR,                              // Белый свет
-EFF_COLORS,                                   // Смена цвета
-EFF_RAINBOW_2D,                               // Радуга универсальная
-EFF_SPARKLES,                                 // Конфетти
-EFF_PILE,                                     // Цветные Драже
-EFF_SNOWSTORMSTARFALL,                        // Метель + Звездопад
-EFF_MATRIX,                                   // Матрица
-EFF_WATERCOLORS,                              // Акварель
-EFF_LIGHTER_TRACES,                           // Светлячки со шлейфом
-// 10
-EFF_CUBE,                                     // Блуждающий кубик
-EFF_PULSE,                                    // Пульс
-EFF_EVERYTHINGFALL,                           // Водо/огне/лава/радуга/хренопад
-EFF_RADIALFIRE,                               // Радиальный Огонь (неопалимая купелина)
-EFF_PAINTBALL,                                // Пейнтбол
-EFF_3DNOISE,                                  // 3D-шум
-EFF_CELL,                                     // Клеточки
-//EFF_PUZZLES,                                // Пятнашки
-EFF_T_LEND = 18,                              // Тикси Ленд
-EFF_SPBALS,                                   // Н.Тесла
-//20
-EFF_OSCIL,                                    // Осциллятор 
-//EFF_WRAIN,                                  // Шторм 
-EFF_FAIRY = 22,                               // Фея
-EFF_FOUNT,                                    // Источник
-EFF_BBALS,                                    // Прыгающие мячики
-EFF_SINUSOID3,                                // Синусоид
-EFF_METABALLS,                                // Метасферы
-EFF_SPIRO,                                    // Спираль
-EFF_COMET,                                    // Кометы, Парящие огни +
-EFF_CIRCLES,                                  // Бульбулятор
-//30
-//EFF_PRIZMATA,                               // Призмата
-EFF_FLOCK = 31,                               // Стая и Хищник
-//EFF_SWIRL,                                  // Водоворот
-EFF_DRIFT = 33,                               // Дрифт
-//EFF_POPCORN,                                // Попкорн
-EFF_TWINKLES = 35,                            // Мерцание
-//EFF_RADAR,                                  // Радар
-EFF_WAVES = 37,                               // Волны
-EFF_FIRE2012,                                 // Огонь 2012
-//EFF_BENGALL,                                // Бенгальские Огни
-//40
-EFF_BALLS = 40,                               // Шары
-EFF_DNA,                                      // ДНК
-//EFF_FIRE2018,                               // Огонь 2018
-EFF_RINGS = 43,                               // Кодовый замок
-EFF_CUBE2,                                    // Куб 2D
-EFF_MAGMA,                                    // Магма
-EFF_PICASSO,                                  // Пикассо
-EFF_STARSHIPS,                                // Звездный Десант
-EFF_FLAGS,                                    // Флаги
-//EFF_LEAPERS,                                // Прыгуны
-//50
-EFF_WHIRL = 50,                               // Вихри
-EFF_STAR,                                     // Звезды
-/*
-EFF_AQUARIUM,                                 // Аквариум
-EFF_FIREWORKS,                                // Фейерверк
-EFF_PACIFIC,                                  // Тихий Океан
-EFF_MUNCH,                                    // Вышиванка
-EFF_NOISE,                                    // Цветной шум
-EFF_BUTTERFLY,                                // Мотыльки
-EFF_SHADOWS,                                  // Тени
-EFF_PATTERNS,                                 // Узоры
-//60
-EFF_ARROWS,                                   // Стрелки
-*/
-EFF_NBALLS = 62,                              // Дикие шарики
-EFF_ATTRACT,                                  // Притяжение
-EFF_SNAKE,                                    // Змейки by kDn
-EFF_NEXUS,                                    // Nexus
-EFF_MAZE,                                     // Лабиринт
-EFF_FRIZZLES,                                 // Вьющийся цвет (с) Stepko
-//EFF_POLARL,                                 // Северное Сияние
-//EFF_FLOWER,                                 // Цветение
-//EFF_SNAKEISLAND,                            // Змеиный Остров
-//70
-EFF_SMOKEBALLS = 70,                          // Детские Сны (stepko)
-EFF_PICASSO4,                                 // Меташары
-EFF_LIQUIDLAMP,                               // Лаваламп 
-//EFF_RACER,                                  // Космо-Гонщик
-EFF_SMOKER = 74,                              // Дым
-EFF_FIRE2021,                                 // Огонь от Степко
-//EFF_MIRAGE,                                 // Мираж
-//EFF_TETRIS_CLOCK,                           // Часы-Тетрис
-//EFF_VU,                                     // Частотный анализатор
-//EFF_OSC                                     // Осциллограф
-} EFF_ENUM;
+enum class effect_t : uint32_t {
+empty = (0U),                              // пустой черный квадрат :)
+whitelight,                               // Белый свет
+colors,                                   // Смена цвета
+attractor,                                // Притяжение
+balls,                                    // Шары
+bouncingballs,                            // Прыгающие мячики
+bubbles,                                  // Бульбулятор (круги)
+cells,                                    // Клеточки (Ёлки-палки)
+cube,                                     // Блуждающий кубик
+DNA,                                      // ДНК
+drift,                                    // Дрифт
+fairy,                                    // Фея
+fire2012,                                 // Огонь 2012
+fire2021,                                 // Огонь от Степко
+fireflies,                                // Светлячки со шлейфом
+fireveil,                                 // Огненная вуаль, Кометы, Парящие огни +
+flags,                                    // Флаги
+flock,                                    // Стая и Хищник
+fountain,                                 // Источник
+frizzles,                                 // Вьющийся цвет (с) Stepko
+liquidlamp,                               // Лава-лампа
+magma,                                    // Магма
+matrix,                                   // Матрица
+maze,                                     // Лабиринт
+metaballs,                                // Метасферы
+nexus,                                    // Nexus
+noise3d,                                  // 3D-шум
+oscillator,                               // Осциллятор 
+paintball,                                // Пейнтбол
+picasso,                                  // Пикассо
+picasso4,                                 // Меташары
+pile,                                     // Цветные Драже
+pulse,                                    // Пульс
+radialfire,                               // Радиальный Огонь (неопалимая купелина)
+rainbow2d,                                // Радуга универсальная
+rubik,                                    // Куб 2D, кубик-рубика
+sinusoid,                                 // Синусоид
+smokeballs,                               // Детские Сны (stepko)
+smoker,                                   // Дым
+sparkles,                                 // Конфетти
+spballs,                                  // Н.Тесла
+spiral,                                   // Спираль
+starfall,                                 // Метель + Звездопад
+starts,                                   // Звезды
+startships,                               // Звездный Десант
+tixyland,                                 // Тикси Ленд
+twinkles,                                 // Мерцание
+watercolors,                              // Акварель
+waves,                                    // Волны
+whirls                                    // Вихри
+};
 
-//static constexpr std::array<uint8_t, 256> effects_list = {}
+
+
+// effect index names
+static constexpr const char* T_attractor = "attractor";
+static constexpr const char* T_balls = "balls";
+static constexpr const char* T_bouncingballs = "bouncingballs";
+static constexpr const char* T_bubbles = "bubbles";
+static constexpr const char* T_cells = "cells";
+static constexpr const char* T_colors = "colors";
+static constexpr const char* T_cube = "cube";
+static constexpr const char* T_DNA = "DNA";
+static constexpr const char* T_drift = "drift";
+static constexpr const char* T_empty = "empty";
+static constexpr const char* T_fairy = "fairy";
+static constexpr const char* T_fire2012 = "fire2012";
+static constexpr const char* T_fire2021 = "fire2021";
+static constexpr const char* T_fireflies = "fireflies";
+static constexpr const char* T_fireveil = "fireveil";
+static constexpr const char* T_flags = "flags";
+static constexpr const char* T_flock = "flock";
+static constexpr const char* T_fountain = "fountain";
+static constexpr const char* T_frizzles = "frizzles";
+static constexpr const char* T_liquidlamp = "liquidlamp";
+static constexpr const char* T_magma = "magma";
+static constexpr const char* T_matrix = "matrix";
+static constexpr const char* T_maze = "maze";
+static constexpr const char* T_metaballs = "metaballs";
+static constexpr const char* T_nexus = "nexus";
+static constexpr const char* T_noise3d = "noise3d";
+static constexpr const char* T_oscillator = "oscillator";
+static constexpr const char* T_paintball = "paintball";
+static constexpr const char* T_picasso = "picasso";
+static constexpr const char* T_picasso4 = "picasso4";
+static constexpr const char* T_pile = "pile";
+static constexpr const char* T_pulse = "pulse";
+static constexpr const char* T_radialfire = "radialfire";
+static constexpr const char* T_rainbow2d = "rainbow2d";
+static constexpr const char* T_rubik = "rubik";
+static constexpr const char* T_sinusoid = "sinusoid";
+static constexpr const char* T_smokeballs = "smokeballs";
+static constexpr const char* T_smoker = "smoker";
+static constexpr const char* T_sparkles = "sparkles";
+static constexpr const char* T_spballs = "spballs";
+static constexpr const char* T_spiral = "spiral";
+static constexpr const char* T_starfall = "starfall";
+static constexpr const char* T_starts = "starts";
+static constexpr const char* T_startships = "startships";
+static constexpr const char* T_tixyland = "tixyland";
+static constexpr const char* T_twinkles = "twinkles";
+static constexpr const char* T_watercolors = "watercolors";
+static constexpr const char* T_waves = "waves";
+static constexpr const char* T_whirls = "whirls";
+static constexpr const char* T_whitelight = "whitelight";
+
+
+// firmware defined static index names for each of available effects
+static constexpr std::array<effect_t, 2> fw_effects_index = {
+  effect_t::empty,
+  effect_t::magma
+};
+
+/**
+ * @brief firmware defined index label for each of available effects
+ * @warning the order of elements in this array MUST match the order in effect_t enum!
+ */
+static constexpr std::array<const char*, 50> fw_effects_nameindex = {
+T_empty,
+T_whitelight,
+T_colors,
+T_attractor,
+T_balls,
+T_bouncingballs,
+T_bubbles,
+T_cells,
+T_cube,
+T_DNA,
+T_drift,
+T_fairy,
+T_fire2012,
+T_fire2021,
+T_fireflies,
+T_fireveil,
+T_flags,
+T_flock,
+T_fountain,
+T_frizzles,
+T_liquidlamp,
+T_magma,
+T_matrix,
+T_maze,
+T_metaballs,
+T_nexus,
+T_noise3d,
+T_oscillator,
+T_paintball,
+T_picasso,
+T_picasso4,
+T_pile,
+T_pulse,
+T_radialfire,
+T_rainbow2d,
+T_rubik,
+T_sinusoid,
+T_smokeballs,
+T_smoker,
+T_sparkles,
+T_spballs,
+T_spiral,
+T_starfall,
+T_starts,
+T_startships,
+T_tixyland,
+T_twinkles,
+T_watercolors,
+T_waves,
+T_whirls
+};
+
+
+
 
 /** набор указателей на строки с именами эффектов
  * индекс элемента массива составляет id из EFF_ENUM
@@ -373,8 +453,8 @@ static constexpr std::array<const char *, 256> T_EFFUICFG = {
 /**
  * константы/определения
  */
-#define MIN_RANGE 1     // заложим дейфан пока нет динамических ползунков
-#define MAX_RANGE 255   // заложим дейфан пока нет динамических ползунков
+//#define MIN_RANGE 1     // заложим дейфан пока нет динамических ползунков
+//#define MAX_RANGE 255   // заложим дейфан пока нет динамических ползунков
 
 
 // ==== Константы для эффектов ====

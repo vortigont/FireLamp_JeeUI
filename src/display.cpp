@@ -56,7 +56,7 @@ bool LEDDisplay::start(){
 
     JsonDocument doc;
     // if config can't be loaded, then just quit, 'cause we need at least an engine type to run
-    if (!embuifs::deserializeFile(doc, TCONST_fcfg_display)) return false;
+    if (embuifs::deserializeFile(doc, TCONST_fcfg_display)) return false;
 
     // a shortcut for hub75 testing
     if (doc[T_display_type] == static_cast<int>(engine_t::hub75))

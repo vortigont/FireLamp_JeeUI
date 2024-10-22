@@ -43,7 +43,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 //#include <TetrisMatrixDraw.h>
 
 #define NUMPALETTES 10
-#define NUM_LAYERS  1       // layers for noice effetcs
+#define NUM_LAYERS  1       // layers for noise effetcs
 
 //-------------- Специально обученный пустой эффект :)
 class EffectNone : public EffectCalc {
@@ -53,7 +53,7 @@ public:
     EffectNone(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){ fb->clear(); }
     bool run() override { fb->clear(); return true; };
 };
-
+#ifdef DISABLED_CODE
 /*
  ***** METABALLS / МЕТАСФЕРЫ *****
 Metaballs proof of concept by Stefan Petrick 
@@ -1023,15 +1023,15 @@ public:
     //void load() override;
     bool run() override;
 };
-
+#endif //DISABLED_CODE
 
 // ----------------- Эффект "Магма"
 // (c) Сотнег (SottNick) 2021
 // адаптация и доводка до ума - kostyamat
+// рефакторинг для проекта Инвормера vortigont 2023-2024
 #define MAGMA_MIN_OBJ   4   //(fb->w()/4)
 #define MAGMA_MAX_OBJ   (fb->w()/2)
 class EffectMagma: public EffectCalc {
-private:
 
     struct Magma {
         float posX{0}, posY{0};
@@ -1047,20 +1047,20 @@ private:
     const float gravity = 0.1;
     uint16_t step = fb->w();
     std::vector<uint8_t> shiftHue{std::vector<uint8_t>(fb->h())};
-    std::vector<Magma> particles{std::vector<Magma>(fb->w(), Magma())};
+    std::vector<Magma> particles{std::vector<Magma>(MAGMA_MIN_OBJ, Magma())};
 
     void palettesload();
     void regen();
     void leapersMove_leaper(Magma &l);
     void leapersRestart_leaper(Magma &l);
-    String setDynCtrl(UIControl*_val) override;
 
 public:
     EffectMagma(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     void load() override;
+    void setControl(size_t idx, int32_t value) override;
     bool run() override;
 };
-
+#ifdef DISABLED_CODE
 // ------------- Эффект "Флаги"
 // (c) Stepko + kostyamat
 // 17.03.21
@@ -1328,3 +1328,4 @@ public:
     bool run() override;// { return false; };
 };
 
+#endif // DISABLED_CODE

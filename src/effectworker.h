@@ -39,96 +39,97 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 #include "freertos/FreeRTOS.h"
 #include <mutex>
-#include "filehelpers.hpp"
+//#include "filehelpers.hpp"
 #include "effects_types.h"
 #include "ledfb.hpp"
 #include "luma_curves.hpp"
 #include "ts.h"
 
-// Вывод значка микрофона в списке эффектов
-//#define MIC_SYMBOL(N) (pgm_read_byte(T_EFFVER + (uint8_t)N) % 2 ? "" : " \U0001F399")
-// Вывод номеров эффектов в списке, в WebUI
-#define EFF_NUMBER(N)   N <= 255 ? (String(N) + ". ") : (String((byte)(N & 0xFF)) + "." + String((byte)(N >> 8) - 1U) + " ")
 
 
-
-struct LampState {
-    // todo: убрать этот тупизм с дублированием флагов лампы в двух разных структурах
-    union {
-        uint32_t flags{0};
-        struct {
-            bool isDebug:1;
-            bool demoRndEffControls:1;
-        };
-    };
-
-    float speedfactor{1.0};
+/**
+ * @brief effect flags
+ * denotes different markers for effect, like if it is hidden, it's features, etc...
+ * 
+ */
+struct eff_flags_t {
+    bool hidden:1;              // скрыт из списка выбора эффектов, не может быть запущен
+    bool disabledInDemo:1;      // не доступен в демо-режиме
 };
 
-typedef union {
-    uint8_t mask;
-    struct {
-        bool canBeSelected:1;       // доступен в списке выбора на главной
-        bool enabledInDemo:1;       // доступен в демо-режиме
-        bool renamed:1;
-    };
-} EFFFLAGS;
+struct EffectsListItem_t {
+    effect_t eid;               // effect's enumerator
+    eff_flags_t flags;          // флаги эффекта
+    luma::curve curve;
 
-typedef enum : uint8_t {ST_BASE=0,ST_END, ST_IDX, ST_AB, ST_AB2} SORT_TYPE; // виды сортировки
+    EffectsListItem_t(effect_t nb = effect_t::empty, eff_flags_t flags = {}, luma::curve curve = luma::curve::cie1931) : eid(nb), flags(flags), curve(curve) {}
 
-class UIControl{
-private:
-    uint8_t id;
-    CONTROL_TYPE ctype;
-    String control_name;
-    String val;
-    String min;
-    String max;
-    String step;
+    // return in-firmware effect's label based on enum index
+    const char* getLbl() const { return getLbl(eid); };
+    // return in-firmware effect's label based on enum index
+    static const char* getLbl(effect_t eid);
+};
+
+class EffectControl {
+
+    const size_t _idx;
+    String _name;
+    int32_t _val, _minv, _maxv, _scale_min, _scale_max;
+
 public:
-    UIControl(
-        uint8_t _id=0,
-        CONTROL_TYPE _ctype=CONTROL_TYPE::RANGE,
-        const String _name="ctrl",
-        const String _val= "128",
-        const String _min= "1",
-        const String _max= "255",
-        const String _step= "1"
-        ) : 
-        id(_id), ctype(_ctype),
-        control_name(_name),
-        val(_val), min(_min), max(_max), step(_step) {}
+    EffectControl(
+        size_t idx,
+        const char* name,
+        int32_t val,
+        int32_t min,
+        int32_t max,
+        int32_t scale_min,
+        int32_t scale_max
+        );
 
     /**
-     * @brief copy constructor
-     * 
+     * @brief set value for the control according to scale and min/max mapping
+     * value would be limited withing scale range and mapped to _minv, _maxv range
+     * returns Scaled Value (same as getScaledVal())
+     * @param v 
+     * @return int32_t 
      */
-    UIControl(const UIControl&rhs) : id(rhs.id), ctype(rhs.ctype), control_name(rhs.control_name), val(rhs.val), min(rhs.min), max(rhs.max), step(rhs.step) {};
-    UIControl& operator =(const UIControl&rhs);
+    int32_t setVal(int32_t v);
 
-    uint8_t getId() const {return id;}
-    CONTROL_TYPE getType() const {return ctype;}
-    const String &getName() {return control_name;}
-    const String &getVal() {return val;}
-    const String &getMin() {return min;}
-    const String &getMax() {return max;}
-    const String &getStep() {return step;}
+    /**
+     * @brief returns clamped raw value
+     * 
+     * @return int32_t 
+     */
+    int32_t getVal() const { return _val; }
 
-    void setVal(const String &_val);
+    /**
+     * @brief returns Scaled Value
+     * 
+     * @return int32_t 
+     */
+    int32_t getScaledVal() const;
+
+    size_t getIdx() const {return _idx;};
+    const char* getName() const { return _name.c_str(); };
 };
 
 /**
- * @brief effect configuration data structure
- * holds info about effect engine, like name,num
- * controls, etc...
+ * @brief effect configuration class
+ * it respond for loading/saving effect's presets from json files on FS
  */
-class Effcfg {
-    Task *tConfigSave = nullptr;       // динамическая таска, задержки при сохранении текущего конфига эффекта в файл
+class EffConfiguration {
 
-    /**
-     * получить версию эффекта из "прошивки" по его ENUM
-     */
-    static uint8_t geteffcodeversion(uint8_t id) { return *(T_EFFVER + id); };
+    effect_t _eid;                      // энумератор эффекта
+    bool _locked{false};                       // config is locked, no changes possible
+
+    Task *tConfigSave = nullptr;        // динамическая таска, задержки при сохранении текущего конфига эффекта в файл
+
+    // Effect's controls
+    std::vector<EffectControl> _controls;
+    // index for control presets
+    size_t _profile_idx{0};
+
 
     /**
      * @brief deserialise effect configuration from a file based on eff number
@@ -141,7 +142,7 @@ class Effcfg {
      * @return true - on success
      * @return false - on failure
      */
-    bool _eff_cfg_deserialize(JsonDocument &doc, const char *folder = NULL);
+    //bool _eff_cfg_deserialize(JsonDocument &doc, const char *folder = NULL);
 
     /**
      * @brief serialize and write struct to json file
@@ -158,28 +159,49 @@ class Effcfg {
      * @return true - on success
      * @return false - on error
      */
-    bool _eff_ctrls_load_from_jdoc(JsonDocument &effcfg, std::vector<std::shared_ptr<UIControl>> &ctrls);
+    //bool _eff_ctrls_load_from_jdoc(JsonDocument &effcfg, std::vector<std::shared_ptr<EffectControl>> &ctrls);
+
+    /**
+     * @brief load controls configuration from manifest file
+     * 
+     * @return true on success 
+     * @return false on error
+     */
+    bool _load_manifest();
+
+    /**
+     * @brief load control's values for specified preset from file
+     * 
+     * @param seq - profile to load, if <0 then load last used from config
+     */
+    void _load_preset(int seq = -1);
 
 public:
-    uint16_t num = 0;       // номер эффекта
-    uint8_t version = 0;    // версия эффекта
-    EFFFLAGS flags;         // effect flags
-    //uint8_t brt{0};         // effect's private brightness
-    luma::curve curve{luma::curve::cie1931};
-    String effectName;      // имя эффекта (предварительно заданное или из конфига)
-    // список контроллов эффекта
-    std::vector<std::shared_ptr<UIControl>> controls;
 
-    Effcfg(){};
     // constructor loads or creates default configuration for effect with specified ID
-    Effcfg(uint16_t effid);
-    ~Effcfg();
+    EffConfiguration() : _eid(effect_t::empty) {};
+    EffConfiguration(effect_t effid);
+    ~EffConfiguration();
 
     // copy not yet implemented
-    Effcfg(const Effcfg&) = delete;
-    Effcfg& operator=(const Effcfg &) = delete;
-    Effcfg(Effcfg &&) = delete;
-    Effcfg & operator=(Effcfg &&) = delete;
+    EffConfiguration(const EffConfiguration&) = delete;
+    EffConfiguration& operator=(const EffConfiguration &) = delete;
+    EffConfiguration(EffConfiguration &&) = delete;
+    EffConfiguration & operator=(EffConfiguration &&) = delete;
+
+    // return lock state
+    bool locked() const { return _locked; }
+
+    /**
+     * @brief lock the configuration
+     * no changes are possible for controls while it is locked
+     * loadEffconfig() call will reset and unlocks the controls
+     * 
+     */
+    void lock();
+
+    // unlock configuration
+    void unlock(){ _locked = false; };
 
     /**
      * @brief load effect's configuration from a json file
@@ -189,7 +211,7 @@ public:
      * @param folder - folder to look for config files
      * @return int 
      */
-    bool loadeffconfig(uint16_t nb, const char *folder=NULL);
+    bool loadEffconfig(effect_t effid);
 
     /**
      * @brief create Effect's default configuration json file
@@ -198,7 +220,7 @@ public:
      * @param nb - eff enum
      * @param filename - filename to write
      */
-    static void create_eff_default_cfg_file(uint16_t nb, String &filename);
+    //static void create_eff_default_cfg_file(effect_t nb, String &filename);
 
     /**
      * @brief write configuration to json file on FS
@@ -214,7 +236,7 @@ public:
      * @param replaceBright 
      * @return String 
      */
-    String getSerializedEffConfig(uint8_t replaceBright = 0) const;
+    //String getSerializedEffConfig(uint8_t replaceBright = 0) const;
 
     /**
      * @brief flush pending config data to file on disk
@@ -222,31 +244,27 @@ public:
      * it writes cfg data ONLY if some changes are pending in delayed task
      */
     void flushcfg(){ if(tConfigSave) autosave(true); };
-};
 
+    /**
+     * @brief Set the value for control undex index
+     * 
+     * @param idx 
+     * @param v 
+     * @return return scaled value, or -1 for any non-existing controls
+     */
+    int32_t setValue(size_t idx, int32_t v);
 
-class EffectListElem{
-private:
-    uint8_t ms = micros()|0xFF; // момент создания элемента, для сортировки в порядке следования (естественно, что байта мало, но экономим память)
+    /**
+     * @brief Get control's Value by index
+     * 
+     * @param idx 
+     * @return int32_t 
+     */
+    int32_t getValue(size_t idx) const;
 
-public:
-    uint16_t eff_nb; // номер эффекта, для копий наращиваем старший байт
-    EFFFLAGS flags; // флаги эффекта
+    // get access to controls container
+    const std::vector<EffectControl> &getControls() const { return _controls; }
 
-    EffectListElem(uint16_t nb = 0, uint8_t mask = 0) : eff_nb(nb) { flags.mask = mask; }
-
-    EffectListElem(const EffectListElem *base) {
-        eff_nb = ((((base->eff_nb >> 8) + 1 ) << 8 ) | (base->eff_nb&0xFF)); // в старшем байте увеличиваем значение на 1
-        flags =base->flags; 
-    }
-
-    bool canBeSelected() const { return flags.canBeSelected; }
-    void canBeSelected(bool val){ flags.canBeSelected = val; }
-    bool enabledInDemo() const { return flags.enabledInDemo; }
-    void enabledInDemo(bool val){ flags.enabledInDemo = val; }
-    bool renamed() const { return flags.renamed; }
-    void renamed(bool v){ flags.renamed = v; }
-    uint8_t getMS() const { return ms; }
 };
 
 
@@ -259,51 +277,27 @@ class EffectWorker;
 */
 class EffectCalc {
 private:
-    LampState *_lampstate = nullptr;
-    std::vector<std::shared_ptr<UIControl>> *ctrls;
-    String dummy; // дефолтная затычка для отсутствующего контролла, в случае приведения к целому получится "0"
-    bool active = false;          /**< работает ли воркер и был ли обсчет кадров с момента последнего вызова, пока нужно чтобы пропускать холостые кадры */
-    bool isCtrlPallete = false; // признак наличия контрола палитры
+
 
 protected:
     LedFB<CRGB> *fb;          // Framebuffer to work on
-    EFF_ENUM effect;        /**< энумератор эффекта */
-    bool isDebug() {return _lampstate ? _lampstate->isDebug : false;}
-    bool demoRndEffControls() {return _lampstate ? _lampstate->demoRndEffControls : false;}
-
-    // коэффициент скорости эффектов (некоторых, блин!)
-    float getBaseSpeedFactor() {return _lampstate ? _lampstate->speedfactor : 1.0;}
-
+    // a flag that indicates that effect is using framebuffer memory to keep data between frame calculation, it must persist unmodified accross runs
+    const bool _canvasProtect;
     
-    bool isActive() {return active;}
-    void setActive(bool flag) {active=flag;}
-    uint32_t lastrun=0;     /**< счетчик времени для эффектов с "задержкой" */
+    uint32_t lastrun{0};         /**< счетчик времени для эффектов с "задержкой" */
 
-    // рудиментная "яркость", должна быть удалена из кода эффектов
-    static constexpr byte brightness{128};
-    byte speed=1;
-    byte scale=1;
+    int32_t speed{1}, scale{1};
     // inheritable effect speedfactor variable
-    float speedFactor=1.0;
+    float speedFactor{1.0};
 
-    uint8_t palettescale=1.0;     // внутренний масштаб для палитр, т.е. при 22 палитрах на нее будет приходится около 11 пунктов, при 8 палитрах - около 31 пункта
-    float ptPallete=1.0;          // сколько пунктов приходится на одну палитру; 255.1 - диапазон ползунка, не включая 255, т.к. растягиваем только нужное :)
-    uint8_t palettepos=0;         // позиция в массиве указателей паллитр
-    uint8_t paletteIdx=0;         // индекс палитры переданный с UI
+    /**< набор используемых палитр*/
+    std::vector<const TProgmemRGBPalette16*> palettes;
+    /**< указатель на текущую палитру */
+    TProgmemRGBPalette16 const *curPalette = &RainbowColors_p;
 
-    /** флаг, включает использование палитр в эффекте.
-     *  влияет на:
-     *  - подгрузку дефолтовых палитр при init()
-     *  - переключение палитры при изменении ползунка "шкалы"
-     */
-    bool usepalettes=false;
-    std::vector<PGMPalette*> palettes;          /**< набор используемых палитр (пустой)*/
-    TProgmemRGBPalette16 const *curPalette = &RainbowColors_p;     /**< указатель на текущую палитру */
-
-    const String &getCtrlVal(unsigned idx);
 
 public:
-    EffectCalc(LedFB<CRGB> *framebuffer) : fb(framebuffer) {}
+    EffectCalc(LedFB<CRGB> *framebuffer, bool canvasProtect = false) : fb(framebuffer), _canvasProtect(canvasProtect) {}
 
     /**
      * деструктор по-умолчанию
@@ -312,20 +306,10 @@ public:
 
 
     /**
-     * intit метод, вызывается отдельно после создания экземпляра эффекта для установки базовых переменных
-     * в конце выполнения вызывает метод load() который может быть переопределен в дочернем классе
-     * @param _eff - энумератор эффекта
-     * @param _controls - контролы эффекта
-     * @param _state - текущее состояние лампы
-     *
-    */
-    void init(EFF_ENUM eff, std::vector<std::shared_ptr<UIControl>> *controls, LampState* state);
-
-    /**
      * load метод, по умолчанию пустой. Вызывается автоматом из init(), в дочернем классе можно заменять на процедуру первой загрузки эффекта (вместо того что выполняется под флагом load)
      *
     */
-    virtual void load();
+    virtual void load(){};
 
     /**
      * run метод, Вызывается для прохода одного цикла эффекта, можно переопределять либо фунцией обсчета смого эффекта,
@@ -334,7 +318,7 @@ public:
      * @param ledarr - указатель на массив, пока не используется
      * @param opt - опция, пока не используется, вероятно нужно заменить на какую-нибудь расширяемую структуру
     */
-    virtual bool run();
+    virtual bool run() = 0;
 
     /**
      * drynrun метод, всеми любимая затычка-проверка на "пустой" вызов
@@ -345,47 +329,33 @@ public:
     /**
      * status - статус воркера, если работает и загружен эффект, отдает true
      */
-    virtual bool status();
-
-    /**
-     * setDynCtrl - обработка для динамических контролов idx=3+
-     * https://community.alexgyver.ru/threads/wifi-lampa-budilnik-proshivka-firelamp_jeeui-gpl.2739/page-112#post-48848
-     */
-    virtual String setDynCtrl(UIControl*_val);
+    //virtual bool status();
 
     /**
      * загрузка дефолтных палитр в массив и установка текущей палитры
-     * в соответствие в "бегунком" шкала/R
+     * 
      */
     virtual void palettesload();
 
-    /**
-     * palletemap - меняет указатель на текущую палитру из набора в соответствие с "ползунком"
-     * @param _val - байт "ползунка"
-     * @param _pals - набор с палитрами
-     */
-    virtual void palettemap(std::vector<PGMPalette*> &_pals, const uint8_t _val, const uint8_t _min=1,  const uint8_t _max=255);
+    // returns a flag that indicates that efefct is using framebuffer memory to keep data between frame calculation
+    bool getCanvasProtect() const { return _canvasProtect; }
 
     /**
-     * метод выбирает текущую палитру '*curPalette' из набора дотупных палитр 'palettes'
-     * в соответствии со значением "бегунка" шкалы. В случае если задана паременная rval -
-     * метод использует значение R,  иначе используется значение scale
-     * (палитры меняются автоматом при изменении значения шкалы/R, метод оставлен для совместимости
-     * и для первоначальной загрузки эффекта)
+     * @brief Set the Control's value
+     * 
+     * @param idx control's index
+     * @param value control's value
      */
-    void scale2pallete();
-
+    virtual void setControl(size_t idx, int32_t value);
 };
 
 class EffectWorker {
 private:
-    LampState *lampstate;   // ссылка на состояние лампы
-    SORT_TYPE effSort;      // порядок сортировки в UI
-
-    Effcfg curEff;          // конфигурация текущего эффекта, имя/версия и т.п.
+    EffectsListItem_t _effItem;        // current effect item and flags
+    EffConfiguration _effCfg;          // конфигурация текущего эффекта
     
     // список эффектов с флагами из индекса
-    std::vector<EffectListElem> effects;
+    std::vector<EffectsListItem_t> effects;
 
     // указатель на экземпляр класса текущего эффекта
     std::unique_ptr<EffectCalc> worker;
@@ -397,13 +367,10 @@ private:
     TaskHandle_t    _runnerTask_h=nullptr;          // effect calculator task
 
     /**
-     * создает и инициализирует экземпляр класса выбранного эффекта
+     * создает и инициализирует экземпляр класса требуемого эффекта
      *
     */
-    void workerset(uint16_t effect);
-
-    // obsolete
-    //void effectsReSort(SORT_TYPE st=(SORT_TYPE)(255));
+    void _spawn(effect_t eid);
 
     /**
      * @brief load a list of default effects from firmware tables
@@ -419,7 +386,7 @@ private:
      * 
      * @param folder - where to look for idx file, must end with a '/'
      */
-    void _load_eff_list_from_idx_file(const char *folder = NULL);
+    void _load_eff_list_from_idx_file();
 
     /**
      * @brief rebuild list of effects based on json configs on filesystem
@@ -428,7 +395,7 @@ private:
      * 
      * @param folder 
      */
-    void _rebuild_eff_list(const char *folder = NULL);
+    //void _rebuild_eff_list(const char *folder = NULL);
 
     // static wrapper for _runner Task to call handling class member
     static inline void _runnerTask(void* pvParams){ ((EffectWorker*)pvParams)->_runnerHndlr(); }
@@ -439,14 +406,25 @@ private:
     // start a task that periodically runs effect calculation
     void _start_runner();
 
+    // updates _effItem to match eid copy in a list
+    void _switch_current_effect_item(effect_t eid);
+
 public:
     // дефолтный конструктор
-    EffectWorker(LampState *_lampstate);
+    EffectWorker();
     ~EffectWorker(){ if(_runnerTask_h) vTaskDelete(_runnerTask_h); _runnerTask_h = nullptr; };
 
     // noncopyable
     EffectWorker (const EffectWorker&) = delete;
     EffectWorker& operator= (const EffectWorker&) = delete;
+
+    /**
+     * @brief loads effect index
+     * enumerates effects in firmware and merge parameters from an index on FS
+     * this method allows to always have a fresh copy of effects despite if FW and index file are out of sync
+     * @note should be called early after calss instantiantion buf after FS is awailable
+     */
+    void loadIndex();
 
     // start effect calculator and renderer
     void start();
@@ -480,40 +458,62 @@ public:
     // уделение списков из ФС
     void removeLists();
 
-    void initDefault(const char *folder = NULL); // пусть вызывается позже и явно
+    /**
+     * @brief apply all controls to the current effect
+     * should be called after loading new worker/control configs
+     */
+    void applyControls();
+
+    /**
+     * @brief Set the Control Value object
+     * 
+     * @param idx 
+     * @param v 
+     */
+    void setControlValue(size_t idx, int32_t v);
+
+    /**
+     * @brief Get a reference to current effect element
+     * 
+     * @return const EffectsListItem_t& 
+     */
+    const EffectsListItem_t& getCurrentEffectItem() const { return _effItem; }
+
+    /**
+     * @brief access effects controls container
+     * needed to build conrol values for WebUI
+     * 
+     * @return const std::vector<EffectControl>& 
+     */
+    const std::vector<EffectControl> &getEffControls() const { return _effCfg.getControls(); }
 
     /**
      * @brief Get const reference to current Effects List
      * 
      */
-    std::vector<EffectListElem> const &getEffectsList() const { return effects; };
+    std::vector<EffectsListItem_t> const &getEffectsList() const { return effects; };
 
-    std::vector<std::shared_ptr<UIControl>>&getControls() { return curEff.controls; }
-
-    // тип сортировки (obsolete)
-    //void setEffSortType(SORT_TYPE type) {if(effSort != type) { effectsReSort(type); } effSort = type;}
-    //SORT_TYPE getEffSortType() {return effSort;}
+    //std::vector<std::shared_ptr<UIControl>>&getControls() { return curEff.controls; }
 
     // удалить конфиг переданного эффекта
     void removeConfig(const uint16_t nb, const char *folder=NULL);
 
     /**
-     * @brief пересоздает индекс из текущего списка эффектов
+     * @brief создает json индекс файл на ФС из текущего списка эффектов
      * 
-     * @param folder 
      * @param forceRemove - удалить ВСЕ списки, в.т.ч. списки для выпадающих меню
      */
-    void makeIndexFileFromList(const char *folder = NULL, bool forceRemove = false);
+    void makeIndexFileFromList(bool forceRemove = false);
 
     /**
      * @brief Get total number of effects in a list 
      */
-    unsigned getEffectsListSize() const {return effects.size();}
+    size_t getEffectsListSize() const {return effects.size();}
 
-    const String &getEffectName() const {return curEff.effectName;}
+    //const String &getEffectName() const {return curEff.effectName;}
 
     // если текущий, то просто пишем имя, если другой - создаем экземпляр, пишем, удаляем
-    void setEffectName(const String &name, EffectListElem*to);
+    //void setEffectName(const String &name, EffectsListItem_t*to){};
 
     /**
     * вычитать только имя эффекта из конфиг-файла и записать в предоставленную строку
@@ -525,61 +525,51 @@ public:
     */
     void loadeffname(String& effectName, const uint16_t nb, const char *folder=NULL);
 
-    // следующий эффект, кроме canBeSelected==false
-    uint16_t getNext();
-    // предыдущий эффект, кроме canBeSelected==false
-    uint16_t getPrev();
+    // следующий эффект, кроме enabled==false
+    effect_t getNext();
+    // предыдущий эффект, кроме enabled==false
+    effect_t getPrev();
 
     /**
      * @brief найти следующий номер эффекта для демо режима
      * 
      * @return uint16_t 
      */
-    uint16_t getNextEffIndexForDemo(bool rnd = false);
+    effect_t getNextEffIndexForDemo(bool rnd = false);
 
-    bool validByList(int val);
-
-    // получить реальный номер эффекта по номеру элемента списка (для плагинов)
-    uint16_t realEffNumdByList(uint16_t val) { return effects.at(val).eff_nb; }
-
-    // получить индекс эффекта по номеру (для плагинов)
-    uint16_t effIndexByList(uint16_t val);
-
-    // получить флаг canBeSelected по номеру элемента списка (для плагинов)
-    bool effCanBeSelected(uint16_t val) { return val < effects.size() ? effects.at(val).canBeSelected() : false; }
 
     // вернуть первый элемент списка
-    EffectListElem *getFirstEffect();
+    //EffectsListItem_t *getFirstEffect();
     // вернуть следующий эффект
-    EffectListElem *getNextEffect(EffectListElem *current);
+    //EffectsListItem_t *getNextEffect(EffectsListItem_t *current);
     // вернуть выбранный элемент списка
-    EffectListElem *getEffect(uint16_t select);
+    //EffectsListItem_t *getEffect(effect_t select);
 
     // вернуть номер текущего эффекта
-    uint16_t getCurrentEffectNumber() const {return curEff.num; }
+    effect_t getCurrentEffectNumber() const { return _effItem.eid; }
 
     // вернуть текущий элемент списка
-    EffectListElem *getCurrentListElement();
+    //EffectsListItem_t *getCurrentListElement();
 
     // вернуть выбранный элемент списка
-    EffectListElem *getSelectedListElement();
+    //EffectsListItem_t *getSelectedListElement();
 
     /**
      * @brief return current effect config object
      */
-    Effcfg const &getCurrEffCfg() const { return curEff; }
+    //Effcfg const &getCurrEffCfg() const { return curEff; }
 
     /**
      * @brief return a ref to effect config depending on if switching in pending or not
      * if fade is progress, than a ref to pending config will be returned
      */
-    Effcfg const &getEffCfg() const { return curEff; }
+    //Effcfg const &getEffCfg() const { return curEff; }
 
     /**
      * @brief autosave current effect configuration to json file
      * 
      */
-    void autoSaveConfig(){ curEff.autosave(); }
+    void autoSaveConfig(){ _effCfg.autosave(); }
 
     /**
      * @brief switch to the specified effect
@@ -588,10 +578,10 @@ public:
      * 
      * @param effnb - effect to switch to
      */
-    void switchEffect(uint16_t effnb);
+    void switchEffect(effect_t eid);
 
     // копирование эффекта
-    void copyEffect(const EffectListElem *base);
+    void copyEffect(const EffectsListItem_t *base){};
 
 
     /**
@@ -600,7 +590,7 @@ public:
      * @param eff 
      * @param onlyCfgFile - удалить только конфиг файл с ФС (сбрасывает настройки эффекта на дефолтные)
      */
-    void deleteEffect(const EffectListElem *eff, bool onlyCfgFile = false);
+    void deleteEffect(const EffectsListItem_t *eff, bool onlyCfgFile = false){};
 
 
     // COMPAT methods
@@ -609,7 +599,7 @@ public:
      * @brief a wrapper for EffectCalc's setDynCtrl method
      * (exist for compatibility for the time of refactoring control's code)
      */
-    String setDynCtrl(UIControl*_val){ return worker ? worker->setDynCtrl(_val) : String(); };  // damn String()
+    //String setDynCtrl(UIControl*_val){ return worker ? worker->setDynCtrl(_val) : String(); };  // damn String()
 
 
 };

@@ -119,7 +119,7 @@ private:
     // struct keep state during switching effects with fader
     struct EffSwitch_state_t {
         int fadeState{0};       // 0 not fading, -1 - fadeout, 1 - fadein
-        uint16_t pendingEffectNum{0};
+        effect_t pendingEffectNum{0};
     };
 
     // used auxilary GPIOs 
@@ -142,15 +142,11 @@ private:
     // a set of lamp options (flags)
     LampFlagsPack opts;
     VolatileFlags vopts{};
-    // текущее состояние лампы, которое передается в класс эффектпроцессора
-    LampState lampState;
 
     uint8_t _brightnessScale{DEF_BRT_SCALE};
     // default luma correction curve for PWM driven LEDs
     luma::curve _curve = luma::curve::cie1931;
     uint8_t globalBrightness{DEF_BRT_SCALE/2};     // глобальная яркость
-
-    uint16_t storedEffect = (uint16_t)EFF_ENUM::EFF_NONE;
 
     // Таймер смены эффектов в ДЕМО
     Task *demoTask = nullptr;
@@ -175,15 +171,10 @@ public:
     // инициализация Лампы
     void lamp_init();
 
-    LampState &getLampState(){ return lampState; }
-
-    std::vector<std::shared_ptr<UIControl>>&getEffControls() { return effwrkr.getControls(); }
+    //std::vector<std::shared_ptr<UIControl>>&getEffControls() { return effwrkr.getControls(); }
 
     void setSpeedFactor(float val) {
-        lampState.speedfactor = val;
-        // speed is control number 1, so check the size of vector, must be >1
-        if ( effwrkr.getControls().size() >1 ) effwrkr.setDynCtrl(effwrkr.getControls().at(1).get());
-        //if(effwrkr.getControls().exist(1)) effwrkr.setDynCtrl(effwrkr.getControls()[1].get());
+        // do nothing for now
     }
 
     // Lamp brightness control
@@ -266,8 +257,6 @@ public:
     bool getPwr() const { return vopts.pwrState; }
 
     bool isDebugOn() {return vopts.debug;}
-    bool isDebug() {return lampState.isDebug;}
-    void setDebug(bool flag) { vopts.debug = flag; lampState.isDebug=flag; }
 
     // set/clear "restore on/off/demo" state on boot
     void setRestoreState(bool flag){ opts.flag.restoreState = flag; save_flags(); }
@@ -337,7 +326,7 @@ public:
      * 
      * @param v 
      */
-    void setDemoRndEffControls(bool v){ opts.flag.demoRndEffControls = lampState.demoRndEffControls = v; };
+    void setDemoRndEffControls(bool v){ opts.flag.demoRndEffControls = v; };
 
 
 
@@ -368,7 +357,7 @@ public:
      * @param action - тип переключения на эффект, предыдущий, следующий, конкретный и т.п.
      * @param effnb - опциональный параметр номер переключаемого эффекта
      */
-    void switcheffect(effswitch_t action, uint16_t effnb = EFF_ENUM::EFF_NONE);
+    void switcheffect(effswitch_t action, effect_t effnb = effect_t::empty);
 
     /*
      * включает/выключает "эффект"-таймер
@@ -412,7 +401,7 @@ private:
      * @param fade - переключаться через фейдер или сразу
      * @param effnb - номер эффекта на который переключаться (при переключении по конкретному номеру)
      */
-    void _switcheffect(effswitch_t action, bool fade, uint16_t effnb = EFF_ENUM::EFF_NONE);
+    void _switcheffect(effswitch_t action, bool fade, effect_t effnb = effect_t::empty);
 
     /**
      * @brief get effect number relative to fader state
@@ -420,7 +409,7 @@ private:
      * when in transition state, it returns pending effect number
      * @return uint16_t 
      */
-    uint16_t _getRealativeEffectNum();
+    effect_t _getRealativeEffectNum();
 
 
     /**

@@ -46,9 +46,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #define CENTER_X_MAJOR (fb->w()/2 + !!(fb->w()%2))          // центр матрицы по ИКСУ, сдвинутый в большую сторону, если ширина чётная
 #define CENTER_Y_MAJOR (fb->h()/2 + !!(fb->h()%2))          // центр матрицы по ИГРЕКУ, сдвинутый в большую сторону, если высота чётная
 
-// непустой дефолтный деструктор (если понадобится)
-// EffectCalc::~EffectCalc(){LOG(println, "Effect object destroyed");}
-
+#ifdef DISABLED_CODE
 // ------------- Эффект "Конфетти" --------------
 bool EffectSparcles::run(){
   if (dryrun(3.0))
@@ -2507,10 +2505,10 @@ bool EffectPicasso::metaBallsRoutine(){
 bool EffectPicasso::run(){
   switch (effect)
   {
-  case EFF_PICASSO:
+  case effect_t::picasso:
     return picassoRoutine();
     break;
-  case EFF_PICASSO4:
+  case effect_t::picasso4:
     return metaBallsRoutine();
     break;
   default:;
@@ -3693,10 +3691,10 @@ bool EffectFairy::run() {
 
   switch (effect)
   {
-  case EFF_FAIRY:
+  case effect_t::fairy:
     return fairy();
     break;
-  case EFF_FOUNT:
+  case effect_t::fountain:
     fount();
     break; 
   default:
@@ -3709,7 +3707,7 @@ bool EffectFairy::run() {
 
 void EffectFairy::load(){
   //---- Общее для двух эффектов
-  if(effect==EFF_FAIRY)
+  if(effect == effect_t::fairy)
     deltaValue = 10; // количество зарождающихся частиц за 1 цикл //perCycle = 1;
   else
     deltaValue = units.size() / (EffectMath::sqrt(CENTER_X_MAJOR * CENTER_X_MAJOR + CENTER_Y_MAJOR * CENTER_Y_MAJOR) * 4U) + 1U; // 4 - это потому что за 1 цикл частица пролетает ровно четверть расстояния между 2мя соседними пикселями
@@ -3735,7 +3733,7 @@ void EffectFairy::load(){
 // !++
 String EffectFairy::setDynCtrl(UIControl*_val){
   if(_val->getId()==1) {
-    if (effect == EFF_FAIRY) speedFactor = EffectMath::fmap(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 0.05, .25) * getBaseSpeedFactor();
+    if (effect == effect_t::fairy) speedFactor = EffectMath::fmap(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 0.05, .25) * getBaseSpeedFactor();
     else speedFactor = EffectMath::fmap(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 0.2, 1.) * getBaseSpeedFactor();
   } else if(_val->getId()==2) {
     EffectCalc::setDynCtrl(_val);   // маразм
@@ -4175,29 +4173,29 @@ bool EffectFrizzles::run() {
   return true;
 }
 
-
+#endif //#ifdef DISABLED_CODE
 
 // ----------------- Эффект "Магма"
 // (c) Сотнег (SottNick) 2021
 // адаптация и доводка до ума - kostyamat
 void EffectMagma::palettesload(){
   // собираем свой набор палитр для эффекта
-  palettes.reserve(NUMPALETTES);
+  palettes.clear();
+  palettes.reserve(12);
   palettes.push_back(&MagmaColor_p);
   palettes.push_back(&CopperFireColors_p);
   palettes.push_back(&NormalFire_p);
+  palettes.push_back(&NormalFire2_p);
+  palettes.push_back(&NormalFire3_p);
   palettes.push_back(&SodiumFireColors_p);
   palettes.push_back(&HeatColors2_p);
   palettes.push_back(&PotassiumFireColors_p);
-  palettes.push_back(&NormalFire3_p);
   palettes.push_back(&AlcoholFireColors_p);
-  palettes.push_back(&NormalFire2_p);
   palettes.push_back(&LithiumFireColors_p);
   palettes.push_back(&WoodFireColors_p);
   palettes.push_back(&WaterfallColors_p);
-  
-  usepalettes = true; // включаем флаг палитр
-  scale2pallete();    // выставляем текущую палитру
+  LOGV(T_Effect, printf, "Loaded %u palettes\n", palettes.size());
+  curPalette = &MagmaColor_p;
 }
 
 void EffectMagma::load() {
@@ -4206,24 +4204,31 @@ void EffectMagma::load() {
 }
 
 // !++
-String EffectMagma::setDynCtrl(UIControl*_val){
-  if (_val->getId()==1){
-    LOGD(T_Effect, printf, "Magma speed=%d, speedfactor=%2.2f\n", speed, speedFactor);
-    speedFactor = EffectMath::fmap(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 0.075, .5) * getBaseSpeedFactor();
-  }
-  else if(_val->getId()==3) {
-    int scale = map(EffectCalc::setDynCtrl(_val).toInt(), 1, 100, MAGMA_MIN_OBJ, MAGMA_MAX_OBJ);
-    particles.assign(scale, Magma());
-  }
-  else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
+void EffectMagma::setControl(size_t idx, int32_t value){
+  switch (idx){
+    // speed
+    case 0:
+      speedFactor = EffectMath::fmap(value, 1, 10, 0.05, 2.5);
+      LOGV(T_Effect, printf, "Magma speed=%d, speedfactor=%2.2f\n", value, speedFactor);
+      break;
+    // scale
+    case 1: {
+      scale = map(value, 1, 10, MAGMA_MIN_OBJ, MAGMA_MAX_OBJ);
+      LOGV(T_Effect, printf, "Magma scale=%d\n", scale);
+      particles.assign(scale, Magma());
+      regen();
+      break;
+    }
 
-  regen();
-  return String();
+    default:
+      EffectCalc::setControl(idx, value);
+  }
+
 }
 
 void EffectMagma::regen() {
   randomSeed(millis());
-  for (uint8_t j = 0; j != shiftHue.size(); ++j){
+  for (size_t j = 0; j != shiftHue.size(); ++j){
     shiftHue[j] = map(j, 0, fb->h()+fb->h()/4, 255, 0);// init colorfade table
   }
 
@@ -4243,8 +4248,8 @@ bool EffectMagma::run() {
     EffectMath::drawPixelXYF(i.posX, i.posY, ColorFromPalette(*curPalette, i.hue), fb, 0);
   }
 
-  for (uint8_t i = 0; i != fb->w(); ++i) {
-    for (uint8_t j = 0; j != fb->h(); ++j) {
+  for (size_t i = 0; i != fb->w(); ++i) {
+    for (size_t j = 0; j != fb->h(); ++j) {
      fb->at(i, j) += ColorFromPalette(*curPalette, qsub8(inoise8(i * deltaValue, (j + ff_y + random8(2)) * deltaHue, ff_z), shiftHue[j]), 127U);
     }
   }
@@ -4293,7 +4298,7 @@ void EffectMagma::leapersRestart_leaper(Magma &l) {
   }
 }
 
-
+#ifdef DISABLED_CODE
 // --------------------- Эффект "Звездный Десант"
 // Starship Troopers https://editor.soulmatelights.com/gallery/839-starship-troopers
 // Based on (c) stepko`s codes https://editor.soulmatelights.com/gallery/639-space-ships
@@ -5107,4 +5112,4 @@ bool EffectMira::run(){
   return false;
 }
 
-
+#endif //#ifdef DISABLED_CODE

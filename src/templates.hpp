@@ -2,7 +2,7 @@
     This file is a part of FireLamp_JeeUI project
     https://github.com/vortigont/FireLamp_JeeUI
 
-    Copyright © 2023 Emil Muratov (vortigont)
+    Copyright © 2023-2024 Emil Muratov (vortigont)
 
     FireLamp_JeeUI is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -37,3 +37,8 @@
 
 #pragma once
 
+// a simple constrain function                                                                                                                                
+template<typename T>                                                                                                                                          
+T clamp(T value, T min, T max){                                                                                                                               
+  return (value < min)? min : (value > max)? max : value;                                                                                                     
+}

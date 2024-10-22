@@ -42,6 +42,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "actions.hpp"
 #include "evtloop.h"
 #include "display.hpp"
+#include "templates.hpp"
 #include "log.h"
 
 #define DYNJSON_SIZE_EFF_CFG   2048
@@ -65,18 +66,70 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 constexpr int target_fps{MAX_FPS};                     // desired FPS rate for effect runner
 constexpr int interframe_delay_ms = 1000 / target_fps;
+static constexpr const char* effects_cfg_fldr = "/eff/";
+static constexpr const char* effects_controls_manifest_file = "/eff/controls.json";
+// LOG tags
+static constexpr const char* T_EffCtrl = "EffCtrl";
 
 
 // TaskScheduler - Let the runner object be a global, single instance shared between object files.
 extern Scheduler ts;
 
-//static constexpr const char c_snd[] = "snd";
 
-Effcfg::Effcfg(uint16_t effid) : num(effid){
-  loadeffconfig(effid);
+EffectControl::EffectControl(
+        size_t idx,
+        const char* name,
+        int32_t val,
+        int32_t min,
+        int32_t max,
+        int32_t scale_min,
+        int32_t scale_max
+        ) : 
+        _idx(idx), _name(name), _val(val), _minv(min), _maxv(max), _scale_min(scale_min), _scale_max(_scale_max){
+
+  if (_name == nullptr){
+    _name = T_ctrl;
+    _name += _idx;
+  }
+
+  if (_minv == _maxv){
+    _minv = 1;
+    _maxv = 10;
+  }
+
+  if (_scale_min == _scale_max){
+    _scale_min = _minv;
+    _scale_max = _maxv;
+  }
+
+  if (_val < _minv || _val > _maxv)
+    _val = (_maxv - _minv + 1) / 2;
+}
+
+int32_t EffectControl::setVal(int32_t v){
+  _val = clamp(v, _scale_min, _scale_max);
+  return getScaledVal();
+}
+
+int32_t EffectControl::getScaledVal() const {
+  LOGV(T_EffCtrl, printf, "getScaledV v:%d smn:%d smx:%d min:%d max:%d\n", _val, _scale_min, _scale_max, _minv, _maxv);
+  return map(_val, _scale_min, _scale_max, _minv, _maxv);
+}
+
+
+const char* EffectsListItem_t::getLbl(effect_t eid){
+  if (static_cast<size_t>(eid) >= fw_effects_nameindex.size())
+    return fw_effects_nameindex.at(0);
+  else
+    return fw_effects_nameindex.at(static_cast<size_t>(eid));
 };
 
-Effcfg::~Effcfg(){
+
+EffConfiguration::EffConfiguration(effect_t effid) : _eid(effid), _locked(false) {
+  loadEffconfig(effid);
+};
+
+EffConfiguration::~EffConfiguration(){
   // save config if any changes are pending
   if (tConfigSave){
     delete tConfigSave;
@@ -84,17 +137,18 @@ Effcfg::~Effcfg(){
   }
 }
 
-bool Effcfg::_eff_cfg_deserialize(JsonDocument &doc, const char *folder){
+/*
+bool EffConfiguration::_eff_cfg_deserialize(JsonDocument &doc, const char *folder){
   LOGD(T_EffCfg, printf, "_eff_cfg_deserialize() eff:%u\n", num);
-  String filename(fshlpr::getEffectCfgPath(num,folder));
+  String filename(fshlpr::getEffectCfgPath(e2int(num), folder));
 
   bool retry = true;
   READALLAGAIN:
   if (embuifs::deserializeFile(doc, filename.c_str() )){
-    if ( num>255 || geteffcodeversion((uint8_t)num) == doc["ver"] ){ // только для базовых эффектов эта проверка
+    if ( e2int(num) > 255 || geteffcodeversion((uint8_t)num) == doc["ver"] ){ // только для базовых эффектов эта проверка
       return true;   // we are OK
     }
-    LOGW(T_EffCfg, printf, "Wrong version in effect cfg file, reset to default (%d vs %d)\n", doc["ver"].as<uint8_t>(), geteffcodeversion((uint8_t)num));
+    LOGW(T_EffConfiguration, printf, "Wrong version in effect cfg file, reset to default (%d vs %d)\n", doc["ver"].as<uint8_t>(), geteffcodeversion((uint8_t)num));
   }
   // something is wrong with eff config file, recreate it to default
   create_eff_default_cfg_file(num, filename);   // пробуем перегенерировать поврежденный конфиг (todo: remove it and provide default from code)
@@ -104,26 +158,117 @@ bool Effcfg::_eff_cfg_deserialize(JsonDocument &doc, const char *folder){
     goto READALLAGAIN;
   }
 
-  LOGE(T_EffCfg, printf, "Failed to recreate eff config file: %s\n", filename.c_str());
+  LOGE(T_EffConfiguration, printf, "Failed to recreate eff config file: %s\n", filename.c_str());
   return false;
 }
+*/
 
-bool Effcfg::loadeffconfig(uint16_t nb, const char *folder){
-  num = nb;
-  JsonDocument doc;
-  if (!_eff_cfg_deserialize(doc, folder)) return false;   // error loading file
-
-  version = doc["ver"];
-  effectName = doc[T_name] ? doc[T_name].as<const char*>() : T_EFFNAMEID[(uint8_t)nb];
-
-  //brt = doc["brt"];
-  curve = doc[A_dev_lcurve] ? static_cast<luma::curve>(doc[A_dev_lcurve].as<int>()) : luma::curve::cie1931;
-
-
-  return _eff_ctrls_load_from_jdoc(doc, controls);
+void EffConfiguration::lock(){
+  flushcfg();
+  _locked = true;
 }
 
-void Effcfg::create_eff_default_cfg_file(uint16_t nb, String &filename){
+bool EffConfiguration::loadEffconfig(effect_t effid){
+  if (_locked) return false;   // won't load if config is not an empty one and locked
+
+  lock();
+  _eid = effid;
+  _profile_idx = 0;
+
+  if (effid == effect_t::empty){
+    _controls.clear();
+    unlock();
+    return true;
+  }
+
+  _load_manifest();
+  _load_preset();
+
+  unlock();
+  return true;
+}
+
+bool EffConfiguration::_load_manifest(){
+  _controls.clear();
+
+  // load controls schema from manifest config
+  // make a filter document
+  JsonDocument filter;
+  filter[EffectsListItem_t::getLbl(_eid)] = true;
+  JsonDocument doc;
+
+  DeserializationError error = embuifs::deserializeFileWFilter(doc, effects_controls_manifest_file, filter);
+
+  if (error){
+    LOGW(T_EffCfg, printf, "can't load manifest for eff:%s, err:%s\n", EffectsListItem_t::getLbl(_eid), error.c_str());
+    return false;
+  }
+
+  JsonArray arr = doc[EffectsListItem_t::getLbl(_eid)][T_ctrls];
+
+  if (!arr.size()) return false;
+  
+  _controls.reserve(arr.size());
+
+  // create control objects from manifest
+  size_t idx{0};
+  for (JsonObject o : arr){
+    _controls.emplace_back(idx, o[P_label].as<const char*>(), 0, o[T_min], o[T_max], o[T_smin], o[T_smax]);
+    ++idx;
+  }
+
+  LOGD(T_EffCfg, printf, "Loaded %u controls from manifest for eff:%s\n", arr.size(), EffectsListItem_t::getLbl(_eid));
+  return true;
+}
+
+void EffConfiguration::_load_preset(int seq){
+  String fname(effects_cfg_fldr);
+  fname += EffectsListItem_t::getLbl(_eid);
+  JsonDocument doc;
+  DeserializationError error = embuifs::deserializeFile(doc, fname);
+
+  if (error) return;
+
+  if (seq < 0)
+    _profile_idx = doc[T_last_profile];
+
+  JsonArray arr = doc[T_profiles][_profile_idx][T_ctrls];
+  if (!arr.size()){
+    LOGD(T_EffCfg, println, "Profile values are missing!");
+    return;
+  }
+
+  size_t idx{0};
+  for (JsonObject o : arr){
+    setValue(idx++, o[P_value]);
+  }
+}
+
+int32_t EffConfiguration::setValue(size_t idx, int32_t v){
+  LOGV("EffCfg", printf, "Control:%u(%u), setValue:%d\n", idx, _controls.size(), v);
+  if (idx < _controls.size()){
+    if (_locked){
+      LOGW("EffCfg", println, "Locked! Skip setValue.");
+      return _controls.at(idx).getVal();
+    }
+    autosave();
+    return _controls.at(idx).setVal(v);
+  }
+
+  // for non-existing controls let's return -1
+  return -1;
+}
+
+int32_t EffConfiguration::getValue(size_t idx) const {
+  if (idx < _controls.size())
+    return _controls.at(idx).getVal();
+
+  return -1;
+}
+
+
+/*
+void EffConfiguration::create_eff_default_cfg_file(effect_t nb, String &filename){
 
   const char* efname = T_EFFNAMEID[(uint8_t)nb]; // выдергиваем имя эффекта из таблицы
   LOGD(T_EffCfg, printf, "Make default config: %d %s\n", nb, efname);
@@ -131,7 +276,7 @@ void Effcfg::create_eff_default_cfg_file(uint16_t nb, String &filename){
   String  cfg(T_EFFUICFG[(uint8_t)nb]);    // извлекаем конфиг для UI-эффекта по-умолчанию из флеш-таблицы
   cfg.replace("@name@", efname);
   cfg.replace("@ver@", String(geteffcodeversion((uint8_t)nb)) );
-  cfg.replace("@nb@", String(nb));
+  cfg.replace("@nb@", String(e2int( nb)));
   
   File configFile = LittleFS.open(filename, "w");
   if (configFile){
@@ -139,21 +284,41 @@ void Effcfg::create_eff_default_cfg_file(uint16_t nb, String &filename){
     configFile.close();
   }
 }
+*/
+void EffConfiguration::_savecfg(char *folder){
+  String fname(effects_cfg_fldr);
+  fname += EffectsListItem_t::getLbl(_eid);
+  JsonDocument doc;
+  DeserializationError error = embuifs::deserializeFile(doc, fname);
 
-void Effcfg::_savecfg(char *folder){
-  File configFile;
-  String filename = fshlpr::getEffectCfgPath(num, folder);
-  LOGD(T_EffCfg, printf, "Writing eff #%d cfg: %s\n", num, filename.c_str());
-  configFile = LittleFS.open(filename, "w");
-  configFile.print(getSerializedEffConfig());
-  configFile.close();
+  if (error) return;
+
+  doc[T_last_profile] = _profile_idx;
+
+  JsonArray a;
+
+  if ( _profile_idx >= doc[T_profiles].size() )
+    a = doc[T_profiles].add<JsonObject>()[T_ctrls].to<JsonArray>();
+  else {
+    a = doc[T_profiles][_profile_idx][T_ctrls];
+    a.clear();
+  }
+
+  for (const auto& i: _controls){
+    JsonObject kv = a.add<JsonObject>();
+    kv[P_id] = i.getName();
+    kv[P_value] = i.getVal();
+  }
+
+  LOGD(T_EffCfg, printf, "_savecfg:%s\n", fname);
+  embuifs::serialize2file(doc, fname);
 }
 
-void Effcfg::autosave(bool force) {
+void EffConfiguration::autosave(bool force) {
   if (force){
     if(tConfigSave)
       tConfigSave->cancel();
-    LOGD(T_EffCfg, printf, "Force save eff cfg: %d\n", num);
+    LOGD(T_EffCfg, printf, "Force save eff cfg: %u\n", _eid);
     _savecfg();
     return;
   }
@@ -162,19 +327,19 @@ void Effcfg::autosave(bool force) {
     tConfigSave = new Task(CFG_AUTOSAVE_TIMEOUT, TASK_ONCE, [this](){
       _savecfg();
       //fsinforenew();
-      LOGD(T_EffCfg, printf, "Autosave effect config: %u\n", num);
+      LOGD(T_EffCfg, printf, "Autosave effect config: %u\n", _eid);
     }, &ts, false, nullptr, [this](){tConfigSave=nullptr;}, true);
     tConfigSave->enableDelayed();
   } else {
     tConfigSave->restartDelayed();
   }
 }
-
-String Effcfg::getSerializedEffConfig(uint8_t replaceBright) const {
+/*
+String EffConfiguration::getSerializedEffConfig(uint8_t replaceBright) const {
   JsonDocument doc;
 
-  doc["nb"] = num;
-  doc["flags"] = flags.mask;
+  doc["nb"] = e2int(num);
+  //doc["flags"] = flags.mask;
   doc[T_name] = effectName;
   doc["ver"] = version;
   //if (brt) doc["brt"] = brt;
@@ -197,21 +362,12 @@ String Effcfg::getSerializedEffConfig(uint8_t replaceBright) const {
 
   return cfg_str;
 }
-
+*/
 
 //  ***** EffectWorker implementation *****
 
-EffectWorker::EffectWorker(LampState *_lampstate) : lampstate(_lampstate) {
-  // create 3 'faivored' superusefull controls for 'speed', 'scale'
-  for(unsigned id=1; id<2; id++){
-    auto c = std::make_shared<UIControl>(
-      id,                                     // id
-      CONTROL_TYPE::RANGE,                    // type
-      id==1 ? String(TINTF_087) : String(TINTF_088)           // name
-    );
-    curEff.controls.push_back(std::move(c));
-  }
-  //pendingCtrls = controls;
+EffectWorker::EffectWorker() {
+
 }
 
 //EffectWorker::~EffectWorker() { clearEffectList(); }
@@ -219,23 +375,34 @@ EffectWorker::EffectWorker(LampState *_lampstate) : lampstate(_lampstate) {
 /*
  * Создаем экземпляр класса калькулятора в зависимости от требуемого эффекта
  */
-void EffectWorker::workerset(uint16_t effect){
-  LOGI(T_EffWrkr, printf, "Switch to eff:%u\n", effect);
+void EffectWorker::_spawn(effect_t eid){
+  LOGD(T_EffWrkr, printf, "_spawn(%u)\n", eid);
 
   LedFB<CRGB> *canvas = display.getCanvas().get();
   if (!canvas) { LOGW(T_EffWrkr, println, "no canvas buffer!"); return; }
 
-  // load effect configuration from a saved file
-  curEff.loadeffconfig(effect);
-
   // не создаем экземпляр калькулятора если воркер неактивен (лампа выключена и т.п.)
-  if (!_status) { LOGI(T_EffWrkr, println, "worker is inactive"); return; }
+  if (!_status) {
+    _switch_current_effect_item(eid);
+    LOGI(T_EffWrkr, println, "worker is inactive");
+    return;
+  }
+
+  // save and lock previous configs
+  _effCfg.lock();
 
   // grab mutex
   std::unique_lock<std::mutex> lock(_mtx);
-  // create a new instance of effect child
-  switch (static_cast<EFF_ENUM>(effect%256)){ // номер может быть больше чем ENUM из-за копирований, находим эффект по модулю
 
+  // create a new instance of effect child
+  switch (eid){
+
+   case effect_t::magma :
+    worker = std::make_unique<EffectMagma>(canvas);
+    LOGD(T_EffWrkr, println, "Spawn magma");
+    break;
+
+/*
   case EFF_ENUM::EFF_COMET :
     worker = std::make_unique<EffectComet>(canvas);
     break;
@@ -263,7 +430,7 @@ void EffectWorker::workerset(uint16_t effect){
   case EFF_ENUM::EFF_CUBE :
     worker = std::make_unique<EffectBall>(canvas);
     break;
-  case EFF_ENUM::EFF_LIGHTER_TRACES :
+  case EFF_ENUM::EFF_fireflies :
     worker = std::make_unique<EffectLighterTracers>(canvas);
     break;
   case EFF_ENUM::EFF_RAINBOW_2D :
@@ -328,7 +495,7 @@ void EffectWorker::workerset(uint16_t effect){
   case EFF_ENUM::EFF_FLAGS :
     worker = std::make_unique<EffectFlags>(canvas);
     break;
-  case EFF_ENUM::EFF_LIQUIDLAMP :
+  case EFF_ENUM::EFF_liquidlamp :
     worker = std::make_unique<EffectLiquidLamp>(canvas);
     break;
   case EFF_ENUM::EFF_WHIRL :
@@ -337,7 +504,7 @@ void EffectWorker::workerset(uint16_t effect){
   case EFF_ENUM::EFF_STAR :
     worker = std::make_unique<EffectStar>(canvas);
     break;
-  case EFF_ENUM::EFF_ATTRACT :
+  case effect_t::attractor :
     worker = std::make_unique<EffectAttract>(canvas);
     break;
   case EFF_ENUM::EFF_SNAKE :
@@ -352,11 +519,8 @@ void EffectWorker::workerset(uint16_t effect){
   case EFF_ENUM::EFF_FRIZZLES :
     worker = std::make_unique<EffectFrizzles>(canvas);
     break;
-   case EFF_ENUM::EFF_SMOKEBALLS :
+   case EFF_ENUM::EFF_smokeballs :
     worker = std::make_unique<EffectSmokeballs>(canvas);
-    break;
-   case EFF_ENUM::EFF_MAGMA :
-    worker = std::make_unique<EffectMagma>(canvas);
     break;
    case EFF_ENUM::EFF_FIRE2021 :
     worker = std::make_unique<EffectFire2021>(canvas);
@@ -379,45 +543,74 @@ void EffectWorker::workerset(uint16_t effect){
   case EFF_ENUM::EFF_SPBALS :
     worker = std::make_unique<EffectSplashBals>(canvas);
     break;
-
+*/
   default:
-    worker = std::make_unique<EffectNone>(canvas);
+    LOGW(T_EffWrkr, println, "Attempt to spawn nonexistent effect!");
+    lock.unlock();
+    return;
   }
 
-  if(worker){
-    // apply effect's controls
-    worker->init(static_cast<EFF_ENUM>(effect%256), &curEff.controls, lampstate);
+  if (!worker){
+    lock.unlock();
+    // unable to create worker object somehow
+    _switch_current_effect_item(effect_t::empty);
+    return;
   }
 
-  // release mutex after effect init  has complete
+  // initialize effect
+  worker->load();
+
+  _switch_current_effect_item(eid);
+  // apply effect's controls
+  applyControls();
+
+  display.canvasProtect (worker->getCanvasProtect());         // set 'persistent' frambuffer flag if effect's manifest demands it
+
+  // release mutex after effect init has complete
   lock.unlock();
+  _start_runner();  // start calculator task IF we are marked as active
 
-  if(worker){
-    // set newly loaded luma curve to the lamp
-    run_action(ra::brt_lcurve, e2int(curEff.curve));
-    display.canvasProtect(eff_persistent_buff[effect%256]);     // set 'persistent' frambuffer flag if effect's manifest demands it
-    _start_runner();  // start calculator task IF we are marked as active
-    // send event
-    uint32_t n = effect;
-    EVT_POST_DATA(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::effSwitchTo), &n, sizeof(uint32_t));
+  // set newly loaded luma curve to the lamp
+  run_action(ra::brt_lcurve, e2int(_effItem.curve));
+
+  // send event    
+  uint32_t n = e2int(eid);
+  EVT_POST_DATA(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::effSwitchTo), &n, sizeof(uint32_t));
+}
+
+void EffectWorker::loadIndex(){
+  // first generate a list from fw constants
+  _load_default_fweff_list();
+
+
+  if (!LittleFS.exists(F_effects_idx)){
+    LOGD(T_EffWrkr, printf, "eff index file %s missing\n", F_effects_idx);
+    return;
+  }
+
+  // merge data from FS index file, it containes changed values for flags, etc...
+  JsonDocument doc;
+  embuifs::deserializeFile(doc, F_effects_idx);
+
+  for (JsonObject o : doc.as<JsonArray>()){
+    effect_t eid = static_cast<effect_t>( o[P_id].as<unsigned>() );
+    auto i = std::find_if(effects.begin(), effects.end(), [eid](const EffectsListItem_t &e){ return e.eid == eid; });
+    if (i == effects.end())
+      continue;
+
+    i->flags.hidden = o[P_hidden];
+    i->flags.disabledInDemo = o[T_demoDisabled];
+    i->curve = static_cast<luma::curve>( o[T_luma].as<unsigned>() );
   }
 }
 
-void EffectWorker::initDefault(const char *folder)
-{
-  if(!LittleFS.exists("/eff")){
-    LittleFS.mkdir("/eff");
-  }
-
-  // try to load effects index from FS, or default index from FW if FS index is missing or corrupted
-  _load_eff_list_from_idx_file();
-}
-
-void EffectWorker::removeConfig(const uint16_t nb, const char *folder)
-{
+/*
+void EffectWorker::removeConfig(const uint16_t nb, const char *folder){
   LOGD(T_EffWrkr, printf, "Remove from FS: %s\n", fshlpr::getEffectCfgPath(nb,folder).c_str());
   LittleFS.remove(fshlpr::getEffectCfgPath(nb,folder)); // удаляем файл
 }
+*/
+
 /*
 void EffectWorker::effectsReSort(SORT_TYPE _effSort)
 {
@@ -426,25 +619,25 @@ void EffectWorker::effectsReSort(SORT_TYPE _effSort)
 
   switch(_effSort){
     case SORT_TYPE::ST_BASE :
-      effects.sort([](EffectListElem &a, EffectListElem &b){ return (((a.eff_nb&0xFF) - (b.eff_nb&0xFF))<<8) + (((a.eff_nb&0xFF00) - (b.eff_nb&0xFF00))>>8);});
+      effects.sort([](EffectsListItem_t &a, EffectsListItem_t &b){ return (((a.eff_nb&0xFF) - (b.eff_nb&0xFF))<<8) + (((a.eff_nb&0xFF00) - (b.eff_nb&0xFF00))>>8);});
       break;
     case SORT_TYPE::ST_END :
-      effects.sort([](EffectListElem &a, EffectListElem &b){ return a.eff_nb - b.eff_nb;}); // сортирую по eff_nb
-      //effects.sort([](EffectListElem *&a, EffectListElem *&b){ return ((int32_t)(((a->eff_nb&0xFF)<<8) | ((a->eff_nb&0xFF00)>>8)) - (((b->eff_nb&0xFF)<<8) | ((b->eff_nb&0xFF00)>>8)));});
-      //effects.sort([](EffectListElem *&a, EffectListElem *&b){ return (a->eff_nb&0xFF00) - (b->eff_nb&0xFF00) + (((a->eff_nb&0xFF) - (b->eff_nb&0xFF))<<8) + (((a->eff_nb&0xFF00) - (b->eff_nb&0xFF00))>>8);});
+      effects.sort([](EffectsListItem_t &a, EffectsListItem_t &b){ return a.eff_nb - b.eff_nb;}); // сортирую по eff_nb
+      //effects.sort([](EffectsListItem_t *&a, EffectsListItem_t *&b){ return ((int32_t)(((a->eff_nb&0xFF)<<8) | ((a->eff_nb&0xFF00)>>8)) - (((b->eff_nb&0xFF)<<8) | ((b->eff_nb&0xFF00)>>8)));});
+      //effects.sort([](EffectsListItem_t *&a, EffectsListItem_t *&b){ return (a->eff_nb&0xFF00) - (b->eff_nb&0xFF00) + (((a->eff_nb&0xFF) - (b->eff_nb&0xFF))<<8) + (((a->eff_nb&0xFF00) - (b->eff_nb&0xFF00))>>8);});
       break;
     case SORT_TYPE::ST_IDX :
-      effects.sort([](EffectListElem &a, EffectListElem &b){ return (int)(a.getMS() - b.getMS());});
+      effects.sort([](EffectsListItem_t &a, EffectsListItem_t &b){ return (int)(a.getMS() - b.getMS());});
       break;
     case SORT_TYPE::ST_AB2 :
       // крайне медленный вариант, с побочными эффектами, пока отключаю и использую вместо него ST_AB
-      //effects.sort([](EffectListElem *&a, EffectListElem *&b){ EffectWorker *tmp = new EffectWorker((uint16_t)0); String tmp1; tmp->loadeffname(tmp1, a->eff_nb); String tmp2; tmp->loadeffname(tmp2,b->eff_nb); delete tmp; return strcmp_P(tmp1.c_str(), tmp2.c_str());});
+      //effects.sort([](EffectsListItem_t *&a, EffectsListItem_t *&b){ EffectWorker *tmp = new EffectWorker((uint16_t)0); String tmp1; tmp->loadeffname(tmp1, a->eff_nb); String tmp2; tmp->loadeffname(tmp2,b->eff_nb); delete tmp; return strcmp_P(tmp1.c_str(), tmp2.c_str());});
       //break;
     case SORT_TYPE::ST_AB :
-      effects.sort([](EffectListElem &a, EffectListElem &b){ return std::string_view(T_EFFNAMEID[(uint8_t)a.eff_nb]).compare(T_EFFNAMEID[(uint8_t)b.eff_nb]); });
+      effects.sort([](EffectsListItem_t &a, EffectsListItem_t &b){ return std::string_view(T_EFFNAMEID[(uint8_t)a.eff_nb]).compare(T_EFFNAMEID[(uint8_t)b.eff_nb]); });
       break;
     case SORT_TYPE::ST_MIC :
-      effects.sort([](EffectListElem &a, EffectListElem &b){ return ((int)(pgm_read_byte(T_EFFVER + (a.eff_nb&0xFF))&0x01) - (int)(pgm_read_byte(T_EFFVER + (b.eff_nb&0xFF))&0x01)); });
+      effects.sort([](EffectsListItem_t &a, EffectsListItem_t &b){ return ((int)(pgm_read_byte(T_EFFVER + (a.eff_nb&0xFF))&0x01) - (int)(pgm_read_byte(T_EFFVER + (b.eff_nb&0xFF))&0x01)); });
       break;
     default:
       break;
@@ -459,6 +652,7 @@ void EffectWorker::effectsReSort(SORT_TYPE _effSort)
  * @param nb  - айди эффекта
  * @param folder - какой-то префикс для каталога
  */
+/*
 void EffectWorker::loadeffname(String& _effectName, const uint16_t nb, const char *folder)
 {
   String filename = fshlpr::getEffectCfgPath(nb,folder);
@@ -470,67 +664,86 @@ void EffectWorker::loadeffname(String& _effectName, const uint16_t nb, const cha
     _effectName = T_EFFNAMEID[(uint8_t)nb];   // выбираем имя по-умолчанию из флеша если конфиг поврежден
   }
 }
+*/
 
 void EffectWorker::removeLists(){
   LittleFS.remove(TCONST_eff_list_json);
   LittleFS.remove(TCONST_eff_fulllist_json);
-  LittleFS.remove(TCONST_eff_index);
+  LittleFS.remove(F_effects_idx);
 }
 
-void EffectWorker::makeIndexFileFromList(const char *folder, bool forceRemove)
-{
+void EffectWorker::makeIndexFileFromList(bool forceRemove){
+  LOGD(T_EffWrkr, println, "writing effects index file" );
   if(forceRemove)
     removeLists();
 
-  std::array<char, ARR_LIST_SIZE> *buff = new(std::nothrow) std::array<char, ARR_LIST_SIZE>;
-  if (!buff) return;    // not enough mem
+  // need to save current element first
+  auto idx = _effItem.eid;
+  auto i = std::find_if(effects.begin(), effects.end(), [idx](const EffectsListItem_t &e){ return e.eid == idx; });
+  if (i != effects.end()){
+    (*i) = _effItem;
+  }
 
-  File hndlr;
-  fshlpr::openIndexFile(hndlr, folder);
-  //effectsReSort(SORT_TYPE::ST_IDX); // сброс сортировки перед записью
+  JsonDocument doc;
+  JsonArray arr = doc.to<JsonArray>();
 
-  size_t offset = 0;
-  auto itr =  effects.cbegin();  // get const interator
-  buff->at(offset++) = (char)0x5b;   // Open json with ASCII '['
+  for (const auto& i : effects){
+    JsonObject o = arr.add<JsonObject>();
+    o[T_idx] = e2int(i.eid);
+    o[P_hidden] = i.flags.hidden;
+    o[T_demoDisabled] = i.flags.disabledInDemo;
+    o[T_luma] = e2int( i.curve );
+  }
 
-  do {
-    // {"n":%d,"f":%d},   => 32 bytes is more than enough
-    if (ARR_LIST_SIZE - offset < 32){
-      // write to file and purge buffer
-      hndlr.write(reinterpret_cast<uint8_t*>(buff->data()), offset);
-      offset = 0;
+  embuifs::serialize2file(doc, F_effects_idx);
+}
+
+void EffectWorker::_switch_current_effect_item(effect_t eid){
+  //LOGV(T_EffWrkr, printf, "_switch_current_effect_item: %u\n", eid);
+  if (eid == effect_t::empty){
+    _effItem = effects.front();
+  } else {
+    // change current effect element to the one from a list
+    //auto idx = _effItem.eid;
+    auto i = std::find_if(effects.begin(), effects.end(), [eid](const EffectsListItem_t &e){ return e.eid == eid; });
+    if (i == effects.end()){
+      // something is crazy wrong, there is no such effect in a list with given eid, switch to default empty one
+      _effItem = effects.front();
+      LOGI(T_EffWrkr, printf, "_switch_current_effect_item: %u not found!\n", eid);
+    } else {
+      _effItem = *i;
+      LOGV(T_EffWrkr, printf, "_switch_current_effect_item: %u:%s\n", i->eid, i->getLbl());
     }
-
-    offset += sprintf_P(buff->data()+offset, "{\"n\":%d,\"f\":%d},", itr->eff_nb, itr->flags.mask);
-  } while (++itr != effects.cend());
-
-  buff->at(--offset) = (char)0x5d;   // ASCII ']' implaced over last comma
-  hndlr.write(reinterpret_cast<uint8_t*>(buff->data()), ++offset);
-  hndlr.close();
-  delete buff;
-
-  LOGD(T_EffWrkr, println, "Индекс эффектов обновлен" );
-  //effectsReSort(); // восстанавливаем сортировку
+  }
+ 
+  // load effect configuration from a saved file
+  _effCfg.loadEffconfig(_effItem.eid);
 }
 
 // удалить эффект
-void EffectWorker::deleteEffect(const EffectListElem *eff, bool onlyCfgFile)
+/*
+void EffectWorker::deleteEffect(const EffectsListItem_t *eff, bool onlyCfgFile)
 {
+  // TODO rewrite it!
   for (auto i = effects.begin(); i != effects.end(); ++i){
     if ( (*i).eff_nb == eff->eff_nb){
           if(onlyCfgFile)
-            removeConfig(eff->eff_nb);    // only remove eff json cfg file
+            removeConfig(e2int( eff->eff_nb ));    // only remove eff json cfg file
           else
-            effects.erase(i);             // remove effect from drop-down selection list
+            i->flags.hidden = true;
+            //effects.erase(i);             // remove effect from drop-down selection list
+            // TODO: need to update a list???
           return;
     }
   }
 }
+*/
 
 // копирование эффекта
-void EffectWorker::copyEffect(const EffectListElem *base)
+/*
+void EffectWorker::copyEffect(const EffectsListItem_t *base)
 {
-  EffectListElem copy(base); // создать копию переданного эффекта
+  EffectsListItem_t copy(base); // создать копию переданного эффекта
   uint16_t maxfoundnb=base->eff_nb;
   for(unsigned i=0; i<effects.size();i++){
     if(effects[i].eff_nb>255 && ((effects[i].eff_nb&0x00FF)==(copy.eff_nb&0x00FF))){ // найдены копии
@@ -542,7 +755,7 @@ void EffectWorker::copyEffect(const EffectListElem *base)
   copy.eff_nb = newnum;
   effects.push_back(std::move(copy));
 
-  Effcfg copycfg(base->eff_nb);
+  EffConfiguration copycfg(base->eff_nb);
   copycfg.num = newnum;
   // имя формируем с базового + индекс копии
   copycfg.effectName.concat("_");
@@ -553,9 +766,10 @@ void EffectWorker::copyEffect(const EffectListElem *base)
   removeLists();              // drop cached lists
   makeIndexFileFromList();    // rebuild index (it will be faster than wait to hit _rebuild_eff_list() )
 }
-
+*/
+#ifdef DISABLED_CODE
 // вернуть эффект на очереди из списка эффектов
-EffectListElem *EffectWorker::getSelectedListElement()
+EffectsListItem_t *EffectWorker::getSelectedListElement()
 {
   for(unsigned i=0; i<effects.size(); i++){
     if(effects[i].eff_nb == curEff.num)
@@ -565,7 +779,7 @@ EffectListElem *EffectWorker::getSelectedListElement()
 }
 
 // вернуть текущий элемент списка
-EffectListElem *EffectWorker::getCurrentListElement()
+EffectsListItem_t *EffectWorker::getCurrentListElement()
 {
   for(unsigned i=0; i<effects.size(); i++){
     if(effects[i].eff_nb==curEff.num)
@@ -575,7 +789,7 @@ EffectListElem *EffectWorker::getCurrentListElement()
 }
 
 // вернуть выбранный элемент списка
-EffectListElem *EffectWorker::getFirstEffect()
+EffectsListItem_t *EffectWorker::getFirstEffect()
 {
   if(effects.size()>0)
     return &effects[0];
@@ -584,7 +798,7 @@ EffectListElem *EffectWorker::getFirstEffect()
 }
 
 // вернуть выбранный элемент списка
-EffectListElem *EffectWorker::getEffect(uint16_t select){
+EffectsListItem_t *EffectWorker::getEffect(effect_t select){
   for (unsigned i = 0; i < effects.size(); i++) {
       if (effects[i].eff_nb == select) {
           return &effects[i];
@@ -595,7 +809,7 @@ EffectListElem *EffectWorker::getEffect(uint16_t select){
 }
 
 // вернуть следующий эффект, если передан nullptr, то возвращается первый
-EffectListElem *EffectWorker::getNextEffect(EffectListElem *current){
+EffectsListItem_t *EffectWorker::getNextEffect(EffectsListItem_t *current){
     if(current == nullptr) return getFirstEffect();
     for (unsigned i = 0; i < effects.size(); i++) {
         if (effects[i].eff_nb == current->eff_nb) {
@@ -604,92 +818,124 @@ EffectListElem *EffectWorker::getNextEffect(EffectListElem *current){
     }
     return nullptr; // NONE
 }
+#endif
 
-uint16_t EffectWorker::getNextEffIndexForDemo(bool rnd){
-  auto idx = curEff.num;
-  auto i = effects.begin();
+effect_t EffectWorker::getNextEffIndexForDemo(bool rnd){
+  if (!effects.size()) return effect_t::empty;
 
+  // look for random effect
   if (rnd){
-    i += random(1, effects.size()-2);   // if need random effect, then shift iterator to random distance
-  } else {
-    i = std::find_if(effects.begin(), effects.end(), [idx](const EffectListElem &e){ return e.eff_nb == idx; }); // otherwise find current
+    size_t attempt{20};     // limit number of iterations
+    long n;
+    do {
+      n = random(1, effects.size()-1);
+    } while ( ( effects.at(n).flags.disabledInDemo || effects.at(n).flags.hidden) && --attempt);
+
+    return effects.at(n).eid;
   }
 
-  // какая-то ошибка, не нашли текущий эффект
+  // otherwise find current effect in a list
+  auto idx = _effItem.eid;
+  auto i = std::find_if(effects.begin(), effects.end(), [idx](const EffectsListItem_t &e){ return e.eid == idx; });
+
+  // не нашли текущий эффект, возвращаем случайный
   if (i == effects.end())
-    return idx;
+    return getNextEffIndexForDemo(true);
 
   // ищем следующий доступный эффект для демо после текущего
   while ( ++i != effects.end()){
-    if (i->canBeSelected() && i->enabledInDemo())
-      return i->eff_nb;
+    if (i->flags.hidden || i->flags.disabledInDemo)
+      continue;
+
+    return i->eid;
   }
 
-  // если не нашли, ищем с начала списка
+  // если не нашли, ищем с начала списка пропуская первую пустоту
   i = effects.begin();
   while ( ++i != effects.end()){
-    if (i->canBeSelected() && i->enabledInDemo())
-      return i->eff_nb;
+    if (i->flags.hidden || i->flags.disabledInDemo)
+      continue;
+
+    return i->eid;
   }
 
   // if nothing found, then return current effect
-  return curEff.num;
+  return _effItem.eid;
 }
 
-// предыдущий эффект, кроме canBeSelected==false
-uint16_t EffectWorker::getPrev(){
-  uint16_t firstfound = curEff.num;
-  bool found = false;
-  for(unsigned i=0; i<effects.size(); i++){
-      if(found && firstfound!=curEff.num) { // нашли эффект перед собой
-          break;
-      } else {
-          found = false; // перед текущим не нашлось подходящих, поэтому возьмем последний из canBeSelected()
-      }
-      if(effects[i].eff_nb==curEff.num && i!=0){ // нашли себя, но не первым :)
-          found = true;
-          continue;
-      }
-      if(effects[i].canBeSelected()){
-          firstfound = effects[i].eff_nb; // первый найденный, на случай если следующего после текущего не будет
-      }
-  }
-  return firstfound;
+// предыдущий эффект, кроме enabled==false
+effect_t EffectWorker::getPrev(){
+  if (!effects.size()) return effect_t::empty;
+
+  // find current effect in a list
+  auto idx = _effItem.eid;
+  auto i = std::find_if(effects.begin(), effects.end(), [idx](const EffectsListItem_t &e){ return e.eid == idx; });
+
+  // quite strange if there is no current effect found
+  if (i == effects.end())
+    return _effItem.eid;
+
+  // look for as may times as there are elements
+  size_t cnt = effects.size();
+  do {
+    // rollover if we are at begining
+    if (i == effects.begin())
+      i = effects.end();
+
+    --i;
+
+    if (!i->flags.hidden)
+      return i->eid;
+
+  } while (--cnt);
+
+  // last resort
+  return _effItem.eid;
 }
 
-// следующий эффект, кроме canBeSelected==false
-uint16_t EffectWorker::getNext(){
-  uint16_t firstfound = curEff.num;
-  bool found = false;
-  for(unsigned i=0; i<effects.size(); i++){
-      if(effects[i].eff_nb==curEff.num){ // нашли себя
-          found = true;
-          continue;
-      }
-      if(effects[i].canBeSelected()){
-          if(firstfound == curEff.num)
-              firstfound = effects[i].eff_nb; // первый найденный, на случай если следующего после текущего не будет
-          if(found) { // нашли эффект после себя
-              firstfound = effects[i].eff_nb;
-              break;
-          }
-      }
-  }
-  return firstfound;
+// следующий эффект, кроме enabled==false
+effect_t EffectWorker::getNext(){
+  if (!effects.size()) return effect_t::empty;
+
+  // find current effect in a list
+  auto idx = _effItem.eid;
+  auto i = std::find_if(effects.begin(), effects.end(), [idx](const EffectsListItem_t &e){ return e.eid == idx; });
+
+  // quite strange if there is no current effect found
+  if (i == effects.end())
+    return _effItem.eid;
+
+  // look for as may times as there are elements
+  size_t cnt = effects.size();
+  do {
+    ++i;
+    // rollover if we are at end
+    if (i == effects.end()){
+      i = effects.begin();
+      ++i;    // skip empty
+    }
+
+
+    if (!i->flags.hidden)
+      return i->eid;
+
+  } while (--cnt);
+
+  // last resort
+  return _effItem.eid;
 }
 
-void EffectWorker::switchEffect(uint16_t effnb){
+void EffectWorker::switchEffect(effect_t eid){
   // NOTE: if call has been made to the SAME effect number as the current one, than it MUST be force-switched anyway to recreate EffectCalc object
   // (it's required for a cases like new LedFB has been provided, etc)
-  if (effnb == curEff.num) return reset();
+  if (eid == _effItem.eid) return reset();
 
-  curEff.flushcfg();  // сохраняем конфигурацию предыдущего эффекта если были несохраненные изменения
-
-  LOGD(T_EffWrkr, printf, "switchEffect:%u\n", effnb);
-  workerset(effnb);
+  LOGD(T_EffWrkr, printf, "switchEffect:%u\n", eid);
+  _spawn(eid);
 }
 
-void EffectWorker::setEffectName(const String &name, EffectListElem*to){
+/*
+void EffectWorker::setEffectName(const String &name, EffectsListItem_t*to){
   if (name == T_EFFNAMEID[(uint8_t)to->eff_nb]){
     to->flags.renamed = false;
     return;   // имя совпадает с исходным значением во флеше, нечего переименовывать
@@ -704,27 +950,19 @@ void EffectWorker::setEffectName(const String &name, EffectListElem*to){
   }
 
   // load specific configuration
-  Effcfg cfg(to->eff_nb);
+  EffConfiguration cfg(to->eff_nb);
   cfg.effectName = name;
   cfg.autosave(true);
 }
-
-uint16_t EffectWorker::effIndexByList(uint16_t val) { 
-    for (uint16_t i = 0; i < effects.size(); i++) {
-        if (effects[i].eff_nb == val ) {
-            return i;
-        }
-    }
-    return 0;
-}
-
-bool Effcfg::_eff_ctrls_load_from_jdoc(JsonDocument &effcfg, std::vector<std::shared_ptr<UIControl>> &ctrls){
+*/
+#ifdef DISABLED_CODE
+bool EffConfiguration::_eff_ctrls_load_from_jdoc(JsonDocument &EffConfiguration, std::vector<std::shared_ptr<UIControl>> &ctrls){
   LOGD(T_Effect, print, "_eff_ctrls_load_from_jdoc(), ");
   //LOG(printf_P, PSTR("Load MEM: %s - CFG: %s - DEF: %s\n"), effectName.c_str(), doc[T_name].as<String>().c_str(), worker->getName().c_str());
   // вычитываею список контроллов
   // повторные - скипаем, нехватающие - создаем
   // обязательные контролы 0, 1, 2 - яркость, скорость, масштаб, остальные пользовательские
-  JsonArray arr = effcfg[T_ctrls].as<JsonArray>();
+  JsonArray arr = EffConfiguration[T_ctrls].as<JsonArray>();
   if (!arr) return false;
   LOGD(T_Effect, printf, "got arr of %u controls\n", arr.size());
 
@@ -787,68 +1025,53 @@ bool Effcfg::_eff_ctrls_load_from_jdoc(JsonDocument &effcfg, std::vector<std::sh
   //ctrls.sort([](std::shared_ptr<UIControl> &a, std::shared_ptr<UIControl> &b){ return (*a).getId() - (*b).getId();}); // сортирую по id
   return true;
 }
+#endif //DISABLED_CODE
 
 void EffectWorker::_load_default_fweff_list(){
   effects.clear();
+  effects.reserve(fw_effects_index.size());
 
-  for (uint16_t i = 0; i != 256U; i++){
-    if (!strlen(T_EFFNAMEID[i]))   // пропускаем индексы-"пустышки" без названия
-      continue;
-
-    //EffectListElem el(i, SET_ALL_EFFFLAGS);
-    effects.emplace_back(i, SET_ALL_EFFFLAGS);
+  for (const auto& i : fw_effects_index){
+    effects.emplace_back(i);
   }
+
   LOGD(T_EffWrkr, printf, "Loaded default list of effects, %u entries\n", effects.size());
 }
 
-void EffectWorker::_load_eff_list_from_idx_file(const char *folder){
-  // todo: check if supplied alternative path starts with '/'
-  String filename(folder ? folder : "");
-  filename += TCONST_eff_index; // append 'eff_index.json' filename
-
+/*
+void EffectWorker::_load_eff_list_from_idx_file(){
   // if index file does not exist - load default list from firmware tables
-  if (!LittleFS.exists(filename)){
-    LOGD(T_EffWrkr, printf, "eff index file %s missing, loading fw defaults\n", filename.c_str());
-    return _rebuild_eff_list();
+  if (!LittleFS.exists(F_effects_idx)){
+    LOGD(T_EffWrkr, printf, "eff index file %s missing, loading fw defaults\n", F_effects_idx);
+    return _load_default_fweff_list();
   }
 
   JsonDocument doc;  // document for loading effects index from file
 
-  if (!embuifs::deserializeFile(doc, filename.c_str())){
-    LittleFS.remove(filename);    // remove corrupted index file
-    return _rebuild_eff_list();
+  if (!embuifs::deserializeFile(doc, F_effects_idx)){
+    LittleFS.remove(F_effects_idx);    // remove corrupted index file
+    return _load_default_fweff_list();
   }
 
   JsonArray arr = doc.as<JsonArray>();
-  if(arr.isNull() || arr.size()==0){
-    LittleFS.remove(filename);    // remove corrupted index file
+  if(arr.size() == 0){
+    LittleFS.remove(F_effects_idx);    // remove corrupted index file
     LOGW(T_EffWrkr, println, "eff index file corrupted, loading fw defaults");
-    return _rebuild_eff_list();
+    return _load_default_fweff_list();
   }
 
   effects.clear();
   for (JsonObject item : arr){
-      if(item["n"].is<int>()){
-        effects.emplace_back(item["n"].as<uint16_t>(), item["f"].as<uint8_t>());
-      }
+      eff_flags_t f;
+      f.hidden = item[P_hidden];
+      f.disabledInDemo = item[T_demoDisabled];
+      effects.emplace_back( static_cast<effect_t>( item[T_idx].as<unsigned>() ), f);
       //LOG(printf_P,PSTR("%d : %d\n"),item["n"].as<uint16_t>(), item["f"].as<uint8_t>());
   }
-
-  //effects.sort([](EffectListElem &a, EffectListElem &b){ return a.eff_nb - b.eff_nb;}); // сортирую по eff_nb
-
-  int32_t chk = -1; // удаляю дубликаты
-  for (auto i = effects.begin(); i != effects.end(); ++i){
-    if((int32_t)(*i).eff_nb==chk){
-      effects.erase(i);
-      continue;
-    }
-    chk = (*i).eff_nb;
-  }
-
-  //effectsReSort();
   LOGD(T_EffWrkr, printf, "Loaded list of effects, %u entries\n", effects.size());
 }
-
+*/
+/*
 void EffectWorker::_rebuild_eff_list(const char *folder){
   LOGD(T_EffWrkr, println, "_rebuild_eff_list()");
   // load default fw list first
@@ -883,7 +1106,7 @@ void EffectWorker::_rebuild_eff_list(const char *folder){
 
     uint16_t nb = doc["nb"].as<uint16_t>();
     uint8_t flags = doc["flags"].as<uint8_t>();
-    EffectListElem *eff = getEffect(nb);
+    EffectsListItem_t *eff = getEffect(nb);
     if(eff){  // such effect exist in list, apply flags
       flags = eff->flags.mask;
     } else {    // no such eff in list, must be an effect copy
@@ -894,14 +1117,17 @@ void EffectWorker::_rebuild_eff_list(const char *folder){
 
   makeIndexFileFromList();
 }
+*/
 
 void EffectWorker::reset(){
-  if (worker) workerset(getCurrentEffectNumber());
+  if (worker) _spawn(getCurrentEffectNumber());
 }
 
 void EffectWorker::setLumaCurve(luma::curve c){
-  if (c == curEff.curve) return;  // quit if same value
-  curEff.curve = c; curEff.autosave();
+  if (c == _effItem.curve) return;  // quit if same value
+  _effItem.curve = c;
+
+  makeIndexFileFromList();
 };
 
 void EffectWorker::_start_runner(){
@@ -925,8 +1151,10 @@ void EffectWorker::_runnerHndlr(){
 #endif
 
   for (;;){
-    // if task has been delayed, than we can't keep up with desired frame rate, let's give other tasks time to run anyway
-    if ( xTaskDelayUntil( &xLastWakeTime, pdMS_TO_TICKS(interframe_delay_ms) ) ) taskYIELD();
+    if ( xTaskDelayUntil( &xLastWakeTime, pdMS_TO_TICKS(interframe_delay_ms) ) != pdTRUE ) {
+    // if task has not been delayed, than we can't keep up with desired frame rate, let's give other tasks time to run anyway
+      taskYIELD();
+    }
 
     if (!worker || !_status){
       worker.reset();
@@ -939,7 +1167,6 @@ void EffectWorker::_runnerHndlr(){
     // aquire mutex, if unseccessful then simply skip this run cycle
     if (!lock.try_lock())
       continue;
-    //std::unique_lock<std::mutex> lock(_mtx);
 
     if (worker->run()){
       // effect has rendered a data in buffer, need to call the engine draw it
@@ -955,7 +1182,6 @@ void EffectWorker::_runnerHndlr(){
         t = millis();
       }
 #endif
-
     }
     // effectcalc returned no data
 
@@ -969,87 +1195,69 @@ void EffectWorker::_runnerHndlr(){
 void EffectWorker::start(){
   _status = true;
   if (_runnerTask_h) return;    // we are already running
-  workerset(getCurrentEffectNumber());      // spawn an instance of effect and run the task
+  _spawn(getCurrentEffectNumber());      // spawn an instance of effect and run the task
 }
 
 void EffectWorker::stop(){
   _status = false;                  // task will self destruct on next iteration
-  //std::lock_guard<std::mutex> lock(_mtx);
-  //worker.reset();
-  //display.clear();
   display.canvasProtect(false);     // force clear persistent flag for frambuffer (if any) 
 }
 
-
-/*  *** EffectCalc  implementation  ***   */
-void EffectCalc::init(EFF_ENUM eff, std::vector<std::shared_ptr<UIControl>> *controls, LampState* state){
-  effect = eff;
-  ctrls = controls;
-  _lampstate = state;
-
-  for(unsigned i=0; i<controls->size(); i++){
-    setDynCtrl((*controls)[i].get());
-    // switch(i){
-    //   case 0:
-    //     setbrt((*controls)[i]->getVal().toInt());
-    //     break;
-    //   case 1:
-    //     setspd((*controls)[i]->getVal().toInt());
-    //     break;
-    //   case 2:
-    //     setscl((*controls)[i]->getVal().toInt());
-    //     break;
-    //   default:
-    //     setDynCtrl((*controls)[i]);
-    //     break;
-    // }
+void EffectWorker::applyControls(){
+  if (!worker) return;
+  for (const auto& i : _effCfg.getControls()){
+    //LOGV(T_EffWrkr, printf, "apply ctrl %u\n", i.getIdx());
+    worker->setControl(i.getIdx(), i.getScaledVal());
   }
-  active=true;
-  load();
 }
 
-/*
- *  первоначальная загрузка эффекта, автозапускается из init()
- */
-void EffectCalc::load(){}
+void EffectWorker::setControlValue(size_t idx, int32_t v){
+  if (idx >= _effCfg.getControls().size()){
+    LOGW(T_EffWrkr, printf, "attempt to save non-exiting control:%u\n", idx);
+    return;
+  }
+  
+  if (worker)
+    worker->setControl(idx, _effCfg.setValue(idx, v));
+  autoSaveConfig();
+};
 
-bool EffectCalc::run(){
-  return false;
-}
+////////////////////////////////////////////
+/*  *** EffectCalc  implementation  ***   */
+
 
 /**
  * проверка на холостой вызов для эффектов с доп. задержкой
  */
 bool EffectCalc::dryrun(float n, uint8_t delay){
   if((millis() - lastrun - delay) < (unsigned)((255 - speed) / n)) {
-    active=false;
-  } else {
-    lastrun = millis();
-    active=true;
+    return false;
   }
-
-  return !active;
+  
+  lastrun = millis();
+  return true;
 }
 
 /**
  * status - статус воркера, если работает и загружен эффект, отдает true
  */
-bool EffectCalc::status(){return active;}
+//bool EffectCalc::status(){return active;}
 
 /**
  * setDynCtrl - была смена динамического контрола, idx=3+
  * вызывается в UI, для реализации особого поведения (палитра и т.д.)...
  * https://community.alexgyver.ru/threads/wifi-lampa-budilnik-proshivka-firelamp_jeeui-gpl.2739/page-112#post-48848
  */
+/*
 String EffectCalc::setDynCtrl(UIControl*_val){
   if(!_val)
     return String();
   String ret_val = _val->getVal();
   //LOG(printf_P, PSTR("ctrlVal=%s\n"), ret_val.c_str());
   if ( usepalettes && starts_with(_val->getName().c_str(), TINTF_084) ){ // Начинается с Палитра
-    if(demoRndEffControls()){
-      paletteIdx = random(_val->getMin().toInt(),_val->getMax().toInt()+1);
-    } else
+    //if(demoRndEffControls()){
+    //  paletteIdx = random(_val->getMin().toInt(),_val->getMax().toInt()+1);
+    //} else
       paletteIdx = ret_val.toInt();
     palettemap(palettes, paletteIdx, _val->getMin().toInt(), _val->getMax().toInt());
     isCtrlPallete = true;
@@ -1060,9 +1268,9 @@ String EffectCalc::setDynCtrl(UIControl*_val){
     // не будем заниматься ерундой и включать/выключать микрофон из конфига эффекта, для этого есть глобальный флажек
     // 
   } else {
-    if(demoRndEffControls()){ // для режима рандомного ДЕМО, если это не микрофон - то вернуть рандомное значение в пределах диапазона значений
-      ret_val = String(random(_val->getMin().toInt(), _val->getMax().toInt()+1));
-    }
+    //if(demoRndEffControls()){ // для режима рандомного ДЕМО, если это не микрофон - то вернуть рандомное значение в пределах диапазона значений
+    //  ret_val = String(random(_val->getMin().toInt(), _val->getMax().toInt()+1));
+    //}
   }
 
   switch(_val->getId()){
@@ -1078,36 +1286,63 @@ String EffectCalc::setDynCtrl(UIControl*_val){
   return ret_val;
 }
 
+*/
 // Load palletes into array
 void EffectCalc::palettesload(){
+  palettes.clear();
   palettes.reserve(FASTLED_PALETTS_COUNT);
-  palettes.push_back(&AuroraColors_p/*RainbowStripeColors_p*/);
+  palettes.push_back(&AcidColors_p);
+  palettes.push_back(&AlcoholFireColors_p);
+  palettes.push_back(&AuroraColors_p);
+  palettes.push_back(&AutumnColors_p);
+  palettes.push_back(&CloudColors_p);
+  palettes.push_back(&CopperFireColors_p);
+  palettes.push_back(&EveningColors_p);
   palettes.push_back(&ForestColors_p);
-  palettes.push_back(&NormalFire_p);
+  palettes.push_back(&HeatColors_p);
+  palettes.push_back(&HolyLightsColors_p);
   palettes.push_back(&LavaColors_p);
+  palettes.push_back(&LithiumFireColors_p);
+  palettes.push_back(&NormalFire_p);
   palettes.push_back(&OceanColors_p);
   palettes.push_back(&PartyColors_p);
-  palettes.push_back(&RainbowColors_p);
-  palettes.push_back(&HeatColors_p);
-  palettes.push_back(&CloudColors_p);
-  palettes.push_back(&EveningColors_p);
-  palettes.push_back(&LithiumFireColors_p);
-  palettes.push_back(&WoodFireColors_p);
-  palettes.push_back(&SodiumFireColors_p);
-  palettes.push_back(&CopperFireColors_p);
-  palettes.push_back(&AlcoholFireColors_p);
-  palettes.push_back(&RubidiumFireColors_p);
   palettes.push_back(&PotassiumFireColors_p);
-  palettes.push_back(&AutumnColors_p);
-  palettes.push_back(&AcidColors_p);
+  palettes.push_back(&RainbowColors_p);
+  palettes.push_back(&RubidiumFireColors_p);
+  palettes.push_back(&SodiumFireColors_p);
   palettes.push_back(&StepkosColors_p);
-  palettes.push_back(&HolyLightsColors_p);
   palettes.push_back(&WaterfallColors_p);
-
-  usepalettes = true; // активируем "авто-переключатель" палитр при изменении scale/R
-  scale2pallete();    // выставляем текущую палитру
+  palettes.push_back(&WoodFireColors_p);
 }
 
+
+void EffectCalc::setControl(size_t idx, int32_t value){
+  switch (idx){
+    // speed control
+    case 0:
+      speed = value;
+      LOGD(T_Effect, printf, "Eff speed:%d\n", value);
+      break;
+    // scale control
+    case 1:
+      scale = value;
+      LOGD(T_Effect, printf, "Eff scale:%d\n", value);
+      break;
+    // pelette switch
+    case 2:
+      if (value >= palettes.size()){
+        LOGV(T_Effect, printf, "palette idx out of bound:%d of %u\n", value, palettes.size());
+        return;
+      }
+      curPalette = palettes.at(value);
+      LOGD(T_Effect, printf, "Eff pallete:%d\n", value);
+      break;
+
+    default :;
+  }
+}
+
+#ifdef DISABLED_CODE
 /**
  * palletemap - меняет указатель на текущую палитру из набора в соответствие с "ползунком"
  * @param _val - байт "ползунка"
@@ -1157,11 +1392,11 @@ const String& EffectCalc::getCtrlVal(unsigned idx) {
     } else {
         for(unsigned i = 3; i<ctrls->size(); i++){
             if((*ctrls)[i]->getId()==idx){
-                if(demoRndEffControls()){
-                    dummy = random((*ctrls)[i]->getMin().toInt(),(*ctrls)[i]->getMax().toInt()+1);
-                    return dummy;
-                }
-                else
+                //if(demoRndEffControls()){
+                //    dummy = random((*ctrls)[i]->getMin().toInt(),(*ctrls)[i]->getMax().toInt()+1);
+                //    return dummy;
+                //}
+                //else
                     return (*ctrls)[i]->getVal();
             }
         }
@@ -1212,16 +1447,18 @@ void build_eff_names_list_file(EffectWorker &w, bool full){
 
   do {
     // skip effects that are excluded from selection list (main page)
-    if (!full && !itr->flags.canBeSelected)
+    if (!full && itr->flags.hidden)
       continue;
 
-    String effname;
+    // effect's 
+    String effname = fw_effects_nameindex.at( e2int(itr->eff_nb) );
     // if effect was renamed, than read it's name from json, otherwise from flash
+/*
     if (itr->flags.renamed)
       w.loadeffname(effname, itr->eff_nb);
     else
       effname = T_EFFNAMEID[(uint8_t)itr->eff_nb];
-    
+*/
 
     // {"label":"50. Прыгуны","value":"50"}, => 30 bytes + NameLen (assume 35 to be safe)
     #define LIST_JSON_OVERHEAD  35
@@ -1235,9 +1472,8 @@ void build_eff_names_list_file(EffectWorker &w, bool full){
 
     // create number prefix for effect name in list, i.e.  '8. '
     // for effect copies it will append clone number suffix, i.e. '75.0 '
-    String name(EFF_NUMBER(itr->eff_nb));
-    //name += effname + MIC_SYMBOL(itr->eff_nb);    // add microphone symbol for effects that support it
-    //name + (eff->eff_nb>255 ? String(" (") + String(eff->eff_nb&0xFF) + String(")") : String("")) + String(". ")
+    //String name(EFF_NUMBER(itr->eff_nb));
+    String name(e2int(itr->eff_nb));
 
     offset += sprintf_P(buff->data()+offset, PSTR("{\"label\":\"%s\",\"value\":\"%d\"},"), name.c_str(), itr->eff_nb);
   } while (++itr != w.getEffectsList().cend());
@@ -1250,3 +1486,5 @@ void build_eff_names_list_file(EffectWorker &w, bool full){
   LittleFS.rename(TCONST_eff_list_json_tmp, full ? TCONST_eff_fulllist_json : TCONST_eff_list_json);
   LOGD(T_EffWrkr, printf, "\nGENERATE effects name json file for GUI(%s): %lums\n", full ? "brief" : "full", millis()-s);
 }
+
+#endif

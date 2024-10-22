@@ -65,7 +65,7 @@ void getset_brightness(Interface *interf, JsonObjectConst data, const char* acti
         interf->json_frame_value();
         interf->value(A_dev_brightness, myLamp.getBrightness());
         interf->value(V_dev_brtscale, myLamp.getBrightnessScale());
-        interf->value(A_dev_lcurve, e2int(myLamp.effwrkr.getEffCfg().curve));
+        //interf->value(A_dev_lcurve, e2int(myLamp.effwrkr.getEffCfg().curve));
         interf->json_frame_flush();
     }
 }
@@ -115,15 +115,10 @@ void effect_switch(Interface *interf, JsonObjectConst data, const char* action){
     if (action_view.compare(A_effect_switch_prev) == 0)
         return run_action(ra::eff_prev);
 
-    uint16_t num = data[A_effect_switch_idx];
-    EffectListElem *eff = myLamp.effwrkr.getEffect(num);
-    if (!eff) return;                                       // some unknown effect requested, quit
+    size_t num = data[A_effect_switch_idx];
 
-    // сбросить флаг случайного демо
-    //myLamp.setDRand(myLamp.getLampFlagsStuct().dRand);
-
-    LOGD(T_WebUI, printf, "switch to:%d, LampPWR:%u\n", eff->eff_nb, myLamp.isLampOn());
-    myLamp.switcheffect(effswitch_t::num, eff->eff_nb);
+    LOGD(T_WebUI, printf, "switch to:%u, LampPWR:%u\n", num, myLamp.isLampOn());
+    myLamp.switcheffect(effswitch_t::num, static_cast<effect_t>(num) );
 }
 
 /**
@@ -133,48 +128,14 @@ void effect_switch(Interface *interf, JsonObjectConst data, const char* action){
  * @param data 
  * @param action 
  */
-void set_effects_dynCtrl(Interface *interf, JsonObjectConst data, const char* action){
-    LOGV(T_WebUI, printf, "set_effects_dynCtrl %s\n", action ? action : "empty");
-
-    std::vector<std::shared_ptr<UIControl>>&controls = myLamp.effwrkr.getControls();
+void set_effect_control(Interface *interf, JsonObjectConst data, const char* action){
+    LOGI(T_WebUI, printf, "set_effect_control %s\n", action ? action : T_empty);
 
     std::string_view a(action);
-    a.remove_prefix(std::string_view(T_effect_dynCtrl).length()); // chop off "eff_dynCtrl"
-    int idx = strtol(a.data(), NULL, 10);
+    a.remove_prefix(std::string_view(A_effect_control).length()-1); // chop off "effect_control_"
+    int idx = std::strtol(a.data(), NULL, 10);
 
-    if (!data || !data.size()){
-        if (!interf && !action) return;     // return if requred arguments are null
-
-        
-        for(unsigned i=1; i<controls.size();i++){       // I skip first control here [0] as it's the old 'individual brightness'
-            if (controls[i]->getId() == idx){
-                // found requested control index, let's reply it's value!
-                interf->json_frame_value();
-                interf->value( action, controls[i]->getVal() );
-                interf->json_frame_flush();
-                return;
-            }
-        }
-        return;
-    }
-
-
-    // else it's a "set" request to set a value
-    for(unsigned i=0; i<controls.size(); i++){
-        LOGV(T_WebUI, printf, "Lookup Eff control #%u, %s\n", controls[i]->getId(), controls[i]->getName().c_str());
-
-        if( idx == controls[i]->getId() ){
-            //LOGI(T_WebUI, printf, "Eff control #%u found\n", i);
-            if (data[action].is<bool>() ){
-                controls[i]->setVal(data[action] ? "1" : "0");     // больше стрингов во славу Богу стрингов!
-            } else
-                controls[i]->setVal(data[action]); // для всех остальных
-
-            resetAutoTimers(true);
-            myLamp.effwrkr.setDynCtrl(controls[i].get());
-            break;
-        }
-    }
+    myLamp.effwrkr.setControlValue(idx, data[action]);
 }
 
 /*
@@ -183,7 +144,7 @@ void set_effects_dynCtrl(Interface *interf, JsonObjectConst data, const char* ac
 void set_ledstrip(Interface *interf, JsonObjectConst data, const char* action){
     {
         JsonDocument doc;
-        if (!embuifs::deserializeFile(doc, TCONST_fcfg_display)) doc.clear();
+        if (embuifs::deserializeFile(doc, TCONST_fcfg_display)) doc.clear();
 
         // if this is a request with no data, then just provide existing configuration and quit
         if (!data || !data.size()){
@@ -255,7 +216,7 @@ void set_ledstrip(Interface *interf, JsonObjectConst data, const char* action){
 void set_hub75(Interface *interf, JsonObjectConst data, const char* action){
     {
         JsonDocument doc;
-        if (!embuifs::deserializeFile(doc, TCONST_fcfg_display)) doc.clear();
+        if (embuifs::deserializeFile(doc, TCONST_fcfg_display)) doc.clear();
 
         // if this is a request with no data, then just provide existing configuration and quit
         if (!data || !data.size()){
@@ -288,7 +249,7 @@ void set_hub75(Interface *interf, JsonObjectConst data, const char* action){
 void getset_tm1637(Interface *interf, JsonObjectConst data, const char* action){
     {
         JsonDocument doc;
-        if (!embuifs::deserializeFile(doc, TCONST_fcfg_display)) doc.clear();
+        if (embuifs::deserializeFile(doc, TCONST_fcfg_display)) doc.clear();
 
         // if this is a request with no data, then just provide existing configuration and quit
         if (!data || !data.size()){

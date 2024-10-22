@@ -24,6 +24,8 @@
 #include "StreamUtils.h"
 #include "char_const.h"
 
+#ifdef DISABLED_CODE
+
 namespace fshlpr{
 
     const String getEffectCfgPath(const uint16_t nb, const char *folder) {
@@ -53,13 +55,17 @@ namespace fshlpr{
      */
     File& openIndexFile(File& fhandle, const char *folder){
         String filename;
-        if (folder && folder[0]){ // если указан каталог и первый символ не пустой, то берем как есть
+        if (folder && folder[0]){ // если указан каталог и первый символ не пустой, то начинаем путь с переданного каталога
             filename.concat(folder);
-        } else
-            filename.concat(TCONST_eff_index);
+        }
+
+        // добавляем имя индекс-файла
+        filename.concat(TCONST_eff_index);
         
         fhandle = LittleFS.open(filename, "w");
         return fhandle;
     }
 
 }
+
+#endif
