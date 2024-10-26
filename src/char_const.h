@@ -364,19 +364,7 @@ static constexpr const char* TCONST_Version = "Version";
 static constexpr const char* TCONST_White = "White";
 static constexpr const char* TCONST__5f9ea0 = "#5f9ea0";
 static constexpr const char* TCONST__708090 = "#708090";
-static constexpr const char* TCONST__backup_btn_ = "/backup/btn/";
-static constexpr const char* TCONST__backup_evn_ = "/backup/evn/";
-static constexpr const char* TCONST__backup_glb_ = "/backup/glb/";
-static constexpr const char* TCONST__backup_idx = "/backup/idx";
-static constexpr const char* TCONST__backup_idx_ = "/backup/idx/";
 static constexpr const char* TCONST__ffffff = "#ffffff";
-static constexpr const char* TCONST__tmplist_tmp = "/tmplist.tmp";
-static constexpr const char* TCONST__tmpqlist_tmp = "/tmpqlist.tmp";
-// текст элементов интерфейса
-//static constexpr const char* I_zmeika = "змейка";
-//static constexpr const char* I_vert = "вертикальная";
-//static constexpr const char* I_vflip = "зеркальные столбцы";
-//static constexpr const char* I_hflip = "зеркальные строки";
 
 /* ***  conf variable names *** */
 

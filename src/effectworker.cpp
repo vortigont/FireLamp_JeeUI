@@ -369,6 +369,10 @@ void EffectWorker::_spawn(effect_t eid){
   // create a new instance of effect child
   switch (eid){
 
+   case effect_t::empty :
+    worker = std::make_unique<EffectNone>(canvas);
+    break;
+
    case effect_t::magma :
     worker = std::make_unique<EffectMagma>(canvas);
     LOGD(T_EffWrkr, println, "Spawn magma");

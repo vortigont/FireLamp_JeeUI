@@ -2214,6 +2214,81 @@
           "label":"🔙 Выход"
         }
       ]
+    },
+    "effTitle":{
+      "section": "ui_page_effects",
+      "label": "Эффекты",
+      "main": true,
+      "block": [
+        {
+          "section": "switches",
+          "line": true,
+          "block": [
+            {
+              "html": "input",
+              "id": "dev_pwrswitch",
+              "type": "checkbox",
+              "label": "Включить",
+              "onChange": true
+            },
+            {
+              "html": "button",
+              "type": 0,
+              "id": "ui_block_switches",
+              "label": "Выключатели..."
+            }
+          ]
+        },
+        {
+          "html": "input",
+          "id": "dev_brightness",
+          "type": "range",
+          "label": "Яркость",
+          "min": 0,
+          "max": 20,
+          "onChange": true
+        },
+        {
+          "section":"uidata",
+          "block":[
+            {
+              "action":"pick",
+              "key":"lampui.dynamic.efflist",
+              "hint":"dynamicaly generated drop-down list with effect selection",
+              "alt":{
+                "id":"eff_sw_idx",
+                "html":"comment",
+                "label":"generating list of available effects..."
+              }
+            }
+          ]
+        },
+        {
+          "section": "eff_switch_btns",
+          "line": true,
+          "block": [
+            {
+              "id": "eff_sw_prev",
+              "html":"button",
+              "color": "green",
+              "type":0,
+              "label":"<<<"
+            },
+            {
+              "id": "eff_sw_next",
+              "html":"button",
+              "color": "green",
+              "type":0,
+              "label":">>>"
+            }
+          ]
+        },
+        {
+          "section": "eff_ctrls",
+          "hint":"a placeholder for dynamically loaded effect controls",
+          "block":[]
+        }
+      ]
     }
   },
 
@@ -2670,13 +2745,6 @@
               "onChange": true
             },
             {
-              "id": "dev_mike",
-              "html": "input",
-              "label": "🎤 Микрофон",
-              "type": "checkbox",
-              "onChange": true
-            },
-            {
               "id": "mp3mute",
               "html": "input",
               "label": "🔇 Откл. мелодии",
@@ -2737,5 +2805,114 @@
         }
       ]
     }
-  }
+  },
+
+  "effControls":{
+    "magma":{
+      "section":"eff_ctrls",
+      "replace":true,
+      "block":[
+        {
+          "section":"uidata",
+          "block":[
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.speed"    
+            },
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.scale"    
+            },
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.palette12"    
+            }
+          ]
+        }
+      ]
+    }
+  },
+
+  "effCommon":{
+    "speed":{
+        "html": "input",
+        "id": "eff_control_0",
+        "type": "range",
+        "label": "Скорость",
+        "min": 1,
+        "max": 10,
+        "value":5,
+        "onChange": true
+    },
+    "scale":{
+      "html": "input",
+      "id": "eff_control_1",
+      "type": "range",
+      "label": "Масштаб",
+      "min": 1,
+      "max": 10,
+      "value":5,
+      "onChange": true
+    },
+    "palette12":{
+      "id":"eff_control_2",
+      "html":"select",
+      "label":"Палитры",
+      "onChange": true,
+      "value":0,
+      "section":"options",
+      "block":[
+        {
+          "value":0,
+          "label":"Magma"
+        },
+        {
+          "value":1,
+          "label":"Copper Fire"
+        },
+        {
+          "value":2,
+          "label":"Normal Fire"
+        },
+        {
+          "value":3,
+          "label":"NormalFire2"
+        },
+        {
+          "value":4,
+          "label":"Normal Fire 3"
+        },
+        {
+          "value":5,
+          "label":"Sodium Fire"
+        },
+        {
+          "value":6,
+          "label":"Heat Colors 2"
+        },
+        {
+          "value":7,
+          "label":"Potassium Fire"
+        },
+        {
+          "value":8,
+          "label":"Alcohol Fire"
+        },
+        {
+          "value":9,
+          "label":"LithiumFire"
+        },
+        {
+          "value":10,
+          "label":"WoodFire"
+        },
+        {
+          "value":11,
+          "label":"Waterfall"
+        }
+      ]
+    }
+  },
+
+  "dynamic":{}
 }

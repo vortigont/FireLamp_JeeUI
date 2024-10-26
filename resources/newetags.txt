@@ -1,0 +1,4 @@
+https://github.com/vortigont/EmbUI/raw/v3.2/resources/data.zip "e463c0f9db9450860f9daa9abe6d9728ba5f721ccbcce139a10b8ef3b23ef2ce"
+https://github.com/vortigont/EmbUI/raw/v3.2/resources/html/js/lib.js "8894e86c682c0d6d5c92d5a5dbc803aac3284e9fc9a6b588e9c41d2899d2d14e"
+https://github.com/vortigont/EmbUI/raw/v3.2/resources/html/js/maker.js "95f878061b4a3cb40349a11793c707c0917cd9f59d779a0190992b14899d2e4b"
+https://github.com/vortigont/EmbUI/raw/v3.2/resources/html/js/dyncss.js "52fe6ff15fdeca3467993c471144d1ee1d93e3c85539d087d6abb1f3f67b3b73"

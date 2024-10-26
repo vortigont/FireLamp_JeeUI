@@ -1,0 +1,13 @@
+{
+  "empty":{
+    "ctrls":[
+    ]
+  },
+  "magma":{
+    "ctrls":[
+      {"label":"speed"},
+      {"label":"scale"},
+      {"label":"pallete", "min":0, "max":11}
+    ]
+  }
+}

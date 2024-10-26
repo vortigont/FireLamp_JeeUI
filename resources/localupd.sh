@@ -21,7 +21,7 @@ compress_args="-9"
 
 
 echo "Update local resources"
-lamp_files='index.html js/ui_lamp.json favicon.ico css/wp_dark.svg css/wp_light.svg'
+lamp_files='index.html js/ui_lamp.json js/ui_lamp.i18n.json favicon.ico css/wp_dark.svg css/wp_light.svg'
 for f in ${lamp_files}
 do
     updlocalarchive $f

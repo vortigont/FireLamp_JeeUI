@@ -72,8 +72,65 @@ function omnicron_tasks_load(arg){
   r.make(pkg);
 }
 
+/**
+ * generates UIData block with a drop-down effects selector
+ * based on effect index on MCU's FS
+ * translates 
+ */
+async function make_effect_list(){
+  let effidx = await fetch('/effects_idx.json', {method: 'GET'});
+  if (!effidx.ok) return;
+  effidx = await effidx.json();
+  let i18ndata = await fetch('/js/ui_lamp.i18n.json', {method: 'GET'});
+  if (!i18ndata.ok) return;
+  i18ndata = await i18ndata.json();
+
+  let efflist = {
+      "id":"eff_sw_idx",
+      "html":"select",
+      "label":"Эффекты",
+      "onChange": true,
+      "value":0,
+      "section":"options",
+      "block":[]
+  }
+
+  effidx.forEach(
+    function(v, idx, array){
+      if (v.hidden) return
+      efflist.block.push({"label":i18ndata.ru.effNames[v.label], "value":v.idx})
+    }
+  )
+
+  _.set(uiblocks, 'lampui.dynamic.efflist', efflist)
+  console.log("Update effects list:", uiblocks.lampui.dynamic.efflist);
+
+  let obj = {
+    "section":"content",
+    "block":[
+      efflist
+    ]
+  }
+  // update ubject on the page
+  var rdr = this.rdr = render();
+  rdr.content(obj)
+  // request controls refresh from MCU
+  ws.send_post("eff_ctrls", {});
+}
 
 // add our fuction to custom funcs that could be called for js_func frames
 customFuncs["alarm_items_load"] = alarm_items_load;
 customFuncs["alarm_item_set"] = alarm_item_set;
 customFuncs["omnicron_tasks_load"] = omnicron_tasks_load;
+customFuncs["make_effect_list"] = make_effect_list;
+
+// load Informer's App UIData
+window.addEventListener("load", async function(ev){
+	let response = await fetch("/js/ui_lamp.json", {method: 'GET'});
+	if (response.ok){
+		response = await response.json();
+		uiblocks['lampui'] = response;
+	}
+
+}.bind(window)
+);
