@@ -3029,7 +3029,7 @@ void EffectSnake::Snake::reset()
       i.x = i.y = 0;
     }
 }
-
+#endif  // DISABLED_CODE
 
 
 //------------ Эффект "Nexus"
@@ -3045,15 +3045,25 @@ void EffectNexus::reload() {
 }
 
 // !++
-String EffectNexus::setDynCtrl(UIControl*_val) {
-  if(_val->getId()==1) speedFactor = EffectMath::fmap(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 0.1, .33) * getBaseSpeedFactor();
-  else if(_val->getId()==3){
-    _scale = EffectCalc::setDynCtrl(_val).toInt();
-    nxdots.assign(_scale, Nexus());
-    reload();
+void EffectNexus::setControl(size_t idx, int32_t value) {
+  switch (idx){
+    // speed
+    case 0:
+      speedFactor = EffectMath::fmap(value, 1, 10, 0.05, 1.33);
+      //LOGV(T_Effect, printf, "Nexus speed=%d, speedfactor=%2.2f\n", value, speedFactor);
+      break;
+    // scale
+    case 1: {
+      scale = map(value, 1, 10, NEXUS_MIN, NEXUS_MAX);
+      LOGV(T_Effect, printf, "Nexus scale=%d\n", scale);
+      nxdots.assign(scale, Nexus());
+      reload();
+      break;
+    }
+
+    default:
+      EffectCalc::setControl(idx, value);
   }
-  else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
-  return String();
 }
 
 void EffectNexus::load() {
@@ -3143,7 +3153,7 @@ void EffectNexus::resetDot(Nexus &nx) {
   } 
 }
 
-
+#ifdef DISABLED_CODE
 //-------- Эффект "Детские сны"
 // (c) Stepko https://editor.soulmatelights.com/gallery/505
 // !++

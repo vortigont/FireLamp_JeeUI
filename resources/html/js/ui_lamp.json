@@ -2825,7 +2825,30 @@
             },
             {
               "action":"pick",
-              "key":"lampui.effCommon.palette12"    
+              "key":"lampui.effCommon.palette12"
+            }
+          ]
+        }
+      ]
+    },
+    "nexus":{
+      "section":"eff_ctrls",
+      "replace":true,
+      "block":[
+        {
+          "section":"uidata",
+          "block":[
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.speed"    
+            },
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.scale"    
+            },
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.palette"
             }
           ]
         }
@@ -2853,6 +2876,108 @@
       "max": 10,
       "value":5,
       "onChange": true
+    },
+    "palette":{
+      "id":"eff_control_2",
+      "html":"select",
+      "label":"Палитры",
+      "onChange": true,
+      "value":0,
+      "section":"options",
+      "block":[
+        {
+          "value":0,
+          "label":"Acid"
+        },
+        {
+          "value":1,
+          "label":"Alcohol Fire"
+        },
+        {
+          "value":2,
+          "label":"Aurora"
+        },
+        {
+          "value":3,
+          "label":"Autumn"
+        },
+        {
+          "value":4,
+          "label":"Cloud"
+        },
+        {
+          "value":5,
+          "label":"Copper Fire"
+        },
+        {
+          "value":6,
+          "label":"Evening"
+        },
+        {
+          "value":7,
+          "label":"Forest"
+        },
+        {
+          "value":8,
+          "label":"Heat"
+        },
+        {
+          "value":9,
+          "label":"Holy Lights"
+        },
+        {
+          "value":10,
+          "label":"Lava"
+        },
+        {
+          "value":11,
+          "label":"Lithium Fire"
+        },
+        {
+          "value":12,
+          "label":"Neon"
+        },
+        {
+          "value":13,
+          "label":"Normal Fire"
+        },
+        {
+          "value":14,
+          "label":"Ocean"
+        },
+        {
+          "value":15,
+          "label":"Party"
+        },
+        {
+          "value":16,
+          "label":"Potassium"
+        },
+        {
+          "value":17,
+          "label":"Rainbow"
+        },
+        {
+          "value":18,
+          "label":"Rubidium Fire"
+        },
+        {
+          "value":19,
+          "label":"Sodium Fire"
+        },
+        {
+          "value":20,
+          "label":"Stepkos"
+        },
+        {
+          "value":21,
+          "label":"Waterfall"
+        },
+        {
+          "value":22,
+          "label":"Wood Fire"
+        }
+      ]
     },
     "palette12":{
       "id":"eff_control_2",

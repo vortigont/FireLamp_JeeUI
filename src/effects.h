@@ -722,11 +722,13 @@ public:
     void load() override;
     bool run() override;
 };
+#endif  // DISABLED_CODE
 
 //------------ Эффект "Nexus"
 // База паттерн "Змейка" из проекта Аврора, 
 // перенос и переписан - kostyamat
 #define NEXUS_MIN   5
+#define NEXUS_MAX   100
 class EffectNexus: public EffectCalc {
   struct Nexus{
     float posX{0};
@@ -738,13 +740,12 @@ class EffectNexus: public EffectCalc {
 
     bool white = false;
     byte type = 1;
-    uint8_t _scale = 1;
     bool randColor = false;
     std::vector<Nexus> nxdots{std::vector<Nexus>(NEXUS_MIN, Nexus())};
 
     void reload();
     void resetDot(Nexus &nx);
-    String setDynCtrl(UIControl*_val) override;
+    void setControl(size_t idx, int32_t value) override;
 
   public:
     EffectNexus(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
@@ -752,7 +753,7 @@ class EffectNexus: public EffectCalc {
     void load() override;
 };
 
-
+#ifdef DISABLED_CODE
 //-------- Эффект "Детские сны"
 // (c) Stepko https://editor.soulmatelights.com/gallery/505
 class EffectSmokeballs: public EffectCalc {

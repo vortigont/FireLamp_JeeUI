@@ -378,6 +378,10 @@ void EffectWorker::_spawn(effect_t eid){
     LOGD(T_EffWrkr, println, "Spawn magma");
     break;
 
+  case effect_t::nexus :
+    worker = std::make_unique<EffectNexus>(canvas);
+    break;
+
 /*
   case EFF_ENUM::EFF_COMET :
     worker = std::make_unique<EffectComet>(canvas);
@@ -485,9 +489,6 @@ void EffectWorker::_spawn(effect_t eid){
     break;
   case EFF_ENUM::EFF_SNAKE :
     worker = std::make_unique<EffectSnake>(canvas);
-    break;
-  case EFF_ENUM::EFF_NEXUS :
-    worker = std::make_unique<EffectNexus>(canvas);
     break;
   case EFF_ENUM::EFF_MAZE :
     worker = std::make_unique<EffectMaze>(canvas);
@@ -909,6 +910,7 @@ void EffectCalc::palettesload(){
   palettes.push_back(&HolyLightsColors_p);
   palettes.push_back(&LavaColors_p);
   palettes.push_back(&LithiumFireColors_p);
+  palettes.push_back(&NeonColors_p);
   palettes.push_back(&NormalFire_p);
   palettes.push_back(&OceanColors_p);
   palettes.push_back(&PartyColors_p);
