@@ -913,3 +913,15 @@ public:
 
 
 
+// ========== Эффект "Эффектопад"
+// совместное творчество юзеров форума https://community.alexgyver.ru/
+class EffectEverythingFall : public EffectCalc {
+private:
+    Vector2D<uint8_t> heat{ Vector2D<uint8_t>(fb->w(),fb->h()) };
+
+public:
+    EffectEverythingFall(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
+    void load() override;
+    bool run() override;
+};
+

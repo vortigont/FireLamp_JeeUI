@@ -243,18 +243,6 @@ public:
     String setDynCtrl(UIControl*_val) override;
 };
 
-// ========== Эффект "Эффектопад"
-// совместное творчество юзеров форума https://community.alexgyver.ru/
-class EffectEverythingFall : public EffectCalc {
-private:
-    Vector2D<uint8_t> heat{ Vector2D<uint8_t>(fb->w(),fb->h()) };
-
-public:
-    EffectEverythingFall(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
-    void load() override;
-    bool run() override;
-};
-
 // ============= FIRE 2012 /  ОГОНЬ 2012 ===============
 // based on FastLED example Fire2012WithPalette: https://github.com/FastLED/FastLED/blob/master/examples/Fire2012WithPalette/Fire2012WithPalette.ino
 // v1.0 - Updating for GuverLamp v1.7 by SottNick 17.04.2020

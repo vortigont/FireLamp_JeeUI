@@ -3527,3 +3527,49 @@ void EffectRacer::drawStarF(float x, float y, float biggy, float little, int16_t
     EffectMath::drawLineF(x + ((little * (sin8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128), y + ((little * (cos8(i * radius2 - radius2 / 2 - dangle) - 128.0)) / 128), x + ((biggy * (sin8(i * radius2 - dangle) - 128.0)) / 128), y + ((biggy * (cos8(i * radius2 - dangle) - 128.0)) / 128), color, fb);
   }
 }
+
+
+// ========== Эффект "Эффектопад"
+// совместное творчество юзеров форума https://community.alexgyver.ru/
+void EffectEverythingFall::load(){
+    palettesload();    // подгружаем дефолтные палитры
+}
+
+// SPARKING: What chance (out of 255) is there that a new spark will be lit?
+// Higher chance = more roaring fire.  Lower chance = more flickery fire.
+// Default 120, suggested range 50-200.
+#define SPARKINGNEW 80U // 50 // 30 // 120 // 90 // 60
+bool EffectEverythingFall::run(){
+  if (dryrun(4.0))
+    return false;
+
+  uint8_t coolingnew = map (scale, 1, 255, 93, 10);
+
+  for (uint8_t x = 0; x < fb->w(); x++) {
+    // Step 1.  Cool down every cell a little
+    for (uint8_t i = 0; i < fb->h(); i++) {
+      heat.at(x,i) = qsub8(heat.at(x,i), random(0, coolingnew));
+    }
+
+    // Step 2.  Heat from each cell drifts 'up' and diffuses a little
+    for (unsigned int k = fb->maxHeightIndex(); k >= 2; k--) {
+      heat.at(x,k) = (heat.at(x, k - 1) + heat.at(x, k - 2) + heat.at(x, k - 2)) / 3;
+    }
+
+    // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
+    if (random8() < SPARKINGNEW) {
+      int y = random(2);
+      heat.at(x,y) = qadd8(heat.at(x,y), random(160, 255));
+    }
+
+    // Step 4.  Map from heat cells to LED colors
+    for (uint8_t j = 0; j < fb->h(); j++) {
+      // Scale the heat value from 0-255 down to 0-240
+      // for best results with color palettes.
+      byte colorindex = scale8(heat.at(x,j), 240);
+      nblend(fb->at(x, fb->maxHeightIndex() - j), ColorFromPalette(*curPalette, colorindex /*, heat[x][j]*/), 50);
+    }
+  }
+  return true;
+}
+
