@@ -132,19 +132,6 @@ class EffConfiguration {
 
 
     /**
-     * @brief deserialise effect configuration from a file based on eff number
-     * if file is missing/damaged or it's versions is older than firmware's default
-     * it will be reset to defaults
-     * 
-     * @param nb - effect number
-     * @param folder - folder to load effects from, must be absolute path with leading/trailing slashes, default is '/eff/'
-     * @param jdoc - document to place deserialized obj
-     * @return true - on success
-     * @return false - on failure
-     */
-    //bool _eff_cfg_deserialize(JsonDocument &doc, const char *folder = NULL);
-
-    /**
      * @brief serialize and write struct to json file
      * 
      * @param folder 
@@ -212,15 +199,6 @@ public:
      * @return int 
      */
     bool loadEffconfig(effect_t effid);
-
-    /**
-     * @brief create Effect's default configuration json file
-     * it (over)writes json file with effect's default configuration
-     * 
-     * @param nb - eff enum
-     * @param filename - filename to write
-     */
-    //static void create_eff_default_cfg_file(effect_t nb, String &filename);
 
     /**
      * @brief write configuration to json file on FS
@@ -394,15 +372,6 @@ private:
      */
     void _load_eff_list_from_idx_file();
 
-    /**
-     * @brief rebuild list of effects based on json configs on filesystem
-     * loads a list of default effects from firmware, then apply per effect
-     * configs from fs (if present)
-     * 
-     * @param folder 
-     */
-    //void _rebuild_eff_list(const char *folder = NULL);
-
     // static wrapper for _runner Task to call handling class member
     static inline void _runnerTask(void* pvParams){ ((EffectWorker*)pvParams)->_runnerHndlr(); }
 
@@ -415,7 +384,6 @@ private:
     // updates _effItem to match eid copy in a list
     void _switch_current_effect_item(effect_t eid);
 
-    //void _uidata_
 
 public:
     // дефолтный конструктор
@@ -501,9 +469,6 @@ public:
      */
     std::vector<EffectsListItem_t> const &getEffectsList() const { return effects; };
 
-    // удалить конфиг переданного эффекта
-    //void removeConfig(const uint16_t nb, const char *folder=NULL);
-
     /**
      * @brief создает json индекс файл на ФС из текущего списка эффектов
      * 
@@ -515,21 +480,6 @@ public:
      * @brief Get total number of effects in a list 
      */
     size_t getEffectsListSize() const {return effects.size();}
-
-    //const String &getEffectName() const {return curEff.effectName;}
-
-    // если текущий, то просто пишем имя, если другой - создаем экземпляр, пишем, удаляем
-    //void setEffectName(const String &name, EffectsListItem_t*to){};
-
-    /**
-    * вычитать только имя эффекта из конфиг-файла и записать в предоставленную строку
-    * в случае отсутствия/повреждения взять имя эффекта из флеш-таблицы, если есть
-    * для работы метода не требуется экземпляра класса effectCalc'а
-    * @param effectName - String куда записать результат
-    * @param nb  - айди эффекта
-    * @param folder - какой-то префикс для каталога
-    */
-    //void loadeffname(String& effectName, const uint16_t nb, const char *folder=NULL);
 
     // следующий эффект, кроме enabled==false
     effect_t getNext();
@@ -543,33 +493,8 @@ public:
      */
     effect_t getNextEffIndexForDemo(bool rnd = false);
 
-
-    // вернуть первый элемент списка
-    //EffectsListItem_t *getFirstEffect();
-    // вернуть следующий эффект
-    //EffectsListItem_t *getNextEffect(EffectsListItem_t *current);
-    // вернуть выбранный элемент списка
-    //EffectsListItem_t *getEffect(effect_t select);
-
     // вернуть номер текущего эффекта
     effect_t getCurrentEffectNumber() const { return _effItem.eid; }
-
-    // вернуть текущий элемент списка
-    //EffectsListItem_t *getCurrentListElement();
-
-    // вернуть выбранный элемент списка
-    //EffectsListItem_t *getSelectedListElement();
-
-    /**
-     * @brief return current effect config object
-     */
-    //Effcfg const &getCurrEffCfg() const { return curEff; }
-
-    /**
-     * @brief return a ref to effect config depending on if switching in pending or not
-     * if fade is progress, than a ref to pending config will be returned
-     */
-    //Effcfg const &getEffCfg() const { return curEff; }
 
     /**
      * @brief autosave current effect configuration to json file
@@ -593,37 +518,4 @@ public:
      */
     void getSerializedControls(JsonObject obj){ _effCfg.makeJson(obj); };
 
-    // копирование эффекта
-    //void copyEffect(const EffectsListItem_t *base){};
-
-
-    /**
-     * @brief удалить эффект  или из списка выбора или конфиг эффекта с ФС
-     * 
-     * @param eff 
-     * @param onlyCfgFile - удалить только конфиг файл с ФС (сбрасывает настройки эффекта на дефолтные)
-     */
-    //void deleteEffect(const EffectsListItem_t *eff, bool onlyCfgFile = false){};
-
-
-    // COMPAT methods
-
-    /**
-     * @brief a wrapper for EffectCalc's setDynCtrl method
-     * (exist for compatibility for the time of refactoring control's code)
-     */
-    //String setDynCtrl(UIControl*_val){ return worker ? worker->setDynCtrl(_val) : String(); };  // damn String()
-
-
 };
-
-/**
- * @brief creates a json file with a list of effects names
- * list files are fetched from WebUI to create dropdown lists
- * on a main page and in "effects configuration" page
- * 
- * @param w reference to current Effects worker object
- * @param full - if true, build full list of all efects (/eff_fulllist.json), used in "effects configuration" page,
- *                 otherwise build (/eff_list.json) a list of only those effects that are not "hidden", used on a main page
- */
-//void build_eff_names_list_file(EffectWorker &w, bool full = false);
