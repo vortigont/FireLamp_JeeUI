@@ -124,8 +124,8 @@ sparkles,                                 // Конфетти
 spballs,                                  // Н.Тесла
 spiral,                                   // Спираль
 starfall,                                 // Метель + Звездопад
-starts,                                   // Звезды
-startships,                               // Звездный Десант
+stars,                                   // Звезды
+starships,                               // Звездный Десант
 tixyland,                                 // Тикси Ленд
 twinkles,                                 // Мерцание
 watercolors,                              // Акварель
@@ -178,8 +178,8 @@ static constexpr const char* T_sparkles = "sparkles";
 static constexpr const char* T_spballs = "spballs";
 static constexpr const char* T_spiral = "spiral";
 static constexpr const char* T_starfall = "starfall";
-static constexpr const char* T_starts = "starts";
-static constexpr const char* T_startships = "startships";
+static constexpr const char* T_stars = "stars";
+static constexpr const char* T_starships = "starships";
 static constexpr const char* T_tixyland = "tixyland";
 static constexpr const char* T_twinkles = "twinkles";
 static constexpr const char* T_watercolors = "watercolors";
@@ -242,8 +242,8 @@ T_sparkles,
 T_spballs,
 T_spiral,
 T_starfall,
-T_starts,
-T_startships,
+T_stars,
+T_starships,
 T_tixyland,
 T_twinkles,
 T_watercolors,

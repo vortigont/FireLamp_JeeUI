@@ -161,17 +161,12 @@ void ui_page_main(Interface *interf, JsonObjectConst data, const char* action){
     interf->json_section_manifest(TINTF_080, embui.macid(), 0, LAMPFW_VERSION_STRING);       // app name/version manifest
     interf->json_section_end();
 
-/*
-    // moved to js's window.load
-    // load uidata objects for the lamp
-    interf->json_section_uidata();
-        interf->uidata_xload("lampui", "js/ui_lamp.json", false, UIDATA_VERSION);
-    interf->json_section_end();
-*/
-
     // build side menu
     ui_section_menu(interf, data, action);
     interf->json_frame_flush();     // close frame
+
+    // generate effect's list
+    interf->json_frame_jscall("make_effect_list");
 
     if(WiFi.getMode() & WIFI_MODE_STA){
         ui_page_effects(interf, data, action);
@@ -302,10 +297,12 @@ void show_effects_config(Interface *interf, JsonObjectConst data, const char* ac
         interf->json_frame(P_xload);
 
         interf->json_section_content();
-        interf->select(TCONST_effListConf, static_cast<unsigned>( myLamp.effwrkr.getCurrentEffectItem().eid ), TINTF_00A,
+/*
+        interf->select_xload(TCONST_effListConf, static_cast<unsigned>( myLamp.effwrkr.getCurrentEffectItem().eid ), TINTF_00A,
                         true,   // direct
                         TCONST_eff_fulllist_json
                 );
+*/
         interf->json_section_end();
 
         // generate block with effect settings controls
@@ -620,6 +617,7 @@ void mqtt_publish_selected_effect_config_json(){
  * @brief UI block with current effect's controls
  * 
  */
+/*
 void block_effect_controls(Interface *interf, JsonObjectConst data, const char* action){
 
     interf->json_section_uidata();
@@ -640,7 +638,6 @@ void block_effect_controls(Interface *interf, JsonObjectConst data, const char* 
         }
     interf->json_frame_flush();
 
-/*
     JsonObject sect = interf->json_section_begin(A_effect_ctrls, P_EMPTY, false, false, false, true);   // do not append section to main
     std::vector<std::shared_ptr<UIControl>> &controls = myLamp.effwrkr.getControls();
     uint8_t ctrlCaseType; // тип контрола, старшие 4 бита соответствуют CONTROL_CASE, младшие 4 - CONTROL_TYPE
@@ -716,9 +713,9 @@ void block_effect_controls(Interface *interf, JsonObjectConst data, const char* 
     topic += A_effect_ctrls;
     // publish an array of controls (i.e. should go to MQTT)
     embui.publish(topic.c_str(), sect[P_block].as<JsonArray>(), true);
-*/
     LOGD(T_WebUI, println, "eof block_effect_controls()");
 }
+*/
 
 /**
  * @brief this function is a wrapper for block_effect_controls() to publish current effect controls to various feeders
@@ -737,13 +734,26 @@ void publish_effect_controls(Interface *interf, JsonObjectConst data, const char
         remove_iface = true;
     }
     interf->json_frame_interface();
-    block_effect_controls(interf, data, action);
-    interf->json_frame_flush();
+    interf->json_section_uidata();
+        String key( "lampui.effControls." );
+        key += myLamp.effwrkr.getCurrentEffectItem().getLbl();
 
-    // publish also current effect index (for drop-down selector)
+        interf->uidata_pick( key.c_str() );
+    interf->json_section_end();
+
+
     interf->json_frame_value();
+        size_t idx{0};
+        auto ctrls = myLamp.effwrkr.getEffControls();
+        for (const auto &i : ctrls){
+            String id(A_effect_control);
+            id += idx++;
+            interf->value(id, i.getVal());
+        }
+        // publish also current effect index (for drop-down selector)
         interf->value(A_effect_switch_idx, e2int( myLamp.effwrkr.getCurrentEffectNumber()) );
     interf->json_frame_flush();
+
     if (remove_iface) delete interf;
 }
 
@@ -782,8 +792,20 @@ void ui_block_mainpage_switches(Interface *interf, JsonObjectConst data, const c
 void ui_page_effects(Interface *interf, JsonObjectConst data, const char* action){
     if (!interf) return;
 
-    // start a new xload frame (need an xload for effects list)
     interf->json_frame_interface();
+
+    interf->json_section_uidata();
+        interf->uidata_pick( "lampui.pages.effTitle" );
+    interf->json_section_end();
+
+    publish_effect_controls(interf, data, NULL);
+
+    interf->json_frame_value();
+        interf->value(A_dev_pwrswitch, myLamp.isLampOn());
+        interf->value(A_dev_brightness, static_cast<int>(myLamp.getBrightness()));
+    interf->json_frame_flush();
+
+/*
     interf->json_section_main(A_ui_page_effects, TINTF_000);
 
     // open a new section for flags, it could be replaced later with verbose switch box
@@ -793,9 +815,15 @@ void ui_page_effects(Interface *interf, JsonObjectConst data, const char* action
             interf->button(button_t::generic, A_ui_block_switches, TINTF_014);          // toggle button for additional switches
         interf->json_section_end(); // line
     interf->json_section_end(); // T_switches section
+*/
 
+    // brightness control
+/*
+    interf->json_section_begin(T_bright);
+        interf->range(A_dev_brightness, static_cast<int>(myLamp.getBrightness()), 0, static_cast<int>(myLamp.getBrightnessScale()), 1, TINTF_00D, true);
+    interf->json_section_end();
+*/
 
-    block_effect_controls(interf, data, NULL);
 
 /*
     if(LittleFS.exists(TCONST_eff_list_json)){
@@ -824,7 +852,6 @@ void ui_page_effects(Interface *interf, JsonObjectConst data, const char* action
     }
 */
 
-    interf->json_frame_flush();
 }
 
 /**
@@ -993,6 +1020,7 @@ void ui_page_drawing(Interface *interf, JsonObjectConst data, const char* action
  * 
  */
 void block_user_settings(Interface *interf, JsonObjectConst data, const char* action){
+    interf->json_section_begin("cfg_buttons");
     // periferal devices
     interf->button_value(button_t::generic, A_ui_page, e2int(page::setup_devices), "Внешние устройства");
     // mike
@@ -1003,6 +1031,7 @@ void block_user_settings(Interface *interf, JsonObjectConst data, const char* ac
 
     // show gpio setup page button
     interf->button_value(button_t::generic, A_ui_page, e2int(page::setup_gpio), TINTF_gpiocfg);
+    interf->json_frame_flush();
 }
 
 // обработчик, для поддержки приложения WLED APP
@@ -1230,7 +1259,7 @@ void embui_actions_register(){
     // Effects control
     embui.action.add(A_effect_switch, effect_switch);                       // effect switcher action
     embui.action.add(A_effect_ctrls, publish_effect_controls);              // сформировать и опубликовать блок контролов текущего эффекта
-    embui.action.add(A_effect_control, set_effect_control);                 // Effect controls handler
+    embui.action.add(A_effect_control_mask, set_effect_control);            // Effect controls handler
 
     // display configurations
     embui.action.add(A_display_ws2812, set_ledstrip);                       // Set LED strip layout setup

@@ -39,10 +39,10 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 #include "freertos/FreeRTOS.h"
 #include <mutex>
-//#include "filehelpers.hpp"
 #include "effects_types.h"
 #include "ledfb.hpp"
 #include "luma_curves.hpp"
+#include "ArduinoJson.h"
 #include "ts.h"
 
 
@@ -149,7 +149,7 @@ class EffConfiguration {
      * 
      * @param folder 
      */
-    void _savecfg(char *folder=NULL);
+    void _savecfg();
 
     /**
      * @brief load effect controls from JsonDocument to a vector
@@ -265,6 +265,12 @@ public:
     // get access to controls container
     const std::vector<EffectControl> &getControls() const { return _controls; }
 
+    /**
+     * @brief serialize current controls to JsonObject
+     * 
+     * @param o object to fill with control's k:v pairs
+     */
+    void makeJson(JsonObject o);
 };
 
 
@@ -409,6 +415,8 @@ private:
     // updates _effItem to match eid copy in a list
     void _switch_current_effect_item(effect_t eid);
 
+    //void _uidata_
+
 public:
     // дефолтный конструктор
     EffectWorker();
@@ -493,10 +501,8 @@ public:
      */
     std::vector<EffectsListItem_t> const &getEffectsList() const { return effects; };
 
-    //std::vector<std::shared_ptr<UIControl>>&getControls() { return curEff.controls; }
-
     // удалить конфиг переданного эффекта
-    void removeConfig(const uint16_t nb, const char *folder=NULL);
+    //void removeConfig(const uint16_t nb, const char *folder=NULL);
 
     /**
      * @brief создает json индекс файл на ФС из текущего списка эффектов
@@ -523,7 +529,7 @@ public:
     * @param nb  - айди эффекта
     * @param folder - какой-то префикс для каталога
     */
-    void loadeffname(String& effectName, const uint16_t nb, const char *folder=NULL);
+    //void loadeffname(String& effectName, const uint16_t nb, const char *folder=NULL);
 
     // следующий эффект, кроме enabled==false
     effect_t getNext();
@@ -580,8 +586,15 @@ public:
      */
     void switchEffect(effect_t eid);
 
+    /**
+     * @brief Get the Serialized Controls for current effect
+     * 
+     * @param obj object to add control k:v pairs
+     */
+    void getSerializedControls(JsonObject obj){ _effCfg.makeJson(obj); };
+
     // копирование эффекта
-    void copyEffect(const EffectsListItem_t *base){};
+    //void copyEffect(const EffectsListItem_t *base){};
 
 
     /**
@@ -590,7 +603,7 @@ public:
      * @param eff 
      * @param onlyCfgFile - удалить только конфиг файл с ФС (сбрасывает настройки эффекта на дефолтные)
      */
-    void deleteEffect(const EffectsListItem_t *eff, bool onlyCfgFile = false){};
+    //void deleteEffect(const EffectsListItem_t *eff, bool onlyCfgFile = false){};
 
 
     // COMPAT methods
@@ -613,4 +626,4 @@ public:
  * @param full - if true, build full list of all efects (/eff_fulllist.json), used in "effects configuration" page,
  *                 otherwise build (/eff_list.json) a list of only those effects that are not "hidden", used on a main page
  */
-void build_eff_names_list_file(EffectWorker &w, bool full = false);
+//void build_eff_names_list_file(EffectWorker &w, bool full = false);

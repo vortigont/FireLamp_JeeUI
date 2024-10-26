@@ -79,8 +79,6 @@ void Lamp::lamp_init(){
   } else {
     LOGD(T_lamp, printf, "Err opening NVS handle: %s\n", esp_err_to_name(err));
   }
-  //_brightnessScale = embui.paramVariant(V_dev_brtscale)  | DEF_BRT_SCALE;
-  //globalBrightness = embui.paramVariant(A_dev_brightness) | DEF_BRT_SCALE/2;
 
   _brightness(0, true);          // начинаем с полностью потушеной матрицы 0-й яркости
 
@@ -107,6 +105,7 @@ void Lamp::lamp_init(){
     }
   }
 
+  // load effect's index
   effwrkr.loadIndex();
 
   // switch to last running effect

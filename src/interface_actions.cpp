@@ -129,11 +129,11 @@ void effect_switch(Interface *interf, JsonObjectConst data, const char* action){
  * @param action 
  */
 void set_effect_control(Interface *interf, JsonObjectConst data, const char* action){
-    LOGI(T_WebUI, printf, "set_effect_control %s\n", action ? action : T_empty);
 
     std::string_view a(action);
-    a.remove_prefix(std::string_view(A_effect_control).length()-1); // chop off "effect_control_"
-    int idx = std::strtol(a.data(), NULL, 10);
+    a.remove_prefix(std::string_view(A_effect_control).length()); // chop off "eff_control_"
+    int idx{std::atoi(a.data())};
+    LOGI(T_WebUI, printf, "set_effect_control:%s, value:%d\n", action ? action : T_empty, data[action].as<int>());
 
     myLamp.effwrkr.setControlValue(idx, data[action]);
 }

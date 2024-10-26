@@ -408,7 +408,8 @@ static constexpr const char* A_effect_switch_next = "eff_sw_next";              
 static constexpr const char* A_effect_switch_prev = "eff_sw_prev";              // Switch to previous effect
 static constexpr const char* A_effect_switch_rnd = "eff_sw_rnd";                // Switch to random effect
 static constexpr const char* A_effect_ctrls = "eff_ctrls";                      // Generate and publish Effect controls (also it is an mqtt suffix for controls publish)
-static constexpr const char* A_effect_control = "eff_control_*";                // Effect controls handler
+static constexpr const char* A_effect_control_mask = "eff_control_*";           // Effect controls setter handler
+static constexpr const char* A_effect_control = "eff_control_";                 // Effect control prefix
 static constexpr const char* A_display_hub75 = "display_hub75";                 // HUB75 display configuration
 static constexpr const char* A_display_ws2812 = "display_ws2812";               // ws2812 display configuration
 // TM1637

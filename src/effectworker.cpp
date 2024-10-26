@@ -85,7 +85,7 @@ EffectControl::EffectControl(
         int32_t scale_min,
         int32_t scale_max
         ) : 
-        _idx(idx), _name(name), _val(val), _minv(min), _maxv(max), _scale_min(scale_min), _scale_max(_scale_max){
+        _idx(idx), _name(name), _val(val), _minv(min), _maxv(max), _scale_min(scale_min), _scale_max(scale_max){
 
   if (_name == nullptr){
     _name = T_ctrl;
@@ -103,7 +103,7 @@ EffectControl::EffectControl(
   }
 
   if (_val < _minv || _val > _maxv)
-    _val = (_maxv - _minv + 1) / 2;
+    _val = (_scale_max - _scale_min + 1) / 2;
 }
 
 int32_t EffectControl::setVal(int32_t v){
@@ -112,7 +112,7 @@ int32_t EffectControl::setVal(int32_t v){
 }
 
 int32_t EffectControl::getScaledVal() const {
-  LOGV(T_EffCtrl, printf, "getScaledV v:%d smn:%d smx:%d min:%d max:%d\n", _val, _scale_min, _scale_max, _minv, _maxv);
+  LOGV(T_EffCtrl, printf, "getScaledV v:%d min:%d max:%d smn:%d smx:%d\n", _val, _minv, _maxv, _scale_min, _scale_max);
   return map(_val, _scale_min, _scale_max, _minv, _maxv);
 }
 
@@ -213,7 +213,8 @@ bool EffConfiguration::_load_manifest(){
   // create control objects from manifest
   size_t idx{0};
   for (JsonObject o : arr){
-    _controls.emplace_back(idx, o[P_label].as<const char*>(), 0, o[T_min], o[T_max], o[T_smin], o[T_smax]);
+    _controls.emplace_back(idx, o[P_label].as<const char*>(), 0, o[T_min] | 1, o[T_max] | 10, o[T_smin] | 1, o[T_smax] | 1);
+    LOGV(T_EffCfg, printf, "New Ctrl:%d %d %d %d\n", o[T_min] | 1, o[T_max] | 10, o[T_smin] | 1, o[T_smax] | 1);
     ++idx;
   }
 
@@ -232,20 +233,20 @@ void EffConfiguration::_load_preset(int seq){
   if (seq < 0)
     _profile_idx = doc[T_last_profile];
 
-  JsonArray arr = doc[T_profiles][_profile_idx][T_ctrls];
-  if (!arr.size()){
+  JsonObject o = doc[T_profiles][_profile_idx][T_ctrls];
+  if (!o.size()){
     LOGD(T_EffCfg, println, "Profile values are missing!");
     return;
   }
 
   size_t idx{0};
-  for (JsonObject o : arr){
-    setValue(idx++, o[P_value]);
+  for (JsonPair kv : o){
+    setValue(idx++, kv.value());
   }
 }
 
 int32_t EffConfiguration::setValue(size_t idx, int32_t v){
-  LOGV("EffCfg", printf, "Control:%u(%u), setValue:%d\n", idx, _controls.size(), v);
+  LOGV("EffCfg", printf, "Control:%u/%u, setValue:%d\n", idx, _controls.size(), v);
   if (idx < _controls.size()){
     if (_locked){
       LOGW("EffCfg", println, "Locked! Skip setValue.");
@@ -285,33 +286,43 @@ void EffConfiguration::create_eff_default_cfg_file(effect_t nb, String &filename
   }
 }
 */
-void EffConfiguration::_savecfg(char *folder){
+void EffConfiguration::_savecfg(){
   String fname(effects_cfg_fldr);
   fname += EffectsListItem_t::getLbl(_eid);
+  fname += ".json";
   JsonDocument doc;
   DeserializationError error = embuifs::deserializeFile(doc, fname);
 
-  if (error) return;
-
   doc[T_last_profile] = _profile_idx;
 
-  JsonArray a;
+  if (!doc[T_profiles].as<JsonArray>().size())
+    doc[T_profiles].to<JsonArray>();
+
+  JsonObject a;
 
   if ( _profile_idx >= doc[T_profiles].size() )
-    a = doc[T_profiles].add<JsonObject>()[T_ctrls].to<JsonArray>();
+    a = doc[T_profiles].add<JsonObject>()[T_ctrls].to<JsonObject>();
   else {
     a = doc[T_profiles][_profile_idx][T_ctrls];
     a.clear();
   }
 
+  makeJson(a);
+/*
   for (const auto& i: _controls){
     JsonObject kv = a.add<JsonObject>();
     kv[P_id] = i.getName();
     kv[P_value] = i.getVal();
   }
-
-  LOGD(T_EffCfg, printf, "_savecfg:%s\n", fname);
+*/
+  LOGD(T_EffCfg, printf, "_savecfg:%s\n", fname.c_str());
   embuifs::serialize2file(doc, fname);
+}
+
+void EffConfiguration::makeJson(JsonObject o){
+  for (const auto& i: _controls){
+    o[i.getName()] = i.getVal();
+  }
 }
 
 void EffConfiguration::autosave(bool force) {
@@ -546,12 +557,14 @@ void EffectWorker::_spawn(effect_t eid){
 */
   default:
     LOGW(T_EffWrkr, println, "Attempt to spawn nonexistent effect!");
-    lock.unlock();
+    lock.unlock();  // release mutex
+    _effCfg.unlock();
     return;
   }
 
   if (!worker){
     lock.unlock();
+    _effCfg.unlock();
     // unable to create worker object somehow
     _switch_current_effect_item(effect_t::empty);
     return;
@@ -568,6 +581,7 @@ void EffectWorker::_spawn(effect_t eid){
 
   // release mutex after effect init has complete
   lock.unlock();
+  _effCfg.unlock();
   _start_runner();  // start calculator task IF we are marked as active
 
   // set newly loaded luma curve to the lamp
@@ -585,6 +599,7 @@ void EffectWorker::loadIndex(){
 
   if (!LittleFS.exists(F_effects_idx)){
     LOGD(T_EffWrkr, printf, "eff index file %s missing\n", F_effects_idx);
+    makeIndexFileFromList();
     return;
   }
 
@@ -592,7 +607,11 @@ void EffectWorker::loadIndex(){
   JsonDocument doc;
   embuifs::deserializeFile(doc, F_effects_idx);
 
-  for (JsonObject o : doc.as<JsonArray>()){
+  JsonArray arr = doc.as<JsonArray>();
+  size_t len = arr.size();
+  size_t eff_len = effects.size();
+
+  for (JsonObject o : arr){
     effect_t eid = static_cast<effect_t>( o[P_id].as<unsigned>() );
     auto i = std::find_if(effects.begin(), effects.end(), [eid](const EffectsListItem_t &e){ return e.eid == eid; });
     if (i == effects.end())
@@ -601,6 +620,12 @@ void EffectWorker::loadIndex(){
     i->flags.hidden = o[P_hidden];
     i->flags.disabledInDemo = o[T_demoDisabled];
     i->curve = static_cast<luma::curve>( o[T_luma].as<unsigned>() );
+  }
+
+  // if fw list and json lists have different size then save current list to file
+  if (len != eff_len){
+    LOGD(T_EffWrkr, println, "Update effects index file");
+    makeIndexFileFromList();
   }
 }
 
@@ -690,6 +715,7 @@ void EffectWorker::makeIndexFileFromList(bool forceRemove){
   for (const auto& i : effects){
     JsonObject o = arr.add<JsonObject>();
     o[T_idx] = e2int(i.eid);
+    o[P_label] = EffectsListItem_t::getLbl(i.eid);
     o[P_hidden] = i.flags.hidden;
     o[T_demoDisabled] = i.flags.disabledInDemo;
     o[T_luma] = e2int( i.curve );
@@ -1213,7 +1239,7 @@ void EffectWorker::applyControls(){
 
 void EffectWorker::setControlValue(size_t idx, int32_t v){
   if (idx >= _effCfg.getControls().size()){
-    LOGW(T_EffWrkr, printf, "attempt to save non-exiting control:%u\n", idx);
+    LOGW(T_EffWrkr, printf, "attempt to set non-exiting control:%u\n", idx);
     return;
   }
   

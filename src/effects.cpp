@@ -4208,7 +4208,7 @@ void EffectMagma::setControl(size_t idx, int32_t value){
   switch (idx){
     // speed
     case 0:
-      speedFactor = EffectMath::fmap(value, 1, 10, 0.05, 2.5);
+      speedFactor = EffectMath::fmap(value, 1, 10, 0.05, 1.5);
       LOGV(T_Effect, printf, "Magma speed=%d, speedfactor=%2.2f\n", value, speedFactor);
       break;
     // scale
