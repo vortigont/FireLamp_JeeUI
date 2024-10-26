@@ -2831,6 +2831,29 @@
         }
       ]
     },
+    "metaballs":{
+      "section":"eff_ctrls",
+      "replace":true,
+      "block":[
+        {
+          "section":"uidata",
+          "block":[
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.speed"    
+            },
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.scale"    
+            },
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.palette"
+            }
+          ]
+        }
+      ]
+    },
     "nexus":{
       "section":"eff_ctrls",
       "replace":true,

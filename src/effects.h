@@ -53,7 +53,7 @@ public:
     EffectNone(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){ fb->clear(); }
     bool run() override { fb->clear(); return true; };
 };
-#ifdef DISABLED_CODE
+
 /*
  ***** METABALLS / МЕТАСФЕРЫ *****
 Metaballs proof of concept by Stefan Petrick 
@@ -61,15 +61,16 @@ https://gist.github.com/StefanPetrick/170fbf141390fafb9c0c76b8a0d34e54
 */
 class EffectMetaBalls : public EffectCalc {
 private:
-		const float hormap = (256 / fb->w());
+	const float hormap = (256 / fb->w());
     const float vermap = (256 / fb->h());
-	String setDynCtrl(UIControl*_val) override;
+	void setControl(size_t idx, int32_t value) override;
     void load() override;
 public:
     EffectMetaBalls(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     bool run() override;
 };
 
+#ifdef DISABLED_CODE
 // ***** SINUSOID3 / СИНУСОИД3 *****
 /*
   Sinusoid3 by Stefan Petrick (mod by Palpalych for GyverLamp 27/02/2020)
@@ -84,7 +85,7 @@ private:
 	uint8_t _scale;
 	uint8_t type;
 	
-	String setDynCtrl(UIControl*_val) override;
+	void setControl(size_t idx, int32_t value) override;
 
 public:
     EffectSinusoid3(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
@@ -121,7 +122,7 @@ class EffectBBalls : public EffectCalc {
 
     bool bBallsRoutine();
     void load() override;
-	String setDynCtrl(UIControl*_val) override;
+	void setControl(size_t idx, int32_t value) override;
 public:
     EffectBBalls(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     bool run() override;
@@ -134,7 +135,7 @@ private:
 	const uint8_t paintWidth = fb->w() - BORDERTHICKNESS * 2;
 	const uint8_t paintHeight = fb->h() - BORDERTHICKNESS * 2;
 		
-	String setDynCtrl(UIControl*_val) override;
+	void setControl(size_t idx, int32_t value) override;
 
 public:
     EffectLightBalls(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
@@ -150,7 +151,7 @@ class EffectPulse : public EffectCalc {
     uint8_t currentRadius = 4;
     float _pulse_hue = 0;
     uint8_t _pulse_hueall = 0;
-        String setDynCtrl(UIControl*_val) override;
+        void setControl(size_t idx, int32_t value) override;
 public:
     EffectPulse(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     bool run() override;
@@ -188,7 +189,7 @@ public:
     EffectLighterTracers(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     void load() override;
     bool run() override;
-    String setDynCtrl(UIControl*_val) override;
+    void setControl(size_t idx, int32_t value) override;
 };
 
 class EffectRainbow : public EffectCalc {
@@ -213,7 +214,7 @@ private:
 
     bool colorsRoutine();
     //void setscl(const byte _scl) override;
-    String setDynCtrl(UIControl*_val) override;
+    void setControl(size_t idx, int32_t value) override;
 public:
     EffectColors(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     void load() override;
@@ -225,7 +226,7 @@ class EffectWhiteColorStripe : public EffectCalc {
 private:
     uint8_t shift=0;
     bool whiteColorStripeRoutine();
-    String setDynCtrl(UIControl*_val) override;
+    void setControl(size_t idx, int32_t value) override;
 public:
     EffectWhiteColorStripe(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     bool run() override;
@@ -240,7 +241,7 @@ private:
 public:
     EffectSparcles(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     bool run() override;
-    String setDynCtrl(UIControl*_val) override;
+    void setControl(size_t idx, int32_t value) override;
 };
 
 // ============= FIRE 2012 /  ОГОНЬ 2012 ===============
@@ -266,7 +267,7 @@ private:
     const uint8_t fireSmoothing = 60U; // 90
     Vector2D<uint8_t> noise;
     bool fire2012Routine();
-    String setDynCtrl(UIControl*_val) override;
+    void setControl(size_t idx, int32_t value) override;
 
 public:
     EffectFire2012(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer), noise(fb->w(), fb->h()) {}
@@ -289,7 +290,7 @@ struct Lighter {
     bool subPix = false;
     std::vector<Lighter> lighters;
 private:
-    String setDynCtrl(UIControl*_val) override;
+    void setControl(size_t idx, int32_t value) override;
 public:
     EffectLighters(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer), lighters(std::vector<Lighter>(10)) {}
     void load() override;
@@ -307,7 +308,7 @@ private:
     bool white = false;
     float count{0};
     float _speed{1};
-    String setDynCtrl(UIControl*_val) override;
+    void setControl(size_t idx, int32_t value) override;
 public:
     EffectMatrix(LedFB<CRGB> *framebuffer) : EffectLighters(framebuffer){}
     void load() override;
@@ -323,7 +324,7 @@ private:
     float fade;
     float _speed{1};
     bool snowStormStarfallRoutine();
-    String setDynCtrl(UIControl*_val) override;
+    void setControl(size_t idx, int32_t value) override;
 
 public:
     EffectStarFall(LedFB<CRGB> *framebuffer) : EffectLighters(framebuffer){}
@@ -349,7 +350,7 @@ public:
     Effect3DNoise(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer), noise(2*fb->w(), fb->h()) {}
     void load() override;
     bool run() override;
-    String setDynCtrl(UIControl*_val) override;
+    void setControl(size_t idx, int32_t value) override;
 };
 
 // ***** Эффект "Спираль"     ****
@@ -380,7 +381,7 @@ private:
   float spirotheta2 = 0;
   uint8_t internalCnt = 0;
   
-  String setDynCtrl(UIControl*_val) override;
+  void setControl(size_t idx, int32_t value) override;
 
 public:
     EffectSpiro(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
@@ -400,7 +401,7 @@ private:
   float hueoffset;
 
   bool flockRoutine();
-  String setDynCtrl(UIControl*_val) override;
+  void setControl(size_t idx, int32_t value) override;
   //void setspd(const byte _spd) override;
 public:
     EffectFlock(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer),
@@ -441,7 +442,7 @@ class EffectComet : public EffectCalc {
     bool fractfireRoutine();
     bool flsnakeRoutine();
     bool smokeRoutine();
-    String setDynCtrl(UIControl*_val) override;
+    void setControl(size_t idx, int32_t value) override;
 
 public:
     EffectComet(LedFB<CRGB> *framebuffer) :  EffectCalc(framebuffer), noise3d(COMET_NOISE_LAYERS, framebuffer->w(), framebuffer->h()) {}
@@ -457,7 +458,7 @@ private:
   uint8_t tnum;
   PixelDataBuffer<CRGB> ledsbuff;
     bool twinklesRoutine();
-  String setDynCtrl(UIControl*_val) override;
+  void setControl(size_t idx, int32_t value) override;
   //void setscl(const byte _scl) override;
 public:
     EffectTwinkles(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer), ledsbuff(fb->size()) {}
@@ -472,7 +473,7 @@ private:
   float waveTheta;
   uint8_t _scale=1;
     bool wavesRoutine();
-  String setDynCtrl(UIControl*_val) override;
+  void setControl(size_t idx, int32_t value) override;
 public:
     EffectWaves(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     void load() override;
@@ -511,7 +512,7 @@ private:
   bool cube2dClassicRoutine();
   void cube2dmoveCols(uint8_t moveItem, bool movedirection);
   void cube2dmoveRows(uint8_t moveItem, bool movedirection);
-  String setDynCtrl(UIControl*_val) override;
+  void setControl(size_t idx, int32_t value) override;
 
 public:
     EffectCube2d(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer), sizeX(4), sizeY(4), ledbuff(1,1)  { cubesize(); moveItems = std::vector<int8_t>(direction ? cntX : cntY, 0); }
@@ -545,7 +546,7 @@ public:
     EffectPicasso(LedFB<CRGB> *framebuffer);
     virtual ~EffectPicasso(){}
     bool run() override;
-    String setDynCtrl(UIControl*_val) override;
+    void setControl(size_t idx, int32_t value) override;
 };
 
 // ------ Эффект "Лавовая Лампа"
@@ -587,7 +588,7 @@ public:
     EffectLiquidLamp(LedFB<CRGB> *framebuffer);
     void load() override { generate(true); };
     bool run() override {return routine();};
-    String setDynCtrl(UIControl*_val) override;
+    void setControl(size_t idx, int32_t value) override;
 };
 
 // ------- Эффект "Вихри"
@@ -606,7 +607,7 @@ private:
     const uint8_t ff_scale = 26; // чем больше этот параметр, тем больше "языков пламени" или как-то так. 26 - это норм
 
     bool whirlRoutine();
-    String setDynCtrl(UIControl*_val) override;
+    void setControl(size_t idx, int32_t value) override;
 public:
     EffectWhirl(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer), boids( std::vector<Boid>(AVAILABLE_BOID_COUNT) ) {}
     void load() override;
@@ -637,7 +638,7 @@ private:
     std::vector<Star> stars{std::vector<Star>(STARS_NUM)};
 
     void drawStar(float xlocl, float ylocl, float biggy, float little, int16_t points, float dangle, uint8_t koler);
-	String setDynCtrl(UIControl*_val) override;
+	void setControl(size_t idx, int32_t value) override;
 
 public:
     EffectStar(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
@@ -665,7 +666,7 @@ private:
 
     PVector attract(Boid &m);
     void setup();
-    String setDynCtrl(UIControl*_val) override;
+    void setControl(size_t idx, int32_t value) override;
 
 public:
     EffectAttract(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer) {
@@ -715,7 +716,7 @@ private:
     };
 
     std::vector<Snake> snakes{ std::vector<Snake>(2, Snake(snake_len)) };
-    String setDynCtrl(UIControl*_val) override;
+    void setControl(size_t idx, int32_t value) override;
     void reset();
 public:
     EffectSnake(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
@@ -771,7 +772,7 @@ class EffectSmokeballs: public EffectCalc {
 
     void shiftUp();
     void regen();
-    String setDynCtrl(UIControl*_val) override;
+    void setControl(size_t idx, int32_t value) override;
   public:
     EffectSmokeballs(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){ speedFactor = 0.1; }
     void load() override;
@@ -806,7 +807,7 @@ class EffectCell: public EffectCalc {
   public:
     EffectCell(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
     bool run() override;
-    String setDynCtrl(UIControl*_val) override;
+    void setControl(size_t idx, int32_t value) override;
 };
 
 // ----------- Эффект "Осциллятор"
@@ -831,7 +832,7 @@ class EffectOscillator: public EffectCalc {
     int blueNeighbours(uint8_t x, uint8_t y);
     int greenNeighbours(uint8_t x, uint8_t y);
     void setCellColors(uint8_t x, uint8_t y);
-    //String setDynCtrl(UIControl*_val) override;
+    //void setControl(size_t idx, int32_t value) override;
   public:
     EffectOscillator(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer) {}
     bool run() override;
@@ -881,7 +882,7 @@ struct TObject {
     bool fairy();
     void fount();
     //void setscl(const byte _scl) override; // перегрузка для масштаба
-    String setDynCtrl(UIControl*_val) override;
+    void setControl(size_t idx, int32_t value) override;
 
 public:
     EffectFairy(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
@@ -922,7 +923,7 @@ private:
     }
 
     void drawCircle(LedFB<CRGB> *fb, Circle &circle);
-    String setDynCtrl(UIControl*_val) override;
+    void setControl(size_t idx, int32_t value) override;
 
 public:
     EffectCircles(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
@@ -948,7 +949,7 @@ private:
 
     const float radiusMax = (float)fb->maxDim() /5;
     std::vector<Ball> balls{ std::vector<Ball>(BALLS_MIN) };
-        String setDynCtrl(UIControl*_val) override;
+        void setControl(size_t idx, int32_t value) override;
     void reset();
 
 public:
@@ -991,7 +992,7 @@ private:
 
     bool checkButtons(){ return (buttons != 4); }
 
-    String setDynCtrl(UIControl*_val) override;
+    void setControl(size_t idx, int32_t value) override;
     //void setspd(const byte _spd) override; // перегрузка для скорости
 public:
     EffectMaze(LedFB<CRGB> *framebuffer);
@@ -1005,7 +1006,7 @@ class EffectFrizzles : public EffectCalc {
 private:
     float _speed;
     float _scale;
-    //String setDynCtrl(UIControl*_val) override;
+    //void setControl(size_t idx, int32_t value) override;
 
 public:
     EffectFrizzles(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
@@ -1091,7 +1092,7 @@ private:
     void spain(uint8_t i);
 
     void changeFlags();
-    String setDynCtrl(UIControl*_val) override;
+    void setControl(size_t idx, int32_t value) override;
 
 public:
     EffectFlags(LedFB<CRGB> *framebuffer);
@@ -1116,7 +1117,7 @@ private:
     uint8_t _fade = 20;
 
     void draw(float x, float y, CRGB color);
-    String setDynCtrl(UIControl*_val) override;
+    void setControl(size_t idx, int32_t value) override;
 
 public:
     EffectStarShips(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
@@ -1157,7 +1158,7 @@ private:
 
     std::vector<Spark> sparks{std::vector<Spark>(fb->w() / 4, Spark())};
 
-    String setDynCtrl(UIControl*_val) override;
+    void setControl(size_t idx, int32_t value) override;
     void palettesload() override;
 
 public:
@@ -1174,7 +1175,7 @@ public:
 class EffectPile : public EffectCalc {
 private:
     uint8_t pcnt = 0U, _scale;
-    String setDynCtrl(UIControl*_val) override;
+    void setControl(size_t idx, int32_t value) override;
 
 public:
     EffectPile(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
@@ -1195,7 +1196,7 @@ private:
     bool bals = false;
     uint8_t type = 0, _type = 1, _scale = 16;
     
-    String setDynCtrl(UIControl*_val) override;
+    void setControl(size_t idx, int32_t value) override;
 
 public:
     EffectDNA(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
@@ -1211,7 +1212,7 @@ private:
     byte _scale = 30, glitch;
 	    float t;
 
-    String setDynCtrl(UIControl*_val) override;
+    void setControl(size_t idx, int32_t value) override;
 
 public:
     EffectSmoker(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
@@ -1253,7 +1254,7 @@ private:
 
     std::vector<Blot> blots = std::vector<Blot>(BLOT_COUNT, fb->w()/2);
 
-    String setDynCtrl(UIControl*_val) override;
+    void setControl(size_t idx, int32_t value) override;
 
 public:
     EffectWcolor(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
@@ -1272,7 +1273,7 @@ class EffectRadialFire : public EffectCalc {
     uint8_t _scale{1};
     bool mode = false;
 
-    String setDynCtrl(UIControl*_val) override;
+    void setControl(size_t idx, int32_t value) override;
     void palettesload() override;
 
 public:
@@ -1300,7 +1301,7 @@ private:
 
     float dist(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2);
 
-    String setDynCtrl(UIControl*_val) override;
+    void setControl(size_t idx, int32_t value) override;
 
 public:
     EffectSplashBals(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}

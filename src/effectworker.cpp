@@ -378,6 +378,10 @@ void EffectWorker::_spawn(effect_t eid){
     LOGD(T_EffWrkr, println, "Spawn magma");
     break;
 
+   case effect_t::metaballs :
+    worker = std::make_unique<EffectMetaBalls>(canvas);
+    break;
+
   case effect_t::nexus :
     worker = std::make_unique<EffectNexus>(canvas);
     break;

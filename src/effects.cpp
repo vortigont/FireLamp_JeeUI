@@ -1079,23 +1079,28 @@ switch (type) {
   }
   return true;
 }
+#endif
 
 /*
  ***** METABALLS / МЕТАСФЕРЫ *****
 Metaballs proof of concept by Stefan Petrick 
 https://gist.github.com/StefanPetrick/170fbf141390fafb9c0c76b8a0d34e54
 */
+void EffectMetaBalls::setControl(size_t idx, int32_t value){
+  switch (idx){
+    // speed
+    case 0:
+      speedFactor = EffectMath::fmap(value, 1, 10, 0.1, 1);
+      break;
 
-// !++
-String EffectMetaBalls::setDynCtrl(UIControl*_val){
-  if(_val->getId()==1) speedFactor = EffectMath::fmap(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 0.5, 2);
-  else if(_val->getId()==2) scale = EffectCalc::setDynCtrl(_val).toInt();
-  else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
-  return String();
+    default:
+      EffectCalc::setControl(idx, value);
+  }
 }
 
 void EffectMetaBalls::load(){
-palettesload();}
+  palettesload();
+}
 
 bool EffectMetaBalls::run()
 {
@@ -1150,6 +1155,7 @@ bool EffectMetaBalls::run()
   }
   return true;
 }
+#ifdef DISABLED_CODE
 
 // ***** Эффект "Спираль"     ****
 /*
