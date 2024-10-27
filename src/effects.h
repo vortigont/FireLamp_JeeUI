@@ -744,7 +744,7 @@ class EffectNexus: public EffectCalc {
     bool randColor = false;
     std::vector<Nexus> nxdots{std::vector<Nexus>(NEXUS_MIN, Nexus())};
 
-    void reload();
+    void reconfig();
     void resetDot(Nexus &nx);
     void setControl(size_t idx, int32_t value) override;
 

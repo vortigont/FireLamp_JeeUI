@@ -3040,20 +3040,20 @@ void EffectSnake::Snake::reset()
 
 //------------ Эффект "Nexus"
 // (с) kostyamat 4.12.2020
-void EffectNexus::reload() {
+void EffectNexus::reconfig() {
   for (auto &nx : nxdots) {
     nx.direct = random(0, 4);                     // задаем направление
     nx.posX = random(0, fb->w());                   // Разбрасываем частицы по ширине
     nx.posY = random(0, fb->h());                  // и по высоте
     nx.color = ColorFromPalette(*curPalette, random8(0, 9) * 31, 255); // цвет капли
-    nx.accel = (float)random(5, 11) / 70;        // делаем частицам немного разное ускорение 
+    nx.accel = (float)random(5, 20) / 100;        // делаем частицам немного разное ускорение 
   }
 }
 
 // !++
 void EffectNexus::setControl(size_t idx, int32_t value) {
   switch (idx){
-    // speed
+    // move speed
     case 0:
       speedFactor = EffectMath::fmap(value, 1, 10, 0.05, 1.33);
       //LOGV(T_Effect, printf, "Nexus speed=%d, speedfactor=%2.2f\n", value, speedFactor);
@@ -3063,7 +3063,12 @@ void EffectNexus::setControl(size_t idx, int32_t value) {
       scale = map(value, 1, 10, NEXUS_MIN, NEXUS_MAX);
       LOGV(T_Effect, printf, "Nexus scale=%d\n", scale);
       nxdots.assign(scale, Nexus());
-      reload();
+      reconfig();
+      break;
+    }
+    // fade speed
+    case 3: {
+      speed = value;
       break;
     }
 
@@ -3075,11 +3080,12 @@ void EffectNexus::setControl(size_t idx, int32_t value) {
 void EffectNexus::load() {
   palettesload();
   randomSeed(millis());
-  reload();
+  reconfig();
 }
 
 bool EffectNexus::run() {
-  fb->fade(map(speed, 1, 255, 11, 33));
+  // use integral speed as fade speed
+  fb->fade(map(speed, 1, 10, 1, 50));
 
   for (auto &nx : nxdots){
     switch (nx.direct){

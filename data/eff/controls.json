@@ -1,13 +1,27 @@
 {
   "empty":{
-    "ctrls":[
-    ]
+    "ctrls":[]
   },
   "magma":{
     "ctrls":[
       {"label":"speed"},
       {"label":"scale"},
       {"label":"pallete", "min":0, "max":11}
+    ]
+  },
+  "metaballs":{
+    "ctrls":[
+      {"label":"speed"},
+      {"label":"scale", "smin":0, "smax":255},
+      {"label":"pallete", "min":0, "max":22}
+    ]
+  },
+  "nexus":{
+    "ctrls":[
+      {"label":"speed"},
+      {"label":"scale"},
+      {"label":"pallete", "min":0, "max":22},
+      {"label":"fade"}
     ]
   }
 }

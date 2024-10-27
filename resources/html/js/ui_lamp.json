@@ -2872,6 +2872,10 @@
             {
               "action":"pick",
               "key":"lampui.effCommon.palette"
+            },
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.fade"
             }
           ]
         }
@@ -3059,6 +3063,16 @@
           "label":"Waterfall"
         }
       ]
+    },
+    "fade":{
+      "html": "input",
+      "id": "eff_control_3",
+      "type": "range",
+      "label": "Затухание",
+      "min": 1,
+      "max": 10,
+      "value":5,
+      "onChange": true
     }
   },
 

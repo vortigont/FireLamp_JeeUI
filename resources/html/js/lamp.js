@@ -76,14 +76,17 @@ function omnicron_tasks_load(arg){
  * generates UIData block with a drop-down effects selector
  * based on effect index on MCU's FS
  * translates 
+ * https://dmitripavlutin.com/javascript-fetch-async-await/
  */
 async function make_effect_list(){
-  let effidx = await fetch('/effects_idx.json', {method: 'GET'});
-  if (!effidx.ok) return;
-  effidx = await effidx.json();
-  let i18ndata = await fetch('/js/ui_lamp.i18n.json', {method: 'GET'});
-  if (!i18ndata.ok) return;
-  i18ndata = await i18ndata.json();
+  const [effidxReq, i18ndataReq] = await Promise.all([
+    fetch('/effects_idx.json', {method: 'GET'}),
+    fetch('/js/ui_lamp.i18n.json', {method: 'GET'})
+  ])
+
+  if (!effidxReq.ok || !i18ndataReq.ok) return;
+  const effidx = await effidxReq.json();
+  const i18ndata = await i18ndataReq.json();
 
   let efflist = {
       "id":"eff_sw_idx",
