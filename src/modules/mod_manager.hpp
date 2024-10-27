@@ -254,7 +254,7 @@ public:
      * loads profile config from file, if specified argument is <0 or wrong, loads last used profile
      * @param value 
      */
-    void switchPreset(int32_t value, bool keepcurrent = false) override final;
+    void switchPreset(int32_t idx, bool keepcurrent = false) override final;
 
     /**
      * @brief Get the Current Profile Num value

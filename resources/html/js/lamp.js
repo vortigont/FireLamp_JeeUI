@@ -78,7 +78,7 @@ function omnicron_tasks_load(arg){
  * translates 
  * https://dmitripavlutin.com/javascript-fetch-async-await/
  */
-async function make_effect_list(){
+async function make_effect_list(arg){
   const [effidxReq, i18ndataReq] = await Promise.all([
     fetch('/effects_idx.json', {method: 'GET'}),
     fetch('/js/ui_lamp.i18n.json', {method: 'GET'})
@@ -91,7 +91,6 @@ async function make_effect_list(){
   let efflist = {
       "id":"eff_sw_idx",
       "html":"select",
-      "label":"Эффекты",
       "onChange": true,
       "value":0,
       "section":"options",
@@ -121,11 +120,49 @@ async function make_effect_list(){
   ws.send_post("eff_ctrls", {});
 }
 
+async function make_effect_profile_selector_list(arg){
+  if (!arg.Effect) return
+  const req = await fetch('/eff/' + arg.Effect + ".json", {method: 'GET'})
+  if (!req.ok) return
+  const resp = await req.json();
+  if (!(resp instanceof Object)) return
+
+  //console.log("Got eff presets list:", resp);
+
+  let presets = {
+    "id":"eff_preset",
+    "html":"select",
+    "onChange": true,
+    "section":"options",
+    "block":[]
+  }
+
+  let idx = 0
+  for (profile of resp.profiles){
+    let lbl = profile.label === undefined ? "Profile_"+idx : profile.label
+    presets.block.push({"label":lbl, "value":idx})
+    ++idx
+  }
+  presets["value"] = arg.idx
+
+  let obj = {
+    "section":"content",
+    "block":[
+      presets
+    ]
+  }
+  //console.log("Render presets list:", obj);
+  // update ubject on the page
+  var rdr = this.rdr = render();
+  rdr.content(obj)
+}
+
 // add our fuction to custom funcs that could be called for js_func frames
 customFuncs["alarm_items_load"] = alarm_items_load;
 customFuncs["alarm_item_set"] = alarm_item_set;
 customFuncs["omnicron_tasks_load"] = omnicron_tasks_load;
 customFuncs["make_effect_list"] = make_effect_list;
+customFuncs["mk_eff_profile_list"] = make_effect_profile_selector_list;
 
 // load Informer's App UIData
 window.addEventListener("load", async function(ev){

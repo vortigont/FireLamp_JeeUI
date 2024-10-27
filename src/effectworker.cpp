@@ -55,6 +55,8 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #endif
 #define WRKR_TASK_NAME          "EFF_WRKR"
 
+#define MAX_NUM_OF_CTRL_PROFILES  10
+
 constexpr int target_fps{MAX_FPS};                     // desired FPS rate for effect runner
 constexpr int interframe_delay_ms = 1000 / target_fps;
 static constexpr const char* effects_cfg_fldr = "/eff/";
@@ -128,31 +130,18 @@ EffConfiguration::~EffConfiguration(){
   }
 }
 
-/*
-bool EffConfiguration::_eff_cfg_deserialize(JsonDocument &doc, const char *folder){
-  LOGD(T_EffCfg, printf, "_eff_cfg_deserialize() eff:%u\n", num);
-  String filename(fshlpr::getEffectCfgPath(e2int(num), folder));
+DeserializationError EffConfiguration::_load_cfg(JsonDocument& doc){
+  String fname(effects_cfg_fldr);
+  fname += EffectsListItem_t::getLbl(_eid);
+  fname += T__json;
 
-  bool retry = true;
-  READALLAGAIN:
-  if (embuifs::deserializeFile(doc, filename.c_str() )){
-    if ( e2int(num) > 255 || geteffcodeversion((uint8_t)num) == doc["ver"] ){ // только для базовых эффектов эта проверка
-      return true;   // we are OK
-    }
-    LOGW(T_EffConfiguration, printf, "Wrong version in effect cfg file, reset to default (%d vs %d)\n", doc["ver"].as<uint8_t>(), geteffcodeversion((uint8_t)num));
+  DeserializationError error = embuifs::deserializeFile(doc, fname);
+
+  if (error) {
+    LOGD("EffCfg", printf, "can't load file:%s\n", fname.c_str());
   }
-  // something is wrong with eff config file, recreate it to default
-  create_eff_default_cfg_file(num, filename);   // пробуем перегенерировать поврежденный конфиг (todo: remove it and provide default from code)
-
-  if (retry) {
-    retry = false;
-    goto READALLAGAIN;
-  }
-
-  LOGE(T_EffConfiguration, printf, "Failed to recreate eff config file: %s\n", filename.c_str());
-  return false;
+  return error;
 }
-*/
 
 void EffConfiguration::_lock(){
   if (_locked) return;
@@ -165,7 +154,7 @@ bool EffConfiguration::loadEffconfig(effect_t effid){
 
   _lock();
   _eid = effid;
-  _profile_idx = 0;
+  _preset_idx = 0;
 
   if (effid == effect_t::empty){
     _controls.clear();
@@ -175,7 +164,15 @@ bool EffConfiguration::loadEffconfig(effect_t effid){
 
   LOGW(T_EffCfg, printf, "loadEffconfig:%u:%s\n", _eid, EffectsListItem_t::getLbl(_eid));
   _load_manifest();
-  _load_preset();
+  // load controls values from an fs json file
+  // switch to the last saved preset if any
+  switchPreset();
+
+  // no need to publish UI page if no one is listening
+  if (embui.feeders.available()){
+    auto interf = std::make_unique<Interface>(&embui.feeders);
+    mkEmbUIpage(interf.get());
+  }
 
   _unlock();
   return true;
@@ -218,34 +215,53 @@ bool EffConfiguration::_load_manifest(){
   return true;
 }
 
-void EffConfiguration::_load_preset(int seq){
-  String fname(effects_cfg_fldr);
-  fname += EffectsListItem_t::getLbl(_eid);
-  fname += T__json;
+void EffConfiguration::switchPreset(int32_t idx){
   JsonDocument doc;
-  DeserializationError error = embuifs::deserializeFile(doc, fname);
 
-  if (error) {
-    LOGD("EffCfg", printf, "can't load file:%s\n", fname.c_str());
+  if (_load_cfg(doc)){  // if error
     return;
   }
+  flushcfg();
+  _switchPreset(idx, doc);
+  
+}
 
-  if (seq < 0)
-    _profile_idx = doc[T_last_profile];
+void EffConfiguration::_switchPreset(int32_t idx, JsonVariant doc){
+  LOGI(T_EffCfg, printf, "_switchPreset to:%d\n", idx);
 
-  JsonObject o = doc[T_profiles][_profile_idx][T_ctrls];
+  // restore last used profile if specified one is wrong or < 0
+  if (idx < 0 || idx >= MAX_NUM_OF_CTRL_PROFILES)
+    _preset_idx = doc[T_last_profile] | 0;
+  else
+    _preset_idx = idx;
+
+  // get total num of presets
+  if (doc[T_profiles].size())
+    _presets_total = doc[T_profiles].size();
+
+  JsonObject o = doc[T_profiles][_preset_idx][T_ctrls];
   if (!o.size()){
-    LOGD(T_EffCfg, println, "Profile values are missing!");
+    LOGD(T_EffCfg, printf, "preset is missing for idx:%d\n", idx);
     return;
   }
 
-  size_t idx{0};
+  // restore label
+  JsonVariant lbl = o[P_label];
+  if (lbl.is<const char*>()){
+    _profile_lbl = lbl.as<const char*>();
+  } else {
+    _profile_lbl = T_profile;
+    _profile_lbl += _preset_idx;
+  }
+
+  size_t i{0};
   for (JsonPair kv : o){
     //LOGV("EffCfg", printf, "restore ctrl:%u value:%d\n", idx, kv.value().as<int>());
-    if (idx < _controls.size())
-      _controls.at(idx).setVal(kv.value());
-    ++idx;
+    if (i < _controls.size())
+      _controls.at(i).setVal(kv.value());
+    ++i;
   }
+
 }
 
 int32_t EffConfiguration::setValue(size_t idx, int32_t v){
@@ -271,27 +287,34 @@ int32_t EffConfiguration::getValue(size_t idx) const {
 }
 
 void EffConfiguration::_savecfg(){
-  String fname(effects_cfg_fldr);
-  fname += EffectsListItem_t::getLbl(_eid);
-  fname += T__json;
   JsonDocument doc;
-  DeserializationError error = embuifs::deserializeFile(doc, fname);
+  if (_load_cfg(doc)){  // if error
+    return;
+  }
+  _savecfg(doc);
+}
 
-  doc[T_last_profile] = _profile_idx;
+void EffConfiguration::_savecfg(JsonVariant doc){
+
+  doc[T_last_profile] = _preset_idx;
 
   if (!doc[T_profiles].as<JsonArray>().size())
     doc[T_profiles].to<JsonArray>();
 
   JsonObject a;
 
-  if ( _profile_idx >= doc[T_profiles].size() )
+  if ( _preset_idx >= doc[T_profiles].size() )
     a = doc[T_profiles].add<JsonObject>()[T_ctrls].to<JsonObject>();
   else {
-    a = doc[T_profiles][_profile_idx][T_ctrls];
+    a = doc[T_profiles][_preset_idx][T_ctrls];
     a.clear();
   }
 
-  makeJson(a);
+  doc[T_profiles][_preset_idx][P_label] = _profile_lbl.c_str();
+
+  for (const auto& i: _controls){
+    a[i.getName()] = i.getVal();
+  }
 /*
   for (const auto& i: _controls){
     JsonObject kv = a.add<JsonObject>();
@@ -299,14 +322,11 @@ void EffConfiguration::_savecfg(){
     kv[P_value] = i.getVal();
   }
 */
+  String fname(effects_cfg_fldr);
+  fname += EffectsListItem_t::getLbl(_eid);
+  fname += T__json;
   LOGD(T_EffCfg, printf, "_savecfg:%s\n", fname.c_str());
   embuifs::serialize2file(doc, fname);
-}
-
-void EffConfiguration::makeJson(JsonObject o){
-  for (const auto& i: _controls){
-    o[i.getName()] = i.getVal();
-  }
 }
 
 void EffConfiguration::autosave(bool force) {
@@ -330,12 +350,104 @@ void EffConfiguration::autosave(bool force) {
   }
 }
 
+void EffConfiguration::mkEmbUIpage(Interface *interf){
+  interf->json_frame_interface();
+  // load effect's controls from uidata
+  interf->json_section_uidata();
+      String key( "lampui.effControls." );
+      key += EffectsListItem_t::getLbl(_eid);
+      interf->uidata_pick( key.c_str() );
 
+  _jscall_preset_list_rebuild(interf);
+
+  // publish control values
+  embui_control_vals(interf);
+}
+
+void EffConfiguration::_jscall_preset_list_rebuild(Interface *interf){
+  if (interf){
+    JsonObject o = interf->json_frame_jscall(T_mk_eff_profile_list);
+    o[T_Effect] = EffectsListItem_t::getLbl(_eid);
+    o[P_idx] = _preset_idx;
+    interf->json_frame_flush();
+  }
+}
+
+void EffConfiguration::embui_control_vals(Interface *interf){
+  interf->json_frame_value();
+    size_t idx{0};
+    for (const auto &i : _controls){
+        String id(A_effect_control);
+        id += idx++;
+        interf->value(id, i.getVal());
+    }
+    // publish current effect index (for drop-down selector)
+    interf->value(A_effect_switch_idx, e2int(_eid) );
+    // preset index
+    interf->value(A_eff_preset, _preset_idx );
+  interf->json_frame_flush();
+}
+
+void EffConfiguration::embui_preset_rename(Interface *interf, JsonObjectConst data, const char* action){
+  JsonVariantConst lbl = data[P_label];
+  if (!lbl.is<const char*>()) return;   // some bad data
+
+  _profile_lbl = lbl.as<const char*>();
+  _savecfg();
+  _jscall_preset_list_rebuild(interf);
+}
+
+void EffConfiguration::embui_preset_clone(Interface *interf){
+  if (_presets_total >= MAX_NUM_OF_CTRL_PROFILES) return;   // do not allow too many preset clones
+
+  _preset_idx = _presets_total;
+  ++_presets_total;
+  _savecfg();
+  _jscall_preset_list_rebuild(interf);
+}
+
+void EffConfiguration::embui_preset_delete(Interface *interf){
+  if (_preset_idx == 0) return;   // won't remove last profile
+
+  JsonDocument doc;
+  if (_load_cfg(doc)){  // if error
+    return;
+  }
+
+  doc[T_profiles].remove(_preset_idx);
+  --_preset_idx;
+
+  _switchPreset(_preset_idx, doc);
+
+  _savecfg(doc);
+  _jscall_preset_list_rebuild(interf);
+}
+
+
+
+///////////////////////////////////////////
 //  ***** EffectWorker implementation *****
 
 EffectWorker::EffectWorker() {
+  // сформировать и опубликовать блок контролов текущего эффекта
+  embui.action.add(A_effect_ctrls, [&](Interface *interf, JsonObjectConst data, const char* action){ _effCfg.embui_control_vals(interf); });
+  // preset switcher
+  embui.action.add(A_eff_preset, [&](Interface *interf, JsonObjectConst data, const char* action){ switchEffectPreset(data[A_eff_preset]); _effCfg.embui_control_vals(interf); });
+  embui.action.add(A_eff_preset_lbl, [&](Interface *interf, JsonObjectConst data, const char* action){ _effCfg.embui_preset_rename(interf, data, action); });
+  embui.action.add(A_eff_preset_new, [&](Interface *interf, JsonObjectConst data, const char* action){ _effCfg.embui_preset_clone(interf); });
+  embui.action.add(A_eff_preset_remove, [&](Interface *interf, JsonObjectConst data, const char* action){ _effCfg.embui_preset_delete(interf); });
 
 }
+
+EffectWorker::~EffectWorker(){
+  if(_runnerTask_h) vTaskDelete(_runnerTask_h);
+  _runnerTask_h = nullptr;
+  embui.action.remove(A_effect_ctrls);
+  embui.action.remove(A_eff_preset_lbl);
+  embui.action.remove(A_eff_preset_new);
+  embui.action.remove(A_eff_preset_remove);
+  embui.action.remove(A_eff_preset);
+};
 
 /*
  * Создаем экземпляр класса калькулятора в зависимости от требуемого эффекта
@@ -745,6 +857,11 @@ void EffectWorker::switchEffect(effect_t eid){
 
   LOGD(T_EffWrkr, printf, "switchEffect:%u\n", eid);
   _spawn(eid);
+}
+
+void EffectWorker::switchEffectPreset(int32_t preset){
+  _effCfg.switchPreset(preset);
+  applyControls();
 }
 
 void EffectWorker::_load_default_fweff_list(){

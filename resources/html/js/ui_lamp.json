@@ -2249,6 +2249,10 @@
           "onChange": true
         },
         {
+          "html":"comment",
+          "label":"Эффект"
+        },
+        {
           "section":"uidata",
           "block":[
             {
@@ -2287,6 +2291,50 @@
           "section": "eff_ctrls",
           "hint":"a placeholder for dynamically loaded effect controls",
           "block":[]
+        },
+        {
+          "section":"eff_preset_blk",
+          "hidden": true,
+          "label":"Профили настроек",
+          "block":[
+            {
+              "id": "eff_preset",
+              "html":"hidden",
+              "hint":"placeholder for Profile selector"
+            },
+            {
+              "section":"eff_preset_lbl",
+              "line":true,
+              "block":[
+                {
+                  "id":"label",
+                  "html":"input",
+                  "label":"Имя пресета",
+                  "type":"text"
+                },
+                {
+                  "id":"eff_preset_lbl",
+                  "html":"button",
+                  "type":1,
+                  "color": "green",
+                  "label":"Переименовать"
+                }
+              ]
+            },
+            {
+              "id":"eff_preset_new",
+              "html":"button",
+              "type":0,
+              "label":"Создать новый"
+            },
+            {
+              "id":"eff_preset_remove",
+              "html":"button",
+              "type":0,
+              "color": "red",
+              "label":"Удалить"
+            }
+          ]
         }
       ]
     }

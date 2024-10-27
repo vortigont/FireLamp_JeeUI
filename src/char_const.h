@@ -364,8 +364,6 @@ static constexpr const char* V_lampFlags = "lampFlags";
 static constexpr const char* V_dev_brtscale = "dev_brtscale";
 // Saved last running effect index
 static constexpr const char* V_effect_idx = "eff_idx";
-// Effect list sorting
-static constexpr const char* V_effSort = "effSort";
 
 
 
@@ -388,6 +386,10 @@ static constexpr const char* A_effect_switch_rnd = "eff_sw_rnd";                
 static constexpr const char* A_effect_ctrls = "eff_ctrls";                      // Generate and publish Effect controls (also it is an mqtt suffix for controls publish)
 static constexpr const char* A_effect_control_mask = "eff_control_*";           // Effect controls setter handler
 static constexpr const char* A_effect_control = "eff_control_";                 // Effect control prefix
+static constexpr const char* A_eff_preset = "eff_preset";                       // Effect's preset
+static constexpr const char* A_eff_preset_lbl = "eff_preset_lbl";               // set current effect's preset label
+static constexpr const char* A_eff_preset_new = "eff_preset_new";               // clone current preset into new one
+static constexpr const char* A_eff_preset_remove = "eff_preset_remove";         // delete effect's current preset
 static constexpr const char* A_display_hub75 = "display_hub75";                 // HUB75 display configuration
 static constexpr const char* A_display_ws2812 = "display_ws2812";               // ws2812 display configuration
 // TM1637
@@ -416,10 +418,10 @@ static constexpr const char* TCONST_set_mp3 = "set_mp3";
 // прочие именованные секции
 static constexpr const char* T_switches = "switches";
 
+// JS functions
+static constexpr const char* T_mk_eff_profile_list = "mk_eff_profile_list";
 
 /** набор служебных текстовых констант (HTTP/MQTT запросы) */
-static constexpr const char* MQT_effect_controls = "effect/controls/";      // topic suffix
-static constexpr const char* MQT_lamp = "lamp/";
+//static constexpr const char* MQT_effect_controls = "effect/controls/";      // topic suffix
+//static constexpr const char* MQT_lamp = "lamp/";
 
-//static constexpr const char* CMD_MP3_PREV = "MP3_PREV";        // Без параметров - переключает трек на 1 назад, принимает числовой параметр, на сколько треков вернуть назад
-//static constexpr const char* CMD_MP3_NEXT = "MP3_NEXT";        // Без параметров - переключает трек на 1 назад, принимает числовой параметр, на сколько треков вернуть назад

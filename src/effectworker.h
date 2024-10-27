@@ -43,7 +43,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "ledfb.hpp"
 #include "luma_curves.hpp"
 #include "ArduinoJson.h"
-#include "ts.h"
+#include "EmbUI.h"
 
 
 
@@ -122,14 +122,15 @@ class EffConfiguration {
 
     effect_t _eid;                      // энумератор эффекта
     bool _locked{false};                // config is locked, no setValue possible
-
+    int32_t _preset_idx{0};             // profile index
+    size_t _presets_total{1};           // max number of presets in saved json file
+    String _profile_lbl;                // profile's name label
     Task *tConfigSave = nullptr;        // динамическая таска, задержки при сохранении текущего конфига эффекта в файл
 
     // Effect's controls
     std::vector<EffectControl> _controls;
-    // index for control presets
-    size_t _profile_idx{0};
 
+    DeserializationError _load_cfg(JsonDocument& doc);
 
     /**
      * @brief serialize and write struct to json file
@@ -137,6 +138,9 @@ class EffConfiguration {
      * @param folder 
      */
     void _savecfg();
+    void _savecfg(JsonVariant doc);
+
+    void _switchPreset(int32_t idx, JsonVariant doc);
 
     /**
      * @brief load controls configuration from manifest file
@@ -145,13 +149,6 @@ class EffConfiguration {
      * @return false on error
      */
     bool _load_manifest();
-
-    /**
-     * @brief load control's values for specified preset from file
-     * 
-     * @param seq - profile to load, if <0 then load last used from config
-     */
-    void _load_preset(int seq = -1);
 
     /**
      * @brief lock the configuration
@@ -163,6 +160,8 @@ class EffConfiguration {
 
     // unlock configuration
     void _unlock(){ _locked = false; };
+
+    void _jscall_preset_list_rebuild(Interface *interf);
 
 public:
 
@@ -190,6 +189,13 @@ public:
      * @return int 
      */
     bool loadEffconfig(effect_t effid);
+
+    /**
+     * @brief switch to specific profile number
+     * loads profile config from file, if specified argument is <0 or wrong, loads last used profile
+     * @param keepvalues - if true, then keep control values just change the preset number
+     */
+    void switchPreset(int32_t idx = -1);
 
     /**
      * @brief write configuration to json file on FS
@@ -226,16 +232,35 @@ public:
     const std::vector<EffectControl> &getControls() const { return _controls; }
 
     /**
-     * @brief serialize current controls to JsonObject
-     * 
-     * @param o object to fill with control's k:v pairs
+     * @brief Construct an EmbUI section with effect's controls
+     * it generates an overriding section that must be placed on "Effects" page
      */
-    void makeJson(JsonObject o);
+    void mkEmbUIpage(Interface *interf);
+
+    /**
+     * @brief post current control values to EmbUI feeders
+     * 
+     * @param interf 
+     */
+    void embui_control_vals(Interface *interf);
+
+    /**
+     * @brief action handler that renames current preset
+     * 
+     */
+    void embui_preset_rename(Interface *interf, JsonObjectConst data, const char* action);
+
+    /**
+     * @brief action handler that clones current preset into new one
+     * 
+     */
+    void embui_preset_clone(Interface *interf);
+
+    void embui_preset_delete(Interface *interf);
+
 };
 
 
-// forward declaration
-class EffectWorker;
 
 /**
  * Базовый класс эффекта с основными переменными и методами общими для всех эффектов
@@ -315,6 +340,8 @@ public:
     virtual void setControl(size_t idx, int32_t value);
 };
 
+
+
 class EffectWorker {
 private:
     EffectsListItem_t _effItem;        // current effect item and flags
@@ -370,7 +397,7 @@ private:
 public:
     // дефолтный конструктор
     EffectWorker();
-    ~EffectWorker(){ if(_runnerTask_h) vTaskDelete(_runnerTask_h); _runnerTask_h = nullptr; };
+    ~EffectWorker();
 
     // noncopyable
     EffectWorker (const EffectWorker&) = delete;
@@ -489,11 +516,20 @@ public:
      */
     void switchEffect(effect_t eid);
 
+    // switch current effect's preset
+    void switchEffectPreset(int32_t preset);
+
     /**
      * @brief Get the Serialized Controls for current effect
      * 
      * @param obj object to add control k:v pairs
      */
-    void getSerializedControls(JsonObject obj){ _effCfg.makeJson(obj); };
+    //void getSerializedControls(JsonObject obj){ _effCfg.makeJson(obj); };
+
+    /**
+     * @brief Construct an EmbUI section with effect's controls
+     * it generates an overriding section that must be placed on "Effects" page
+     */
+    void mkEmbUIpage(Interface *interf){ _effCfg.mkEmbUIpage(interf); };
 
 };

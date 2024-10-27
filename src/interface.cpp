@@ -632,7 +632,7 @@ void block_effect_controls(Interface *interf, JsonObjectConst data, const char* 
  */
 void publish_effect_controls(Interface *interf, JsonObjectConst data, const char* action){
     LOG(println, "publish_effect_controls()");
-
+return;
     bool remove_iface = false;
     if (!interf){
         // no need to publish if no one is listening
@@ -640,26 +640,6 @@ void publish_effect_controls(Interface *interf, JsonObjectConst data, const char
         interf = new Interface(&embui.feeders);
         remove_iface = true;
     }
-    interf->json_frame_interface();
-    interf->json_section_uidata();
-        String key( "lampui.effControls." );
-        key += myLamp.effwrkr.getCurrentEffectItem().getLbl();
-
-        interf->uidata_pick( key.c_str() );
-    interf->json_section_end();
-
-
-    interf->json_frame_value();
-        size_t idx{0};
-        auto ctrls = myLamp.effwrkr.getEffControls();
-        for (const auto &i : ctrls){
-            String id(A_effect_control);
-            id += idx++;
-            interf->value(id, i.getVal());
-        }
-        // publish also current effect index (for drop-down selector)
-        interf->value(A_effect_switch_idx, e2int( myLamp.effwrkr.getCurrentEffectNumber()) );
-    interf->json_frame_flush();
 
     if (remove_iface) delete interf;
 }
@@ -697,21 +677,17 @@ void ui_block_mainpage_switches(Interface *interf, JsonObjectConst data, const c
     здесь выводится список эффектов который не содержит "скрытые" элементы
 */
 void ui_page_effects(Interface *interf, JsonObjectConst data, const char* action){
-    if (!interf) return;
-
     interf->json_frame_interface();
 
     interf->json_section_uidata();
         interf->uidata_pick( "lampui.pages.effTitle" );
-    interf->json_section_end();
-
-    publish_effect_controls(interf, data, NULL);
 
     interf->json_frame_value();
         interf->value(A_dev_pwrswitch, myLamp.isLampOn());
         interf->value(A_dev_brightness, static_cast<int>(myLamp.getBrightness()));
-    interf->json_frame_flush();
 
+    // build effect controls
+    myLamp.effwrkr.mkEmbUIpage(interf);
 }
 
 /**
@@ -763,7 +739,6 @@ void set_mp3mute(Interface *interf, JsonObjectConst data, const char* action){
 }
 
 void set_mp3volume(Interface *interf, JsonObjectConst data, const char* action){
-    if (!data) return;
     int32_t volume = data[T_mp3vol];
     EVT_POST_DATA(LAMP_SET_EVENTS, e2int(evt::lamp_t::mp3vol), &volume, sizeof(volume));
 }
@@ -996,7 +971,6 @@ void embui_actions_register(){
 
     // Effects control
     embui.action.add(A_effect_switch, effect_switch);                       // effect switcher action
-    embui.action.add(A_effect_ctrls, publish_effect_controls);              // сформировать и опубликовать блок контролов текущего эффекта
     embui.action.add(A_effect_control_mask, set_effect_control);            // Effect controls handler
 
     // display configurations
