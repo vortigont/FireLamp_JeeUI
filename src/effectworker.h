@@ -121,7 +121,7 @@ public:
 class EffConfiguration {
 
     effect_t _eid;                      // энумератор эффекта
-    bool _locked{false};                       // config is locked, no changes possible
+    bool _locked{false};                // config is locked, no setValue possible
 
     Task *tConfigSave = nullptr;        // динамическая таска, задержки при сохранении текущего конфига эффекта в файл
 
@@ -139,16 +139,6 @@ class EffConfiguration {
     void _savecfg();
 
     /**
-     * @brief load effect controls from JsonDocument to a vector
-     * 
-     * @param effcfg - deserialized JsonDocument with effect config (should come from a file)
-     * @param ctrls - destination list to load controls (all existing controls will be cleared)
-     * @return true - on success
-     * @return false - on error
-     */
-    //bool _eff_ctrls_load_from_jdoc(JsonDocument &effcfg, std::vector<std::shared_ptr<EffectControl>> &ctrls);
-
-    /**
      * @brief load controls configuration from manifest file
      * 
      * @return true on success 
@@ -162,6 +152,17 @@ class EffConfiguration {
      * @param seq - profile to load, if <0 then load last used from config
      */
     void _load_preset(int seq = -1);
+
+    /**
+     * @brief lock the configuration
+     * no changes are possible for controls while it is locked
+     * loadEffconfig() call will reset and unlocks the controls
+     * 
+     */
+    void _lock();
+
+    // unlock configuration
+    void _unlock(){ _locked = false; };
 
 public:
 
@@ -179,16 +180,6 @@ public:
     // return lock state
     bool locked() const { return _locked; }
 
-    /**
-     * @brief lock the configuration
-     * no changes are possible for controls while it is locked
-     * loadEffconfig() call will reset and unlocks the controls
-     * 
-     */
-    void lock();
-
-    // unlock configuration
-    void unlock(){ _locked = false; };
 
     /**
      * @brief load effect's configuration from a json file
@@ -206,15 +197,6 @@ public:
      * @param force write immidiately, wo delay
      */
     void autosave(bool force = false);
-
-    /**
-     * @brief Get the json string with Serialized Eff Config object
-     * 
-     * @param nb 
-     * @param replaceBright 
-     * @return String 
-     */
-    //String getSerializedEffConfig(uint8_t replaceBright = 0) const;
 
     /**
      * @brief flush pending config data to file on disk
@@ -431,9 +413,6 @@ public:
      */
     void setLumaCurve(luma::curve c);
 
-    // уделение списков из ФС
-    void removeLists();
-
     /**
      * @brief apply all controls to the current effect
      * should be called after loading new worker/control configs
@@ -472,9 +451,8 @@ public:
     /**
      * @brief создает json индекс файл на ФС из текущего списка эффектов
      * 
-     * @param forceRemove - удалить ВСЕ списки, в.т.ч. списки для выпадающих меню
      */
-    void makeIndexFileFromList(bool forceRemove = false);
+    void makeIndexFileFromList();
 
     /**
      * @brief Get total number of effects in a list 

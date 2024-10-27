@@ -146,13 +146,13 @@ void pubCallback(Interface *interf);
 // disabled as not handled by external lib
 //uint8_t uploadProgress(size_t len, size_t total);
 
-void show_effects_config_param(Interface *interf, JsonObjectConst data, const char* action = NULL);
+//void show_effects_config_param(Interface *interf, JsonObjectConst data, const char* action = NULL);
 
 /**
  * блок формирования страницы с контролами для настроек параметров эффектов
  * здесь выводится ПОЛНЫЙ сипсок эффектов
  */
-void block_effects_config(Interface *interf, JsonObjectConst data, const char* action = NULL);
+//void block_effects_config(Interface *interf, JsonObjectConst data, const char* action = NULL);
 
 void show_settings_mic(Interface *interf, JsonObjectConst data, const char* action = NULL);
 

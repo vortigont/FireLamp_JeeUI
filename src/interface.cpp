@@ -115,7 +115,7 @@ void ui_page_setup_devices(Interface *interf, JsonObjectConst data, const char* 
 void ui_section_effects_list_configuration(Interface *interf, JsonObjectConst data, const char* action);
 // build side-menu
 void ui_section_menu(Interface *interf, JsonObjectConst data, const char* action);
-void show_effects_config(Interface *interf, JsonObjectConst data, const char* action);
+//void show_effects_config(Interface *interf, JsonObjectConst data, const char* action);
 // construct a page with Display setup
 void page_display_setup(Interface *interf, JsonObjectConst data, const char* action);
 // construct a page with TM1637 setup
@@ -204,9 +204,9 @@ void ui_page_selector(Interface *interf, JsonObjectConst data, const char* actio
     page idx = static_cast<page>(data[A_ui_page].as<int>());
 
     switch (idx){
-        case page::eff_config :   // страница "Управление списком эффектов"
-            show_effects_config(interf, {}, NULL);
-            return;
+        //case page::eff_config :   // страница "Управление списком эффектов"
+        //    show_effects_config(interf, {}, NULL);
+        //    return;
         case page::setup_bttn :    // страница настроек кнопки
             return page_button_setup(interf, {}, NULL);
         case page::setup_other :    // страница "настройки"-"другие"
@@ -240,6 +240,7 @@ void ui_section_menu(Interface *interf, JsonObjectConst data, const char* action
     interf->json_section_end();
 }
 
+#ifdef DISABLED_CODE
 /**
  * UI блок с настройками параметров эффекта
  * выводится на странице "Управление списком эффектов"
@@ -307,7 +308,7 @@ void show_effects_config(Interface *interf, JsonObjectConst data, const char* ac
     interf->json_frame_flush();
     //rebuild_effect_list_files(lstfile_t::full);
 }
-
+#endif  // DISABLED_CODE
 
 
 /**
@@ -493,6 +494,7 @@ void page_dfplayer_setup(Interface *interf, JsonObjectConst data, const char* ac
     getset_dfplayer_opt(interf, {}, NULL);
 }
 
+#ifdef DISABLED_CODE
 /**
  * @brief переключение эффекта в выпадающем списке на странице "управление списком эффектов"
  * т.к. страница остается таже, нужно только обновить значения нескольких полей значениями для нового эффекта
@@ -517,7 +519,7 @@ void set_effects_config_list(Interface *interf, JsonObjectConst data, const char
 
     interf->json_frame_flush();
 }
-
+#endif // DISABLED_CODE
 /**
  * @brief UI block with current effect's controls
  * 
@@ -1020,11 +1022,7 @@ void embui_actions_register(){
 
 
     // to be refactored
-
-    embui.action.add(TCONST_effListConf, set_effects_config_list);
-    //embui.action.add(TCONST_set_effect, set_effects_config_param);
     embui.action.add(K_demo, set_demoflag);
-
     embui.action.add(TCONST_AUX, set_auxflag);
 
     // disable old overlay buffer

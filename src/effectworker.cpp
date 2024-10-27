@@ -103,7 +103,7 @@ int32_t EffectControl::setVal(int32_t v){
 }
 
 int32_t EffectControl::getScaledVal() const {
-  LOGV(T_EffCtrl, printf, "getScaledV v:%d min:%d max:%d smn:%d smx:%d\n", _val, _minv, _maxv, _scale_min, _scale_max);
+  LOGV(T_EffCtrl, printf, "getScaledV idx:%u v:%d scaled:%d min:%d max:%d smn:%d smx:%d\n", _idx, _val, map(_val, _scale_min, _scale_max, _minv, _maxv), _minv, _maxv, _scale_min, _scale_max);
   return map(_val, _scale_min, _scale_max, _minv, _maxv);
 }
 
@@ -154,28 +154,30 @@ bool EffConfiguration::_eff_cfg_deserialize(JsonDocument &doc, const char *folde
 }
 */
 
-void EffConfiguration::lock(){
-  flushcfg();
+void EffConfiguration::_lock(){
+  if (_locked) return;
   _locked = true;
+  flushcfg();
 }
 
 bool EffConfiguration::loadEffconfig(effect_t effid){
-  if (_locked) return false;   // won't load if config is not an empty one and locked
+  if (_locked) return false;   // won't load if locked
 
-  lock();
+  _lock();
   _eid = effid;
   _profile_idx = 0;
 
   if (effid == effect_t::empty){
     _controls.clear();
-    unlock();
+    _unlock();
     return true;
   }
 
+  LOGW(T_EffCfg, printf, "loadEffconfig:%u:%s\n", _eid, EffectsListItem_t::getLbl(_eid));
   _load_manifest();
   _load_preset();
 
-  unlock();
+  _unlock();
   return true;
 }
 
@@ -197,29 +199,36 @@ bool EffConfiguration::_load_manifest(){
 
   JsonArray arr = doc[EffectsListItem_t::getLbl(_eid)][T_ctrls];
 
-  if (!arr.size()) return false;
-  
+  if (!arr.size()){
+    LOGE(T_EffCfg, printf, "manifest for eff %u:%s, err:%s is empty!\n", _eid, EffectsListItem_t::getLbl(_eid), error.c_str());
+    return false;
+  }
+
   _controls.reserve(arr.size());
 
   // create control objects from manifest
   size_t idx{0};
   for (JsonObject o : arr){
     _controls.emplace_back(idx, o[P_label].as<const char*>(), 0, o[T_min] | 1, o[T_max] | 10, o[T_smin] | 1, o[T_smax] | 1);
-    LOGV(T_EffCfg, printf, "New Ctrl:%d %d %d %d\n", o[T_min] | 1, o[T_max] | 10, o[T_smin] | 1, o[T_smax] | 1);
+    LOGV(T_EffCfg, printf, "Ctrl:%u %d %d %d %d\n", idx, o[T_min] | 1, o[T_max] | 10, o[T_smin] | 1, o[T_smax] | 1);
     ++idx;
   }
 
-  LOGD(T_EffCfg, printf, "Loaded %u controls from manifest for eff:%s\n", arr.size(), EffectsListItem_t::getLbl(_eid));
+  LOGD(T_EffCfg, printf, "Loaded %u ctrls from manifest for eff: %u:%s\n", arr.size(), _eid, EffectsListItem_t::getLbl(_eid));
   return true;
 }
 
 void EffConfiguration::_load_preset(int seq){
   String fname(effects_cfg_fldr);
   fname += EffectsListItem_t::getLbl(_eid);
+  fname += T__json;
   JsonDocument doc;
   DeserializationError error = embuifs::deserializeFile(doc, fname);
 
-  if (error) return;
+  if (error) {
+    LOGD("EffCfg", printf, "can't load file:%s\n", fname.c_str());
+    return;
+  }
 
   if (seq < 0)
     _profile_idx = doc[T_last_profile];
@@ -232,7 +241,10 @@ void EffConfiguration::_load_preset(int seq){
 
   size_t idx{0};
   for (JsonPair kv : o){
-    setValue(idx++, kv.value());
+    //LOGV("EffCfg", printf, "restore ctrl:%u value:%d\n", idx, kv.value().as<int>());
+    if (idx < _controls.size())
+      _controls.at(idx).setVal(kv.value());
+    ++idx;
   }
 }
 
@@ -258,29 +270,10 @@ int32_t EffConfiguration::getValue(size_t idx) const {
   return -1;
 }
 
-
-/*
-void EffConfiguration::create_eff_default_cfg_file(effect_t nb, String &filename){
-
-  const char* efname = T_EFFNAMEID[(uint8_t)nb]; // выдергиваем имя эффекта из таблицы
-  LOGD(T_EffCfg, printf, "Make default config: %d %s\n", nb, efname);
-
-  String  cfg(T_EFFUICFG[(uint8_t)nb]);    // извлекаем конфиг для UI-эффекта по-умолчанию из флеш-таблицы
-  cfg.replace("@name@", efname);
-  cfg.replace("@ver@", String(geteffcodeversion((uint8_t)nb)) );
-  cfg.replace("@nb@", String(e2int( nb)));
-  
-  File configFile = LittleFS.open(filename, "w");
-  if (configFile){
-    configFile.print(cfg.c_str());
-    configFile.close();
-  }
-}
-*/
 void EffConfiguration::_savecfg(){
   String fname(effects_cfg_fldr);
   fname += EffectsListItem_t::getLbl(_eid);
-  fname += ".json";
+  fname += T__json;
   JsonDocument doc;
   DeserializationError error = embuifs::deserializeFile(doc, fname);
 
@@ -359,9 +352,6 @@ void EffectWorker::_spawn(effect_t eid){
     LOGI(T_EffWrkr, println, "worker is inactive");
     return;
   }
-
-  // save and lock previous configs
-  _effCfg.lock();
 
   // grab mutex
   std::unique_lock<std::mutex> lock(_mtx);
@@ -528,13 +518,11 @@ void EffectWorker::_spawn(effect_t eid){
   default:
     LOGW(T_EffWrkr, println, "Attempt to spawn nonexistent effect!");
     lock.unlock();  // release mutex
-    _effCfg.unlock();
     return;
   }
 
   if (!worker){
     lock.unlock();
-    _effCfg.unlock();
     // unable to create worker object somehow
     _switch_current_effect_item(effect_t::empty);
     return;
@@ -551,7 +539,6 @@ void EffectWorker::_spawn(effect_t eid){
 
   // release mutex after effect init has complete
   lock.unlock();
-  _effCfg.unlock();
   _start_runner();  // start calculator task IF we are marked as active
 
   // set newly loaded luma curve to the lamp
@@ -599,16 +586,8 @@ void EffectWorker::loadIndex(){
   }
 }
 
-void EffectWorker::removeLists(){
-  LittleFS.remove(TCONST_eff_list_json);
-  LittleFS.remove(TCONST_eff_fulllist_json);
-  LittleFS.remove(F_effects_idx);
-}
-
-void EffectWorker::makeIndexFileFromList(bool forceRemove){
+void EffectWorker::makeIndexFileFromList(){
   LOGD(T_EffWrkr, println, "writing effects index file" );
-  if(forceRemove)
-    removeLists();
 
   // need to save current element first
   auto idx = _effItem.eid;
@@ -865,8 +844,8 @@ void EffectWorker::stop(){
 
 void EffectWorker::applyControls(){
   if (!worker) return;
+  LOGD(T_EffWrkr, println, "apply ctrls");
   for (const auto& i : _effCfg.getControls()){
-    //LOGV(T_EffWrkr, printf, "apply ctrl %u\n", i.getIdx());
     worker->setControl(i.getIdx(), i.getScaledVal());
   }
 }
