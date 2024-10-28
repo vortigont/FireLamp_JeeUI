@@ -179,10 +179,9 @@ static constexpr const char* T_whitelight = "whitelight";
 
 
 // firmware defined static index names for each of available effects
-static constexpr std::array<effect_t, 8> fw_effects_index = {
+static constexpr std::array<effect_t, 7> fw_effects_index = {
   effect_t::empty,
   effect_t::bouncingballs,
-  effect_t::fire2021,
   effect_t::magma,
   effect_t::metaballs,
   effect_t::nexus,
