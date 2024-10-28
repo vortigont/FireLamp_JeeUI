@@ -3029,11 +3029,21 @@
             {
               "action":"pick",
               "key":"lampui.effCommon.speed"    
-            },
-            {
-              "action":"pick",
-              "key":"lampui.effCommon.scale"    
-            },
+            }
+          ]
+        },
+        {
+          "html": "input",
+          "id": "eff_control_1",
+          "type": "range",
+          "label": "Источники",
+          "min": 1,
+          "max": 20,
+          "onChange": true
+        },
+        {
+          "section":"uidata",
+          "block":[
             {
               "action":"pick",
               "key":"lampui.effCommon.palette"
@@ -3052,6 +3062,13 @@
           "min": 1,
           "max": 10,
           "value":5,
+          "onChange": true
+        },
+        {
+          "id":"eff_control_5",
+          "html":"input",
+          "label":"Инверсия Y",
+          "type":"checkbox",
           "onChange": true
         }
       ]
@@ -3081,7 +3098,8 @@
           "id":"eff_control_3",
           "html":"input",
           "label":"Режим",
-          "type":"checkbox"
+          "type":"checkbox",
+          "onChange": true
         }
       ]
     }

@@ -768,14 +768,15 @@ class EffectSmokeballs: public EffectCalc {
         uint8_t maxMin;
         uint8_t waveColors;
     };
-    int32_t dimming = 240;
+    bool _invertY{true};
+    int32_t dimming = 10;
     uint8_t blur{20};
     std::vector<Wave> waves{std::vector<Wave>(fb->w()/4)};      // allow max w/4 waves to run simultaneously
 
     void regen();
     void setControl(size_t idx, int32_t value) override;
   public:
-    EffectSmokeballs(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){ speedFactor = 0.05; }
+    EffectSmokeballs(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer, true){ speedFactor = 0.05; }
     void load() override;
     bool run() override;
 };

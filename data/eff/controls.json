@@ -53,10 +53,11 @@
   "smokeballs":{
     "ctrls":[
       {"label":"speed"},
-      {"label":"scale", "smin":1, "smax":64},
+      {"label":"scale", "max":20, "smin":1, "smax":40},
       {"label":"pallete", "min":0, "max":22},
-      {"label":"fade", "smin":10, "smax":250},
-      {"label":"blur", "smin":10, "smax":50}
+      {"label":"fade", "smin":1, "smax":30},
+      {"label":"blur", "smin":20, "smax":80},
+      {"label":"invert", "value":1, "min":0, "max":1}
     ]
   }
 }

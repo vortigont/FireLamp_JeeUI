@@ -3207,7 +3207,7 @@ void EffectSmokeballs::setControl(size_t idx, int32_t value){
   switch (idx){
     // 0 - speed - range 1-10
     case 0:
-      speedFactor = EffectMath::fmap(value, 1, 10, 0.02, 0.1);
+      speedFactor = EffectMath::fmap(value, 1, 10, 0.01, 0.4);
       break;
     // 1 scale - as-is value clamped to 1-width/4
     case 1:
@@ -3216,15 +3216,21 @@ void EffectSmokeballs::setControl(size_t idx, int32_t value){
 
     // 2 palletes - default
 
-    // 3 - fade - intensity range 10-250
+    // 3 - fade - intensity range 1-50
     case 3: {
       dimming = value;
       break;
     }
 
-    // 4 - blur - intensity range 10-50
+    // 4 - blur - raw, range 10-80
     case 4: {
       blur = value;
+      break;
+    }
+
+    // 5 - invert Y - bool
+    case 5: {
+      _invertY = value;
       break;
     }
 
@@ -3243,7 +3249,7 @@ void EffectSmokeballs::regen() {
   for (auto &w : waves){
     //w.pos = w.reg =  random((fb->w() * 10) - ((fb->w() / 3) * 20)); // сумма maxMin + reg не должна выскакивать за макс.Х
     w.pos = w.reg = 10 * random(fb->w()-fb->w()/8); // сумма maxMin + reg не должна выскакивать за макс.Х
-    w.sSpeed = EffectMath::randomf(5., (float)(16 * fb->w()));
+    w.sSpeed = EffectMath::randomf(5, 5 * fb->w());
     w.maxMin = random((fb->w() / 2) * 10, (fb->w() / 3) * 20);
     w.waveColors = random(0, 9) * 28;
     //LOG(printf, "Wave pos:%u, mm:%u\n", w.pos, w.maxMin);
@@ -3256,17 +3262,25 @@ bool EffectSmokeballs::run(){
 
   //uint8_t _amount = map(scale, 1, 32, 2, waves.size()-1);
   // shift Up
-  for (int16_t y = fb->maxHeightIndex(); y != 0; --y)
-    for (int16_t x = 0; x != fb->w(); ++x ){
-      int16_t yy = y - 1;
-      fb->at(x, y) = fb->at(x, yy);
-    }
+  if (_invertY){
+    for (int16_t y = 0;  y != fb->maxHeightIndex(); ++y)
+      for (int16_t x = 0; x != fb->w(); ++x ){
+        int16_t yy = y + 1;
+        fb->at(x, y) = fb->at(x, yy);
+      }
+  } else {
+    for (int16_t y = fb->maxHeightIndex(); y != 0; --y)
+      for (int16_t x = 0; x != fb->w(); ++x ){
+        int16_t yy = y - 1;
+        fb->at(x, y) = fb->at(x, yy);
+      }
+  }
 
-  fb->dim(dimming);
+  fb->fade(dimming);
   EffectMath::blur2d(fb, blur);
   for (auto &w : waves){
-    w.pos = beatsin16((uint8_t)(w.sSpeed * (speedFactor * 5.)), w.reg, w.maxMin + w.reg, w.waveColors*256, w.waveColors*8);
-    EffectMath::drawPixelXYF((float)w.pos / 10., 0.05, ColorFromPalette(*curPalette, w.waveColors), fb);
+    w.pos = beatsin16((uint8_t)(w.sSpeed * speedFactor), w.reg, w.maxMin + w.reg, w.waveColors*256, w.waveColors*8);
+    EffectMath::drawPixelXYF((float)w.pos / 10., _invertY ? fb->maxHeightIndex() : 1, ColorFromPalette(*curPalette, w.waveColors), fb);
   }
 
   EVERY_N_SECONDS(20){
@@ -3276,7 +3290,7 @@ bool EffectSmokeballs::run(){
     }
   }
 
-  if (random8(255) > 253 ) regen();
+  if (random8(255) > 252 ) regen();
   return true;
 }
 
