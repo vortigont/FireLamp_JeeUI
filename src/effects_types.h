@@ -60,11 +60,11 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #pragma once
 #include "config.h"
 #include <FastLED.h>
-#include LANG_FILE                //"text_res.h"
+//#include LANG_FILE                //"text_res.h"
 #include "color_palette.h"
 
-#define SF(s) __SFSTR(s)
-#define __SFSTR(s) #s
+//#define SF(s) __SFSTR(s)
+//#define __SFSTR(s) #s
 
 /**
  * @brief enumerated list of visual effects
