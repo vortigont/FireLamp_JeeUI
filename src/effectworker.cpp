@@ -491,6 +491,9 @@ void EffectWorker::_spawn(effect_t eid){
     worker = std::make_unique<EffectNexus>(canvas);
     break;
 
+  case effect_t::radialfire :
+    worker = std::make_unique<EffectRadialFire>(canvas);
+    break;
    case effect_t::smokeballs :
     worker = std::make_unique<EffectSmokeballs>(canvas);
     break;
@@ -620,9 +623,6 @@ void EffectWorker::_spawn(effect_t eid){
     break;
   case EFF_ENUM::EFF_WATERCOLORS :
     worker = std::make_unique<EffectWcolor>(canvas);
-    break;
-  case EFF_ENUM::EFF_RADIALFIRE :
-    worker = std::make_unique<EffectRadialFire>(canvas);
     break;
   case EFF_ENUM::EFF_SPBALS :
     worker = std::make_unique<EffectSplashBals>(canvas);

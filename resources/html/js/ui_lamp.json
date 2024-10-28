@@ -2997,6 +2997,35 @@
           "onChange": true
         }
       ]
+    },
+    "radialfire":{
+      "section":"eff_ctrls",
+      "replace":true,
+      "block":[
+        {
+          "section":"uidata",
+          "block":[
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.speed"
+            },
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.scale"
+            },
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.palette"
+            }
+          ]
+        },
+        {
+          "id":"eff_control_3",
+          "html":"input",
+          "label":"Режим",
+          "type":"checkbox"
+        }
+      ]
     }
   },
 

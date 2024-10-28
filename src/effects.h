@@ -1261,6 +1261,7 @@ public:
     void load() override;
     bool run() override;
 };
+#endif // DISABLED_CODE
 
 // ----------- Эффект "Неопалимая купина"
 // RadialFire
@@ -1269,20 +1270,19 @@ public:
 class EffectRadialFire : public EffectCalc {
     Vector2D<float> xy_angle{ Vector2D<float>(fb->w(), fb->h()) };
     Vector2D<float> xy_radius{ Vector2D<float>(fb->w(), fb->h()) };
-    float t{0};
-    uint8_t _scale{1};
+    uint16_t t{0};
     bool mode = false;
 
-    void setControl(size_t idx, int32_t value) override;
-    void palettesload() override;
+    //void palettesload() override;
 
 public:
-    EffectRadialFire(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer) {}
+    EffectRadialFire(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer) { speed = 10; }
     void load() override;
+    void setControl(size_t idx, int32_t value) override;
     bool run() override;
 };
 
-
+#ifdef DISABLED_CODE
 class EffectSplashBals : public EffectCalc {
 private:
     uint8_t count = 3;

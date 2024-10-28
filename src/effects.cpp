@@ -4990,16 +4990,28 @@ float EffectWcolor::Blot::getY() {
     }
     return result;
 }
+#endif //#if !defined (OBSOLETE_CODE)
 
 // ----------- Эффект "Неопалимая купина"
 void EffectRadialFire::setControl(size_t idx, int32_t value){
-  if(_val->getId()==1) {
-    speed = EffectCalc::setDynCtrl(_val).toInt();
-    speedFactor = EffectMath::fmap(speed, 1, 255, 2., 20.);
-  } else if(_val->getId()==3) {_scale = EffectCalc::setDynCtrl(_val).toInt();
-  } else if(_val->getId()==5) mode = EffectCalc::setDynCtrl(_val).toInt();
-  else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
-  return String();
+  switch (idx){
+    // 0 speed - raw, expected range 2-20
+    // 1 scale - raw, value clamped to 1-width/4
+    case 1:
+      scale = clamp(value, 1L, static_cast<int32_t>( fb->w()));
+      break;
+
+    // 2 palletes - default
+
+    // 3 - Mode switch boolean
+    case 3: {
+      mode = value;
+      break;
+    }
+
+    default:
+      EffectCalc::setControl(idx, value);
+  }
 }
 
 void EffectRadialFire::load() {
@@ -5011,10 +5023,10 @@ void EffectRadialFire::load() {
       xy_radius.at(x, y) = hypotf(x+offset_x, y+offset_y);
     }
   }
-  palettesload();
-  speedFactor = 10;   // it works pretty slow with lower values
+  //palettesload();
 }
 
+/*
 void EffectRadialFire::palettesload(){
   // собираем свой набор палитр для эффекта
   palettes.reserve(NUMPALETTES);
@@ -5034,23 +5046,26 @@ void EffectRadialFire::palettesload(){
   usepalettes = true; // включаем флаг палитр
   scale2pallete();    // выставляем текущую палитру
 }
-
+*/
 bool EffectRadialFire::run() {
-  t += speedFactor;
-  for (uint8_t y = 0; y < fb->h(); ++y) {
-    for (uint8_t x = 0; x < fb->w(); ++x) {
+  t += speed;
+  for (uint16_t y = 0; y < fb->h(); ++y) {
+    for (uint16_t x = 0; x < fb->w(); ++x) {
       float radius = mode ? fb->maxDim() - 3 - xy_radius.at(x,y) : xy_radius.at(x,y);
-      int16_t bri = inoise8(xy_angle.at(x,y), radius * _scale - t, x * _scale) - radius * (256 /fb->maxDim());
+      int16_t bri = inoise8(xy_angle.at(x,y), radius * scale - t, x * scale) - radius * (256 /fb->maxDim());
       byte col = bri;
-      if (bri < 0) bri = 0; 
-      if(bri) bri = 256 - (bri * 0.2);
-        nblend(fb->at(x, y), ColorFromPalette(*curPalette, col, bri), speed);
+      if (bri < 0)
+        bri = 0; 
+      if (bri)
+        bri = 256 - (bri * 0.2);
+
+      nblend(fb->at(x, y), ColorFromPalette(*curPalette, col, bri), speed);
     }
   }
   return true;
 }
 
-// 
+#if !defined (OBSOLETE_CODE)
 void EffectSplashBals::setControl(size_t idx, int32_t value){
   if(_val->getId()==1) {
     speed = EffectCalc::setDynCtrl(_val).toInt();
