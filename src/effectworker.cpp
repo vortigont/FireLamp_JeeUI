@@ -206,8 +206,8 @@ bool EffConfiguration::_load_manifest(){
   // create control objects from manifest
   size_t idx{0};
   for (JsonObject o : arr){
-    _controls.emplace_back(idx, o[P_label].as<const char*>(), 0, o[T_min] | 1, o[T_max] | 10, o[T_smin] | 1, o[T_smax] | 1);
-    LOGV(T_EffCfg, printf, "Ctrl:%u %d %d %d %d\n", idx, o[T_min] | 1, o[T_max] | 10, o[T_smin] | 1, o[T_smax] | 1);
+    _controls.emplace_back(idx, o[P_label].as<const char*>(), o[P_value], o[T_min] | 1, o[T_max] | 10, o[T_smin] | 1, o[T_smax] | 1);
+    LOGV(T_EffCfg, printf, "Ctrl:%u %d %d %d %d\n", idx, o[T_min] | o[P_value], o[T_max] | 10, o[T_smin] | 1, o[T_smax] | 1);
     ++idx;
   }
 
