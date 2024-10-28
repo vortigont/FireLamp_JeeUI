@@ -112,10 +112,12 @@ class EffectBBalls : public EffectCalc {
         float shift{0};
     };
 
-    float bballsHi = 0.0;                               // An array of heights //array, huh?/
     uint32_t bballsTCycle = 0;                          // The time since the last time the ball struck the ground
+    int32_t _radius{3};                                 // ring radius
+    float bballsHi = 0.0;                               // An array of heights //array, huh?/
     float hue{0};
-    bool halo = true;                                   // ореол
+    bool halo = true;                                   // draw rings
+    uint8_t _fade{0};                                   // draw fading trails
     std::vector<Ball> balls = std::vector<Ball>(BBALLS_DEFAULT_BALLS, Ball());
 
     bool bBallsRoutine();

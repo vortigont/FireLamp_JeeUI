@@ -895,6 +895,7 @@ void EffectBBalls::load(){
   fb->clear();
   balls.assign(scale, Ball());
 
+  //ColorFromPalette(*curPalette, color * 9);
   randomSeed(millis());
   int i = 0;
   for (auto &bball : balls){
@@ -912,21 +913,29 @@ void EffectBBalls::load(){
   }
 }
 
-// !++ (разобраться отдельно)
 void EffectBBalls::setControl(size_t idx, int32_t value){
   switch (idx){
     // case0 - move speed expected range 1500-700
 
     // scale expected range 0-25 maps to 1-width/3 pixels
-    case 1: {
+    case 1:
       scale = map(value, 0, 25, 1, fb->w()/3);
       break;
-    }
+
     // Halo boolean
-    case 2: {
+    case 2:
       halo = value;
       break;
-    }
+
+    // 3 ring radius - raw, expect 1 to about width/2
+    case 3:
+      _radius = value;
+      break;
+
+    // 4 fade - raw 0-255
+    case 4:
+      _fade = value;
+      break;
 
     default:
       EffectCalc::setControl(idx, value);
@@ -938,7 +947,11 @@ bool EffectBBalls::bBallsRoutine()
   // resize must be done inside this routine to provide thread-safety for controls change
   if (balls.size() != scale) load();
 
-  fb->fade(scale <= 16 ? 255 : 50);
+  if (_fade)
+    fb->dim(_fade);
+  else
+    fb->clear();
+
   hue += (float)speed/ 1024;
   for (auto &bball : balls){
     bballsTCycle =  millis() - bball.tlast;     // Calculate the time since the last time the ball was on the ground
@@ -946,9 +959,10 @@ bool EffectBBalls::bBallsRoutine()
     // A little kinematics equation calculates positon as a function of time, acceleration (gravity) and intial velocity
     bballsHi = 0.55 * EffectBBalls_gravity * pow( (float)bballsTCycle / speed , 2) + bball.vimpact * (float)bballsTCycle / speed;
 
-    if ( bballsHi < 0 ) {
+    if (bballsHi < 0) {
+      // If the ball crossed the threshold of the "ground," put it back on the ground
       bball.tlast = millis();
-      bballsHi = 0.0f;                            // If the ball crossed the threshold of the "ground," put it back on the ground
+      //bballsHi = 0.0f;
       bball.vimpact = bball.cor * bball.vimpact ;   // and recalculate its new upward velocity as it's old velocity * COR
 
       //if ( bball.vimpact < 0.01 ) bball.vimpact = EffectMath::sqrt(-2 * EffectBBalls_gravity * EffectBBalls_dropH);  // If the ball is barely moving, "pop" it back up at vImpact0
@@ -960,18 +974,18 @@ bool EffectBBalls::bBallsRoutine()
       }
     }
 
-    // invert Y axis to match display's coordinates
-    bball.pos = fb->w() - bballsHi * (float)fb->maxHeightIndex() / EffectBBalls_dropH;       // Map "h" to a "pos" integer index position on the LED strip
-    //bball.pos = bballsHi * (float)fb->maxHeightIndex() / EffectBBalls_dropH;       // Map "h" to a "pos" integer index position on the LED strip
+    bball.pos = bballsHi * (float)fb->maxHeightIndex() / EffectBBalls_dropH;       // Map "h" to a "pos" integer index position on the LED strip
+    if (halo)
+      bball.pos += _radius;
 
     if (bball.shift > 0.0f && bball.pos >= (float)fb->maxHeightIndex() - .5) {                  // если мячик получил право, то пускай сдвинется на максимальной высоте 1 раз
       bball.shift = 0.0f;
       if (bball.color % 2 == 0) {                                       // чётные налево, нечётные направо
         if (bball.x < 0) bball.x = (fb->maxWidthIndex());
-        else bball.x -= 1;
+        else --bball.x;
       } else {
         if (bball.x > fb->maxWidthIndex()) bball.x = 0;
-        else bball.x += 1;
+        else ++bball.x;
       }
     }
   }
@@ -979,17 +993,18 @@ bool EffectBBalls::bBallsRoutine()
   // Adjust balls brightness
   for (auto bball = balls.begin(); bball != balls.end(); ++bball){
     if (halo){ // если ореол включен
-      EffectMath::drawCircleF(bball->x, bball->pos + 2.75, 3., CHSV(bball->color + (byte)hue, 225, bball->brightness), fb);
+    // fb->h() -  invert Y axis to match display's coordinates
+      EffectMath::drawCircleF(bball->x, fb->h() - bball->pos, _radius, CHSV(bball->color + (byte)hue, 225, bball->brightness), fb);
     } else {
       if (bball == balls.begin()){
         bball->brightness = 156;
-        EffectMath::drawPixelXYF_Y(bball->x, bball->pos, CHSV(bball->color + (byte)hue, 255, bball->brightness), fb, 5);
+        EffectMath::drawPixelXYF_Y(bball->x, fb->h() - bball->pos, CHSV(bball->color + (byte)hue, 255, bball->brightness), fb, 5);
         continue;    // skip first iteration
       } 
       // попытка создать объем с помощью яркости. Идея в том, что шарик на переднем фоне должен быть ярче, чем другой,
       // который движится в том же Х. И каждый следующий ярче предыдущего.
       bball->brightness = bball->x == std::prev(bball)->x ? bball->brightness + 32 : 156;
-      EffectMath::drawPixelXYF_Y(bball->x, bball->pos, CHSV(bball->color + (byte)hue, 255, bball->brightness), fb, 5);
+      EffectMath::drawPixelXYF_Y(bball->x, fb->h() - bball->pos, CHSV(bball->color + (byte)hue, 255, bball->brightness), fb, 5);
     }
   }
 

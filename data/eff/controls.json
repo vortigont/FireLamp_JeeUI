@@ -4,9 +4,11 @@
   },
   "bouncingballs":{
     "ctrls":[
-      {"label":"speed", "smin":1500, "smax":700},
+      {"label":"speed", "smin":2000, "smax":500},
       {"label":"scale", "min":0, "max":25},
-      {"label":"halo", "value":1, "min":0, "max":1}
+      {"label":"halo", "value":1, "min":0, "max":1},
+      {"label":"radius", "value":3, "smin":1, "smax":32},
+      {"label":"fade", "value":0, "smin":0, "smax":255}
     ]
   },
   "fire2021":{

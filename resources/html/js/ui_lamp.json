@@ -2867,7 +2867,6 @@
           "label": "Скорость",
           "min": 1,
           "max": 10,
-          "value":5,
           "onChange": true
         },
         {
@@ -2877,14 +2876,32 @@
           "label": "Масштаб",
           "min": 0,
           "max": 25,
-          "value":5,
           "onChange": true
         },
         {
           "id":"eff_control_2",
           "html":"input",
-          "label":"Ореол",
-          "type":"checkbox"
+          "label":"Кольца",
+          "type":"checkbox",
+          "onChange": true
+        },
+        {
+          "html": "input",
+          "id": "eff_control_3",
+          "type": "range",
+          "label": "Радиус колец",
+          "min": 1,
+          "max": 10,
+          "onChange": true
+        },
+        {
+          "html": "input",
+          "id": "eff_control_4",
+          "type": "range",
+          "label": "Шлейф",
+          "min": 0,
+          "max": 10,
+          "onChange": true
         }
       ]
     },
