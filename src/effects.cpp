@@ -4627,19 +4627,19 @@ void EffectFlags::spain(uint8_t i){
     : CHSV(250, 224, (float)thisVal * 0.68);
   }
 }
-
+#endif //#if !defined (OBSOLETE_CODE)
 
 // ----------- Эффект "Огненная Лампа"
 // https://editor.soulmatelights.com/gallery/546-fire
 // (c) Stepko 17.06.21
 // sparks (c) kostyamat 10.01.2022 https://editor.soulmatelights.com/gallery/1619-fire-with-sparks
-void EffectFire2021::load() {
-  palettesload();    // подгружаем палитры
-}
-
+//void EffectFire2021::load() {
+//  palettesload();    // подгружаем палитры
+//}
+/*
 void EffectFire2021::palettesload(){
   // собираем свой набор палитр для эффекта
-  palettes.reserve(NUMPALETTES);
+  palettes.reserve(12);
   palettes.push_back(&NormalFire_p);
   palettes.push_back(&LithiumFireColors_p);
   palettes.push_back(&NormalFire2_p);
@@ -4652,41 +4652,57 @@ void EffectFire2021::palettesload(){
   palettes.push_back(&RubidiumFireColors_p);
   palettes.push_back(&AlcoholFireColors_p); 
   palettes.push_back(&WaterfallColors_p);
-
-  usepalettes = true; // включаем флаг палитр
-  scale2pallete();    // выставляем текущую палитру
-  
-  //sparks.resize(sparksCount);
-  for (byte i = 0; i != sparks.size(); i++) 
-    sparks[i].reset(fb);
 }
+*/
 
-// !++
 void EffectFire2021::setControl(size_t idx, int32_t value) {
-  if(_val->getId()==1) speedFactor = map(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 20, 100) * getBaseSpeedFactor();
-  else if(_val->getId()==3) _scale = EffectCalc::setDynCtrl(_val).toInt(); //map(EffectCalc::setDynCtrl(_val).toInt(), 1, 100, 10, 132);
-  else if(_val->getId()==5) withSparks = EffectCalc::setDynCtrl(_val).toInt();
-  else if(_val->getId()==6) _fill = EffectCalc::setDynCtrl(_val).toInt();
-  else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
-  return String();
+  switch (idx){
+    // 0 speed: raw, range 20-100
+
+    // 1 scale - raw, range 0-255
+
+    // 2 palletes - default
+
+    // 3 fill - range 0-255
+    case 3: {
+      _fill = value;
+      break;
+    }
+
+    // 4 sparks - range 0-20 maps to 0-width/4
+    case 4: {
+      _sparks_cnt = map(clamp(value, 1L, 20L), 1, 20, 1, fb->w()/4);
+      break;
+    }
+
+    default:
+      EffectCalc::setControl(idx, value);
+  }
 }
 
 bool EffectFire2021::run() {
-  t += speedFactor;
+  t += speed;
 
-  if (withSparks)
-    for (byte i = 0; i != sparks.size(); i++) {
-      sparks[i].addXY((float)random(-1, 2) / 2, 0.5 * speedFactor, fb);
-      if (sparks[i].getY() > fb->h() && !random(0, 50))
-        sparks[i].reset(fb);
-      else
-        sparks[i].draw(fb);
+  if (_sparks_cnt){
+    if (_sparks_cnt != sparks.size()){
+      sparks.assign(_sparks_cnt, Spark());
+      for (auto &s : sparks)
+        s.reset(fb);
     }
+
+    for (auto &s : sparks){
+      s.addXY((float)random(-1, 2) / 2, 0.5 * speed, fb);
+      if (s.getY() > fb->h() && !random(0, 50))
+        s.reset(fb);
+      else
+        s.draw(fb);
+    }
+  }
 
   for (size_t x = 0; x != fb->w(); ++x) {
     for (size_t y = 0; y != fb->h(); ++y) {
      
-      int16_t bri = inoise8(x * _scale, y*_scale - t) - ((withSparks ? y + spacer : y) * _fill);
+      int16_t bri = inoise8(x * scale, y*scale - t) - ((_sparks_cnt ? y + spacer : y) * _fill);
       byte col = bri;
       if( bri < 0 )
         bri = 0;
@@ -4710,7 +4726,7 @@ void EffectFire2021::Spark::reset(LedFB<CRGB> *fb) {
   uint32_t peak = 0;
   speedy = (float)random(5, 30) / 10;
   y = random((fb->h()/4) * 5, (fb->h() /2) * 5) / 5;
-  for (uint8_t i=0; i < fb->w(); i++) {
+  for (uint16_t i=0; i < fb->w(); i++) {
     if (fb->at(i, y).getLuma() > peak){
       peak = fb->at(i, y).getLuma();
       x = i;
@@ -4724,6 +4740,7 @@ void EffectFire2021::Spark::draw(LedFB<CRGB> *fb) {
   EffectMath::drawPixelXYF(x, y, color, fb);
 }
 
+#if !defined (OBSOLETE_CODE)
 // ============= Эффект Цветные драже ===============
 // (c) SottNick
 //по мотивам визуала эффекта by Yaroslaw Turbin 14.12.2020

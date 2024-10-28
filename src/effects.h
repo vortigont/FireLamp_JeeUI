@@ -1124,18 +1124,19 @@ public:
     bool run() override;
     void load() override;
 };
-
+#endif // DISABLED_CODE
 
 // ----------- Эффект "Огненная лампа"
 // https://editor.soulmatelights.com/gallery/546-fire
 // (c) Stepko 17.06.21
 // sparks (c) kostyamat 10.01.2022 https://editor.soulmatelights.com/gallery/1619-fire-with-sparks
+// cpp refactoring (c) Vortigont
 class EffectFire2021 : public EffectCalc {
 private:
-    byte _pal{8}, _fill{10};
-    byte _scale{32};
+    byte _pal{8};
+    uint8_t _fill{10};
     uint16_t t{0};
-    bool withSparks = false;
+    size_t _sparks_cnt{0};
 
     const uint8_t spacer = fb->h()/4;
 
@@ -1156,18 +1157,18 @@ private:
         void draw(LedFB<CRGB> *fb);
     }; 
 
-    std::vector<Spark> sparks{std::vector<Spark>(fb->w() / 4, Spark())};
+    std::vector<Spark> sparks;  //{std::vector<Spark>(fb->w() / 4, Spark())};
 
-    void setControl(size_t idx, int32_t value) override;
-    void palettesload() override;
+    //void palettesload() override;
 
 public:
-    EffectFire2021(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
-    void load() override;
+    EffectFire2021(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){ scale = 32; }
+    //void load() override;
+    void setControl(size_t idx, int32_t value) override;
     bool run() override;
 };
 
-
+#ifdef DISABLED_CODE
 // ============= Эффект Цветные драже ===============
 // (c) SottNick
 //по мотивам визуала эффекта by Yaroslaw Turbin 14.12.2020

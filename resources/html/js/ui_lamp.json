@@ -2888,6 +2888,47 @@
         }
       ]
     },
+    "fire2021":{
+      "section":"eff_ctrls",
+      "replace":true,
+      "block":[
+        {
+          "section":"uidata",
+          "block":[
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.speed"    
+            },
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.scale"    
+            },
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.palette"
+            }
+          ]
+        },
+        {
+          "html": "input",
+          "id": "eff_control_3",
+          "type": "range",
+          "label": "Заполнение",
+          "min": 1,
+          "max": 10,
+          "onChange": true
+        },
+        {
+          "html": "input",
+          "id": "eff_control_4",
+          "type": "range",
+          "label": "Искры",
+          "min": 0,
+          "max": 10,
+          "onChange": true
+        }
+      ]
+    },
     "magma":{
       "section":"eff_ctrls",
       "replace":true,
