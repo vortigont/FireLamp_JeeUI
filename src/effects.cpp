@@ -38,7 +38,8 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "lamp.h"
 #include "patterns.h"
 #include "effects.h"
-#include "timeProcessor.h"
+#include "templates.hpp"
+//#include "timeProcessor.h"
 #include "log.h"   // LOG macro
 
 #define OBSOLETE_CODE
@@ -3183,16 +3184,38 @@ void EffectNexus::resetDot(Nexus &nx) {
   } 
 }
 
-#if !defined (OBSOLETE_CODE)
+
 //-------- Эффект "Детские сны"
 // (c) Stepko https://editor.soulmatelights.com/gallery/505
 // !++
 void EffectSmokeballs::setControl(size_t idx, int32_t value){
-  if(_val->getId()==1) speedFactor = EffectMath::fmap(EffectCalc::setDynCtrl(_val).toInt(), 1., 255., .02, .1)*getBaseSpeedFactor(); // попробовал разные способы управления скоростью. Этот максимально приемлемый, хотя и сильно тупой.
-  else if(_val->getId()==3) _scale = EffectCalc::setDynCtrl(_val).toInt();
-  else if(_val->getId()==5) dimming = EffectCalc::setDynCtrl(_val).toInt();   // dimming control
-  else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
-  return String();
+  switch (idx){
+    // 0 - speed - range 1-10
+    case 0:
+      speedFactor = EffectMath::fmap(value, 1, 10, 0.02, 0.1);
+      break;
+    // 1 scale - as-is value clamped to 1-width/4
+    case 1:
+      scale = clamp(value, 1L, static_cast<int32_t>( fb->w()));
+      break;
+
+    // 2 palletes - default
+
+    // 3 - fade - intensity range 10-250
+    case 3: {
+      dimming = value;
+      break;
+    }
+
+    // 4 - blur - intensity range 10-50
+    case 4: {
+      blur = value;
+      break;
+    }
+
+    default:
+      EffectCalc::setControl(idx, value);
+  }
 }
 
 void EffectSmokeballs::load(){
@@ -3201,7 +3224,7 @@ void EffectSmokeballs::load(){
 }
 
 void EffectSmokeballs::regen() {
-  //LOG(println, "Regen Wawes");
+  waves.assign(scale, Wave());
   for (auto &w : waves){
     //w.pos = w.reg =  random((fb->w() * 10) - ((fb->w() / 3) * 20)); // сумма maxMin + reg не должна выскакивать за макс.Х
     w.pos = w.reg = 10 * random(fb->w()-fb->w()/8); // сумма maxMin + reg не должна выскакивать за макс.Х
@@ -3213,14 +3236,24 @@ void EffectSmokeballs::regen() {
 }
 
 bool EffectSmokeballs::run(){
-  uint8_t _amount = map(_scale, 1, 32, 2, waves.size()-1);
-  shiftUp();
+  // resize must be done inside this routine to provide thread-safety for controls change
+  if (waves.size() != scale) regen();
+
+  //uint8_t _amount = map(scale, 1, 32, 2, waves.size()-1);
+  // shift Up
+  for (int16_t y = fb->maxHeightIndex(); y != 0; --y)
+    for (int16_t x = 0; x != fb->w(); ++x ){
+      int16_t yy = y - 1;
+      fb->at(x, y) = fb->at(x, yy);
+    }
+
   fb->dim(dimming);
-  EffectMath::blur2d(fb, 20);
-  for (size_t j = 0; j != _amount; j++) {
-    waves[j].pos = beatsin16((uint8_t)(waves[j].sSpeed * (speedFactor * 5.)), waves[j].reg, waves[j].maxMin + waves[j].reg, waves[j].waveColors*256, waves[j].waveColors*8);
-    EffectMath::drawPixelXYF((float)waves[j].pos / 10., 0.05, ColorFromPalette(*curPalette, waves[j].waveColors), fb);
+  EffectMath::blur2d(fb, blur);
+  for (auto &w : waves){
+    w.pos = beatsin16((uint8_t)(w.sSpeed * (speedFactor * 5.)), w.reg, w.maxMin + w.reg, w.waveColors*256, w.waveColors*8);
+    EffectMath::drawPixelXYF((float)w.pos / 10., 0.05, ColorFromPalette(*curPalette, w.waveColors), fb);
   }
+
   EVERY_N_SECONDS(20){
     for (auto &w : waves ){
       w.reg += random(-20,20);
@@ -3232,14 +3265,8 @@ bool EffectSmokeballs::run(){
   return true;
 }
 
-void EffectSmokeballs::shiftUp(){       
-  for (byte x = 0; x < fb->w(); x++) {
-    for (int16_t y = fb->h(); y > 0; --y) {
-      fb->at(x, y) = fb->at(x, y - 1);
-    }
-  }
-}
 
+#if !defined (OBSOLETE_CODE)
 // ----------- Эффект "Ёлки-Палки"
 // "Cell" (C) Elliott Kember из примеров программы Soulmate
 // Spaider и Spruce (c) stepko

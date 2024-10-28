@@ -753,9 +753,10 @@ class EffectNexus: public EffectCalc {
     void load() override;
 };
 
-#ifdef DISABLED_CODE
+
 //-------- Эффект "Детские сны"
 // (c) Stepko https://editor.soulmatelights.com/gallery/505
+// cpp refactoring (c) Vortigont 2024
 class EffectSmokeballs: public EffectCalc {
   private:
     struct Wave {
@@ -765,19 +766,19 @@ class EffectSmokeballs: public EffectCalc {
         uint8_t maxMin;
         uint8_t waveColors;
     };
-    uint8_t dimming = 240;
-    uint8_t _scale = 1;
+    int32_t dimming = 240;
+    uint8_t blur{20};
     std::vector<Wave> waves{std::vector<Wave>(fb->w()/4)};      // allow max w/4 waves to run simultaneously
 
-    void shiftUp();
     void regen();
     void setControl(size_t idx, int32_t value) override;
   public:
-    EffectSmokeballs(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){ speedFactor = 0.1; }
+    EffectSmokeballs(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){ speedFactor = 0.05; }
     void load() override;
     bool run() override;
 };
 
+#ifdef DISABLED_CODE
 // ----------- Эффект "Ёлки-Палки"
 // "Cell" (C) Elliott Kember из примеров программы Soulmate
 // Spaider и Spruce (c) stepko

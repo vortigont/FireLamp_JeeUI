@@ -30,5 +30,14 @@
       {"label":"pallete", "min":0, "max":22},
       {"label":"fade"}
     ]
+  },
+  "smokeballs":{
+    "ctrls":[
+      {"label":"speed"},
+      {"label":"scale", "smin":1, "smax":64},
+      {"label":"pallete", "min":0, "max":22},
+      {"label":"fade", "smin":10, "smax":250},
+      {"label":"blur", "smin":10, "smax":50}
+    ]
   }
 }
