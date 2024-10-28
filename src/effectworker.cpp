@@ -96,17 +96,17 @@ EffectControl::EffectControl(
   }
 
   if (_val < _minv || _val > _maxv)
-    _val = (_scale_max - _scale_min + 1) / 2;
+    _val = (_maxv - _minv + 1) / 2;
 }
 
 int32_t EffectControl::setVal(int32_t v){
-  _val = clamp(v, _scale_min, _scale_max);
+  _val = clamp(v, _minv, _maxv);
   return getScaledVal();
 }
 
 int32_t EffectControl::getScaledVal() const {
-  LOGV(T_EffCtrl, printf, "getScaledV idx:%u v:%d scaled:%d min:%d max:%d smn:%d smx:%d\n", _idx, _val, map(_val, _scale_min, _scale_max, _minv, _maxv), _minv, _maxv, _scale_min, _scale_max);
-  return map(_val, _scale_min, _scale_max, _minv, _maxv);
+  LOGV(T_EffCtrl, printf, "getScaledV idx:%u v:%d scaled:%d min:%d max:%d smn:%d smx:%d\n", _idx, _val, map(_val,  _minv, _maxv, _scale_min, _scale_max), _minv, _maxv, _scale_min, _scale_max);
+  return map(_val,  _minv, _maxv, _scale_min, _scale_max);
 }
 
 
@@ -269,7 +269,7 @@ int32_t EffConfiguration::setValue(size_t idx, int32_t v){
   if (idx < _controls.size()){
     if (_locked){
       LOGW("EffCfg", println, "Locked! Skip setValue.");
-      return _controls.at(idx).getVal();
+      return _controls.at(idx).getScaledVal();
     }
     autosave();
     return _controls.at(idx).setVal(v);
@@ -288,9 +288,7 @@ int32_t EffConfiguration::getValue(size_t idx) const {
 
 void EffConfiguration::_savecfg(){
   JsonDocument doc;
-  if (_load_cfg(doc)){  // if error
-    return;
-  }
+  _load_cfg(doc);
   _savecfg(doc);
 }
 
@@ -342,7 +340,7 @@ void EffConfiguration::autosave(bool force) {
     tConfigSave = new Task(CFG_AUTOSAVE_TIMEOUT, TASK_ONCE, [this](){
       _savecfg();
       //fsinforenew();
-      LOGD(T_EffCfg, printf, "Autosave effect config: %u\n", _eid);
+      LOGD(T_EffCfg, printf, "Autosave effect #%u\n", _eid);
     }, &ts, false, nullptr, [this](){tConfigSave=nullptr;}, true);
     tConfigSave->enableDelayed();
   } else {
@@ -1030,21 +1028,21 @@ void EffectCalc::setControl(size_t idx, int32_t value){
     // speed control
     case 0:
       speed = value;
-      LOGD(T_Effect, printf, "Eff speed:%d\n", value);
+      //LOGD(T_Effect, printf, "Eff speed:%d\n", value);
       break;
     // scale control
     case 1:
       scale = value;
-      LOGD(T_Effect, printf, "Eff scale:%d\n", value);
+      //LOGD(T_Effect, printf, "Eff scale:%d\n", value);
       break;
     // pelette switch
     case 2:
       if (value >= palettes.size()){
-        LOGV(T_Effect, printf, "palette idx out of bound:%d of %u\n", value, palettes.size());
+        //LOGV(T_Effect, printf, "palette idx out of bound:%d of %u\n", value, palettes.size());
         return;
       }
       curPalette = palettes.at(value);
-      LOGD(T_Effect, printf, "Eff pallete:%d\n", value);
+      //LOGD(T_Effect, printf, "Eff pallete:%d\n", value);
       break;
 
     default :;

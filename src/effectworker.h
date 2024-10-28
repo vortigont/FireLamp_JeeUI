@@ -92,7 +92,7 @@ public:
      * value would be limited withing scale range and mapped to _minv, _maxv range
      * returns Scaled Value (same as getScaledVal())
      * @param v 
-     * @return int32_t 
+     * @return int32_t Scaled Value (same as getScaledVal())
      */
     int32_t setVal(int32_t v);
 
