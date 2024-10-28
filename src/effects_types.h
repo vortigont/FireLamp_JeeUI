@@ -66,16 +66,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #define SF(s) __SFSTR(s)
 #define __SFSTR(s) #s
 
-
-/**
- * типы/определения для палитр
- */
-//typedef const TProgmemRGBPalette16 PGMPalette;
-
-// все установленные биты для EFFFLAGS
-// 3rd bit must be '0'!
-#define SET_ALL_EFFFLAGS 3
-
 /**
  * @brief enumerated list of visual effects
  * 
@@ -189,8 +179,9 @@ static constexpr const char* T_whitelight = "whitelight";
 
 
 // firmware defined static index names for each of available effects
-static constexpr std::array<effect_t, 4> fw_effects_index = {
+static constexpr std::array<effect_t, 5> fw_effects_index = {
   effect_t::empty,
+  effect_t::bouncingballs,
   effect_t::magma,
   effect_t::metaballs,
   effect_t::nexus
@@ -254,7 +245,7 @@ T_whirls
 };
 
 
-
+#ifdef DISABLED_CODE
 
 /** набор указателей на строки с именами эффектов
  * индекс элемента массива составляет id из EFF_ENUM
@@ -452,12 +443,7 @@ static constexpr std::array<const char *, 256> T_EFFUICFG = {
   E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI  // 240 - 255
 };
 
-/**
- * константы/определения
- */
-//#define MIN_RANGE 1     // заложим дейфан пока нет динамических ползунков
-//#define MAX_RANGE 255   // заложим дейфан пока нет динамических ползунков
-
+#endif // DISABLED_CODE
 
 // ==== Константы для эффектов ====
 

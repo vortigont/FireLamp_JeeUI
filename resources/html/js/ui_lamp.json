@@ -2856,6 +2856,38 @@
   },
 
   "effControls":{
+    "bouncingballs":{
+      "section":"eff_ctrls",
+      "replace":true,
+      "block":[
+        {
+          "html": "input",
+          "id": "eff_control_0",
+          "type": "range",
+          "label": "Скорость",
+          "min": 1,
+          "max": 10,
+          "value":5,
+          "onChange": true
+        },
+        {
+          "html": "input",
+          "id": "eff_control_1",
+          "type": "range",
+          "label": "Масштаб",
+          "min": 0,
+          "max": 25,
+          "value":5,
+          "onChange": true
+        },
+        {
+          "id":"eff_control_2",
+          "html":"input",
+          "label":"Ореол",
+          "type":"checkbox"
+        }
+      ]
+    },
     "magma":{
       "section":"eff_ctrls",
       "replace":true,

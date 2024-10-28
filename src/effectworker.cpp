@@ -453,7 +453,7 @@ EffectWorker::~EffectWorker(){
  * Создаем экземпляр класса калькулятора в зависимости от требуемого эффекта
  */
 void EffectWorker::_spawn(effect_t eid){
-  LOGD(T_EffWrkr, printf, "_spawn(%u)\n", eid);
+  LOGD(T_EffWrkr, printf, "_spawn %u:$s\n", eid, EffectsListItem_t::getLbl(eid));
 
   LedFB<CRGB> *canvas = display.getCanvas().get();
   if (!canvas) { LOGW(T_EffWrkr, println, "no canvas buffer!"); return; }
@@ -475,9 +475,12 @@ void EffectWorker::_spawn(effect_t eid){
     worker = std::make_unique<EffectNone>(canvas);
     break;
 
+   case effect_t::bouncingballs :
+    worker = std::make_unique<EffectBBalls>(canvas);
+    break;
+
    case effect_t::magma :
     worker = std::make_unique<EffectMagma>(canvas);
-    LOGD(T_EffWrkr, println, "Spawn magma");
     break;
 
    case effect_t::metaballs :
@@ -503,9 +506,6 @@ void EffectWorker::_spawn(effect_t eid){
     break;
   case EFF_ENUM::EFF_SINUSOID3 :
     worker = std::make_unique<EffectSinusoid3>(canvas);
-    break;
-  case EFF_ENUM::EFF_BBALS :
-    worker = std::make_unique<EffectBBalls>(canvas);
     break;
   case EFF_ENUM::EFF_PAINTBALL :
     worker = std::make_unique<EffectLightBalls>(canvas);

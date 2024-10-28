@@ -92,14 +92,14 @@ public:
     void load() override { fb->clear(); }; 
     bool run() override;
 };
-
+#endif
 
 
 //----- Эффект "Прыгающие Мячики"
 // перевод на субпиксельную графику kostyamat
-#define bballsGRAVITY          (-9.7f)               // Downward (negative) acceleration of gravity in m/s^2
-#define bballsH0               (2)                   // Starting height, in meters, of the ball (strip length)
-
+constexpr float EffectBBalls_gravity = -9.8f;        // Downward (negative) acceleration of gravity in m/s^2
+constexpr int   EffectBBalls_dropH = 2;              // Starting height, in meters, of the ball (strip length)
+#define BBALLS_DEFAULT_BALLS 5
 class EffectBBalls : public EffectCalc {
     struct Ball {
         uint8_t color;              // прикручено при адаптации для разноцветных мячиков
@@ -112,22 +112,21 @@ class EffectBBalls : public EffectCalc {
         float shift{0};
     };
 
-    float bballsHi = 0.0;                               // An array of heights
-    uint32_t bballsTCycle = 0;                        // The time since the last time the ball struck the ground
+    float bballsHi = 0.0;                               // An array of heights //array, huh?/
+    uint32_t bballsTCycle = 0;                          // The time since the last time the ball struck the ground
     float hue{0};
-    bool halo = false;                                  // ореол
-    uint8_t _scale=1;
-    uint16_t _speed;
-    std::vector<Ball> balls = std::vector<Ball>(1, Ball());
+    bool halo = true;                                   // ореол
+    std::vector<Ball> balls = std::vector<Ball>(BBALLS_DEFAULT_BALLS, Ball());
 
     bool bBallsRoutine();
     void load() override;
 	void setControl(size_t idx, int32_t value) override;
 public:
-    EffectBBalls(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
+    EffectBBalls(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){ scale = BBALLS_DEFAULT_BALLS; }
     bool run() override;
 };
 
+#ifdef DISABLED_CODE
 // ------------- Эффект "Пейнтбол" -------------
 class EffectLightBalls : public EffectCalc {
 private:
