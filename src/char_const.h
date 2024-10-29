@@ -250,7 +250,6 @@ static constexpr const char* T_profiles = "profiles";
 static constexpr const char* T_pwr = "pwr";
 static constexpr const char* T_restoreState = "restoreState";          // Lamp flag "restore state"
 static constexpr const char* T_rx = "rx";
-static constexpr const char* T_effSpeedFactor = "effSpeedFactor";
 static constexpr const char* T_smin = "smin";                           // scale min/max for effect controls
 static constexpr const char* T_smax = "smax";
 static constexpr const char* T_step = "step";

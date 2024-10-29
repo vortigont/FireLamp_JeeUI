@@ -162,7 +162,7 @@ bool EffConfiguration::loadEffconfig(effect_t effid){
     return true;
   }
 
-  LOGW(T_EffCfg, printf, "loadEffconfig:%u:%s\n", _eid, EffectsListItem_t::getLbl(_eid));
+  LOGI(T_EffCfg, printf, "loadEffconfig:%u:%s\n", _eid, EffectsListItem_t::getLbl(_eid));
   _load_manifest();
   // load controls values from an fs json file
   // switch to the last saved preset if any

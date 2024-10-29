@@ -1014,16 +1014,6 @@
           "type": "checkbox"
         },
         {
-          "id": "effSpeedFactor",
-          "html": "input",
-          "value": 1,
-          "type": "range",
-          "min": 0.25,
-          "max": 5,
-          "step": 0.25,
-          "label": "Коэф. скорости (1.0 по-умолчанию)"
-        },
-        {
           "html": "spacer",
           "label": "Демо эффектов"
         },
@@ -1031,12 +1021,6 @@
           "id": "demoRndOrder",
           "html": "input",
           "label": "переключать в случайном порядке",
-          "type": "checkbox"
-        },
-        {
-          "id": "demoRndCtrls",
-          "html": "input",
-          "label": "выставлять случайные параметры",
           "type": "checkbox"
         },
         {

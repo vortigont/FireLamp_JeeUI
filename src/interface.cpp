@@ -828,9 +828,6 @@ void embui_actions_register(){
     // создаем конфигурационные параметры и регистрируем обработчики активностей
 
     // create defailt values for some vars
-    JsonVariant v = embui.getConfig()[T_effSpeedFactor];
-    if (!v.is<float>())
-        embui.getConfig()[T_effSpeedFactor] = SPEEDFACTOR_DEFAULT;
 
     // регистрируем обработчики активностей
     embui.action.set_mainpage_cb(ui_page_main);                             // index page callback
