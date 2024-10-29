@@ -242,7 +242,7 @@ public:
      * 
      * @param interf 
      */
-    void embui_control_vals(Interface *interf);
+    void embui_control_vals(Interface *interf) const;
 
     /**
      * @brief action handler that renames current preset
@@ -531,5 +531,14 @@ public:
      * it generates an overriding section that must be placed on "Effects" page
      */
     void mkEmbUIpage(Interface *interf){ _effCfg.mkEmbUIpage(interf); };
+
+    /**
+     * @brief publishes current effect state to EmbUI feeders
+     * will publish current effect num, all controls and control preset
+     * @note it no Interface pointer is provided then it will check if any active feeds are available and spawns a new interface instance
+     * 
+     * @param interf Interface object pointer
+     */
+    void embui_publish(Interface *interf = nullptr) const;
 
 };

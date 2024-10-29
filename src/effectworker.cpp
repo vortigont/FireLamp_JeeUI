@@ -207,7 +207,7 @@ bool EffConfiguration::_load_manifest(){
   size_t idx{0};
   for (JsonObject o : arr){
     _controls.emplace_back(idx, o[P_label].as<const char*>(), o[P_value], o[T_min] | 1, o[T_max] | 10, o[T_smin] | 1, o[T_smax] | 1);
-    LOGV(T_EffCfg, printf, "Ctrl:%u %d %d %d %d\n", idx, o[T_min] | o[P_value], o[T_max] | 10, o[T_smin] | 1, o[T_smax] | 1);
+    LOGV(T_EffCfg, printf, "_load_manifest Ctrl:%u v:%d %d %d %d\n", idx, o[P_value], o[T_min] | 1, o[T_max] | 10, o[T_smin] | 1, o[T_smax] | 1);
     ++idx;
   }
 
@@ -371,17 +371,18 @@ void EffConfiguration::_jscall_preset_list_rebuild(Interface *interf){
   }
 }
 
-void EffConfiguration::embui_control_vals(Interface *interf){
+void EffConfiguration::embui_control_vals(Interface *interf) const {
   interf->json_frame_value();
+    // publish current effect index (for drop-down selector)
+    interf->value(A_effect_switch_idx, e2int(_eid) );
+    // publish control values
     size_t idx{0};
     for (const auto &i : _controls){
         String id(A_effect_control);
         id += idx++;
         interf->value(id, i.getVal());
     }
-    // publish current effect index (for drop-down selector)
-    interf->value(A_effect_switch_idx, e2int(_eid) );
-    // preset index
+    // controls preset index
     interf->value(A_eff_preset, _preset_idx );
   interf->json_frame_flush();
 }
@@ -451,7 +452,7 @@ EffectWorker::~EffectWorker(){
  * Создаем экземпляр класса калькулятора в зависимости от требуемого эффекта
  */
 void EffectWorker::_spawn(effect_t eid){
-  LOGD(T_EffWrkr, printf, "_spawn %u:$s\n", eid, EffectsListItem_t::getLbl(eid));
+  LOGD(T_EffWrkr, printf, "_spawn %u:%s\n", eid, EffectsListItem_t::getLbl(eid));
 
   LedFB<CRGB> *canvas = display.getCanvas().get();
   if (!canvas) { LOGW(T_EffWrkr, println, "no canvas buffer!"); return; }
@@ -974,9 +975,22 @@ void EffectWorker::setControlValue(size_t idx, int32_t v){
   autoSaveConfig();
 };
 
+void EffectWorker::embui_publish(Interface *interf) const {
+  if (!interf){
+    // no need to publish UI page if no one is listening
+    if (!embui.feeders.available()) return;
+
+    auto iface = std::make_unique<Interface>(&embui.feeders);
+    _effCfg.embui_control_vals(iface.get());
+    return;
+  }
+
+  _effCfg.embui_control_vals(interf);
+}
+
+
 ////////////////////////////////////////////
 /*  *** EffectCalc  implementation  ***   */
-
 
 /**
  * проверка на холостой вызов для эффектов с доп. задержкой

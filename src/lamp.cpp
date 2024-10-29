@@ -113,8 +113,7 @@ void Lamp::lamp_init(){
     uint16_t eff_idx{DEFAULT_EFFECT_NUM};
     handle->get_item(V_effect_idx, eff_idx);
     // switch to last running effect
-    //run_action(ra::eff_switch, eff_idx);
-    switcheffect(effswitch_t::num, effect_t::magma);
+    run_action(ra::eff_switch, eff_idx);
   }
 
   if (!opts.flag.restoreState)
@@ -326,13 +325,14 @@ void Lamp::_switcheffect(effswitch_t action, bool fade, effect_t effnb) {
     if(!vopts.demoMode){
       esp_err_t err;
       std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_lamp, NVS_READWRITE, &err);
-      if (err == ESP_OK)
+      if (err == ESP_OK){
         handle->set_item(V_effect_idx, _swState.pendingEffectNum);
-      //embui.var(V_effect_idx, _swState.pendingEffectNum);
+        //LOGV(T_lamp, printf, "save new effnum:%u to NVS\n", _swState.pendingEffectNum);
+      }
     }
 
     // publish new effect's control to all available feeders
-    publish_effect_controls(nullptr, {}, NULL);
+    effwrkr.embui_publish();
   }
 
   // need to reapply brightness as effect's curve might have changed and we might also need a fader
