@@ -3056,7 +3056,7 @@
         {
           "id":"eff_control_3",
           "html":"input",
-          "label":"Режим",
+          "label":"Инверсия",
           "type":"checkbox",
           "onChange": true
         }

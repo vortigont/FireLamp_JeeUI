@@ -4941,7 +4941,7 @@ void EffectRadialFire::setControl(size_t idx, int32_t value){
 
     // 3 - Mode switch boolean
     case 3: {
-      mode = value;
+      _invert = value;
       break;
     }
 
@@ -4987,7 +4987,7 @@ bool EffectRadialFire::run() {
   t += speed;
   for (uint16_t y = 0; y < fb->h(); ++y) {
     for (uint16_t x = 0; x < fb->w(); ++x) {
-      float radius = mode ? fb->maxDim() - 3 - xy_radius.at(x,y) : xy_radius.at(x,y);
+      float radius = _invert ? fb->maxDim() - 3 - xy_radius.at(x,y) : xy_radius.at(x,y);
       int16_t bri = inoise8(xy_angle.at(x,y), radius * scale - t, x * scale) - radius * (256 /fb->maxDim());
       byte col = bri;
       if (bri < 0)

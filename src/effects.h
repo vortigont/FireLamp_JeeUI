@@ -1233,7 +1233,7 @@ class EffectRadialFire : public EffectCalc {
     Vector2D<float> xy_angle{ Vector2D<float>(fb->w(), fb->h()) };
     Vector2D<float> xy_radius{ Vector2D<float>(fb->w(), fb->h()) };
     uint16_t t{0};
-    bool mode = false;
+    bool _invert = true;
 
     //void palettesload() override;
 

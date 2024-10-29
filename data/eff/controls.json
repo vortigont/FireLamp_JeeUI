@@ -38,7 +38,7 @@
       {"label":"speed", "smin":2, "smax":20},
       {"label":"scale", "smin":1, "smax":32},
       {"label":"pallete", "min":0, "max":22},
-      {"label":"mode"}
+      {"label":"invert", "value":1}
     ]
   },
   "smokeballs":{
