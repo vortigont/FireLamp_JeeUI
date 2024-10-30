@@ -3029,13 +3029,27 @@
             },
             {
               "action":"pick",
-              "key":"lampui.effCommon.scale"
-            },
-            {
-              "action":"pick",
               "key":"lampui.effCommon.palette"
             }
           ]
+        },
+        {
+          "html": "input",
+          "id": "eff_control_1",
+          "type": "range",
+          "label": "Хаос",
+          "min": 0,
+          "max": 20,
+          "onChange": true
+        },
+        {
+          "html": "input",
+          "id": "eff_control_4",
+          "type": "range",
+          "label": "Радиус",
+          "min": 0,
+          "max": 10,
+          "onChange": true
         },
         {
           "id":"eff_control_3",

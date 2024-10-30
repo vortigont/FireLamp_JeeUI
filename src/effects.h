@@ -1234,6 +1234,8 @@ class EffectRadialFire : public EffectCalc {
     Vector2D<float> xy_radius{ Vector2D<float>(fb->w(), fb->h()) };
     uint16_t t{0};
     bool _invert = true;
+    float _radius{0};
+    //float theta =  180 / 2 / PI;
 
     //void palettesload() override;
 

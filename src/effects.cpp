@@ -4934,7 +4934,7 @@ void EffectRadialFire::setControl(size_t idx, int32_t value){
     // 0 speed - raw, expected range 2-20
     // 1 scale - raw, value clamped to 1-width/4
     case 1:
-      scale = clamp(value, 1L, static_cast<int32_t>( fb->w()));
+      scale = value;  //clamp(value, 1L, static_cast<int32_t>( fb->w()));
       break;
 
     // 2 palletes - default
@@ -4945,6 +4945,12 @@ void EffectRadialFire::setControl(size_t idx, int32_t value){
       break;
     }
 
+    // 4 - Radius offset, raw,  0-50
+    case 4: {
+      _radius = value / 10;
+      break;
+    }
+
     default:
       EffectCalc::setControl(idx, value);
   }
@@ -4952,6 +4958,7 @@ void EffectRadialFire::setControl(size_t idx, int32_t value){
 
 void EffectRadialFire::load() {
   constexpr float theta = 180 / 2 / PI;
+  //theta = 180 / 2 / PI;
   int offset_x{-fb->w()/2}, offset_y{-fb->h()/2};
   for (int y = 0; y < fb->h(); ++y) {
     for (int x = 0; x < fb->w(); ++x) {
@@ -4959,7 +4966,7 @@ void EffectRadialFire::load() {
       xy_radius.at(x, y) = hypotf(x+offset_x, y+offset_y);
     }
   }
-  //palettesload();
+  palettesload();
 }
 
 /*
@@ -4987,7 +4994,7 @@ bool EffectRadialFire::run() {
   t += speed;
   for (uint16_t y = 0; y < fb->h(); ++y) {
     for (uint16_t x = 0; x < fb->w(); ++x) {
-      float radius = _invert ? fb->maxDim() - 3 - xy_radius.at(x,y) : xy_radius.at(x,y);
+      float radius = _invert ? fb->maxDim() - /* 3 */ _radius - xy_radius.at(x,y) : xy_radius.at(x,y) + _radius;
       int16_t bri = inoise8(xy_angle.at(x,y), radius * scale - t, x * scale) - radius * (256 /fb->maxDim());
       byte col = bri;
       if (bri < 0)
