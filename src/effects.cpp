@@ -3280,7 +3280,7 @@ bool EffectSmokeballs::run(){
   EffectMath::blur2d(fb, blur);
   for (auto &w : waves){
     w.pos = beatsin16((uint8_t)(w.sSpeed * speedFactor), w.reg, w.maxMin + w.reg, w.waveColors*256, w.waveColors*8);
-    EffectMath::drawPixelXYF((float)w.pos / 10., _invertY ? fb->maxHeightIndex() : 1, ColorFromPalette(*curPalette, w.waveColors), fb);
+    EffectMath::drawPixelXYF((float)w.pos / 10., _invertY ? fb->maxHeightIndex() : 0, ColorFromPalette(*curPalette, w.waveColors), fb);
   }
 
   EVERY_N_SECONDS(20){
