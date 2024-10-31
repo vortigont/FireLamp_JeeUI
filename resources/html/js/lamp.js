@@ -100,7 +100,7 @@ async function make_effect_list(arg){
   effidx.forEach(
     function(v, idx, array){
       if (v.hidden) return
-      efflist.block.push({"label":i18ndata.ru.effNames[v.label], "value":v.idx})
+      efflist.block.push({"label":v.idx + ' - ' + i18ndata.ru.effNames[v.label], "value":v.idx})
     }
   )
 
