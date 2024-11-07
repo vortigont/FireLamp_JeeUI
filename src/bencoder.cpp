@@ -41,7 +41,7 @@
 #include "embuifs.hpp"
 #include "traits.hpp"
 #include "char_const.h"
-#include "constants.h"
+#include "embui_constants.h"
 #include "log.h"
 
 #define ENCODER_TIMER_PERIOD    100   // encoder poller in ms

@@ -37,7 +37,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "effectworker.h"
 #include "effects.h"
 #include "char_const.h"
-#include "constants.h"        // EmbUI string literals
+#include "embui_constants.h"        // EmbUI string literals
 #include "templates.hpp"
 #include "actions.hpp"
 #include "evtloop.h"
@@ -207,7 +207,7 @@ bool EffConfiguration::_load_manifest(){
   size_t idx{0};
   for (JsonObject o : arr){
     _controls.emplace_back(idx, o[P_label].as<const char*>(), o[P_value], o[T_min] | 1, o[T_max] | 10, o[T_smin] | 1, o[T_smax] | 1);
-    LOGV(T_EffCfg, printf, "_load_manifest Ctrl:%u v:%d %d %d %d\n", idx, o[P_value], o[T_min] | 1, o[T_max] | 10, o[T_smin] | 1, o[T_smax] | 1);
+    LOGV(T_EffCfg, printf, "_load_manifest Ctrl:%u v:%d %d %d %d %d\n", idx, o[P_value] | -1, o[T_min] | 1, o[T_max] | 10, o[T_smin] | 1, o[T_smax] | 1);
     ++idx;
   }
 
