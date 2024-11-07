@@ -38,7 +38,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "effects.h"
 #include "char_const.h"
 #include "constants.h"        // EmbUI string literals
-#include "templates.hpp"
 #include "actions.hpp"
 #include "evtloop.h"
 #include "display.hpp"
@@ -488,6 +487,14 @@ void EffectWorker::_spawn(effect_t eid){
 
   case effect_t::nexus :
     worker = std::make_unique<EffectNexus>(canvas);
+    break;
+
+  case effect_t::picassoBalls :
+    worker = std::make_unique<EffectPicassoMetaBalls>(canvas);
+    break;
+
+  case effect_t::picassoShapes :
+    worker = std::make_unique<EffectPicassoShapes>(canvas);
     break;
 
   case effect_t::radialfire :

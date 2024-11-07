@@ -1,4 +1,5 @@
 /*
+Copyright © 2020-2024 Emil Muratov (vortigont)
 Copyright © 2020 Dmytro Korniienko (kDn)
 JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
@@ -520,13 +521,15 @@ public:
     void load() override;
     bool run() override;
 };
+#endif  // DISABLED_CODE
 
 // ------ Эффекты "Пикассо"
 // (c) obliterator
-#define PICASSO_MIN_PARTICLES   6U
-#define PICASSO_MAX_PARTICLES   20U
-class EffectPicasso : public EffectCalc {
-private:
+// cpp refactoring Vortigont
+#define PICASSO_MIN_PARTICLES   5L
+#define PICASSO_MAX_PARTICLES   50L
+class EffectPicassoBase : public EffectCalc {
+protected:
     struct Particle {
         float position_x{0}, position_y{0};
         float speed_x{0}, speed_y{0};
@@ -534,22 +537,43 @@ private:
         uint8_t hue_next = 0;
         int8_t hue_step = 0;
     };
-    uint8_t effId=0;
-    uint8_t pidx = 0;
-    std::vector<Particle> particles{std::vector<Particle>(PICASSO_MIN_PARTICLES, Particle())};
+    const int32_t _num_of_palettes = 22;
+    uint8_t _dimming{0};
+    size_t _palette_idx{0};
+    size_t numParticles{PICASSO_MIN_PARTICLES};
+    std::vector<Particle> particles;
+    GradientPaletteList palettes;
 
+    void _make_palettes();
     void generate(bool reset = false);
     void position();
-    bool picassoRoutine();
-    bool metaBallsRoutine();
-    GradientPaletteList palettes;
+    void _dyn_palette_generator(uint8_t hue);
+
 public:
-    EffectPicasso(LedFB<CRGB> *framebuffer);
-    virtual ~EffectPicasso(){}
+    EffectPicassoBase(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer, true){ _make_palettes(); };
+};
+
+// Picasso
+class EffectPicassoShapes : public EffectPicassoBase {
+    // figure to draw
+    size_t _figure{0};
+public:
+    EffectPicassoShapes(LedFB<CRGB> *framebuffer) : EffectPicassoBase(framebuffer){};
+
     bool run() override;
     void setControl(size_t idx, int32_t value) override;
 };
 
+// Metaballs
+class EffectPicassoMetaBalls : public EffectPicassoBase {
+public:
+    EffectPicassoMetaBalls(LedFB<CRGB> *framebuffer) : EffectPicassoBase(framebuffer){};
+
+    bool run() override;
+    void setControl(size_t idx, int32_t value) override;
+};
+
+#ifdef DISABLED_CODE
 // ------ Эффект "Лавовая Лампа"
 // (c) obliterator
 #define LIQLAMP_MASS_MIN    10

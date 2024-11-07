@@ -3,6 +3,7 @@
 #include "FastLED.h"
 #include "colorutils.h"
 #include <list>
+#include "templates.hpp"
 
 /**
  * Набор палитр в дополнение к тем что идут с FastLED
@@ -97,16 +98,15 @@ DECLARE_GRADIENT_PALETTE( pit );
 
 class GradientPalette{
     CRGBPalette32 pl;
-    int sh;
-    int mn;
-    int mx;
+    uint8_t sh;
+    uint8_t mn;
+    uint8_t mx;
     public:
     GradientPalette(CRGBPalette32 pallete = CRGBPalette32(CRGB::Black), uint8_t shift = 0, uint8_t min = 0, uint8_t max = 0) :
         pl(pallete), sh(shift), mn(min), mx(max) {};
     CRGB GetColor(uint8_t idx, uint8_t br) {
-        if (mn && idx < mn) idx = mn;
-        if (mx && idx > mx) idx = mx;
-        return ColorFromPalette(pl, (uint8_t)idx + sh, br);
+        idx = clamp(idx, mn, mx);
+        return ColorFromPalette(pl, idx + sh, br);
     }
 };
 
@@ -114,15 +114,15 @@ class GradientPaletteList{
     std::vector<GradientPalette> palletes;
     public:
     // return element at [index], if index is out of bounds returns last element
-    GradientPalette operator[](unsigned i){ return (i < palletes.size()) ? palletes.at(i) : palletes.back(); }
+    GradientPalette& operator[](unsigned i){ return (i < palletes.size()) ? palletes.at(i) : palletes.back(); }
 
     int size() const { return palletes.size(); }
     void del(int idx){ if (idx < palletes.size()) palletes.erase(palletes.begin() + idx); }
-    int add(CRGBPalette32 pallete, int shift, uint8_t min = 0, uint8_t max = 0) {
+    int add(const CRGBPalette32& pallete, int shift, uint8_t min = 0, uint8_t max = 0) {
         palletes.emplace_back(pallete, shift, min, max);
         return palletes.size();
     }
-    int add(int idx, CRGBPalette32 pallete, int shift, uint8_t min = 0, uint8_t max = 0) {
+    int add(int idx, const CRGBPalette32& pallete, int shift, uint8_t min = 0, uint8_t max = 0) {
         if (idx < palletes.size()){
             palletes.at(idx) = GradientPalette (pallete, shift, min, max);
         } else {
@@ -130,5 +130,6 @@ class GradientPaletteList{
         }
         return palletes.size();
     }
+    void clear(){ palletes.clear(); }
 };
 

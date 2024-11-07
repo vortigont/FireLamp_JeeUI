@@ -33,6 +33,24 @@
       {"label":"fade"}
     ]
   },
+  "picassoBalls":{
+    "ctrls":[
+      {"label":"speed", "smin":5, "smax":30},
+      {"label":"scale", "smin":5, "smax":50},
+      {"label":"pallete", "min":0, "max":22},
+      {"label":"hue", "smin":0, "smax":255}
+    ]
+  },
+  "picassoShapes":{
+    "ctrls":[
+      {"label":"speed", "smin":5, "smax":30},
+      {"label":"scale", "smin":5, "smax":50},
+      {"label":"pallete", "min":0, "max":22},
+      {"label":"hue", "smin":0, "smax":255},
+      {"label":"dimming", "smin":1, "smax":255},
+      {"label":"shape", "min":0, "max":2}
+    ]
+  },
   "radialfire":{
     "ctrls":[
       {"label":"speed", "smin":5, "smax":30},

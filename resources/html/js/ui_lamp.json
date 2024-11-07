@@ -2962,6 +2962,98 @@
         }
       ]
     },
+    "picassoBalls":{
+      "section":"eff_ctrls",
+      "replace":true,
+      "block":[
+        {
+          "section":"uidata",
+          "block":[
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.speed"
+            },
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.scale"
+            }
+          ]
+        },
+        {
+          "html": "input",
+          "id": "eff_control_2",
+          "type": "range",
+          "label": "Палитры",
+          "min": 0,
+          "max": 22,
+          "onChange": true
+        },
+        {
+          "html": "input",
+          "id": "eff_control_3",
+          "type": "range",
+          "label": "Оттенок",
+          "min": 0,
+          "max": 255,
+          "onChange": true
+        }
+      ]      
+    },
+    "picassoShapes":{
+      "section":"eff_ctrls",
+      "replace":true,
+      "block":[
+        {
+          "section":"uidata",
+          "block":[
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.speed"
+            },
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.scale"
+            }
+          ]
+        },
+        {
+          "html": "input",
+          "id": "eff_control_2",
+          "type": "range",
+          "label": "Палитры",
+          "min": 0,
+          "max": 22,
+          "onChange": true
+        },
+        {
+          "html": "input",
+          "id": "eff_control_3",
+          "type": "range",
+          "label": "Оттенок",
+          "min": 0,
+          "max": 255,
+          "onChange": true
+        },
+        {
+          "html": "input",
+          "id": "eff_control_4",
+          "type": "range",
+          "label": "Затухание",
+          "min": 1,
+          "max": 10,
+          "onChange": true
+        },
+        {
+          "html": "input",
+          "id": "eff_control_5",
+          "type": "range",
+          "label": "Фигура",
+          "min": 0,
+          "max": 3,
+          "onChange": true
+        }
+      ]
+    },
     "smokeballs":{
       "section":"eff_ctrls",
       "replace":true,
