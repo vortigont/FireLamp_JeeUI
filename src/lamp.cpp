@@ -45,7 +45,7 @@ Copyright © 2020 Dmytro Korniienko (kDn)
 #include "nvs_handle.hpp"
 #include "log.h"
 
-#define DEFAULT_EFFECT_NUM  13  // неопалимая купина
+#define DEFAULT_EFFECT_NUM    0                 // empty
 
 #define FADE_MINSTEPTIME      100U              // minimum time between fade steps, ms
 #define FADE_MININCREMENT     2U                // Minimal absolute increment for fading steps
@@ -110,10 +110,13 @@ void Lamp::lamp_init(){
 
   // switch to last running effect
   if (err == ESP_OK) {
-    uint16_t eff_idx{DEFAULT_EFFECT_NUM};
+    uint32_t eff_idx{DEFAULT_EFFECT_NUM};
     handle->get_item(V_effect_idx, eff_idx);
+    LOGI(T_lamp, printf, "restore last eff:%u\n", eff_idx);
     // switch to last running effect
-    run_action(ra::eff_switch, eff_idx);
+    if (eff_idx)
+      _switcheffect(effswitch_t::num, false, static_cast<effect_t>(eff_idx));
+      //run_action(ra::eff_switch, eff_idx);
   }
 
   if (!opts.flag.restoreState)
@@ -326,7 +329,8 @@ void Lamp::_switcheffect(effswitch_t action, bool fade, effect_t effnb) {
       esp_err_t err;
       std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_lamp, NVS_READWRITE, &err);
       if (err == ESP_OK){
-        handle->set_item(V_effect_idx, _swState.pendingEffectNum);
+        uint32_t idx = e2int(_swState.pendingEffectNum);
+        handle->set_item(V_effect_idx, idx);
         //LOGV(T_lamp, printf, "save new effnum:%u to NVS\n", _swState.pendingEffectNum);
       }
     }
