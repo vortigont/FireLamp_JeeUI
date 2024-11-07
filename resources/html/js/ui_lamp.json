@@ -1014,16 +1014,6 @@
           "type": "checkbox"
         },
         {
-          "id": "effSpeedFactor",
-          "html": "input",
-          "value": 1,
-          "type": "range",
-          "min": 0.25,
-          "max": 5,
-          "step": 0.25,
-          "label": "Коэф. скорости (1.0 по-умолчанию)"
-        },
-        {
           "html": "spacer",
           "label": "Демо эффектов"
         },
@@ -1031,12 +1021,6 @@
           "id": "demoRndOrder",
           "html": "input",
           "label": "переключать в случайном порядке",
-          "type": "checkbox"
-        },
-        {
-          "id": "demoRndCtrls",
-          "html": "input",
-          "label": "выставлять случайные параметры",
           "type": "checkbox"
         },
         {
@@ -2201,18 +2185,6 @@
           "html":"spacer"
         },
         {
-          "id": "mic",
-          "html": "input",
-          "value": -1,
-          "type": "number",
-          "label": "Microphone gpio",
-          "min": -1,
-          "step": 1
-        },
-        {
-          "html":"spacer"
-        },
-        {
           "id": "set_gpio",
           "html": "button",
           "type": 1,
@@ -2224,6 +2196,129 @@
           "color": "green",
           "type":0,
           "label":"🔙 Выход"
+        }
+      ]
+    },
+    "effTitle":{
+      "section": "ui_page_effects",
+      "label": "Эффекты",
+      "main": true,
+      "block": [
+        {
+          "section": "switches",
+          "line": true,
+          "block": [
+            {
+              "html": "input",
+              "id": "dev_pwrswitch",
+              "type": "checkbox",
+              "label": "Включить",
+              "onChange": true
+            },
+            {
+              "html": "button",
+              "type": 0,
+              "id": "ui_block_switches",
+              "label": "Выключатели..."
+            }
+          ]
+        },
+        {
+          "html": "input",
+          "id": "dev_brightness",
+          "type": "range",
+          "label": "Яркость",
+          "min": 0,
+          "max": 20,
+          "onChange": true
+        },
+        {
+          "html":"comment",
+          "label":"Эффект"
+        },
+        {
+          "section":"uidata",
+          "block":[
+            {
+              "action":"pick",
+              "key":"lampui.dynamic.efflist",
+              "hint":"dynamicaly generated drop-down list with effect selection",
+              "alt":{
+                "id":"eff_sw_idx",
+                "html":"comment",
+                "label":"generating list of available effects..."
+              }
+            }
+          ]
+        },
+        {
+          "section": "eff_switch_btns",
+          "line": true,
+          "block": [
+            {
+              "id": "eff_sw_prev",
+              "html":"button",
+              "color": "green",
+              "type":0,
+              "label":"<<<"
+            },
+            {
+              "id": "eff_sw_next",
+              "html":"button",
+              "color": "green",
+              "type":0,
+              "label":">>>"
+            }
+          ]
+        },
+        {
+          "section": "eff_ctrls",
+          "hint":"a placeholder for dynamically loaded effect controls",
+          "block":[]
+        },
+        {
+          "section":"eff_preset_blk",
+          "hidden": true,
+          "label":"Профили настроек",
+          "block":[
+            {
+              "id": "eff_preset",
+              "html":"hidden",
+              "hint":"placeholder for Profile selector"
+            },
+            {
+              "section":"eff_preset_lbl",
+              "line":true,
+              "block":[
+                {
+                  "id":"label",
+                  "html":"input",
+                  "label":"Имя пресета",
+                  "type":"text"
+                },
+                {
+                  "id":"eff_preset_lbl",
+                  "html":"button",
+                  "type":1,
+                  "color": "green",
+                  "label":"Переименовать"
+                }
+              ]
+            },
+            {
+              "id":"eff_preset_new",
+              "html":"button",
+              "type":0,
+              "label":"Создать новый"
+            },
+            {
+              "id":"eff_preset_remove",
+              "html":"button",
+              "type":0,
+              "color": "red",
+              "label":"Удалить"
+            }
+          ]
         }
       ]
     }
@@ -2682,13 +2777,6 @@
               "onChange": true
             },
             {
-              "id": "dev_mike",
-              "html": "input",
-              "label": "🎤 Микрофон",
-              "type": "checkbox",
-              "onChange": true
-            },
-            {
               "id": "mp3mute",
               "html": "input",
               "label": "🔇 Откл. мелодии",
@@ -2749,5 +2837,423 @@
         }
       ]
     }
-  }
+  },
+
+  "effControls":{
+    "bouncingballs":{
+      "section":"eff_ctrls",
+      "replace":true,
+      "block":[
+        {
+          "html": "input",
+          "id": "eff_control_0",
+          "type": "range",
+          "label": "Скорость",
+          "min": 1,
+          "max": 10,
+          "onChange": true
+        },
+        {
+          "html": "input",
+          "id": "eff_control_1",
+          "type": "range",
+          "label": "Масштаб",
+          "min": 0,
+          "max": 25,
+          "onChange": true
+        },
+        {
+          "id":"eff_control_2",
+          "html":"input",
+          "label":"Кольца",
+          "type":"checkbox",
+          "onChange": true
+        },
+        {
+          "html": "input",
+          "id": "eff_control_3",
+          "type": "range",
+          "label": "Радиус колец",
+          "min": 1,
+          "max": 10,
+          "onChange": true
+        },
+        {
+          "html": "input",
+          "id": "eff_control_4",
+          "type": "range",
+          "label": "Шлейф",
+          "min": 0,
+          "max": 10,
+          "onChange": true
+        }
+      ]
+    },
+    "magma":{
+      "section":"eff_ctrls",
+      "replace":true,
+      "block":[
+        {
+          "section":"uidata",
+          "block":[
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.speed"    
+            },
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.scale"    
+            },
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.palette12"
+            }
+          ]
+        }
+      ]
+    },
+    "metaballs":{
+      "section":"eff_ctrls",
+      "replace":true,
+      "block":[
+        {
+          "section":"uidata",
+          "block":[
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.speed"    
+            },
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.scale"    
+            },
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.palette"
+            }
+          ]
+        }
+      ]
+    },
+    "nexus":{
+      "section":"eff_ctrls",
+      "replace":true,
+      "block":[
+        {
+          "section":"uidata",
+          "block":[
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.speed"    
+            },
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.scale"    
+            },
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.palette"
+            },
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.fade"
+            }
+          ]
+        }
+      ]
+    },
+    "smokeballs":{
+      "section":"eff_ctrls",
+      "replace":true,
+      "block":[
+        {
+          "section":"uidata",
+          "block":[
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.speed"    
+            }
+          ]
+        },
+        {
+          "html": "input",
+          "id": "eff_control_1",
+          "type": "range",
+          "label": "Источники",
+          "min": 1,
+          "max": 20,
+          "onChange": true
+        },
+        {
+          "section":"uidata",
+          "block":[
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.palette"
+            },
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.fade"
+            }
+          ]
+        },
+        {
+          "html": "input",
+          "id": "eff_control_4",
+          "type": "range",
+          "label": "Размытие",
+          "min": 1,
+          "max": 10,
+          "value":5,
+          "onChange": true
+        },
+        {
+          "id":"eff_control_5",
+          "html":"input",
+          "label":"Инверсия Y",
+          "type":"checkbox",
+          "onChange": true
+        }
+      ]
+    },
+    "radialfire":{
+      "section":"eff_ctrls",
+      "replace":true,
+      "block":[
+        {
+          "section":"uidata",
+          "block":[
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.speed"
+            },
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.palette"
+            }
+          ]
+        },
+        {
+          "html": "input",
+          "id": "eff_control_1",
+          "type": "range",
+          "label": "Хаос",
+          "min": 0,
+          "max": 20,
+          "onChange": true
+        },
+        {
+          "html": "input",
+          "id": "eff_control_4",
+          "type": "range",
+          "label": "Радиус",
+          "min": 0,
+          "max": 10,
+          "onChange": true
+        },
+        {
+          "id":"eff_control_3",
+          "html":"input",
+          "label":"Инверсия",
+          "type":"checkbox",
+          "onChange": true
+        }
+      ]
+    }
+  },
+
+  "effCommon":{
+    "speed":{
+        "html": "input",
+        "id": "eff_control_0",
+        "type": "range",
+        "label": "Скорость",
+        "min": 1,
+        "max": 10,
+        "value":5,
+        "onChange": true
+    },
+    "scale":{
+      "html": "input",
+      "id": "eff_control_1",
+      "type": "range",
+      "label": "Масштаб",
+      "min": 1,
+      "max": 10,
+      "value":5,
+      "onChange": true
+    },
+    "palette":{
+      "id":"eff_control_2",
+      "html":"select",
+      "label":"Палитры",
+      "onChange": true,
+      "value":0,
+      "section":"options",
+      "block":[
+        {
+          "value":0,
+          "label":"Acid"
+        },
+        {
+          "value":1,
+          "label":"Alcohol Fire"
+        },
+        {
+          "value":2,
+          "label":"Aurora"
+        },
+        {
+          "value":3,
+          "label":"Autumn"
+        },
+        {
+          "value":4,
+          "label":"Cloud"
+        },
+        {
+          "value":5,
+          "label":"Copper Fire"
+        },
+        {
+          "value":6,
+          "label":"Evening"
+        },
+        {
+          "value":7,
+          "label":"Forest"
+        },
+        {
+          "value":8,
+          "label":"Heat"
+        },
+        {
+          "value":9,
+          "label":"Holy Lights"
+        },
+        {
+          "value":10,
+          "label":"Lava"
+        },
+        {
+          "value":11,
+          "label":"Lithium Fire"
+        },
+        {
+          "value":12,
+          "label":"Neon"
+        },
+        {
+          "value":13,
+          "label":"Normal Fire"
+        },
+        {
+          "value":14,
+          "label":"Ocean"
+        },
+        {
+          "value":15,
+          "label":"Party"
+        },
+        {
+          "value":16,
+          "label":"Potassium"
+        },
+        {
+          "value":17,
+          "label":"Rainbow"
+        },
+        {
+          "value":18,
+          "label":"Rubidium Fire"
+        },
+        {
+          "value":19,
+          "label":"Sodium Fire"
+        },
+        {
+          "value":20,
+          "label":"Stepkos"
+        },
+        {
+          "value":21,
+          "label":"Waterfall"
+        },
+        {
+          "value":22,
+          "label":"Wood Fire"
+        }
+      ]
+    },
+    "palette12":{
+      "id":"eff_control_2",
+      "html":"select",
+      "label":"Палитры",
+      "onChange": true,
+      "value":0,
+      "section":"options",
+      "block":[
+        {
+          "value":0,
+          "label":"Magma"
+        },
+        {
+          "value":1,
+          "label":"Copper Fire"
+        },
+        {
+          "value":2,
+          "label":"Normal Fire"
+        },
+        {
+          "value":3,
+          "label":"NormalFire2"
+        },
+        {
+          "value":4,
+          "label":"Normal Fire 3"
+        },
+        {
+          "value":5,
+          "label":"Sodium Fire"
+        },
+        {
+          "value":6,
+          "label":"Heat Colors 2"
+        },
+        {
+          "value":7,
+          "label":"Potassium Fire"
+        },
+        {
+          "value":8,
+          "label":"Alcohol Fire"
+        },
+        {
+          "value":9,
+          "label":"LithiumFire"
+        },
+        {
+          "value":10,
+          "label":"WoodFire"
+        },
+        {
+          "value":11,
+          "label":"Waterfall"
+        }
+      ]
+    },
+    "fade":{
+      "html": "input",
+      "id": "eff_control_3",
+      "type": "range",
+      "label": "Затухание",
+      "min": 1,
+      "max": 10,
+      "value":5,
+      "onChange": true
+    }
+  },
+
+  "dynamic":{}
 }

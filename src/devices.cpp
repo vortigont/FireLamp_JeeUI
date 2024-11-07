@@ -64,7 +64,7 @@ MP3PlayerController *mp3player = nullptr;
 
 void tm1637_setup(){
   JsonDocument doc;
-  if (!embuifs::deserializeFile(doc, TCONST_fcfg_display) || doc[T_tm1637] == nullptr) return;      // config is missing, bad or has no TM1637 data
+  if (embuifs::deserializeFile(doc, TCONST_fcfg_display) || doc[T_tm1637] == nullptr) return;      // config is missing, bad or has no TM1637 data
 
   JsonVariantConst cfg( doc[T_tm1637] );
   tm1637_configure(cfg);
@@ -133,7 +133,7 @@ void encoder_cfg_load(JsonVariantConst cfg){
 
 void button_cfg_load(){
   JsonDocument doc;
-  if (!embuifs::deserializeFile(doc, T_benc_cfg)) return;      // config is missing, bad
+  if (embuifs::deserializeFile(doc, T_benc_cfg)) return;      // config is missing, bad
 
   // setup encoder
   JsonVariantConst _enc( doc[T_encoder] );
@@ -219,7 +219,7 @@ void button_configure_events(JsonVariantConst cfg){
 void getset_button_gpio(Interface *interf, const JsonObjectConst data, const char* action){
   {
     JsonDocument doc;
-    if (!embuifs::deserializeFile(doc, T_benc_cfg)) doc.clear();
+    if (embuifs::deserializeFile(doc, T_benc_cfg)) doc.clear();
 
     // if this is a request with no data, then just provide existing configuration and quit
     if (data.isNull()){
@@ -249,7 +249,7 @@ void getset_button_gpio(Interface *interf, const JsonObjectConst data, const cha
 void getset_encoder_gpio(Interface *interf, const JsonObjectConst data, const char* action){
   {
     JsonDocument doc;
-    if (!embuifs::deserializeFile(doc, T_benc_cfg)) doc.clear();
+    if (embuifs::deserializeFile(doc, T_benc_cfg)) doc.clear();
 
     // if this is a request with no data, then just provide existing configuration and quit
     if (data.isNull()){
@@ -280,7 +280,7 @@ void getset_encoder_gpio(Interface *interf, const JsonObjectConst data, const ch
 
 void dfplayer_cfg_load(){
   JsonDocument doc;
-  if (!embuifs::deserializeFile(doc, T_dfplayer_cfg)) return;      // config is missing, bad
+  if (embuifs::deserializeFile(doc, T_dfplayer_cfg)) return;      // config is missing, bad
 
   {
     JsonVariantConst dev( doc[T_device] );
@@ -328,7 +328,7 @@ void dfplayer_setup_opt(JsonVariantConst cfg){
 void getset_dfplayer_device(Interface *interf, const JsonObjectConst data, const char* action){
     {
         JsonDocument doc;
-        if (!embuifs::deserializeFile(doc, T_dfplayer_cfg)) doc.clear();
+        if (embuifs::deserializeFile(doc, T_dfplayer_cfg)) doc.clear();
 
         // if this is a request with no data, then just provide existing configuration and quit
         if (data.isNull()){
@@ -361,7 +361,7 @@ void getset_dfplayer_device(Interface *interf, const JsonObjectConst data, const
 void getset_dfplayer_opt(Interface *interf, const JsonObjectConst data, const char* action){
     {
         JsonDocument doc;
-        if (!embuifs::deserializeFile(doc, T_dfplayer_cfg)) doc.clear();
+        if (embuifs::deserializeFile(doc, T_dfplayer_cfg)) doc.clear();
 
         // if this is a request with no data, then just provide existing configuration and quit
         if (data.isNull()){

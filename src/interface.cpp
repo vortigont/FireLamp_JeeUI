@@ -60,13 +60,8 @@ Copyright © 2020 Dmytro Korniienko (kDn)
 #define DEMO_MAX_PERIOD     900
 #define DEMO_PERIOD_STEP    10
 
-#define MIC_SCALE_DEFAULT   1.28
 #define SPEEDFACTOR_DEFAULT 1.0
 
-// placeholder for effect list rebuilder task
-Task *delayedOptionTask = nullptr;
-// эффект, который сейчас конфигурируется на странице "Управление списком эффектов"
-EffectListElem *confEff = nullptr;
 
 /**
  * @brief numeric indexes for pages
@@ -118,7 +113,9 @@ void block_user_settings(Interface *interf, JsonObjectConst data, const char* ac
 void ui_page_effects(Interface *interf, JsonObjectConst data, const char* action);
 void ui_page_setup_devices(Interface *interf, JsonObjectConst data, const char* action);
 void ui_section_effects_list_configuration(Interface *interf, JsonObjectConst data, const char* action);
-void show_effects_config(Interface *interf, JsonObjectConst data, const char* action);
+// build side-menu
+void ui_section_menu(Interface *interf, JsonObjectConst data, const char* action);
+//void show_effects_config(Interface *interf, JsonObjectConst data, const char* action);
 // construct a page with Display setup
 void page_display_setup(Interface *interf, JsonObjectConst data, const char* action);
 // construct a page with TM1637 setup
@@ -137,29 +134,37 @@ void section_sys_settings_frame(Interface *interf, JsonObjectConst data, const c
  */
 void block_display_setup(Interface *interf, engine_t e);
 
-/**
- * @brief rebuild cached json file with effects names list
- * i.e. used for sideloading in WebUI
- * @param full - rebuild full list or brief, excluding hidden effs
- * todo: implement an event queue
- */
-void rebuild_effect_list_files(lstfile_t lst);
-
-
-
-
-/* *** auxilary functions *** */
-
-// сброс таймера демо и настройка автосохранений
-void resetAutoTimers(bool isEffects=false){
-    myLamp.demoReset();
-    if(isEffects)
-        myLamp.effwrkr.autoSaveConfig();
-}
 
 
 
 /* *** WebUI generators *** */
+
+/**
+ * @brief index page for WebUI,
+ * it loads in each new WebSOcket connection
+ * 
+ */
+void ui_page_main(Interface *interf, JsonObjectConst data, const char* action){
+    if (!interf) return;
+
+    interf->json_frame_interface(); //TINTF_080);
+    interf->json_section_manifest(TINTF_080, embui.macid(), 0, LAMPFW_VERSION_STRING);       // app name/version manifest
+    interf->json_section_end();
+
+    // build side menu
+    ui_section_menu(interf, data, action);
+    interf->json_frame_flush();     // close frame
+
+    // generate effect's list
+    interf->json_frame_jscall("make_effect_list");
+
+    if(WiFi.getMode() & WIFI_MODE_STA){
+        ui_page_effects(interf, data, action);
+    } else {
+        // открываем страницу с настройками WiFi если контроллер не подключен к внешней AP
+        basicui::page_settings_netw(interf, {}, NULL);
+    }
+}
 
 /**
  * @brief loads UI page from uidata storage and triggers value generation for UI elements
@@ -199,12 +204,9 @@ void ui_page_selector(Interface *interf, JsonObjectConst data, const char* actio
     page idx = static_cast<page>(data[A_ui_page].as<int>());
 
     switch (idx){
-        case page::eff_config :   // страница "Управление списком эффектов"
-            show_effects_config(interf, {}, NULL);
-            return;
-        case page::mike :         // страница настроек микрофона
-            show_settings_mic(interf, {}, NULL);
-            return;
+        //case page::eff_config :   // страница "Управление списком эффектов"
+        //    show_effects_config(interf, {}, NULL);
+        //    return;
         case page::setup_bttn :    // страница настроек кнопки
             return page_button_setup(interf, {}, NULL);
         case page::setup_other :    // страница "настройки"-"другие"
@@ -238,6 +240,7 @@ void ui_section_menu(Interface *interf, JsonObjectConst data, const char* action
     interf->json_section_end();
 }
 
+#ifdef DISABLED_CODE
 /**
  * UI блок с настройками параметров эффекта
  * выводится на странице "Управление списком эффектов"
@@ -250,29 +253,14 @@ void ui_section_effects_list_configuration(Interface *interf, JsonObjectConst da
     interf->text(TCONST_effname, "", TINTF_effrename);       // поле под новое имя оставляем пустым
 
     interf->json_section_line();
-        interf->checkbox(TCONST_eff_sel, confEff->canBeSelected(), TINTF_in_sel_lst);      // доступен для выбора в выпадающем списке на главной странице
-        interf->checkbox(TCONST_eff_fav, confEff->enabledInDemo(), TINTF_in_demo);         // доступен в демо-режиме
+        //interf->checkbox(TCONST_eff_sel, !confEff->flags.hidden, TINTF_in_sel_lst);         // доступен для выбора в выпадающем списке на главной странице
+        //interf->checkbox(TCONST_eff_fav, !confEff->flags.disabledInDemo, TINTF_in_demo);    // доступен в демо-режиме
     interf->json_section_end();
 
     interf->spacer();
 
-    // sorting option
-/*
-    interf->select(V_effSort, TINTF_040);
-        interf->option(SORT_TYPE::ST_BASE, TINTF_041);
-        interf->option(SORT_TYPE::ST_END, TINTF_042);
-        interf->option(SORT_TYPE::ST_IDX, TINTF_043);
-        interf->option(SORT_TYPE::ST_AB, TINTF_085);
-        interf->option(SORT_TYPE::ST_AB2, TINTF_08A);
-        interf->option(SORT_TYPE::ST_MIC, TINTF_08D);  // эффекты с микрофоном
-    interf->json_section_end();
-*/
-
     interf->button(button_t::submit, TCONST_set_effect, TINTF_Save, P_GRAY);            // Save btn
     interf->button_value(button_t::submit, TCONST_set_effect, TCONST_copy, TINTF_005);  // Copy button
-    //if (confEff->eff_nb&0xFF00) { // пока удаление только для копий, но в теории можно удалять что угодно
-        // interf->button_value(button_t::submit, TCONST_set_effect, TCONST_del_, TINTF_006, P_RED);
-    //}
 
     interf->json_section_line();
         interf->button_value(button_t::submit, TCONST_set_effect, TCONST_delfromlist, TINTF_0B5, P_RED);    // удалить эффект из списка
@@ -293,17 +281,19 @@ void show_effects_config(Interface *interf, JsonObjectConst data, const char* ac
 
     interf->json_frame_interface();
     interf->json_section_main(A_ui_page_effects_config, TINTF_009);
-    confEff = myLamp.effwrkr.getSelectedListElement();
+    //confEff = myLamp.effwrkr.getSelectedListElement();
 
     if(LittleFS.exists(TCONST_eff_fulllist_json)){
         // формируем и отправляем кадр с запросом подгрузки внешнего ресурса
         interf->json_frame(P_xload);
 
         interf->json_section_content();
-        interf->select(TCONST_effListConf, (int)confEff->eff_nb, TINTF_00A,
+/*
+        interf->select_xload(TCONST_effListConf, static_cast<unsigned>( myLamp.effwrkr.getCurrentEffectItem().eid ), TINTF_00A,
                         true,   // direct
                         TCONST_eff_fulllist_json
                 );
+*/
         interf->json_section_end();
 
         // generate block with effect settings controls
@@ -316,36 +306,10 @@ void show_effects_config(Interface *interf, JsonObjectConst data, const char* ac
 
     interf->constant("Rebuilding effects list, pls retry in a second...");
     interf->json_frame_flush();
-    rebuild_effect_list_files(lstfile_t::full);
+    //rebuild_effect_list_files(lstfile_t::full);
 }
+#endif  // DISABLED_CODE
 
-
-/**
- * @brief индексная страница WebUI
- * 
- */
-void ui_page_main(Interface *interf, JsonObjectConst data, const char* action){
-    if (!interf) return;
-
-    interf->json_frame_interface(); //TINTF_080);
-    interf->json_section_manifest(TINTF_080, embui.macid(), 0, LAMPFW_VERSION_STRING);       // app name/version manifest
-    interf->json_section_end();
-
-    // load uidata objects for the lamp
-    interf->json_section_uidata();
-        interf->uidata_xload("lampui", "js/ui_lamp.json", false, UIDATA_VERSION);
-    interf->json_section_end();
-
-    ui_section_menu(interf, data, action);
-    interf->json_frame_flush();     // close frame
-
-    if(WiFi.getMode() & WIFI_MODE_STA){
-        ui_page_effects(interf, data, action);
-    } else {
-        // открываем страницу с настройками WiFi если контроллер не подключен к внешней AP
-        basicui::page_settings_netw(interf, {}, NULL);
-    }
-}
 
 /**
  * @brief page with buttons leading to configuration of various external devices
@@ -404,7 +368,7 @@ void page_button_setup(Interface *interf, JsonObjectConst data, const char* acti
     getset_encoder_gpio(interf, {}, NULL);
 
     JsonDocument doc;
-    if (!embuifs::deserializeFile(doc, T_benc_cfg)) return;      // config is missing, bad
+    if (embuifs::deserializeFile(doc, T_benc_cfg)) return;      // config is missing, bad
     JsonArray bevents( doc[T_btn_events] );
 
     interf->json_frame_interface();
@@ -481,7 +445,7 @@ void page_button_setup(Interface *interf, JsonObjectConst data, const char* acti
 
 void page_button_evtedit(Interface *interf, JsonObjectConst data, const char* action){
     JsonDocument doc;
-    if (!embuifs::deserializeFile(doc, T_benc_cfg)) return;
+    if (embuifs::deserializeFile(doc, T_benc_cfg)) return;
     JsonArray bevents( doc[T_btn_events] );
     int idx = data[A_button_evt_edit];
     JsonObject obj = bevents[idx];
@@ -502,7 +466,7 @@ void page_button_evtedit(Interface *interf, JsonObjectConst data, const char* ac
 
 void page_button_evt_save(Interface *interf, JsonObjectConst data, const char* action){
     JsonDocument doc;
-    if (!embuifs::deserializeFile(doc, T_benc_cfg)) doc.clear();
+    if (embuifs::deserializeFile(doc, T_benc_cfg)) doc.clear();
     JsonArray bevents( doc[T_btn_events] );
     int idx = data[T_idx];
     JsonObject obj = idx < bevents.size() ? bevents[idx] : bevents.add<JsonObject>();
@@ -530,91 +494,7 @@ void page_dfplayer_setup(Interface *interf, JsonObjectConst data, const char* ac
     getset_dfplayer_opt(interf, {}, NULL);
 }
 
-
-/**
- * обработчик установок эффекта
- */
-void set_effects_config_param(Interface *interf, JsonObjectConst data, const char* action){
-    if (!confEff || !data) return;
-    EffectListElem *effect = confEff;
-    
-    //bool isNumInList =  data[TCONST_numInList] == "1";
-
-    bool isEffHasMic = data[TCONST_effHasMic];
-    myLamp.setEffHasMic(isEffHasMic);
-
-    // sorting is removed
-    //SORT_TYPE st = data[V_effSort].as<SORT_TYPE>();
-    //embui.var(V_effSort, data[V_effSort]); 
-    //myLamp.effwrkr.setEffSortType(st);
-    myLamp.save_flags();
-    
-    String act = data[TCONST_set_effect];
-    // action is to "copy" effect
-    if (act == TCONST_copy) {
-        myLamp.effwrkr.copyEffect(effect); // копируем текущий, это вызовет перестроение индекса
-        LOG(println, "Effect copy, rebuild list");
-        rebuild_effect_list_files(lstfile_t::all);
-        return;
-    }
-    
-    // action is to "delete" effect
-    if (act == TCONST_delfromlist || act == TCONST_delall) {
-        uint16_t tmpEffnb = effect->eff_nb;
-        LOG(printf, "delete effect->eff_nb=%d\n", tmpEffnb);
-        bool isCfgRemove = (act == TCONST_delall);
-
-        if(tmpEffnb==myLamp.effwrkr.getCurrentEffectNumber()){
-            myLamp.effwrkr.switchEffect(EFF_ENUM::EFF_NONE);
-            run_action(ra::eff_next);
-        }
-
-        confEff = myLamp.effwrkr.getEffect(EFF_ENUM::EFF_NONE);
-        if(isCfgRemove){
-            myLamp.effwrkr.deleteEffect(effect, true);  // удаляем только конфиг эффекта с ФС
-            myLamp.effwrkr.makeIndexFileFromList();     // создаем индекс по текущему списку и на выход
-            //myLamp.effwrkr.makeIndexFileFromFS();       // создаем индекс по файлам ФС и на выход
-            rebuild_effect_list_files(lstfile_t::all);
-        } else {
-            myLamp.effwrkr.deleteEffect(effect, false); // удаляем эффект только из активного списка
-            myLamp.effwrkr.makeIndexFileFromList();     // создаем индекс по текущему списку и на выход
-            rebuild_effect_list_files(lstfile_t::selected);
-        }
-        return;
-    }
-
-    // action is "rebuild effects index"
-    if (act == TCONST_makeidx) {
-        myLamp.effwrkr.removeLists();
-        myLamp.effwrkr.initDefault();
-        LOG(println, PSTR("Force rebuild index"));
-        rebuild_effect_list_files(lstfile_t::all);
-        return;
-    }
-    
-    // if selectivity changed, than need to rebuild json eff list for main page
-    if ( data[TCONST_eff_sel] != effect->canBeSelected() ){
-        effect->canBeSelected(data[TCONST_eff_sel]);
-        LittleFS.remove(TCONST_eff_list_json);
-    }
-
-    // could be used in demo
-    effect->enabledInDemo(data[TCONST_eff_fav]);
-
-    // check if effect has been renamed
-    if (!data[TCONST_effname].isNull()){
-        LOG(println, PSTR("Effect rename, rebuild list"));
-        myLamp.effwrkr.setEffectName(data[TCONST_effname], effect);
-        // effect has been renamed, need to update BOTH dropdown list jsons
-        myLamp.effwrkr.makeIndexFileFromList(NULL, true);
-        return show_effects_config(interf, {}, NULL);       // force reload setup page
-    }
-
-    resetAutoTimers();
-    myLamp.effwrkr.makeIndexFileFromList(); // обновить индексный файл после возможных изменений
-    //ui_page_main(interf, {}, NULL);
-}
-
+#ifdef DISABLED_CODE
 /**
  * @brief переключение эффекта в выпадающем списке на странице "управление списком эффектов"
  * т.к. страница остается таже, нужно только обновить значения нескольких полей значениями для нового эффекта
@@ -624,146 +504,23 @@ void set_effects_config_list(Interface *interf, JsonObjectConst data, const char
 
     // получаем номер выбраного эффекта 
     uint16_t num = data[TCONST_effListConf].as<uint16_t>();
-
+/*
     if(confEff){ // если переключаемся, то сохраняем предыдущие признаки в эффект до переключения
         LOG(printf_P, PSTR("eff_sel: %d eff_fav : %d, new eff:%d\n"), data[TCONST_eff_sel].as<bool>(),data[TCONST_eff_fav].as<bool>(), num);
     }
-
-    confEff = myLamp.effwrkr.getEffect(num);
-
-    //resetAutoTimers();
+*/
+    //confEff = myLamp.effwrkr.getEffect(static_cast<effect_t>(num));
 
     // обновляем поля
     interf->json_frame_value();
 
-    interf->value(TCONST_eff_sel, confEff->canBeSelected(), false);          // доступен для выбора в выпадающем списке на главной странице
-    interf->value(TCONST_eff_fav, confEff->enabledInDemo(), false);             // доступен в демо-режиме
+    //interf->value(TCONST_eff_sel, !confEff->flags.hidden, false);          // доступен для выбора в выпадающем списке на главной странице
+    //interf->value(TCONST_eff_fav, !confEff->flags.disabledInDemo, false);             // доступен в демо-режиме
 
     interf->json_frame_flush();
 }
+#endif // DISABLED_CODE
 
-#ifdef EMBUI_USE_MQTT
-void mqtt_publish_selected_effect_config_json(){
-  if (!embui.mqttAvailable()) return;
-  embui.publish("effect/jsconfig", myLamp.effwrkr.getEffCfg().getSerializedEffConfig().c_str(), true);
-}
-#endif
-
-/**
- * @brief UI block with current effect's controls
- * 
- */
-void block_effect_controls(Interface *interf, JsonObjectConst data, const char* action){
-
-    JsonObject sect = interf->json_section_begin(A_effect_ctrls, P_EMPTY, false, false, false, true);   // do not append section to main
-    std::vector<std::shared_ptr<UIControl>> &controls = myLamp.effwrkr.getControls();
-    uint8_t ctrlCaseType; // тип контрола, старшие 4 бита соответствуют CONTROL_CASE, младшие 4 - CONTROL_TYPE
-
-    bool isMicOn = myLamp.getLampFlagsStuct().isMicOn;
-    LOGD(T_WebUI, printf, "Make UI for %d controls\n", controls.size());
-    for(unsigned i=0; i<controls.size();i++)
-        if(controls[i]->getId()==7 && controls[i]->getName().startsWith(TINTF_020))
-            isMicOn = isMicOn && controls[i]->getVal().toInt();
-
-    LOGD(T_WebUI, printf, "block_effect_controls() got %u ctrls\n", controls.size());
-    for (const auto &ctrl : controls){
-        if (!ctrl->getId()) continue;       // skip old "brightness control"
-
-        ctrlCaseType = ctrl->getType();
-        switch(ctrlCaseType>>4){
-            case CONTROL_CASE::HIDE :
-                continue;
-                break;
-            case CONTROL_CASE::ISMICON :
-                if(!isMicOn && (!myLamp.getLampFlagsStuct().isMicOn || !(ctrl->getId()==7 && ctrl->getName().startsWith(TINTF_020)==1) )) continue;
-                break;
-            case CONTROL_CASE::ISMICOFF :
-                if(isMicOn && (myLamp.getLampFlagsStuct().isMicOn || !(ctrl->getId()==7 && ctrl->getName().startsWith(TINTF_020)==1) )) continue;
-                break;
-            default: break;
-        }
-
-        // если сейчас активен демо-режим и включена опция "случайные контролы в демо", добавлять префикс с имени контрола
-        bool rnd_prefix = myLamp.getLampFlagsStuct().demoRndEffControls && myLamp.getLampFlagsStuct().demoMode;
-        String ctrlId(T_effect_dynCtrl);
-        ctrlId += ctrl->getId();
-        String ctrlName = ctrl->getId() ? ctrl->getName() : TINTF_00D;
-
-        switch(ctrlCaseType&0x0F){
-            case CONTROL_TYPE::RANGE :
-                {
-                    if(rnd_prefix && ctrl->getId()>0 && !(ctrl->getId()==7 && ctrl->getName().startsWith(TINTF_020)==1))
-                        ctrlName=String(TINTF_Rand)+ctrlName;
-                    int value = ctrl->getId() ? ctrl->getVal().toInt() : myLamp.getBrightness();
-                    if(interf) interf->range( ctrlId, (long)value, ctrl->getMin().toInt(), ctrl->getMax().toInt(), ctrl->getStep().toInt(), ctrlName, true);
-                }
-                break;
-            case CONTROL_TYPE::EDIT :
-                {
-                    String ctrlName = ctrl->getName();
-                    if(rnd_prefix && ctrl->getId()>0 && !(ctrl->getId()==7 && ctrl->getName().startsWith(TINTF_020)==1))
-                        ctrlName=String(TINTF_Rand)+ctrlName;
-                    
-                    if(interf) interf->text(ctrlId
-                    , ctrl->getVal()
-                    , ctrlName
-                    );
-                    break;
-                }
-            case CONTROL_TYPE::CHECKBOX :
-                {
-                    String ctrlName = ctrl->getName();
-                    if(rnd_prefix && ctrl->getId()>0 && !(ctrl->getId()==7 && ctrl->getName().startsWith(TINTF_020)==1))
-                        ctrlName=String(TINTF_Rand)+ctrlName;
-
-                    if(interf) interf->checkbox(ctrlId
-                    , ctrl->getVal() == "1" ? true : false
-                    , ctrlName
-                    , true
-                    );
-                    break;
-                }
-            default:
-                break;
-        }
-    }
-
-    if(interf) interf->json_section_end();
-
-    String topic(C_pub);
-    topic += A_effect_ctrls;
-    // publish an array of controls (i.e. should go to MQTT)
-    embui.publish(topic.c_str(), sect[P_block].as<JsonArray>(), true);
-
-    LOGD(T_WebUI, println, "eof block_effect_controls()");
-}
-
-/**
- * @brief this function is a wrapper for block_effect_controls() to publish current effect controls to various feeders
- * it either can use a provided Interface object, or it will create a new one if called
- * from an internal fuctions not a post callbacks
- * 
- */
-void publish_effect_controls(Interface *interf, JsonObjectConst data, const char* action){
-    LOG(println, "publish_effect_controls()");
-
-    bool remove_iface = false;
-    if (!interf){
-        // no need to publish if no one is listening
-        if (!embui.feeders.available()) return;
-        interf = new Interface(&embui.feeders);
-        remove_iface = true;
-    }
-    interf->json_frame_interface();
-    block_effect_controls(interf, data, action);
-    interf->json_frame_flush();
-
-    // publish also current effect index (for drop-down selector)
-    interf->json_frame_value();
-    interf->value(A_effect_switch_idx, myLamp.effwrkr.getCurrentEffectNumber());
-    interf->json_frame_flush();
-    if (remove_iface) delete interf;
-}
 
 /**
  * Формирование и вывод секции с дополнительными переключателями на основной странице
@@ -785,106 +542,30 @@ void ui_block_mainpage_switches(Interface *interf, JsonObjectConst data, const c
         interf->value(K_demo, myLamp.getDemoMode());
         // button lock
         getset_btn_lock(interf, {}, NULL);
-        // Mike
-        interf->value(A_dev_mike, myLamp.getMicState());
         // current effect's luma curve
-        interf->value(A_dev_lcurve, e2int(myLamp.effwrkr.getEffCfg().curve));
+        interf->value(A_dev_lcurve, e2int(myLamp.effwrkr.getCurrentEffectItem().curve));
     interf->json_frame_flush();
 
     // request state publishing from MP3Player
     EVT_POST(LAMP_GET_EVENTS, e2int(evt::lamp_t::mp3state));
-
-
-#ifdef DISABLED_CODE
-    interf->json_frame_interface("content");    // replace sections on existing main page
-
-    interf->json_section_begin(T_switches);   // section to replace
-    interf->json_section_line();
-    interf->checkbox(A_dev_pwrswitch, myLamp.isLampOn(), TINTF_00E, true);
-    interf->checkbox(K_demo, myLamp.getMode() == LAMPMODE::MODE_DEMO, TINTF_00F, true);
-    interf->checkbox(TCONST_drawbuff, myLamp.isDrawOn(), TINTF_0CE, true);
-    interf->checkbox(TCONST_Mic, myLamp.isMicOnOff(), TINTF_012, true);
-    interf->checkbox(TCONST_AUX, embui.paramVariant(TCONST_AUX), TCONST_AUX, true);
-    interf->checkbox(T_mp3mute, myLamp.isMP3mute(), "MP3 Mute" /*TINTF_099*/, true);
-
-#ifdef LAMP_DEBUG
-    interf->checkbox(TCONST_debug, myLamp.isDebugOn(), TINTF_08E, true);
-#endif
-    // curve selector
-    interf->select(A_dev_lcurve, e2int(myLamp.effwrkr.getEffCfg().curve), "Luma curve", true);  // luma curve selector
-        interf->option(0, "binary");
-        interf->option(1, "linear");
-        interf->option(2, "cie1931");
-        interf->option(3, "exponent");
-        interf->option(4, "sine");
-        interf->option(5, "square");
-    interf->json_section_end();     // select
-
-    interf->json_section_end();     // json_section_line()
-/*
-    if(mp3->isMP3Mode()){
-        interf->json_section_line("line124"); // спец. имя - разбирается внутри html
-        interf->button(button_t::generic, CMD_MP3_PREV, TINTF_0BD, P_GRAY);
-        interf->button(button_t::generic, CMD_MP3_NEXT, TINTF_0BE, P_GRAY);
-        interf->button(button_t::generic, TCONST_mp3_p5, TINTF_0BF, P_GRAY);
-        interf->button(button_t::generic, TCONST_mp3_n5, TINTF_0C0, P_GRAY);
-        interf->json_section_end(); // line
-    }
-*/
-    // регулятор громкости mp3 плеера
-    interf->range(T_mp3vol, embui.paramVariant(T_mp3vol).as<int>(), 1, 30, 1, TINTF_09B, true);
-
-    interf->button(button_t::generic, A_ui_page_effects, TINTF_exit);
-    interf->json_frame_flush();
-#endif  // DISABLED_CODE
-
 }
 
-/*  Страница "Эффекты" (заглавная страница)
+/*  
+    Страница "Эффекты" (заглавная страница)
     здесь выводится список эффектов который не содержит "скрытые" элементы
 */
 void ui_page_effects(Interface *interf, JsonObjectConst data, const char* action){
-    if (!interf) return;
-
-    // start a new xload frame (need an xload for effects list)
     interf->json_frame_interface();
-    interf->json_section_main(A_ui_page_effects, TINTF_000);
 
-    // open a new section for flags, it could be replaced later with verbose switch box
-    interf->json_section_begin(T_switches);
-        interf->json_section_line();
-            interf->checkbox(A_dev_pwrswitch, myLamp.isLampOn(), TINTF_00E, true);      // power switch
-            interf->button(button_t::generic, A_ui_block_switches, TINTF_014);          // toggle button for additional switches
-        interf->json_section_end(); // line
-    interf->json_section_end(); // flags section
+    interf->json_section_uidata();
+        interf->uidata_pick( "lampui.pages.effTitle" );
 
-    if(LittleFS.exists(TCONST_eff_list_json)){
-        // формируем и отправляем кадр с запросом подгрузки внешнего ресурса
+    interf->json_frame_value();
+        interf->value(A_dev_pwrswitch, myLamp.isLampOn());
+        interf->value(A_dev_brightness, static_cast<int>(myLamp.getBrightness()));
 
-        interf->json_section_xload();
-            // side load drop-down list from /eff_list.json file
-            interf->select(A_effect_switch_idx, myLamp.effwrkr.getCurrentEffectNumber(), TINTF_00A, true, TCONST_eff_list_json);
-        interf->json_section_end(); // close xload section
-
-        // 'next', 'prev' effect buttons << >>
-        interf->json_section_line();
-            interf->button(button_t::generic, A_effect_switch_prev, TINTF_015, TCONST__708090);
-            interf->button(button_t::generic, A_effect_switch_next, TINTF_016, TCONST__5f9ea0);
-        interf->json_section_end();
-
-        interf->range(A_dev_brightness, static_cast<int>(myLamp.getBrightness()), 0, static_cast<int>(myLamp.getBrightnessScale()), 1, TINTF_00D, true);
-
-        // build a block of controls for current effect
-        block_effect_controls(interf, data, NULL);
-
-        interf->button_value(button_t::generic, A_ui_page, e2int(page::eff_config), TINTF_009);
-    } else {
-        interf->constant("Rebuilding effects list, pls retry in a sec...");
-        rebuild_effect_list_files(lstfile_t::selected);
-    }
-
-    interf->json_section_end();     // close main section
-    interf->json_frame_flush();
+    // build effect controls
+    myLamp.effwrkr.mkEmbUIpage(interf);
 }
 
 /**
@@ -909,79 +590,6 @@ void set_auxflag(Interface *interf, JsonObjectConst data, const char* action){
 }
 
 /**
- * @brief UI Draw on screen function
- * 
- */
-/*
-void set_drawing(Interface *interf, JsonObjectConst data, const char* action){
-    // draw pixel
-    if (data[P_color]){
-        CRGB c = strtol(data[P_color].as<const char*>(), NULL, 0);
-        myLamp.writeDrawBuf(c, data["col"], data["row"]);
-        return;
-    }
-    // screen solid fill
-    if (data[TCONST_fill]){
-        CRGB val = strtol(data[TCONST_fill].as<const char*>(), NULL, 0);
-        myLamp.fillDrawBuf(val);
-    }
-}
-
-// clear draw buffer to solid balck
-void set_clear(Interface *interf, JsonObjectConst data, const char* action){
-        CRGB color=CRGB::Black;
-        myLamp.fillDrawBuf(color);
-}
-*/
-void show_settings_mic(Interface *interf, JsonObjectConst data, const char* action){
-    if (!interf) return;
-    interf->json_frame_interface();
-    interf->json_section_main(TCONST_settings_mic, TINTF_020);
-
-    interf->checkbox(A_dev_mike, myLamp.getLampFlagsStuct().isMicOn, TINTF_012, true);
-
-    interf->json_section_begin(TCONST_set_mic);
-        interf->number_constrained(V_micScale, round(myLamp.getLampState().getMicScale() * 10) / 10, TINTF_022, 0.1f, 0.1f, 4.0f);
-        interf->number_constrained(V_micNoise, round(myLamp.getLampState().getMicNoise() * 10) / 10, TINTF_023, 0.1f, 0.0f, 32.0f);
-        interf->range (V_micRdcLvl, (int)myLamp.getLampState().getMicNoiseRdcLevel(), 0, 4, 1, TINTF_024, false);
-        interf->button(button_t::submit, TCONST_set_mic, TINTF_Save, P_GRAY);
-    interf->json_section_end();
-
-    interf->spacer();
-    interf->button(button_t::generic, A_ui_page_settings, TINTF_exit);
-
-    interf->json_frame_flush();
-}
-
-void set_settings_mic(Interface *interf, JsonObjectConst data, const char* action){
-    if (!data) return;
-    float scale = data[V_micScale];
-    float noise = data[V_micNoise];
-    mic_noise_reduce_level_t rdl = static_cast<mic_noise_reduce_level_t>(data[V_micRdcLvl].as<unsigned>());
-
-    LOGI(T_WebUI, printf, "Set mike: scale=%2.3f noise=%2.3f rdl=%u\n", scale, noise, (uint32_t)rdl);
-
-    embui.getConfig()[V_micScale] = scale;
-    embui.getConfig()[V_micNoise] = noise;
-    embui.getConfig()[V_micRdcLvl] = data[V_micRdcLvl];
-
-    // apply to running configuration
-    myLamp.getLampState().setMicScale(scale);
-    myLamp.getLampState().setMicNoise(noise);
-    myLamp.getLampState().setMicNoiseRdcLevel(rdl);
-    // mike has onChange control and does not work here
-    //myLamp.setMicOnOff(data[T_mic]);
-
-    basicui::page_system_settings(interf, data, NULL);
-}
-
-void set_micflag(Interface *interf, JsonObjectConst data, const char* action){
-    if (!data) return;
-    myLamp.setMicOnOff(data[A_dev_mike]);
-    LOGD(T_WebUI, printf, "Set mike: %u/%u\n", data[T_mic].as<bool>(), myLamp.getLampFlagsStuct().isMicOn);
-}
-
-/**
  * @brief WebUI страница "Настройки" - "другие"
  * 
  */
@@ -995,43 +603,6 @@ void page_settings_other(Interface *interf, JsonObjectConst data, const char* ac
     getset_settings_other(interf, {}, NULL);
 }
 
-#ifdef DISABLED_CODE
-/**
- * @brief WebUI страница "Настройки" - "другие" (устаревший код)
- * 
- */
-void page_settings_other(Interface *interf, JsonObjectConst data, const char* action){
-    if (!interf) return;
-    interf->json_frame_interface();
-    interf->json_section_main(A_getset_other, TINTF_002);
-    
-    interf->spacer(TINTF_030);
-
-    interf->checkbox(T_restoreState, myLamp.getLampFlagsStuct().restoreState, TINTF_f_restore_state, false);
-    interf->checkbox(T_swFade, myLamp.getLampFlagsStuct().fadeEffects , TINTF_03D, false);
-    interf->checkbox(T_swWipeScreen, myLamp.getLampFlagsStuct().wipeOnEffChange , TINTF_083, false);
-    interf->json_section_line();
-        interf->checkbox(T_demoRndOrder, myLamp.getLampFlagsStuct().demoRandom , TINTF_03E, false);
-    interf->json_section_end(); // line
-
-    interf->number_constrained(V_dev_brtscale, static_cast<int>(myLamp.getBrightnessScale()), "Brightness Scale", 1, 5, static_cast<int>(MAX_BRIGHTNESS));
-
-    interf->json_section_line();
-        interf->range(T_DemoTime, static_cast<int>(myLamp.getDemoTime()), DEMO_MIN_PERIOD, DEMO_MAX_PERIOD, DEMO_PERIOD_STEP, TINTF_03F);
-        float sf = embui.paramVariant(T_effSpeedFactor);
-        interf->range(T_effSpeedFactor, sf, 0.25f, 4.0f, 0.25f, TINTF_0D3, false);
-    interf->json_section_end(); // line
-
-    interf->button(button_t::submit, A_getset_other, TINTF_Save, P_GRAY);
-
-    interf->spacer();
-    interf->button(button_t::generic, A_ui_page_settings, TINTF_exit);
-
-    interf->json_frame_flush();
-}
-#endif // DISABLED_CODE
-
-// enable/disable overlay drawing
 /*
 void set_overlay_drawing(Interface *interf, JsonObjectConst data, const char* action){
     if (!data) return;
@@ -1046,7 +617,6 @@ void set_mp3mute(Interface *interf, JsonObjectConst data, const char* action){
 }
 
 void set_mp3volume(Interface *interf, JsonObjectConst data, const char* action){
-    if (!data) return;
     int32_t volume = data[T_mp3vol];
     EVT_POST_DATA(LAMP_SET_EVENTS, e2int(evt::lamp_t::mp3vol), &volume, sizeof(volume));
 }
@@ -1058,7 +628,7 @@ void getset_gpios(Interface *interf, JsonObjectConst data, const char* action){
 
     if (!data || !data.size()){
         JsonDocument doc;
-        if (!embuifs::deserializeFile(doc, TCONST_fcfg_gpio)) doc.clear();     // reset if cfg is broken or missing
+        if (embuifs::deserializeFile(doc, TCONST_fcfg_gpio)) doc.clear();     // reset if cfg is broken or missing
 
         // it's a request, send current configuration
         interf->json_frame_value(doc);
@@ -1099,6 +669,7 @@ void ui_page_drawing(Interface *interf, JsonObjectConst data, const char* action
  * 
  */
 void block_user_settings(Interface *interf, JsonObjectConst data, const char* action){
+    interf->json_section_begin("cfg_buttons");
     // periferal devices
     interf->button_value(button_t::generic, A_ui_page, e2int(page::setup_devices), "Внешние устройства");
     // mike
@@ -1109,6 +680,7 @@ void block_user_settings(Interface *interf, JsonObjectConst data, const char* ac
 
     // show gpio setup page button
     interf->button_value(button_t::generic, A_ui_page, e2int(page::setup_gpio), TINTF_gpiocfg);
+    interf->json_frame_flush();
 }
 
 // обработчик, для поддержки приложения WLED APP
@@ -1143,27 +715,6 @@ void show_progress(Interface *interf, JsonObjectConst data, const char* action){
     interf->json_section_end();
     interf->json_frame_flush();
 }
-/*
-uint8_t uploadProgress(size_t len, size_t total){
-    JsonDocument doc;
-    JsonObject obj = doc.to<JsonObject>();
-    static int prev = 0; // используется чтобы не выводить повторно предыдущее значение, хрен с ней, пусть живет
-    float part = total / 50.0;
-    int curr = len / part;
-    uint8_t progress = 100*len/total;
-    if (curr != prev) {
-        prev = curr;
-        for (int i = 0; i < curr; i++) Serial.print("=");
-        Serial.print("\n");
-        obj[TINTF_05A] = progress;
-        CALL_INTF_OBJ(show_progress);
-    }
-    if (myLamp.getGaugeType()!=GAUGETYPE::GT_NONE){
-        GAUGE::GaugeShow(len, total, 100);
-    }
-    return progress;
-}
-*/
 
 /**
  * @brief build a page with LED Display setup
@@ -1213,7 +764,7 @@ void block_display_setup(Interface *interf, engine_t e){
     JsonDocument doc;
     // if config can't be loaded, then just quit
     auto key = e == engine_t::hub75 ? T_hub75 : T_ws2812;
-    if (!embuifs::deserializeFile(doc, TCONST_fcfg_display) || doc[key] == nullptr ) return;
+    if (embuifs::deserializeFile(doc, TCONST_fcfg_display) || doc[key] == nullptr ) return;
 
     interf->json_frame_value(doc[key]);
     interf->json_frame_flush();
@@ -1271,56 +822,12 @@ void block_display_setup(Interface *interf, engine_t e){
 }
 
 /**
- * @brief rebuild cached json file with effects names list
- * i.e. used for sideloading in WebUI
- * @param full - rebuild full list or brief, excluding hidden effs
- * todo: implement an event queue
- */
-void rebuild_effect_list_files(lstfile_t lst){
-    if (delayedOptionTask)      // task is already running, skip
-        return;
-    // schedule a task to rebuild effects names list files
-    delayedOptionTask = new Task(500, TASK_ONCE,
-        [lst](){
-            switch (lst){
-                case lstfile_t::full :
-                    build_eff_names_list_file(myLamp.effwrkr, true);
-                    if (embui.feeders.available()){  // refresh UI page with a regenerated list
-                        Interface interf(&embui.feeders);
-                        show_effects_config(&interf, {}, NULL);
-                    }
-                    break;
-                case lstfile_t::all :
-                    build_eff_names_list_file(myLamp.effwrkr, true);
-                    // intentionally fall-trough this to default
-                    [[fallthrough]];
-                default :
-                    build_eff_names_list_file(myLamp.effwrkr);
-                    if (embui.feeders.available()){  // refresh UI page with a regenerated list
-                        Interface interf(&embui.feeders);
-                        ui_page_main(&interf, {}, NULL);
-                    }
-            }
-        },
-        &ts, true, nullptr, [](){ delayedOptionTask=nullptr; }, true
-    );
-}
-
-
-/**
  * Набор конфигурационных переменных и callback-обработчиков EmbUI
  */
 void embui_actions_register(){
     // создаем конфигурационные параметры и регистрируем обработчики активностей
 
     // create defailt values for some vars
-    JsonVariant v = embui.getConfig()[V_micScale];
-    if (!v.is<float>())
-        embui.getConfig()[V_micScale] = MIC_SCALE_DEFAULT;
-
-    v = embui.getConfig()[T_effSpeedFactor];
-    if (!v.is<float>())
-        embui.getConfig()[T_effSpeedFactor] = SPEEDFACTOR_DEFAULT;
 
     // регистрируем обработчики активностей
     embui.action.set_mainpage_cb(ui_page_main);                             // index page callback
@@ -1339,8 +846,7 @@ void embui_actions_register(){
 
     // Effects control
     embui.action.add(A_effect_switch, effect_switch);                       // effect switcher action
-    embui.action.add(A_effect_ctrls, publish_effect_controls);              // сформировать и опубликовать блок контролов текущего эффекта
-    embui.action.add(A_effect_dynCtrl, set_effects_dynCtrl);                // Effect controls handler
+    embui.action.add(A_effect_control_mask, set_effect_control);            // Effect controls handler
 
     // display configurations
     embui.action.add(A_display_ws2812, set_ledstrip);                       // Set LED strip layout setup
@@ -1365,11 +871,7 @@ void embui_actions_register(){
 
 
     // to be refactored
-
-    embui.action.add(TCONST_effListConf, set_effects_config_list);
-    embui.action.add(TCONST_set_effect, set_effects_config_param);
     embui.action.add(K_demo, set_demoflag);
-
     embui.action.add(TCONST_AUX, set_auxflag);
 
     // disable old overlay buffer
@@ -1377,8 +879,5 @@ void embui_actions_register(){
     //embui.action.add(TCONST_drawbuff, set_overlay_drawing);
 
     embui.action.add(T_display_type, page_display_setup);                // load display setup page depending on selected disp type (action for drop down list)
-
-    embui.action.add(TCONST_set_mic, set_settings_mic);
-    embui.action.add(A_dev_mike, set_micflag);
 
 }

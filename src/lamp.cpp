@@ -52,11 +52,7 @@ Copyright © 2020 Dmytro Korniienko (kDn)
 #define FADE_LOWBRTFRACT      5U                // доля от максимальной шкалы яркости, до которой работает затухание при смене эффектов. Если текущая яркость ниже двойной доли, то затухание пропускается
 
 
-Lamp::Lamp() : effwrkr(&lampState){
-  lampState.micAnalyseDivider = 1; // анализ каждый раз
-  lampState.flags = 0; // сборосить все флаги состояния
-  lampState.speedfactor = 1.0; // дефолтное значение
-}
+Lamp::Lamp() {}
 
 Lamp::~Lamp(){
   events_unsubsribe();
@@ -83,26 +79,13 @@ void Lamp::lamp_init(){
   } else {
     LOGD(T_lamp, printf, "Err opening NVS handle: %s\n", esp_err_to_name(err));
   }
-  //_brightnessScale = embui.paramVariant(V_dev_brtscale)  | DEF_BRT_SCALE;
-  //globalBrightness = embui.paramVariant(A_dev_brightness) | DEF_BRT_SCALE/2;
 
   _brightness(0, true);          // начинаем с полностью потушеной матрицы 0-й яркости
 
-  // switch to last running effect
-  if (err == ESP_OK) {
-    uint16_t eff_idx{DEFAULT_EFFECT_NUM};
-    handle->get_item(V_effect_idx, eff_idx);
-    // switch to last running effect
-    run_action(ra::eff_switch, eff_idx);
-  }
 
   // GPIO's
   JsonDocument doc;
-  if (embuifs::deserializeFile(doc, TCONST_fcfg_gpio)){
-    // restore mic gpio
-    _pins.mic = doc[T_mic] | static_cast<int>(GPIO_NUM_NC);
-    // copy gpio value to this ugly shared struct for EffectWorker
-    lampState.mic_gpio = _pins.mic;
+  if (!embuifs::deserializeFile(doc, TCONST_fcfg_gpio)){
 
     // restore fet gpio
     _pins.fet = doc[TCONST_mosfet_gpio] | static_cast<int>(GPIO_NUM_NC);
@@ -122,13 +105,16 @@ void Lamp::lamp_init(){
     }
   }
 
-  // restore mike on/off state
-  if (_pins.mic != GPIO_NUM_NC){
-    vopts.isMicOn = lampState.isMicOn = opts.flag.isMicOn;
-  }
+  // load effect's index
+  effwrkr.loadIndex();
 
-  // copy demo values to this ugly shared struct for EffectWorker
-  lampState.demoRndEffControls = opts.flag.demoRndEffControls;
+  // switch to last running effect
+  if (err == ESP_OK) {
+    uint16_t eff_idx{DEFAULT_EFFECT_NUM};
+    handle->get_item(V_effect_idx, eff_idx);
+    // switch to last running effect
+    run_action(ra::eff_switch, eff_idx);
+  }
 
   if (!opts.flag.restoreState)
     return;
@@ -142,15 +128,6 @@ void Lamp::lamp_init(){
   // if panel was On, switch it back to On
   if (opts.flag.pwrState){
     power(true);
-    // return
-  }
-}
-
-void Lamp::handle(){
-  static unsigned long mic_check = 0;
-  if(effwrkr.status() && vopts.isMicOn && vopts.pwrState && (mic_check + MIC_POLLRATE < millis()) ){
-    micHandler();
-    mic_check = millis();
   }
 }
 
@@ -210,72 +187,6 @@ void Lamp::power(bool pwr, bool restore_state){
   }
 }
 
-void Lamp::micHandler()
-{
-  static uint8_t counter=0;
-  if(effwrkr.getCurrentEffectNumber()==EFF_ENUM::EFF_NONE)
-    return;
-
-  if (!mw && vopts.isMicOn && lampState.micAnalyseDivider){
-    //create micfft object
-    mw = new(std::nothrow) MicWorker(_pins.mic, lampState.mic_scale,lampState.mic_noise,true);   // создаем полноценный объект и держим в памяти
-    if(!mw) {
-      return; // не удалось выделить память, на выход
-    }
-  } else {
-    // delete object
-    if (mw){
-      delete mw;
-      mw = nullptr;
-    }
-    return;
-  }
-
-  lampState.samp_freq = mw->process(lampState.noise_reduce); // возвращаемое значение - частота семплирования
-  lampState.last_min_peak = mw->getMinPeak();
-  lampState.last_max_peak = mw->getMaxPeak();
-  lampState.cur_val = mw->getCurVal();
-
-  if(!counter) // раз на N измерений берем частоту, т.к. это требует обсчетов
-    lampState.last_freq = mw->analyse(); // возвращаемое значение - частота главной гармоники
-  if(lampState.micAnalyseDivider)
-    counter = (counter+1)%(0x01<<(lampState.micAnalyseDivider-1)); // как часто выполнять анализ
-  else
-    counter = 1; // при micAnalyseDivider == 0 - отключено
-}
-
-void Lamp::setMicOnOff(bool val) {
-  if (_pins.mic == GPIO_NUM_NC){
-    // force disable mic if proper gpio has not been set
-    vopts.isMicOn = opts.flag.isMicOn = lampState.isMicOn = false;
-    return;
-  }
-
-  vopts.isMicOn = opts.flag.isMicOn = lampState.isMicOn = val;
-
-// have no idea what that bullshit means, I just set the flag that mike is enabled
-/*
-    unsigned foundc7 = 0;
-    LList<std::shared_ptr<UIControl>>&controls = effwrkr.getControls();
-    if(val){
-        for(unsigned i=3; i<controls.size(); i++) {
-            if(controls[i]->getId()==7 && controls[i]->getName().startsWith(TINTF_020)==1){
-                effwrkr.setDynCtrl(controls[i].get());
-                return;
-            } else if(controls[i]->getId()==7) {
-                foundc7 = i;
-            }
-        }
-    }
-
-    UIControl ctrl(7,(CONTROL_TYPE)18,String(TINTF_020), val ? "1" : "0", "0", "1", "1");
-    effwrkr.setDynCtrl(&ctrl);
-    if(foundc7){ // был найден 7 контрол, но не микрофон
-        effwrkr.setDynCtrl(controls[foundc7].get());
-    }
-*/
-  save_flags();
-}
 
 void Lamp::setBrightness(uint8_t tgtbrt, fade_t fade, bool bypass){
     LOGD(T_lamp, printf, "setBrightness(%u,%u,%u)\n", tgtbrt, static_cast<uint8_t>(fade), bypass);
@@ -348,7 +259,7 @@ void Lamp::gradualFade(evt::gradual_fade_t arg){
   LEDFader::getInstance()->fadelight(arg.toB, arg.duration);
 }
 
-void Lamp::switcheffect(effswitch_t action, uint16_t effnb){
+void Lamp::switcheffect(effswitch_t action, effect_t effnb){
   _switcheffect(action, isLampOn() ? getFaderFlag() : false, effnb);
   // if in demo mode, and this switch came NOT from demo timer, delay restart demo timer
   // a bit hakish but will work. Otherwise I have to segregate demo switches from all other
@@ -362,8 +273,7 @@ void Lamp::switcheffect(effswitch_t action, uint16_t effnb){
  * @param effswitch_t action - вид переключения (пред, след, случ.)
  * @param fade - переключаться через фейдер или сразу
  */
-void Lamp::_switcheffect(effswitch_t action, bool fade, uint16_t effnb) {
-  lampState.setMicAnalyseDivider(1); // восстановить делитель, при любой активности (поскольку эффекты могут его перенастраивать под себя)
+void Lamp::_switcheffect(effswitch_t action, bool fade, effect_t effnb) {
 
   // find real effect number we need to switch to
   switch (action) {
@@ -380,13 +290,12 @@ void Lamp::_switcheffect(effswitch_t action, bool fade, uint16_t effnb) {
   case effswitch_t::rnd :
     // next random effect in demo mode
     _swState.pendingEffectNum = effwrkr.getNextEffIndexForDemo(true);
-    //_swState.pendingEffectNum = effwrkr.getByCnt(random(1, effwrkr.getEffectsListSize()));
     break;
   default:
       return;
   }
 
-  LOGD(T_lamp, printf, "switcheffect() action=%u, fade=%d, effnb=%d\n", static_cast<uint32_t>(action), fade, _swState.pendingEffectNum);
+  LOGD(T_lamp, printf, "switcheffect() action=%u, fade=%d, effnb=%u\n", static_cast<uint32_t>(action), fade, _swState.pendingEffectNum);
 
   // проверяем нужно ли использовать затухание (только если лампа включена, и не идет разжигание)
   if (fade && vopts.pwrState && _swState.fadeState <1){
@@ -403,12 +312,28 @@ void Lamp::_switcheffect(effswitch_t action, bool fade, uint16_t effnb) {
   }
 
   // затухание не требуется, переключаемся непосредственно на нужный эффект
-  if(opts.flag.wipeOnEffChange || !effwrkr.getCurrentEffectNumber()){ // для EFF_NONE или для случая когда включена опция - чистим матрицу
+  if(opts.flag.wipeOnEffChange || effwrkr.getCurrentEffectNumber() == effect_t::empty){ // для пустышки или для случая когда включена опция - чистим матрицу
     if (display.getCanvas())
       display.getCanvas()->clear();
   }
 
-  effwrkr.switchEffect(_swState.pendingEffectNum);
+  // if current worker's effect is same as the target one, then I do not need to do actual switch
+  if (effwrkr.getCurrentEffectNumber() != _swState.pendingEffectNum){
+    effwrkr.switchEffect(_swState.pendingEffectNum);
+
+    // if lamp is not in Demo mode, then need to save new effect in config
+    if(!vopts.demoMode){
+      esp_err_t err;
+      std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_lamp, NVS_READWRITE, &err);
+      if (err == ESP_OK){
+        handle->set_item(V_effect_idx, _swState.pendingEffectNum);
+        //LOGV(T_lamp, printf, "save new effnum:%u to NVS\n", _swState.pendingEffectNum);
+      }
+    }
+
+    // publish new effect's control to all available feeders
+    effwrkr.embui_publish();
+  }
 
   // need to reapply brightness as effect's curve might have changed and we might also need a fader
   // I use direct access to fader and _brightness, 'cause I do not want to re-publishing brightness value and re-save it to permanent storage
@@ -418,21 +343,10 @@ void Lamp::_switcheffect(effswitch_t action, bool fade, uint16_t effnb) {
     _brightness(globalBrightness);
   }
 
-  // if lamp is not in Demo mode, then need to save new effect in config
-  if(!vopts.demoMode){
-    esp_err_t err;
-    std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_lamp, NVS_READWRITE, &err);
-    if (err == ESP_OK)
-      handle->set_item(V_effect_idx, _swState.pendingEffectNum);
-    //embui.var(V_effect_idx, _swState.pendingEffectNum);
-  }
-
-  // publish new effect's control to all available feeders
-  publish_effect_controls(nullptr, {}, NULL);
   LOGD(T_lamp, println, "eof switcheffect()");
 }
 
-uint16_t Lamp::_getRealativeEffectNum(){
+effect_t Lamp::_getRealativeEffectNum(){
   return (_swState.fadeState != -1) ? effwrkr.getCurrentEffectNumber() : _swState.pendingEffectNum;
 }
 
@@ -637,14 +551,16 @@ void Lamp::_event_picker_cmd(esp_event_base_t base, int32_t id, void* data){
       case evt::lamp_t::effSwitchRnd :
         switcheffect(effswitch_t::rnd);
         break;
-      case evt::lamp_t::effSwitchTo :
-        switcheffect(effswitch_t::num, *((int*) data));
+      case evt::lamp_t::effSwitchTo :{
+        int n = *((int*) data);
+        switcheffect(effswitch_t::num, static_cast<effect_t>(n));
         break;
+      }
       case evt::lamp_t::effSwitchStep : {
-        int32_t shift = _getRealativeEffectNum() + *((int*) data);
+        int32_t shift = e2int(_getRealativeEffectNum()) + *((int*) data);
         if (shift < 0) shift += effwrkr.getEffectsListSize();
         shift %= effwrkr.getEffectsListSize();
-        switcheffect(effswitch_t::num, shift);
+        switcheffect(effswitch_t::num, static_cast<effect_t>(shift));
         break;
       }
 

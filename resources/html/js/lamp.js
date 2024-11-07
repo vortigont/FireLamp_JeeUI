@@ -72,8 +72,105 @@ function omnicron_tasks_load(arg){
   r.make(pkg);
 }
 
+/**
+ * generates UIData block with a drop-down effects selector
+ * based on effect index on MCU's FS
+ * translates 
+ * https://dmitripavlutin.com/javascript-fetch-async-await/
+ */
+async function make_effect_list(arg){
+  const [effidxReq, i18ndataReq] = await Promise.all([
+    fetch('/effects_idx.json', {method: 'GET'}),
+    fetch('/js/ui_lamp.i18n.json', {method: 'GET'})
+  ])
+
+  if (!effidxReq.ok || !i18ndataReq.ok) return;
+  const effidx = await effidxReq.json();
+  const i18ndata = await i18ndataReq.json();
+
+  let efflist = {
+      "id":"eff_sw_idx",
+      "html":"select",
+      "onChange": true,
+      "value":0,
+      "section":"options",
+      "block":[]
+  }
+
+  effidx.forEach(
+    function(v, idx, array){
+      if (v.hidden) return
+      efflist.block.push({"label":v.idx + ' - ' + i18ndata.ru.effNames[v.label], "value":v.idx})
+    }
+  )
+
+  _.set(uiblocks, 'lampui.dynamic.efflist', efflist)
+  console.log("Update effects list:", uiblocks.lampui.dynamic.efflist);
+
+  let obj = {
+    "section":"content",
+    "block":[
+      efflist
+    ]
+  }
+  // update ubject on the page
+  var rdr = this.rdr = render();
+  rdr.content(obj)
+  // request controls refresh from MCU
+  ws.send_post("eff_ctrls", {});
+}
+
+async function make_effect_profile_selector_list(arg){
+  if (!arg.Effect) return
+  const req = await fetch('/eff/' + arg.Effect + ".json", {method: 'GET'})
+  if (!req.ok) return
+  const resp = await req.json();
+  if (!(resp instanceof Object)) return
+
+  //console.log("Got eff presets list:", resp);
+
+  let presets = {
+    "id":"eff_preset",
+    "html":"select",
+    "onChange": true,
+    "section":"options",
+    "block":[]
+  }
+
+  let idx = 0
+  for (profile of resp.profiles){
+    let lbl = profile.label === undefined ? "Profile_"+idx : profile.label
+    presets.block.push({"label":lbl, "value":idx})
+    ++idx
+  }
+  presets["value"] = arg.idx
+
+  let obj = {
+    "section":"content",
+    "block":[
+      presets
+    ]
+  }
+  //console.log("Render presets list:", obj);
+  // update ubject on the page
+  var rdr = this.rdr = render();
+  rdr.content(obj)
+}
 
 // add our fuction to custom funcs that could be called for js_func frames
 customFuncs["alarm_items_load"] = alarm_items_load;
 customFuncs["alarm_item_set"] = alarm_item_set;
 customFuncs["omnicron_tasks_load"] = omnicron_tasks_load;
+customFuncs["make_effect_list"] = make_effect_list;
+customFuncs["mk_eff_profile_list"] = make_effect_profile_selector_list;
+
+// load Informer's App UIData
+window.addEventListener("load", async function(ev){
+	let response = await fetch("/js/ui_lamp.json", {method: 'GET'});
+	if (response.ok){
+		response = await response.json();
+		uiblocks['lampui'] = response;
+	}
+
+}.bind(window)
+);

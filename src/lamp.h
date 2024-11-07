@@ -42,7 +42,6 @@ Copyright © 2020 Dmytro Korniienko (kDn)
 #include "EmbUI.h"
 #include "char_const.h"
 #include "luma_curves.hpp"
-#include "micFFT.h"
 #include "evtloop.h"
 
 #ifndef DEFAULT_MQTTPUB_INTERVAL
@@ -88,8 +87,8 @@ struct LampFlags {
     bool reserved8:1;               // признак режима отладки
     bool reserved9:1;               // случайный порядок демо
     bool reserved10:1;              // отображение имени в демо
-    bool isMicOn:1;                 // включение/выключение микрофона
-    bool effHasMic:1;               // микрофон для эффекта
+    bool reserved11:1;              // включение/выключение микрофона
+    bool reserved12:1;              // микрофон для эффекта
     bool reserved13:1;
     bool reserved14:1;
     bool reserved15:1;      //
@@ -106,7 +105,7 @@ union LampFlagsPack {
 struct VolatileFlags {
     bool pwrState:1;        // флаг включения/выключения
     bool demoMode:1;        // running demo
-    bool isMicOn:1;         // включение/выключение микрофона
+    //bool isMicOn:1;         // включение/выключение микрофона
     bool debug:1;           // some debug flag
 };
 
@@ -120,13 +119,11 @@ private:
     // struct keep state during switching effects with fader
     struct EffSwitch_state_t {
         int fadeState{0};       // 0 not fading, -1 - fadeout, 1 - fadein
-        uint16_t pendingEffectNum{0};
+        effect_t pendingEffectNum{0};
     };
 
     // used auxilary GPIOs 
     struct GPIO_pins {
-        // Analog pin for microphone
-        int32_t mic{GPIO_NUM_NC};
         // matrix power switch FET
         int32_t fet{GPIO_NUM_NC};
         // some uknown AUX pin
@@ -145,19 +142,11 @@ private:
     // a set of lamp options (flags)
     LampFlagsPack opts;
     VolatileFlags vopts{};
-    // текущее состояние лампы, которое передается в класс эффектпроцессора
-    LampState lampState;
 
     uint8_t _brightnessScale{DEF_BRT_SCALE};
     // default luma correction curve for PWM driven LEDs
     luma::curve _curve = luma::curve::cie1931;
     uint8_t globalBrightness{DEF_BRT_SCALE/2};     // глобальная яркость
-
-    uint16_t storedEffect = (uint16_t)EFF_ENUM::EFF_NONE;
-
-    // Microphone
-    MicWorker *mw = nullptr;
-    void micHandler();
 
     // Таймер смены эффектов в ДЕМО
     Task *demoTask = nullptr;
@@ -182,20 +171,10 @@ public:
     // инициализация Лампы
     void lamp_init();
 
-    LampState &getLampState(){ return lampState; }
-
-    std::vector<std::shared_ptr<UIControl>>&getEffControls() { return effwrkr.getControls(); }
-
-    void setMicOnOff(bool val);
-
-    // return if Microphone enabled state
-    bool getMicState() const { return vopts.isMicOn; }
+    //std::vector<std::shared_ptr<UIControl>>&getEffControls() { return effwrkr.getControls(); }
 
     void setSpeedFactor(float val) {
-        lampState.speedfactor = val;
-        // speed is control number 1, so check the size of vector, must be >1
-        if ( effwrkr.getControls().size() >1 ) effwrkr.setDynCtrl(effwrkr.getControls().at(1).get());
-        //if(effwrkr.getControls().exist(1)) effwrkr.setDynCtrl(effwrkr.getControls()[1].get());
+        // do nothing for now
     }
 
     // Lamp brightness control
@@ -278,8 +257,6 @@ public:
     bool getPwr() const { return vopts.pwrState; }
 
     bool isDebugOn() {return vopts.debug;}
-    bool isDebug() {return lampState.isDebug;}
-    void setDebug(bool flag) { vopts.debug = flag; lampState.isDebug=flag; }
 
     // set/clear "restore on/off/demo" state on boot
     void setRestoreState(bool flag){ opts.flag.restoreState = flag; save_flags(); }
@@ -349,10 +326,8 @@ public:
      * 
      * @param v 
      */
-    void setDemoRndEffControls(bool v){ opts.flag.demoRndEffControls = lampState.demoRndEffControls = v; };
+    void setDemoRndEffControls(bool v){ opts.flag.demoRndEffControls = v; };
 
-
-    void setEffHasMic(bool flag){ opts.flag.effHasMic = flag; }
 
 
     // ---------- служебные функции -------------
@@ -382,7 +357,7 @@ public:
      * @param action - тип переключения на эффект, предыдущий, следующий, конкретный и т.п.
      * @param effnb - опциональный параметр номер переключаемого эффекта
      */
-    void switcheffect(effswitch_t action, uint16_t effnb = EFF_ENUM::EFF_NONE);
+    void switcheffect(effswitch_t action, effect_t effnb = effect_t::empty);
 
     /*
      * включает/выключает "эффект"-таймер
@@ -426,7 +401,7 @@ private:
      * @param fade - переключаться через фейдер или сразу
      * @param effnb - номер эффекта на который переключаться (при переключении по конкретному номеру)
      */
-    void _switcheffect(effswitch_t action, bool fade, uint16_t effnb = EFF_ENUM::EFF_NONE);
+    void _switcheffect(effswitch_t action, bool fade, effect_t effnb = effect_t::empty);
 
     /**
      * @brief get effect number relative to fader state
@@ -434,7 +409,7 @@ private:
      * when in transition state, it returns pending effect number
      * @return uint16_t 
      */
-    uint16_t _getRealativeEffectNum();
+    effect_t _getRealativeEffectNum();
 
 
     /**

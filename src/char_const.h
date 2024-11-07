@@ -52,12 +52,14 @@ static constexpr const char* T_bright = "bright";
 static constexpr const char* T_brt_scale = "brt_scale";
 static constexpr const char* T_DemoTime = "DemoTime";
 static constexpr const char* T_drawing = "drawing";
-static constexpr const char* T_effect_dynCtrl = "eff_dynCtrl";
 static constexpr const char* T_encoder = "encoder";
 static constexpr const char* T_enctype = "enctype";
 static constexpr const char* T_gpio = "gpio";                                   // gpio key for display configuration
 static constexpr const char* T_logicL= "logicL";                                // logic level for button
 static constexpr const char* T_pull = "pull";
+
+// Files
+static constexpr const char* F_effects_idx = "/effects_idx.json";                   // file to save 
 
 
 // Display
@@ -216,24 +218,26 @@ static constexpr const char* T_datefmt = "datefmt";
 static constexpr const char* T_cfg = "cfg";
 static constexpr const char* T_clicks = "clicks";
 static constexpr const char* T_cmd = "cmd";
+static constexpr const char* T_ctrl = "ctrl";
 static constexpr const char* T_ctrls = "ctrls";
-static constexpr const char* T_demoRndOrder = "demoRndOrder";
+static constexpr const char* T_demoDisabled = "demoDisabled";
 static constexpr const char* T_demoRndCtrls = "demoRndCtrls";
+static constexpr const char* T_demoRndOrder = "demoRndOrder";
 static constexpr const char* T_descr = "descr";
 static constexpr const char* T_device = "device";
 static constexpr const char* T_edit = "edit";
 static constexpr const char* T_Enable = "Enable";
 static constexpr const char* T_enabled = "enabled";
-static constexpr const char* T_id = "id";
 static constexpr const char* T_idx = "idx";
+static constexpr const char* T__json = ".json";
 static constexpr const char* T_interval = "interval";
 static constexpr const char* T_invert = "invert";
 static constexpr const char* T_last_profile = "last_profile";
+static constexpr const char* T_luma = "luma";
 static constexpr const char* T_Main = "Main";                           // used as LOG tag
 static constexpr const char* T_max = "max";
 static constexpr const char* T_maxw = "maxw";
 static constexpr const char* T_maxh = "maxh";
-static constexpr const char* T_mic = "mic";                             // microphone key (gpio)
 static constexpr const char* T_min = "min";
 static constexpr const char* T_mixer = "mixer";                         // overlay mixer type
 static constexpr const char* T_name = "name";
@@ -246,7 +250,8 @@ static constexpr const char* T_profiles = "profiles";
 static constexpr const char* T_pwr = "pwr";
 static constexpr const char* T_restoreState = "restoreState";          // Lamp flag "restore state"
 static constexpr const char* T_rx = "rx";
-static constexpr const char* T_effSpeedFactor = "effSpeedFactor";
+static constexpr const char* T_smin = "smin";                           // scale min/max for effect controls
+static constexpr const char* T_smax = "smax";
 static constexpr const char* T_step = "step";
 static constexpr const char* T_swWipeScreen = "swWipeScreen";
 static constexpr const char* T_swFade = "swFade";
@@ -280,18 +285,6 @@ static constexpr const char* TCONST_drawbuff = "drawbuff";
 static constexpr const char* TCONST_drawClear = "drawClear";
 static constexpr const char* TCONST_draw_dat = "draw_dat";
 static constexpr const char* TCONST_ds18b20 = "ds18b20";
-//static constexpr const char* TCONST_edit_lamp_config = "edit_lamp_config";
-static constexpr const char* TCONST_edit_text_config = "edit_text_config";
-static constexpr const char* TCONST_eff_config = "eff_config";
-static constexpr const char* TCONST_eff_fav = "eff_fav";
-static constexpr const char* TCONST_eff_fulllist_json = "/eff_fulllist.json"; // a json serialized full list of effects and it's names for WebUI drop-down list on effects management page
-static constexpr const char* TCONST_eff_index = "/eff_index.json";
-static constexpr const char* TCONST_eff_list_json_tmp = "/eff_list.json.tmp"; // a json serialized list of effects and it's names for WebUI drop-down list
-static constexpr const char* TCONST_eff_list_json = "/eff_list.json";         // a json serialized list of effects and it's names for WebUI drop-down list on main page
-static constexpr const char* TCONST_eff_sel = "eff_sel";
-static constexpr const char* TCONST_effHasMic = "effHasMic";
-static constexpr const char* TCONST_effListConf = "effListConf";
-static constexpr const char* TCONST_effname = "effname";
 static constexpr const char* TCONST_eqSetings = "eqSetings";
 static constexpr const char* TCONST_eventList = "eventList";
 static constexpr const char* TCONST_Events = "Events";
@@ -316,7 +309,6 @@ static constexpr const char* TCONST_load = "load";
 static constexpr const char* TCONST_makeidx = "makeidx";
 static constexpr const char* TCONST_mapping = "mapping";
 static constexpr const char* TCONST_Memory = "Memory";
-static constexpr const char* TCONST_mic_cal = "mic_cal";
 static constexpr const char* TCONST_MIRR_H = "MIRR_H";
 static constexpr const char* TCONST_MIRR_V = "MIRR_V";
 static constexpr const char* TCONST_Mode = "Mode";
@@ -333,7 +325,6 @@ static constexpr const char* TCONST_pFS = "pFS";
 static constexpr const char* TCONST_PINB = "PINB"; // пин кнопки
 static constexpr const char* TCONST_pin = "pin";
 static constexpr const char* TCONST_RGB = "RGB";
-static constexpr const char* TCONST_settings_mic = "settings_mic";
 static constexpr const char* TCONST_settings_mp3 = "settings_mp3";
 static constexpr const char* TCONST_settings_wifi = "settings_wifi";
 static constexpr const char* TCONST_showName = "showName";
@@ -362,19 +353,7 @@ static constexpr const char* TCONST_Version = "Version";
 static constexpr const char* TCONST_White = "White";
 static constexpr const char* TCONST__5f9ea0 = "#5f9ea0";
 static constexpr const char* TCONST__708090 = "#708090";
-static constexpr const char* TCONST__backup_btn_ = "/backup/btn/";
-static constexpr const char* TCONST__backup_evn_ = "/backup/evn/";
-static constexpr const char* TCONST__backup_glb_ = "/backup/glb/";
-static constexpr const char* TCONST__backup_idx = "/backup/idx";
-static constexpr const char* TCONST__backup_idx_ = "/backup/idx/";
 static constexpr const char* TCONST__ffffff = "#ffffff";
-static constexpr const char* TCONST__tmplist_tmp = "/tmplist.tmp";
-static constexpr const char* TCONST__tmpqlist_tmp = "/tmpqlist.tmp";
-// текст элементов интерфейса
-//static constexpr const char* I_zmeika = "змейка";
-//static constexpr const char* I_vert = "вертикальная";
-//static constexpr const char* I_vflip = "зеркальные столбцы";
-//static constexpr const char* I_hflip = "зеркальные строки";
 
 /* ***  conf variable names *** */
 
@@ -384,14 +363,6 @@ static constexpr const char* V_lampFlags = "lampFlags";
 static constexpr const char* V_dev_brtscale = "dev_brtscale";
 // Saved last running effect index
 static constexpr const char* V_effect_idx = "eff_idx";
-// Effect list sorting
-static constexpr const char* V_effSort = "effSort";
-// Microphone scale level
-static constexpr const char* V_micScale = "micScale";
-// Microphone noise level
-static constexpr const char* V_micNoise = "micNoise";
-// Microphone Rdc level
-static constexpr const char* V_micRdcLvl = "micnRdcLvl";
 
 
 
@@ -401,7 +372,6 @@ static constexpr const char* A_dev_brightness = "dev_brightness";               
 static constexpr const char* A_dev_lcurve = "dev_lcurve";                       // Luma curve
 static constexpr const char* A_dev_pwrswitch = "dev_pwrswitch";                 // Lamp on/off switch
 static constexpr const char* A_dev_btnlock = "dev_btnlock";                     // Button lock
-static constexpr const char* A_dev_mike = "dev_mike";                           // Enable/disable microphone
 static constexpr const char* A_ui_page_effects = "ui_page_effects";             // Contstruct UI page - main Effects Control
 static constexpr const char* A_ui_page_drawing = "ui_page_drawing";             // Contstruct UI page - drawing panel
 static constexpr const char* A_ui_block_switches = "ui_block_switches";         // Contstruct UI block - show extended switches at effects page
@@ -413,7 +383,12 @@ static constexpr const char* A_effect_switch_next = "eff_sw_next";              
 static constexpr const char* A_effect_switch_prev = "eff_sw_prev";              // Switch to previous effect
 static constexpr const char* A_effect_switch_rnd = "eff_sw_rnd";                // Switch to random effect
 static constexpr const char* A_effect_ctrls = "eff_ctrls";                      // Generate and publish Effect controls (also it is an mqtt suffix for controls publish)
-static constexpr const char* A_effect_dynCtrl = "eff_dynCtrl*";                 // Effect controls handler
+static constexpr const char* A_effect_control_mask = "eff_control_*";           // Effect controls setter handler
+static constexpr const char* A_effect_control = "eff_control_";                 // Effect control prefix
+static constexpr const char* A_eff_preset = "eff_preset";                       // Effect's preset
+static constexpr const char* A_eff_preset_lbl = "eff_preset_lbl";               // set current effect's preset label
+static constexpr const char* A_eff_preset_new = "eff_preset_new";               // clone current preset into new one
+static constexpr const char* A_eff_preset_remove = "eff_preset_remove";         // delete effect's current preset
 static constexpr const char* A_display_hub75 = "display_hub75";                 // HUB75 display configuration
 static constexpr const char* A_display_ws2812 = "display_ws2812";               // ws2812 display configuration
 // TM1637
@@ -437,16 +412,15 @@ static constexpr const char* TCONST_set_butt = "set_butt";                  // s
 static constexpr const char* TCONST_set_effect = "set_effect";
 static constexpr const char* TCONST_set_enc = "set_enc";
 static constexpr const char* TCONST_set_event = "set_event";
-static constexpr const char* TCONST_set_mic = "set_mic";
 static constexpr const char* TCONST_set_mp3 = "set_mp3";
 
 // прочие именованные секции
 static constexpr const char* T_switches = "switches";
 
+// JS functions
+static constexpr const char* T_mk_eff_profile_list = "mk_eff_profile_list";
 
 /** набор служебных текстовых констант (HTTP/MQTT запросы) */
-static constexpr const char* MQT_effect_controls = "effect/controls/";      // topic suffix
-static constexpr const char* MQT_lamp = "lamp/";
+//static constexpr const char* MQT_effect_controls = "effect/controls/";      // topic suffix
+//static constexpr const char* MQT_lamp = "lamp/";
 
-//static constexpr const char* CMD_MP3_PREV = "MP3_PREV";        // Без параметров - переключает трек на 1 назад, принимает числовой параметр, на сколько треков вернуть назад
-//static constexpr const char* CMD_MP3_NEXT = "MP3_NEXT";        // Без параметров - переключает трек на 1 назад, принимает числовой параметр, на сколько треков вернуть назад

@@ -138,16 +138,15 @@ void GenericModule::mkEmbUIpage(Interface *interf, JsonObjectConst data, const c
   JsonDocument doc;
   getConfig(doc.to<JsonObject>());
   interf->json_frame_value(doc);
-  interf->json_frame_flush();
+
   // if this module is multi-profile, then send current profile's value
   if (profilesAvailable()){
-    interf->json_frame_value();
     String s(A_set_mod_preset);
     s.remove(s.length()-1, 1);
     s += getLabel();
     interf->value(s, getCurrentProfileNum());
-    interf->json_frame_flush();
   }
+  interf->json_frame_flush();
 }
 
 
@@ -241,7 +240,7 @@ size_t GenericModuleProfiles::mkProfilesIndex(JsonArray arr){
   JsonArray profiles = doc[T_profiles];
 
   size_t idx{0};
-  String p;
+  String p; 
   for(JsonVariant v : profiles) {
     JsonObject d = arr.add<JsonObject>();
 

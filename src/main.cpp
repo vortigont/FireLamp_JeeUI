@@ -108,9 +108,6 @@ void setup() {
     dfplayer_cfg_load();
 
     // Lamp object initialization must be done AFTER display.start(), so that display object could create pixel buffer first
-    // TODO: this is ugly
-    //myLamp.effwrkr.setEffSortType((SORT_TYPE)embui.paramVariant(V_effSort).as<int>()); // сортировка должна быть определена до заполнения
-    myLamp.effwrkr.initDefault();
     myLamp.lamp_init();
 
     // Hookup IPC event publisher callback
@@ -134,7 +131,6 @@ void setup() {
 
 void loop() {
     embui.handle(); // цикл, необходимый фреймворку
-    myLamp.handle(); // цикл, обработка лампы
     // do not have anything usefull there except mike and ftp
     vTaskDelay(1);
 }

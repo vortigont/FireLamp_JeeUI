@@ -68,7 +68,6 @@ enum class ra:uint8_t {
   eff_prev,           // switch to previous effect
   eff_rnd,            // switch to random effect
   eff_switch,         // switch effect to specific number
-  miconoff,           // Mike: On/Off
   mp3_enable,         // MP3: enable/disable mp3 sounds
   mp3_next,           // MP3: play next track?
   mp3_prev,           // MP3: play previous track?
@@ -167,19 +166,15 @@ void run_action(ra act, const T& param) {
       break;
     }
 
-    // simple actions with provided key:value
-    case ra::miconoff : {
-      obj[P_action] = T_mic;
-      data[T_mic] = param;
-      break;
-    }
-
+/*
     //MP3: enable/disable
     case ra::mp3_enable : {
       obj[P_action] = T_mic;
       data[T_mic] = param;
       break;
     }
+*/
+
     //MP3: set volume
     case ra::mp3_vol : {
       obj[P_action] = T_mp3vol;
