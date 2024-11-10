@@ -540,25 +540,23 @@ protected:
     const int32_t _num_of_palettes = 22;
     uint8_t _dimming{0};
     size_t _palette_idx{0};
-    size_t numParticles{PICASSO_MIN_PARTICLES};
     std::vector<Particle> particles;
     GradientPaletteList palettes;
 
-    void _make_palettes();
     void generate(bool reset = false);
     void position();
-    void _dyn_palette_generator(uint8_t hue);
 
 public:
-    EffectPicassoBase(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer, true){ _make_palettes(); };
+    EffectPicassoBase(LedFB<CRGB> *framebuffer, bool canvasProtect) : EffectCalc(framebuffer, canvasProtect){ scale = PICASSO_MIN_PARTICLES; };
 };
 
 // Picasso
 class EffectPicassoShapes : public EffectPicassoBase {
     // figure to draw
     size_t _figure{0};
+    uint8_t _blur{80};
 public:
-    EffectPicassoShapes(LedFB<CRGB> *framebuffer) : EffectPicassoBase(framebuffer){};
+    EffectPicassoShapes(LedFB<CRGB> *framebuffer) : EffectPicassoBase(framebuffer, true){};
 
     bool run() override;
     void setControl(size_t idx, int32_t value) override;
@@ -566,8 +564,10 @@ public:
 
 // Metaballs
 class EffectPicassoMetaBalls : public EffectPicassoBase {
+    void _make_palettes();
+    void _dyn_palette_generator(uint8_t hue);
 public:
-    EffectPicassoMetaBalls(LedFB<CRGB> *framebuffer) : EffectPicassoBase(framebuffer){};
+    EffectPicassoMetaBalls(LedFB<CRGB> *framebuffer) : EffectPicassoBase(framebuffer, false){ _make_palettes(); };
 
     bool run() override;
     void setControl(size_t idx, int32_t value) override;

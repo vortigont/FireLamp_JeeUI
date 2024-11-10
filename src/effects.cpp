@@ -2317,8 +2317,10 @@ bool EffectCube2d::cube2dClassicRoutine()
 #endif  // OBSOLETE_CODE
 
 // ----------- Эффекты "Пикассо" (c) obliterator
-void EffectPicassoBase::_make_palettes(){
+void EffectPicassoMetaBalls::_make_palettes(){
   palettes.clear();
+
+  //
   palettes.add(MBVioletColors_gp, 0, 16); //затычка для плитры под генератор
 
   palettes.add(MBVioletColors_gp, 0, 16);
@@ -2327,45 +2329,46 @@ void EffectPicassoBase::_make_palettes(){
 
   palettes.add(es_pinksplash_08_gp, 125, 16);
 
-  palettes.add(departure_gp, 0);
+  // 4 palettes.add(departure_gp, 0);
   palettes.add(departure_gp, 140, 16, 220);
 
   palettes.add(es_landscape_64_gp, 25, 16, 250);
-  palettes.add(es_landscape_64_gp, 125);
+  // 7 palettes.add(es_landscape_64_gp, 125);
   palettes.add(es_landscape_64_gp, 175, 50, 220);
-  palettes.add(es_landscape_33_gp, 0);
-  palettes.add(es_landscape_33_gp, 50);
+  // 9 palettes.add(es_landscape_33_gp, 0);
+  // 10 palettes.add(es_landscape_33_gp, 50);
   palettes.add(es_landscape_33_gp, 50, 50);
-  palettes.add(es_ocean_breeze_036_gp, 0);
+  // 12 palettes.add(es_ocean_breeze_036_gp, 0);
 
-  palettes.add(GMT_drywet_gp, 0);
-  palettes.add(GMT_drywet_gp, 75);
+  // 13 palettes.add(GMT_drywet_gp, 0);
+  // 14 palettes.add(GMT_drywet_gp, 75);
   palettes.add(GMT_drywet_gp, 150, 0, 200);
 
-  palettes.add(fire_gp, 175);
+  //16 palettes.add(fire_gp, 175);
 
-  palettes.add(Pink_Purple_gp, 25);
+  // 17 palettes.add(Pink_Purple_gp, 25);
   palettes.add(Pink_Purple_gp, 175, 0, 220);
 
-  palettes.add(Sunset_Real_gp, 25, 0, 200);
-  palettes.add(Sunset_Real_gp, 50, 0, 220);
+  // 19 palettes.add(Sunset_Real_gp, 25, 0, 200);
+  // 20 palettes.add(Sunset_Real_gp, 50, 0, 220);
 
-  palettes.add(BlacK_Magenta_Red_gp, 25);
+  //palettes.add(BlacK_Magenta_Red_gp, 25);
 
   generate(true);
 }
 
 void EffectPicassoBase::generate(bool reset){
-  if (numParticles != particles.size()){
-    particles.assign(numParticles, Particle());
+  if (scale != particles.size()){
+    particles.assign(scale, Particle());
     reset = true;
+    Serial.printf("New num of parts:%u\n", scale);
   }
 
   float minSpeed = 0.2, maxSpeed = 0.8;
   for (auto &particle : particles){
     if (reset) {
-      particle.position_x = random8(0, fb->w());
-      particle.position_y = random8(0, fb->h());
+      particle.position_x = random(0, fb->w());
+      particle.position_y = random(0, fb->h());
 
       particle.speed_x = (-maxSpeed / 3) + (maxSpeed * (float)random(1, 100) / 100);
       particle.speed_x += particle.speed_x > 0 ? minSpeed : -minSpeed;
@@ -2400,25 +2403,6 @@ void EffectPicassoBase::position(){
   };
 }
 
-void EffectPicassoBase::_dyn_palette_generator(uint8_t hue){
-    TDynamicRGBGradientPalette_byte dynpal[20] = {
-        0,  0,  0,  0,
-        1,  0,  0,  0,
-       80,  0,  0,  0,
-      150,  0,  0,  0,
-      255,  0,  0,  0
-    };
-
-    CRGB *color = (CRGB *)dynpal + 1; *color = CHSV(hue + 255, 255U, 255U);
-    color = (CRGB *)(dynpal + 5);   *color = CHSV(hue + 135, 255U, 200U);
-    color = (CRGB *)(dynpal + 9);   *color = CHSV(hue + 160, 255U, 120U);
-    color = (CRGB *)(dynpal + 13);  *color = CHSV(hue + 150, 255U, 255U);
-    color = (CRGB *)(dynpal + 17);  *color = CHSV(hue + 255, 255U, 255U);
-    CRGBPalette32 pal;
-    pal.loadDynamicGradientPalette(dynpal);
-    palettes.add(0, pal, 0, 16);
-}
-
 bool EffectPicassoShapes::run(){
   generate();
   position();
@@ -2446,7 +2430,7 @@ bool EffectPicassoShapes::run(){
     generate(true);
   }
 
-  EffectMath::blur2d(fb, 80);
+  EffectMath::blur2d(fb, _blur);
   return true;
 }
 
@@ -2459,29 +2443,23 @@ void EffectPicassoShapes::setControl(size_t idx, int32_t value) {
 
     // 1 scale - as-is value clamped to PICASSO_MIN_PARTICLES PICASSO_MAX_PARTICLES
     case 1:
-      scale = clamp(value, PICASSO_MAX_PARTICLES, PICASSO_MAX_PARTICLES);
+      scale = clamp(value, PICASSO_MIN_PARTICLES, PICASSO_MAX_PARTICLES);
       break;
 
-    // 2 palletes - range 0-_num_of_palettes
+    // 2 - Dimming - range 0-255
     case 2: {
-      _palette_idx = clamp(value, 0L, _num_of_palettes-1);
-      break;
-    }
-
-    // 3 - custom palette hue - range 0-255
-    case 3: {
-      _dyn_palette_generator(value);
-      break;
-    }
-
-    // 4 - Dimming - range 0-255
-    case 4: {
       _dimming = value;
       break;
     }
 
-    // 5 - figures - range 0-3
-    case 5: {
+    // 3 - Blur - range 0-255
+    case 3: {
+      _blur = value;
+      break;
+    }
+
+    // 4 - figures - range 0-3
+    case 4: {
       _figure = value;
       break;
     }
@@ -2495,6 +2473,7 @@ void EffectPicassoShapes::setControl(size_t idx, int32_t value) {
 bool EffectPicassoMetaBalls::run(){
   generate();
   position();
+  fb->clear();
 
  // сила возмущения
   unsigned mx = EffectMath::fmap(scale, 0U, 255U, 200U, 80U);
@@ -2519,7 +2498,8 @@ bool EffectPicassoMetaBalls::run(){
 
         if (sum > 255) { sum = 255; break; }
       }
-      fb->at(x, y) = palettes[_palette_idx].GetColor((uint8_t)sum, 255);
+      if ( sum > 5) // do not fill the background with palette color
+        fb->at(x, y) = palettes[_palette_idx].GetColor((uint8_t)sum, 255);
     }
   }
 
@@ -2535,7 +2515,7 @@ void EffectPicassoMetaBalls::setControl(size_t idx, int32_t value) {
 
     // 1 scale - as-is value clamped to PICASSO_MIN_PARTICLES PICASSO_MAX_PARTICLES
     case 1:
-      scale = clamp(value, PICASSO_MAX_PARTICLES, PICASSO_MAX_PARTICLES);
+      scale = clamp(value, PICASSO_MIN_PARTICLES, PICASSO_MAX_PARTICLES);
       break;
 
     // 2 palletes - range 0-_num_of_palettes
@@ -2554,6 +2534,27 @@ void EffectPicassoMetaBalls::setControl(size_t idx, int32_t value) {
       EffectCalc::setControl(idx, value);
   }
 }
+
+void EffectPicassoMetaBalls::_dyn_palette_generator(uint8_t hue){
+    TDynamicRGBGradientPalette_byte dynpal[20] = {
+        0,  0,  0,  0,
+        1,  0,  0,  0,
+       80,  0,  0,  0,
+      150,  0,  0,  0,
+      255,  0,  0,  0
+    };
+
+    CRGB *color = (CRGB *)dynpal + 1; *color = CHSV(hue + 255, 255U, 255U);
+    color = (CRGB *)(dynpal + 5);   *color = CHSV(hue + 135, 255U, 200U);
+    color = (CRGB *)(dynpal + 9);   *color = CHSV(hue + 160, 255U, 120U);
+    color = (CRGB *)(dynpal + 13);  *color = CHSV(hue + 150, 255U, 255U);
+    color = (CRGB *)(dynpal + 17);  *color = CHSV(hue + 255, 255U, 255U);
+    CRGBPalette32 pal;
+    pal.loadDynamicGradientPalette(dynpal);
+    palettes.add(0, pal, 0, 16);
+}
+
+
 
 #if !defined (OBSOLETE_CODE)
 // ----------- Эффекты "Лавовая лампа" (c) obliterator
