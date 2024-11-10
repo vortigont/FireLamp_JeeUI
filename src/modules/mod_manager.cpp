@@ -195,9 +195,9 @@ void GenericModuleProfiles::save(){
   if (arr.size() < MAX_NUM_OF_PROFILES){
     size_t s = arr.size();
     JsonObject empty;
-    do {
+    while (s++ != MAX_NUM_OF_PROFILES){
       arr.add(empty);
-    } while (s++ != MAX_NUM_OF_PROFILES);
+    } 
   }
 
   // generate config to current profile cell
