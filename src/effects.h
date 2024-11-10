@@ -537,9 +537,7 @@ protected:
         uint8_t hue_next = 0;
         int8_t hue_step = 0;
     };
-    const int32_t _num_of_palettes = 22;
     uint8_t _dimming{0};
-    size_t _palette_idx{0};
     std::vector<Particle> particles;
     GradientPaletteList palettes;
 
@@ -564,8 +562,10 @@ public:
 
 // Metaballs
 class EffectPicassoMetaBalls : public EffectPicassoBase {
+    const int32_t _num_of_palettes = 10;
+    size_t _palette_idx{0};
     void _make_palettes();
-    void _dyn_palette_generator(uint8_t hue);
+    //void _dyn_palette_generator(uint8_t hue);
 public:
     EffectPicassoMetaBalls(LedFB<CRGB> *framebuffer) : EffectPicassoBase(framebuffer, false){ _make_palettes(); };
 

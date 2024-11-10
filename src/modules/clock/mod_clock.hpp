@@ -57,7 +57,7 @@ struct Clock {
     uint8_t seconds_font_index;         // font to use for seconds
     bool show_seconds;                  // show seconds
     bool twelwehr;                      // 12/24 hour clock
-    int16_t eff_num;                    // switch to effect number 'num'
+    int32_t eff_num;                    // switch to effect number 'num'
     // max text bounds - needed to track max block size to cover the clock text
     overlay_cb_t cb{};
 };

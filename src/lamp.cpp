@@ -557,7 +557,7 @@ void Lamp::_event_picker_cmd(esp_event_base_t base, int32_t id, void* data){
         switcheffect(effswitch_t::rnd);
         break;
       case evt::lamp_t::effSwitchTo :{
-        int n = *((int*) data);
+        uint32_t n = *((uint32_t*) data);
         switcheffect(effswitch_t::num, static_cast<effect_t>(n));
         break;
       }

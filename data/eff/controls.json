@@ -37,8 +37,7 @@
     "ctrls":[
       {"label":"speed", "smin":5, "smax":30},
       {"label":"scale", "smin":5, "smax":50},
-      {"label":"pallete", "min":0, "max":9},
-      {"label":"hue", "min":1, "max":10}
+      {"label":"pallete", "min":0, "max":9}
     ]
   },
   "picassoShapes":{

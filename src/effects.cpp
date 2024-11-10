@@ -2321,7 +2321,7 @@ void EffectPicassoMetaBalls::_make_palettes(){
   palettes.clear();
 
   //
-  palettes.add(MBVioletColors_gp, 0, 16); //затычка для плитры под генератор
+  //palettes.add(MBVioletColors_gp, 0, 16); //затычка для плитры под генератор
 
   palettes.add(MBVioletColors_gp, 0, 16);
 
@@ -2352,7 +2352,7 @@ void EffectPicassoMetaBalls::_make_palettes(){
   // 19 palettes.add(Sunset_Real_gp, 25, 0, 200);
   // 20 palettes.add(Sunset_Real_gp, 50, 0, 220);
 
-  //palettes.add(BlacK_Magenta_Red_gp, 25);
+  palettes.add(BlacK_Magenta_Red_gp, 25);
 
   generate(true);
 }
@@ -2523,18 +2523,18 @@ void EffectPicassoMetaBalls::setControl(size_t idx, int32_t value) {
       _palette_idx = clamp(value, 0L, _num_of_palettes-1);
       break;
     }
-
+/*
     // 3 - custom palette hue - range 0-255
     case 3: {
       _dyn_palette_generator(value);
       break;
     }
-
+*/
     default:
       EffectCalc::setControl(idx, value);
   }
 }
-
+/*
 void EffectPicassoMetaBalls::_dyn_palette_generator(uint8_t hue){
     TDynamicRGBGradientPalette_byte dynpal[20] = {
         0,  0,  0,  0,
@@ -2553,7 +2553,7 @@ void EffectPicassoMetaBalls::_dyn_palette_generator(uint8_t hue){
     pal.loadDynamicGradientPalette(dynpal);
     palettes.add(0, pal, 0, 16);
 }
-
+*/
 
 
 #if !defined (OBSOLETE_CODE)

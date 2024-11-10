@@ -2987,15 +2987,6 @@
           "min": 0,
           "max": 9,
           "onChange": true
-        },
-        {
-          "html": "input",
-          "id": "eff_control_3",
-          "type": "range",
-          "label": "Оттенок",
-          "min": 1,
-          "max": 10,
-          "onChange": true
         }
       ]      
     },
@@ -3036,7 +3027,7 @@
         },
         {
           "html": "select",
-          "id": "eff_control_5",
+          "id": "eff_control_4",
           "label": "Фигура",
           "onChange": true,
           "section":"options",
