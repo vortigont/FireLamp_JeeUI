@@ -100,8 +100,8 @@ nexus,                                    // Nexus
 noise3d,                                  // 3D-шум
 oscillator,                               // Осциллятор 
 paintball,                                // Пейнтбол
-picasso,                                  // Пикассо
-picasso4,                                 // Меташары
+picassoBalls,                             // Пикассо Меташары
+picassoShapes,                            // Пикассо фигуры
 pile,                                     // Цветные Драже
 pulse,                                    // Пульс
 radialfire,                               // Радиальный Огонь (неопалимая купелина)
@@ -154,8 +154,8 @@ static constexpr const char* T_nexus = "nexus";
 static constexpr const char* T_noise3d = "noise3d";
 static constexpr const char* T_oscillator = "oscillator";
 static constexpr const char* T_paintball = "paintball";
-static constexpr const char* T_picasso = "picasso";
-static constexpr const char* T_picasso4 = "picasso4";
+static constexpr const char* T_picassoBalls = "picassoBalls";
+static constexpr const char* T_picassoShapes = "picassoShapes";
 static constexpr const char* T_pile = "pile";
 static constexpr const char* T_pulse = "pulse";
 static constexpr const char* T_radialfire = "radialfire";
@@ -179,12 +179,14 @@ static constexpr const char* T_whitelight = "whitelight";
 
 
 // firmware defined static index names for each of available effects
-static constexpr std::array<effect_t, 7> fw_effects_index = {
+static constexpr std::array<effect_t, 9> fw_effects_index = {
   effect_t::empty,
   effect_t::bouncingballs,
   effect_t::magma,
   effect_t::metaballs,
   effect_t::nexus,
+  effect_t::picassoBalls,
+  effect_t::picassoShapes,
   effect_t::radialfire,
   effect_t::smokeballs
 };
@@ -223,8 +225,8 @@ T_nexus,
 T_noise3d,
 T_oscillator,
 T_paintball,
-T_picasso,
-T_picasso4,
+T_picassoBalls,
+T_picassoShapes,
 T_pile,
 T_pulse,
 T_radialfire,

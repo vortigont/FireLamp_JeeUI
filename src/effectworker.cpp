@@ -265,7 +265,7 @@ void EffConfiguration::_switchPreset(int32_t idx, JsonVariant doc){
 }
 
 int32_t EffConfiguration::setValue(size_t idx, int32_t v){
-  LOGV("EffCfg", printf, "Control:%u/%u, setValue:%d\n", idx, _controls.size(), v);
+  LOGD("EffCfg", printf, "Control:%u/%u, setValue:%d\n", idx, _controls.size(), v);
   if (idx < _controls.size()){
     if (_locked){
       LOGW("EffCfg", println, "Locked! Skip setValue.");
@@ -488,6 +488,14 @@ void EffectWorker::_spawn(effect_t eid){
 
   case effect_t::nexus :
     worker = std::make_unique<EffectNexus>(canvas);
+    break;
+
+  case effect_t::picassoBalls :
+    worker = std::make_unique<EffectPicassoMetaBalls>(canvas);
+    break;
+
+  case effect_t::picassoShapes :
+    worker = std::make_unique<EffectPicassoShapes>(canvas);
     break;
 
   case effect_t::radialfire :

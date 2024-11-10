@@ -112,7 +112,7 @@ void Lamp::lamp_init(){
   if (err == ESP_OK) {
     uint32_t eff_idx{DEFAULT_EFFECT_NUM};
     handle->get_item(V_effect_idx, eff_idx);
-    LOGI(T_lamp, printf, "restore last eff:%u\n", eff_idx);
+    LOGD(T_lamp, printf, "restore last eff:%u\n", eff_idx);
     // switch to last running effect
     if (eff_idx)
       _switcheffect(effswitch_t::num, false, static_cast<effect_t>(eff_idx));
@@ -268,6 +268,18 @@ void Lamp::switcheffect(effswitch_t action, effect_t effnb){
   // a bit hakish but will work. Otherwise I have to segregate demo switches from all other
   if(vopts.demoMode && demoTask && ts.timeUntilNextIteration(*demoTask) < demoTask->getInterval())
     demoTask->delay();
+
+  // if lamp is not in Demo mode, then need to save new effect to NVS
+  if(!vopts.demoMode){
+    esp_err_t err;
+    std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_lamp, NVS_READWRITE, &err);
+    if (err == ESP_OK){
+      uint32_t idx = e2int(effwrkr.getCurrentEffectNumber());
+      handle->set_item(V_effect_idx, idx);
+      LOGD(T_lamp, printf, "save new effnum:%u to NVS\n", idx);
+    }
+  }
+
 }
 
 /*
@@ -323,17 +335,6 @@ void Lamp::_switcheffect(effswitch_t action, bool fade, effect_t effnb) {
   // if current worker's effect is same as the target one, then I do not need to do actual switch
   if (effwrkr.getCurrentEffectNumber() != _swState.pendingEffectNum){
     effwrkr.switchEffect(_swState.pendingEffectNum);
-
-    // if lamp is not in Demo mode, then need to save new effect in config
-    if(!vopts.demoMode){
-      esp_err_t err;
-      std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_lamp, NVS_READWRITE, &err);
-      if (err == ESP_OK){
-        uint32_t idx = e2int(_swState.pendingEffectNum);
-        handle->set_item(V_effect_idx, idx);
-        //LOGV(T_lamp, printf, "save new effnum:%u to NVS\n", _swState.pendingEffectNum);
-      }
-    }
 
     // publish new effect's control to all available feeders
     effwrkr.embui_publish();

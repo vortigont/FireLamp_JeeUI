@@ -44,7 +44,6 @@
 #include "ArduinoJson.h"
 #include "freertos/timers.h"
 
-#define BTN_EVENTS_CFG_JSIZE    4096
 #define ENCODER_SWITCH_MODES    3       // number of modes encoder could switch to (brightness, effects, mp3volume)
 
 struct ButtonAction {
