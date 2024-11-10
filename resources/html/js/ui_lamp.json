@@ -738,7 +738,7 @@
                     {
                       "id":"mclickt",
                       "html":"input",
-                      "value": 350,
+                      "value": 750,
                       "type": "number",
                       "label": "Multi Click time, ms",
                       "min": 100,
@@ -809,7 +809,7 @@
                     {
                       "id":"enctype",
                       "html":"select",
-                      "value":2,
+                      "value":1,
                       "label":"Тип энкодера",
                       "section":"options",
                       "block":[
