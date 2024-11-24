@@ -262,7 +262,7 @@ void OmniCron::_task_set(Interface *interf, JsonObjectConst data, const char* ac
     if (new_state){
       if (t.active){
         // task has been active already, need to update the expression only
-        _cronos.setExpr(t.tid, t.crontab.data());
+        _cronos.setExpr(t.tid, t.crontab.c_str());
       } else {
         // need to create a new task
         t.tid = _cronos.addCallback(data[T_crontab], [this](cronos_tid id, void* arg){ _cron_callback(id, arg); });
