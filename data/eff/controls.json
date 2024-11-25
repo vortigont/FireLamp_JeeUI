@@ -11,6 +11,15 @@
       {"label":"fade", "value":0, "min":0, "smin":0, "smax":200}
     ]
   },
+  "fire2012":{
+    "ctrls":[
+      {"label":"speed", "smin":0, "smax":255},
+      {"label":"scale", "smin":55, "smax":200},
+      {"label":"pallete", "min":0, "max":9},
+      {"label":"cooling", "smin":55, "smax":200},
+      {"label":"deviation", "smin":5, "smax":50}
+    ]
+  },
   "magma":{
     "ctrls":[
       {"label":"speed"},

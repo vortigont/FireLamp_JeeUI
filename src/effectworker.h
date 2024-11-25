@@ -275,7 +275,7 @@ protected:
     // a flag that indicates that effect is using framebuffer memory to keep data between frame calculation, it must persist unmodified accross runs
     const bool _canvasProtect;
     
-    uint32_t lastrun{0};         /**< счетчик времени для эффектов с "задержкой" */
+    //uint32_t lastrun{0};         /**< счетчик времени для эффектов с "задержкой" */
 
     int32_t speed{1}, scale{1};
     // inheritable effect speedfactor variable
@@ -315,7 +315,7 @@ public:
      * drynrun метод, всеми любимая затычка-проверка на "пустой" вызов
      * возвращает false если еще не прошло достаточно времени с EFFECTS_RUN_TIMER
      */
-    bool dryrun(float n=1.0, uint8_t delay = EFFECTS_RUN_TIMER);
+    bool dryrun();
 
     /**
      * status - статус воркера, если работает и загружен эффект, отдает true

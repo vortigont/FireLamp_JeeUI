@@ -2889,6 +2889,93 @@
         }
       ]
     },
+    "fire2012":{
+      "section":"eff_ctrls",
+      "replace":true,
+      "block":[
+        {
+          "section":"uidata",
+          "block":[
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.speed"    
+            },
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.scale"    
+            }
+          ]
+        },
+        {
+          "id":"eff_control_2",
+          "html":"select",
+          "label":"Палитры",
+          "onChange": true,
+          "value":4,
+          "section":"options",
+          "block":[
+            {
+              "value":0,
+              "label":"Alcohol Fire"
+            },
+            {
+              "value":1,
+              "label":"Copper Fire"
+            },
+            {
+              "value":2,
+              "label":"Lithium Fire"
+            },
+            {
+              "value":3,
+              "label":"Heat2"
+            },
+            {
+              "value":4,
+              "label":"Normal Fire"
+            },
+            {
+              "value":5,
+              "label":"Potassium"
+            },
+            {
+              "value":6,
+              "label":"Rubidium Fire"
+            },
+            {
+              "value":7,
+              "label":"Sodium Fire"
+            },
+            {
+              "value":8,
+              "label":"White / Black"
+            },
+            {
+              "value":9,
+              "label":"Wood Fire"
+            }
+          ]
+        },
+        {
+          "html": "input",
+          "id": "eff_control_3",
+          "type": "range",
+          "label": "Охлаждение",
+          "min": 0,
+          "max": 9,
+          "onChange": true
+        },
+        {
+          "html": "input",
+          "id": "eff_control_4",
+          "type": "range",
+          "label": "Разброс",
+          "min": 0,
+          "max": 9,
+          "onChange": true
+        }
+      ]
+    },
     "magma":{
       "section":"eff_ctrls",
       "replace":true,

@@ -478,6 +478,10 @@ void EffectWorker::_spawn(effect_t eid){
     worker = std::make_unique<EffectBBalls>(canvas);
     break;
 
+   case effect_t::fire2012 :
+    worker = std::make_unique<EffectFire2012>(canvas);
+    break;
+
    case effect_t::magma :
     worker = std::make_unique<EffectMagma>(canvas);
     break;
@@ -550,9 +554,6 @@ void EffectWorker::_spawn(effect_t eid){
     break;
   case EFF_ENUM::EFF_EVERYTHINGFALL :
     worker = std::make_unique<EffectMira>(canvas);
-    break;
-  case EFF_ENUM::EFF_FIRE2012 :
-    worker = std::make_unique<EffectFire2012>(canvas);
     break;
   case EFF_ENUM::EFF_SNOWSTORMSTARFALL :
     worker = std::make_unique<EffectStarFall>(canvas);
@@ -1003,12 +1004,13 @@ void EffectWorker::embui_publish(Interface *interf) const {
 /**
  * проверка на холостой вызов для эффектов с доп. задержкой
  */
-bool EffectCalc::dryrun(float n, uint8_t delay){
-  if((millis() - lastrun - delay) < (unsigned)((255 - speed) / n)) {
+bool EffectCalc::dryrun(){
+  // randomly skip frames proportional to 1/speed
+  if (random8() > speed )
     return false;
-  }
+  //if((millis() - lastrun - delay) < (unsigned)((255 - speed) / n)) {}
   
-  lastrun = millis();
+  //lastrun = millis();
   return true;
 }
 

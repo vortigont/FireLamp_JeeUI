@@ -1820,6 +1820,7 @@ bool EffectWaves::wavesRoutine() {
 
   return true;
 }
+#endif  // OBSOLETE_CODE
 
 // ============= FIRE 2012 /  ОГОНЬ 2012 ===============
 // based on FastLED example Fire2012WithPalette: https://github.com/FastLED/FastLED/blob/master/examples/Fire2012WithPalette/Fire2012WithPalette.ino
@@ -1830,33 +1831,52 @@ bool EffectWaves::wavesRoutine() {
 void EffectFire2012::load(){
   // собираем свой набор палитр для эффекта
   palettes.reserve(NUMPALETTES);
-  palettes.push_back(&PotassiumFireColors_p);
-  palettes.push_back(&SodiumFireColors_p);
-  palettes.push_back(&LithiumFireColors_p);
-  palettes.push_back(&RubidiumFireColors_p);
-  palettes.push_back(&NormalFire_p);
-  palettes.push_back(&HeatColors2_p);
-  palettes.push_back(&WoodFireColors_p);
-  palettes.push_back(&CopperFireColors_p);
   palettes.push_back(&AlcoholFireColors_p);
+  palettes.push_back(&CopperFireColors_p);
+  palettes.push_back(&LithiumFireColors_p);
+  palettes.push_back(&HeatColors2_p);
+  palettes.push_back(&NormalFire_p);
+  palettes.push_back(&PotassiumFireColors_p);
+  palettes.push_back(&RubidiumFireColors_p);
+  palettes.push_back(&SodiumFireColors_p);
   palettes.push_back(&WhiteBlackColors_p);
-
-  usepalettes = true; // активируем "переключатель" палитр
-  scale2pallete();    // выбираем палитру согласно "шкале"
+  palettes.push_back(&WoodFireColors_p);
 
   // Add entropy to random number generator; we use a lot of it.
   random16_add_entropy(millis());
 }
 
 void EffectFire2012::setControl(size_t idx, int32_t value){
-  if(_val->getId()==3) _scale = EffectCalc::setDynCtrl(_val).toInt();
-  else if(_val->getId()==5) cooling = 120 - 10*EffectCalc::setDynCtrl(_val).toInt();
-  else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
-  return String();
+  switch (idx){
+    // 0 - speed - range 0-30
+
+    // 1 scale - range 55-200
+    case 1:
+      scale = clamp(value, 55L, 200L);;
+      break;
+
+    // 2 - Palletes 10
+
+    // 3 - Cooling - range 55-200
+    case 3: {
+      _cooling = clamp(value, 55L, 200L);
+      break;
+    }
+
+    // 4 - Deviation - range 5-50
+    case 4: {
+      _deviation = clamp(value, 5L, 50L);;
+      break;
+    }
+
+
+    default:
+      EffectCalc::setControl(idx, value);
+  }
 }
 
 bool EffectFire2012::run() {
-  if (curPalette == nullptr || dryrun(4.0)){
+  if (curPalette == nullptr || dryrun()){
     return false;
   }
 
@@ -1864,15 +1884,15 @@ bool EffectFire2012::run() {
 }
 
 bool EffectFire2012::fire2012Routine() {
-  sparking = qadd8(8, _scale);
+  _sparking = qadd8(8, scale);
   int fire_base = (fb->h()/6)>6 ? 6 : fb->h()/6 + 1;
 
   // Loop for each column individually
   for (size_t x = 0; x != noise.w(); ++x)
   {
 
-    uint8_t col_cooling = random8(cooling - deviation, cooling + deviation); 
-    uint8_t col_sparkling = random8(sparking - deviation, sparking + deviation); 
+    uint8_t col_cooling = random8(_cooling - _deviation, _cooling + _deviation);
+    uint8_t col_sparkling = random8(_sparking - _deviation, _sparking + _deviation);
 
     // Step 1.  Cool down every cell a little
     for (size_t y = 0; y != noise.h(); ++y)
@@ -1898,6 +1918,7 @@ bool EffectFire2012::fire2012Routine() {
   return true;
 }
 
+#if !defined (OBSOLETE_CODE)
 // ------------------------------ ЭФФЕКТ КУБИК 2D ----------------------
 // Classic (c) SottNick
 // New (c) Vortigont

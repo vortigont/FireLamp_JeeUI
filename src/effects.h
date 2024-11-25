@@ -245,6 +245,7 @@ public:
     bool run() override;
     void setControl(size_t idx, int32_t value) override;
 };
+#endif  // DISABLED_CODE
 
 // ============= FIRE 2012 /  ОГОНЬ 2012 ===============
 // based on FastLED example Fire2012WithPalette: https://github.com/FastLED/FastLED/blob/master/examples/Fire2012WithPalette/Fire2012WithPalette.ino
@@ -256,16 +257,15 @@ class EffectFire2012 : public EffectCalc {
 private:
   // COOLING: How much does the air cool as it rises?
   // Less cooling = taller flames.  More cooling = shorter flames.
-    uint8_t cooling = 120U;
+    uint8_t _cooling = 120U;
   // SPARKING: What chance (out of 255) is there that a new spark will be lit?
   // Higher chance = more roaring fire.  Lower chance = more flickery fire.
-    uint8_t sparking = 90U; // 130
-    uint8_t deviation{20};  // how much to devoate cooling and sparkling
-    const uint8_t spark_min_T{150};     // miimum Temp of a new sparks
+    uint8_t _sparking = 90U;
+    uint8_t _deviation{20};  // how much to deviate cooling and sparkling
+    const uint8_t spark_min_T{150};     // minimum Temp of a new sparks
 
   // SMOOTHING; How much blending should be done between frames
   // Lower = more blending and smoother flames. Higher = less blending and flickery flames
-    uint8_t _scale = 1;
     const uint8_t fireSmoothing = 60U; // 90
     Vector2D<uint8_t> noise;
     bool fire2012Routine();
@@ -277,6 +277,7 @@ public:
     bool run() override;
 };
 
+#ifdef DISABLED_CODE
 // ------------- класс Светлячки -------------
 // нужен для некоторых эффектов
 #define LIGHTERS_MAX    10
