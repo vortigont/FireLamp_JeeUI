@@ -250,6 +250,7 @@ void EffConfiguration::_switchPreset(int32_t idx, JsonVariant doc){
   if (lbl.is<const char*>()){
     _profile_lbl = lbl.as<const char*>();
   } else {
+    LOGD(T_EffCfg, println, "preset's label is bad!");
     _profile_lbl = T_profile;
     _profile_lbl += _preset_idx;
   }
@@ -478,6 +479,10 @@ void EffectWorker::_spawn(effect_t eid){
     worker = std::make_unique<EffectBBalls>(canvas);
     break;
 
+  case effect_t::fireveil :
+    worker = std::make_unique<EffectFireVeil>(canvas);
+    break;
+
    case effect_t::fire2012 :
     worker = std::make_unique<EffectFire2012>(canvas);
     break;
@@ -510,9 +515,6 @@ void EffectWorker::_spawn(effect_t eid){
     break;
 
 /*
-  case EFF_ENUM::EFF_COMET :
-    worker = std::make_unique<EffectComet>(canvas);
-    break;
   case EFF_ENUM::EFF_FLOCK :
     worker = std::make_unique<EffectFlock>(canvas);
     break;
@@ -1048,21 +1050,21 @@ void EffectCalc::setControl(size_t idx, int32_t value){
     // speed control
     case 0:
       speed = value;
-      //LOGD(T_Effect, printf, "Eff speed:%d\n", value);
+      LOGV(T_Effect, printf, "Eff speed:%d\n", value);
       break;
     // scale control
     case 1:
       scale = value;
-      //LOGD(T_Effect, printf, "Eff scale:%d\n", value);
+      LOGV(T_Effect, printf, "Eff scale:%d\n", value);
       break;
     // pelette switch
     case 2:
       if (value >= palettes.size()){
-        //LOGV(T_Effect, printf, "palette idx out of bound:%d of %u\n", value, palettes.size());
+        LOGW(T_Effect, printf, "palette idx out of bound:%d of %u\n", value, palettes.size());
         return;
       }
       curPalette = palettes.at(value);
-      //LOGD(T_Effect, printf, "Eff pallete:%d\n", value);
+      LOGV(T_Effect, printf, "Eff pallete:%d\n", value);
       break;
 
     default :;

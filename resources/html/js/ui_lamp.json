@@ -1413,7 +1413,7 @@
                     "type": "number",
                     "label": "Цвет фона (565)",
                     "min": 0
-                  }        
+                  }
                 ]
               },
               {
@@ -2733,7 +2733,7 @@
             "type":0,
             "label":"🔙 Выход"
           }
-        ]  
+        ]
       }
     },
     "btn_exit_modlist":{
@@ -2898,11 +2898,11 @@
           "block":[
             {
               "action":"pick",
-              "key":"lampui.effCommon.speed"    
+              "key":"lampui.effCommon.speed"
             },
             {
               "action":"pick",
-              "key":"lampui.effCommon.scale"    
+              "key":"lampui.effCommon.scale"
             }
           ]
         },
@@ -2976,6 +2976,104 @@
         }
       ]
     },
+    "fireveil":{
+      "section":"eff_ctrls",
+      "replace":true,
+      "block":[
+        {
+          "id":"eff_control_1",
+          "html":"select",
+          "label":"Эффект",
+          "onChange": true,
+          "section":"options",
+          "block":[
+            {
+              "value":0,
+              "label":"Комета"
+            },
+            {
+              "value":1,
+              "label":"Комета 3"
+            },
+            {
+              "value":2,
+              "label":"Линия"
+            },
+            {
+              "value":3,
+              "label":"Огонь"
+            },
+            {
+              "value":4,
+              "label":"Струны"
+            }
+          ]
+        },
+        {
+          "section":"uidata",
+          "block":[
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.speed"
+            }
+          ]
+        },
+        {
+          "html": "input",
+          "id": "eff_control_2",
+          "type": "range",
+          "label": "Шум. сдвиг",
+          "min": -10,
+          "max": 10,
+          "onChange": true
+        },
+        {
+          "html": "input",
+          "id": "eff_control_3",
+          "type": "range",
+          "label": "Оттенок",
+          "min": 0,
+          "max": 32,
+          "onChange": true
+        },
+        {
+          "html": "input",
+          "id": "eff_control_4",
+          "type": "range",
+          "label": "Рваность",
+          "min": 0,
+          "max": 9,
+          "onChange": true
+        },
+        {
+          "html": "input",
+          "id": "eff_control_5",
+          "type": "range",
+          "label": "Рамытие",
+          "min": 0,
+          "max": 10,
+          "onChange": true
+        },
+        {
+          "html": "input",
+          "id": "eff_control_6",
+          "type": "range",
+          "label": "Амплитуда",
+          "min": 1,
+          "max": 10,
+          "onChange": true
+        },
+        {
+          "html": "input",
+          "id": "eff_control_7",
+          "type": "range",
+          "label": "Сглаживание шума",
+          "min": 0,
+          "max": 9,
+          "onChange": true
+        }
+      ]
+    },
     "magma":{
       "section":"eff_ctrls",
       "replace":true,
@@ -2985,11 +3083,11 @@
           "block":[
             {
               "action":"pick",
-              "key":"lampui.effCommon.speed"    
+              "key":"lampui.effCommon.speed"
             },
             {
               "action":"pick",
-              "key":"lampui.effCommon.scale"    
+              "key":"lampui.effCommon.scale"
             },
             {
               "action":"pick",
@@ -3008,11 +3106,11 @@
           "block":[
             {
               "action":"pick",
-              "key":"lampui.effCommon.speed"    
+              "key":"lampui.effCommon.speed"
             },
             {
               "action":"pick",
-              "key":"lampui.effCommon.scale"    
+              "key":"lampui.effCommon.scale"
             },
             {
               "action":"pick",
@@ -3031,11 +3129,11 @@
           "block":[
             {
               "action":"pick",
-              "key":"lampui.effCommon.speed"    
+              "key":"lampui.effCommon.speed"
             },
             {
               "action":"pick",
-              "key":"lampui.effCommon.scale"    
+              "key":"lampui.effCommon.scale"
             },
             {
               "action":"pick",
@@ -3075,7 +3173,7 @@
           "max": 9,
           "onChange": true
         }
-      ]      
+      ]
     },
     "picassoShapes":{
       "section":"eff_ctrls",
@@ -3135,7 +3233,7 @@
           "block":[
             {
               "action":"pick",
-              "key":"lampui.effCommon.speed"    
+              "key":"lampui.effCommon.speed"
             }
           ]
         },

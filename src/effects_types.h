@@ -71,7 +71,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
  * 
  */
 enum class effect_t : uint32_t {
-empty = (0U),                              // пустой черный квадрат :)
+empty = (0U),                             // пустой черный квадрат :)
 whitelight,                               // Белый свет
 colors,                                   // Смена цвета
 attractor,                                // Притяжение
@@ -114,8 +114,8 @@ sparkles,                                 // Конфетти
 spballs,                                  // Н.Тесла
 spiral,                                   // Спираль
 starfall,                                 // Метель + Звездопад
-stars,                                   // Звезды
-starships,                               // Звездный Десант
+stars,                                    // Звезды
+starships,                                // Звездный Десант
 tixyland,                                 // Тикси Ленд
 twinkles,                                 // Мерцание
 watercolors,                              // Акварель
@@ -179,9 +179,10 @@ static constexpr const char* T_whitelight = "whitelight";
 
 
 // firmware defined static index names for each of available effects
-static constexpr std::array<effect_t, 10> fw_effects_index = {
+static constexpr std::array<effect_t, 11> fw_effects_index = {
   effect_t::empty,
   effect_t::bouncingballs,
+  effect_t::fireveil,
   effect_t::fire2012,
   effect_t::magma,
   effect_t::metaballs,
@@ -459,11 +460,6 @@ static constexpr std::array<const char *, 256> T_EFFUICFG = {
 #define BALLS_AMOUNT           (7U)                 // максимальное количество "шариков"
 #define LIGHTERS_AM            (32U)                // светлячки
 #define AVAILABLE_BOID_COUNT   (10U)                // стая, кол-во птиц
-
-// ***** RAINBOW COMET / РАДУЖНАЯ КОМЕТА *****
-#define e_com_TAILSPEED        (500)                // скорость смещения хвоста
-#define e_com_BLUR             (12U)                // размытие хвоста
-#define e_com_3DCOLORSPEED     (3U)                 // скорость случайного изменения цвета (0й - режим)
 
 // ------------- светлячки со шлейфом -------------
 //#define BALLS_AMOUNT         (7U)                 // максимальное количество "шариков"

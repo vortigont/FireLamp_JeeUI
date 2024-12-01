@@ -20,6 +20,18 @@
       {"label":"deviation", "smin":5, "smax":50}
     ]
   },
+  "fireveil":{
+    "ctrls":[
+      {"label":"speed", "smin":1, "smax":400},
+      {"label":"effect", "min":0, "max":5},
+      {"label":"shift", "value":0, "min":-10, "max":10, "smin":-200, "smax":200},
+      {"label":"color", "min":0, "max":32, "smin":0, "smax":255},
+      {"label":"smooth", "smin":1, "smax":20},
+      {"label":"blur", "value":0, "min":0, "smax":50},
+      {"label":"amp", "smin":-15, "smax":15},
+      {"label":"nsmooth", "smin":100, "smax":255}
+    ]
+  },
   "magma":{
     "ctrls":[
       {"label":"speed"},

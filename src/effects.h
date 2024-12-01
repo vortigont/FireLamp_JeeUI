@@ -412,47 +412,47 @@ public:
     void load() override;
     bool run() override;
 };
+#endif  // DISABLED_CODE
 
 // ***** RAINBOW COMET / РАДУЖНАЯ КОМЕТА *****
 // ***** Парящий огонь, Кровавые Небеса, Радужный Змей и т.п.
 // базис (c) Stefan Petrick
-#define COMET_NOISE_LAYERS  1
-class EffectComet : public EffectCalc {
-    byte hue, hue2;
-    uint8_t eNs_noisesmooth = 200;
+#define COMET_NOISE_LAYERS      1
+#define e_com_3DCOLORSPEED     (3U)                 // скорость случайного изменения цвета (0й - режим)
+
+class EffectFireVeil : public EffectCalc {
+    uint8_t hue, hue2;
+    uint8_t eNs_noisesmooth{200};
     uint8_t count;
-    uint8_t speedy{100};
     float spiral, spiral2;
-    float _speed{1};
-    uint8_t _scale = 4;     // effect switcher
-    uint8_t effId = 1;      // 2, 1-6
-    uint8_t colorId;        // 3, 1-255
-    uint8_t smooth = 1;     // 4, 1-12
-    uint8_t blur{10};           // 5, 1-64
+    uint8_t _effId{0};      // 2, 1-6
+    uint8_t _colorId;        // 3, 1-255
+    uint8_t _discrete{2};
+    uint8_t _blur{0};
+    int8_t _amplitude{2};       // noise move amp
+    int32_t _shift{0};
+
     // 3D Noise map
     Noise3dMap noise3d;
 
-    const uint8_t e_centerX = (fb->w() / 2) - ((fb->w() - 1) & 0x01);
-    const uint8_t e_centerY = (fb->h() / 2) - ((fb->h() - 1) & 0x01);
-
-
-    void drawFillRect2_fast(int8_t x1, int8_t y1, int8_t x2, int8_t y2, CRGB color);
-    void moveFractionalNoise(bool direction, int8_t amplitude, float shift = 0);
+    void drawFillRect2_fast(int32_t x1, int32_t y1, int32_t x2, int32_t y2, CRGB color);
+    void moveFractionalNoise(bool direction, int8_t amplitude, int32_t shift = 0);
 
     bool rainbowCometRoutine();
     bool rainbowComet3Routine();
     bool firelineRoutine();
     bool fractfireRoutine();
-    bool flsnakeRoutine();
-    bool smokeRoutine();
-    void setControl(size_t idx, int32_t value) override;
+    //bool flsnakeRoutine();
+    bool stringsRoutine();
 
 public:
-    EffectComet(LedFB<CRGB> *framebuffer) :  EffectCalc(framebuffer), noise3d(COMET_NOISE_LAYERS, framebuffer->w(), framebuffer->h()) {}
+    EffectFireVeil(LedFB<CRGB> *framebuffer) :  EffectCalc(framebuffer, true), noise3d(COMET_NOISE_LAYERS, framebuffer->w(), framebuffer->h()) {}
+    void setControl(size_t idx, int32_t value) override;
     void load() override;
     bool run() override;
 };
 
+#ifdef DISABLED_CODE
 // ------------------------------ ЭФФЕКТ МЕРЦАНИЕ ----------------------
 // (c) SottNick
 class EffectTwinkles : public EffectCalc {
@@ -482,8 +482,6 @@ public:
     void load() override;
     bool run() override;
 };
-
-
 
 // ------------------------------ ЭФФЕКТ КУБИК 2D ----------------------
 // (c) SottNick

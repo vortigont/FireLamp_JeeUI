@@ -1,11 +1,12 @@
 #pragma once
+#include <cstdint>
 
 // наборы для эффекта "Узоры"
 #define MAX_PATTERN 38
 
 typedef uint8_t Pattern[10][10];
 
-static const Pattern patterns[] PROGMEM = {
+static const Pattern patterns[] = {
 {// 0 зигзаг ********
 {6,6,6,6,6,7,7,7,7,7},  
 {7,6,6,6,6,6,7,7,7,7},
