@@ -471,52 +471,6 @@ public:
 
 
 
-class TextScrollerWgdt : public GenericModuleProfiles, public Task {
-
-struct WeatherCfg {
-  String apikey;
-  uint32_t city_id, refresh; // ms
-  bool retry{false};
-};
-
-  TextBitMapCfg _bitmapcfg;
-  WeatherCfg _weathercfg;
-
-  std::unique_ptr<Arduino_Canvas_Mono> _textmask;
-
-  int _cur_offset{0};
-  int _scrollrate;
-  uint32_t _last_redraw;
-  uint16_t _txt_pixlen;
-  bool _wupd{false};
-
-  overlay_cb_t _renderer;
-
-  std::string _txtstr{"обновление погоды..."};
-
-  static void _event_hndlr(void* handler, esp_event_base_t base, int32_t id, void* event_data);
-
-  // pack class configuration into JsonObject
-  void generate_cfg(JsonVariant cfg) const override;
-
-  // load class configuration into JsonObject
-  void load_cfg(JsonVariantConst cfg) override;
-
-  void _getOpenWeather();
-
-  // hook to check/update text sroller
-  void _scroll_line(LedFB_GFX *gfx);
-
-public:
-  TextScrollerWgdt();
-  ~TextScrollerWgdt();
-
-  void moduleRunner();
-
-  void start() override;
-  void stop() override;
-};
-
 /*
 static uint8_t inline alphaBlend( uint8_t a, uint8_t b, uint8_t alpha ) { return scale8(a, 255-alpha) + scale8(b, alpha); }
 static CRGB alphaBlend( CRGB a, CRGB b, uint8_t alpha){
