@@ -43,13 +43,18 @@
 #define DEF_BITMAP_HEIGHT       8
 #define DEF_OVERLAY_ALPHA       32
 #define DEF_BITMAP_YOFFSET      20
-#define DEF_WEATHER_RETRY       5000
+#define DEF_MAX_MGS_Q_LEN       25    // max messages in the queue
 
 // *** Running Text overlay 
 
 TextScroll::TextScroll(){
   //
   _renderer = { (size_t)(this), [&](LedFB_GFX *gfx){ _scroll_line(gfx); } };
+}
+
+void TextScroll::clear(){
+  _msg_pool.clear();
+  _load_next = true;
 }
 
 void TextScroll::load_cfg(JsonVariantConst cfg){
@@ -78,13 +83,18 @@ void TextScroll::load_cfg(JsonVariantConst cfg){
 }
 
 void TextScroll::start(){
-  // attach overlay renderer
+  _active = true;
+  _load_next = true;
   display.attachOverlay( _renderer );
 }
 
 void TextScroll::stop(){
   std::lock_guard<std::mutex> lock(mtx);
   display.detachOverlay(_renderer.id);
+  _active = false;
+  // if some message in progress now, push it back to the front of the queue
+  if (_current_msg)
+    _msg_pool.push_front(_current_msg);
 }
 
 void TextScroll::_scroll_line(LedFB_GFX *gfx){
@@ -142,8 +152,9 @@ bool TextScroll::_load_next_msg(){
       // find text string width
       int16_t px, py; uint16_t pw;
       _textmask->getTextBounds(_current_msg->msg.c_str(), 0, _bitmapcfg.h, &px, &py, &_txt_pixlen, &pw);
-      LOGD(T_txtscroll, printf, "load string: %s\n", _current_msg->msg.c_str());
       _last_redraw = millis();
+      _cur_offset = _txt_pixlen;
+      LOGD(T_txtscroll, printf, "load string: %s\n", _current_msg->msg.c_str());
       return true;
     }
   }
@@ -158,6 +169,28 @@ void TextScroll::load_msg(JsonArrayConst msg){
   }
 }
 
+void TextScroll::enqueueMSG(const TextMessage& msg){
+  if (_active && _msg_pool.size() <= DEF_MAX_MGS_Q_LEN)
+    _msg_pool.emplace_back(std::make_shared<TextMessage>(msg));
+}
+
+void TextScroll::updateMSG(const TextMessage& msg, bool enqueue){
+  if (!_active) return;
+
+  for (auto m : _msg_pool){
+    if (m->id == msg.id){
+      (*m) = msg;
+      return;
+    }
+  }
+  // no messages found
+  if (enqueue)
+    enqueueMSG(msg);
+}
+
+
+
+
 
 
 
@@ -171,7 +204,6 @@ ModTextScroller::~ModTextScroller(){
 }
 
 void ModTextScroller::load_cfg(JsonVariantConst cfg){
-  serializeJson(cfg, Serial);
   JsonObjectConst queues = cfg["queues"];
   if (queues.isNull())
     return;
@@ -238,6 +270,23 @@ void ModTextScroller::_event_hndlr(void* handler, esp_event_base_t base, int32_t
   //  return static_cast<TextScrollerWgdt*>(handler)->_lmpChEventHandler(base, id, event_data);
 }
 
+void ModTextScroller::enqueueMSG(const TextMessage& msg, uint8_t scroller_id){
+  for (auto &s : _scrollers){
+    if (!scroller_id || (s.getID() == scroller_id)){
+      s.enqueueMSG(msg);
+      return;
+    }
+  }
+}
+
+void ModTextScroller::updateMSG(const TextMessage& msg, uint8_t scroller_id, bool enqueue){
+  for (auto &s : _scrollers){
+    if (!scroller_id || (s.getID() == scroller_id)){
+      s.updateMSG(msg, enqueue);
+      return;
+    }
+  }
+}
 
 
 /*

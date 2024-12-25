@@ -39,13 +39,10 @@
 #include "modules/mod_manager.hpp"
 #include "display.hpp"
 #include "canvas/Arduino_Canvas_Mono.h"
-//#include <string>
-//#include <ctime>
 
 
 struct TextMessage {
     std::string msg;
-    uint8_t id;
     /**
      * @brief display counter
      * 0 - do not display
@@ -54,15 +51,21 @@ struct TextMessage {
     int32_t cnt;
     // interval in seconds between showing message again
     int32_t interval;
+    // unique message id, if 0 - then not a unique message
+    uint32_t id;
+
     // last displayed time
     uint32_t last_displayed{0};
     TextMessage() = default;
-    TextMessage(const char* m, int32_t cnt = 0, int32_t interval = 0) : msg(m), cnt(cnt), interval(interval) {}
+    TextMessage(const char* m, int32_t cnt = 0, int32_t interval = 0, uint32_t id = 0) : msg(m), cnt(cnt), interval(interval), id(id) {}
 };
 
 class TextScroll {
   // instance id
   uint8_t _id;
+
+  bool _active{false};
+  bool _load_next{true};
 
   TextBitMapCfg _bitmapcfg;
   std::unique_ptr<Arduino_Canvas_Mono> _textmask;
@@ -80,7 +83,6 @@ class TextScroll {
 
   std::mutex mtx;
 
-  bool _load_next{true};
 
   // hook to check/update text scroller
   void _scroll_line(LedFB_GFX *gfx);
@@ -102,8 +104,27 @@ public:
   void start();
   void stop();
 
+  // purge current message queue
+  void clear();
+
   void setID(uint8_t id){ _id = id; }
   uint8_t getID() const { return _id; }
+
+  /**
+   * @brief enque message
+   * 
+   * @param msg 
+   * @param id 
+   */
+  void enqueueMSG(const TextMessage& msg);
+
+  /**
+   * @brief find and update message in the queue with matching message ids
+   * 
+   * @param msg message
+   * @param append - if true and unique message is not found in the queue, then appen message to the back if the queue
+   */
+  void updateMSG(const TextMessage& msg, bool enqueue = true);
 
 };
 
@@ -128,53 +149,22 @@ public:
 
   void start() override;
   void stop() override;
+
+  /**
+   * @brief enqueue new message to the scroller instance with specified ID
+   * 
+   * @param msg 
+   * @param scrolled_id - instance ID, if 0 - then any available instance
+   */
+  void enqueueMSG(const TextMessage& msg, uint8_t scroller_id = 0);
+
+  /**
+   * @brief for specified scroller find and update message in the queue with matching message ids
+   * 
+   * @param msg 
+   * @param scroller_id 
+   * @param enqueue 
+   */
+  void updateMSG(const TextMessage& msg, uint8_t scroller_id = 0, bool enqueue = true);
+
 };
-
-/*
-class TextScrollerWgdt : public GenericModuleProfiles, public Task {
-
-struct WeatherCfg {
-  String apikey;
-  uint32_t city_id, refresh; // ms
-  bool retry{false};
-};
-
-  TextBitMapCfg _bitmapcfg;
-  WeatherCfg _weathercfg;
-
-  std::unique_ptr<Arduino_Canvas_Mono> _textmask;
-
-  int _cur_offset{0};
-  int _scrollrate;
-  uint32_t _last_redraw;
-  uint16_t _txt_pixlen;
-  bool _wupd{false};
-
-  overlay_cb_t _renderer;
-
-  std::string _txtstr{"обновление погоды..."};
-
-  static void _event_hndlr(void* handler, esp_event_base_t base, int32_t id, void* event_data);
-
-  // pack class configuration into JsonObject
-  void generate_cfg(JsonVariant cfg) const override;
-
-  // load class configuration into JsonObject
-  void load_cfg(JsonVariantConst cfg) override;
-
-  void _getOpenWeather();
-
-  // hook to check/update text sroller
-  void _scroll_line(LedFB_GFX *gfx);
-
-public:
-  TextScrollerWgdt();
-  ~TextScrollerWgdt();
-
-  void moduleRunner();
-
-  void start() override;
-  void stop() override;
-};
-
-*/

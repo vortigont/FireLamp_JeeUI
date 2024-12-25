@@ -3,7 +3,7 @@
     "q0":{
       "id":1,
       "enabled":true,
-      "profile":0,
+      "profile":1,
       "messages":[
         {"cnt":2, "interval":3, "msg":"Добро пожаловать!"},
         {"cnt":-1, "interval":10, "msg":"Ожидание сообщений"}
@@ -11,15 +11,16 @@
     }
   },
   "profiles":[
-    {"label":"8x13 Cyrillic (128)",
-        "cfg":{"width":128,"height":12,"x1pos":0,"y1pos":52,"font1":1,"offset":2,"color1":2031,"alpha_b":255,"rate":20,"refresh":1}},
-    {"label":"16x16 Cyrillic (128)",
-        "cfg":{"width":128,"height":16,"x1pos":0,"y1pos":49,"font1":2,"offset":3,"color1":64544,"alpha_b":255,"rate":20,"refresh":1}},
+    {"label":"16x16 Unifont Cyrillic (64)",
+        "cfg":{"width":64,"height":14,"x1pos":0,"y1pos":18,"font1":2,"offset":2,"color1":65535,"alpha_b":255,"rate":20,"refresh":1}},
     {"label":"5х8 Cyrillic (64)",
         "cfg":{"width":64,"height":12,"x1pos":0,"y1pos":20,"font1":0,"offset":2,"color1":64832,"alpha_b":255,"rate":20,"refresh":1}},
     {"label":"8x13 Cyrillic (64)",
         "cfg":{"width":64,"height":12,"x1pos":0,"y1pos":20,"font1":1,"offset":2,"color1":64832,"alpha_b":255,"rate":20,"refresh":1}},
-    {"label":"16x16 Unifont Cyrillic (64)",
-        "cfg":{"width":64,"height":14,"x1pos":0,"y1pos":18,"font1":2,"offset":2,"color1":65535,"alpha_b":255,"rate":20,"refresh":1}}
+    {"label":"8x13 Cyrillic (128)",
+        "cfg":{"width":128,"height":12,"x1pos":0,"y1pos":52,"font1":1,"offset":2,"color1":2031,"alpha_b":255,"rate":20,"refresh":1}},
+    {"label":"16x16 Cyrillic (128)",
+        "cfg":{"width":128,"height":16,"x1pos":0,"y1pos":32,"font1":2,"offset":3,"color1":64544,"alpha_b":200,"rate":20,"refresh":1}},
+,
   ]
 }
