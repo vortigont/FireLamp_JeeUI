@@ -1155,8 +1155,26 @@
               "label": "🛠 Параметры"
             }
           ]
-        }
-      ]
+        },
+        {
+          "section":"weather",
+          "line":true,
+          "block":[
+            {
+              "id":"set_modstate_weather",
+              "html":"input",
+              "label":"⛅ Сервис погоды",
+              "type":"checkbox",
+              "onChange": true
+            },
+            {
+              "id": "ui_page_module_weather",
+              "html": "button",
+              "type": 0,
+              "label": "🛠 Параметры"
+            }
+          ]
+        }      ]
     },
     "module":{
       "clock":{
@@ -2005,36 +2023,6 @@
             ]
           },
           {
-            "html":"spacer"
-          },
-          {
-            "section":"set_modcfg_weather",
-            "label":"Погода OpenWeather",
-            "block":[
-              {
-                "id":"cityid",
-                "html":"input",
-                "label":"Код города в OpenWeather",
-                "type":"number"
-              },
-              {
-                "id":"apikey",
-                "html":"input",
-                "label":"Ключ API OpenWeather",
-                "type":"text"
-              },
-              {
-                "id":"refresh",
-                "html":"input",
-                "type":"number",
-                "label":"Обновление, ч.",
-                "min":1,
-                "max":12,
-                "step":1
-              }
-            ]
-          },
-          {
             "id":"set_modcfg_txtscroll",
             "html":"button",
             "type":1,
@@ -2111,6 +2099,83 @@
             "html": "button",
             "type": 0,
             "color": "green",
+            "label":"🔙 Выход"
+          }
+        ]
+      },
+      "weather":{
+        "section":"set_modcfg_weather",
+        "label":"⛅ Сервис погоды",
+        "main":true,
+        "block":[
+          {
+            "section":"OpenWeather",
+            "label":"Сервис OpenWeather",
+            "block":[
+              {
+                "id":"cityid",
+                "html":"input",
+                "label":"Код города в OpenWeather",
+                "type":"number"
+              },
+              {
+                "id":"apikey",
+                "html":"input",
+                "label":"Ключ API OpenWeather",
+                "type":"text"
+              },
+              {
+                "id":"refresh",
+                "html":"input",
+                "type":"number",
+                "label":"Обновление, ч.",
+                "min":1,
+                "max":12,
+                "step":1
+              }
+            ]
+          },
+          {
+            "html":"spacer"
+          },  
+          {
+            "section":"queue",
+            "label":"Очередь бегущей строки",
+            "block":[
+              {
+                "id":"destination",
+                "html":"input",
+                "label":"Номер потока бегущей строки",
+                "type":"number"
+              },
+              {
+                "id":"repeat",
+                "html":"input",
+                "label":"число повторов вывода строки (-1 - бесконечно)",
+                "type":"number",
+                "value": -1
+              },
+              {
+                "id":"interval",
+                "html":"input",
+                "type":"number",
+                "label":"Интервал вывода строки, с",
+                "min":0,
+                "step":1
+              }
+            ]
+          },
+          {
+            "id":"set_modcfg_weather",
+            "html":"button",
+            "type":1,
+            "label":"✅ Применить"
+          },
+          {
+            "id":"ui_page_modules",
+            "html":"button",
+            "color": "green",
+            "type":0,
             "label":"🔙 Выход"
           }
         ]

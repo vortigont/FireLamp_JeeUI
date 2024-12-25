@@ -111,7 +111,7 @@ void TextScroll::_scroll_line(LedFB_GFX *gfx){
   // дошла ли строка до конца?
   if (_cur_offset <  -1*_txt_pixlen){
     // decrement counter
-    if (_current_msg->cnt != -1)
+    if (_current_msg->cnt > 0)
       --_current_msg->cnt;
 
     if (_current_msg->cnt){
@@ -150,11 +150,13 @@ bool TextScroll::_load_next_msg(){
       _msg_pool.erase(i);
       _load_next = false;
       // find text string width
-      int16_t px, py; uint16_t pw;
-      _textmask->getTextBounds(_current_msg->msg.c_str(), 0, _bitmapcfg.h, &px, &py, &_txt_pixlen, &pw);
+      int16_t px, py; uint16_t ph;
+      _textmask->getTextBounds(_current_msg->msg.c_str(), 0, _bitmapcfg.h, &px, &py, &_txt_pixlen, &ph);
       _last_redraw = millis();
-      _cur_offset = _txt_pixlen;
+      // reset string position to the right side of the canvas
+      _cur_offset = _bitmapcfg.w;
       LOGD(T_txtscroll, printf, "load string: %s\n", _current_msg->msg.c_str());
+      _load_next = false;
       return true;
     }
   }

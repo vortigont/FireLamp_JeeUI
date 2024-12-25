@@ -317,10 +317,10 @@ void ModuleManager::setHandlers(){
     }
   );
 
-  // handler for module's confiration page generators
+  // handler to start/stop module via EmbUI
   embui.action.add(A_set_mod_state, [this](Interface *interf, JsonObjectConst data, const char* action){ _set_module_state(interf, data, action); } );
 
-  // handler to start/stop module via EmbUI
+  // handler for module's confiration page generators
   embui.action.add(T_ui_page_module_mask, [this](Interface *interf, JsonObjectConst data, const char* action){ _make_embui_page(interf, data, action); } );
 
   // handler to set module's configuration
