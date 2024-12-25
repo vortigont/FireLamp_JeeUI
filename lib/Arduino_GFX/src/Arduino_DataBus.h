@@ -136,16 +136,14 @@ typedef volatile ARDUINOGFX_PORT_t *PORTreg_t;
     (var) = ((uint32_t)a[0] << 8 | a[1] | a[2] << 24 | a[3] << 16); \
   }
 
-#ifndef INLINE
 #if !defined(LITTLE_FOOT_PRINT)
-#define INLINE __attribute__((always_inline)) inline
+#define GFX_INLINE __attribute__((always_inline)) inline
 #else
-#define INLINE inline
+#define GFX_INLINE inline
 #endif // !defined(LITTLE_FOOT_PRINT)
-#endif  // INLINE
 
 #if defined(ESP32) && (CONFIG_IDF_TARGET_ESP32S3)
-#if (ESP_ARDUINO_VERSION_MAJOR < 3)
+#if (!defined(ESP_ARDUINO_VERSION_MAJOR)) || (ESP_ARDUINO_VERSION_MAJOR < 3)
 #include <esp_lcd_panel_io.h>
 #include <esp_lcd_panel_io_interface.h>
 #include <esp_pm.h>
@@ -231,7 +229,7 @@ struct lcd_panel_io_i80_t
   } flags;
   lcd_i80_trans_descriptor_t trans_pool[]; // Transaction pool
 };
-#endif // #if (ESP_ARDUINO_VERSION_MAJOR < 3)
+#endif // #if (!defined(ESP_ARDUINO_VERSION_MAJOR)) || (ESP_ARDUINO_VERSION_MAJOR < 3)
 #endif // #if defined(ESP32) && (CONFIG_IDF_TARGET_ESP32S3)
 
 typedef enum
@@ -291,6 +289,7 @@ public:
   void sendData16(uint16_t d);
 
 #if !defined(LITTLE_FOOT_PRINT)
+  virtual void write16bitBeRGBBitmapR1(uint16_t *bitmap, int16_t w, int16_t h);
   virtual void batchOperation(const uint8_t *operations, size_t len);
   virtual void writePattern(uint8_t *data, uint8_t len, uint32_t repeat);
   virtual void writeIndexedPixels(uint8_t *data, uint16_t *idx, uint32_t len);

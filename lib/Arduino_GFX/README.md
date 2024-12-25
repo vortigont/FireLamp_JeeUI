@@ -26,9 +26,9 @@ Arduino_GFX *gfx = new Arduino_ILI9341(bus, 17 /* RST */);
 
 ```C
 gfx->begin();
-gfx->fillScreen(BLACK);
+gfx->fillScreen(RGB565_BLACK);
 gfx->setCursor(10, 10);
-gfx->setTextColor(RED);
+gfx->setTextColor(RGB565_RED);
 gfx->println("Hello World!");
 ```
 
@@ -87,7 +87,7 @@ Another U8g2 font advantage is the font support Unicode glyphs. Simply enable se
 
 ```C
 gfx->begin();
-gfx->fillScreen(BLACK);
+gfx->fillScreen(RGB565_BLACK);
 gfx->setUTF8Print(true);
 ```
 
@@ -269,9 +269,13 @@ Some larger display require RGB + 3-bit SPI combo interface, This interface requ
 * 8-bit and 9-bit hardware SPI (ESP32SPI)
 * 8-bit hardware SPI (HWSPI, ESP8266SPI, mbedSPI, NRFXSPI, RPiPicoSPI)
 * 8-bit and 9-bit software SPI (SWSPI)
-* 8-bit parallel interface (SWPAR8, AVRPAR8, ESP32PAR8, ESP32S2PAR8, RPiPicoPAR8, RTLPAR8, STM32PAR8)
+* 8-bit parallel interface (SWPAR8, AVRPAR8, ESP32LCD8, ESP32PAR8, ESP32S2PAR8, RPiPicoPAR8, RTLPAR8, STM32PAR8)
 * 16-bit parallel interface (ESP32LCD16, ESP32PAR16, ESP32S2PAR16, RPiPicoPAR16)
 * RGB565+SPI interface (ESP32RGBPanel)
+
+#### Note
+
+ESP32LCD8, ESP32LCD16 and ESP32RGBPanel only supported by arduino-esp32 v2.x and no longer support in v3.0.
 
 </details>
 
@@ -331,6 +335,7 @@ Some larger display require RGB + 3-bit SPI combo interface, This interface requ
 * [LILYGO T-Display](https://www.lilygo.cc/products/lilygo®-ttgo-t-display-1-14-inch-lcd-esp32-control-board)
 * [LILYGO T-Display-S3](https://www.lilygo.cc/products/t-display-s3) [[demo video](https://youtu.be/kpRC64QNQAo)]
 * [LILYGO T-Display-S3 AMOLED](https://www.lilygo.cc/products/t-display-s3-amoled) [[demo video](https://youtu.be/NvOGJAMlh1M)]
+* [LILYGO T-Display-S3 AMOLED](https://www.lilygo.cc/products/t-display-s3-amoled-1-64) [[demo video](https://youtu.be/5O3fQ1xNsrg)][[LVGL demo video](https://youtu.be/6UEaxWfxm9g)]
 * [T-Display S3 Long](https://www.lilygo.cc/products/t-display-s3-long)[[LVGL demo video](https://youtu.be/OuxLFwxvcVc)]
 * [LILYGO T-Display-s3-Pro](https://www.lilygo.cc/products/t-display-s3-pro) [[demo video](https://youtube.com/shorts/PE-GKTzbdP8)]
 * [LILYGO T-QT](https://www.lilygo.cc/products/t-qt-v1-1) [[demo video](https://youtube.com/shorts/V1MCQ1tQ8PM)]
@@ -399,7 +404,6 @@ Some larger display require RGB + 3-bit SPI combo interface, This interface requ
 * SSD1331 96x64 [[demo video](https://youtu.be/v20b1A_KDcQ)]
 * SSD1351 128x128 [[demo video](https://youtu.be/5TIM-qMVBNQ)]
 * SSD1351 128x96
-* ST7262 800x480 [[demo video](https://youtu.be/VvpILAVyPt8)]
 * ST7735 128x160 (various tabs) [[demo video](https://youtu.be/eRBSSD_N9II)]
 * ST7735 128x128 (various tabs) [[demo video](https://youtu.be/6rueSV2Ee6c)]
 * ST7735 80x160 [[demo video](https://youtu.be/qESHDuYo_Mk)]
