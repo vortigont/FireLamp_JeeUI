@@ -37,18 +37,17 @@
 
 #pragma once
 
-#include "display.hpp"
+//#include "display.hpp"
 #include "ts.h"
 #include "ui.h"
 #include "evtloop.h"
 #include "char_const.h"
-#include "canvas/Arduino_Canvas_Mono.h"
 #include <mutex>
 
-#define DEFAULT_TEXT_COLOR  54000
 #define MAX_NUM_OF_PROFILES 10
 
 static constexpr const char* T_ui_pages_module_prefix = "lampui.pages.module.";
+
 
 /**
  * @brief an abstract class to implement dynamically loaded components or modules
@@ -65,7 +64,8 @@ protected:
 	// module label or "name", can't be changed once defined
 	const char* const label;
 
-	// use shared module's config file for settings, or save in module's own config named as '${label}.json'
+	// if 'true' - then use shared module's config file for settings,
+    // if 'false - or save in module's own config named as '${label}.json'
 	const bool _def_config;
 
 	/**
@@ -273,7 +273,7 @@ public:
     /**
      * @copydoc GenericModule::setPresetLabel(const char* lbl)
      */
-    void setPresetLabel(const char* lbl) override;
+    void setPresetLabel(const char* lbl) override { if (lbl) _profilename = lbl; };
 
     /**
      * @brief Construct an EmbUI page with module's state/configuration
@@ -291,23 +291,6 @@ public:
      */
     size_t mkProfilesIndex(JsonArray arr) override;
 
-};
-
-/**
- * @brief configuration for text bitmap block
- * 
- */
-struct TextBitMapCfg {
-    int16_t x, y;           // top left corner to place bitmap to
-    uint16_t w,  h;         // bitmap WxH
-    uint16_t color{DEFAULT_TEXT_COLOR};     // color in 5-6-5 mode
-    uint8_t font_index;     // font to use
-    int8_t baseline_shift_x;       // offset from left side of bitmap
-    int8_t baseline_shift_y;       // ofset from bottom of bitmap
-    // max text bounds - needed to track max block size to cover the clock text
-    uint8_t alpha_bg;
-    std::string datefmt{"%F"};
-    overlay_cb_t cb{};
 };
 
 

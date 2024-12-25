@@ -42,19 +42,19 @@
 #include <ctime>
 //#include "time.h"
 #include <string_view>
-#include "mod_manager.hpp"
 #include "EmbUI.h"
 #include "nvs_handle.hpp"
-#include "HTTPClient.h"
-#include "log.h"
+#include "mod_manager.hpp"
+//#include "HTTPClient.h"
 
 // modules
 #include "fonts.h"
 #include "clock/mod_clock.hpp"
 #include "omnicron/omnicron.hpp"
+#include "mod_textq.hpp"
 
+#include "log.h"
 
-#define CLOCK_DEFAULT_YOFFSET   14          // default offset for clock module
 
 // array with all available module names (labels) we can run
 static constexpr std::array<const char*, 4> wdg_list = {
@@ -260,10 +260,6 @@ size_t GenericModuleProfiles::mkProfilesIndex(JsonArray arr){
   return idx;
 }
 
-void GenericModuleProfiles::setPresetLabel(const char* lbl){
-  if (!lbl) return;
-  _profilename = lbl;
-}
 
 
 // ****  GenericGFXModule methods
@@ -451,7 +447,7 @@ void ModuleManager::_spawn(const char* label){
   } else if(std::string_view(label).compare(T_alrmclock) == 0){
     w = std::make_unique<AlarmClock>();
   } else if(std::string_view(label).compare(T_txtscroll) == 0){
-    w = std::make_unique<TextScrollerWgdt>();
+    w = std::make_unique<ModTextScroller>();
   } else if(std::string_view(label).compare(T_omnicron) == 0){
     w = std::make_unique<OmniCron>();
   } else

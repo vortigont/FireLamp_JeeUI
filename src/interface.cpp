@@ -36,16 +36,16 @@ Copyright © 2020 Dmytro Korniienko (kDn)
 */
 
 #include "config.h"
+#include <type_traits>
+#include "templates.hpp"
 #include "interface.h"
 #include "lamp.h"
 #include "devices.h"
+#include "display.hpp"
 #include "effects.h"
-#include "templates.hpp"
 #include "basicui.h"
 #include "actions.hpp"
-#include <type_traits>
 #include "evtloop.h"
-#include "devices.h"
 #include "components.hpp"
 #include "log.h"
 #include LANG_FILE                  //"text_res.h"

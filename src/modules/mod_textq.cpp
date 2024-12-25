@@ -36,6 +36,8 @@
 */
 
 #include "mod_textq.hpp"
+#include "fonts.h"
+#include "log.h"
 
 #define DEF_BITMAP_WIDTH        64
 #define DEF_BITMAP_HEIGHT       8
@@ -45,21 +47,12 @@
 
 // *** Running Text overlay 
 
-ModTextScroller::ModTextScroller() : GenericModuleProfiles(T_txtscroll) {
-  //esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, TextScrollerWgdt::_event_hndlr, this, &_hdlr_lmp_change_evt);
-  //esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_STATE_EVENTS, ESP_EVENT_ANY_ID, TextScrollerWgdt::_event_hndlr, this, &_hdlr_lmp_state_evt);
-
+TextScroll::TextScroll(){
+  //
   _renderer = { (size_t)(this), [&](LedFB_GFX *gfx){ _scroll_line(gfx); } };
-
-  set( 5000, TASK_FOREVER, [this](){ moduleRunner(); } );
-  ts.addTask(*this);
 }
 
-ModTextScroller::~ModTextScroller(){
-  stop();
-}
-
-void ModTextScroller::load_cfg(JsonVariantConst cfg){
+void TextScroll::load_cfg(JsonVariantConst cfg){
   LOGV(T_txtscroll, println, "Configure text scroller");
   _bitmapcfg.w                = cfg[T_width]    | DEF_BITMAP_WIDTH;
   _bitmapcfg.h                = cfg[T_height]   | DEF_BITMAP_HEIGHT;
@@ -81,21 +74,129 @@ void ModTextScroller::load_cfg(JsonVariantConst cfg){
   _textmask->setFont(fonts.at(_bitmapcfg.font_index));
   //_textmask->setTextBound();
   //_textmask_clk->setRotation(2);
-
-  _weathercfg.city_id = cfg[T_cityid].as<unsigned>();
-
-  if (cfg[T_apikey].is<const char*>())
-    _weathercfg.apikey =  cfg[T_apikey].as<const char*>();
-
-  _weathercfg.refresh = (cfg[T_refresh] | 1) * 3600000;
-
-  _last_redraw = millis();
-
-  // weather update
-  enableIfNot();
-  forceNextIteration();
+  
 }
 
+void TextScroll::start(){
+  // attach overlay renderer
+  display.attachOverlay( _renderer );
+}
+
+void TextScroll::stop(){
+  std::lock_guard<std::mutex> lock(mtx);
+  display.detachOverlay(_renderer.id);
+}
+
+void TextScroll::_scroll_line(LedFB_GFX *gfx){
+  // check if new message must be loaded and we have anything to display
+  if (_load_next && !_load_next_msg()) return;
+
+  // if canvas can't be locked, skip this run
+  std::unique_lock<std::mutex> lock(mtx, std::defer_lock);
+  if (!lock.try_lock())
+    return;
+
+  int32_t px_to_shift = (millis() - _last_redraw) * _scrollrate / 1000;
+  _cur_offset -= px_to_shift;
+  // дошла ли строка до конца?
+  if (_cur_offset <  -1*_txt_pixlen){
+    // decrement counter
+    if (_current_msg->cnt != -1)
+      --_current_msg->cnt;
+
+    if (_current_msg->cnt){
+      // need to redisplay the message again later, enqueue it
+      _current_msg->last_displayed = millis();
+      LOGV(T_txtscroll, printf, "requeue: %s\n", _current_msg->msg.c_str());
+      _msg_pool.push_back(_current_msg);
+    }
+
+    _load_next = true;
+    return;
+    //_cur_offset = _bitmapcfg.w;
+  }
+
+  // добавляем ко времени последнего обновления столько интервалов заданной частоты на сколько пикселей мы продвинулись.
+  // нужно оставить "хвосты" избыточного времени копиться до момента пока не набежит еще один високосный пиксель для сдвига
+  _last_redraw += px_to_shift * 1000 / _scrollrate;
+  
+  // рисуем строку только если был сдвиг
+  if (px_to_shift){
+    _textmask->fillScreen(BLACK);
+    _textmask->setCursor(_cur_offset, _bitmapcfg.h - _bitmapcfg.baseline_shift_y);
+    _textmask->print(_current_msg->msg.data());
+  }
+
+  // draw overlay
+  gfx->drawBitmap_bgfade(_bitmapcfg.x, _bitmapcfg.y, _textmask->getFramebuffer(), _bitmapcfg.w, _bitmapcfg.h, _bitmapcfg.color, _bitmapcfg.alpha_bg );
+}
+
+bool TextScroll::_load_next_msg(){
+  for (auto i = _msg_pool.begin(); i != _msg_pool.end(); ++i){
+    if (millis() - (*i)->last_displayed > (*i)->interval * 1000){
+      // found a message that need to be displayed
+      _current_msg = *i;
+      // remove message from queue
+      _msg_pool.erase(i);
+      _load_next = false;
+      // find text string width
+      int16_t px, py; uint16_t pw;
+      _textmask->getTextBounds(_current_msg->msg.c_str(), 0, _bitmapcfg.h, &px, &py, &_txt_pixlen, &pw);
+      LOGD(T_txtscroll, printf, "load string: %s\n", _current_msg->msg.c_str());
+      _last_redraw = millis();
+      return true;
+    }
+  }
+
+  // have not found anything
+  return false;
+}
+
+void TextScroll::load_msg(JsonArrayConst msg){
+  for (auto m : msg){
+    _msg_pool.emplace_back( std::make_shared<TextMessage>(m[T_msg].as<const char*>(), m[T_cnt].as<int32_t>(), m[T_interval].as<int32_t>()) );
+  }
+}
+
+
+
+
+ModTextScroller::ModTextScroller() : GenericModule(T_txtscroll, false){
+  //esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, TextScrollerWgdt::_event_hndlr, this, &_hdlr_lmp_change_evt);
+  //esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_STATE_EVENTS, ESP_EVENT_ANY_ID, TextScrollerWgdt::_event_hndlr, this, &_hdlr_lmp_state_evt);
+}
+
+ModTextScroller::~ModTextScroller(){
+  stop();
+}
+
+void ModTextScroller::load_cfg(JsonVariantConst cfg){
+  serializeJson(cfg, Serial);
+  JsonObjectConst queues = cfg["queues"];
+  if (queues.isNull())
+    return;
+
+  LOGI(T_txtscroll, println, "loading text scrollers");
+  for (JsonPairConst kv : queues){
+    JsonObjectConst o = kv.value();
+    if (o[T_enabled] == false)
+      continue;
+
+    LOGD(T_txtscroll, printf, "load scroller:%s\n", kv.key().c_str());
+    // create new object
+    TextScroll &t = _scrollers.emplace_back();
+    t.setID(o[P_id]);
+    // load string facing/size config
+    t.load_cfg(cfg[T_profiles][o[T_profile].as<unsigned>()][T_cfg]);
+    // load predefined messages
+    t.load_msg(o[T_messages]);
+    // start scroller
+    t.start();
+  }
+}
+
+
+/*
 void ModTextScroller::generate_cfg(JsonVariant cfg) const {
   cfg.clear();
   cfg[T_width]    = _bitmapcfg.w;
@@ -117,55 +218,22 @@ void ModTextScroller::generate_cfg(JsonVariant cfg) const {
     cfg[T_apikey] =  _weathercfg.apikey;
   cfg[T_refresh] = _weathercfg.refresh / 3600000;   // ms in hr
 }
-
+*/
 void ModTextScroller::moduleRunner(){
-  LOGV(T_txtscroll, printf, "pogoda %lu\n", getInterval());
   // this periodic runner needed only for weather update
-
-  _getOpenWeather();
 }
 
-void ModTextScroller::_scroll_line(LedFB_GFX *gfx){
-  // if canvas can't be locked, skip this run
-  std::unique_lock<std::mutex> lock(mtx, std::defer_lock);
-  if (!lock.try_lock())
-    return;
-
-  int32_t px_to_shift = (millis() - _last_redraw) * _scrollrate / 1000;
-  _cur_offset -= px_to_shift;
-  // добавляем ко времени последнего обновления столько интервалов заданной частоты на сколько пикселей мы продвинулись.
-  // нужно оставить "хвосты" избыточного времени копиться до момента пока не набежит еще один високосный пиксель для сдвига
-  _last_redraw += px_to_shift * 1000 / _scrollrate;
-  
-
-  _textmask->fillScreen(BLACK);
-  _textmask->setCursor(_cur_offset, _bitmapcfg.h - _bitmapcfg.baseline_shift_y);
-  _textmask->print(_txtstr.data());
-  if (_cur_offset <  -1*_txt_pixlen)
-    _cur_offset = _bitmapcfg.w;
-
-
-  gfx->drawBitmap_bgfade(_bitmapcfg.x, _bitmapcfg.y, _textmask->getFramebuffer(), _bitmapcfg.w, _bitmapcfg.h, _bitmapcfg.color, _bitmapcfg.alpha_bg );
-}
 
 void ModTextScroller::start(){
-  // overlay rendering functor
-  display.attachOverlay( _renderer );
-
   // enable timer
-  enable();
-  // request lamp's status to discover it's power state
-  //EVT_POST(LAMP_GET_EVENTS, e2int(evt::lamp_t::pwr));
 }
 
 void ModTextScroller::stop(){
-  disable();
-  std::lock_guard<std::mutex> lock(mtx);
-  display.detachOverlay(_renderer.id);
+
 }
 
 void ModTextScroller::_event_hndlr(void* handler, esp_event_base_t base, int32_t id, void* event_data){
-  LOGV(T_clock, printf, "EVENT %s:%d\n", base, id);
+  //LOGV(T_clock, printf, "EVENT %s:%d\n", base, id);
   //if ( base == LAMP_CHANGE_EVENTS )
   //  return static_cast<TextScrollerWgdt*>(handler)->_lmpChEventHandler(base, id, event_data);
 }
@@ -314,100 +382,6 @@ void TextScrollerWgdt::_lmpChEventHandler(esp_event_base_t base, int32_t id, voi
       break;
     default:;
   }
-}
-*/
-/*
-void TextScrollerWgdt::_getOpenWeather(){
-  if (!_weathercfg.apikey.length() || !_weathercfg.city_id) { disable(); return; }   // no API key - no weather
-
-  // http://api.openweathermap.org/data/2.5/weather?id=1850147&units=metric&lang=ru&APPID=your_API_KEY>
-  String url("http://api.openweathermap.org/data/2.5/weather?units=metric&lang=ru&id=");
-  url += _weathercfg.city_id;
-  url += "&APPID=";
-  url += _weathercfg.apikey.c_str();
-
-  HTTPClient http;
-  http.begin(url);
-  LOGV(T_txtscroll, printf, "get weather: %s\n", url.c_str());
-  int code = http.GET();
-  if (code != HTTP_CODE_OK) {
-    LOGD(T_txtscroll, printf, "HTTP Weather response code:%d\n", code);
-
-    // some HTTP error
-    if (_weathercfg.retry){
-      setInterval(getInterval() + DEF_WEATHER_RETRY);
-    } else {
-      _weathercfg.retry = true;
-      setInterval(DEF_WEATHER_RETRY);
-    }
-    return;
-  }
-
-  JsonDocument doc;
-  if ( deserializeJson(doc, *http.getStreamPtr()) != DeserializationError::Ok ) return;
-  http.end();
-
-  String pogoda;
-  pogoda.reserve(100);
-  pogoda = doc["name"].as<const char*>();
-  pogoda += ": сейчас ";
-  pogoda += doc[F("weather")][0][F("description")].as<const char*>();
-  pogoda += ", ";
-
-// Температура
-  int t = int(doc["main"]["temp"].as<float>() + 0.5);
-  if (t > 0)
-    pogoda += "+";
-  pogoda += t;
-
-// Влажность
-  pogoda += "°C, влажность:";
-  pogoda += doc["main"]["humidity"].as<int>();
-// Ветер
-  pogoda += "%, ветер ";
-  int deg = doc["wind"]["deg"];
-  if( deg >22 && deg <=68 ) pogoda += "сев-вост.";
-  else if( deg >68 && deg <=112 ) pogoda += "вост.";
-  else if( deg >112 && deg <=158 ) pogoda += "юг-вост.";
-  else if( deg >158 && deg <=202 ) pogoda += "юж.";
-  else if( deg >202 && deg <=248 ) pogoda += "юг-зап.";
-  else if( deg >248 && deg <=292 ) pogoda += "зап.";
-  else if( deg >292 && deg <=338 ) pogoda += "сев-зап.";
-  else pogoda += "сев.";
-  int wind = int(doc["wind"]["speed"].as<float>() + 0.5);
-  pogoda += wind;
-  pogoda += " м/с";
-
-  // sunrise/sunset
-  pogoda += ", восх:";
-  time_t sun = doc["sys"]["sunrise"].as<uint32_t>();
-  pogoda += localtime(&sun)->tm_hour;
-  pogoda += ":";
-  if (localtime(&sun)->tm_min < 10)
-    pogoda += static_cast<char>(0x30);  // '0'
-  pogoda += localtime(&sun)->tm_min;
-
-  pogoda += ", закат:";
-  sun = doc["sys"]["sunset"].as<uint32_t>();
-  pogoda += localtime(&sun)->tm_hour;
-  pogoda += ":";
-  if (localtime(&sun)->tm_min < 10)
-    pogoda += static_cast<char>(0x30);  // '0'
-  pogoda += localtime(&sun)->tm_min;
-
-  // ths lock was meant for canvas, but let's use for string update also,
-  // anyway string is also use when rendering text to bitmap
-  std::lock_guard<std::mutex> lock(mtx);
-  _txtstr = pogoda.c_str();
-
-  // find text string width
-  int16_t px, py; uint16_t pw;
-  _textmask->getTextBounds(_txtstr.data(), 0, _bitmapcfg.h, &px, &py, &_txt_pixlen, &pw);
-
-  // reset update
-  _weathercfg.retry = false;
-  setInterval(_weathercfg.refresh);
-  LOGD(T_txtscroll, printf, "Weather update: %s\n", pogoda.c_str());
 }
 */
 
