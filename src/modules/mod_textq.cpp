@@ -176,6 +176,11 @@ void TextScroll::enqueueMSG(const TextMessage& msg){
     _msg_pool.emplace_back(std::make_shared<TextMessage>(msg));
 }
 
+void TextScroll::enqueueMSG(TextMessage&& msg){
+  if (_active && _msg_pool.size() <= DEF_MAX_MGS_Q_LEN)
+    _msg_pool.emplace_back(std::make_shared<TextMessage>(std::move(msg)));
+}
+
 void TextScroll::updateMSG(const TextMessage& msg, bool enqueue){
   if (!_active) return;
 
@@ -276,6 +281,15 @@ void ModTextScroller::enqueueMSG(const TextMessage& msg, uint8_t scroller_id){
   for (auto &s : _scrollers){
     if (!scroller_id || (s.getID() == scroller_id)){
       s.enqueueMSG(msg);
+      return;
+    }
+  }
+}
+
+void ModTextScroller::enqueueMSG(TextMessage&& msg, uint8_t scroller_id){
+  for (auto &s : _scrollers){
+    if (!scroller_id || (s.getID() == scroller_id)){
+      s.enqueueMSG(std::move(msg));
       return;
     }
   }

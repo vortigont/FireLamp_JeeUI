@@ -35,6 +35,7 @@
    <https://www.gnu.org/licenses/>.)
 */
 
+//#include <format>
 #include "weather.hpp"
 #include "components.hpp"
 #include "modules/mod_textq.hpp"
@@ -57,22 +58,45 @@ ModWeatherSource::~ModWeatherSource(){
 }
 
 void ModWeatherSource::_getOpenWeather(){
-  if (!_weathercfg.apikey.length() || !_weathercfg.city_id) { disable(); return; }   // no API key - no weather
-
-  LOGV(T_txtscroll, printf, "pogoda updater: %lu\n", getInterval());
+  // no API key, city - no weather updates
+  if (!_weathercfg.apikey.length() || !_weathercfg.city_id) { disable(); return; }
+  
+  // no WiFi connection - skip update
+  if (!WiFi.isConnected()){
+    return;
+    LOGW(T_txtscroll, println, "no WiFi, skip update");
+  }
 
   // http://api.openweathermap.org/data/2.5/weather?id=1850147&units=metric&lang=ru&APPID=your_API_KEY>
-  String url("http://api.openweathermap.org/data/2.5/weather?units=metric&lang=ru&id=");
+  String url;
+  url.reserve(128);
+  url += "http://api.openweathermap.org/data/2.5/weather?units=metric&lang=ru&id=";
   url += _weathercfg.city_id;
   url += "&APPID=";
   url += _weathercfg.apikey.c_str();
 
+  LOGV(T_txtscroll, printf, "updater t: %lu, url:%s\n", getInterval(), url.c_str());
+
+  auto scroller = zookeeper.getModulePtr(T_txtscroll);
+  if (scroller){
+    TextMessage m1("Обновление погоды");
+    static_cast<ModTextScroller*>(scroller)->enqueueMSG(std::move(m1), _scroller_id);
+  }
+
   HTTPClient http;
-  http.begin(url);
+  http.begin(url.c_str());
   LOGV(T_txtscroll, printf, "get weather: %s\n", url.c_str());
   int code = http.GET();
   if (code != HTTP_CODE_OK) {
-    LOGE(T_txtscroll, printf, "Weather HTTP response code:%d\n", code);
+    std::string m("Ошибка обновления погоды, HTTP:");
+    m += std::to_string(code);
+    LOGE(T_txtscroll, println, m.c_str());
+
+    // report error
+    if (scroller){
+      TextMessage msg(std::move(m));
+      static_cast<ModTextScroller*>(scroller)->enqueueMSG(std::move(msg), _scroller_id);
+    }
 
     // some HTTP error
     if (_weathercfg.retry){
@@ -88,22 +112,22 @@ void ModWeatherSource::_getOpenWeather(){
   if ( deserializeJson(doc, *http.getStreamPtr()) != DeserializationError::Ok ) return;
   http.end();
 
-  String pogoda;
-  pogoda.reserve(100);
-  pogoda = doc["name"].as<const char*>();
+  std::string pogoda;
+  pogoda.reserve(128);
+  pogoda += doc[T_name].as<const char*>();
   pogoda += ": сейчас ";
-  pogoda += doc[F("weather")][0][F("description")].as<const char*>();
+  pogoda += doc[T_weather][0][T_description].as<const char*>();
   pogoda += ", ";
 
 // Температура
-  int t = int(doc["main"]["temp"].as<float>() + 0.5);
+  int t = int(doc[P_main]["temp"].as<float>() + 0.5);
   if (t > 0)
     pogoda += "+";
-  pogoda += t;
+  pogoda += std::to_string(t);
 
 // Влажность
   pogoda += "°C, влажность:";
-  pogoda += doc["main"]["humidity"].as<int>();
+  pogoda += std::to_string(doc[P_main]["humidity"].as<int>());
 // Ветер
   pogoda += "%, ветер ";
   int deg = doc["wind"]["deg"];
@@ -115,35 +139,33 @@ void ModWeatherSource::_getOpenWeather(){
   else if( deg >248 && deg <=292 ) pogoda += "зап.";
   else if( deg >292 && deg <=338 ) pogoda += "сев-зап.";
   else pogoda += "сев.";
-  int wind = int(doc["wind"]["speed"].as<float>() + 0.5);
-  pogoda += wind;
+  int wind = int(doc["wind"][T_speed].as<float>() + 0.5);
+  pogoda += std::to_string(wind);
   pogoda += " м/с";
 
   // sunrise/sunset
   pogoda += ", восх:";
   time_t sun = doc["sys"]["sunrise"].as<uint32_t>();
-  pogoda += localtime(&sun)->tm_hour;
+  pogoda += std::to_string(localtime(&sun)->tm_hour);
   pogoda += ":";
   if (localtime(&sun)->tm_min < 10)
     pogoda += static_cast<char>(0x30);  // '0'
-  pogoda += localtime(&sun)->tm_min;
+  pogoda += std::to_string(localtime(&sun)->tm_min);
 
   pogoda += ", закат:";
   sun = doc["sys"]["sunset"].as<uint32_t>();
-  pogoda += localtime(&sun)->tm_hour;
+  pogoda += std::to_string(localtime(&sun)->tm_hour);
   pogoda += ":";
   if (localtime(&sun)->tm_min < 10)
     pogoda += static_cast<char>(0x30);  // '0'
-  pogoda += localtime(&sun)->tm_min;
+  pogoda += std::to_string(localtime(&sun)->tm_min);
 
-  LOGI(T_weather, println, "Weather update");
   LOGI(T_weather, println, pogoda.c_str());
 
-  auto scroller = zookeeper.getModulePtr(T_txtscroll);
-  // try to enqueue the message
+  // update message
   if (scroller){
-    TextMessage m(pogoda.c_str(), _repeat_cnt, _repeat_interval, _msg_id);
-    static_cast<ModTextScroller*>(scroller)->updateMSG(m, _scroller_id);
+    TextMessage m2(std::move(pogoda), _repeat_cnt, _repeat_interval, _msg_id);
+    static_cast<ModTextScroller*>(scroller)->updateMSG(std::move(m2), _scroller_id);
   }
 
   // reset update timer

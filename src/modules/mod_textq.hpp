@@ -57,7 +57,8 @@ struct TextMessage {
     // last displayed time
     uint32_t last_displayed{0};
     TextMessage() = default;
-    TextMessage(const char* m, int32_t cnt = 0, int32_t interval = 0, uint32_t id = 0) : msg(m), cnt(cnt), interval(interval), id(id) {}
+    explicit TextMessage(const char* m, int32_t cnt = 1, int32_t interval = 0, uint32_t id = 0) : msg(m), cnt(cnt), interval(interval), id(id) {}
+    explicit TextMessage(std::string&& m, int32_t cnt = 1, int32_t interval = 0, uint32_t id = 0) : msg(m), cnt(cnt), interval(interval), id(id) {}
 };
 
 class TextScroll {
@@ -117,6 +118,7 @@ public:
    * @param id 
    */
   void enqueueMSG(const TextMessage& msg);
+  void enqueueMSG(TextMessage&& msg);
 
   /**
    * @brief find and update message in the queue with matching message ids
@@ -157,6 +159,7 @@ public:
    * @param scrolled_id - instance ID, if 0 - then any available instance
    */
   void enqueueMSG(const TextMessage& msg, uint8_t scroller_id = 0);
+  void enqueueMSG(TextMessage&& msg, uint8_t scroller_id = 0);
 
   /**
    * @brief for specified scroller find and update message in the queue with matching message ids

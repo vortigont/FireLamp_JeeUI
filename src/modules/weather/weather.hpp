@@ -57,7 +57,10 @@ struct WeatherCfg {
   // interval between message displays in seconds
   int32_t _repeat_interval;
 
+  // update weather
   void _getOpenWeather();
+
+  //void _send_msg();
 
 public:
   ModWeatherSource();
