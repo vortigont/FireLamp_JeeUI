@@ -134,7 +134,13 @@ class ModTextScroller : public GenericModule {
 
   std::list<TextScroll> _scrollers;
 
+  bool _wifi_events_msg;
+  uint8_t _wifi_events_stream{0};
+  network_event_handle_t eid{0};
+
   static void _event_hndlr(void* handler, esp_event_base_t base, int32_t id, void* event_data);
+
+  void _onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info);
 
   // pack class configuration into JsonObject
   void generate_cfg(JsonVariant cfg) const override {};
@@ -146,8 +152,6 @@ class ModTextScroller : public GenericModule {
 public:
   ModTextScroller();
   ~ModTextScroller();
-
-  void moduleRunner();
 
   void start() override;
   void stop() override;

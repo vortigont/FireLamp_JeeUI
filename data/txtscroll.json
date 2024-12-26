@@ -1,12 +1,13 @@
 {
+  "wifi": true,
   "queues":{
     "q0":{
       "id":1,
       "enabled":true,
       "profile":1,
       "messages":[
-        {"cnt":2, "interval":3, "msg":"Добро пожаловать!"},
-        {"cnt":-1, "interval":10, "msg":"Ожидание сообщений"}
+        {"cnt":1, "msg":"Добро пожаловать!"},
+        {"cnt":1, "msg":"Присоединяйтесь к группе в Телеграмм: https://t.me/lampdevs"}
       ]
     }
   },
@@ -20,7 +21,6 @@
     {"label":"8x13 Cyrillic (128)",
         "cfg":{"width":128,"height":12,"x1pos":0,"y1pos":52,"font1":1,"offset":2,"color1":2031,"alpha_b":255,"rate":20,"refresh":1}},
     {"label":"16x16 Cyrillic (128)",
-        "cfg":{"width":128,"height":16,"x1pos":0,"y1pos":32,"font1":2,"offset":3,"color1":64544,"alpha_b":200,"rate":20,"refresh":1}},
-,
+        "cfg":{"width":128,"height":16,"x1pos":0,"y1pos":32,"font1":2,"offset":3,"color1":64544,"alpha_b":200,"rate":20,"refresh":1}}
   ]
 }

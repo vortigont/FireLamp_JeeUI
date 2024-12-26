@@ -259,6 +259,7 @@ static constexpr const char* T_rx = "rx";
 static constexpr const char* T_smin = "smin";                           // scale min/max for effect controls
 static constexpr const char* T_smax = "smax";
 static constexpr const char* T_speed = "speed";
+static constexpr const char* T_stream_id = "stream_id";
 static constexpr const char* T_step = "step";
 static constexpr const char* T_swWipeScreen = "swWipeScreen";
 static constexpr const char* T_swFade = "swFade";

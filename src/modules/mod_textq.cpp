@@ -58,7 +58,7 @@ void TextScroll::clear(){
 }
 
 void TextScroll::load_cfg(JsonVariantConst cfg){
-  LOGV(T_txtscroll, println, "Configure text scroller");
+  //LOGV(T_txtscroll, println, "Configure text scroller");
   _bitmapcfg.w                = cfg[T_width]    | DEF_BITMAP_WIDTH;
   _bitmapcfg.h                = cfg[T_height]   | DEF_BITMAP_HEIGHT;
   _bitmapcfg.x                = cfg[T_x1pos];
@@ -208,6 +208,8 @@ ModTextScroller::ModTextScroller() : GenericModule(T_txtscroll, false){
 
 ModTextScroller::~ModTextScroller(){
   stop();
+  if (eid)
+    WiFi.removeEvent(eid);
 }
 
 void ModTextScroller::load_cfg(JsonVariantConst cfg){
@@ -232,36 +234,19 @@ void ModTextScroller::load_cfg(JsonVariantConst cfg){
     // start scroller
     t.start();
   }
+
+  _wifi_events_msg = cfg[P_wifi];
+  _wifi_events_stream = cfg[T_stream_id];
+
+  // register/unregister wifi event handler
+  if (_wifi_events_msg && !eid){
+    // Set WiFi event handlers
+    eid = WiFi.onEvent( [this](WiFiEvent_t event, WiFiEventInfo_t info){ _onWiFiEvent(event, info); } );
+    LOGV(T_txtscroll, println, "monitor WiFi events");
+  } else if (!_wifi_events_msg && eid){
+    WiFi.removeEvent(eid);
+  }
 }
-
-
-/*
-void ModTextScroller::generate_cfg(JsonVariant cfg) const {
-  cfg.clear();
-  cfg[T_width]    = _bitmapcfg.w;
-  cfg[T_height]   = _bitmapcfg.h;
-  cfg[T_x1pos]    = _bitmapcfg.x;
-  cfg[T_y1pos]    = _bitmapcfg.y;
-  cfg[T_font1]    = _bitmapcfg.font_index;
-  cfg[T_offset]   = _bitmapcfg.baseline_shift_y;
-  cfg[T_color1]   = _bitmapcfg.color;
-  cfg[T_alpha_b]  = _bitmapcfg.alpha_bg;
-  cfg[T_rate]     = _scrollrate;
-
-  //JsonObject weath = cfg[T_weather].isNull() ? cfg[T_weather].to<JsonObject>() : cfg[T_weather];
-  //weath.clear();  // clear obj, I'll replace it's content
-
-  // weather
-  cfg[T_cityid] =  _weathercfg.city_id;
-  if (_weathercfg.apikey.length())
-    cfg[T_apikey] =  _weathercfg.apikey;
-  cfg[T_refresh] = _weathercfg.refresh / 3600000;   // ms in hr
-}
-*/
-void ModTextScroller::moduleRunner(){
-  // this periodic runner needed only for weather update
-}
-
 
 void ModTextScroller::start(){
   // enable timer
@@ -275,6 +260,25 @@ void ModTextScroller::_event_hndlr(void* handler, esp_event_base_t base, int32_t
   //LOGV(T_clock, printf, "EVENT %s:%d\n", base, id);
   //if ( base == LAMP_CHANGE_EVENTS )
   //  return static_cast<TextScrollerWgdt*>(handler)->_lmpChEventHandler(base, id, event_data);
+}
+
+void ModTextScroller::_onWiFiEvent(arduino_event_id_t event, arduino_event_info_t info){
+  // message WiFi events to scrollers
+  switch (event){
+    case ARDUINO_EVENT_WIFI_STA_GOT_IP: {
+      std::string m("WiFi connected SSID:");
+      m += WiFi.SSID().c_str();
+      m += " ip:";
+      m += WiFi.localIP().toString().c_str();
+
+      TextMessage msg(std::move(m));
+      // let's use magic id for this so not to flood the queue in case of frequent reconnects
+      msg.id = 0xdeadbeef;
+      updateMSG(std::move(msg), _wifi_events_stream);
+      break;
+    }
+    default:;
+  }
 }
 
 void ModTextScroller::enqueueMSG(const TextMessage& msg, uint8_t scroller_id){
@@ -303,150 +307,3 @@ void ModTextScroller::updateMSG(const TextMessage& msg, uint8_t scroller_id, boo
     }
   }
 }
-
-
-/*
-TextScrollerWgdt::TextScrollerWgdt() : GenericModuleProfiles(T_txtscroll) {
-  //esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, TextScrollerWgdt::_event_hndlr, this, &_hdlr_lmp_change_evt);
-  //esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_STATE_EVENTS, ESP_EVENT_ANY_ID, TextScrollerWgdt::_event_hndlr, this, &_hdlr_lmp_state_evt);
-
-  _renderer = { (size_t)(this), [&](LedFB_GFX *gfx){ _scroll_line(gfx); } }; 
-
-  set( 5000, TASK_FOREVER, [this](){ moduleRunner(); } );
-  ts.addTask(*this);
-}
-
-TextScrollerWgdt::~TextScrollerWgdt(){
-  stop();
-}
-
-void TextScrollerWgdt::load_cfg(JsonVariantConst cfg){
-  LOGV(T_txtscroll, println, "Configure text scroller");
-  _bitmapcfg.w                = cfg[T_width]    | DEF_BITMAP_WIDTH;
-  _bitmapcfg.h                = cfg[T_height]   | DEF_BITMAP_HEIGHT;
-  _bitmapcfg.x                = cfg[T_x1pos];
-  _bitmapcfg.y                = cfg[T_y1pos]    | DEF_BITMAP_YOFFSET;
-  _bitmapcfg.font_index       = cfg[T_font1];
-  _bitmapcfg.baseline_shift_y = cfg[T_offset];
-  _bitmapcfg.color            = cfg[T_color1]   | DEFAULT_TEXT_COLOR;
-  _bitmapcfg.alpha_bg         = cfg[T_alpha_b]  | DEF_OVERLAY_ALPHA;
-
-  _scrollrate = cfg[T_rate] | 10;
-
-  // grab a lock on bitmap canvas
-  std::lock_guard<std::mutex> lock(mtx);
-  _textmask = std::make_unique<Arduino_Canvas_Mono>(_bitmapcfg.w, _bitmapcfg.h, nullptr);
-  _textmask->begin();
-  _textmask->setUTF8Print(true);
-  _textmask->setTextWrap(false);
-  _textmask->setFont(fonts.at(_bitmapcfg.font_index));
-  //_textmask->setTextBound();
-  //_textmask_clk->setRotation(2);
-
-  _weathercfg.city_id = cfg[T_cityid].as<unsigned>();
-
-  if (cfg[T_apikey].is<const char*>())
-    _weathercfg.apikey =  cfg[T_apikey].as<const char*>();
-
-  _weathercfg.refresh = (cfg[T_refresh] | 1) * 3600000;
-
-  _last_redraw = millis();
-
-  // weather update
-  enableIfNot();
-  forceNextIteration();
-}
-
-void TextScrollerWgdt::generate_cfg(JsonVariant cfg) const {
-  cfg.clear();
-  cfg[T_width]    = _bitmapcfg.w;
-  cfg[T_height]   = _bitmapcfg.h;
-  cfg[T_x1pos]    = _bitmapcfg.x;
-  cfg[T_y1pos]    = _bitmapcfg.y;
-  cfg[T_font1]    = _bitmapcfg.font_index;
-  cfg[T_offset]   = _bitmapcfg.baseline_shift_y;
-  cfg[T_color1]   = _bitmapcfg.color;
-  cfg[T_alpha_b]  = _bitmapcfg.alpha_bg;
-  cfg[T_rate]     = _scrollrate;
-
-  //JsonObject weath = cfg[T_weather].isNull() ? cfg[T_weather].to<JsonObject>() : cfg[T_weather];
-  //weath.clear();  // clear obj, I'll replace it's content
-
-  // weather
-  cfg[T_cityid] =  _weathercfg.city_id;
-  if (_weathercfg.apikey.length())
-    cfg[T_apikey] =  _weathercfg.apikey;
-  cfg[T_refresh] = _weathercfg.refresh / 3600000;   // ms in hr
-}
-
-void TextScrollerWgdt::moduleRunner(){
-  LOGV(T_txtscroll, printf, "pogoda %lu\n", getInterval());
-  // this periodic runner needed only for weather update
-
-  _getOpenWeather();
-}
-
-void TextScrollerWgdt::_scroll_line(LedFB_GFX *gfx){
-  // if canvas can't be locked, skip this run
-  std::unique_lock<std::mutex> lock(mtx, std::defer_lock);
-  if (!lock.try_lock())
-    return;
-
-  int32_t px_to_shift = (millis() - _last_redraw) * _scrollrate / 1000;
-  _cur_offset -= px_to_shift;
-  // добавляем ко времени последнего обновления столько интервалов заданной частоты на сколько пикселей мы продвинулись.
-  // нужно оставить "хвосты" избыточного времени копиться до момента пока не набежит еще один високосный пиксель для сдвига
-  _last_redraw += px_to_shift * 1000 / _scrollrate;
-  
-
-  _textmask->fillScreen(BLACK);
-  _textmask->setCursor(_cur_offset, _bitmapcfg.h - _bitmapcfg.baseline_shift_y);
-  _textmask->print(_txtstr.data());
-  if (_cur_offset <  -1*_txt_pixlen)
-    _cur_offset = _bitmapcfg.w;
-
-
-  gfx->drawBitmap_bgfade(_bitmapcfg.x, _bitmapcfg.y, _textmask->getFramebuffer(), _bitmapcfg.w, _bitmapcfg.h, _bitmapcfg.color, _bitmapcfg.alpha_bg );
-}
-
-void TextScrollerWgdt::start(){
-  // overlay rendering functor
-  display.attachOverlay( _renderer );
-
-  // enable timer
-  enable();
-  // request lamp's status to discover it's power state
-  //EVT_POST(LAMP_GET_EVENTS, e2int(evt::lamp_t::pwr));
-}
-
-void TextScrollerWgdt::stop(){
-  disable();
-  std::lock_guard<std::mutex> lock(mtx);
-  display.detachOverlay(_renderer.id);
-}
-
-void TextScrollerWgdt::_event_hndlr(void* handler, esp_event_base_t base, int32_t id, void* event_data){
-  LOGV(T_clock, printf, "EVENT %s:%d\n", base, id);
-  //if ( base == LAMP_CHANGE_EVENTS )
-  //  return static_cast<TextScrollerWgdt*>(handler)->_lmpChEventHandler(base, id, event_data);
-}
-*/
-
-/*
-void TextScrollerWgdt::_lmpChEventHandler(esp_event_base_t base, int32_t id, void* data){
-  switch (static_cast<evt::lamp_t>(id)){
-    // Power control
-    case evt::lamp_t::pwron :
-      LOGI(T_clock, println, "activate module");
-      redraw = true;
-      enable();
-      break;
-    case evt::lamp_t::pwroff :
-      LOGI(T_clock, println, "suspend module");
-      stop();
-      break;
-    default:;
-  }
-}
-*/
-
