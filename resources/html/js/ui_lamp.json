@@ -1824,10 +1824,77 @@
         ]
       },
       "txtscroll":{
-        "section":"set_modcfg_txtscroll",
+        "section":"mod_txtscroll_container",
         "label":"🔤 Бегущая строка",
         "main":true,
         "block":[
+          {
+            "html":"comment",
+            "label":"Подробнее о настроках см. <a href=\"https://github.com/vortigont/FireLamp_JeeUI/wiki/Бегущая-строка\" target=\"_blank\">WiKi</a>"
+          },
+          {
+            "section":"mod_txtscroll_body",
+            "block":[
+              {
+                "section":"mod_txtscroll_generic",
+                "hidden": true,
+                "label":"Сообщения о событиях",
+                "block":[
+                  {
+                    "section":"set_mod_txtscroll_generic",
+                    "line":true,
+                    "block":[
+                      {
+                        "id":"wifi",
+                        "html":"input",
+                        "label":"События WiFi",
+                        "type":"checkbox"
+                      },
+                      {
+                        "id":"stream_id",
+                        "html":"input",
+                        "type":"number",
+                        "label":"номер потока (0 - любой поток)",
+                        "value": 0,
+                        "min":0,
+                        "step":1
+                      }
+                    ]
+                  },
+                  {
+                    "id": "set_mod_txtscroll_generic",
+                    "html": "button",
+                    "type": 1,
+                    "label":"🖫 Сохранить"
+                  }
+                ]
+              },
+              { "html":"spacer" },
+              {
+                "section":"scrolls_list",
+                "hint":"a placeholder for dynamically loaded list of scroll instances",
+                "block":[]
+              },
+              {
+                "id":"get_mod_txtscroll_scroll",
+                "html":"button",
+                "label":"Новый бегущий блок",
+                "type":2,
+                "function":"txtscroller_mk_page_edit_stream",
+                "value": -1
+              },
+              {
+                "id":"ui_page_modules",
+                "html":"button",
+                "color":"green",
+                "type":0,
+                "label":"🔙 Выход"
+              }
+            ]
+          }
+        ]
+      },
+      "scroller_old":[
           {
             "section":"ui_modpreset",
             "label":"Профиль",
@@ -2035,8 +2102,7 @@
             "type":0,
             "label":"🔙 Выход"
           }
-        ]
-      },
+      ],
       "omnicron":{
         "section":"mod_omnicron",
         "label":"📅 Планировщик ОмниКрон",
@@ -2135,9 +2201,7 @@
               }
             ]
           },
-          {
-            "html":"spacer"
-          },  
+          { "html":"spacer" },
           {
             "section":"queue",
             "label":"Очередь бегущей строки",
@@ -2159,7 +2223,7 @@
                 "id":"interval",
                 "html":"input",
                 "type":"number",
-                "label":"Интервал вывода строки, с",
+                "label":"Интервал вывода сообщения, с",
                 "min":0,
                 "step":1
               }
@@ -2799,6 +2863,115 @@
             "label":"🔙 Выход"
           }
         ]
+      }
+    },
+    "mod_txtscroll":{
+      "bottom":{
+        "section":"scroller_btm",
+        "block":[
+          {
+            "id": "get_mod_txtscroll_scroll",
+            "html": "button",
+            "type": 2,
+            "function": "txtscroller_mk_page_edit_stream",
+            "value": -1,
+            "label":"Создать новый поток"
+          },
+          {
+            "id":"ui_page_modules",
+            "html":"button",
+            "color": "green",
+            "type":0,
+            "label":"🔙 Выход"
+          }
+        ]
+      },
+      "scroll_item":{
+        "section":"scroller_",
+        "line": true,
+        "block":[
+          {
+            "id":"active",
+            "html":"input",
+            "label":"🔤",
+            "type":"checkbox",
+            "disabled": true,
+            "class":"pure-u-1-5 pure-u-lg-1-12"
+          },
+          {
+            "id":"descr",
+            "html":"constbtn",
+            "class":"pure-u-4-5 pure-u-lg-7-12"
+          },
+          {
+            "id": "get_mod_txtscroll_scroll_edit",
+            "html": "button",
+            "type": 2,
+            "function": "txtscroller_mk_page_edit_stream",
+            "label":"🛠 настроить",
+            "class":"pure-u-1-2 pure-u-lg-1-6"
+          },
+          {
+            "id": "set_mod_txtscroll_scroll_rm",
+            "html": "button",
+            "type": 0,
+            "color": "red",
+            "label":"🗑 удалить",
+            "class":"pure-u-1-2 pure-u-lg-1-6"
+          }
+        ]
+      },
+      "edit_stream_form":{
+        "section":"mod_txtscroll_body",
+        "label": "Настройка потока",
+        "replace": true,
+        "block":[
+          {
+            "section":"set_mod_txtscroll_streamcfg",
+            "block":[
+              {
+                "id":"active",
+                "html":"input",
+                "label":"Активен",
+                "type":"checkbox"
+              },
+              {
+                "id":"stream_id",
+                "html":"input",
+                "type":"number",
+                "label":"Номер потока",
+                "min":0,
+                "step":1
+              },
+              {
+                "id":"descr",
+                "html":"input",
+                "label":"Название",
+                "type":"text"
+              },
+              {
+                "id":"profile",
+                "html":"select",
+                "label":"Профиль оформления слоя",
+                "section":"options",
+                "block":[]
+              },
+              {
+                "id": "set_mod_txtscroll_streamcfg",
+                "html": "button",
+                "type": 1,
+                "label":"🖫 Сохранить"
+              },
+              {
+                "id":"ui_page_module_txtscroll",
+                "html":"button",
+                "color": "green",
+                "type":0,
+                "label":"🔙 Выход"
+              }    
+            ]
+          }
+        ]    
       }
     },
     "btn_exit_modlist":{

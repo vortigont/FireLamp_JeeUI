@@ -75,7 +75,7 @@ void ModWeatherSource::_getOpenWeather(){
   url += "&APPID=";
   url += _weathercfg.apikey.c_str();
 
-  LOGV(T_txtscroll, printf, "updater t: %lu, url:%s\n", getInterval(), url.c_str());
+  LOGD(T_weather, printf, "update t: %lu\n", getInterval()/1000);
 
   auto scroller = zookeeper.getModulePtr(T_txtscroll);
   if (scroller){
@@ -85,7 +85,7 @@ void ModWeatherSource::_getOpenWeather(){
 
   HTTPClient http;
   http.begin(url.c_str());
-  LOGV(T_txtscroll, printf, "get weather: %s\n", url.c_str());
+  LOGV(T_weather, printf, "fetch: %s\n", url.c_str());
   int code = http.GET();
   if (code != HTTP_CODE_OK) {
     std::string m("Ошибка обновления погоды, HTTP:");

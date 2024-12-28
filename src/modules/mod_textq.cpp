@@ -37,6 +37,7 @@
 
 #include "mod_textq.hpp"
 #include "fonts.h"
+#include "EmbUI.h"
 #include "log.h"
 
 #define DEF_BITMAP_WIDTH        64
@@ -44,6 +45,11 @@
 #define DEF_OVERLAY_ALPHA       32
 #define DEF_BITMAP_YOFFSET      20
 #define DEF_MAX_MGS_Q_LEN       25    // max messages in the queue
+
+
+static constexpr const char* A_set_mod_txtscroll_generic = "set_mod_txtscroll_generic";
+static constexpr const char* A_get_mod_txtscroll_scroll_edit  = "get_mod_txtscroll_scroll_edit";
+static constexpr const char* A_set_mod_txtscroll_scroll_rm = "set_mod_txtscroll_scroll_rm";
 
 // *** Running Text overlay 
 
@@ -202,6 +208,13 @@ void TextScroll::updateMSG(const TextMessage& msg, bool enqueue){
 
 
 ModTextScroller::ModTextScroller() : GenericModule(T_txtscroll, false){
+  // add EmbUI's handlers
+
+  // set generic options
+  embui.action.add(A_set_mod_txtscroll_generic, [this](Interface *interf, JsonObjectConst data, const char* action){ set_generic_options(interf, data, action); } );
+  // remove specified scroller instance
+  embui.action.add(A_set_mod_txtscroll_scroll_rm, [this](Interface *interf, JsonObjectConst data, const char* action){ rm_instance(interf, data, action); } );
+
   //esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, TextScrollerWgdt::_event_hndlr, this, &_hdlr_lmp_change_evt);
   //esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_STATE_EVENTS, ESP_EVENT_ANY_ID, TextScrollerWgdt::_event_hndlr, this, &_hdlr_lmp_state_evt);
 }
@@ -213,20 +226,19 @@ ModTextScroller::~ModTextScroller(){
 }
 
 void ModTextScroller::load_cfg(JsonVariantConst cfg){
-  JsonObjectConst queues = cfg["queues"];
+  JsonArrayConst queues = cfg[T_scrollers];
   if (queues.isNull())
     return;
 
-  LOGI(T_txtscroll, println, "loading text scrollers");
-  for (JsonPairConst kv : queues){
-    JsonObjectConst o = kv.value();
-    if (o[T_enabled] == false)
+  LOGI(T_txtscroll, printf, "loading text scrollers: %u", queues.size());
+  for (JsonVariantConst o : queues){
+    if (o[T_active] == false)
       continue;
 
-    LOGD(T_txtscroll, printf, "load scroller:%s\n", kv.key().c_str());
+    LOGD(T_txtscroll, printf, "load scroller:%s\n", o[T_descr].as<const char*>());
     // create new object
     TextScroll &t = _scrollers.emplace_back();
-    t.setID(o[P_id]);
+    t.setID(o[T_stream_id]);
     // load string facing/size config
     t.load_cfg(cfg[T_profiles][o[T_profile].as<unsigned>()][T_cfg]);
     // load predefined messages
@@ -247,7 +259,7 @@ void ModTextScroller::load_cfg(JsonVariantConst cfg){
     WiFi.removeEvent(eid);
   }
 }
-
+/*
 void ModTextScroller::start(){
   // enable timer
 }
@@ -255,7 +267,7 @@ void ModTextScroller::start(){
 void ModTextScroller::stop(){
 
 }
-
+*/
 void ModTextScroller::_event_hndlr(void* handler, esp_event_base_t base, int32_t id, void* event_data){
   //LOGV(T_clock, printf, "EVENT %s:%d\n", base, id);
   //if ( base == LAMP_CHANGE_EVENTS )
@@ -304,6 +316,81 @@ void ModTextScroller::updateMSG(const TextMessage& msg, uint8_t scroller_id, boo
     if (!scroller_id || (s.getID() == scroller_id)){
       s.updateMSG(msg, enqueue);
       return;
+    }
+  }
+}
+
+void ModTextScroller::mkEmbUIpage(Interface *interf, JsonObjectConst data, const char* action){
+  String key(T_ui_pages_module_prefix);
+  key += label;
+  // load Module's structure from a EmbUI's UI data
+  interf->json_frame_interface();
+  interf->json_section_uidata();
+  interf->uidata_pick( key.c_str() );
+
+  // call js function that will get txtscroll.json and create a list of objects on a page
+  interf->json_frame_jscall("txtscroller_mk_page_main");
+  interf->json_frame_flush();
+/*
+    JsonDocument doc;
+    generate_cfg(doc.to<JsonObject>());
+    interf->json_object_add(doc);
+//  interf->json_frame_flush();
+
+  // 'new' and 'exit' buttons
+  interf->json_frame_interface();
+  interf->json_section_uidata();
+  interf->uidata_pick( T_mod_omnicron_bottom );
+  interf->json_frame_flush();
+*/
+}
+
+void ModTextScroller::set_generic_options(Interface *interf, JsonObjectConst data, const char* action){
+
+  // apply setting to running instance
+  load_cfg(data);
+
+  // merge with config on FS
+  JsonDocument doc;
+  embuifs::deserializeFile(doc, mkFileName().c_str());
+
+  // reset doc to object if deserialization failed
+  if (doc.isNull())
+    doc.to<JsonObject>();
+
+  JsonObject cfg = doc.as<JsonObject>();
+
+  embuifs::obj_merge(cfg, data);
+
+  LOGD(T_txtscroll, printf, "writing cfg to file: %s\n", mkFileName().c_str());
+  embuifs::serialize2file(doc, mkFileName().c_str());
+}
+
+void ModTextScroller::rm_instance(Interface *interf, JsonObjectConst data, const char* action){
+  int id = data[P_value].as<int>();
+  if (id < 1)
+    return;
+
+  JsonDocument doc;
+  embuifs::deserializeFile(doc, mkFileName().c_str());
+
+  bool save = false;
+  JsonArray queues = doc[T_scrollers];
+  for (JsonArray::iterator it=queues.begin(); it!=queues.end(); ++it) {
+    if ((*it)[P_value] == id) {
+      queues.remove(it);
+      save = true;
+      LOGI(T_txtscroll, printf, "erase: %d", id);
+    }
+  }
+  // save file
+  if (save)
+    embuifs::serialize2file(doc, mkFileName().c_str());
+
+  // remove spawned instances
+  for (auto s =  _scrollers.begin(); s != _scrollers.end(); ++s){
+    if ((s->getID() == id)){
+      _scrollers.erase(s);
     }
   }
 }

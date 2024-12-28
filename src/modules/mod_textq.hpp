@@ -153,8 +153,8 @@ public:
   ModTextScroller();
   ~ModTextScroller();
 
-  void start() override;
-  void stop() override;
+  void start() override {};
+  void stop() override {};
 
   /**
    * @brief enqueue new message to the scroller instance with specified ID
@@ -173,5 +173,29 @@ public:
    * @param enqueue 
    */
   void updateMSG(const TextMessage& msg, uint8_t scroller_id = 0, bool enqueue = true);
+
+
+  // EmbUI handlers
+
+	/**
+	 * @brief Construct an EmbUI page with module's state/configuration
+	 * 
+	 * @param interf 
+	 * @param data 
+	 * @param action 
+	 */
+	void mkEmbUIpage(Interface *interf, JsonObjectConst data, const char* action) override;
+
+  /**
+   * @brief apply basic configuration for module
+   * i.e. event generators
+   * @param interf 
+   * @param data 
+   * @param action 
+   */
+	void set_generic_options(Interface *interf, JsonObjectConst data, const char* action);
+
+  // remove configured scroller instance
+	void rm_instance(Interface *interf, JsonObjectConst data, const char* action);
 
 };

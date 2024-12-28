@@ -1,16 +1,17 @@
 {
   "wifi": true,
-  "queues":{
-    "q0":{
-      "id":1,
-      "enabled":true,
-      "profile":1,
+  "scrollers":[
+    {
+      "stream_id":1,
+      "descr":"бегунок_1",
+      "active":true,
+      "profile":3,
       "messages":[
         {"cnt":1, "msg":"Добро пожаловать!"},
         {"cnt":1, "msg":"Присоединяйтесь к группе в Телеграмм: https://t.me/lampdevs"}
       ]
     }
-  },
+  ],
   "profiles":[
     {"label":"16x16 Unifont Cyrillic (64)",
         "cfg":{"width":64,"height":14,"x1pos":0,"y1pos":18,"font1":2,"offset":2,"color1":65535,"alpha_b":255,"rate":20,"refresh":1}},

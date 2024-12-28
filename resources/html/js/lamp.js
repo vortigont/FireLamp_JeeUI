@@ -56,7 +56,7 @@ function omnicron_tasks_load(arg){
   };
 
   // make a deep copy, 'cause we'll modify the object
-  let ui_obj = JSON.parse(JSON.stringify(_.get(uiblocks, "lampui.sections.mod_omnicron.task_brief")));
+  let ui_obj = structuredClone(_.get(uiblocks, "lampui.sections.mod_omnicron.task_brief"));
 
   // rename keys for each array's elements in 'event' obj
   tasks_data.event.forEach((obj, idx, array) => {
@@ -65,7 +65,7 @@ function omnicron_tasks_load(arg){
     ui_obj.block[1]["value"] = obj.descr
     ui_obj.block[2]["value"] = idx        // edit btn
     ui_obj.block[3]["value"] = idx        // del btn
-    pkg.block.push(JSON.parse(JSON.stringify(ui_obj)))
+    pkg.block.push(structuredClone(ui_obj))
   });
 
   var r = render();
@@ -157,12 +157,88 @@ async function make_effect_profile_selector_list(arg){
   rdr.content(obj)
 }
 
+/**
+ * generate UI page for Text Scrollers
+ * 
+ */
+async function txtscroller_mk_page_main(arg){
+  const req = await fetch('/txtscroll.json', {method: 'GET'})
+  if (!req.ok) return
+  const resp = await req.json();
+  if (!(resp instanceof Object)) return
+
+  _.set(uiblocks, 'lampui.dynamic.mod_txtscroll', resp)
+
+  let scrolls = {
+    "section":"scrolls_list",
+    "label": "Потоки",
+    "replace": true,
+    "block":[]
+  }
+
+  // rename keys for each array's element
+  resp.scrollers.forEach((obj, idx, array) => {
+    // make a deep copy, 'cause we'll modify the object
+    let ui_obj = structuredClone(_.get(uiblocks, "lampui.sections.mod_txtscroll.scroll_item"));
+    ui_obj.section += obj.stream_id
+
+    let index = _.findIndex(ui_obj.block, {"id":"active"})
+    ui_obj.block[index]["value"] = obj.active // chk box
+    //index
+    ui_obj.block[_.findIndex(ui_obj.block, {"id":"descr"})]["value"] = "ID:" + obj.stream_id + " - " + obj.descr
+    ui_obj.block[_.findIndex(ui_obj.block, {"id":"get_mod_txtscroll_scroll_edit"})]["value"] = obj.stream_id        // edit btn
+    ui_obj.block[_.findIndex(ui_obj.block, {"id":"set_mod_txtscroll_scroll_rm"})]["value"] = obj.stream_id        // del btn
+    scrolls.block.push(ui_obj)
+  });
+
+  //console.log("Render scrolls list:", scrolls);
+  var rdr = this.rdr = render();
+  rdr.section(scrolls)
+}
+
+// reacts on button "edit text scroll stream", creates a form with stream's config options
+function txtscroller_mk_page_edit_stream(event, id, arg){
+  let ui_obj = structuredClone(_.get(uiblocks, "lampui.sections.mod_txtscroll.edit_stream_form"));
+  let form = ui_obj.block[0]
+  // if arg == -1, then it's a new object creation
+  if (arg != -1){
+    let scrollers = _.get(uiblocks, "lampui.dynamic.mod_txtscroll.scrollers")
+    let stream_id = _.findIndex(scrollers, {"stream_id":arg})
+    let scroller = scrollers[stream_id]
+    //console.log("scroller:", scroller, "sid:", stream_id);
+    for (let key in scroller){
+      if (typeof scroller[key] == 'object')
+        continue
+
+      let i = _.findIndex(form.block, {"id":key})
+      if (i != -1)
+        form.block[i]["value"] = scroller[key]
+    }
+    console.log("scroller:", scroller);
+    console.log("form:", form);
+    // set value for profiles drop-down selector
+    let i = _.findIndex(ui_obj.block[0].block, {"id":"profile"})
+    console.log("res:", ui_obj, " i:", i);
+    ui_obj.block[0].block[i]["value"] = scroller.profile
+  }
+
+  // drop down profile selector options
+  let profile_idx = _.findIndex(form.block, {"id":"profile"})
+  _.get(uiblocks, "lampui.dynamic.mod_txtscroll.profiles").forEach((obj, idx, array) => {
+    form.block[profile_idx].block.push( { "value":idx, "label":obj["label"] })
+  });
+  var rdr = this.rdr = render();
+  rdr.section(ui_obj)
+}
+
 // add our fuction to custom funcs that could be called for js_func frames
-customFuncs["alarm_items_load"] = alarm_items_load;
-customFuncs["alarm_item_set"] = alarm_item_set;
-customFuncs["omnicron_tasks_load"] = omnicron_tasks_load;
-customFuncs["make_effect_list"] = make_effect_list;
-customFuncs["mk_eff_profile_list"] = make_effect_profile_selector_list;
+customFuncs["alarm_items_load"] = alarm_items_load
+customFuncs["alarm_item_set"] = alarm_item_set
+customFuncs["omnicron_tasks_load"] = omnicron_tasks_load
+customFuncs["make_effect_list"] = make_effect_list
+customFuncs["mk_eff_profile_list"] = make_effect_profile_selector_list
+customFuncs["txtscroller_mk_page_main"] = txtscroller_mk_page_main
+customFuncs["txtscroller_mk_page_edit_stream"] = txtscroller_mk_page_edit_stream
 
 // load Informer's App UIData
 window.addEventListener("load", async function(ev){

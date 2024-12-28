@@ -123,7 +123,7 @@ public:
 
 	/**
 	 * @brief Get module's configuration packed into a nested json object ['module_label']
-	 * used to feed control's values to WebUI/MQTT
+	 * used to feed configuration values to WebUI/MQTT, calls virtual generate_cfg() under the hood
 	 */
 	void getConfig(JsonObject obj) const;
 
