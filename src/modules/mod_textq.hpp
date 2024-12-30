@@ -117,8 +117,8 @@ public:
    * @param msg 
    * @param id 
    */
-  void enqueueMSG(const TextMessage& msg);
-  void enqueueMSG(TextMessage&& msg);
+  void enqueueMSG(const TextMessage& msg, bool prepend = false);
+  void enqueueMSG(TextMessage&& msg, bool prepend = false);
 
   /**
    * @brief find and update message in the queue with matching message ids
@@ -195,7 +195,18 @@ public:
    */
 	void set_generic_options(Interface *interf, JsonObjectConst data, const char* action);
 
-  // remove configured scroller instance
+  // EmbUI API - remove configured scroller instance by it's stream_id
 	void rm_instance(Interface *interf, JsonObjectConst data, const char* action);
+
+  // EmbUI API - set configuration for the runner instance by it's stream_id
+	void set_instance(Interface *interf, JsonObjectConst data, const char* action);
+
+private:
+
+  // spawn a scroller based on json config
+  void _spawn_scroller(JsonObjectConst scroller, JsonObjectConst text_profile);
+
+  // removes active scroller from a pool by it's stream id
+  void _kill_scroller(uint8_t stream_id);
 
 };
