@@ -1,6 +1,6 @@
 {
   "type":"interface",
-  "version":23,
+  "version":24,
   "descr":"FireLamp UI objects",
 
   "settings":{
@@ -1830,7 +1830,7 @@
         "block":[
           {
             "html":"comment",
-            "label":"Подробнее о настроках см. <a href=\"https://github.com/vortigont/FireLamp_JeeUI/wiki/Бегущая-строка\" target=\"_blank\">WiKi</a>"
+            "label":"Подробнее о настройках см. <a href=\"https://github.com/vortigont/FireLamp_JeeUI/wiki/Бегущая-строка\" target=\"_blank\">WiKi</a>"
           },
           {
             "section":"mod_txtscroll_body",
@@ -1866,6 +1866,66 @@
                     "html": "button",
                     "type": 1,
                     "label":"🖫 Сохранить"
+                  }
+                ]
+              },
+              { "html":"spacer" },
+              {
+                "section":"set_mod_txtscroll_send",
+                "hidden": true,
+                "label":"Отправка сообщения",
+                "block":[
+                  {
+                    "section":"set_mod_txtscroll_opt1",
+                    "line":true,
+                    "block":[
+                      {
+                        "id":"prepend",
+                        "html":"input",
+                        "label":"Приоритетное",
+                        "type":"checkbox"
+                      },
+                      {
+                        "id":"stream_id",
+                        "html":"input",
+                        "type":"number",
+                        "label":"номер потока (0 - любой поток)",
+                        "value": 0,
+                        "min":0,
+                        "step":1
+                      }
+
+                    ]
+                  },
+                  {
+                    "id":"cnt",
+                    "html":"input",
+                    "type":"number",
+                    "label":"кол-во повторов",
+                    "value": 1,
+                    "min":1,
+                    "step":1
+                  },
+                  {
+                    "id":"interval",
+                    "html":"input",
+                    "type":"number",
+                    "label":"интервал вывода, с",
+                    "value": 0,
+                    "min":0,
+                    "step":1
+                  },
+                  {
+                    "id":"text",
+                    "html":"input",
+                    "type":"textarea",
+                    "label":"Сообщение"
+                  },
+                  {
+                    "id": "set_mod_txtscroll_send",
+                    "html": "button",
+                    "type": 1,
+                    "label":"📨 Отправить"
                   }
                 ]
               },

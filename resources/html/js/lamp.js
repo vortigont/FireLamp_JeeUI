@@ -227,6 +227,7 @@ function txtscroller_mk_page_edit_stream(event, id, arg){
   _.get(uiblocks, "lampui.dynamic.mod_txtscroll.profiles").forEach((obj, idx, array) => {
     form.block[profile_idx].block.push( { "value":idx, "label":obj["label"] })
   });
+  // todo: add value for drop-down
   var rdr = this.rdr = render();
   rdr.section(ui_obj)
 }

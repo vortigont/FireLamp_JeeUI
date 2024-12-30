@@ -162,8 +162,8 @@ public:
    * @param msg 
    * @param scrolled_id - instance ID, if 0 - then any available instance
    */
-  void enqueueMSG(const TextMessage& msg, uint8_t scroller_id = 0);
-  void enqueueMSG(TextMessage&& msg, uint8_t scroller_id = 0);
+  void enqueueMSG(const TextMessage& msg, uint8_t scroller_id = 0, bool prepend = false);
+  void enqueueMSG(TextMessage&& msg, uint8_t scroller_id = 0, bool prepend = false);
 
   /**
    * @brief for specified scroller find and update message in the queue with matching message ids
@@ -200,6 +200,9 @@ public:
 
   // EmbUI API - set configuration for the runner instance by it's stream_id
 	void set_instance(Interface *interf, JsonObjectConst data, const char* action);
+
+  // EmbUI API - send message to the queue
+	void embui_send_msg(Interface *interf, JsonObjectConst data, const char* action);
 
 private:
 

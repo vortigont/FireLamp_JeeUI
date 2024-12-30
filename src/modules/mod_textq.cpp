@@ -51,6 +51,7 @@ static constexpr const char* A_set_mod_txtscroll_generic = "set_mod_txtscroll_ge
 static constexpr const char* A_get_mod_txtscroll_scroll_edit  = "get_mod_txtscroll_scroll_edit";
 static constexpr const char* A_set_mod_txtscroll_scroll_rm = "set_mod_txtscroll_scroll_rm";
 static constexpr const char* A_set_mod_txtscroll_streamcfg = "set_mod_txtscroll_streamcfg";
+static constexpr const char* A_set_mod_txtscroll_send = "set_mod_txtscroll_send";
 
 // *** Running Text overlay 
 
@@ -187,9 +188,10 @@ void TextScroll::enqueueMSG(const TextMessage& msg, bool prepend){
 }
 
 void TextScroll::enqueueMSG(TextMessage&& msg, bool prepend){
+  LOGV(T_txtscroll, printf, "enqueueMSG:%s\n", msg.msg.c_str());
   if (_active && _msg_pool.size() <= DEF_MAX_MGS_Q_LEN)
     if (prepend)
-      _msg_pool.emplace_back(std::make_shared<TextMessage>(std::move(msg)));
+      _msg_pool.emplace_front(std::make_shared<TextMessage>(std::move(msg)));
     else
       _msg_pool.emplace_back(std::make_shared<TextMessage>(std::move(msg)));
 }
@@ -223,6 +225,8 @@ ModTextScroller::ModTextScroller() : GenericModule(T_txtscroll, false){
   embui.action.add(A_set_mod_txtscroll_scroll_rm, [this](Interface *interf, JsonObjectConst data, const char* action){ rm_instance(interf, data, action); } );
   // set/add scroller instance options
   embui.action.add(A_set_mod_txtscroll_streamcfg, [this](Interface *interf, JsonObjectConst data, const char* action){ set_instance(interf, data, action); } );
+
+  embui.action.add(A_set_mod_txtscroll_send, [this](Interface *interf, JsonObjectConst data, const char* action){ embui_send_msg(interf, data, action); } );
   
   //esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, TextScrollerWgdt::_event_hndlr, this, &_hdlr_lmp_change_evt);
   //esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_STATE_EVENTS, ESP_EVENT_ANY_ID, TextScrollerWgdt::_event_hndlr, this, &_hdlr_lmp_state_evt);
@@ -235,6 +239,7 @@ ModTextScroller::~ModTextScroller(){
   embui.action.remove(A_set_mod_txtscroll_generic);
   embui.action.remove(A_set_mod_txtscroll_scroll_rm);
   embui.action.remove(A_set_mod_txtscroll_streamcfg);
+  embui.action.remove(A_set_mod_txtscroll_send);
   stop();
 }
 
@@ -318,19 +323,19 @@ void ModTextScroller::_onWiFiEvent(arduino_event_id_t event, arduino_event_info_
   }
 }
 
-void ModTextScroller::enqueueMSG(const TextMessage& msg, uint8_t scroller_id){
+void ModTextScroller::enqueueMSG(const TextMessage& msg, uint8_t scroller_id, bool prepend){
   for (auto &s : _scrollers){
     if (!scroller_id || (s.getID() == scroller_id)){
-      s.enqueueMSG(msg);
+      s.enqueueMSG(msg, prepend);
       return;
     }
   }
 }
 
-void ModTextScroller::enqueueMSG(TextMessage&& msg, uint8_t scroller_id){
+void ModTextScroller::enqueueMSG(TextMessage&& msg, uint8_t scroller_id, bool prepend){
   for (auto &s : _scrollers){
     if (!scroller_id || (s.getID() == scroller_id)){
-      s.enqueueMSG(std::move(msg));
+      s.enqueueMSG(std::move(msg), prepend);
       return;
     }
   }
@@ -452,4 +457,10 @@ void ModTextScroller::set_instance(Interface *interf, JsonObjectConst data, cons
 void ModTextScroller::_kill_scroller(uint8_t stream_id){
   // remove spawned instances
   std::erase_if(_scrollers, [stream_id](const TextScroll &s){ return s.getID() == stream_id; } );
+}
+
+void ModTextScroller::embui_send_msg(Interface *interf, JsonObjectConst data, const char* action){
+  TextMessage m(data[P_text].as<const char*>(), data[T_cnt], data[T_interval]);
+  LOGI(T_txtscroll, printf, "Add msg:%s\n", m.msg.c_str());
+  enqueueMSG(std::move(m), data[T_stream_id], data[T_prepend]);
 }
