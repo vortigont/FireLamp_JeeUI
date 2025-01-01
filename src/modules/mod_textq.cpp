@@ -460,7 +460,10 @@ void ModTextScroller::_kill_scroller(uint8_t stream_id){
 }
 
 void ModTextScroller::embui_send_msg(Interface *interf, JsonObjectConst data, const char* action){
-  TextMessage m(data[P_text].as<const char*>(), data[T_cnt], data[T_interval]);
-  LOGI(T_txtscroll, printf, "Add msg:%s\n", m.msg.c_str());
-  enqueueMSG(std::move(m), data[T_stream_id], data[T_prepend]);
+  JsonVariantConst v = data[P_text];
+  if (v.is<const char*>() && !v.isNull()){
+    TextMessage m(v.as<const char*>(), data[T_cnt], data[T_interval]);
+    //LOGI(T_txtscroll, printf, "Add msg:%s\n", m.msg.c_str());
+    enqueueMSG(std::move(m), data[T_stream_id], data[T_prepend]);
+  }
 }
