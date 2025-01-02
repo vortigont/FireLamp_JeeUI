@@ -2,10 +2,14 @@
   "wifi": true,
   "scrollers":[
     {
-      "stream_id":1,
-      "descr":"Бегунок",
-      "active":true,
-      "profile":3,
+      "active":true, "stream_id":1, "descr":"Бегунок", "profile":3,
+      "messages":[
+        {"cnt":1, "msg":"Добро пожаловать!"},
+        {"cnt":1, "msg":"Присоединяйтесь к группе в Телеграмм: @lampdevs"}
+      ]
+    },
+    {
+      "active":true,"stream_id":2,"descr":"Бегунок 64x32 низ","profile":1,
       "messages":[
         {"cnt":1, "msg":"Добро пожаловать!"},
         {"cnt":1, "msg":"Присоединяйтесь к группе в Телеграмм: @lampdevs"}
@@ -19,6 +23,16 @@
         "cfg":{"width":64,"height":12,"x1pos":0,"y1pos":20,"font1":0,"offset":2,"color1":64832,"alpha_b":255,"rate":20,"refresh":1}},
     {"label":"8x13 Cyrillic (64)",
         "cfg":{"width":64,"height":12,"x1pos":0,"y1pos":20,"font1":1,"offset":2,"color1":64832,"alpha_b":255,"rate":20,"refresh":1}},
+    {"label":"8x13 Cyrillic (128)",
+        "cfg":{"width":128,"height":12,"x1pos":0,"y1pos":52,"font1":1,"offset":2,"color1":2031,"alpha_b":255,"rate":20,"refresh":1}},
+    {"label":"8x13 Cyrillic (128)",
+        "cfg":{"width":128,"height":12,"x1pos":0,"y1pos":52,"font1":1,"offset":2,"color1":2031,"alpha_b":255,"rate":20,"refresh":1}},
+    {"label":"8x13 Cyrillic (128)",
+        "cfg":{"width":128,"height":12,"x1pos":0,"y1pos":52,"font1":1,"offset":2,"color1":2031,"alpha_b":255,"rate":20,"refresh":1}},
+    {"label":"8x13 Cyrillic (128)",
+        "cfg":{"width":128,"height":12,"x1pos":0,"y1pos":52,"font1":1,"offset":2,"color1":2031,"alpha_b":255,"rate":20,"refresh":1}},
+    {"label":"8x13 Cyrillic (128)",
+        "cfg":{"width":128,"height":12,"x1pos":0,"y1pos":52,"font1":1,"offset":2,"color1":2031,"alpha_b":255,"rate":20,"refresh":1}},
     {"label":"8x13 Cyrillic (128)",
         "cfg":{"width":128,"height":12,"x1pos":0,"y1pos":52,"font1":1,"offset":2,"color1":2031,"alpha_b":255,"rate":20,"refresh":1}},
     {"label":"16x16 Cyrillic (128)",

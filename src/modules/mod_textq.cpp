@@ -52,6 +52,9 @@ static constexpr const char* A_get_mod_txtscroll_scroll_edit  = "get_mod_txtscro
 static constexpr const char* A_set_mod_txtscroll_scroll_rm = "set_mod_txtscroll_scroll_rm";
 static constexpr const char* A_set_mod_txtscroll_streamcfg = "set_mod_txtscroll_streamcfg";
 static constexpr const char* A_set_mod_txtscroll_send = "set_mod_txtscroll_send";
+static constexpr const char* A_set_mod_txtscroll_profile_apply = "set_mod_txtscroll_profile_apply";
+static constexpr const char* A_set_mod_txtscroll_profile_save = "set_mod_txtscroll_profile_save";
+
 
 // *** Running Text overlay 
 
@@ -67,6 +70,7 @@ void TextScroll::clear(){
 
 void TextScroll::load_cfg(JsonVariantConst cfg){
   //LOGV(T_txtscroll, println, "Configure text scroller");
+  //serializeJsonPretty(cfg, Serial);
   _bitmapcfg.w                = cfg[T_width]    | DEF_BITMAP_WIDTH;
   _bitmapcfg.h                = cfg[T_height]   | DEF_BITMAP_HEIGHT;
   _bitmapcfg.x                = cfg[T_x1pos];
@@ -227,7 +231,11 @@ ModTextScroller::ModTextScroller() : GenericModule(T_txtscroll, false){
   embui.action.add(A_set_mod_txtscroll_streamcfg, [this](Interface *interf, JsonObjectConst data, const char* action){ set_instance(interf, data, action); } );
 
   embui.action.add(A_set_mod_txtscroll_send, [this](Interface *interf, JsonObjectConst data, const char* action){ embui_send_msg(interf, data, action); } );
-  
+
+  embui.action.add(A_set_mod_txtscroll_profile_apply, [this](Interface *interf, JsonObjectConst data, const char* action){ embui_profile_apply(interf, data, action); } );
+
+  embui.action.add(A_set_mod_txtscroll_profile_save, [this](Interface *interf, JsonObjectConst data, const char* action){ embui_profile_save(interf, data, action); } );
+
   //esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, TextScrollerWgdt::_event_hndlr, this, &_hdlr_lmp_change_evt);
   //esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_STATE_EVENTS, ESP_EVENT_ANY_ID, TextScrollerWgdt::_event_hndlr, this, &_hdlr_lmp_state_evt);
 }
@@ -240,6 +248,9 @@ ModTextScroller::~ModTextScroller(){
   embui.action.remove(A_set_mod_txtscroll_scroll_rm);
   embui.action.remove(A_set_mod_txtscroll_streamcfg);
   embui.action.remove(A_set_mod_txtscroll_send);
+  embui.action.remove(A_set_mod_txtscroll_profile_apply);
+  embui.action.remove(A_set_mod_txtscroll_profile_save);
+  
   stop();
 }
 
@@ -385,7 +396,7 @@ void ModTextScroller::set_generic_options(Interface *interf, JsonObjectConst dat
 }
 
 void ModTextScroller::rm_instance(Interface *interf, JsonObjectConst data, const char* action){
-  int id = data[P_value].as<int>();
+  int id = data[action].as<int>();
   if (id < 1)
     return;
 
@@ -440,7 +451,7 @@ void ModTextScroller::set_instance(Interface *interf, JsonObjectConst data, cons
   if (o.isNull())
     queues.add(data);
   else
-    embuifs::obj_deepmerge(o, data);    // merge with saved messages
+    embuifs::obj_merge(o, data);    // merge with saved messages
 
   embuifs::serialize2file(doc, mkFileName().c_str());
 
@@ -465,5 +476,51 @@ void ModTextScroller::embui_send_msg(Interface *interf, JsonObjectConst data, co
     TextMessage m(v.as<const char*>(), data[T_cnt], data[T_interval]);
     //LOGI(T_txtscroll, printf, "Add msg:%s\n", m.msg.c_str());
     enqueueMSG(std::move(m), data[T_stream_id], data[T_prepend]);
+  }
+}
+
+void ModTextScroller::embui_profile_apply(Interface *interf, JsonObjectConst data, const char* action){
+  for (auto &s : _scrollers){
+    if (s.getID() == data[T_stream_id].as<uint8_t>()){
+      s.load_cfg(data);
+      return;
+    }
+  }
+}
+
+void ModTextScroller::embui_profile_save(Interface *interf, JsonObjectConst data, const char* action){
+  uint8_t stream_id = data[T_stream_id];
+  if (!stream_id) return;   // stream id must be valid
+
+  JsonDocument doc;
+  embuifs::deserializeFile(doc, mkFileName().c_str());
+
+  JsonArray queues = doc[T_scrollers];
+
+  JsonObject o;
+  for (auto instance = queues.begin(); instance != queues.end(); ++instance ){
+    if ( stream_id == (*instance)[T_stream_id].as<uint8_t>() ){
+      o = *instance;
+      break;
+    }
+  }
+  if (o.isNull())
+    return;
+  
+  embuifs::obj_merge(o, data[T_scroller]);
+
+  uint32_t idx = o[T_profile];
+  embuifs::obj_deepmerge(doc[T_profiles][idx], data[T_profile]);
+
+  //serializeJsonPretty(doc, Serial);
+
+  embuifs::serialize2file(doc, mkFileName().c_str());
+
+  // apply to current instance if any
+  for (auto &s : _scrollers){
+    if (s.getID() == stream_id){
+      s.load_cfg(data[T_profile][T_cfg]);
+      return;
+    }
   }
 }

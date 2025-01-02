@@ -204,6 +204,12 @@ public:
   // EmbUI API - send message to the queue
 	void embui_send_msg(Interface *interf, JsonObjectConst data, const char* action);
 
+  // EmbUI API - apply string appearance profile
+	void embui_profile_apply(Interface *interf, JsonObjectConst data, const char* action);
+
+  // EmbUI API - save string appearance profile
+	void embui_profile_save(Interface *interf, JsonObjectConst data, const char* action);
+
 private:
 
   // spawn a scroller based on json config

@@ -335,14 +335,14 @@
         {
           "id":"display_hub75",
           "html":"button",
-          "type":1,
+          "type":"submit",
           "label":"🖫 Сохранить"
         },
         {
           "id":"ui_page_settings",
           "html":"button",
           "color": "green",
-          "type":0,
+          "type":"generic",
           "label":"🔙 Выход"
         }
       ]
@@ -1067,7 +1067,7 @@
           "id": "ui_page_settings",
           "html": "button",
           "color": "green",
-          "type":0,
+          "type":"generic",
           "label": "🔙 Выход"
         }
       ]
@@ -1214,7 +1214,7 @@
                       {
                         "id":"set_modpresetname",
                         "html":"button",
-                        "type":1,
+                        "type":"submit",
                         "label":"✅ Rename"
                       },
                       {
@@ -1240,7 +1240,7 @@
                       {
                         "id":"set_modpresetclone",
                         "html":"button",
-                        "type":1,
+                        "type":"submit",
                         "label":"✅ Clone to"
                       },
                       {
@@ -1603,14 +1603,14 @@
           {
             "id":"set_modcfg_clock",
             "html":"button",
-            "type":1,
+            "type":"submit",
             "label":"✅ Применить"
           },
           {
             "id":"ui_page_modules",
             "html":"button",
             "color": "green",
-            "type":0,
+            "type":"generic",
             "label":"🔙 Выход"
           }
         ]
@@ -1809,7 +1809,7 @@
               {
                 "id":"set_modcfg_alrmclock",
                 "html":"button",
-                "type":1,
+                "type":"submit",
                 "label":"✅ Применить"
               }
            ]
@@ -1818,7 +1818,7 @@
             "id":"ui_page_modules",
             "html":"button",
             "color": "green",
-            "type":0,
+            "type":"generic",
             "label":"🔙 Выход"
           }
         ]
@@ -1939,7 +1939,7 @@
                 "id":"get_mod_txtscroll_scroll",
                 "html":"button",
                 "label":"Новый бегущий блок",
-                "type":2,
+                "type":"js",
                 "function":"txtscroller_mk_page_edit_stream",
                 "value": -1
               },
@@ -1947,222 +1947,13 @@
                 "id":"ui_page_modules",
                 "html":"button",
                 "color":"green",
-                "type":0,
+                "type":"generic",
                 "label":"🔙 Выход"
               }
             ]
           }
         ]
       },
-      "scroller_old":[
-          {
-            "section":"ui_modpreset",
-            "label":"Профиль",
-            "block":[
-              {
-                "id": "set_modpreset_txtscroll",
-                "html":"input",
-                "type": "number",
-                "label": "Профиль настроек"
-              },
-              {
-                "section":"preset_ctrls",
-                "label":"Profile controls",
-                "hidden": true,
-                "block":[
-                  {
-                    "section":"set_modpresetname",
-                    "line":true,
-                    "block":[
-                      {
-                        "id":"modpreset_lbl",
-                        "html":"input",
-                        "label":"Profile name",
-                        "type":"text"
-                      },
-                      {
-                        "id":"set_modpresetname",
-                        "html":"button",
-                        "type":1,
-                        "label":"✅ Rename"
-                      },
-                      {
-                        "id":"module",
-                        "html":"hidden",
-                        "value":"txtscroll"
-                      }
-                    ]
-                  },
-                  {
-                    "section":"set_modpresetclone",
-                    "line":true,
-                    "block":[
-                      {
-                        "id":"modpreset_clone",
-                        "html":"input",
-                        "label":"Clone settings into another preset",
-                        "type":"number",
-                        "min": 0,
-                        "max": 9,
-                        "step": 1
-                      },
-                      {
-                        "id":"set_modpresetclone",
-                        "html":"button",
-                        "type":1,
-                        "label":"✅ Clone to"
-                      },
-                      {
-                        "id":"module",
-                        "html":"hidden",
-                        "value":"txtscroll"
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "section":"mod_txtscroll",
-            "label":"Слой строки",
-            "block":[
-              {
-                "section":"txtscroll_fonts",
-                "line":true,
-                "block":[
-                  {
-                    "id":"font1",
-                    "html":"select",
-                    "value":5,
-                    "label":"Шрифт",
-                    "section":"options",
-                    "block":[
-                      {
-                        "value":0,
-                        "label":"5x8 Сyrillic"
-                      },
-                      {
-                        "value":1,
-                        "label":"8x13 Сyrillic"
-                      },
-                      {
-                        "value":2,
-                        "label":"16x16 Unifont Cyrillic"
-                      },
-                      {
-                        "value":5,
-                        "label":"3x7 Tiny Simon (lat)"
-                      },
-                      {
-                        "value":6,
-                        "label":"13x13 doomalpha04 (lat)"
-                      },
-                      {
-                        "value":7,
-                        "label":"15x16 greenbloodserif2 (lat)"
-                      }
-                    ]
-                  },
-                  {
-                    "id":"offset",
-                    "html":"input",
-                    "type":"number",
-                    "label":"Смещение базовой линии",
-                    "min":0,
-                    "max":16,
-                    "step":1
-                  }
-                ]
-              },
-              {
-                "section":"txtscroll_size",
-                "line":true,
-                "block":[
-                  {
-                    "id":"width",
-                    "html":"input",
-                    "type":"number",
-                    "label":"Ширина блока",
-                    "min":4,
-                    "max":256,
-                    "step":4
-                  },
-                  {
-                    "id":"height",
-                    "html":"input",
-                    "type":"number",
-                    "label":"Высота блока",
-                    "min":4,
-                    "max":128,
-                    "step":1
-                  },
-                  {
-                    "id":"x1pos",
-                    "html":"input",
-                    "type":"number",
-                    "label":"Привязка по X",
-                    "min":0,
-                    "max":256,
-                    "step":1
-                  },
-                  {
-                    "id":"y1pos",
-                    "html":"input",
-                    "type":"number",
-                    "label":"Привязка по Y",
-                    "min":4,
-                    "max":256,
-                    "step":1
-                  }
-                ]
-              },
-              {
-                "section":"txtscroll_color",
-                "line":true,
-                "block":[
-                  {
-                    "id": "color1",
-                    "html":"input",
-                    "type": "number",
-                    "label": "Цвет текста (565)",
-                    "min": 0
-                  },
-                  {
-                    "id": "alpha_b",
-                    "html":"input",
-                    "type": "number",
-                    "label": "Прозрачность фона",
-                    "min": 0,
-                    "max": 255,
-                    "step": 1
-                  }
-                ]
-              },
-              {
-                "id": "rate",
-                "html":"input",
-                "type": "number",
-                "label": "Скорость прокрутки, пикс/с",
-                "min": 2,
-                "max": 200
-              }
-            ]
-          },
-          {
-            "id":"set_modcfg_txtscroll",
-            "html":"button",
-            "type":1,
-            "label":"✅ Применить"
-          },
-          {
-            "id":"ui_page_modules",
-            "html":"button",
-            "color": "green",
-            "type":0,
-            "label":"🔙 Выход"
-          }
-      ],
       "omnicron":{
         "section":"mod_omnicron",
         "label":"📅 Планировщик ОмниКрон",
@@ -2292,14 +2083,14 @@
           {
             "id":"set_modcfg_weather",
             "html":"button",
-            "type":1,
+            "type":"submit",
             "label":"✅ Применить"
           },
           {
             "id":"ui_page_modules",
             "html":"button",
             "color": "green",
-            "type":0,
+            "type":"generic",
             "label":"🔙 Выход"
           }
         ]
@@ -2383,7 +2174,7 @@
           "id": "ui_page_settings",
           "html":"button",
           "color": "green",
-          "type":0,
+          "type":"generic",
           "label":"🔙 Выход"
         }
       ]
@@ -2448,14 +2239,14 @@
               "id": "eff_sw_prev",
               "html":"button",
               "color": "green",
-              "type":0,
+              "type":"generic",
               "label":"<<<"
             },
             {
               "id": "eff_sw_next",
               "html":"button",
               "color": "green",
-              "type":0,
+              "type":"generic",
               "label":">>>"
             }
           ]
@@ -2488,7 +2279,7 @@
                 {
                   "id":"eff_preset_lbl",
                   "html":"button",
-                  "type":1,
+                  "type":"submit",
                   "color": "green",
                   "label":"Переименовать"
                 }
@@ -2497,13 +2288,13 @@
             {
               "id":"eff_preset_new",
               "html":"button",
-              "type":0,
+              "type":"generic",
               "label":"Создать новый"
             },
             {
               "id":"eff_preset_remove",
               "html":"button",
-              "type":0,
+              "type":"generic",
               "color": "red",
               "label":"Удалить"
             }
@@ -2919,7 +2710,7 @@
             "id":"ui_page_modules",
             "html":"button",
             "color": "green",
-            "type":0,
+            "type":"generic",
             "label":"🔙 Выход"
           }
         ]
@@ -2941,7 +2732,7 @@
             "id":"ui_page_modules",
             "html":"button",
             "color": "green",
-            "type":0,
+            "type":"generic",
             "label":"🔙 Выход"
           }
         ]
@@ -2964,18 +2755,18 @@
             "class":"pure-u-4-5 pure-u-lg-7-12"
           },
           {
-            "id": "get_mod_txtscroll_scroll_edit",
-            "html": "button",
-            "type": 2,
-            "function": "txtscroller_mk_page_edit_stream",
+            "id":"get_mod_txtscroll_scroll_edit",
+            "html":"button",
+            "type":"js",
+            "function":"txtscroller_mk_page_edit_stream",
             "label":"🛠 настроить",
             "class":"pure-u-1-2 pure-u-lg-1-6"
           },
           {
-            "id": "set_mod_txtscroll_scroll_rm",
-            "html": "button",
-            "type": 0,
-            "color": "red",
+            "id":"set_mod_txtscroll_scroll_rm",
+            "html":"button",
+            "type":"generic",
+            "color":"red",
             "label":"🗑 удалить",
             "class":"pure-u-1-2 pure-u-lg-1-6"
           }
@@ -3023,15 +2814,190 @@
                 "label":"🖫 Сохранить"
               },
               {
+                "id": "edit_profile_btn",
+                "html": "button",
+                "type": "js",
+                "function":"txtscroller_edit_profile",
+                "color": "magenta",
+                "label":"Редактировать оформление"
+              },
+              {
                 "id":"ui_page_module_txtscroll",
                 "html":"button",
                 "color": "green",
-                "type":0,
+                "type":"generic",
                 "label":"🔙 Выход"
               }    
             ]
           }
         ]    
+      },
+      "profile_editor":{
+        "section":"mod_txtscroll_body",
+        "label": "Настройка профилей слоя строк",
+        "replace": true,
+        "block":[
+          {
+            "section":"set_mod_txtscroll_profile_save",
+            "block":[
+              {
+                "section":"profile_selector",
+                "label":"Профиль",
+                "block":[
+                  {
+                    "id":"profile",
+                    "html":"select",
+                    "label":"Профиль оформления",
+                    "onJS":true,
+                    "function":"txtscroller_load_profile_form",
+                    "section":"options",
+                    "block":[]
+                  },
+                  {
+                    "id":"profile_lbl",
+                    "html":"input",
+                    "label":"Переименовать профиль",
+                    "type":"text"
+                  }
+                ]
+              },
+              {
+                "section":"set_mod_txtscroll_profile_apply",
+                "label":"Слой строки",
+                "block":[
+                  {
+                    "section":"txtscroll_fonts",
+                    "line":true,
+                    "block":[
+                      {
+                        "section":"uidata",
+                        "block":[
+                          {
+                            "action":"pick",
+                            "key":"lampui.elements.fonts_txt",
+                            "newid":"font1"
+                          }
+                        ]
+                      },
+                      {
+                        "id":"offset",
+                        "html":"input",
+                        "type":"number",
+                        "label":"Смещение базовой линии",
+                        "min":0,
+                        "max":16,
+                        "step":1
+                      }
+                    ]
+                  },
+                  {
+                    "section":"blk_size",
+                    "line":true,
+                    "block":[
+                      {
+                        "id":"width",
+                        "html":"input",
+                        "type":"number",
+                        "label":"Ширина блока",
+                        "min":4,
+                        "max":256,
+                        "step":4
+                      },
+                      {
+                        "id":"height",
+                        "html":"input",
+                        "type":"number",
+                        "label":"Высота блока",
+                        "min":4,
+                        "max":128,
+                        "step":1
+                      }
+                    ]
+                  },
+                  {
+                    "section":"blk_pos",
+                    "line":true,
+                    "block":[
+                      {
+                        "id":"x1pos",
+                        "html":"input",
+                        "type":"number",
+                        "label":"Привязка по X",
+                        "min":0,
+                        "max":256,
+                        "step":1
+                      },
+                      {
+                        "id":"y1pos",
+                        "html":"input",
+                        "type":"number",
+                        "label":"Привязка по Y",
+                        "min":4,
+                        "max":256,
+                        "step":1
+                      }
+                    ]  
+                  },
+                  {
+                    "section":"txtscroll_color",
+                    "line":true,
+                    "block":[
+                      {
+                        "id": "color1",
+                        "html":"input",
+                        "type": "number",
+                        "label": "Цвет текста (565)",
+                        "min": 0
+                      },
+                      {
+                        "id": "alpha_b",
+                        "html":"input",
+                        "type": "number",
+                        "label": "Прозрачность фона",
+                        "min": 0,
+                        "max": 255,
+                        "step": 1
+                      }
+                    ]
+                  },
+                  {
+                    "id": "rate",
+                    "html":"input",
+                    "type": "number",
+                    "label": "Скорость прокрутки, пикс/с",
+                    "min": 2,
+                    "max": 200
+                  },
+                  {
+                    "id":"stream_id",
+                    "html":"hidden"
+                  }
+                ]
+              },
+              {
+                "id":"set_mod_txtscroll_profile_apply",
+                "html":"button",
+                "type":"submit",
+                "label":"✅ Применить"
+              },
+              {
+                "id":"set_mod_txtscroll_profile_save",
+                "html":"button",
+                "type":"js",
+                "function":"txtscroller_save_profile_form",
+                "color":"red",
+                "label":"🖫 Сохранить"
+              },
+              {
+                "id":"ui_page_modules",
+                "html":"button",
+                "color": "green",
+                "type":"generic",
+                "label":"🔙 Выход"
+              }
+            ]
+          }
+        ]
       }
     },
     "btn_exit_modlist":{
@@ -3041,7 +3007,7 @@
           "id":"ui_page_modules",
           "html":"button",
           "color": "green",
-          "type":0,
+          "type":"generic",
           "label":"🔙 Выход"
        }
       ]
@@ -3133,6 +3099,51 @@
           "type": 0,
           "label": "Скрыть"
         }
+      ]
+    }
+  },
+
+  "elements":{
+    "fonts_all":{
+      "id":"font_all",
+      "html":"select",
+      "label":"Выбор шрифта",
+      "section":"options",
+      "block":[
+        { "value":0, "label":"5x8 Сyrillic" },
+        { "value":1, "label":"8x13 Сyrillic" },
+        { "value":2, "label":"16x16 Unifont Cyrillic" },
+        { "value":3, "label":"14x14 Fewture (dgt)" },
+        { "value":4, "label":"7x14 Bold (dgt)" },
+        { "value":5, "label":"3x7 Tiny Simon (lat)" },
+        { "value":6, "label":"13x13 doomalpha04(lat)" },
+        { "value":7, "label":"15x16 greenbloodserif2(lat)" },
+        { "value":8, "label":"freedoomr25 (lat)" },
+        { "value":9, "label":"logisoso20 (dgt)" },
+        { "value":10, "label":"logisoso42 (dgt)" },
+        { "value":11, "label":"Mystery Quest 32 (dgt)" },
+        { "value":12, "label":"Mystery Quest 48 (dgt)" },
+        { "value":13, "label":"maniac(lat) (dgt)" },
+        { "value":14, "label":"lucasarts_scumm (dgt)" },
+        { "value":15, "label":"Bubble (dgt)" },
+        { "value":16, "label":"moosenooks (lat)" },
+        { "value":17, "label":"osr29 (dgt)" },
+        { "value":18, "label":"osb21_tn (dgt)" },
+        { "value":19, "label":"osb29 (dgt)" }
+      ]
+    },
+    "fonts_txt":{
+      "id":"font_txt",
+      "html":"select",
+      "label":"Выбор шрифта",
+      "section":"options",
+      "block":[
+        { "value":0, "label":"5x8 Сyrillic" },
+        { "value":1, "label":"8x13 Сyrillic" },
+        { "value":2, "label":"16x16 Unifont Cyrillic" },
+        { "value":5, "label":"3x7 Tiny Simon (lat)" },
+        { "value":6, "label":"13x13 doomalpha04 (lat)" },
+        { "value":7, "label":"15x16 greenbloodserif2 (lat)" }
       ]
     }
   },
