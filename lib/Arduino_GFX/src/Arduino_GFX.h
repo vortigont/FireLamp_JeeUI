@@ -20,13 +20,15 @@
 #if __has_include(<U8g2lib.h>)
 #include <U8g2lib.h>
 #define U8G2_FONT_SUPPORT
-//#include "font/u8g2_font_chill7_h_cjk.h"
-//#include "font/u8g2_font_cubic11_h_cjk.h"
-//#include "font/u8g2_font_quan7_h_cjk.h"
-//#include "font/u8g2_font_unifont_h_utf8.h"
-//#include "font/u8g2_font_unifont_t_chinese.h"
-//#include "font/u8g2_font_unifont_t_chinese4.h"
-//#include "font/u8g2_font_unifont_t_cjk.h"
+/*
+#include "font/u8g2_font_chill7_h_cjk.h"
+#include "font/u8g2_font_cubic11_h_cjk.h"
+#include "font/u8g2_font_quan7_h_cjk.h"
+#include "font/u8g2_font_unifont_h_utf8.h"
+#include "font/u8g2_font_unifont_t_chinese.h"
+#include "font/u8g2_font_unifont_t_chinese4.h"
+#include "font/u8g2_font_unifont_t_cjk.h"
+*/
 #endif
 
 #define RGB565(r, g, b) ((((r) & 0xF8) << 8) | (((g) & 0xFC) << 3) | ((b) >> 3))
@@ -51,6 +53,7 @@
 #define RGB565_ORANGE RGB565(255, 165, 0)
 #define RGB565_GREENYELLOW RGB565(173, 255, 41)
 #define RGB565_PALERED RGB565(255, 130, 198)
+#define RGB565_PINK RGB565(255, 198, 198)
 
 // Color definitions
 #ifndef DISABLE_COLOR_DEFINES
@@ -137,7 +140,7 @@
 #endif
 
 #if !defined(ATTINY_CORE)
-INLINE GFXglyph *pgm_read_glyph_ptr(const GFXfont *gfxFont, uint8_t c)
+GFX_INLINE static GFXglyph *pgm_read_glyph_ptr(const GFXfont *gfxFont, uint8_t c)
 {
 #ifdef __AVR__
   return &(((GFXglyph *)pgm_read_pointer(&gfxFont->glyph))[c]);
@@ -149,7 +152,7 @@ INLINE GFXglyph *pgm_read_glyph_ptr(const GFXfont *gfxFont, uint8_t c)
 #endif //__AVR__
 }
 
-INLINE uint8_t *pgm_read_bitmap_ptr(const GFXfont *gfxFont)
+GFX_INLINE static uint8_t *pgm_read_bitmap_ptr(const GFXfont *gfxFont)
 {
 #ifdef __AVR__
   return (uint8_t *)pgm_read_pointer(&gfxFont->bitmap);
@@ -286,6 +289,8 @@ public:
   virtual void draw24bitRGBBitmap(int16_t x, int16_t y, const uint8_t bitmap[], int16_t w, int16_t h);
   virtual void draw24bitRGBBitmap(int16_t x, int16_t y, uint8_t *bitmap, int16_t w, int16_t h);
   virtual void drawChar(int16_t x, int16_t y, unsigned char c, uint16_t color, uint16_t bg);
+
+  virtual void draw16bitBeRGBBitmapR1(int16_t x, int16_t y, uint16_t *bitmap, int16_t w, int16_t h);
 #endif // !defined(LITTLE_FOOT_PRINT)
 
   /**********************************************************************/

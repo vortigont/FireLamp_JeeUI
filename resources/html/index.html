@@ -65,13 +65,11 @@
 				</span>
 			</div>
 			<div>
-				<span class="menu-title" data-i18n="locale_lang">Lang:</span>
 				<span class="menu-value lang_selector"></span>
 			</div>
 			<div>
 				<span class="menu-title"><a href="https://github.com/vortigont/FireLamp_JeeUI" target="_blank" rel="noopener noreferrer">GitHub</a></span>
 				<span class="menu-title"><a href="https://t.me/LampDevs" target="_blank" rel="noopener noreferrer">Telegram</a></span>
-				<span class="menu-title"><a href="https://community.alexgyver.ru/threads/wifi-lampa-girljanda-informer-ws2812-hub75-obsuzhdenie-proshivki-firelamp_embui.7257/" target="_blank" rel="noopener noreferrer">Gyver</a></span>
 			</div>
 		</div>
 	</script>
@@ -109,9 +107,13 @@
 
 		{{#if html == "button"}}
 		<button id="{{id}}" {{#if2 color}}style="background-color: {{color}}"{{/if2}} class="pure-u-1 pure-button pure-button-primary mr"
+			{{#if2 type == "generic"}}{{onevent "click", "on_change", id, value}}{{/if2}}
+			{{#if2 type == "submit"}}{{onevent "click", "on_submit", id, value}}{{/if2}}
+			{{#if2 type == "js"}}{{onevent "click", "on_js", function, id, value}}{{/if2}}
+			{{#if2 type == "href"}} onclick="location.href='{{value}}'"{{/if2}}
 			{{#if2 type == 0}}{{onevent "click", "on_change", id, value}}{{/if2}}
 			{{#if2 type == 1}}{{onevent "click", "on_submit", id, value}}{{/if2}}
-			{{#if2 type == 2}}{{onevent "click", "on_js", function}}{{/if2}}
+			{{#if2 type == 2}}{{onevent "click", "on_js", function, id, value}}{{/if2}}
 			{{#if2 type == 3}} onclick="location.href='{{value}}'"{{/if2}}
 			type="button">
 			{{#if2 fa}}<i class="{{fa}}"></i>{{/if2}}
@@ -120,8 +122,8 @@
 		{{/if}}
 		{{#if type == "checkbox"}}
 		    <div class="switch-block">
-			<input {{#disabled}}{{disabled}}{{/disabled}} type="checkbox" id="{{id}}" name="{{id}}" class="checkbox" {{#if2 value == true || value == 1 || value == "true" || value == "1"}}checked{{/if2}} {{#if2 onChange}}{{onevent "click", "on_change", id}}{{/if2}}>
-			<label class="switch" for="{{id}}"><span class="checkbox-label">{{label}}</span></label></input>
+			<input {{#disabled}}disabled{{/disabled}} type="checkbox" id="{{id}}" name="{{id}}" class="checkbox" {{#if2 value == true || value == 1 || value == "true" || value == "1"}}checked{{/if2}} {{#if2 onChange}}{{onevent "click", "on_change", id}}{{/if2}}>
+			<label class="switch" for="{{id}}"><span class="checkbox-label">{{label}}</span></label>
 		    </div>
 		{{/if}}
 		{{#if html == "const"}}
@@ -200,6 +202,7 @@
 			{{#if2 editable}}<div class="select-editable">{{/if2}}
 			<select id="{{id}}" name="{{id}}" value="{{value}}" class="pure-u-1"
 				{{#if2 onChange}}{{onevent "change", "on_change", id}}{{/if2}}
+				{{#if2 onJS}}{{onevent "input", "on_js", function, id, value}}{{/if2}}
 			>
 			{{#block}}
 				<option value="{{value}}" {{#if2 value == _this.value}}selected{{/if2}}>{{label}}</option>

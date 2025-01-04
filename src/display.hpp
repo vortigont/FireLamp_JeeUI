@@ -46,6 +46,7 @@ A header file for LED output devices, backends and buffers
 #include "ArduinoJson.h"
 
 #define FASTLED_CURRENT_LIMIT (2000U)                       // лимит по току для адресных лент в миллиамперах, 0 - выключить лимит
+#define DEFAULT_TEXT_COLOR  54000
 
 enum class engine_t:uint8_t  {
     ws2812 = 0,
@@ -62,6 +63,23 @@ struct overlay_cb_t {
     uint32_t id;
     std::function <void (LedFB_GFX *buff)> callback;
     //std::function <void (std::shared_ptr< PixelDataBuffer<COLOR_TYPE> > buff)> callback;
+};
+
+/**
+ * @brief configuration for text bitmap block
+ * 
+ */
+struct TextBitMapCfg {
+    int16_t x, y;           // top left corner to place bitmap to
+    uint16_t w,  h;         // bitmap WxH
+    uint16_t color{DEFAULT_TEXT_COLOR};     // color in 5-6-5 mode
+    uint8_t font_index;     // font to use
+    int8_t baseline_shift_x;       // offset from left side of bitmap
+    int8_t baseline_shift_y;       // ofset from bottom of bitmap
+    // max text bounds - needed to track max block size to cover the clock text
+    uint8_t alpha_bg;
+    std::string datefmt{"%F"};
+    overlay_cb_t cb{};
 };
 
 // My LED engine controller

@@ -941,7 +941,7 @@ void EffectWorker::_runnerHndlr(){
       ++fps;
       // once per 10 sec
       if(millis()-t > 10000){
-        LOGD(T_lamp, printf, "Eff:%u, FPS: %u\n", getCurrentEffectNumber(), fps/10);
+        LOGD(T_lamp, printf, "Eff:%u, FPS: %u, heap:%uk\n", getCurrentEffectNumber(), fps/10, ESP.getFreeHeap()/1024);
         fps = 0;
         t = millis();
       }

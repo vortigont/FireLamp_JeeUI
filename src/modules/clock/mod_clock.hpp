@@ -35,7 +35,10 @@
    <https://www.gnu.org/licenses/>.)
 */
 
+#pragma once
 #include "modules/mod_manager.hpp"
+#include "display.hpp"
+#include "canvas/Arduino_Canvas_Mono.h"
 
 class ClockModule : public GenericModuleProfiles, public Task {
 
