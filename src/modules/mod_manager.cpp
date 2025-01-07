@@ -58,9 +58,10 @@
 
 
 // array with all available module names (labels) we can run
-static constexpr std::array<const char*, 5> wdg_list = {
+static constexpr std::array<const char*, 6> wdg_list = {
   T_alrmclock,
   T_clock,
+  T_narodmon,
   T_omnicron,
   T_txtscroll,
   T_weather
@@ -455,6 +456,8 @@ void ModuleManager::_spawn(const char* label){
     w = std::make_unique<OmniCron>();
   } else if(std::string_view(label).compare(T_weather) == 0){
     w = std::make_unique<ModWeatherSource>();
+  } else if(std::string_view(label).compare(T_narodmon) == 0){
+    w = std::make_unique<ModNarodMonSource>();
   } else
     return;   // no such module exist
 

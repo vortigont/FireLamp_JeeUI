@@ -38,6 +38,21 @@
 #pragma once
 #include "modules/mod_manager.hpp"
 
+class HTTP_API_Poller : public Task {
+  uint32_t _refresh; // ms
+  bool _retry{false};
+
+protected:
+  virtual void http_fetch() = 0;
+
+
+};
+
+/**
+ * @brief OpenWeather source
+ * obtains weather forcast via API and pulishes it to the text message queue
+ * 
+ */
 class ModWeatherSource : public GenericModuleProfiles, public Task {
 
 struct WeatherCfg {
@@ -76,3 +91,43 @@ public:
   void stop() override { disable(); };
 };
 
+
+class ModNarodMonSource : public GenericModule, public Task {
+
+  struct NarodMonAPICfg {
+    String apikey, sensorid, uuid, lang{"en"};
+    uint32_t refresh; // ms
+  };
+
+  NarodMonAPICfg _sourceCfg;
+
+  bool _retry{false};
+
+
+  // String Scroller params
+  // msg unique id
+  uint32_t _msg_id;
+  // scroller destination
+  uint8_t _scroller_id;
+  // how many times to repeat message (-1 - forever)
+  int32_t _repeat_cnt;
+  // interval between message displays in seconds
+  int32_t _repeat_interval;
+
+public:
+  ModNarodMonSource();
+  ~ModNarodMonSource();
+
+  // pack class configuration into JsonObject
+  void generate_cfg(JsonVariant cfg) const override;
+
+  // load class configuration from JsonObject
+  void load_cfg(JsonVariantConst cfg) override;
+
+  void start() override { enable(); };
+  void stop() override { disable(); };
+
+  // update data from a remote source
+  void getData();
+
+};

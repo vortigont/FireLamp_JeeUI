@@ -40,6 +40,8 @@
 #include "components.hpp"
 #include "modules/mod_textq.hpp"
 #include "HTTPClient.h"
+#include <MD5Builder.h>
+#include "EmbUI.h"
 #include "log.h"
 
 #define DEF_WEATHER_RETRY       5000
@@ -67,6 +69,10 @@ void ModWeatherSource::_getOpenWeather(){
     LOGW(T_txtscroll, println, "no WiFi, skip update");
   }
 
+  auto scroller = zookeeper.getModulePtr(T_txtscroll);
+  if (!scroller)
+    return;
+
   // http://api.openweathermap.org/data/2.5/weather?id=1850147&units=metric&lang=ru&APPID=your_API_KEY>
   String url;
   url.reserve(128);
@@ -77,11 +83,8 @@ void ModWeatherSource::_getOpenWeather(){
 
   LOGD(T_weather, printf, "update t: %lu\n", getInterval()/1000);
 
-  auto scroller = zookeeper.getModulePtr(T_txtscroll);
-  if (scroller){
-    TextMessage m1("Обновление погоды");
-    static_cast<ModTextScroller*>(scroller)->enqueueMSG(std::move(m1), _scroller_id);
-  }
+  //  TextMessage m1("Обновление погоды");
+  //  static_cast<ModTextScroller*>(scroller)->updateMSG(std::move(m1), _scroller_id);
 
   HTTPClient http;
   http.begin(url.c_str());
@@ -93,10 +96,8 @@ void ModWeatherSource::_getOpenWeather(){
     LOGE(T_txtscroll, println, m.c_str());
 
     // report error
-    if (scroller){
-      TextMessage msg(std::move(m));
-      static_cast<ModTextScroller*>(scroller)->enqueueMSG(std::move(msg), _scroller_id);
-    }
+    TextMessage msg(std::move(m));
+    static_cast<ModTextScroller*>(scroller)->updateMSG(std::move(msg), _scroller_id);
 
     // some HTTP error
     if (_weathercfg.retry){
@@ -163,10 +164,8 @@ void ModWeatherSource::_getOpenWeather(){
   LOGI(T_weather, println, pogoda.c_str());
 
   // update message
-  if (scroller){
-    TextMessage m2(std::move(pogoda), _repeat_cnt, _repeat_interval, _msg_id);
-    static_cast<ModTextScroller*>(scroller)->updateMSG(std::move(m2), _scroller_id);
-  }
+  TextMessage m2(std::move(pogoda), _repeat_cnt, _repeat_interval, _msg_id);
+  static_cast<ModTextScroller*>(scroller)->updateMSG(std::move(m2), _scroller_id);
 
   // reset update timer
   _weathercfg.retry = false;
@@ -194,8 +193,6 @@ void ModWeatherSource::load_cfg(JsonVariantConst cfg){
 
 void ModWeatherSource::generate_cfg(JsonVariant cfg) const {
   cfg.clear();
-  //JsonObject weath = cfg[T_weather].isNull() ? cfg[T_weather].to<JsonObject>() : cfg[T_weather];
-  //weath.clear();  // clear obj, I'll replace it's content
 
   // weather
   cfg[T_cityid] =  _weathercfg.city_id;
@@ -207,3 +204,144 @@ void ModWeatherSource::generate_cfg(JsonVariant cfg) const {
   cfg[T_repeat] = _repeat_cnt;
   cfg[T_interval] = _repeat_interval;
 }
+
+
+// NarodMon
+
+ModNarodMonSource::ModNarodMonSource() : GenericModule(T_narodmon, false){
+  _msg_id = std::rand();
+
+  MD5Builder md5;
+  md5.begin();
+  md5.add(embui.macid());
+  md5.calculate();
+  _sourceCfg.uuid = md5.toString();
+
+  set( 5000, TASK_FOREVER, [this](){ getData(); } );
+  ts.addTask(*this);
+}
+
+ModNarodMonSource::~ModNarodMonSource(){
+  ts.deleteTask(*this);
+}
+
+void ModNarodMonSource::load_cfg(JsonVariantConst cfg){
+  LOGD(T_narodmon, println, "Configure NarodMon source");
+
+  if (cfg[T_apikey].is<const char*>())
+    _sourceCfg.apikey =  cfg[T_apikey].as<const char*>();
+
+  if (cfg[T_sensor_id].is<const char*>())
+    _sourceCfg.sensorid =  cfg[T_sensor_id].as<const char*>();
+
+  if (cfg[P_lang].is<const char*>())
+    _sourceCfg.lang =  cfg[P_lang].as<const char*>();
+
+  _sourceCfg.refresh = (cfg[T_refresh] | 10) * 60000;
+
+  _scroller_id = cfg[T_destination];
+  _repeat_cnt = cfg[T_repeat] | -1;
+  _repeat_interval = cfg[T_interval];
+
+  // weather update
+  enableIfNot();
+  forceNextIteration();
+}
+
+void ModNarodMonSource::generate_cfg(JsonVariant cfg) const {
+  cfg.clear();
+
+  if (_sourceCfg.apikey.length())
+    cfg[T_apikey] =  _sourceCfg.apikey;
+
+  cfg[T_sensor_id] =  _sourceCfg.sensorid;
+  cfg[T_refresh] = _sourceCfg.refresh / 60000;   // ms in min
+
+  cfg[T_destination] = _scroller_id;
+  cfg[T_repeat] = _repeat_cnt;
+  cfg[T_interval] = _repeat_interval;
+}
+
+void ModNarodMonSource::getData(){
+  // no API key - no weather updates
+  if (!_sourceCfg.apikey.length()) { disable(); return; }
+  
+  // no WiFi connection - skip update
+  if (!WiFi.isConnected()){
+    return;
+    LOGW(T_txtscroll, println, "no WiFi, skip update");
+  }
+
+  auto scroller = zookeeper.getModulePtr(T_txtscroll);
+
+  // no text destination available
+  if (!scroller)
+    return;
+
+  //TextMessage m1("Обновление NarodMon");
+  //static_cast<ModTextScroller*>(scroller)->updateMSG(std::move(m1), _scroller_id);
+
+  JsonDocument doc;
+  JsonObject o = doc.to<JsonObject>();
+
+  o[T_cmd] = "sensorsOnDevice";
+  o["api_key"] = _sourceCfg.apikey;
+  o["uuid"] = _sourceCfg.uuid;
+  o[P_id] = _sourceCfg.sensorid;
+  o[P_lang] = _sourceCfg.lang;
+
+  std::string buffer;
+  serializeJson(doc, buffer);
+
+  HTTPClient http;
+  http.begin("http://narodmon.ru/api");
+  http.addHeader(asyncsrv::T_Content_Type, asyncsrv::T_application_json);
+  //LOGV(T_weather, printf, "fetch: %s\n", url.c_str());
+
+  int code = http.POST((uint8_t*)buffer.c_str(), buffer.length());
+  if (code != HTTP_CODE_OK) {
+    buffer = "Ошибка обновления погоды, HTTP:";
+    buffer += std::to_string(code);
+    LOGE(T_txtscroll, println, buffer.c_str());
+
+    // report error
+    TextMessage msg(std::move(buffer));
+    static_cast<ModTextScroller*>(scroller)->updateMSG(std::move(msg), _scroller_id);
+
+    // some HTTP error
+    if (_retry){
+      setInterval(getInterval() + DEF_WEATHER_RETRY);
+    } else {
+      _retry = true;
+      setInterval(DEF_WEATHER_RETRY);
+    }
+    return;
+  }
+
+  if ( deserializeJson(doc, *http.getStreamPtr()) != DeserializationError::Ok ) return;
+  http.end();
+
+  buffer.clear();
+  buffer += doc[T_name].as<const char*>();
+  buffer += (char)0x20; // space
+
+  JsonArray arr = doc[T_sensors];
+  for (auto s: arr){
+    buffer += s[T_name].as<const char*>();
+    buffer += ": ";
+    buffer += s[P_value].as<String>().c_str();
+    buffer += s[T_unit].as<const char*>();
+    buffer += ", ";
+  }
+
+  LOGI(T_narodmon, println, buffer.c_str());
+
+  // update message
+  TextMessage m2(std::move(buffer), _repeat_cnt, _repeat_interval, _msg_id);
+  static_cast<ModTextScroller*>(scroller)->updateMSG(std::move(m2), _scroller_id);
+
+  // reset update timer
+  _retry = false;
+  setInterval(_sourceCfg.refresh);
+}
+
