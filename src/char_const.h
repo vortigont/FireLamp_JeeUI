@@ -144,11 +144,12 @@ static constexpr const char* T_set_modpreset_ = "set_modpreset_";   // prefix fo
 //static constexpr const char* T_profile_selector = "profile_selector"; // section name for profile selector
 
 // Module labels
-static constexpr const char* T_clock = "clock";                     // LABEL Clock module
 static constexpr const char* T_alrmclock = "alrmclock";             // LABEL Alarm Clock / Cockoo
+static constexpr const char* T_clock = "clock";                     // LABEL Clock module
+static constexpr const char* T_narodmon = "narodmon";               // NarodMon source
+static constexpr const char* T_omnicron = "omnicron";               // CronoS scheduler
 static constexpr const char* T_txtscroll = "txtscroll";             // LABEL Text Scroller module
 static constexpr const char* T_weather = "weather";
-static constexpr const char* T_omnicron = "omnicron";               // CronoS scheduler
 
 
 static constexpr const char* T_color1 = "color1";
@@ -260,6 +261,8 @@ static constexpr const char* T_queues = "queues";
 static constexpr const char* T_repeat = "repeat";
 static constexpr const char* T_restoreState = "restoreState";          // Lamp flag "restore state"
 static constexpr const char* T_rx = "rx";
+static constexpr const char* T_sensor_id = "sensor_id";
+static constexpr const char* T_sensors = "sensors";
 static constexpr const char* T_scroller =  "scroller";
 static constexpr const char* T_scrollers = "scrollers";
 static constexpr const char* T_smin = "smin";                           // scale min/max for effect controls
@@ -272,6 +275,7 @@ static constexpr const char* T_swFade = "swFade";
 static constexpr const char* T_tx = "tx";
 static constexpr const char* T_timeout = "timeout";
 static constexpr const char* T_type = "type";
+static constexpr const char* T_unit = "unit";
 static constexpr const char* T_val = "val";
 
 
