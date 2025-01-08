@@ -3477,6 +3477,128 @@
         }
       ]
     },
+    "liquidlamp":{
+      "section":"eff_ctrls",
+      "replace":true,
+      "block":[
+        {
+          "section":"uidata",
+          "block":[
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.speed"
+            },
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.scale"
+            }
+          ]
+        },
+        {
+          "id":"eff_control_2",
+          "html":"select",
+          "label":"Палитры",
+          "onChange": true,
+          "value":0,
+          "section":"options",
+          "block":[
+            {
+              "value":0,
+              "label":"Custom - MBViolet"
+            },
+            {
+              "value":1,
+              "label":"Jul"
+            },
+            {
+              "value":2,
+              "label":"Sunset Real"
+            },
+            {
+              "value":3,
+              "label":"Pink Splash"
+            },
+            {
+              "value":4,
+              "label":"Landscape 1"
+            },
+            {
+              "value":5,
+              "label":"Landscape 2"
+            },
+            {
+              "value":6,
+              "label":"Landscape 3"
+            },
+            {
+              "value":7,
+              "label":"Landscape 4"
+            },
+            {
+              "value":8,
+              "label":"Ocean Breeze"
+            },
+            {
+              "value":9,
+              "label":"GMT drywet 1"
+            },
+            {
+              "value":10,
+              "label":"GMT drywet 2"
+            },
+            {
+              "value":11,
+              "label":"GMT drywet 3"
+            },
+            {
+              "value":12,
+              "label":"Fire"
+            },
+            {
+              "value":13,
+              "label":"Pink Purple 1"
+            },
+            {
+              "value":14,
+              "label":"Pink Purple 2"
+            },
+            {
+              "value":15,
+              "label":"Sunset real"
+            },
+            {
+              "value":16,
+              "label":"Black Magenta Red"
+            }
+          ]
+        },
+        {
+          "html": "input",
+          "id": "eff_control_3",
+          "type": "range",
+          "label": "Оттенок для спец палитры",
+          "min": 0,
+          "max": 255,
+          "onChange": true
+        },
+        {
+          "html": "input",
+          "id": "eff_control_4",
+          "type": "number",
+          "label": "Фильтр Шарра",
+          "min": 0,
+          "max": 2,
+          "onChange": true
+        },
+        {
+          "id":"eff_control_5",
+          "html":"input",
+          "label":"Физика",
+          "type":"checkbox",
+          "onChange": true
+        }
+      ]
+    },
     "magma":{
       "section":"eff_ctrls",
       "replace":true,

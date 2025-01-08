@@ -491,6 +491,10 @@ void EffectWorker::_spawn(effect_t eid){
     worker = std::make_unique<EffectFire2012>(canvas);
     break;
 
+   case effect_t::liquidlamp :
+    worker = std::make_unique<EffectLiquidLamp>(canvas);
+    break;
+
    case effect_t::magma :
     worker = std::make_unique<EffectMagma>(canvas);
     break;

@@ -32,6 +32,16 @@
       {"label":"nsmooth", "smin":100, "smax":255}
     ]
   },
+  "liquidlamp":{
+    "ctrls":[
+      {"label":"speed", "smin":20, "smax":250},
+      {"label":"scale", "min":5, "max":50},
+      {"label":"pallete", "min":0, "max":16},
+      {"label":"hue", "min":0, "max":255},
+      {"label":"sharr", "min":0, "max":3},
+      {"label":"physics", "min":0, "max":1}
+    ]
+  },
   "magma":{
     "ctrls":[
       {"label":"speed"},
