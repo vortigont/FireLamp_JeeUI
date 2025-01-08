@@ -41,8 +41,6 @@ Copyright © 2020 Dmytro Korniienko (kDn)
 #define register // keyword 'register' is banned with c++17
 #endif
 
-#include "config.h"
-
 #define LAMPFW_VERSION_MAJOR     4
 #define LAMPFW_VERSION_MINOR     1
 #define LAMPFW_VERSION_REVISION  0

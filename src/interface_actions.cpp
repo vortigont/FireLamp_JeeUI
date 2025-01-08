@@ -39,8 +39,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "interface.h"
 #include "lamp.h"
 #include "display.hpp"
-#include LANG_FILE                  //"text_res.h"
-
 #include "devices.h"
 #include "basicui.h"
 #include "actions.hpp"

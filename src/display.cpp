@@ -39,7 +39,7 @@
 
 An object file for LED output devices, backends and buffers
 */
-#include "config.h"
+
 #include "display.hpp"
 #include "devices.h"
 #include "embuifs.hpp"

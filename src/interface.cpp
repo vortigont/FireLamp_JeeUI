@@ -35,7 +35,7 @@ Copyright © 2020 Dmytro Korniienko (kDn)
    <https://www.gnu.org/licenses/>.)
 */
 
-#include "config.h"
+//#include "config.h"
 #include <type_traits>
 #include "templates.hpp"
 #include "interface.h"
@@ -48,6 +48,10 @@ Copyright © 2020 Dmytro Korniienko (kDn)
 #include "evtloop.h"
 #include "components.hpp"
 #include "log.h"
+
+#ifndef LANG_FILE
+#define LANG_FILE                  "text_res-RUS.h"           // Языковой файл по дефолту
+#endif
 #include LANG_FILE                  //"text_res.h"
 
 // modules
