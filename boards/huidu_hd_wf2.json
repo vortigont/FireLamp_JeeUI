@@ -21,7 +21,7 @@
       ]
     ],
     "mcu": "esp32s3",
-    "variant": "wifiduino32s3"
+    "variant": "huidu_hd_wf2"
   },
   "connectivity": [
     "bluetooth",
