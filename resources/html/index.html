@@ -50,15 +50,15 @@
 			</ul>
 		</div>
 		<div class="left-block">
-			<div><span class="menu-title" data-i18n="locale_time">Time:</span><span id="pTime" class="menu-value">{{value.pTime}}</span></div>
-			<div><span class="menu-title" data-i18n="locale_memory">Memory:</span><span id="pMem" class="menu-value">{{value.pMem}}</span></div>
-			<div><span class="menu-title" data-i18n="locale_uptime">Uptime:</span><span id="pUptime" class="menu-value">{{value.pUptime}}</span></div>
+			<div><span class="menu-title">Time:</span><span id="pTime" class="menu-value">{{value.pTime}}</span></div>
+			<div><span class="menu-title">Memory:</span><span id="pMem" class="menu-value">{{value.pMem}}</span></div>
+			<div><span class="menu-title">Uptime:</span><span id="pUptime" class="menu-value">{{value.pUptime}}</span></div>
 			<div><span class="menu-title">RSSI &#128246;:</span><span id="pRSSI" class="menu-value">{{value.pRSSI}}</span></div>
 			<div><span class="menu-title">ID:</span><span class="menu-value">{{macid}}</span></div>
-			<div><span class="menu-title" data-i18n="locale_version">EmbUI ver:</span><span class="menu-value">{{uiver}}</span></div>
+			<div><span class="menu-title">EmbUI ver:</span><span class="menu-value">{{uiver}}</span></div>
 			<div><span class="menu-title">FireLamp ver:</span><span id="fwver" class="menu-value">{{appver}}</span></div>
 			<div>
-				<span class="menu-title" data-i18n="locale_theme">Theme:</span><span class="menu-value">
+				<span class="menu-title">Theme:</span><span class="menu-value">
 					<button class="pure-menu-selected" onclick="setDynCSS('css/style.css');">C</button>
 					<button class="pure-menu-selected" onclick="setDynCSS('css/style_light.css');">L</button>
 					<button class="pure-menu-selected" onclick="setDynCSS('css/style_dark.css');">D</button>
@@ -127,7 +127,7 @@
 		    </div>
 		{{/if}}
 		{{#if html == "const"}}
-			<div id="{{id}}" class="pure-u-1 pure-button mr">{{#if2 fa}}<i class="{{fa}}"></i>{{/if2}}{{label}}{{#if2 value}}<input type="hidden" name="{{id}}" value="{{value}}">{{/if2}}</div>
+			<div id="{{id}}" class="pure-u-1 pure-button mr">{{label}}{{#if2 value}}<input type="hidden" name="{{id}}" value="{{value}}">{{/if2}}</div>
 		{{/if}}
 		{{#if html == "constbtn"}}
 			<input id="{{id}}" disabled {{#if2 color}}style="background-color: {{color}}"{{/if2}} class="pure-u-1 pure-button pure-button-primary mr" type="button" value="{{value}}"/>
@@ -142,8 +142,8 @@
 				value - becomes js-function name to call
 				label - becomes span "comment" element
 			-->
-			{{#if2 label}}<span class="comment">{{label}}</span>{{/if2}}
-			<div id="{{id}}" name="{{id}}" {{#if2 class}}class="{{class}}"{{/if2}}><img src onerror='{{value}}("{{id}}","{{params.arg1}}")'></div>
+			{{#if2 label}}<span id="{{id}}-lbl" class="comment">{{label}}</span>{{/if2}}
+			<div id="{{id}}" {{#if2 class}}class="{{class}}"{{/if2}}><img src onerror='{{value}}("{{id}}","{{params.arg1}}")'></div>
 		{{/if}}
 		{{#if html == "div" && type == "html"}}
 			<!-- Custom div with text content,
@@ -152,8 +152,8 @@
 				label - becomes div css class selector
 				param.* - reserved
 			-->
-			{{#if2 label}}<span class="comment">{{label}}</span>{{/if2}}
-			<div {{#if2 class}}class="{{class}}"{{/if2}}><div id="{{id}}">{{value}}</div></div>
+			{{#if2 label}}<span id="{{id}}-lbl" class="comment">{{label}}</span>{{/if2}}
+			<div id="{{id}}-out" {{#if2 class}}class="{{class}}"{{/if2}}><div id="{{id}}">{{value}}</div></div>
 		{{/if}}
 		{{#if html == "div" && type == "pbar"}}
 			<!-- live progressbar -->
@@ -183,6 +183,7 @@
 		{{#if html == "img"}}
 			<div class = "image"><img id="{{id}}" src = {{value}}></div>
 		{{/if}}
+
 		{{#if html == "input" && type != "checkbox"}}
 			<span>{{label}}</span>
 			{{#if2 type == "range" || type == "color"}}<span id="{{id}}-val">: {{value}}</span>{{/if2}}
