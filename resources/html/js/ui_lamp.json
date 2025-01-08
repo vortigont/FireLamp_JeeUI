@@ -1174,7 +1174,27 @@
               "label": "🛠 Параметры"
             }
           ]
-        }      ]
+        },
+        {
+          "section":"narodmon",
+          "line":true,
+          "block":[
+            {
+              "id":"set_modstate_narodmon",
+              "html":"input",
+              "label":"⛅ Сервис NarodMon",
+              "type":"checkbox",
+              "onChange": true
+            },
+            {
+              "id": "ui_page_module_narodmon",
+              "html": "button",
+              "type": 0,
+              "label": "🛠 Параметры"
+            }
+          ]
+        }
+      ]
     },
     "module":{
       "clock":{
@@ -2085,6 +2105,80 @@
             "html":"button",
             "type":"submit",
             "label":"✅ Применить"
+          },
+          {
+            "id":"ui_page_modules",
+            "html":"button",
+            "color": "green",
+            "type":"generic",
+            "label":"🔙 Выход"
+          }
+        ]
+      },
+      "narodmon":{
+        "section":"set_modcfg_narodmon",
+        "label":"⛅ NarodMon",
+        "main":true,
+        "block":[
+          {
+            "section":"OpenWeather",
+            "label":"Параметры доступа к сенсору",
+            "block":[
+              {
+                "id":"apikey",
+                "html":"input",
+                "label":"Ключ API NarodMon",
+                "type":"text"
+              },
+              {
+                "id":"sensor_id",
+                "html":"input",
+                "label":"Код сенсора",
+                "type":"text"
+              },
+              {
+                "id":"refresh",
+                "html":"input",
+                "type":"number",
+                "label":"Обновление, мин.",
+                "min":5,
+                "step":5
+              }
+            ]
+          },
+          { "html":"spacer" },
+          {
+            "section":"queue",
+            "label":"Очередь бегущей строки",
+            "block":[
+              {
+                "id":"destination",
+                "html":"input",
+                "label":"Номер потока бегущей строки",
+                "type":"number"
+              },
+              {
+                "id":"repeat",
+                "html":"input",
+                "label":"число повторов вывода строки (-1 - бесконечно)",
+                "type":"number",
+                "value": -1
+              },
+              {
+                "id":"interval",
+                "html":"input",
+                "type":"number",
+                "label":"Интервал вывода сообщения, с",
+                "min":0,
+                "step":1
+              }
+            ]
+          },
+          {
+            "id":"set_modcfg_narodmon",
+            "html":"button",
+            "type":"submit",
+            "label":"🖫 Сохранить"
           },
           {
             "id":"ui_page_modules",
