@@ -37,7 +37,6 @@ Copyright © 2020 Dmytro Korniienko (kDn)
 
 #pragma once
 
-#include "config.h" // подключаем эффекты, там же их настройки
 #include "effectworker.h"
 #include "EmbUI.h"
 #include "char_const.h"
@@ -48,6 +47,7 @@ Copyright © 2020 Dmytro Korniienko (kDn)
     #define DEFAULT_MQTTPUB_INTERVAL 30
 #endif
 
+#define DEFAULT_DEMO_TIMER  (60U)                         // интервал смены демо по-умолчанию
 #define MAX_BRIGHTNESS          255U                    // максимальная яркость LED
 #define DEF_BRT_SCALE           20                      // шкала регулировки яркости по-умолчанию
 #ifndef FADE_TIME

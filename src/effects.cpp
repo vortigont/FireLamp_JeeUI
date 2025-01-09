@@ -2603,20 +2603,21 @@ void EffectPicassoMetaBalls::_dyn_palette_generator(uint8_t hue){
 */
 
 
-#if !defined (OBSOLETE_CODE)
 // ----------- Эффекты "Лавовая лампа" (c) obliterator
 EffectLiquidLamp::EffectLiquidLamp(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer) {
+  scale = LIQLAMP_MIN_PARTICLES;
+#define LIQLAMP_PALLETE_MAX_IDX 16
   // эта палитра создана под эффект
   palettes.add(MBVioletColors_gp, 0, 16);
   // палитры частично подогнаные под эффект
   palettes.add(ib_jul01_gp, 60, 16, 200);
   palettes.add(Sunset_Real_gp, 25, 0, 200);
-  palettes.add(es_landscape_33_gp, 50, 50);
   palettes.add(es_pinksplash_08_gp, 125, 16);
+  palettes.add(es_landscape_33_gp, 50, 50);
   palettes.add(es_landscape_64_gp, 175, 50, 220);
   palettes.add(es_landscape_64_gp, 25, 16, 250);
-  palettes.add(es_ocean_breeze_036_gp, 0);
   palettes.add(es_landscape_33_gp, 0);
+  palettes.add(es_ocean_breeze_036_gp, 0);
   palettes.add(GMT_drywet_gp, 0);
   palettes.add(GMT_drywet_gp, 75);
   palettes.add(GMT_drywet_gp, 150, 0, 200);
@@ -2628,10 +2629,8 @@ EffectLiquidLamp::EffectLiquidLamp(LedFB<CRGB> *framebuffer) : EffectCalc(frameb
 }
 
 void EffectLiquidLamp::generate(bool reset){
-  unsigned num = map(scale, 0U, 255, LIQLAMP_MIN_PARTICLES, LIQLAMP_MAX_PARTICLES);
-
-  if (num != particles.size())
-    particles.assign(num, Particle());
+  if (scale != particles.size())
+    particles.assign(scale, Particle());
   else if (!reset) return;
 
   for (auto &curr : particles){
@@ -2661,7 +2660,7 @@ void EffectLiquidLamp::position(){
     if (curr.speed_y) curr.speed_y *= 0.85;
     curr.position_y += curr.speed_y * speedFactor;
 
-    if (physic_on) {
+    if (_physics) {
       curr.speed_x *= 0.7;
       curr.position_x += curr.speed_x * speedFactor;
     }
@@ -2702,12 +2701,47 @@ void EffectLiquidLamp::physic(){
   }
 }
 
-// !++
 void EffectLiquidLamp::setControl(size_t idx, int32_t value) {
-  if(_val->getId()==1) speedFactor = ((float)EffectCalc::setDynCtrl(_val).toInt() / 127.0 + 0.1)*getBaseSpeedFactor();
-  else if(_val->getId()==3) pidx = EffectCalc::setDynCtrl(_val).toInt();
-  else if(_val->getId()==4) {
-    byte hue = EffectCalc::setDynCtrl(_val).toInt();
+  switch (idx){
+    // 0 - speed - range 0-255
+    case 0:
+      speedFactor = value / 128.0;  //EffectMath::fmap(value, 1, 10, 0.01, 0.4);
+      break;
+    // 1 scale - num of particles, as-is value clamped to 1-width/4
+    case 1:
+      scale = clamp(value, static_cast<int32_t>(LIQLAMP_MIN_PARTICLES), static_cast<int32_t>(LIQLAMP_MAX_PARTICLES));
+      break;
+
+    // custom palletes
+    case 2:
+      _pallete_id = clamp(value, static_cast<int32_t>(0), static_cast<int32_t>(LIQLAMP_PALLETE_MAX_IDX));
+      break;
+
+    // 3 - hue for custom pallete - range 1-255
+    case 3: {
+      _dynamic_pallete(value);
+      _pallete_id = 0;
+      break;
+    }
+
+    // 4 - shar's filter - raw, range 0-2
+    case 4: {
+      filter = clamp(value, static_cast<int32_t>(0), static_cast<int32_t>(2));
+      break;
+    }
+
+    // 5 - physics
+    case 5: {
+      _physics = value;
+      break;
+    }
+
+    default:
+      EffectCalc::setControl(idx, value);
+  }
+}
+
+void EffectLiquidLamp::_dynamic_pallete(uint8_t hue){
     TDynamicRGBGradientPalette_byte dynpal[20] = {
         0,  0,  0,  0,
         1,  0,  0,  0,
@@ -2723,17 +2757,13 @@ void EffectLiquidLamp::setControl(size_t idx, int32_t value) {
     *color = CHSV(hue + 255, 255U, 255U);
     CRGBPalette32 pal;    pal.loadDynamicGradientPalette(dynpal);
     palettes.add(0, pal, 0, 16);
-  }
-  else if(_val->getId()==5) { filter = EffectCalc::setDynCtrl(_val).toInt(); } // enable filtering }
-  else if(_val->getId()==6) physic_on = EffectCalc::setDynCtrl(_val).toInt();
-  else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
-  return String();
 }
 
 bool EffectLiquidLamp::routine(){
   generate();
   position();
-  if (physic_on) physic();
+  fb->clear();
+  if (_physics) physic();
 
   uint8_t f = filter; // local scope copy to provide thread-safety
 
@@ -2760,7 +2790,8 @@ bool EffectLiquidLamp::routine(){
       }
 
       if (f < 2) {
-        fb->at(x, y) = palettes[pidx].GetColor(sum, filter? sum : 255);
+        if ( sum > 5) // do not fill the background with palette color
+          fb->at(x, fb->h() - y) = palettes[_pallete_id].GetColor(sum, filter? sum : 255);
       } else {
         buff->at(x,y) = sum;
       }
@@ -2796,13 +2827,14 @@ bool EffectLiquidLamp::routine(){
         val = 1 - (val - min) / (max - min);
         unsigned step = f - 1;
         while (step) { val *= val; --step; } // почему-то это быстрее чем pow
-        fb->at(x, y) = palettes[pidx].GetColor(buff->at(x,y), val * 255);
+        fb->at(x, fb->h() - y) = palettes[_pallete_id].GetColor(buff->at(x,y), val * 255);
       }
     }
 
   return true;
 }
 
+#if !defined (OBSOLETE_CODE)
 // ------- Эффект "Вихри"
 // Based on Aurora : https://github.com/pixelmatix/aurora/blob/master/PatternFlowField.h
 // Copyright(c) 2014 Jason Coon

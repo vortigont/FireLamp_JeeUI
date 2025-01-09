@@ -45,6 +45,9 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "templates.hpp"
 #include "log.h"
 
+#ifndef MAX_FPS
+#define MAX_FPS               (50U)                   // Максимальное число обсчитываемых и выводимых кадров в секунду
+#endif
 
 #define WRKR_TASK_CORE          CONFIG_ARDUINO_RUNNING_CORE    // task MUST be pinned to the second core to avoid LED glitches (if applicable)
 #define WRKR_TASK_PRIO          tskIDLE_PRIORITY+1    // task priority
@@ -56,6 +59,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #define WRKR_TASK_NAME          "EFF_WRKR"
 
 #define MAX_NUM_OF_CTRL_PROFILES  10
+#define CFG_AUTOSAVE_TIMEOUT       (60*1000U)         // таймаут сохранения конфигурации эффекта, по умолчанию - 60 секунд
 
 constexpr int target_fps{MAX_FPS};                     // desired FPS rate for effect runner
 constexpr int interframe_delay_ms = 1000 / target_fps;
@@ -485,6 +489,10 @@ void EffectWorker::_spawn(effect_t eid){
 
    case effect_t::fire2012 :
     worker = std::make_unique<EffectFire2012>(canvas);
+    break;
+
+   case effect_t::liquidlamp :
+    worker = std::make_unique<EffectLiquidLamp>(canvas);
     break;
 
    case effect_t::magma :

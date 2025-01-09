@@ -572,19 +572,16 @@ public:
     void setControl(size_t idx, int32_t value) override;
 };
 
-#ifdef DISABLED_CODE
 // ------ Эффект "Лавовая Лампа"
 // (c) obliterator
 #define LIQLAMP_MASS_MIN    10
 #define LIQLAMP_MASS_MAX    50
-#define LIQLAMP_MIN_PARTICLES   10
-#define LIQLAMP_MAX_PARTICLES   20
+#define LIQLAMP_MIN_PARTICLES   5
+#define LIQLAMP_MAX_PARTICLES   100
 class EffectLiquidLamp : public EffectCalc {
     struct Particle{
-        float position_x = 0;
-        float position_y = 0;
-        float speed_x = 0;
-        float speed_y = 0;
+        float position_x{0}, position_y{0};
+        float speed_x{0}, speed_y{0};
         float rad = 0;
         float hot = 0;
         float spf = 0;
@@ -594,8 +591,8 @@ class EffectLiquidLamp : public EffectCalc {
         unsigned tr = 0;
     };
 
-    uint8_t pidx = 0;
-    bool physic_on = 1;
+    uint8_t _pallete_id = 0;
+    bool _physics = 1;
     uint8_t filter = 0;
     GradientPaletteList palettes;
 
@@ -603,6 +600,7 @@ class EffectLiquidLamp : public EffectCalc {
     std::unique_ptr< Vector2D<uint8_t> > buff;
     std::unique_ptr< Vector2D<float> > buff2;
 
+    void _dynamic_pallete(uint8_t hue);
     void generate(bool reset = false);
     void position();
     void physic();
@@ -615,6 +613,7 @@ public:
     void setControl(size_t idx, int32_t value) override;
 };
 
+#ifdef DISABLED_CODE
 // ------- Эффект "Вихри"
 // Based on Aurora : https://github.com/pixelmatix/aurora/blob/master/PatternFlowField.h
 // Copyright(c) 2014 Jason Coon
