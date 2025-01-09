@@ -3846,6 +3846,48 @@
           "onChange": true
         }
       ]
+    },
+    "whirls":{
+      "section":"eff_ctrls",
+      "replace":true,
+      "block":[
+        {
+          "section":"uidata",
+          "block":[
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.speed"
+            },
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.scale"
+            },
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.fade"
+            }
+          ]
+        },
+        {
+          "html": "input",
+          "id": "eff_control_4",
+          "type": "range",
+          "label": "Размытие",
+          "min": 1,
+          "max": 10,
+          "value":5,
+          "onChange": true
+        },
+        {
+          "html": "input",
+          "id": "eff_control_2",
+          "type": "range",
+          "label": "Число объектов стаи",
+          "min": 1,
+          "max": 10,
+          "onChange": true
+        }
+      ]
     }
   },
 

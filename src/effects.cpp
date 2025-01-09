@@ -2834,63 +2834,88 @@ bool EffectLiquidLamp::routine(){
   return true;
 }
 
-#if !defined (OBSOLETE_CODE)
 // ------- Эффект "Вихри"
 // Based on Aurora : https://github.com/pixelmatix/aurora/blob/master/PatternFlowField.h
 // Copyright(c) 2014 Jason Coon
 //адаптация SottNick
-bool EffectWhirl::run(){
-
-  return whirlRoutine();
-}
-
 void EffectWhirl::load(){
   palettesload();    // подгружаем дефолтные палитры
-  ff_x = random16();
-  ff_y = random16();
-  ff_z = random16();
-  for (auto &boid : boids)
+  _boids_init();
+}
+
+void EffectWhirl::_boids_init(){
+  _x = random16();
+  _y = random16();
+  _z = random16();
+
+  _boids.resize(_boids_num);
+  for (auto &boid : _boids)
     boid = Boid(EffectMath::randomf(0, fb->w()), 0);
-
 }
 
-// !++
 void EffectWhirl::setControl(size_t idx, int32_t value){
-  if(_val->getId()==1) speedFactor = EffectMath::fmap(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 0.5, 1.1) * getBaseSpeedFactor();
-  else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
-  return String();
+  switch (idx){
+    // 0 - speed - range ~5-150
+    case 0:
+      speedFactor = value / 10;
+      break;
+    // 1 scale - some scale parameter (default)
+
+    // number of boids
+    case 2:
+      _boids_num = clamp(value, static_cast<int32_t>(1), static_cast<int32_t>(250));
+      break;
+
+    // 3 - fade - range 1-255
+    case 3: {
+      _fade = value;
+      break;
+    }
+
+    // 4 - blur - range 1-255
+    case 4: {
+      _blur = value;
+      break;
+    }
+
+    default:
+      EffectCalc::setControl(idx, value);
+  }
 }
 
-bool EffectWhirl::whirlRoutine() {
-  fb->fade(15. * speedFactor);
+bool EffectWhirl::_whirlRoutine() {
+  if (_boids_num != _boids.size())
+    _boids_init();
 
-  for (auto &boid : boids){
-    float ioffset = (float)ff_scale * boid.location.x;
-    float joffset = (float)ff_scale * boid.location.y;
+  fb->fade(_fade);
 
-    byte angle = inoise8(ff_x + ioffset, ff_y + joffset, ff_z);
+  for (auto &boid : _boids){
+    float ioffset = scale * boid.location.x;
+    float joffset = scale * boid.location.y;
 
-    boid.velocity.x = ((float)sin8(angle) * 0.0078125 - speedFactor);
-    boid.velocity.y = -((float)cos8(angle) * 0.0078125 - speedFactor);
+    auto angle = inoise8(_x + ioffset, _y + joffset, _z);
+
+    boid.velocity.x = (sin8(angle) * 0.0078125 - speedFactor);
+    boid.velocity.y = -(cos8(angle) * 0.0078125 - speedFactor);
     boid.update();
 
-      EffectMath::drawPixelXYF(boid.location.x, boid.location.y, ColorFromPalette(*curPalette, angle + (uint8_t)hue), fb); // + hue постепенно сдвигает палитру по кругу
+    EffectMath::drawPixelXYF(boid.location.x, boid.location.y, ColorFromPalette(*curPalette, angle + hue), fb); // + hue постепенно сдвигает палитру по кругу
 
     if (boid.location.x < 0 || boid.location.x >= fb->w() || boid.location.y < 0 || boid.location.y >= fb->h()) {
       boid.location.x = EffectMath::randomf(0, fb->w());
       boid.location.y = 0;
     }
   }
-  EffectMath::blur2d(fb, 30U);
+  EffectMath::blur2d(fb, _blur);
 
   hue += speedFactor;
-  ff_x += speedFactor;
-  ff_y += speedFactor;
-  ff_z += speedFactor;
+  _x += speedFactor;
+  _y += speedFactor;
+  _z += speedFactor;
   return true;
 }
 
-
+#if !defined (OBSOLETE_CODE)
 // ------- Эффект "Звезды"
 // !++
 void EffectStar::setControl(size_t idx, int32_t value){
