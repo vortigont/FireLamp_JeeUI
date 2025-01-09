@@ -624,14 +624,14 @@ private:
     float hue;
     std::vector<Boid> _boids;
     size_t _boids_num{10};
-    uint8_t _blur{30};
+    uint8_t _blur{30}, _fade{15};
 	
     //const uint8_t ff_speed = 1; // чем выше этот параметр, тем короче переходы (градиенты) между цветами. 1 - это самое красивое
 
     void _boids_init();
     bool _whirlRoutine();
 public:
-    EffectWhirl(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer) {
+    EffectWhirl(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer, true) {
         scale = 26; // чем больше этот параметр, тем больше "языков пламени" или как-то так. 26 - это норм
     }
     void setControl(size_t idx, int32_t value) override;

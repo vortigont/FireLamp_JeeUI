@@ -102,9 +102,10 @@
   "whirls":{
     "ctrls":[
       {"label":"speed", "smin":5, "smax":150},
-      {"label":"scale", "min":5, "max":50},
-      {"label":"fade", "smin":5, "smax":200},
-      {"label":"objects", "smin":1, "smax":100}
+      {"label":"scale", "min":5, "max":150},
+      {"label":"fade", "smin":5, "smax":100},
+      {"label":"blur", "smin":0, "smax":200},
+      {"label":"objects", "smin":1, "smax":35}
     ]
   }
 }

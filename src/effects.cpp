@@ -2866,8 +2866,14 @@ void EffectWhirl::setControl(size_t idx, int32_t value){
       _boids_num = clamp(value, static_cast<int32_t>(1), static_cast<int32_t>(250));
       break;
 
-    // 3 - fade/blur - range 1-255
+    // 3 - fade - range 1-255
     case 3: {
+      _fade = value;
+      break;
+    }
+
+    // 4 - blur - range 1-255
+    case 4: {
       _blur = value;
       break;
     }
@@ -2881,7 +2887,7 @@ bool EffectWhirl::_whirlRoutine() {
   if (_boids_num != _boids.size())
     _boids_init();
 
-  fb->fade(15 * speedFactor);
+  fb->fade(_fade);
 
   for (auto &boid : _boids){
     float ioffset = scale * boid.location.x;

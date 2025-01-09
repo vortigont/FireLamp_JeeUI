@@ -3870,6 +3870,16 @@
         },
         {
           "html": "input",
+          "id": "eff_control_4",
+          "type": "range",
+          "label": "Размытие",
+          "min": 1,
+          "max": 10,
+          "value":5,
+          "onChange": true
+        },
+        {
+          "html": "input",
           "id": "eff_control_2",
           "type": "range",
           "label": "Число объектов стаи",
