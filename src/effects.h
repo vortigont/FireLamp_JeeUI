@@ -613,31 +613,33 @@ public:
     void setControl(size_t idx, int32_t value) override;
 };
 
-#ifdef DISABLED_CODE
 // ------- Эффект "Вихри"
 // Based on Aurora : https://github.com/pixelmatix/aurora/blob/master/PatternFlowField.h
 // Copyright(c) 2014 Jason Coon
 //адаптация SottNick
+#define EFF_WHIRL_BOID_COUNT   (10U)                // стая, кол-во птиц
 class EffectWhirl : public EffectCalc {
 private:
-    float ff_x;
-    float ff_y;
-    float ff_z;
+    float _x, _y, _z;
     float hue;
-    std::vector<Boid> boids;
+    std::vector<Boid> _boids;
+    size_t _boids_num{10};
+    uint8_t _blur{30};
 	
-    const uint8_t ff_speed = 1; // чем выше этот параметр, тем короче переходы (градиенты) между цветами. 1 - это самое красивое
-    const uint8_t ff_scale = 26; // чем больше этот параметр, тем больше "языков пламени" или как-то так. 26 - это норм
+    //const uint8_t ff_speed = 1; // чем выше этот параметр, тем короче переходы (градиенты) между цветами. 1 - это самое красивое
 
-    bool whirlRoutine();
-    void setControl(size_t idx, int32_t value) override;
+    void _boids_init();
+    bool _whirlRoutine();
 public:
-    EffectWhirl(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer), boids( std::vector<Boid>(AVAILABLE_BOID_COUNT) ) {}
+    EffectWhirl(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer) {
+        scale = 26; // чем больше этот параметр, тем больше "языков пламени" или как-то так. 26 - это норм
+    }
+    void setControl(size_t idx, int32_t value) override;
     void load() override;
-    bool run() override;
+    bool run() override { return _whirlRoutine(); };
 };
 
-
+#ifdef DISABLED_CODE
 // ----------- Эффект "Звезды"
 // (c) SottNick
 #define STARS_NUM (5)

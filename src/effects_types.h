@@ -178,7 +178,7 @@ static constexpr const char* T_whitelight = "whitelight";
 
 
 // firmware defined static index names for each of available effects
-static constexpr std::array<effect_t, 12> fw_effects_index = {
+static constexpr std::array<effect_t, 13> fw_effects_index = {
   effect_t::empty,
   effect_t::bouncingballs,
   effect_t::fireveil,
@@ -190,7 +190,8 @@ static constexpr std::array<effect_t, 12> fw_effects_index = {
   effect_t::picassoBalls,
   effect_t::picassoShapes,
   effect_t::radialfire,
-  effect_t::smokeballs
+  effect_t::smokeballs,
+  effect_t::whirls
 };
 
 /**
@@ -459,7 +460,6 @@ static constexpr std::array<const char *, 256> T_EFFUICFG = {
 
 #define BALLS_AMOUNT           (7U)                 // максимальное количество "шариков"
 #define LIGHTERS_AM            (32U)                // светлячки
-#define AVAILABLE_BOID_COUNT   (10U)                // стая, кол-во птиц
 
 // ------------- светлячки со шлейфом -------------
 //#define BALLS_AMOUNT         (7U)                 // максимальное количество "шариков"

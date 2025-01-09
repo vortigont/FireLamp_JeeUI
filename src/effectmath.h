@@ -221,8 +221,7 @@ namespace EffectMath {
 
 
 template <class T>
-class Vector2 {
-public:
+struct Vector2 {
     T x, y;
 
     Vector2() :x(0), y(0) {}
@@ -265,35 +264,43 @@ public:
         return *this;
     }
 
-    Vector2 operator+(double s) {
+    template  <typename S>
+    Vector2 operator+(S s) {
         return Vector2(x + s, y + s);
     }
-    Vector2 operator-(double s) {
+    template  <typename S>
+    Vector2 operator-(S s) {
         return Vector2(x - s, y - s);
     }
-    Vector2 operator*(double s) {
+    template  <typename S>
+    Vector2 operator*(S s) {
         return Vector2(x * s, y * s);
     }
-    Vector2 operator/(double s) {
+    template  <typename S>
+    Vector2 operator/(S s) {
         return Vector2(x / s, y / s);
     }
 
-    Vector2& operator+=(double s) {
+    template  <typename S>
+    Vector2& operator+=(S s) {
         x += s;
         y += s;
         return *this;
     }
-    Vector2& operator-=(double s) {
+    template  <typename S>
+    Vector2& operator-=(S s) {
         x -= s;
         y -= s;
         return *this;
     }
-    Vector2& operator*=(double s) {
+    template  <typename S>
+    Vector2& operator*=(S s) {
         x *= s;
         y *= s;
         return *this;
     }
-    Vector2& operator/=(double s) {
+    template  <typename S>
+    Vector2& operator/=(S s) {
         x /= s;
         y /= s;
         return *this;
@@ -304,7 +311,8 @@ public:
         this->y = y;
     }
 
-    void rotate(double deg) {
+    template  <typename S>
+    void rotate(S deg) {
         double theta = deg / 180.0 * M_PI;
         double c = cos(theta);
         double s = sin(theta);
@@ -336,7 +344,8 @@ public:
         return (x * x + y * y);
     }
 
-    void truncate(double length) {
+    template  <typename S>
+    void truncate(S length) {
         double angle = atan2f(y, x);
         x = length * cos(angle);
         y = length * sin(angle);
@@ -353,7 +362,8 @@ public:
         return (v1.x * v2.y) - (v1.y * v2.x);
     }
 
-    void limit(float max) {
+    template  <typename S>
+    void limit(S max) {
         if (magSq() > max*max) {
             normalize();
             *this *= max;
@@ -369,8 +379,7 @@ typedef Vector2<float> PVector;
 
 // Boid class
 // Methods for Separation, Cohesion, Alignment added
-class Boid {
-  public:
+struct Boid {
     PVector location;
     PVector velocity;
     PVector acceleration;
