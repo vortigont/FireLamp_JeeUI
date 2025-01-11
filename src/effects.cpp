@@ -5103,49 +5103,26 @@ void EffectRadialFire::setControl(size_t idx, int32_t value){
 
 void EffectRadialFire::load() {
   constexpr float theta = 180 / 2 / PI;
-  //theta = 180 / 2 / PI;
   int offset_x{-fb->w()/2}, offset_y{-fb->h()/2};
+  // precompute vectors (this is a very compute-heavy operation)
   for (int y = 0; y < fb->h(); ++y) {
     for (int x = 0; x < fb->w(); ++x) {
       xy_angle.at(x, y) = atan2(y+offset_y, x+offset_x) * theta * fb->maxDim();
-      xy_radius.at(x, y) = hypotf(x+offset_x, y+offset_y);
+      xy_radius.at(x, y) = hypot(x+offset_x, y+offset_y);
     }
   }
   palettesload();
 }
 
-/*
-void EffectRadialFire::palettesload(){
-  // собираем свой набор палитр для эффекта
-  palettes.reserve(NUMPALETTES);
-  palettes.push_back(&NormalFire_p);
-  palettes.push_back(&LithiumFireColors_p);
-  palettes.push_back(&NormalFire2_p);
-  palettes.push_back(&WoodFireColors_p);
-  palettes.push_back(&NormalFire3_p);
-  palettes.push_back(&CopperFireColors_p);
-  palettes.push_back(&HeatColors_p);
-  palettes.push_back(&PotassiumFireColors_p);
-  palettes.push_back(&MagmaColor_p);
-  palettes.push_back(&RubidiumFireColors_p);
-  palettes.push_back(&AlcoholFireColors_p); 
-  palettes.push_back(&WaterfallColors_p);
-
-  usepalettes = true; // включаем флаг палитр
-  scale2pallete();    // выставляем текущую палитру
-}
-*/
 bool EffectRadialFire::run() {
   t += speed;
   for (uint16_t y = 0; y < fb->h(); ++y) {
     for (uint16_t x = 0; x < fb->w(); ++x) {
-      float radius = _invert ? fb->maxDim() - /* 3 */ _radius - xy_radius.at(x,y) : xy_radius.at(x,y) + _radius;
-      int16_t bri = inoise8(xy_angle.at(x,y), radius * scale - t, x * scale) - radius * (256 /fb->maxDim());
-      byte col = bri;
-      if (bri < 0)
-        bri = 0; 
+      int32_t radius = _invert ? fb->maxDim() - /* 3 */ _radius - xy_radius.at(x,y) : xy_radius.at(x,y) + _radius;
+      auto bri = inoise8(xy_angle.at(x,y), radius * scale - t, x * scale) - radius * (256 /fb->maxDim());
+      auto col = bri;
       if (bri)
-        bri = 256 - (bri * 0.2);
+        bri = 256 - bri / 5;
 
       nblend(fb->at(x, y), ColorFromPalette(*curPalette, col, bri), speed);
     }
