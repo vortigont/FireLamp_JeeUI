@@ -542,8 +542,6 @@ void ui_block_mainpage_switches(Interface *interf, JsonObjectConst data, const c
     interf->json_frame_value();
         // lamp pwr switch
         interf->value(A_dev_pwrswitch, myLamp.getPwr());
-        // demo status
-        interf->value(K_demo, myLamp.getDemoMode());
         // button lock
         getset_btn_lock(interf, {}, NULL);
         // current effect's luma curve
@@ -565,21 +563,15 @@ void ui_page_effects(Interface *interf, JsonObjectConst data, const char* action
         interf->uidata_pick( "lampui.pages.effTitle" );
 
     interf->json_frame_value();
-        interf->value(A_dev_pwrswitch, myLamp.isLampOn());
+        interf->value(A_dev_pwrswitch, myLamp.getPwr());
         interf->value(A_dev_brightness, static_cast<int>(myLamp.getBrightness()));
+        // demo status
+        interf->value(T_demoOn, myLamp.getDemoMode());
+        interf->value(T_demoRndOrder, myLamp.getDemoRndSwitch());
+        interf->value(T_demoRndCtrls, myLamp.getDemoRndEffControls());
 
     // build effect controls
     myLamp.effwrkr.mkEmbUIpage(interf);
-}
-
-/**
- * @brief handle Demo flag change from WebUI
- * 
- */
-void set_demoflag(Interface *interf, JsonObjectConst data, const char* action){
-    if (!data) return;
-    bool newdemo = data[K_demo];
-    myLamp.demoMode(newdemo);
 }
 
 void set_auxflag(Interface *interf, JsonObjectConst data, const char* action){
@@ -647,27 +639,6 @@ void getset_gpios(Interface *interf, JsonObjectConst data, const char* action){
     basicui::page_system_settings(interf, {}, NULL);
 }
 
-/* Страница "Рисование"
-void ui_page_drawing(Interface *interf, JsonObjectConst data, const char* action){
-    if (!interf) return;
-    interf->json_frame_interface();  //TINTF_080);
-    interf->json_section_main(A_ui_page_drawing, TINTF_0CE);
-
-    JsonDocument doc;
-    JsonObject param = doc.to<JsonObject>();
-
-    param[T_width] = display.getLayout().canvas_w();
-    param[T_height] = display.getLayout().canvas_h();
-    param[TCONST_blabel] = TINTF_0CF;
-    param[TCONST_drawClear] = TINTF_0D9;
-
-    interf->checkbox(TCONST_drawbuff, myLamp.isDrawOn(), TINTF_0CE, true);
-    interf->div(T_drawing, T_drawing, embui.param(TCONST_txtColor), TINTF_0D0, P_EMPTY, param);
-
-    interf->json_frame_flush();
-}
-*/
-
 /**
  * @brief additional elements on system settings page
  * 
@@ -696,7 +667,7 @@ void wled_handle(AsyncWebServerRequest *request){
         else
             EVT_POST(LAMP_SET_EVENTS, pwr ? e2int(evt::lamp_t::pwron) : e2int(evt::lamp_t::pwroff));
     }
-    uint8_t bright = myLamp.isLampOn() ? myLamp.getBrightness() : 0;
+    uint8_t bright = myLamp.getPwr() ? myLamp.getBrightness() : 0;
 
     if (request->hasParam("A")){
         bright = request->getParam("A")->value().toInt();
@@ -704,7 +675,7 @@ void wled_handle(AsyncWebServerRequest *request){
     }
 
     String result = "<?xml version=\"1.0\" ?><vs><ac>";
-    result.concat(myLamp.isLampOn()?bright:0);
+    result.concat(myLamp.getPwr()?bright:0);
     result.concat("</ac><ds>");
     result.concat(embui.hostname());
     result.concat("</ds></vs>");
@@ -875,7 +846,6 @@ void embui_actions_register(){
 
 
     // to be refactored
-    embui.action.add(K_demo, set_demoflag);
     embui.action.add(TCONST_AUX, set_auxflag);
 
     // disable old overlay buffer

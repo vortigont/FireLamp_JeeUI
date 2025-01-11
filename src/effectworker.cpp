@@ -113,6 +113,9 @@ int32_t EffectControl::getScaledVal() const {
   return map(_val,  _minv, _maxv, _scale_min, _scale_max);
 }
 
+int32_t EffectControl::getScaledRandomVal() const {
+  return std::rand() % _scale_max + _scale_min;
+};
 
 const char* EffectsListItem_t::getLbl(effect_t eid){
   if (static_cast<size_t>(eid) >= fw_effects_nameindex.size())
@@ -120,6 +123,8 @@ const char* EffectsListItem_t::getLbl(effect_t eid){
   else
     return fw_effects_nameindex.at(static_cast<size_t>(eid));
 };
+
+
 
 
 EffConfiguration::EffConfiguration(effect_t effid) : _eid(effid), _locked(false) {
@@ -174,8 +179,8 @@ bool EffConfiguration::loadEffconfig(effect_t effid){
 
   // no need to publish UI page if no one is listening
   if (embui.feeders.available()){
-    auto interf = std::make_unique<Interface>(&embui.feeders);
-    mkEmbUIpage(interf.get());
+    Interface interf(&embui.feeders);
+    mkEmbUIpage(&interf);
   }
 
   _unlock();
@@ -429,6 +434,7 @@ void EffConfiguration::embui_preset_delete(Interface *interf){
 
 
 
+
 ///////////////////////////////////////////
 //  ***** EffectWorker implementation *****
 
@@ -456,7 +462,7 @@ EffectWorker::~EffectWorker(){
 /*
  * Создаем экземпляр класса калькулятора в зависимости от требуемого эффекта
  */
-void EffectWorker::_spawn(effect_t eid){
+void EffectWorker::_spawn(effect_t eid, bool rnd_ctrls){
   LOGD(T_EffWrkr, printf, "_spawn %u:%s\n", eid, EffectsListItem_t::getLbl(eid));
 
   LedFB<CRGB> *canvas = display.getCanvas().get();
@@ -471,6 +477,8 @@ void EffectWorker::_spawn(effect_t eid){
 
   // grab mutex
   std::unique_lock<std::mutex> lock(_mtx);
+  // destroy previous effect to release memory
+  worker.reset();
 
   // create a new instance of effect child
   switch (eid){
@@ -651,6 +659,7 @@ void EffectWorker::_spawn(effect_t eid){
 */
   default:
     LOGW(T_EffWrkr, println, "Attempt to spawn nonexistent effect!");
+    worker = std::make_unique<EffectNone>(canvas);
     lock.unlock();  // release mutex
     return;
   }
@@ -667,7 +676,7 @@ void EffectWorker::_spawn(effect_t eid){
 
   _switch_current_effect_item(eid);
   // apply effect's controls
-  applyControls();
+  rnd_ctrls ? applyRandomControls() : applyControls();
 
   display.canvasProtect (worker->getCanvasProtect());         // set 'persistent' frambuffer flag if effect's manifest demands it
 
@@ -678,7 +687,7 @@ void EffectWorker::_spawn(effect_t eid){
   // set newly loaded luma curve to the lamp
   run_action(ra::brt_lcurve, e2int(_effItem.curve));
 
-  // send event    
+  // send event about eefect switch completition    
   uint32_t n = e2int(eid);
   EVT_POST_DATA(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::effSwitchTo), &n, sizeof(uint32_t));
 }
@@ -872,13 +881,13 @@ effect_t EffectWorker::getNext(){
   return _effItem.eid;
 }
 
-void EffectWorker::switchEffect(effect_t eid){
+void EffectWorker::switchEffect(effect_t eid, bool rnd_ctrls){
   // NOTE: if call has been made to the SAME effect number as the current one, than it MUST be force-switched anyway to recreate EffectCalc object
   // (it's required for a cases like new LedFB has been provided, etc)
   if (eid == _effItem.eid) return reset();
 
   LOGD(T_EffWrkr, printf, "switchEffect:%u\n", eid);
-  _spawn(eid);
+  _spawn(eid, rnd_ctrls);
 }
 
 void EffectWorker::switchEffectPreset(int32_t preset){
@@ -987,6 +996,14 @@ void EffectWorker::applyControls(){
   for (const auto& i : _effCfg.getControls()){
     worker->setControl(i.getIdx(), i.getScaledVal());
   }
+}
+
+void EffectWorker::applyRandomControls(){
+  if (!worker) return;
+  LOGD(T_EffWrkr, println, "apply random ctrls");
+  for (const auto& i : _effCfg.getControls()){
+    worker->setControl(i.getIdx(), i.getScaledRandomVal());
+  }  
 }
 
 void EffectWorker::setControlValue(size_t idx, int32_t v){

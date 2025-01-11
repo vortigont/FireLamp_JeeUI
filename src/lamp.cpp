@@ -52,36 +52,43 @@ Copyright © 2020 Dmytro Korniienko (kDn)
 #define FADE_LOWBRTFRACT      5U                // доля от максимальной шкалы яркости, до которой работает затухание при смене эффектов. Если текущая яркость ниже двойной доли, то затухание пропускается
 
 
-Lamp::Lamp() {}
+Lamp::Lamp() {
+  // initialize fader instance
+  LEDFader::getInstance()->setLamp(this);
+
+  // demo on/off
+  embui.action.add(T_demoOn, [this](Interface *interf, JsonObjectConst data, const char* action){ _embui_demoOn(interf, data, action); } );
+  embui.action.add(T_demoRndCtrls, [this](Interface *interf, JsonObjectConst data, const char* action){ _embui_demoRndCtrls(interf, data, action); } );
+  embui.action.add(T_demoRndOrder, [this](Interface *interf, JsonObjectConst data, const char* action){ _embui_demoRndOrder(interf, data, action); } );
+}
 
 Lamp::~Lamp(){
   events_unsubsribe();
+  embui.action.remove(T_demoOn);
+  embui.action.remove(T_demoRndCtrls);
+  embui.action.remove(T_demoRndOrder);
 }
 
 void Lamp::lamp_init(){
   // subscribe to CMD events
   _events_subsribe();
 
-  // initialize fader instance
-  LEDFader::getInstance()->setLamp(this);
-
   // open NVS storage
   esp_err_t err;
   std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_lamp, NVS_READONLY, &err);
 
   if (err == ESP_OK) {
-    handle->get_item(T_bright, globalBrightness);
-    handle->get_item(V_dev_brtscale, _brightnessScale);
     // restore lamp flags from NVS
     handle->get_item(V_lampFlags, opts.pack);
+    handle->get_item(T_bright, globalBrightness);
+    handle->get_item(V_dev_brtscale, _brightnessScale);
     // restore demo time
     handle->get_item(T_DemoTime, demoTime);
   } else {
-    LOGD(T_lamp, printf, "Err opening NVS handle: %s\n", esp_err_to_name(err));
+    LOGE(T_lamp, printf, "Err opening NVS handle: %s\n", esp_err_to_name(err));
   }
 
-  _brightness(0, true);          // начинаем с полностью потушеной матрицы 0-й яркости
-
+  _brightness(0, true);          // начинаем с полностью потушенного дисплея 0-й яркости
 
   // GPIO's
   JsonDocument doc;
@@ -116,51 +123,46 @@ void Lamp::lamp_init(){
     // switch to last running effect
     if (eff_idx)
       _switcheffect(effswitch_t::num, false, static_cast<effect_t>(eff_idx));
-      //run_action(ra::eff_switch, eff_idx);
   }
 
-  if (!opts.flag.restoreState)
-    return;
+  // set fade flag to fade-in
+  if (opts.flag.fadeEffects)
+    _swState.fadeState = 1;   // fade-in
 
-  // if panel was in demo, switch it back to demo
-  if (opts.flag.demoMode){
-    demoMode(true);
+  // if other options need to be restored, then just quit
+  if (!opts.flag.restoreState){
+    vopts.flag.initialized = true;
     return;
   }
+
+  // restore demo mode
+  vopts.flag.demoMode = opts.flag.demoMode;
+  demoTask = new Task(demoTime * TASK_SECOND, TASK_FOREVER, [this](){demoNext();}, &ts, false);
 
   // if panel was On, switch it back to On
   if (opts.flag.pwrState){
     power(true);
   }
+
+  vopts.flag.initialized = true;
 }
 
-void Lamp::power(bool pwr, bool restore_state){
-  if (pwr == vopts.pwrState) return;  // пропускаем холостые вызовы
+void Lamp::power(bool pwr){
+  if (pwr == vopts.flag.pwrState) return;  // пропускаем холостые вызовы
   LOGI(T_lamp, printf, "Powering %s\n", pwr ? "On": "Off");
 
   if (pwr){
     // POWER ON
-
-    if (restore_state){
-      _swState.fadeState = 1;   // fade-in
-      vopts.pwrState = true;    // set the flag here, from now on lamp considers itself in "On" state
-      // вторично переключаемся на текущий же эффект, переключение вызовет фейдер (если необходимо)
-      _switcheffect(effswitch_t::num, getFaderFlag(), effwrkr.getCurrentEffectNumber());
-      // включаем демотаймер если был режим демо
-      if(vopts.demoMode && demoTask)
-        demoTask->restartDelayed();
-    } else {
-      // no need to fade-in or demo, just run the engine
-      vopts.demoMode = false;
-      // гасим Демо-таймер
-      if(demoTask)
-        demoTask->disable();
-    }
-
     // запускаем планировщик движка эффектов
     effectsTimer(true);
 
-    // generate pwr change state event 
+    if(vopts.flag.demoMode && demoTask)
+      // вторично переключаемся на текущий же эффект, переключение вызовет фейдер (если необходимо)
+      demoTask->restart();
+    else
+      _switcheffect(effswitch_t::num, getFaderFlag(), effwrkr.getCurrentEffectNumber());
+
+    // generate pwr change state event
     EVT_POST(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::pwron));
   } else  {
     // POWER OFF
@@ -182,14 +184,13 @@ void Lamp::power(bool pwr, bool restore_state){
   }
 
   // update flag on last step to let other call understand in which state they were called
-  vopts.pwrState = pwr;
+  vopts.flag.pwrState = pwr;
   // save power state if required
   if (opts.flag.restoreState && (opts.flag.pwrState != pwr)){
     opts.flag.pwrState = pwr;
     save_flags();
   }
 }
-
 
 void Lamp::setBrightness(uint8_t tgtbrt, fade_t fade, bool bypass){
     LOGD(T_lamp, printf, "setBrightness(%u,%u,%u)\n", tgtbrt, static_cast<uint8_t>(fade), bypass);
@@ -198,7 +199,7 @@ void Lamp::setBrightness(uint8_t tgtbrt, fade_t fade, bool bypass){
       return _brightness(tgtbrt, true);
 
     // when lamp in 'PowerOff' state, just change brightness w/o any notifications or saves
-    if (!isLampOn())
+    if (!getPwr())
       return _brightness(tgtbrt);
 
     if ( fade == fade_t::on || ( (fade == fade_t::preset) && opts.flag.fadeEffects) ) {
@@ -263,14 +264,14 @@ void Lamp::gradualFade(evt::gradual_fade_t arg){
 }
 
 void Lamp::switcheffect(effswitch_t action, effect_t effnb){
-  _switcheffect(action, isLampOn() ? getFaderFlag() : false, effnb);
+  _switcheffect(action, getPwr() ? getFaderFlag() : false, effnb);
   // if in demo mode, and this switch came NOT from demo timer, delay restart demo timer
   // a bit hakish but will work. Otherwise I have to segregate demo switches from all other
-  if(vopts.demoMode && demoTask && ts.timeUntilNextIteration(*demoTask) < demoTask->getInterval())
+  if(vopts.flag.demoMode && demoTask && ts.timeUntilNextIteration(*demoTask) < demoTask->getInterval())
     demoTask->delay();
 
   // if lamp is not in Demo mode, then need to save new effect to NVS
-  if(!vopts.demoMode){
+  if(!vopts.flag.demoMode){
     esp_err_t err;
     std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_lamp, NVS_READWRITE, &err);
     if (err == ESP_OK){
@@ -294,7 +295,7 @@ void Lamp::_switcheffect(effswitch_t action, bool fade, effect_t effnb) {
   switch (action) {
   case effswitch_t::next :
     // если в демо-режиме, ищем следующий эффект для демо, иначе просто следующий эффект
-    _swState.pendingEffectNum = opts.flag.demoMode ? effwrkr.getNextEffIndexForDemo() : effwrkr.getNext();
+    _swState.pendingEffectNum = vopts.flag.demoMode ? effwrkr.getNextEffIndexForDemo(opts.flag.demoRndOrderSwitching) : effwrkr.getNext();
     break;
   case effswitch_t::prev :
     _swState.pendingEffectNum = effwrkr.getPrev();
@@ -304,7 +305,7 @@ void Lamp::_switcheffect(effswitch_t action, bool fade, effect_t effnb) {
     break;
   case effswitch_t::rnd :
     // next random effect in demo mode
-    _swState.pendingEffectNum = effwrkr.getNextEffIndexForDemo(true);
+    _swState.pendingEffectNum = effwrkr.getNextEffIndexForDemo(opts.flag.demoRndOrderSwitching);
     break;
   default:
       return;
@@ -313,7 +314,7 @@ void Lamp::_switcheffect(effswitch_t action, bool fade, effect_t effnb) {
   LOGD(T_lamp, printf, "switcheffect() action=%u, fade=%d, effnb=%u\n", static_cast<uint32_t>(action), fade, _swState.pendingEffectNum);
 
   // проверяем нужно ли использовать затухание (только если лампа включена, и не идет разжигание)
-  if (fade && vopts.pwrState && _swState.fadeState <1){
+  if (fade && vopts.flag.pwrState && _swState.fadeState <1){
     // если уже идет угасание вниз, просто выходим, переключение произойдет на новый эффект после конца затухания
     if(_swState.fadeState == -1)
       return;
@@ -334,7 +335,7 @@ void Lamp::_switcheffect(effswitch_t action, bool fade, effect_t effnb) {
 
   // if current worker's effect is same as the target one, then I do not need to do actual switch
   if (effwrkr.getCurrentEffectNumber() != _swState.pendingEffectNum){
-    effwrkr.switchEffect(_swState.pendingEffectNum);
+    effwrkr.switchEffect(_swState.pendingEffectNum, vopts.flag.demoMode && opts.flag.demoRndEffControls);
 
     // publish new effect's control to all available feeders
     effwrkr.embui_publish();
@@ -357,7 +358,7 @@ effect_t Lamp::_getRealativeEffectNum(){
 
 void Lamp::_fadeEventHandler(){
   // check if lamp is in "PowerOff" state, then we've just complete fade-out, need to send event
-  if (!vopts.pwrState){
+  if (!vopts.flag.pwrState){
     _swState.fadeState = 0;
     effectsTimer(false);
     EVT_POST(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::pwroff));
@@ -377,26 +378,24 @@ void Lamp::_fadeEventHandler(){
 /*
  * запускаем режим "ДЕМО"
  */
-void Lamp::demoMode(bool active){
-  if (active == vopts.demoMode) return;   // уже и так в нужном "демо" режиме, выходим
+void Lamp::setDemoMode(bool active){
+  if (active == vopts.flag.demoMode) return;   // уже и так в нужном "демо" режиме, выходим
   LOGI(T_lamp, printf, "Demo %s, time: %u\n", active ? T_On : T_Off, demoTime);
 
+  vopts.flag.demoMode = active;
   if (active){
     // enable demo
-    power(true);  // "включаем" лампу
-    if (!demoTask){
-      demoTask = new Task(demoTime * TASK_SECOND, TASK_FOREVER, [this](){demoNext();}, &ts, false);
-      demoTask->enableDelayed();
-    }
+    if (!demoTask)
+      demoTask = new Task(demoTime * TASK_SECOND, TASK_FOREVER, [this](){ demoNext(); }, &ts, false);
+    demoTask->enable();
   } else {
     if (demoTask){
       delete demoTask;
       demoTask = nullptr;
     }
   }
-  vopts.demoMode = active;
   // save demo state if required
-  if (opts.flag.restoreState && (opts.flag.demoMode != active) ){
+  if (opts.flag.restoreState && vopts.flag.initialized){
     opts.flag.demoMode = active;
     save_flags();
   }
@@ -409,7 +408,7 @@ void Lamp::demoMode(bool active){
 void Lamp::setDemoTime(uint32_t seconds){
   // if time is zero - disable demo
   if (!seconds)
-    demoMode(false);
+    setDemoMode(false);
 
   demoTime = seconds;
   if(demoTask){
@@ -427,10 +426,12 @@ void Lamp::setDemoTime(uint32_t seconds){
  * 
  */
 void Lamp::demoNext(){
-if (opts.flag.demoRndOrderSwitching)
-  switcheffect(effswitch_t::rnd);
-else
-  switcheffect(effswitch_t::next);
+  LOGD(T_lamp, println, "demoNext");
+
+  if (opts.flag.demoRndOrderSwitching)
+    switcheffect(effswitch_t::rnd);
+  else
+    switcheffect(effswitch_t::next);
 }
 
 /*
@@ -445,16 +446,6 @@ void Lamp::effectsTimer(bool action) {
     effwrkr.stop();
 }
 
-//-----------------------------
-/*
-void Lamp::fillDrawBuf(CRGB color) {
-  if(_overlay) _overlay->fill( LedFB_GFX::color565(color) );
-}
-
-void Lamp::writeDrawBuf(CRGB color, uint16_t x, uint16_t y){
-  if (_overlay) { _overlay->at(x,y) = LedFB_GFX::color565(color); }
-}
-*/
 void Lamp::save_flags(){
   esp_err_t err;
   std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle(T_lamp, NVS_READWRITE, &err);
@@ -467,18 +458,7 @@ void Lamp::save_flags(){
 
   handle->set_item(V_lampFlags, opts.pack);
 }
-/*
-void Lamp::_overlay_buffer(bool activate) {
-  if (activate && !_overlay){
-    LOGD(T_lamp, println, "Create Display overlay");
-    _overlay = display.getOverlay();   // obtain overlay buffer
-  }
-  else{
-    LOGD(T_lamp, println, "Release Display overlay");
-    _overlay.reset();
-  }
-}
-*/
+
 void Lamp::_events_subsribe(){
   ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), ESP_EVENT_ANY_BASE, ESP_EVENT_ANY_ID, Lamp::event_hndlr, this, &_events_lamp_cmd));
 }
@@ -512,8 +492,8 @@ void Lamp::_event_picker_cmd(esp_event_base_t base, int32_t id, void* data){
           power();
         else
           power(v);
+        }
         return;
-      }
       case evt::lamp_t::pwron :
         power(true);
         return;
@@ -521,10 +501,8 @@ void Lamp::_event_picker_cmd(esp_event_base_t base, int32_t id, void* data){
         power(false);
         return;
       case evt::lamp_t::pwrtoggle :
-        power();
-        return;
       case evt::lamp_t::pwronengine :
-        power(true, false);
+        power();
         return;
 
     // Brightness control
@@ -573,9 +551,9 @@ void Lamp::_event_picker_cmd(esp_event_base_t base, int32_t id, void* data){
       case evt::lamp_t::demo : {
         uint32_t v = *reinterpret_cast<uint32_t*>(data);
         if (v == 2)
-          demoMode(!getDemoMode());
+          setDemoMode(!getDemoMode());
         else
-          demoMode(v);
+          setDemoMode(v);
         return;
       }
       case evt::lamp_t::demoTimer :
@@ -591,7 +569,7 @@ void Lamp::_event_picker_get(esp_event_base_t base, int32_t id, void* data){
   switch (static_cast<evt::lamp_t>(id)){
   // Get State Commands
     case evt::lamp_t::pwr :
-      EVT_POST(LAMP_STATE_EVENTS, vopts.pwrState ? e2int(evt::lamp_t::pwron) : e2int(evt::lamp_t::pwroff));
+      EVT_POST(LAMP_STATE_EVENTS, vopts.flag.pwrState ? e2int(evt::lamp_t::pwron) : e2int(evt::lamp_t::pwroff));
       break;
 
     case evt::lamp_t::brightness :{
@@ -623,6 +601,31 @@ void Lamp::_event_picker_state(esp_event_base_t base, int32_t id, void* data){
   }
 
 }
+
+void Lamp::_embui_demoOn(Interface *interf, JsonObjectConst data, const char* action){
+  if (data){
+    setDemoMode(data[T_demoOn]);
+    return;
+  }
+  // todo: sent demoOn value
+}
+
+void Lamp::_embui_demoRndOrder(Interface *interf, JsonObjectConst data, const char* action){
+  if (data){
+    setDemoRndSwitch(data[T_demoRndOrder]);
+    return;
+  }
+  // todo: send demo val
+}
+
+void Lamp::_embui_demoRndCtrls(Interface *interf, JsonObjectConst data, const char* action){
+  if (data){
+    setDemoRndEffControls(data[T_demoRndCtrls]);
+    return;
+  }
+  // todo: send demo val
+}
+
 
 // *********************************
 /*  LEDFader class implementation */

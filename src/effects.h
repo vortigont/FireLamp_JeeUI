@@ -1254,8 +1254,8 @@ public:
 // (c) Stepko and Sutaburosu https://editor.soulmatelights.com/gallery/1570-radialfire
 // refactoring, stretching for any dimension Vortigont
 class EffectRadialFire : public EffectCalc {
-    Vector2D<float> xy_angle{ Vector2D<float>(fb->w(), fb->h()) };
-    Vector2D<float> xy_radius{ Vector2D<float>(fb->w(), fb->h()) };
+    Vector2D<float> xy_angle;
+    Vector2D<float> xy_radius;
     uint16_t t{0};
     bool _invert = true;
     float _radius{0};
@@ -1264,7 +1264,7 @@ class EffectRadialFire : public EffectCalc {
     //void palettesload() override;
 
 public:
-    EffectRadialFire(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer) { speed = 10; }
+    EffectRadialFire(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer), xy_angle(fb->w(), fb->h()), xy_radius{fb->w(), fb->h()} { speed = 10; }
     void load() override;
     void setControl(size_t idx, int32_t value) override;
     bool run() override;

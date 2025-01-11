@@ -60,7 +60,7 @@ enum class effswitch_t : uint8_t {
     next,       // следующий
     prev,       // предыдущий
     rnd,        // случайный
-    num        // переход на конкретный эффект по индексу
+    num         // переход на конкретный эффект по индексу
 };  // ex EFFSWITCH;
 
 /**
@@ -91,23 +91,16 @@ struct LampFlags {
     bool reserved12:1;              // микрофон для эффекта
     bool reserved13:1;
     bool reserved14:1;
-    bool reserved15:1;      //
+    bool initialized:1;             // flag shows that intial loading of has been complete, should be set ONLY in vopts member and never saved to NVS
     //--------16 штук граница-------------------
 };
 
 union LampFlagsPack {
     uint32_t pack;          // vars packed into unsigned
     LampFlags flag;
-    LampFlagsPack() : pack(4){}     // set fade
+    LampFlagsPack() : pack(4){}     // set fade enabled by default
 };
 
-// this struct keeps volatile flags that are cleared on MCU reset
-struct VolatileFlags {
-    bool pwrState:1;        // флаг включения/выключения
-    bool demoMode:1;        // running demo
-    //bool isMicOn:1;         // включение/выключение микрофона
-    bool debug:1;           // some debug flag
-};
 
 /**
  * @brief Lamp class
@@ -141,7 +134,8 @@ private:
 
     // a set of lamp options (flags)
     LampFlagsPack opts;
-    VolatileFlags vopts{};
+    // this struct keeps volatile flags that are cleared on MCU reset
+    LampFlagsPack vopts{};
 
     uint8_t _brightnessScale{DEF_BRT_SCALE};
     // default luma correction curve for PWM driven LEDs
@@ -251,12 +245,8 @@ public:
     void setClearingFlag(bool flag) {opts.flag.wipeOnEffChange = flag; save_flags(); }
     bool getClearingFlag() const {return opts.flag.wipeOnEffChange; }
 
-    bool isLampOn() {return vopts.pwrState;}
-
     // get lamp's power state
-    bool getPwr() const { return vopts.pwrState; }
-
-    bool isDebugOn() {return vopts.debug;}
+    bool getPwr() const { return vopts.flag.pwrState; }
 
     // set/clear "restore on/off/demo" state on boot
     void setRestoreState(bool flag){ opts.flag.restoreState = flag; save_flags(); }
@@ -265,35 +255,15 @@ public:
     // Drawing methods
     bool isDrawOn() const { return _overlay.get(); }
 
-    // activate/disable overlay for drawing
-    //void enableDrawing(bool state){ _overlay_buffer(state); };
-
-    // draw a pixel in overlay
-    //void writeDrawBuf(CRGB color, uint16_t x, uint16_t y);
-    //void writeDrawBuf(CRGB color, uint16_t num);
-
-    /**
-     * @brief fill DrawBuffer with solid color
-     * 
-     * @param color 
-     */
-    //void fillDrawBuf(CRGB color);
-
-    /**
-     * @brief fill DrawBuf with solid black (make it transparent)
-     * 
-     */
-    //void clearDrawBuf() { CRGB c = CRGB::Black; fillDrawBuf(c); }
-
     /**
      * @brief enable/disable demo mode
      * 
      * @param avtive 
      */
-    void demoMode(bool active);
+    void setDemoMode(bool active);
 
     // return demo mode status
-    bool getDemoMode() const { return vopts.demoMode; }
+    bool getDemoMode() const { return vopts.flag.demoMode; }
 
     // reset demo timer
     void demoReset(){ if (demoTask) demoTask->restartDelayed(); }
@@ -319,14 +289,16 @@ public:
      * 
      * @param flag 
      */
-    void setDemoRndSwitch(bool flag){ opts.flag.demoRndOrderSwitching = flag; }
+    void setDemoRndSwitch(bool v){ opts.flag.demoRndOrderSwitching = v; save_flags(); }
+    bool getDemoRndSwitch() const { return opts.flag.demoRndOrderSwitching; }
 
     /**
      * @brief shuffle effect controls randomly when in demo mode
      * 
      * @param v 
      */
-    void setDemoRndEffControls(bool v){ opts.flag.demoRndEffControls = v; };
+    void setDemoRndEffControls(bool v){ opts.flag.demoRndEffControls = v; save_flags(); };
+    bool getDemoRndEffControls() const { return opts.flag.demoRndEffControls; }
 
 
 
@@ -340,7 +312,7 @@ public:
      *  lampEvtId_t::pwroff
      * 
      */
-    void power(bool pwr, bool restore_state = true);
+    void power(bool pwr);
 
     /**
      * @brief toggle logical power state for the lamp
@@ -349,7 +321,7 @@ public:
      *  lampEvtId_t::pwroff
      * 
      */
-    void power(){ power(!vopts.pwrState); };
+    void power(){ power(!vopts.flag.pwrState); };
 
     /**
      * @brief общий переключатель эффектов лампы
@@ -470,6 +442,15 @@ private:
      * @param event_data 
      */
     void _event_picker_get(esp_event_base_t base, int32_t id, void* data);
+
+    // demo on/off
+    void _embui_demoOn(Interface *interf, JsonObjectConst data, const char* action);
+
+    // demo random order
+    void _embui_demoRndCtrls(Interface *interf, JsonObjectConst data, const char* action);
+
+    // demo random controls
+    void _embui_demoRndOrder(Interface *interf, JsonObjectConst data, const char* action);
 
 };
 

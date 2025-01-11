@@ -115,7 +115,7 @@ void effect_switch(Interface *interf, JsonObjectConst data, const char* action){
 
     size_t num = data[A_effect_switch_idx];
 
-    LOGD(T_WebUI, printf, "switch to:%u, LampPWR:%u\n", num, myLamp.isLampOn());
+    LOGD(T_WebUI, printf, "switch to:%u, LampPWR:%u\n", num, myLamp.getPwr());
     myLamp.switcheffect(effswitch_t::num, static_cast<effect_t>(num) );
 }
 
