@@ -1256,8 +1256,8 @@ public:
 //    - stretching for any dimension
 //    - code optimization
 class EffectRadialFire : public EffectCalc {
-    Vector2D<uint16_t> xy_angle;
-    Vector2D<uint16_t> xy_radius;
+    Vector2D<uint16_t> xy_angle{ Vector2D<uint16_t>(fb->w(), fb->h()) };
+    Vector2D<uint16_t> xy_radius{ Vector2D<uint16_t>(fb->w(), fb->h()) };
     uint16_t t{0};
     bool _invert = true;
     int16_t _radius{0};
