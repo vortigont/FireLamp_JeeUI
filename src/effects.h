@@ -1252,16 +1252,15 @@ public:
 // ----------- Эффект "Неопалимая купина"
 // RadialFire
 // (c) Stepko and Sutaburosu https://editor.soulmatelights.com/gallery/1570-radialfire
-// refactoring, stretching for any dimension Vortigont
+// refactoring - Vortigont
+//    - stretching for any dimension
+//    - code optimization
 class EffectRadialFire : public EffectCalc {
-    Vector2D<float> xy_angle{ Vector2D<float>(fb->w(), fb->h()) };
-    Vector2D<float> xy_radius{ Vector2D<float>(fb->w(), fb->h()) };
+    Vector2D<uint16_t> xy_angle;
+    Vector2D<uint16_t> xy_radius;
     uint16_t t{0};
     bool _invert = true;
-    float _radius{0};
-    //float theta =  180 / 2 / PI;
-
-    //void palettesload() override;
+    int16_t _radius{0};
 
 public:
     EffectRadialFire(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer) { speed = 10; }
