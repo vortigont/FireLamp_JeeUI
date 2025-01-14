@@ -110,7 +110,17 @@ public:
      */
     int32_t getScaledVal() const;
 
+    /**
+     * @brief returns Scaled Value Randomized within of allowed scaled_min/scaled_max range
+     * 
+     * @return int32_t 
+     */
+    int32_t getScaledRandomVal() const;
+
+    // get control's index
     size_t getIdx() const {return _idx;};
+
+    // get control's name
     const char* getName() const { return _name.c_str(); };
 };
 
@@ -181,12 +191,10 @@ public:
 
 
     /**
-     * @brief load effect's configuration from a json file
+     * @brief load effect's configuration from a json file on filesystem
      * apply saved configuration to current worker instance
-     * @param cfg - struct to load data into
-     * @param nb - effect number
-     * @param folder - folder to look for config files
-     * @return int 
+     * @param effid - effect number to load
+     * @return true on success, false otherwise
      */
     bool loadEffconfig(effect_t effid);
 
@@ -206,7 +214,6 @@ public:
 
     /**
      * @brief flush pending config data to file on disk
-     * it's a temporary workaround method
      * it writes cfg data ONLY if some changes are pending in delayed task
      */
     void flushcfg(){ if(tConfigSave) autosave(true); };
@@ -231,9 +238,12 @@ public:
     // get access to controls container
     const std::vector<EffectControl> &getControls() const { return _controls; }
 
+    // ******************
+    // EmbUI API handlers
+
     /**
-     * @brief Construct an EmbUI section with effect's controls
-     * it generates an overriding section that must be placed on "Effects" page
+     * @brief Construct an EmbUI section with effect's controls.
+     * Generates an overriding section that must be emplaced on "Effects" page
      */
     void mkEmbUIpage(Interface *interf);
 
@@ -256,6 +266,10 @@ public:
      */
     void embui_preset_clone(Interface *interf);
 
+    /**
+     * @brief action handler that deletes current preset
+     * 
+     */
     void embui_preset_delete(Interface *interf);
 
 };
@@ -344,8 +358,10 @@ public:
 
 class EffectWorker {
 private:
-    EffectsListItem_t _effItem;        // current effect item and flags
-    EffConfiguration _effCfg;          // конфигурация текущего эффекта
+    // current effect item and flags
+    EffectsListItem_t _effItem;
+    // конфигурация текущего эффекта
+    EffConfiguration _effCfg;
     
     // список эффектов с флагами из индекса
     std::vector<EffectsListItem_t> effects;
@@ -363,7 +379,7 @@ private:
      * создает и инициализирует экземпляр класса требуемого эффекта
      *
     */
-    void _spawn(effect_t eid);
+    void _spawn(effect_t eid, bool rnd_ctrls = false);
 
     /**
      * @brief load a list of default effects from firmware tables
@@ -447,6 +463,12 @@ public:
     void applyControls();
 
     /**
+     * @brief randomize all controls of an effect
+     * random controls won't be saved into persistent storage
+     */
+    void applyRandomControls();
+
+    /**
      * @brief Set the Control Value object
      * 
      * @param idx 
@@ -509,12 +531,11 @@ public:
 
     /**
      * @brief switch to the specified effect
-     * two-stage switch required for fading effect, first time call will only preload controls for a new effect,
-     * second one does the switching
      * 
      * @param effnb - effect to switch to
+     * @param rnd_ctrls - randomize controls
      */
-    void switchEffect(effect_t eid);
+    void switchEffect(effect_t eid, bool rnd_ctrls = false);
 
     // switch current effect's preset
     void switchEffectPreset(int32_t preset);

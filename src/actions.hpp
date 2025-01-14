@@ -61,7 +61,6 @@ enum class ra:uint8_t {
   brt,                // brightness control, param int
   brt_nofade,         // change brightness without fading effect, param int
   brt_lcurve,         // set brightness luma curve
-  demo,               // demo mode on/off, param bool
   demo_next,          // switch effect in demo mode, param void
   eff_ctrl,           // apply effect control value
   eff_next,           // switch to next effect
@@ -156,13 +155,6 @@ void run_action(ra act, const T& param) {
     case ra::eff_switch : {
       obj[P_action] = A_effect_switch_idx;
       data[A_effect_switch_idx] = param;
-      break;
-    }
-
-    // demo mode On/Off
-    case ra::demo : {
-      obj[P_action] = K_demo;
-      data[K_demo] = param;
       break;
     }
 

@@ -1263,7 +1263,7 @@ class EffectRadialFire : public EffectCalc {
     int16_t _radius{0};
 
 public:
-    EffectRadialFire(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer) { speed = 10; }
+    EffectRadialFire(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer), xy_angle(fb->w(), fb->h()), xy_radius{fb->w(), fb->h()} { speed = 10; }
     void load() override;
     void setControl(size_t idx, int32_t value) override;
     bool run() override;

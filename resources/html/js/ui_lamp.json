@@ -2298,6 +2298,36 @@
           ]
         },
         {
+          "section":"demo_sw",
+          "line":true,
+          "hidden":true,
+          "label":"Demo",
+          "block":[
+            {
+              "id": "demoOn",
+              "html": "input",
+              "label": "🟔 Демо",
+              "type": "checkbox",
+              "onChange": true
+            },
+            {
+              "id": "demoRndOrder",
+              "html": "input",
+              "label": "🔀 случайный порядок",
+              "type": "checkbox",
+              "onChange": true
+            },
+            {
+              "id": "demoRndCtrls",
+              "html": "input",
+              "label": "🎲 случайные контролы",
+              "type": "checkbox",
+              "onChange": true
+            }
+          ]
+
+        },
+        {
           "html": "input",
           "id": "dev_brightness",
           "type": "range",
@@ -3117,13 +3147,6 @@
               "id": "dev_pwrswitch",
               "html": "input",
               "label": "⏻ Включить",
-              "type": "checkbox",
-              "onChange": true
-            },
-            {
-              "id": "demo",
-              "html": "input",
-              "label": "🔁 Демо",
               "type": "checkbox",
               "onChange": true
             },

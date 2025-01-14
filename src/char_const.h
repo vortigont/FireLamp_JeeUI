@@ -224,6 +224,7 @@ static constexpr const char* T_cnt = "cnt";
 static constexpr const char* T_ctrl = "ctrl";
 static constexpr const char* T_ctrls = "ctrls";
 static constexpr const char* T_demoDisabled = "demoDisabled";
+static constexpr const char* T_demoOn = "demoOn";
 static constexpr const char* T_demoRndCtrls = "demoRndCtrls";
 static constexpr const char* T_demoRndOrder = "demoRndOrder";
 static constexpr const char* T_descr = "descr";
@@ -382,7 +383,6 @@ static constexpr const char* V_effect_idx = "eff_idx";
 
 
 // имена ключей конфигурации / акшены
-static constexpr const char* K_demo = "demo";
 static constexpr const char* A_dev_brightness = "dev_brightness";               // Scaled brightness value based on scale
 static constexpr const char* A_dev_lcurve = "dev_lcurve";                       // Luma curve
 static constexpr const char* A_dev_pwrswitch = "dev_pwrswitch";                 // Lamp on/off switch
