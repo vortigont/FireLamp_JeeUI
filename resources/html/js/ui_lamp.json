@@ -3510,13 +3510,20 @@
             {
               "action":"pick",
               "key":"lampui.effCommon.speed"
-            },
-            {
-              "action":"pick",
-              "key":"lampui.effCommon.scale"
             }
           ]
         },
+        {
+          "html": "input",
+          "id": "eff_control_1",
+          "type": "range",
+          "label": "Масштаб",
+          "min": 1,
+          "max": 30,
+          "value":10,
+          "onChange": true
+        },
+    
         {
           "id":"eff_control_2",
           "html":"select",
@@ -3605,13 +3612,18 @@
           "onChange": true
         },
         {
-          "html": "input",
+          "html": "select",
           "id": "eff_control_4",
-          "type": "number",
-          "label": "Фильтр Шарра",
-          "min": 0,
-          "max": 2,
-          "onChange": true
+          "onChange": true,
+          "label": "Фильтр",
+          "section":"options",
+          "block":[
+            { "value":0, "label":"Отсутствует" },
+            { "value":1, "label":"линейный" },
+            { "value":2, "label":"Щарра 1" },
+            { "value":3, "label":"Щарра 2" },
+            { "value":4, "label":"Щарра 3" }
+          ]
         },
         {
           "id":"eff_control_5",

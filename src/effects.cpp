@@ -2724,9 +2724,9 @@ void EffectLiquidLamp::setControl(size_t idx, int32_t value) {
       break;
     }
 
-    // 4 - shar's filter - raw, range 0-2
+    // 4 - shar's filter - raw, range 0-4
     case 4: {
-      filter = clamp(value, static_cast<int32_t>(0), static_cast<int32_t>(2));
+      filter = clamp(value, static_cast<int32_t>(0), static_cast<int32_t>(4));
       break;
     }
 
@@ -2767,12 +2767,10 @@ bool EffectLiquidLamp::routine(){
 
   uint8_t f = filter; // local scope copy to provide thread-safety
 
-  if (f < 2 && (buff || buff2)) {
+  if (f < 2 && (buff)) {
     buff.reset();
-    buff2.reset();
   } else {
     if (!buff) buff = std::make_unique< Vector2D<uint8_t> >(fb->w(), fb->h());
-    if (!buff2) buff2 = std::make_unique< Vector2D<float> >(fb->w(), fb->h());
   }
 
   for (unsigned x = 0; x != fb->maxWidthIndex(); x++) {
@@ -2791,7 +2789,7 @@ bool EffectLiquidLamp::routine(){
 
       if (f < 2) {
         if ( sum > 5) // do not fill the background with palette color
-          fb->at(x, fb->h() - y) = palettes[_pallete_id].GetColor(sum, filter? sum : 255);
+          fb->at(x, fb->h() - y) = palettes[_pallete_id].GetColor(sum, f ? sum : 255);
       } else {
         buff->at(x,y) = sum;
       }
@@ -2800,12 +2798,18 @@ bool EffectLiquidLamp::routine(){
 
   if (f < 2) return true;
 
-  // use Scharr's filter
-    static constexpr std::array<int, 9> dh_scharr = {3, 10, 3,  0, 0,   0, -3, -10, -3};
-    static constexpr std::array<int, 9> dv_scharr = {3, 0, -3, 10, 0, -10,  3,   0, -3};
-    float min =0, max = 0;
+  // apply Scharr's filter
+    static constexpr std::array<int, 9> dh_scharr = {  3,  10,  3,
+                                                       0,   0,  0,
+                                                      -3, -10, -3  };
+    static constexpr std::array<int, 9> dv_scharr = {  3,   0,  -3,
+                                                      10,   0, -10,
+                                                       3,   0,  -3 };
+    float min = 0, max = 0;
     for (int16_t x = 1; x < fb->maxWidthIndex() -1; x++) {
       for (int16_t y = 1; y < fb->maxHeightIndex() -1; y++) {
+        if (buff->at(x,y) < 5) continue;   // skip out of range pixels, it gives huge performance boost
+
         int gh = 0, gv = 0, idx = 0;
 
         for (int v = -1; v != 2; ++v) {
@@ -2815,19 +2819,14 @@ bool EffectLiquidLamp::routine(){
             ++idx;
           }
         }
-        buff2->at(x,y) = EffectMath::sqrt((gh * gh) + (gv * gv));
-        if (buff2->at(x,y) < min) min = buff2->at(x,y);
-        if (buff2->at(x,y) > max) max = buff2->at(x,y);
-      }
-    }
 
-    for (uint16_t x = 0; x != fb->maxWidthIndex(); x++) {
-      for (uint16_t y = 0; y != fb->maxHeightIndex(); y++) {
-        float val = buff2->at(x,y);
-        val = 1 - (val - min) / (max - min);
-        unsigned step = f - 1;
-        while (step) { val *= val; --step; } // почему-то это быстрее чем pow
-        fb->at(x, fb->h() - y) = palettes[_pallete_id].GetColor(buff->at(x,y), val * 255);
+        float v = EffectMath::sqrt((gh * gh) + (gv * gv));
+        if (v < min) min = v;
+        if (v > max) max = v;
+        v = 1 - (v - min) / (max - min);
+        size_t cnt = f;
+        while (--cnt) v *= v; // pow(v,f) на esp32 оч медленный
+        fb->at(x, fb->h() - y) = palettes[_pallete_id].GetColor(buff->at(x,y), v * 255);
       }
     }
 

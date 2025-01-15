@@ -1,4 +1,5 @@
 /*
+Copyright © 2024-2025 Emil Muratov (vortigont)
 Copyright © 2020 Dmytro Korniienko (kDn)
 JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
@@ -38,6 +39,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #pragma once
 
 #include "ledfb.hpp"
+
 // Общий набор мат. функций и примитивов для обсчета эффектов
 
 #define M_PI_2	1.57079632679489661923
