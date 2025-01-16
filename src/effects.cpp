@@ -4406,7 +4406,7 @@ void EffectMagma::setControl(size_t idx, int32_t value){
   switch (idx){
     // speed
     case 0:
-      speedFactor = EffectMath::fmap(value, 1, 10, 0.05, 1.5);
+      speedFactor = EffectMath::fmap(value, 1, 10, 0.05, 1.2);
       LOGV(T_Effect, printf, "Magma speed=%d, speedfactor=%2.2f\n", value, speedFactor);
       break;
     // scale
@@ -4427,7 +4427,7 @@ void EffectMagma::setControl(size_t idx, int32_t value){
 void EffectMagma::regen() {
   randomSeed(millis());
   for (size_t j = 0; j != shiftHue.size(); ++j){
-    shiftHue[j] = map(j, 0, fb->h()+fb->h()/4, 255, 0);// init colorfade table
+    shiftHue[j] = map(j, 0, fb->h()+fb->h()/4, 255, 0); // init colorfade table
   }
 
   for (auto &i : particles){
@@ -4448,7 +4448,7 @@ bool EffectMagma::run() {
 
   for (size_t i = 0; i != fb->w(); ++i) {
     for (size_t j = 0; j != fb->h(); ++j) {
-     fb->at(i, j) += ColorFromPalette(*curPalette, qsub8(inoise8(i * deltaValue, (j + ff_y + random8(2)) * deltaHue, ff_z), shiftHue[j]), 127U);
+     fb->at(i, j) += ColorFromPalette(*curPalette, qsub8(inoise8(i * deltaValue, (j + ff_y) * deltaHue, ff_z), shiftHue.at(j)), 127U);
     }
   }
 
@@ -4460,15 +4460,16 @@ bool EffectMagma::run() {
 
 void EffectMagma::leapersMove_leaper(Magma &l) {
 
-  l.posX += l.speedX * speedFactor;
-  l.posY -= l.shift * speedFactor;
+  l.shift -= gravity * speedFactor;
+  l.posX  += l.speedX * speedFactor;
+  l.posY  -= l.shift * speedFactor;
 
+/*
   // bounce off the ceiling (floor inverted) with some probability
   if (l.posY < fb->h()/5 && random8()<32) {
-
     l.shift *= -1;
   }
-
+*/
   // settled on the floor (ceiling inverted)?
   if (l.posY > fb->h() - fb->h()/8) {
     leapersRestart_leaper(l);
@@ -4478,22 +4479,15 @@ void EffectMagma::leapersMove_leaper(Magma &l) {
   if ((l.posX < 0 || l.posX > fb->w()) && random8()<32) {
     leapersRestart_leaper(l);
   }
-  
-  l.shift += gravity * speedFactor;
 }
 
 void EffectMagma::leapersRestart_leaper(Magma &l) {
   // leap up and to the side with some random component
-  l.speedX = EffectMath::randomf(0.2, 2.5);
+  l.speedX = EffectMath::randomf(0.2, 1 + speedFactor);
   if (random8() % 2) l.speedX *= -1;
-  l.shift = EffectMath::randomf(0.50, 0.85);
-  l.posX = EffectMath::randomf(0, fb->w());
-  l.posY = EffectMath::randomf(fb->h() - fb->h()/4, fb->h());
-
-  // for variety, sometimes go 100% faster
-  if (random8() < 12) {
-    l.shift += l.shift * EffectMath::randomf(1.5, 2.5);
-  }
+  l.shift = EffectMath::randomf(0.85, 3 + speedFactor);
+  l.posX = std::rand() % fb->w();
+  l.posY = std::rand() % fb->h() + (fb->h() - fb->h()/4);
 }
 
 #if !defined (OBSOLETE_CODE)

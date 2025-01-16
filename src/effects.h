@@ -598,7 +598,6 @@ class EffectLiquidLamp : public EffectCalc {
 
     std::vector<Particle> particles{std::vector<Particle>(LIQLAMP_MIN_PARTICLES, Particle())};
     std::unique_ptr< Vector2D<uint8_t> > buff;
-    //std::unique_ptr< Vector2D<float> > buff2;
 
     void _dynamic_pallete(uint8_t hue);
     void generate(bool reset = false);
