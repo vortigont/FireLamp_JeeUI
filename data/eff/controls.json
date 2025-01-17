@@ -38,7 +38,7 @@
       {"label":"scale", "min":5, "max":50},
       {"label":"pallete", "min":0, "max":16},
       {"label":"hue", "min":0, "max":255},
-      {"label":"sharr", "min":0, "max":3},
+      {"label":"filter", "min":0, "max":4},
       {"label":"physics", "min":0, "max":1}
     ]
   },
