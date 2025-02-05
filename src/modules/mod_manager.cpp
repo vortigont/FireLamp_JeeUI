@@ -108,7 +108,15 @@ void GenericModule::load(){
 void GenericModule::save(){
   JsonDocument doc;
   embuifs::deserializeFile(doc, mkFileName().c_str());
-  // TODO: fix this - should not clear the doc!
+  if (doc.isNull())
+    doc.to<JsonObject>();
+
+  JsonObject o;
+  if (_def_config){
+    o = doc[label].isNull() ? doc[label].to<JsonObject>() : doc[label];
+  } else 
+    o = doc.as<JsonObject>();
+
   getConfig(_def_config ? doc[label].to<JsonObject>() : doc.to<JsonObject>());
   LOGD(T_Module, printf, "writing cfg to file: %s\n", mkFileName().c_str());
   embuifs::serialize2file(doc, mkFileName().c_str());
