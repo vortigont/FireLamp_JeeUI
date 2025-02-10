@@ -46,6 +46,9 @@
 
 #define DEF_WEATHER_RETRY       5000
 
+static constexpr const char* T_sunrise = "sunrise";
+
+
 ModWeatherSource::ModWeatherSource() : GenericModuleProfiles(T_weather){
   //esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, TextScrollerWgdt::_event_hndlr, this, &_hdlr_lmp_change_evt);
   //esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_STATE_EVENTS, ESP_EVENT_ANY_ID, TextScrollerWgdt::_event_hndlr, this, &_hdlr_lmp_state_evt);
@@ -145,21 +148,25 @@ void ModWeatherSource::_getOpenWeather(){
   pogoda += " м/с";
 
   // sunrise/sunset
-  pogoda += ", восх:";
-  time_t sun = doc["sys"]["sunrise"].as<uint32_t>();
-  pogoda += std::to_string(localtime(&sun)->tm_hour);
-  pogoda += ":";
-  if (localtime(&sun)->tm_min < 10)
-    pogoda += static_cast<char>(0x30);  // '0'
-  pogoda += std::to_string(localtime(&sun)->tm_min);
+  if (_show_sunrise){
+    // здесь баг - значения рассвета/заката передаются в UTC, если погода запрошена для локации не совпадающей
+    // с текущей временной зоной, значения будут неверные. Нужно высчитывать смещение временной зоны переданной вместе с данными 
+    pogoda += ", восход: ";
+    time_t sun = doc["sys"]["sunrise"].as<uint32_t>();
+    pogoda += std::to_string(localtime(&sun)->tm_hour);
+    pogoda += ":";
+    if (localtime(&sun)->tm_min < 10)
+      pogoda += static_cast<char>(0x30);  // '0'
+    pogoda += std::to_string(localtime(&sun)->tm_min);
 
-  pogoda += ", закат:";
-  sun = doc["sys"]["sunset"].as<uint32_t>();
-  pogoda += std::to_string(localtime(&sun)->tm_hour);
-  pogoda += ":";
-  if (localtime(&sun)->tm_min < 10)
-    pogoda += static_cast<char>(0x30);  // '0'
-  pogoda += std::to_string(localtime(&sun)->tm_min);
+    pogoda += ", закат: ";
+    sun = doc["sys"]["sunset"].as<uint32_t>();
+    pogoda += std::to_string(localtime(&sun)->tm_hour);
+    pogoda += ":";
+    if (localtime(&sun)->tm_min < 10)
+      pogoda += static_cast<char>(0x30);  // '0'
+    pogoda += std::to_string(localtime(&sun)->tm_min);
+  }
 
   LOGI(T_weather, println, pogoda.c_str());
 
@@ -186,6 +193,9 @@ void ModWeatherSource::load_cfg(JsonVariantConst cfg){
   _repeat_cnt = cfg[T_repeat] | -1;
   _repeat_interval = cfg[T_interval];
 
+  // formatting
+  _show_sunrise = cfg[T_sunrise];
+
   // weather update
   enableIfNot();
   forceNextIteration();
@@ -203,6 +213,9 @@ void ModWeatherSource::generate_cfg(JsonVariant cfg) const {
 
   cfg[T_repeat] = _repeat_cnt;
   cfg[T_interval] = _repeat_interval;
+
+  // formatting
+  cfg[T_sunrise] = _show_sunrise;
 }
 
 
