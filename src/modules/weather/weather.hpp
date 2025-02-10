@@ -72,6 +72,9 @@ struct WeatherCfg {
   // interval between message displays in seconds
   int32_t _repeat_interval;
 
+  // formatting
+  bool _show_sunrise;
+
   // update weather
   void _getOpenWeather();
 
