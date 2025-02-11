@@ -408,10 +408,10 @@ void ModTextScroller::rm_instance(Interface *interf, JsonObjectConst data, const
   bool save = false;
   JsonArray queues = doc[T_scrollers];
   for (JsonArray::iterator it=queues.begin(); it!=queues.end(); ++it) {
-    if ((*it)[action] == id) {
+    if ((*it)[T_stream_id] == id) {
       queues.remove(it);
       save = true;
-      LOGD(T_txtscroll, printf, "erase sream: %d", id);
+      LOGD(T_txtscroll, printf, "erase stream: %d\n", id);
     }
   }
   // save file

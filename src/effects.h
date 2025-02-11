@@ -773,7 +773,7 @@ class EffectNexus: public EffectCalc {
     void setControl(size_t idx, int32_t value) override;
 
   public:
-    EffectNexus(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
+    EffectNexus(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer, true){}
     bool run() override;
     void load() override;
 };
@@ -1071,7 +1071,7 @@ class EffectMagma: public EffectCalc {
     void leapersRestart_leaper(Magma &l);
 
 public:
-    EffectMagma(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
+    EffectMagma(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer, true){}
     void load() override;
     void setControl(size_t idx, int32_t value) override;
     bool run() override;
@@ -1262,7 +1262,7 @@ class EffectRadialFire : public EffectCalc {
     int16_t _radius{0};
 
 public:
-    EffectRadialFire(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer), xy_angle(fb->w(), fb->h()), xy_radius{fb->w(), fb->h()} { speed = 10; }
+    EffectRadialFire(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer, true), xy_angle(fb->w(), fb->h()), xy_radius{fb->w(), fb->h()} { speed = 10; }
     void load() override;
     void setControl(size_t idx, int32_t value) override;
     bool run() override;
