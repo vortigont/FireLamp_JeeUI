@@ -53,18 +53,20 @@
 #include "omnicron/omnicron.hpp"
 #include "mod_textq.hpp"
 #include "weather/weather.hpp"
+#include "sensors/sensors.h"
 
 #include "log.h"
 
 
 // array with all available module names (labels) we can run
-static constexpr std::array<const char*, 6> wdg_list = {
+static constexpr std::array<const char*, 7> wdg_list = {
   T_alrmclock,
   T_clock,
   T_narodmon,
   T_omnicron,
   T_txtscroll,
-  T_weather
+  T_weather,
+  T_sensors
 };
 
 static constexpr const char* T_ui_page_module_mask    = "ui_page_module_*";
@@ -466,6 +468,8 @@ void ModuleManager::_spawn(const char* label){
     w = std::make_unique<ModWeatherSource>();
   } else if(std::string_view(label).compare(T_narodmon) == 0){
     w = std::make_unique<ModNarodMonSource>();
+  } else if(std::string_view(label).compare(T_sensors) == 0){
+    w = std::make_unique<SensorManager>();
   } else
     return;   // no such module exist
 

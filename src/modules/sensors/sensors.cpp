@@ -9,8 +9,34 @@
  *  Description      : sensors poller/parser
  *
  */
+#include <format>
+#include <string_view>
+#include "components.hpp"
+#include "modules/mod_textq.hpp"
+#include "Wire.h"
 #include "sensors.h"
+#include "EmbUI.h"
+#include "log.h"
 
+#define SENSOR_UPD_PERIOD   10  // Default Update rate in seconds
+#define SENSOR_DATA_BUFSIZE 25  // chars for sensors formatted data
+
+// configuration file name
+static constexpr const char T_sensors_cfg[] = "sensors.json";
+
+// List of sensor types
+static constexpr const char T_Bosch_BMx[] = "Bosch_BMx";
+//static constexpr const char T_Si702x[] = "Si702x";
+//static constexpr const char T_SGP30[] = "SGP30";
+
+/*
+// array with all available module names (labels) we can run
+static constexpr std::array<const char*, 3> sensor_types_list = {
+  T_Bosch_BMx,
+  T_Si702x,
+  T_SGP30
+};
+*/
 
 void GenericSensor::run(){
   std::time_t now;
@@ -63,9 +89,51 @@ void SensorManager::load_cfg(JsonVariantConst cfg){
 }
 
 void SensorManager::start(){
+  if (_i2c_scl == -1 || _i2c_scl == -1){
+    LOGE(T_sensors, println, "i2c bus pins are not configured");
+    return;
+  }
+  // destory all sensors
+  _sensors.clear();
+  // init i2c bus
   Wire.setPins(_i2c_sda, _i2c_scl);
   Wire.begin();
   enable();
+
+  // load sensors configuration
+  JsonDocument doc;
+  embuifs::deserializeFile(doc, T_sensors_cfg);
+  if (doc.isNull())
+    return;
+
+  JsonArray arr = doc[T_sensors];
+
+  for(JsonVariant v : arr){
+    if (!v[T_enabled])
+      continue;
+
+    sensor_pt s;
+    std::string_view lbl;
+    if (v[T_type].is<const char*>())
+      lbl = v[T_type].as<const char*>();
+    else
+      continue;
+
+    // go through all known sensors
+
+    // bosch BMx
+    if (std::string_view(lbl).compare(T_Bosch_BMx) == 0){
+      s = std::make_unique<Sensor_Bosch>(v[P_id] | random());
+      // load sensor's configuration
+      s->load_cfg(v);
+      // try to init sensor, if fails - then discard the object
+      if (s->init())
+        _sensors.emplace_back(std::move(s));
+      continue;
+    }
+
+  }
+
 };
 
 void SensorManager::stop(){
@@ -73,23 +141,17 @@ void SensorManager::stop(){
   Wire.end();
 };
 
-
 void SensorManager::_poll_sensors(){
-  //std:rand()
+  for (auto &s : _sensors){
+    if (s->getState())
+      s->run();
+  }
 }
 
 
 
 // **************************************
-
-void SensorManager::readbme280(float& t, float& h, float& p, float& dew) {
-    //BME280::TempUnit tempUnit(BME280::TempUnit_Celsius);
-    //BME280::PresUnit presUnit(BME280::PresUnit_torr);
-    _bosch.read(p, t, h, BME280::TempUnit_Celsius, BME280::PresUnit_torr);
-     //EnvironmentCalculations::TempUnit     envTempUnit =  EnvironmentCalculations::TempUnit_Celsius;
-     //dew = EnvironmentCalculations::DewPoint(t, h, envTempUnit);
- }
-
+/*
 void SensorManager::readsi7021(float& t, float& h) {
   h = _si702x.readHumidity();
   // try to reset sensor on read error
@@ -100,7 +162,8 @@ void SensorManager::readsi7021(float& t, float& h) {
 
   t = _si702x.readTemperature(READ_TEMP_AFTER_RH);
 }
-
+*/
+/*
 // Update string with sensor's data
 bool SensorManager::getFormattedValues(String &str){
   char sensorstr[SENSOR_DATA_BUFSIZE];
@@ -122,30 +185,7 @@ bool SensorManager::getFormattedValues(String &str){
   return true;
 }
 
-bool SensorManager::getFormattedValues(char* str) {
-    switch(_bosch_model) {
-      case sensor_t::bme280 :
-      case sensor_t::bmp280 :
-            readbme280(temp, humidity, pressure, dew);
-
-            switch (s_bosch.chipModel()){
-              case BME280::ChipModel_BME280:
-                snprintf_P(str, SENSOR_DATA_BUFSIZE, PSTR("T:%.1f Rh:%.f%% P:%.fmmHg"), temp + toffset, humidity, pressure);
-                return true;
-              default:
-              //case BME280::ChipModel_BMP280:
-                snprintf_P(str, SENSOR_DATA_BUFSIZE, PSTR("T:%.1f P:%.fmmHg"), temp + toffset, pressure);
-                return true;
-            }
-      case sensor_t::si7021 :
-            readsi7021(temp, humidity);
-            snprintf_P(str, SENSOR_DATA_BUFSIZE, PSTR("T:%.1f Rh:%.f%%"), temp + toffset, humidity);
-            return true;
-      default:
-            snprintf_P(str, SENSOR_DATA_BUFSIZE, PSTR("Temp sensor err!"));
-            return false;
-    }
-}
+*/
 /*
 void SensorManager::getSensorModel(String &str){
   str = F("SensorManager: ");
@@ -153,7 +193,6 @@ void SensorManager::getSensorModel(String &str){
   if (issgp)
     str += F(", SGP30");
 }
-*/
 
 void SensorManager::sgp30poll(){
   if (!issgp)
@@ -175,27 +214,71 @@ void SensorManager::readsgp30(uint16_t &co2, uint16_t &tvoc, float rh, float t){
   uint16_t sensHumidity = doubleToFixedPoint(absHumidity);
   sgp30.setHumidity(sensHumidity);
 }
+*/
 
 
-float SensorManager::RHtoAbsolute (float relHumidity, float tempC) {
+
+// ======= Bosch sensor
+float Sensor_Bosch::RHtoAbsolute (float relHumidity, float tempC) {
   float eSat = 6.11 * pow(10.0, (7.5 * tempC / (237.7 + tempC)));
   float vaporPressure = (relHumidity * eSat) / 100; //millibars
   float absHumidity = 1000 * vaporPressure * 100 / ((tempC + 273) * 461.5); //Ideal gas law with unit conversions
   return absHumidity;
 }
 
-uint16_t SensorManager::doubleToFixedPoint( double number) {
+uint16_t Sensor_Bosch::doubleToFixedPoint( double number) {
   int power = 1 << 8;
   double number2 = number * power;
   uint16_t value = floor(number2 + 0.5);
   return value;
 }
 
-/*
-float SensorManager::tempoffset(float t){
-  if (t != NAN)
-    toffset = t;
-  
-  return toffset;
-};
-*/
+void Sensor_Bosch::load_cfg(JsonVariantConst cfg){
+  poll_rate = cfg[T_publish_rate] | SENSOR_UPD_PERIOD;
+  scroller_id = cfg[T_destination];
+
+}
+
+bool Sensor_Bosch::init(){
+  online = false;
+  if (!_bosch.begin()){
+    LOGW(T_sensors, println, "No Bosch BMx found!");
+    return false;
+  }
+
+  switch(_bosch.chipModel()){
+     case BME280::ChipModel_BME280:
+       stype = sensor_t::bosch_bme;
+       LOGI(T_sensors, println, "Found BME280");
+       break;
+
+     case BME280::ChipModel_BMP280:
+       LOGI(T_sensors, println, "Found BMP280");
+       stype = sensor_t::bosch_bmp;
+       break;
+
+     default:
+       LOGW(T_sensors, println, "No Bosch BMx found!");
+       return false;
+  }
+  online = true;
+  return online;
+}
+
+void Sensor_Bosch::poll(){
+  _bosch.read(temp, humidity, pressure, BME280::TempUnit_Celsius, BME280::PresUnit_torr);
+  auto scroller = zookeeper.getModulePtr(T_txtscroll);
+
+  // no text destination available
+  if (!scroller)
+    return;
+
+  std::string buffer = descr;
+  buffer += std::format(" температура: {:.1f}°С, атм. давление: {:.1f} мм.рт.с.", temp, pressure);
+  if (stype == sensor_t::bosch_bme)
+    buffer += std::format(", влажность: {:.1f}%", humidity);
+
+  TextMessage m(std::move(buffer), 1, 0, message_id);
+  static_cast<ModTextScroller*>(scroller)->updateMSG(std::move(m), scroller_id);
+}
+

@@ -19,30 +19,17 @@
 //#include <EnvironmentCalculations.h>
 #include <BME280I2C.h>       //https://github.com/finitespace/BME280
 
-#include "HTU2xD_SHT2x_Si70xx.h"
+//#include "HTU2xD_SHT2x_Si70xx.h"
 
 // SGP30 gas sensor
-#include <SparkFun_SGP30_Arduino_Library.h>
+//#include <SparkFun_SGP30_Arduino_Library.h>
 
-// BME Sensor setup
-#define PRESSURE_UNITS 5        // unit: B001 = hPa, B010 = inHg, 5 = mmHg
-#define METRIC_UNITS true       // measurement units
-#define SENSOR_UPD_PERIOD 5     // Update rate in seconds
-#define SENSOR_DATA_BUFSIZE 25  // chars for sensors formatted data
 
-// List of sensor types
-//static constexpr char* S_na = "N/A";
-static constexpr const char* T_BME280 = "BME280";
-static constexpr const char* T_BMP280 = "BMP280";
-static constexpr const char* T_Si702x = "Si702x";
-static constexpr const char* T_SGP30 = "SGP30";
-
-//Table of sensor names
-//const char* const sensor_types[] PROGMEM = { sname_0, sname_1, sname_2, sname_3, sname_4 };
-
-// sensors type enum
+// sensors types enum
 enum class sensor_t{
-  bosch_bmx,
+  na,           // not available
+  bosch_bme,
+  bosch_bmp,
   si7021,
   sgp30
 };
@@ -50,12 +37,66 @@ enum class sensor_t{
 class GenericSensor {
 
 protected:
-  // textq receiver id to publish to
-  uint8_t sink_id;
+  sensor_t stype{sensor_t::na};
+
   // poll rate in seconds
   uint32_t poll_rate;
   // last poll tstamp
   uint32_t last_poll_tstamp;
+  // shows if sensor's helath is OK
+  bool online{false};
+
+  // sensor's mnemonic description, i.e. "room", "outdoor" etc...
+  std::string descr;
+
+  // textq receiver
+  uint8_t scroller_id;
+  uint32_t message_id;
+
+public:
+  // sensor unique id
+  const int32_t id;
+
+  GenericSensor(int32_t id) : message_id(random()), id(id) {}
+
+	/**
+	 * @brief load configuration from a json object
+	 * method should be implemented in derived class to process
+	 * class specific json object.
+   * This is the first method that should called on derived class instantiation
+	 * @param cfg 
+	 */
+	virtual void load_cfg(JsonVariantConst cfg) = 0;
+
+  /**
+   * @brief initialize sensor
+   * this method should be called right after load_cfg()
+   * 
+   * @return true if sensor found/operational
+   * @return false if failed to init sensor
+   */
+  virtual bool init() = 0;
+
+  /**
+   * @brief poll sensor and publish it's data to text sink if needed
+   * executed once a second by sensor manager, will check sensor's
+   * poll rate value and call poll() method when needed
+   */
+  void run();
+
+  /**
+   * @brief returns 'true' if sensor is initialized and operational
+   * offline sensors are not polled by sensor manager
+   * 
+   * @return true 
+   * @return false 
+   */
+  bool getState(){ return online; }
+
+  // temporary enable/disable sensor
+  void setState(bool state){ online = state; }
+
+protected:
 
   /**
    * @brief poll sensor and publish it's date to sink if needed
@@ -63,73 +104,30 @@ protected:
    */
   virtual void poll() = 0;
 
-public:
-  // sensor unique id
-  const int32_t id;
-
-  const sensor_t stype;
-
-  GenericSensor(int32_t id, sensor_t stype) : id(id), stype(stype) {}
-
-  // sensor's mnemonic description, i.e. "room", "outdoor" etc...
-  std::string descr;
-
-	/**
-	 * @brief load configuration from a json object
-	 * method should be implemented in derived class to process
-	 * class specific json object
-	 * @param cfg 
-	 */
-	virtual void load_cfg(JsonVariantConst cfg) = 0;
-
-  /**
-   * @brief initialize sensor
-   * 
-   * @return true if sensor found/operational
-   * @return false if failed to init sensor
-   */
-  virtual bool init() = 0;
-
-
-  /**
-   * @brief poll sensor and publish it's date to sink if needed
-   * executed once a second by sensor manager, will check sensor's
-   * poll rate value and call poll() method when needed
-   */
-  void run();
 };
 
 
 
-
+/**
+ * @brief Maintains a pool of known sensors
+ * loads/unloads sensor configurations
+ * 
+ */
 class SensorManager : public GenericModule, public Task {
 private:
-  // initial id counter
-  int32_t _snsr_id{0};
-
   // i2c bus
   int _i2c_scl{-1}, _i2c_sda{-1};
 
-  BME280I2C _bosch;
-  HTU2xD_SHT2x_SI70xx _si702x{HTU2xD_SHT2x_SI70xx(SI702x_SENSOR, HUMD_12BIT_TEMP_14BIT)}; //sensor type, resolution
-  SGP30 sgp30;
+  //HTU2xD_SHT2x_SI70xx _si702x{HTU2xD_SHT2x_SI70xx(SI702x_SENSOR, HUMD_12BIT_TEMP_14BIT)}; //sensor type, resolution
+  //SGP30 sgp30;
 
-  // detect flags
-  bool _sgp_present{false}, _bosch_present{false}, _si702_present{false};
-  sensor_t _bosch_model;
-
-  // readings
- 	float temp, pressure, humidity, dew = NAN;  // toffset = 0.0
-  uint16_t co2, tvoc;
+  //uint16_t co2, tvoc;
 
 
-  void readbme280(float& t, float& h, float& p, float& dew);
-  void readsi7021(float& t, float& h);
+  //void readsi7021(float& t, float& h);
 
-  void sgp30poll();
-  void readsgp30(uint16_t &co2, uint16_t &tvoc, float rh, float t);
-
-  void _spawn(sensor_t sensor);
+  //void sgp30poll();
+  //void readsgp30(uint16_t &co2, uint16_t &tvoc, float rh, float t);
 
   /**
    * @brief poll each sensor in a pool
@@ -143,7 +141,7 @@ public:
   
 
   // pack class configuration into JsonObject
-  //void generate_cfg(JsonVariant cfg) const override;
+  void generate_cfg(JsonVariant cfg) const override {};
 
   // load class configuration from JsonObject
   void load_cfg(JsonVariantConst cfg) override;
@@ -152,22 +150,45 @@ public:
   void stop() override;
 
 
-  bool getFormattedValues( char* str);
-  bool getFormattedValues( String &str);
+  //bool getFormattedValues( char* str);
+  //bool getFormattedValues( String &str);
 
   //void getSensorModel(char* str);
   //void getSensorModel(String &str);
 
-  static float RHtoAbsolute (float relHumidity, float tempC);
-  static uint16_t doubleToFixedPoint( double number);
-
   // temp sensor offset get/set
-  float tempoffset();
-  float tempoffset(float t);
+  //float tempoffset();
+  //float tempoffset(float t);
 
 private:
   using sensor_pt = std::unique_ptr<GenericSensor>;
-  // sensors modules container
+  // sensors modules container    TODO: this container need a locking when controled over asyncWS!
   std::list<sensor_pt> _sensors;
+
+};
+
+
+/**
+ * @brief Bosch BMP/BME sensor
+ * 
+ */
+class Sensor_Bosch : public GenericSensor {
+  BME280I2C _bosch;
+  // readings
+ 	float temp, humidity, pressure;
+
+public:
+  Sensor_Bosch(int32_t id) : GenericSensor(id) {}
+
+
+	void load_cfg(JsonVariantConst cfg) override;
+
+  bool init() override;
+
+  void poll() override;
+
+
+  static float RHtoAbsolute (float relHumidity, float tempC);
+  static uint16_t doubleToFixedPoint( double number);
 
 };
