@@ -84,7 +84,7 @@ void SensorManager::begin(){
 void SensorManager::load_cfg(JsonVariantConst cfg){
   // read i2c gpio's
   _i2c_scl = cfg[T_i2c][T_scl] | -1;
-  _i2c_scl = cfg[T_i2c][T_sda] | -1;
+  _i2c_sda = cfg[T_i2c][T_sda] | -1;
 
 }
 
