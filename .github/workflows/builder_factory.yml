@@ -67,17 +67,6 @@ jobs:
           pip install --upgrade platformio
           platformio run -t buildfs
           #platformio pkg update
-      - name: Patch Platformio
-        run: |
-          pwd
-          echo "REPO_NAME=$(basename ${{ github.repository }})" >> $GITHUB_ENV
-          cd $(dirname $(which pio) )
-          cd ../
-          echo $(find -type d -name site-packages)
-          cd   $(find -type d -name site-packages)
-          pwd
-          git apply --verbose $GITHUB_WORKSPACE/extra/0001-LDF-refresh-lib-dependency-after-recursive-search.patch
-          cd $GITHUB_WORKSPACE
       - name: Run PlatformIO build
         run: |
           platformio run -e esp32_4M -e esp32_16M -e esp32S3_4M -e esp32S3_16M
