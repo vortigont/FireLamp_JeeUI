@@ -148,6 +148,7 @@ static constexpr const char* T_alrmclock = "alrmclock";             // LABEL Ala
 static constexpr const char* T_clock = "clock";                     // LABEL Clock module
 static constexpr const char* T_narodmon = "narodmon";               // NarodMon source
 static constexpr const char* T_omnicron = "omnicron";               // CronoS scheduler
+static constexpr const char* T_sensors = "sensors";                 // LABEL Sensor's manager module
 static constexpr const char* T_txtscroll = "txtscroll";             // LABEL Text Scroller module
 static constexpr const char* T_weather = "weather";
 
@@ -211,6 +212,12 @@ static constexpr const char* T_refresh = "refresh";
 static constexpr const char* T_event = "event";
 static constexpr const char* T_crontab = "crontab";
 
+// I2c Bus
+static constexpr const char* T_i2c = "i2c";
+static constexpr const char* T_sda = "sda";
+static constexpr const char* T_scl = "scl";
+
+
 
 // Other
 static constexpr const char* T_Active = "Active";
@@ -253,9 +260,12 @@ static constexpr const char* T_Notification = "Notification";
 static constexpr const char* T_on = "on";
 static constexpr const char* T_off = "off";
 static constexpr const char* T_opt = "opt";
+//static constexpr const char* T_pollrate = "pollrate";
 static constexpr const char* T_prepend = "prepend";
 static constexpr const char* T_profile = "profile";
 static constexpr const char* T_profiles = "profiles";
+static constexpr const char* T_publish = "publish";
+static constexpr const char* T_publish_rate = "publish_rate";
 static constexpr const char* T_pwr = "pwr";
 static constexpr const char* T_queue = "queue";
 static constexpr const char* T_queues = "queues";
@@ -263,7 +273,6 @@ static constexpr const char* T_repeat = "repeat";
 static constexpr const char* T_restoreState = "restoreState";          // Lamp flag "restore state"
 static constexpr const char* T_rx = "rx";
 static constexpr const char* T_sensor_id = "sensor_id";
-static constexpr const char* T_sensors = "sensors";
 static constexpr const char* T_scroller =  "scroller";
 static constexpr const char* T_scrollers = "scrollers";
 static constexpr const char* T_smin = "smin";                           // scale min/max for effect controls

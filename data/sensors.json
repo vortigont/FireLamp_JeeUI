@@ -1,0 +1,17 @@
+{
+  "i2c":{
+    "sda":-1,
+    "scl":-1
+  },
+  "sensors":[
+    {
+      "type":"Bosch_BMx",
+      "id":119,
+      "enabled":true,
+      "descr":"Комната",
+      "publish_rate":20,
+      "destination":0
+    }
+
+  ]    
+}

@@ -1193,6 +1193,25 @@
               "label": "🛠 Параметры"
             }
           ]
+        },
+        {
+          "section":"sensors",
+          "line":true,
+          "block":[
+            {
+              "id":"set_modstate_sensors",
+              "html":"input",
+              "label":"🌡 Локальные датчики",
+              "type":"checkbox",
+              "onChange": true
+            },
+            {
+              "id": "ui_page_module_sensors",
+              "html": "button",
+              "type": 0,
+              "label": "🛠 Параметры"
+            }
+          ]
         }
       ]
     },
@@ -2185,6 +2204,25 @@
             "html":"button",
             "type":"submit",
             "label":"🖫 Сохранить"
+          },
+          {
+            "id":"ui_page_modules",
+            "html":"button",
+            "color": "green",
+            "type":"generic",
+            "label":"🔙 Выход"
+          }
+        ]
+      }
+      ,
+      "sensors":{
+        "section":"set_modcfg_sensors",
+        "label":"🌡 Локальные датчики",
+        "main":true,
+        "block":[
+          {
+            "html":"comment",
+            "label":"настройки лежат в файле sensors.json, править через FTP"
           },
           {
             "id":"ui_page_modules",
