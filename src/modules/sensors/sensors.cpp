@@ -51,7 +51,7 @@ void GenericSensor::run(){
 /**
  * default constructor
 **/
-SensorManager::SensorManager() : GenericModule(T_sensors, true){
+SensorManager::SensorManager() : GenericModule(T_sensors, false){
   set( 1000, TASK_FOREVER, [this](){ _poll_sensors(); } );
   ts.addTask(*this);
 }
@@ -86,29 +86,23 @@ void SensorManager::load_cfg(JsonVariantConst cfg){
   _i2c_scl = cfg[T_i2c][T_scl] | -1;
   _i2c_sda = cfg[T_i2c][T_sda] | -1;
 
-}
-
-void SensorManager::start(){
-  if (_i2c_scl == -1 || _i2c_scl == -1){
-    LOGE(T_sensors, println, "i2c bus pins are not configured");
+  if (_i2c_sda == -1 || _i2c_scl == -1){
+    LOGE(T_sensors, printf, "i2c bus pins are not configured, sda:%d, scl:%d\n", _i2c_scl, _i2c_scl);
     return;
   }
   // destory all sensors
   _sensors.clear();
   // init i2c bus
   Wire.setPins(_i2c_sda, _i2c_scl);
-  Wire.begin();
-  enable();
-
-  // load sensors configuration
-  JsonDocument doc;
-  embuifs::deserializeFile(doc, T_sensors_cfg);
-  if (doc.isNull())
+  if (!Wire.begin()){
+    LOGE(T_sensors, println, "i2c init err");
     return;
+  }
 
-  JsonArray arr = doc[T_sensors];
+  JsonArrayConst arr = cfg[T_sensors];
 
-  for(JsonVariant v : arr){
+  for(JsonVariantConst v : arr){
+    LOGD(T_sensors, println, "creating sensors pool");
     if (!v[T_enabled])
       continue;
 
@@ -116,13 +110,16 @@ void SensorManager::start(){
     std::string_view lbl;
     if (v[T_type].is<const char*>())
       lbl = v[T_type].as<const char*>();
-    else
+    else{
+      LOGV(T_sensors, println, "wrong sensor type!");
       continue;
+    }
 
     // go through all known sensors
 
     // bosch BMx
     if (std::string_view(lbl).compare(T_Bosch_BMx) == 0){
+      LOGI(T_sensors, printf, "Load: %s\n", T_Bosch_BMx);
       s = std::make_unique<Sensor_Bosch>(v[P_id] | random());
       // load sensor's configuration
       s->load_cfg(v);
@@ -131,17 +128,21 @@ void SensorManager::start(){
         _sensors.emplace_back(std::move(s));
       continue;
     }
-
   }
 
+}
+
+void SensorManager::start(){
+  // enable periodic poll
+  enable();
 };
 
 void SensorManager::stop(){
   disable();
-  Wire.end();
 };
 
 void SensorManager::_poll_sensors(){
+  //LOGV(T_sensors, println, "SM poll");
   for (auto &s : _sensors){
     if (s->getState())
       s->run();
@@ -234,6 +235,7 @@ uint16_t Sensor_Bosch::doubleToFixedPoint( double number) {
 }
 
 void Sensor_Bosch::load_cfg(JsonVariantConst cfg){
+  descr = cfg[T_descr].as<const char*>();
   poll_rate = cfg[T_publish_rate] | SENSOR_UPD_PERIOD;
   scroller_id = cfg[T_destination];
 
@@ -242,7 +244,7 @@ void Sensor_Bosch::load_cfg(JsonVariantConst cfg){
 bool Sensor_Bosch::init(){
   online = false;
   if (!_bosch.begin()){
-    LOGW(T_sensors, println, "No Bosch BMx found!");
+    LOGE(T_sensors, println, "bosch BMx init err!");
     return false;
   }
 
@@ -266,7 +268,8 @@ bool Sensor_Bosch::init(){
 }
 
 void Sensor_Bosch::poll(){
-  _bosch.read(temp, humidity, pressure, BME280::TempUnit_Celsius, BME280::PresUnit_torr);
+  //LOGV(T_sensors, println, "BMx poll");
+  _bosch.read(pressure, temp, humidity, BME280::TempUnit_Celsius, BME280::PresUnit_torr);
   auto scroller = zookeeper.getModulePtr(T_txtscroll);
 
   // no text destination available
