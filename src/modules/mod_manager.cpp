@@ -53,18 +53,20 @@
 #include "omnicron/omnicron.hpp"
 #include "mod_textq.hpp"
 #include "weather/weather.hpp"
+#include "sensors/sensors.h"
 
 #include "log.h"
 
 
 // array with all available module names (labels) we can run
-static constexpr std::array<const char*, 6> wdg_list = {
+static constexpr std::array<const char*, 7> wdg_list = {
   T_alrmclock,
   T_clock,
   T_narodmon,
   T_omnicron,
   T_txtscroll,
-  T_weather
+  T_weather,
+  T_sensors
 };
 
 static constexpr const char* T_ui_page_module_mask    = "ui_page_module_*";
@@ -108,7 +110,15 @@ void GenericModule::load(){
 void GenericModule::save(){
   JsonDocument doc;
   embuifs::deserializeFile(doc, mkFileName().c_str());
-  // TODO: fix this - should not clear the doc!
+  if (doc.isNull())
+    doc.to<JsonObject>();
+
+  JsonObject o;
+  if (_def_config){
+    o = doc[label].isNull() ? doc[label].to<JsonObject>() : doc[label];
+  } else 
+    o = doc.as<JsonObject>();
+
   getConfig(_def_config ? doc[label].to<JsonObject>() : doc.to<JsonObject>());
   LOGD(T_Module, printf, "writing cfg to file: %s\n", mkFileName().c_str());
   embuifs::serialize2file(doc, mkFileName().c_str());
@@ -458,6 +468,8 @@ void ModuleManager::_spawn(const char* label){
     w = std::make_unique<ModWeatherSource>();
   } else if(std::string_view(label).compare(T_narodmon) == 0){
     w = std::make_unique<ModNarodMonSource>();
+  } else if(std::string_view(label).compare(T_sensors) == 0){
+    w = std::make_unique<SensorManager>();
   } else
     return;   // no such module exist
 
