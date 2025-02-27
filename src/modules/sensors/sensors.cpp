@@ -277,7 +277,7 @@ void Sensor_Bosch::poll(){
     return;
 
   std::string buffer = descr;
-  buffer += std::format(" температура: {:.1f}°С, атм. давление: {:.1f} мм.рт.с.", temp, pressure);
+  buffer += std::format(" температура: {:.1f}°С, атм. давление: {:.1f} мм.рт.ст.", temp, pressure);
   if (stype == sensor_t::bosch_bme)
     buffer += std::format(", влажность: {:.1f}%", humidity);
 

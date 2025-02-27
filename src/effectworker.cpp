@@ -459,6 +459,12 @@ EffectWorker::~EffectWorker(){
   embui.action.remove(A_eff_preset);
 };
 
+EffectWorker::effect_iterator_t EffectWorker::_getCurEffIterator(){
+  auto idx = _effItem.eid;
+  auto i = std::find_if(effects.begin(), effects.end(), [idx](const EffectsListItem_t &e){ return e.eid == idx; });
+  return i == effects.end() ? effects.begin() : i;
+}
+
 /*
  * Создаем экземпляр класса калькулятора в зависимости от требуемого эффекта
  */
@@ -791,12 +797,7 @@ effect_t EffectWorker::getNextEffIndexForDemo(bool rnd){
   }
 
   // otherwise find current effect in a list
-  auto idx = _effItem.eid;
-  auto i = std::find_if(effects.begin(), effects.end(), [idx](const EffectsListItem_t &e){ return e.eid == idx; });
-
-  // не нашли текущий эффект, возвращаем случайный
-  if (i == effects.end())
-    return getNextEffIndexForDemo(true);
+  auto i = _getCurEffIterator();
 
   // ищем следующий доступный эффект для демо после текущего
   while ( ++i != effects.end()){
@@ -817,6 +818,39 @@ effect_t EffectWorker::getNextEffIndexForDemo(bool rnd){
 
   // if nothing found, then return current effect
   return _effItem.eid;
+}
+
+effect_t EffectWorker::getEffIndexByOffset(int32_t step){
+  if (!effects.size()) return effect_t::empty;
+  if (!step) return getCurrentEffectNumber();
+  auto i = _getCurEffIterator();
+
+  if (step > 0){
+    // advancing forward
+    do {
+      auto cur = i;
+      do {
+        ++i;
+        if (i == effects.end())
+          i = effects.begin();
+        if (cur == i)
+          break;                    // if I returned to self, then no other effects available to advance to, break
+      } while(i->flags.hidden);     // iterate till I find non-hidden effect or return back to starting point
+    } while (--step);
+  } else {
+    // advancing backward
+    do{
+      auto cur = i;
+      do {
+        if (i == effects.begin())
+          i = effects.end();
+        --i;
+        if (cur == i)
+          break;                    // if I returned to self, then no other effects available to advance to, break
+      } while(i->flags.hidden);     // iterate till I find non-hidden effect or return back to starting point
+    } while (++step != 0);
+  }
+  return i->eid;
 }
 
 // предыдущий эффект, кроме enabled==false
