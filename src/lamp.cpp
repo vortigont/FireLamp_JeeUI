@@ -540,10 +540,8 @@ void Lamp::_event_picker_cmd(esp_event_base_t base, int32_t id, void* data){
         break;
       }
       case evt::lamp_t::effSwitchStep : {
-        int32_t shift = e2int(_getRealativeEffectNum()) + *((int*) data);
-        if (shift < 0) shift += effwrkr.getEffectsListSize();
-        shift %= effwrkr.getEffectsListSize();
-        switcheffect(effswitch_t::num, static_cast<effect_t>(shift));
+        int32_t n = *((int32_t*) data);
+        switcheffectStep(n);
         break;
       }
 
