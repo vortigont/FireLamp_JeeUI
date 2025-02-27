@@ -365,6 +365,7 @@ private:
     
     // список эффектов с флагами из индекса
     std::vector<EffectsListItem_t> effects;
+    using effect_iterator_t=std::vector<EffectsListItem_t>::iterator;
 
     // указатель на экземпляр класса текущего эффекта
     std::unique_ptr<EffectCalc> worker;
@@ -409,6 +410,7 @@ private:
     // updates _effItem to match eid copy in a list
     void _switch_current_effect_item(effect_t eid);
 
+    effect_iterator_t _getCurEffIterator();
 
 public:
     // дефолтный конструктор
@@ -512,6 +514,15 @@ public:
     effect_t getNext();
     // предыдущий эффект, кроме enabled==false
     effect_t getPrev();
+
+    /**
+     * @brief вернуть номер эффекта из текущего списка по смещению от текущего
+     * расчитывает индекс эффекта на 'step' позиций вперед/назад от текушего с
+     * учетом перехода через начало/конец списка и флага активного эффекта (неактивные эффекты пропускаются)
+     * @param step 
+     * @return effect_t 
+     */
+    effect_t getEffIndexByOffset(int32_t step);
 
     /**
      * @brief найти следующий номер эффекта для демо режима
