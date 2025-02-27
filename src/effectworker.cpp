@@ -827,7 +827,7 @@ effect_t EffectWorker::getEffIndexByOffset(int32_t step){
 
   if (step > 0){
     // advancing forward
-    while (--step){
+    do {
       auto cur = i;
       do {
         ++i;
@@ -836,10 +836,10 @@ effect_t EffectWorker::getEffIndexByOffset(int32_t step){
         if (cur == i)
           break;                    // if I returned to self, then no other effects available to advance to, break
       } while(i->flags.hidden);     // iterate till I find non-hidden effect or return back to starting point
-    }
+    } while (--step);
   } else {
     // advancing backward
-    while (++step != 0){
+    do{
       auto cur = i;
       do {
         if (i == effects.begin())
@@ -848,7 +848,7 @@ effect_t EffectWorker::getEffIndexByOffset(int32_t step){
         if (cur == i)
           break;                    // if I returned to self, then no other effects available to advance to, break
       } while(i->flags.hidden);     // iterate till I find non-hidden effect or return back to starting point
-    }
+    } while (++step != 0);
   }
   return i->eid;
 }
