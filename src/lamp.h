@@ -61,7 +61,7 @@ enum class effswitch_t : uint8_t {
     prev,       // предыдущий
     rnd,        // случайный
     num         // переход на конкретный эффект по индексу
-};  // ex EFFSWITCH;
+};
 
 /**
  * @brief if method should use a fader when changing brightness
@@ -327,9 +327,16 @@ public:
      * @brief общий переключатель эффектов лампы
      * в зависимости от режима лампы может переключать эффекты с затуханием или без
      * @param action - тип переключения на эффект, предыдущий, следующий, конкретный и т.п.
-     * @param effnb - опциональный параметр номер переключаемого эффекта
+     * @param effnb - опциональный параметр номер/шаг переключаемого эффекта
      */
     void switcheffect(effswitch_t action, effect_t effnb = effect_t::empty);
+
+    /**
+     * @brief переключить эффект на n позиций вперёд/назад по списку
+     * 
+     * @param step 
+     */
+    void switcheffectStep(int32_t step){ switcheffect(effswitch_t::num, effwrkr.getEffIndexByOffset(step)); };
 
     /*
      * включает/выключает "эффект"-таймер

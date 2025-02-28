@@ -144,17 +144,17 @@ void ButtonEventHandler::_btnEventHandler(ESPButton::event_t e, const EventMsg* 
       case 1 :
       // effect switch
         EVT_POST_DATA(LAMP_SET_EVENTS, e2int(lamp_t::effSwitchStep), &diff, sizeof(diff));
-        LOGV(T_encoder, println, "effsw");
+        LOGD(T_encoder, printf, "effsw step:%d\n", diff);
         break;
       case 2 :
       // mp3 vol control
         EVT_POST_DATA(LAMP_SET_EVENTS, e2int(lamp_t::mp3volstep), &diff, sizeof(diff));
-        LOGV(T_encoder, println, "vol");
+        LOGD(T_encoder, printf, "vol step:%d\n", diff);
         break;
       default :
       // by default change brightness
         EVT_POST_DATA(LAMP_SET_EVENTS, e2int(lamp_t::brightness_step), &diff, sizeof(diff));
-        LOGV(T_encoder, println, "brt");
+        LOGD(T_encoder, printf, "brt step:%d", diff);
     }
     return;
   }
