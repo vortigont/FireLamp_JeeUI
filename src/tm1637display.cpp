@@ -171,6 +171,28 @@ void TMDisplay::_event_picker(esp_event_base_t base, int32_t id, void* data){
       case evt::lamp_t::brightness :
         _msg_brt(*((unsigned*) data));
         return;
+
+      // смена режима энкодера
+      case evt::lamp_t::encoderMode : {
+        int8_t mode = *(reinterpret_cast<int8_t*> (data));
+        clearScreen();
+        switch (mode) {
+          // brt change
+          case 0 :
+            display("Brt");
+            break;
+          case 1 :
+            display("Eff");
+          break;
+          case 2 :
+            display("Snd");
+          break;
+          default:;
+        }
+        timer = 1;
+        return;
+      }
+
       default:;
     }
   }
