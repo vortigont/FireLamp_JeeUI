@@ -114,11 +114,13 @@ void MP3PlayerController::begin(int8_t rxPin, int8_t txPin){
 
   // this will (probably) make a player to reply with state packet and we can understand that it's on-line
   //dfp->getTotalTrackCount();
-  Task* t = new (std::nothrow) Task(TASK_SECOND, TASK_ONCE, [this](){ dfp->reset(); }, &ts, false, nullptr, nullptr, true);
+  //Task* t = new (std::nothrow) Task(TASK_SECOND, TASK_ONCE, [this](){ dfp->reset(); }, &ts, false, nullptr, nullptr, true);
+  //if (t)
+  //  t->enableDelayed();
 
-  if (t)
-    t->enableDelayed();
-
+  // assume player is always OK and just send STOP to shut it up on MCU reset/boot
+  flags.ready = true;
+  dfp->stop();
 }
 
 // this method will recreate MP3Player object
