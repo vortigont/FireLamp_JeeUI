@@ -80,10 +80,8 @@ void MP3PlayerController::begin(int8_t rxPin, int8_t txPin){
     {
       LOGI(T_DFPlayer, printf, "on-line: %u\n", source);
       // set vol on first online event
-      if (!flags.ready){
-        flags.ready = true;
-        dfp->setVolume(_volume);
-      }
+      flags.ready = true;
+      dfp->setVolume(_volume);
       _state = DfMp3_StatusState_Idle;
     }
   );
@@ -114,11 +112,14 @@ void MP3PlayerController::begin(int8_t rxPin, int8_t txPin){
 
   // this will (probably) make a player to reply with state packet and we can understand that it's on-line
   //dfp->getTotalTrackCount();
-  Task* t = new (std::nothrow) Task(TASK_SECOND, TASK_ONCE, [this](){ dfp->reset(); }, &ts, false, nullptr, nullptr, true);
-
+  // force set vol after one sec, do not cate if player is on-line or not
+  Task* t = new (std::nothrow) Task(TASK_SECOND, TASK_ONCE, [this](){ dfp->setVolume(_volume); }, &ts, false, nullptr, nullptr, true);
   if (t)
     t->enableDelayed();
 
+  // assume player is always OK and just send STOP to shut it up on MCU reset/boot
+  flags.ready = true;
+  dfp->stop();
 }
 
 // this method will recreate MP3Player object
