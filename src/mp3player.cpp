@@ -69,14 +69,6 @@ void MP3PlayerController::begin(int8_t rxPin, int8_t txPin){
   LOGD(T_DFPlayer, printf, "Initializing at rx:%d, tx:%d", rxPin, txPin);
   _serial.begin(MP3_SERIAL_SPEED, SERIAL_8N1, rxPin, txPin);
 
-  // event poller
-  _tPeriodic.set(100, TASK_FOREVER, [this](){
-      loop();
-    });
-
-  ts.addTask(_tPeriodic);
-  _tPeriodic.enableDelayed();
-
   dfp->onPlayFinished( [this](DfMp3_PlaySources source, uint16_t track){
     LOGI(T_DFPlayer, printf, "playback end #%u\n", track);
     // ignore "play end event if loop is active"
@@ -98,9 +90,6 @@ void MP3PlayerController::begin(int8_t rxPin, int8_t txPin){
 
   dfp->onError( [](uint16_t errorCode){  LOGW(T_DFPlayer, printf, "Error: %u\n", errorCode); } );
 
-  // this will (probably) make a player to reply with state packet and we can understand that it's on-line
-  //dfp->getTotalTrackCount();
-  dfp->reset();
 
   // event bus subsribe
   if (!_lmp_ch_events)
@@ -115,6 +104,20 @@ void MP3PlayerController::begin(int8_t rxPin, int8_t txPin){
     handle->get_item(T_mp3vol, _volume);
     handle->get_item(T_mp3mute, _mute);
   }
+
+  // event poller
+  _tPeriodic.set(100, TASK_FOREVER, [this](){ loop(); });
+
+  ts.addTask(_tPeriodic);
+  _tPeriodic.enableDelayed();
+
+
+  // this will (probably) make a player to reply with state packet and we can understand that it's on-line
+  //dfp->getTotalTrackCount();
+  Task* t = new (std::nothrow) Task(TASK_SECOND, TASK_ONCE, [this](){ dfp->reset(); }, &ts, false, nullptr, nullptr, true);
+
+  if (t)
+    t->enableDelayed();
 
 }
 
