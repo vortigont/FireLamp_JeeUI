@@ -6,8 +6,13 @@ import os.path
 import subprocess
 Import("env")
 
-from zopfli.gzip import compress
 from datetime import datetime
+try:
+    from zopfli.gzip import compress
+    print("found Zopfli compressor, good!")
+except:
+    from gzip import compress
+    print("Using gzip compressor, try to install python zopfli module for better compression")
 
 #print("************** Current CLI targets", COMMAND_LINE_TARGETS)
 #print("************** Current Build targets", BUILD_TARGETS)
