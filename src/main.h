@@ -52,3 +52,5 @@ Copyright © 2020 Dmytro Korniienko (kDn)
 
 /* make version as string, i.e. "2.6.1" */
 #define LAMPFW_VERSION_STRING    TOSTRING(LAMPFW_VERSION_MAJOR) "." TOSTRING(LAMPFW_VERSION_MINOR) "." TOSTRING(LAMPFW_VERSION_REVISION)
+
+void set_static_http_handlers();
