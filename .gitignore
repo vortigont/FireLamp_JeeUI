@@ -9,6 +9,7 @@ include/user_cfg*
 /data/*.json
 !data/benc.json
 /data.*
+embed/
 resources/embui.zip
 resources/etags.txt
 test/

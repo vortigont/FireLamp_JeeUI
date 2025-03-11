@@ -89,6 +89,7 @@ void setup() {
     // event bus sniffer
     //evt::debug();
 
+    set_static_http_handlers();
     //  *** EmbUI ***
     // Инициализируем EmbUI фреймворк - загружаем конфиг, запускаем WiFi и все зависимые от него службы
     embui.begin();
