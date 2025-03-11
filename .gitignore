@@ -1,12 +1,9 @@
 .gitattributes
 .pio
-.vscode
 eff
 user_*.ini
 lnk
-.vscode/extensions.json
-.vscode/settings.json
-.vscode/c_cpp_properties.json
+.vscode/
 include/user_config.h
 include/user_cfg*
 /data/*.json
