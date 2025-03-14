@@ -18,6 +18,7 @@
 //Baro sensor
 //#include <EnvironmentCalculations.h>
 #include <BME280I2C.h>       //https://github.com/finitespace/BME280
+#include <SparkFun_SGP30_Arduino_Library.h>
 
 //#include "HTU2xD_SHT2x_Si70xx.h"
 
@@ -137,7 +138,7 @@ private:
 
 public:
   SensorManager();
-  //virtual ~Sensors();
+  ~SensorManager();
   
 
   // pack class configuration into JsonObject
@@ -190,5 +191,26 @@ public:
 
   static float RHtoAbsolute (float relHumidity, float tempC);
   static uint16_t doubleToFixedPoint( double number);
+
+};
+
+/**
+ * @brief Bosch BMP/BME sensor
+ * 
+ */
+class Sensor_SGP : public GenericSensor {
+  uint32_t _pub_rate, _ctr{0};
+  SGP30 _sensor;
+  // readings
+
+public:
+  Sensor_SGP(int32_t id) : GenericSensor(id) {}
+  ~Sensor_SGP();
+
+	void load_cfg(JsonVariantConst cfg) override;
+
+  bool init() override;
+
+  void poll() override;
 
 };

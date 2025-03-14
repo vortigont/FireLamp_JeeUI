@@ -11,7 +11,14 @@
       "descr":"Комната",
       "publish_rate":20,
       "destination":0
+    },
+    {
+      "type":"SGP30",
+      "id":88,
+      "enabled":false,
+      "descr":"воздух",
+      "publish_rate":30,
+      "destination":0
     }
-
   ]    
 }
