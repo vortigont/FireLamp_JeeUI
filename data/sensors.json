@@ -11,7 +11,15 @@
       "descr":"Комната",
       "publish_rate":20,
       "destination":0
+    },
+    {
+      "type":"Si70xx",
+      "id":64,
+      "model":0,
+      "enabled":false,
+      "descr":"Комната",
+      "publish_rate":30,
+      "destination":0
     }
-
   ]    
 }
