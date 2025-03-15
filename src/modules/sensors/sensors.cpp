@@ -27,16 +27,7 @@ static constexpr const char T_sensors_cfg[] = "sensors.json";
 // List of sensor types
 static constexpr const char T_Bosch_BMx[] = "Bosch_BMx";
 static constexpr const char T_Si70xx[] = "Si70xx";
-//static constexpr const char T_SGP30[] = "SGP30";
-
-/*
-// array with all available module names (labels) we can run
-static constexpr std::array<const char*, 3> sensor_types_list = {
-  T_Bosch_BMx,
-  T_Si702x,
-  T_SGP30
-};
-*/
+static constexpr const char T_SGP30[] = "SGP30";
 
 void GenericSensor::run(){
   std::time_t now;
@@ -54,6 +45,10 @@ void GenericSensor::run(){
 SensorManager::SensorManager() : GenericModule(T_sensors, false){
   set( 1000, TASK_FOREVER, [this](){ _poll_sensors(); } );
   ts.addTask(*this);
+}
+
+SensorManager::~SensorManager(){
+  ts.deleteTask(*this);
 }
 
 void SensorManager::load_cfg(JsonVariantConst cfg){
@@ -96,6 +91,18 @@ void SensorManager::load_cfg(JsonVariantConst cfg){
     if (std::string_view(lbl).compare(T_Bosch_BMx) == 0){
       LOGI(T_sensors, printf, "Load: %s\n", T_Bosch_BMx);
       s = std::make_unique<Sensor_Bosch>(v[P_id] | random());
+      // load sensor's configuration
+      s->load_cfg(v);
+      // try to init sensor, if fails - then discard the object
+      if (s->init())
+        _sensors.emplace_back(std::move(s));
+      continue;
+    }
+
+    // SGP30
+    if (std::string_view(lbl).compare(T_SGP30) == 0){
+      LOGI(T_sensors, printf, "Load: %s\n", T_SGP30);
+      s = std::make_unique<Sensor_SGP>(v[P_id] | random());
       // load sensor's configuration
       s->load_cfg(v);
       // try to init sensor, if fails - then discard the object
@@ -243,6 +250,44 @@ void Sensor_Bosch::poll(){
   buffer += std::format(" температура: {:.1f}°С, атм. давление: {:.1f} мм.рт.ст.", temp, pressure);
   if (stype == sensor_t::bosch_bme)
     buffer += std::format(", влажность: {:.1f}%", humidity);
+
+  TextMessage m(std::move(buffer), 1, 0, message_id);
+  static_cast<ModTextScroller*>(scroller)->updateMSG(std::move(m), scroller_id);
+}
+
+
+// ======= SGP30 gas sensor
+void Sensor_SGP::load_cfg(JsonVariantConst cfg){
+  descr = cfg[T_descr].as<const char*>();
+  poll_rate = 1;
+  _pub_rate = cfg[T_publish_rate] | SENSOR_UPD_PERIOD;
+  scroller_id = cfg[T_destination];
+}
+
+bool Sensor_SGP::init(){
+  online = false;
+  if (!_sensor.begin()){
+    LOGE(T_sensors, println, "SGP30 init err!");
+    return false;
+  }
+  _sensor.initAirQuality();
+  online = true;
+  return online;
+}
+
+
+void Sensor_SGP::poll(){
+  _sensor.measureAirQuality();
+  if (++_ctr % _pub_rate != 0)
+    return;
+
+  auto scroller = zookeeper.getModulePtr(T_txtscroll);
+  // no text destination available
+  if (!scroller)
+    return;
+  // todo: need to feed sensor with data from temp/humi sensor if that one is available
+  std::string buffer = descr;
+  buffer += std::format(" CO2: {}ppm, tvoc: {}", _sensor.CO2, _sensor.TVOC);
 
   TextMessage m(std::move(buffer), 1, 0, message_id);
   static_cast<ModTextScroller*>(scroller)->updateMSG(std::move(m), scroller_id);

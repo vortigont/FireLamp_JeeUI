@@ -13,6 +13,12 @@
       "destination":0
     },
     {
+      "type":"SGP30",
+      "id":88,
+      "enabled":false,
+      "descr":"воздух"
+    },
+    {
       "type":"Si70xx",
       "id":64,
       "model":0,

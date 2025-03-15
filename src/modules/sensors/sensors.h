@@ -18,10 +18,10 @@
 //Baro sensor
 //#include <EnvironmentCalculations.h>
 #include <BME280I2C.h>       //https://github.com/finitespace/BME280
+// SGP30 gas sensor
+#include <SparkFun_SGP30_Arduino_Library.h>
 //Si7021 sensors
 #include "HTU2xD_SHT2x_Si70xx.h"
-// SGP30 gas sensor
-//#include <SparkFun_SGP30_Arduino_Library.h>
 
 
 // sensors types enum
@@ -136,7 +136,7 @@ private:
 
 public:
   SensorManager();
-  //virtual ~Sensors();
+  ~SensorManager();
   
 
   // pack class configuration into JsonObject
@@ -193,6 +193,26 @@ public:
 };
 
 /**
+ * @brief Bosch BMP/BME sensor
+ * 
+ */
+class Sensor_SGP : public GenericSensor {
+  uint32_t _pub_rate, _ctr{0};
+  SGP30 _sensor;
+  // readings
+
+public:
+  Sensor_SGP(int32_t id) : GenericSensor(id) {}
+  ~Sensor_SGP();
+
+	void load_cfg(JsonVariantConst cfg) override;
+
+  bool init() override;
+
+  void poll() override;
+};
+
+/**
  * @brief Si70xx sensor
  * 
  */
@@ -204,7 +224,6 @@ class Sensor_SiSHT : public GenericSensor {
 
 public:
   Sensor_SiSHT(int32_t id) : GenericSensor(id) {}
-
 
 	void load_cfg(JsonVariantConst cfg) override;
 
