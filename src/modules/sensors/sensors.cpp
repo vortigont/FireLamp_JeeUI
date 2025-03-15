@@ -26,17 +26,8 @@ static constexpr const char T_sensors_cfg[] = "sensors.json";
 
 // List of sensor types
 static constexpr const char T_Bosch_BMx[] = "Bosch_BMx";
-//static constexpr const char T_Si702x[] = "Si702x";
+static constexpr const char T_Si70xx[] = "Si70xx";
 static constexpr const char T_SGP30[] = "SGP30";
-
-/*
-// array with all available module names (labels) we can run
-static constexpr std::array<const char*, 3> sensor_types_list = {
-  T_Bosch_BMx,
-  T_Si702x,
-  T_SGP30
-};
-*/
 
 void GenericSensor::run(){
   std::time_t now;
@@ -143,18 +134,6 @@ void SensorManager::_poll_sensors(){
 
 
 // **************************************
-/*
-void SensorManager::readsi7021(float& t, float& h) {
-  h = _si702x.readHumidity();
-  // try to reset sensor on read error
-  if ( h == HTU2XD_SHT2X_SI70XX_ERROR ){
-    _si702x.softReset();
-    _si702x.setResolution(HUMD_12BIT_TEMP_14BIT);
-  }
-
-  t = _si702x.readTemperature(READ_TEMP_AFTER_RH);
-}
-*/
 /*
 // Update string with sensor's data
 bool SensorManager::getFormattedValues(String &str){
@@ -278,7 +257,6 @@ void Sensor_Bosch::poll(){
 
 
 // ======= SGP30 gas sensor
-
 void Sensor_SGP::load_cfg(JsonVariantConst cfg){
   descr = cfg[T_descr].as<const char*>();
   poll_rate = 1;
@@ -293,10 +271,10 @@ bool Sensor_SGP::init(){
     return false;
   }
   _sensor.initAirQuality();
-
   online = true;
   return online;
 }
+
 
 void Sensor_SGP::poll(){
   _sensor.measureAirQuality();
@@ -307,10 +285,69 @@ void Sensor_SGP::poll(){
   // no text destination available
   if (!scroller)
     return;
-
   // todo: need to feed sensor with data from temp/humi sensor if that one is available
   std::string buffer = descr;
   buffer += std::format(" CO2: {}ppm, tvoc: {}", _sensor.CO2, _sensor.TVOC);
+
+  TextMessage m(std::move(buffer), 1, 0, message_id);
+  static_cast<ModTextScroller*>(scroller)->updateMSG(std::move(m), scroller_id);
+}
+
+
+// ======= SHT/Sixx sensor
+void Sensor_SiSHT::load_cfg(JsonVariantConst cfg){
+  descr = cfg[T_descr].as<const char*>();
+  poll_rate = cfg[T_publish_rate] | SENSOR_UPD_PERIOD;
+  scroller_id = cfg[T_destination];
+  _sensor_model = cfg[T_model];
+}
+
+bool Sensor_SiSHT::init(){
+  online = false;
+
+  switch(_sensor_model){
+    case 1:
+      _sensor.setType(SHT2x_SENSOR);
+      break;
+    case 2:
+      _sensor.setType(SI700x_SENSOR);
+      break;
+    case 3:
+      _sensor.setType(SI701x_SENSOR);
+      break;
+    case 4:
+      _sensor.setType(SI702x_SENSOR);
+      break;
+    default:
+      _sensor.setType(HTU2xD_SENSOR);
+  }
+
+  if (!_sensor.begin()){
+    LOGE(T_sensors, println, "SHT/Sixx init err!");
+    return false;
+  }
+
+  online = true;
+  return online;
+}
+
+void Sensor_SiSHT::poll(){
+  humidity = _sensor.readHumidity();
+
+  if (_sensor_model > 1 ) // Si70xx has ability to get temp from previous humi reading
+    temp = _sensor.readTemperature(READ_TEMP_AFTER_RH);
+  else
+    temp = _sensor.readTemperature();
+
+  //LOGV(T_sensors, println, "BMx poll");
+  auto scroller = zookeeper.getModulePtr(T_txtscroll);
+
+  // no text destination available
+  if (!scroller)
+    return;
+
+  std::string buffer = descr;
+  buffer += std::format(" температура: {:.1f}°С, влажность: {:.1f}%", temp, humidity);
 
   TextMessage m(std::move(buffer), 1, 0, message_id);
   static_cast<ModTextScroller*>(scroller)->updateMSG(std::move(m), scroller_id);

@@ -254,6 +254,7 @@ static constexpr const char* T_maxh = "maxh";
 static constexpr const char* T_messages = "messages";
 static constexpr const char* T_min = "min";
 static constexpr const char* T_mixer = "mixer";                         // overlay mixer type
+static constexpr const char* T_model = "model";
 static constexpr const char* T_msg = "msg";
 static constexpr const char* T_name = "name";
 static constexpr const char* T_Notification = "Notification";

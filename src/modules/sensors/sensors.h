@@ -18,12 +18,10 @@
 //Baro sensor
 //#include <EnvironmentCalculations.h>
 #include <BME280I2C.h>       //https://github.com/finitespace/BME280
-#include <SparkFun_SGP30_Arduino_Library.h>
-
-//#include "HTU2xD_SHT2x_Si70xx.h"
-
 // SGP30 gas sensor
-//#include <SparkFun_SGP30_Arduino_Library.h>
+#include <SparkFun_SGP30_Arduino_Library.h>
+//Si7021 sensors
+#include "HTU2xD_SHT2x_Si70xx.h"
 
 
 // sensors types enum
@@ -212,5 +210,24 @@ public:
   bool init() override;
 
   void poll() override;
+};
 
+/**
+ * @brief Si70xx sensor
+ * 
+ */
+class Sensor_SiSHT : public GenericSensor {
+  uint8_t _sensor_model{0};
+  HTU2xD_SHT2x_SI70xx _sensor;
+  // readings
+ 	float temp, humidity;
+
+public:
+  Sensor_SiSHT(int32_t id) : GenericSensor(id) {}
+
+	void load_cfg(JsonVariantConst cfg) override;
+
+  bool init() override;
+
+  void poll() override;
 };
