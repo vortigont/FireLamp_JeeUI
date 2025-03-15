@@ -287,6 +287,7 @@ static constexpr const char* T_tx = "tx";
 static constexpr const char* T_timeout = "timeout";
 static constexpr const char* T_type = "type";
 static constexpr const char* T_unit = "unit";
+static constexpr const char* T_update = "update";
 static constexpr const char* T_val = "val";
 
 

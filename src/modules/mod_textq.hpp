@@ -124,7 +124,7 @@ public:
    * @brief find and update message in the queue with matching message ids
    * 
    * @param msg message
-   * @param append - if true and unique message is not found in the queue, then appen message to the back if the queue
+   * @param enqueue - if true and unique message is not found in the queue, then appen message to the back if the queue
    */
   void updateMSG(const TextMessage& msg, bool enqueue = true);
 
