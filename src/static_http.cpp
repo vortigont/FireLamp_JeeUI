@@ -17,6 +17,7 @@ enum class embedded_data_t {
 };
 
 static constexpr const char INDEX_FILE[] = "/index.html";
+static constexpr const char C_TYPE_JS_UTF8[] = "application_javascript; charset=utf-8";
 
 static void mk_response(embedded_data_t obj, AsyncWebServerRequest* req){
   AsyncWebServerResponse* response;
@@ -34,10 +35,10 @@ static void mk_response(embedded_data_t obj, AsyncWebServerRequest* req){
         response = req->beginResponse(200, asyncsrv::T_application_json, ui_i18n_json_gz_start, ui_i18n_json_gz_end - ui_i18n_json_gz_start );
         break;
       case embedded_data_t::script :
-        response = req->beginResponse(200, asyncsrv::T_application_javascript, script_js_gz_start, script_js_gz_end - script_js_gz_start );
+        response = req->beginResponse(200, C_TYPE_JS_UTF8, script_js_gz_start, script_js_gz_end - script_js_gz_start );
         break;
       case embedded_data_t::embuijs :
-        response = req->beginResponse(200, asyncsrv::T_application_javascript, embui_js_gz_start, embui_js_gz_end - embui_js_gz_start );
+        response = req->beginResponse(200, C_TYPE_JS_UTF8, embui_js_gz_start, embui_js_gz_end - embui_js_gz_start );
         break;
       case embedded_data_t::embuijson :
         response = req->beginResponse(200, asyncsrv::T_application_json, embui_json_gz_start, embui_json_gz_end - embui_json_gz_start );
