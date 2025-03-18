@@ -74,7 +74,7 @@ def embed_resources():
             compress_file(f, f_hdr)
 
         # combine js scripts
-        jsall = ''.join([open(f).read() for f in combine_js_files])
+        jsall = ''.join([open(f, 'r', encoding='utf-8').read() for f in combine_js_files])
         fpath = outdir + '/script.js.gz'
         compress_data(jsall, fpath)
         print_hdr_data(fpath, f_hdr)
