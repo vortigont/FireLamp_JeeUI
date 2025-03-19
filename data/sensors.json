@@ -7,7 +7,7 @@
     {
       "type":"Bosch_BMx",
       "id":119,
-      "enabled":true,
+      "enabled":false,
       "descr":"Комната",
       "publish_rate":20,
       "destination":0
@@ -26,6 +26,13 @@
       "descr":"Комната",
       "publish_rate":30,
       "destination":0
+    },
+    {
+      "type":"RTC",
+      "model":1,
+      "id":81,
+      "enabled":false,
+      "descr":"RTC Clock"
     }
   ]    
 }
