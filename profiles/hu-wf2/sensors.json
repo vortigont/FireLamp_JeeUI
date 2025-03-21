@@ -1,0 +1,38 @@
+{
+  "i2c":{
+    "sda":41,
+    "scl":42
+  },
+  "sensors":[
+    {
+      "type":"Bosch_BMx",
+      "id":119,
+      "enabled":false,
+      "descr":"Комната",
+      "publish_rate":20,
+      "destination":0
+    },
+    {
+      "type":"SGP30",
+      "id":88,
+      "enabled":false,
+      "descr":"воздух"
+    },
+    {
+      "type":"Si70xx",
+      "id":64,
+      "model":0,
+      "enabled":false,
+      "descr":"Комната",
+      "publish_rate":30,
+      "destination":0
+    },
+    {
+      "type":"RTC",
+      "model":1,
+      "id":81,
+      "enabled":true,
+      "descr":"RTC Clock"
+    }
+  ]
+}
