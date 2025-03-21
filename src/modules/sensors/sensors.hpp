@@ -42,7 +42,7 @@ protected:
   uint32_t poll_rate;
   // last poll tstamp
   uint32_t last_poll_tstamp;
-  // shows if sensor's helath is OK
+  // shows if sensor's health is OK
   bool online{false};
 
   // sensor's mnemonic description, i.e. "room", "outdoor" etc...
@@ -98,7 +98,7 @@ public:
 protected:
 
   /**
-   * @brief poll sensor and publish it's date to sink if needed
+   * @brief poll sensor and publish it's data to sink if needed
    * 
    */
   virtual void poll() = 0;
@@ -116,17 +116,6 @@ class SensorManager : public GenericModule, public Task {
 private:
   // i2c bus
   int _i2c_scl{-1}, _i2c_sda{-1};
-
-  //HTU2xD_SHT2x_SI70xx _si702x{HTU2xD_SHT2x_SI70xx(SI702x_SENSOR, HUMD_12BIT_TEMP_14BIT)}; //sensor type, resolution
-  //SGP30 sgp30;
-
-  //uint16_t co2, tvoc;
-
-
-  //void readsi7021(float& t, float& h);
-
-  //void sgp30poll();
-  //void readsgp30(uint16_t &co2, uint16_t &tvoc, float rh, float t);
 
   /**
    * @brief poll each sensor in a pool

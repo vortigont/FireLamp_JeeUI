@@ -53,7 +53,7 @@
 #include "omnicron/omnicron.hpp"
 #include "mod_textq.hpp"
 #include "weather/weather.hpp"
-#include "sensors/sensors.h"
+#include "sensors/sensors.hpp"
 
 #include "log.h"
 

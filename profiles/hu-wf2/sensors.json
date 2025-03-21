@@ -1,7 +1,7 @@
 {
   "i2c":{
-    "sda":-1,
-    "scl":-1
+    "sda":41,
+    "scl":42
   },
   "sensors":[
     {
@@ -31,8 +31,8 @@
       "type":"RTC",
       "model":1,
       "id":81,
-      "enabled":false,
+      "enabled":true,
       "descr":"RTC Clock"
     }
-  ]    
+  ]
 }
