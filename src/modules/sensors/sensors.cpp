@@ -260,7 +260,7 @@ void Sensor_Bosch::poll(){
 void Sensor_SGP::load_cfg(JsonVariantConst cfg){
   descr = cfg[T_descr].as<const char*>();
   poll_rate = 1;
-  _pub_rate = cfg[T_publish_rate] | SENSOR_UPD_PERIOD;
+  _pub_rate = 1000 * (cfg[T_publish_rate] | SENSOR_UPD_PERIOD); // ms
   scroller_id = cfg[T_destination];
 }
 
@@ -275,11 +275,15 @@ bool Sensor_SGP::init(){
   return online;
 }
 
-
 void Sensor_SGP::poll(){
   _sensor.measureAirQuality();
-  if (++_ctr % _pub_rate != 0)
+
+  std::time_t now = std::time({});
+  if (now - last_pub_tstamp < _pub_rate){
     return;
+  }
+
+  last_pub_tstamp = now;
 
   auto scroller = zookeeper.getModulePtr(T_txtscroll);
   // no text destination available
