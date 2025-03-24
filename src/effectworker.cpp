@@ -144,7 +144,7 @@ DeserializationError EffConfiguration::_load_cfg(JsonDocument& doc){
   fname += EffectsListItem_t::getLbl(_eid);
   fname += T__json;
 
-  DeserializationError error = embuifs::deserializeFile(doc, fname);
+  DeserializationError error = embuifs::deserializeFile(doc, fname.c_str());
 
   if (error) {
     LOGD("EffCfg", printf, "can't load file:%s\n", fname.c_str());
@@ -334,7 +334,7 @@ void EffConfiguration::_savecfg(JsonVariant doc){
   fname += EffectsListItem_t::getLbl(_eid);
   fname += T__json;
   LOGD(T_EffCfg, printf, "_savecfg:%s\n", fname.c_str());
-  embuifs::serialize2file(doc, fname);
+  embuifs::serialize2file(doc, fname.c_str());
 }
 
 void EffConfiguration::autosave(bool force) {
