@@ -14,7 +14,8 @@
 #include "components.hpp"
 #include "modules/mod_textq.hpp"
 #include "Wire.h"
-#include "sensors.h"
+#include "sensors.hpp"
+#include "rtc_clock.hpp"
 #include "EmbUI.h"
 #include "log.h"
 
@@ -28,6 +29,7 @@ static constexpr const char T_sensors_cfg[] = "sensors.json";
 static constexpr const char T_Bosch_BMx[] = "Bosch_BMx";
 static constexpr const char T_Si70xx[] = "Si70xx";
 static constexpr const char T_SGP30[] = "SGP30";
+static constexpr const char T_RTC[] = "RTC";
 
 void GenericSensor::run(){
   std::time_t now;
@@ -71,8 +73,8 @@ void SensorManager::load_cfg(JsonVariantConst cfg){
 
   JsonArrayConst arr = cfg[T_sensors];
 
+  LOGD(T_sensors, println, "creating sensors pool");
   for(JsonVariantConst v : arr){
-    LOGD(T_sensors, println, "creating sensors pool");
     if (!v[T_enabled])
       continue;
 
@@ -91,25 +93,26 @@ void SensorManager::load_cfg(JsonVariantConst cfg){
     if (std::string_view(lbl).compare(T_Bosch_BMx) == 0){
       LOGI(T_sensors, printf, "Load: %s\n", T_Bosch_BMx);
       s = std::make_unique<Sensor_Bosch>(v[P_id] | random());
-      // load sensor's configuration
-      s->load_cfg(v);
-      // try to init sensor, if fails - then discard the object
-      if (s->init())
-        _sensors.emplace_back(std::move(s));
-      continue;
     }
-
     // SGP30
-    if (std::string_view(lbl).compare(T_SGP30) == 0){
+    else if (std::string_view(lbl).compare(T_SGP30) == 0){
       LOGI(T_sensors, printf, "Load: %s\n", T_SGP30);
       s = std::make_unique<Sensor_SGP>(v[P_id] | random());
-      // load sensor's configuration
-      s->load_cfg(v);
-      // try to init sensor, if fails - then discard the object
-      if (s->init())
-        _sensors.emplace_back(std::move(s));
+    }
+    // RTC bm8563
+    else if (std::string_view(lbl).compare(T_RTC) == 0){
+      LOGI(T_sensors, printf, "Load: %s\n", T_RTC);
+      s = std::make_unique<RTC_Clock>(v[P_id] | random());
+    } else {
       continue;
     }
+    
+    // load sensor's configuration
+    s->load_cfg(v);
+    // try to init sensor, if fails - then discard the object
+    if (s->init())
+      _sensors.emplace_back(std::move(s));
+    
   }
 
 }
@@ -219,19 +222,19 @@ bool Sensor_Bosch::init(){
   }
 
   switch(_bosch.chipModel()){
-     case BME280::ChipModel_BME280:
-       stype = sensor_t::bosch_bme;
-       LOGI(T_sensors, println, "Found BME280");
-       break;
+    case BME280::ChipModel_BME280:
+      stype = sensor_t::bosch_bme;
+      LOGI(T_sensors, println, "Found BME280");
+      break;
 
-     case BME280::ChipModel_BMP280:
-       LOGI(T_sensors, println, "Found BMP280");
-       stype = sensor_t::bosch_bmp;
-       break;
+    case BME280::ChipModel_BMP280:
+      LOGI(T_sensors, println, "Found BMP280");
+      stype = sensor_t::bosch_bmp;
+      break;
 
-     default:
-       LOGW(T_sensors, println, "No Bosch BMx found!");
-       return false;
+    default:
+      LOGW(T_sensors, println, "No Bosch BMx found!");
+      return false;
   }
   online = true;
   return online;
