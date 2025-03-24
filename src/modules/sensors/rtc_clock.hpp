@@ -72,7 +72,7 @@ public:
 class RTC_DS32 : public GenericRTC {
   uRTCLib _rtc;
 public:
-  RTC_DS32(){};
+  RTC_DS32(uint8_t model = URTCLIB_MODEL_DS3231){ _rtc.set_model(model); };
   bool init() override { return _rtc.refresh(); };
   void get_tm(tm* time) override;
   void set(tm* time) override;

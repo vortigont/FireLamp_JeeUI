@@ -65,10 +65,10 @@ void RTC_Clock::load_cfg(JsonVariantConst cfg){
       _rtc = std::make_unique<RTC_8563>();
       break;
     case rtc_chip_t::ds32xx :
-      _rtc = std::make_unique<RTC_DS32>(URTCLIB_ADDRESS, URTCLIB_MODEL_DS3231);
+      _rtc = std::make_unique<RTC_DS32>(URTCLIB_MODEL_DS3231);
       break;
     case rtc_chip_t::ds1307 :
-      _rtc = std::make_unique<RTC_DS32>(URTCLIB_ADDRESS, URTCLIB_MODEL_DS1307);
+      _rtc = std::make_unique<RTC_DS32>(URTCLIB_MODEL_DS1307);
       break;
     default:;
   }
