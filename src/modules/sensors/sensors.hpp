@@ -186,7 +186,7 @@ public:
  * 
  */
 class Sensor_SGP : public GenericSensor {
-  uint32_t _pub_rate, last_pub_tstamp{0}; // ms
+  uint32_t _pub_rate, last_pub_tstamp{0};
   SGP30 _sensor;
   // readings
 

@@ -32,9 +32,8 @@ static constexpr const char T_SGP30[] = "SGP30";
 static constexpr const char T_RTC[] = "RTC";
 
 void GenericSensor::run(){
-  std::time_t now;
-  std::time(&now);
-  if (now - last_poll_tstamp >= poll_rate){
+  uint32_t now = millis();
+  if (now - last_poll_tstamp >= 1000 * poll_rate){
     poll();
     last_poll_tstamp = now;
   }
@@ -263,7 +262,7 @@ void Sensor_Bosch::poll(){
 void Sensor_SGP::load_cfg(JsonVariantConst cfg){
   descr = cfg[T_descr].as<const char*>();
   poll_rate = 1;
-  _pub_rate = 1000 * (cfg[T_publish_rate] | SENSOR_UPD_PERIOD); // ms
+  _pub_rate = cfg[T_publish_rate] | SENSOR_UPD_PERIOD;
   scroller_id = cfg[T_destination];
 }
 
@@ -281,8 +280,8 @@ bool Sensor_SGP::init(){
 void Sensor_SGP::poll(){
   _sensor.measureAirQuality();
 
-  std::time_t now = std::time({});
-  if (now - last_pub_tstamp < _pub_rate){
+  uint32_t now = millis();
+  if (now - last_pub_tstamp < 1000 * _pub_rate){
     return;
   }
 
