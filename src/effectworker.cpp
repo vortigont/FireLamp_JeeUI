@@ -438,17 +438,6 @@ void EffConfiguration::embui_preset_delete(Interface *interf){
 ///////////////////////////////////////////
 //  ***** EffectWorker implementation *****
 
-EffectWorker::EffectWorker() {
-  // сформировать и опубликовать блок контролов текущего эффекта
-  embui.action.add(A_effect_ctrls, [&](Interface *interf, JsonObjectConst data, const char* action){ _effCfg.embui_control_vals(interf); });
-  // preset switcher
-  embui.action.add(A_eff_preset, [&](Interface *interf, JsonObjectConst data, const char* action){ switchEffectPreset(data[A_eff_preset]); _effCfg.embui_control_vals(interf); });
-  embui.action.add(A_eff_preset_lbl, [&](Interface *interf, JsonObjectConst data, const char* action){ _effCfg.embui_preset_rename(interf, data, action); });
-  embui.action.add(A_eff_preset_new, [&](Interface *interf, JsonObjectConst data, const char* action){ _effCfg.embui_preset_clone(interf); });
-  embui.action.add(A_eff_preset_remove, [&](Interface *interf, JsonObjectConst data, const char* action){ _effCfg.embui_preset_delete(interf); });
-
-}
-
 EffectWorker::~EffectWorker(){
   if(_runnerTask_h) vTaskDelete(_runnerTask_h);
   _runnerTask_h = nullptr;
@@ -458,6 +447,17 @@ EffectWorker::~EffectWorker(){
   embui.action.remove(A_eff_preset_remove);
   embui.action.remove(A_eff_preset);
 };
+
+void EffectWorker::embui_register(){
+  // сформировать и опубликовать блок контролов текущего эффекта
+  embui.action.add(A_effect_ctrls, [&](Interface *interf, JsonObjectConst data, const char* action){ _effCfg.embui_control_vals(interf); });
+  // preset switcher
+  embui.action.add(A_eff_preset, [&](Interface *interf, JsonObjectConst data, const char* action){ switchEffectPreset(data[A_eff_preset]); _effCfg.embui_control_vals(interf); });
+  embui.action.add(A_eff_preset_lbl, [&](Interface *interf, JsonObjectConst data, const char* action){ _effCfg.embui_preset_rename(interf, data, action); });
+  embui.action.add(A_eff_preset_new, [&](Interface *interf, JsonObjectConst data, const char* action){ _effCfg.embui_preset_clone(interf); });
+  embui.action.add(A_eff_preset_remove, [&](Interface *interf, JsonObjectConst data, const char* action){ _effCfg.embui_preset_delete(interf); });
+}
+
 
 EffectWorker::effect_iterator_t EffectWorker::_getCurEffIterator(){
   auto idx = _effItem.eid;
