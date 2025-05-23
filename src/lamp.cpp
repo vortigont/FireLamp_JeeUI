@@ -55,11 +55,6 @@ Copyright © 2020 Dmytro Korniienko (kDn)
 Lamp::Lamp() {
   // initialize fader instance
   LEDFader::getInstance()->setLamp(this);
-
-  // demo on/off
-  embui.action.add(T_demoOn, [this](Interface *interf, JsonObjectConst data, const char* action){ _embui_demoOn(interf, data, action); } );
-  embui.action.add(T_demoRndCtrls, [this](Interface *interf, JsonObjectConst data, const char* action){ _embui_demoRndCtrls(interf, data, action); } );
-  embui.action.add(T_demoRndOrder, [this](Interface *interf, JsonObjectConst data, const char* action){ _embui_demoRndOrder(interf, data, action); } );
 }
 
 Lamp::~Lamp(){
@@ -143,6 +138,13 @@ void Lamp::lamp_init(){
   if (opts.flag.pwrState){
     power(true);
   }
+
+  // register embui handlers
+  // demo on/off
+  embui.action.add(T_demoOn, [this](Interface *interf, JsonObjectConst data, const char* action){ _embui_demoOn(interf, data, action); } );
+  embui.action.add(T_demoRndCtrls, [this](Interface *interf, JsonObjectConst data, const char* action){ _embui_demoRndCtrls(interf, data, action); } );
+  embui.action.add(T_demoRndOrder, [this](Interface *interf, JsonObjectConst data, const char* action){ _embui_demoRndOrder(interf, data, action); } );  
+  effwrkr.embui_register();
 
   vopts.flag.initialized = true;
 }

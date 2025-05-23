@@ -414,12 +414,18 @@ private:
 
 public:
     // дефолтный конструктор
-    EffectWorker();
+    EffectWorker(){};
     ~EffectWorker();
 
     // noncopyable
     EffectWorker (const EffectWorker&) = delete;
     EffectWorker& operator= (const EffectWorker&) = delete;
+
+    /**
+     * @brief register EmbUI handlers
+     * 
+     */
+    void embui_register();
 
     /**
      * @brief loads effect index
