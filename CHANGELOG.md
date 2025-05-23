@@ -1,5 +1,20 @@
 # Change Log
 
+## 4.1.2
+ - Fix: potential bootloop on wrong intitialization order
+ - remove font awesome from cloudflare
+ - Поддержка RTC часов
+   - модуль BM8563
+   - модули DS32xx
+ - ModTextScroller::embui_send_msg - учитывать параметр `update` от входящих сообщений
+ - Add SGP30 sensor support (untested)
+ - Add Sht/sgp/sixx temp/humidity sensors
+ - интеграция статических ресурсов в .ro область прошивки
+ - отображение событий смены режимов энкодера на ТМ дисплее
+ - небольшие правки для MP3 плеера
+ 
+
+
 ## 4.1.1
  - исправлено переключение эффектов энкодером на n шагов вперед/назад
  - i2c сенсоры - Bosch BMP/BME
