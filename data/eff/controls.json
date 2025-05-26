@@ -107,5 +107,14 @@
       {"label":"blur", "smin":0, "smax":200},
       {"label":"objects", "smin":1, "smax":35}
     ]
+  },
+  "noise3d":{
+    "ctrls":[
+      {"label":"speed", "smin":1, "smax":30},
+      {"label":"scale", "smin":5, "smax":30},
+      {"label":"pallete", "min":0, "max":22},
+      {"label":"blur", "min":0, "max":1},
+      {"label":"colorCycle", "min":0, "max":1}
+    ]
   }
 }

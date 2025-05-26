@@ -174,7 +174,7 @@ static constexpr const char* T_whitelight = "whitelight";
 
 
 // firmware defined static index names for each of available effects
-static constexpr std::array<effect_t, 13> fw_effects_index = {
+static constexpr std::array<effect_t, 14> fw_effects_index = {
   effect_t::empty,
   effect_t::bouncingballs,
   effect_t::fireveil,
@@ -187,7 +187,8 @@ static constexpr std::array<effect_t, 13> fw_effects_index = {
   effect_t::picassoShapes,
   effect_t::radialfire,
   effect_t::smokeballs,
-  effect_t::whirls
+  effect_t::whirls,
+  effect_t::noise3d
 };
 
 /**
@@ -249,10 +250,6 @@ T_whirls
 
 
 // ==== Константы для эффектов ====
-
-// Эффекты на базе "3D Noise"
-#define NOISE_SCALE_AMP        (58.)                // амплификатор шкалы (влияет на машстаб "пятен" эффекта, большие пятна выглядят красивее чем куча мелких)
-#define NOISE_SCALE_ADD        (8.)                 // корректор шкалы
 
 #define BALLS_AMOUNT           (7U)                 // максимальное количество "шариков"
 #define LIGHTERS_AM            (32U)                // светлячки

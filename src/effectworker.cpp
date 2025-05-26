@@ -541,6 +541,10 @@ void EffectWorker::_spawn(effect_t eid, bool rnd_ctrls){
     worker = std::make_unique<EffectWhirl>(canvas);
     break;
 
+    case effect_t::noise3d :
+    worker = std::make_unique<Effect3DNoise>(canvas);
+    break;
+
 
 /*
   case EFF_ENUM::EFF_FLOCK :
