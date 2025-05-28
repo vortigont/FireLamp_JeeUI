@@ -783,73 +783,84 @@ bool EffectBall::run() {
   }
   return true;
 }
+#endif  //  OBSOLETE_CODE
 
 // ----------- Эффекты "Лава, Зебра, etc"
 void Effect3DNoise::fillNoiseLED()
 {
-  uint8_t dataSmoothing = 0;
-  if (speed < 50)
-    dataSmoothing = 200 - (speed * 4);
-
-  for (size_t i = 0; i < noise.h(); i++)
+  for (size_t h = 0; h != _noise.h(); ++h)
   {
-    int32_t ioffset = _scale * i;
-    for (size_t j = 0; j < noise.w(); j++)
+    int32_t hoffset = scale * h;
+    for (size_t w = 0; w != _noise.w(); ++w)
     {
-      int32_t joffset = _scale * j;
+      int32_t woffset = scale * w;
 
-      uint8_t data = inoise8(x + ioffset, y + joffset, z);
-
-      data = qsub8(data, 16);
+      // new data in a noise map
+      uint8_t data = qsub8(inoise8(_x + hoffset, _y + woffset, _z), 16);
       data = qadd8(data, scale8(data, 39));
 
-      if (dataSmoothing)
-        data = scale8( noise.at(j,i), dataSmoothing) + scale8( data, 256 - dataSmoothing);
+      //if (dataSmoothing)
+      //  data = scale8( _noise.at(w, h), dataSmoothing) + scale8( data, 256 - dataSmoothing);
 
-      noise.at(j,i) = data;
-    }
-  }
-  z += _speed;
+      _noise.at(w, h) = data;
 
-  // apply slow drift to X and Y, just for visual variation.
-  x += _speed * 0.125; // 1/8
-  y -= _speed * 0.0625; // 1/16
-
-  for (uint8_t y = 0; y != fb->h(); y++){
-    for (uint8_t x = 0; x != fb->w(); x++){
-      uint8_t index = noise.at(x%noise.w(), y%noise.h());   //  [j%(fb->minDim()*2)][i];
-      uint8_t bri =   noise.at(y%noise.w(), x%noise.h());   //noise[i%(fb->minDim()*2)][j];
+      // draw
+      uint8_t index = _noise.at( w, h );
+      uint8_t bri =   _noise.at( _noise.w() - w - 1, _noise.h() - h - 1 );
       // if this palette is a 'loop', add a slowly-changing base value
-      if ( colorLoop)
+      if ( _cycleColor)
         index += ihue;
 
       // brighten up, as the color palette itself often contains the
       // light/dark dynamic range desired
-      if ( bri > 127 && blurIm)
+      if ( _blur && bri > 127)
         bri = 255;
       else
         bri = dim8_raw( bri * 2);
 
-      CRGB color = ColorFromPalette( *curPalette, index, bri);
-
-      fb->at(x, y) = color;
+      fb->at(w, h) = ColorFromPalette( *curPalette, index, bri);
     }
   }
-  ihue += 1;
+  
+  // apply slow drift to X and Y, just for visual variation.
+  _x += speed / 8;  //* 0.125; // 1/8
+  _y += speed / 16; //* 0.0625; // 1/16
+  _z += speed;
+/*
+  for (uint8_t y = 0; y != fb->h(); y++){
+    for (uint8_t x = 0; x != fb->w(); x++){
+      uint8_t index = _noise.at( x % _noise.w(), y % _noise.h() );
+      uint8_t bri =   _noise.at( y % _noise.w(), x % _noise.h() );
+      // if this palette is a 'loop', add a slowly-changing base value
+      if ( _cycleColor)
+        index += ihue;
+
+      // brighten up, as the color palette itself often contains the
+      // light/dark dynamic range desired
+      if ( _blur && bri > 127)
+        bri = 255;
+      else
+        bri = dim8_raw( bri * 2);
+
+      fb->at(x, y) = ColorFromPalette( *curPalette, index, bri);
+    }
+  }
+*/
+  ++ihue;
 }
 
 void Effect3DNoise::fillnoise8()
 {
-  for (size_t i = 0; i != noise.w(); ++i)
+  for (size_t i = 0; i != _noise.w(); ++i)
   {
-    int32_t ioffset = _scale * i;
-    for (size_t j = 0; j != noise.h(); ++j)
+    int32_t ioffset = scale * i;
+    for (size_t j = 0; j != _noise.h(); ++j)
     {
-      int32_t joffset = _scale * j;
-      noise.at(i, j) = inoise8(x + ioffset, y + joffset, z);
+      int32_t joffset = scale * j;
+      _noise.at(i, j) = inoise8(_x + ioffset, _y + joffset, _z);
     }
   }
-  z += _speed;
+  _z += speed;
 }
 
 void Effect3DNoise::load(){
@@ -858,23 +869,46 @@ void Effect3DNoise::load(){
 }
 
 void Effect3DNoise::setControl(size_t idx, int32_t value) {
-  if(_val->getId()==3 && _val->getVal().toInt()==0 && !demoRndEffControls())
-    curPalette = &ZeebraColors_p;
-  else if(_val->getId()==4) blurIm = EffectCalc::setDynCtrl(_val).toInt();
-   else if(_val->getId()==5) colorLoop = EffectCalc::setDynCtrl(_val).toInt();
-   else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
-  fillnoise8();
-  return String();
+  switch (idx){
+    // 0 - move speed
+    //case 0:
+    //  speed = NOISE_SCALE_AMP * value / 512;
+    //  break;
+
+    // 1 - scale expected range 
+    //case 1:
+    //  scale = NOISE_SCALE_AMP * value / 255 + NOISE_SCALE_ADD;
+    //  break;
+
+    // 2 - Palletes
+    //curPalette = &ZeebraColors_p;
+
+    // 3 - blur pallete
+    case 3:
+      _blur = value;
+      break;
+
+    // 4 - cycle color
+    case 4:
+      _cycleColor = value;
+      break;
+
+    // 5 - smoothing
+    //case 5:
+    //  dataSmoothing = value;
+    //  break;
+
+    default:
+      EffectCalc::setControl(idx, value);
+      fillnoise8();
+  }
 }
 
 bool Effect3DNoise::run(){
-    _scale = NOISE_SCALE_AMP*(float)scale/255.0 + NOISE_SCALE_ADD;
-    _speed = NOISE_SCALE_AMP*(float)speed/512.0;
-
   fillNoiseLED();
   return true;
 }
-#endif  // DISABLED_CODE
+
 
 //----- Эффект "Прыгающие Мячики"
 //  BouncingBalls2014 is a program that lets you animate an LED strip

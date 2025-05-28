@@ -334,28 +334,32 @@ public:
     void load() override;
     bool run() override;
 };
+#endif  // DISABLED_CODE
 
 // ----------- Эффекты "Лава, Зебра, etc"
+// Эффекты на базе "3D Noise"
+#define NOISE_SCALE_AMP        58                // амплификатор шкалы (влияет на машстаб "пятен" эффекта, большие пятна выглядят красивее чем куча мелких)
+#define NOISE_SCALE_ADD        8                 // корректор шкалы
+
 class Effect3DNoise : public EffectCalc {
 private:
     void fillNoiseLED();
     void fillnoise8();
 
     uint8_t ihue;
-    bool colorLoop;
-	bool blurIm;
-    float _speed{200};             // speed is set dynamically once we've started up
-    float _scale{10};             // scale is set dynamically once we've started up
-    float x{1}, y{1}, z{1};
-    Vector2D<uint8_t> noise;
+    //uint8_t dataSmoothing;
+    bool _cycleColor, _blur;
+    uint16_t _x{1}, _y{1}, _z{1};
+    Vector2D<uint8_t> _noise;
 
 public:
-    Effect3DNoise(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer), noise(2*fb->w(), fb->h()) {}
+    Effect3DNoise(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer), _noise(fb->w(), fb->h()) {}       // make a noise map quarter size of a canvas
     void load() override;
     bool run() override;
     void setControl(size_t idx, int32_t value) override;
 };
 
+#ifdef DISABLED_CODE
 // ***** Эффект "Спираль"     ****
 /*
  * Aurora: https://github.com/pixelmatix/aurora

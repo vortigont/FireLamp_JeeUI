@@ -3967,6 +3967,43 @@
           "onChange": true
         }
       ]
+    },
+    "noise3d":{
+      "section":"eff_ctrls",
+      "replace":true,
+      "block":[
+        {
+          "section":"uidata",
+          "block":[
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.speed"
+            },
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.scale"
+            },
+            {
+              "action":"pick",
+              "key":"lampui.effCommon.palette"
+            }
+          ]
+        },
+        {
+          "html": "input",
+          "id": "eff_control_3",
+          "type": "checkbox",
+          "label": "Блюр",
+          "onChange": true
+        },
+        {
+          "id":"eff_control_4",
+          "html":"input",
+          "label":"Циклические цвета",
+          "type":"checkbox",
+          "onChange": true
+        }
+      ]
     }
   },
 
