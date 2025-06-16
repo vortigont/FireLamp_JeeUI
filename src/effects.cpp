@@ -1656,90 +1656,129 @@ bool EffectFireVeil::rainbowComet3Routine()
   return true;
 }
 
-#if !defined (OBSOLETE_CODE)
 // ============= ЭФФЕКТ СТАЯ ===============
 // Адаптация от (c) SottNick
 void EffectFlock::load(){
   palettesload();    // подгружаем дефолтные палитры
-  Boid::spawn(boids, fb->w(), fb->h());
-  for (auto &b : boids){
-    b.maxspeed = 0.380 * speedFactor + 0.380 / 2;
-    b.maxforce = 0.015 * speedFactor + 0.015 / 2;
-  }
-  predator = Boid( random8(0,fb->w()), random(0, fb->h()) );
-  predator.maxspeed = 0.385 * speedFactor + 0.385 / 2;
-  predator.maxforce = 0.020 * speedFactor + 0.020 / 2;
-  predator.neighbordist = 8.0;
-  predator.desiredseparation = 0.0;
+  Boid::spawn(_boids, fb->w(), fb->h());
+  _setSpeed(1);
+  _setForce(1);
+
+  _predator.neighbordist = 8.0;
+  _predator.desiredseparation = 0.0;
 }
 
-// !++
+void EffectFlock::_setSpeed(int32_t s){
+  float spd = s / 10.0;
+
+  for (auto &b : _boids){
+    b.maxspeed = spd;
+/*
+    if (_varyspeed){
+      b.maxspeed = spd; // abs(Boid::randomf()) * s;    //  b.maxspeed = 0.380 * speed + 0.380 / 2;
+      //b.maxforce = s; // abs(Boid::randomf()) * s;    //  b.maxforce = 0.015 * speed + 0.015 / 2;  
+    } else {
+      b.maxspeed = spd;
+      //b.maxforce = f;
+    }
+*/
+  }
+
+  _predator.maxspeed = spd; // abs(Boid::randomf()) * s;  // 0.385 * speedFactor + 0.385 / 2;
+  //_predator.maxforce = s; // abs(Boid::randomf()) * s;  // 0.020 * speedFactor + 0.020 / 2;
+  speed = s;
+}
+
+void EffectFlock::_setForce(int32_t s){
+  _f = s;
+  float f = _f / 50.0;
+
+  for (auto &b : _boids){
+    b.maxforce = f;
+  }
+
+  _predator.maxforce = f; // abs(Boid::randomf()) * s;  // 0.020 * speedFactor + 0.020 / 2;
+}
+
 void EffectFlock::setControl(size_t idx, int32_t value) {
-  if(_val->getId()==1) {
-    speedFactor = ((float)EffectCalc::setDynCtrl(_val).toInt() / 196.0)*getBaseSpeedFactor();
-    for (uint8_t i = 0; i < AVAILABLE_BOID_COUNT; i++)
-      {
-        //boids[i] = Boid(15, 15);
-        boids[i].maxspeed = 0.380 * speedFactor + 0.380 / 2;
-        boids[i].maxforce = 0.015 * speedFactor + 0.015 / 2;
-      }
-    if (predatorPresent)
-      {
-        predator.maxspeed = 0.385 * speedFactor + 0.385 / 2;
-        predator.maxforce = 0.020 * speedFactor + 0.020 / 2;
-        //predator.neighbordist = 8.0;
-        //predator.desiredseparation = 0.0;
-      }
-  } else if(_val->getId()==4) predatorPresent = EffectCalc::setDynCtrl(_val).toInt();
-  else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
-  return String();
+  switch (idx){
+    // 0 - move speed ~30-255
+    case 0:
+      _setSpeed(value);
+      break;
+  
+    // 1 - scale
+    case 1:
+      _boids.assign(value, Boid());
+      Boid::spawn(_boids, fb->w(), fb->h());
+      _setSpeed(speed);
+      _setForce(_f);
+      break;
+
+    // 2 - Pallete switch
+
+    // 3 - enable predator
+    case 3:
+      _predatorPresent = value;
+      break;
+
+    // 4 - fade/tails
+    case 4:
+      _fade = value;
+      break;
+
+    // 5 - force
+    case 5:
+      _setForce(_f);
+      break;
+
+    default:
+      EffectCalc::setControl(idx, value);
+  }
 }
 
 bool EffectFlock::run(){
   if (curPalette == nullptr) {
     return false;
   }
-  return flockRoutine();
+  return _flockRoutine();
 }
 
-bool EffectFlock::flockRoutine() {
-  hueoffset += (speedFactor/5.0+0.1);
+bool EffectFlock::_flockRoutine() {
+  fb->fade(_fade);
 
-  fb->fade(map(speed, 1, 255, 220, 10));
-
-  bool applyWind = random(0, 255) > 240;
-  if (applyWind) {
-    wind.x = Boid::randomf() * .015 * speedFactor + .015 / 2;
-    wind.y = Boid::randomf() * .015 * speedFactor + .015 / 2;
+  bool _applyWind = random(0, 255) > 240;
+  if (_applyWind) {
+    _wind.x = Boid::randomf() * .015 + .0075;
+    _wind.y = Boid::randomf() * .015 + .0075;
   }
 
-  CRGB color = ColorFromPalette(*curPalette, hueoffset, 170);
-  for (auto &boid : boids){
-    if (predatorPresent) {
+  CRGB color = ColorFromPalette(*curPalette, ++_hueoffset, 170);
+  for (auto &boid : _boids){
+    if (_predatorPresent) {
           // flee from predator
-          boid.repelForce(predator.location, 8);
+          boid.repelForce(_predator.location, 8);
         }
-    boid.run(boids);
+    boid.run(_boids);
     boid.wrapAroundBorders(fb->w(), fb->h());
-    PVector location = boid.location;
-    EffectMath::drawPixelXYF(location.x, location.y, color, fb);
-    if (applyWind) {
-          boid.applyForce(wind);
-          applyWind = false;
-        }
+    EffectMath::drawPixelXYF(boid.location.x, boid.location.y, color, fb);
+    if (_applyWind) {
+      boid.applyForce(_wind);
+      _applyWind = false;
+    }
   }
-  if (predatorPresent) {
-    predator.run(boids);
-    predator.wrapAroundBorders(fb->w(), fb->h());
-    color = ColorFromPalette(*curPalette, hueoffset + 128, 255);
-    PVector location = predator.location;
-    EffectMath::drawPixelXYF(location.x, location.y, color, fb);
+
+  if (_predatorPresent) {
+    _predator.run(_boids);
+    _predator.wrapAroundBorders(fb->w(), fb->h());
+    color = ColorFromPalette(*curPalette, _hueoffset + 128, 255);
+    EffectMath::drawPixelXYF(_predator.location.x, _predator.location.y, color, fb);
   }
 
   return true;
 }
 
-
+#if !defined (OBSOLETE_CODE)
 // ------------------------------ ЭФФЕКТ МЕРЦАНИЕ ----------------------
 // (c) SottNick
 #define TWINKLES_SPEEDS 4     // всего 4 варианта скоростей мерцания

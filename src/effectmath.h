@@ -407,7 +407,7 @@ struct Boid {
       return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
     }
 
-    void run(std::vector<Boid> boids) {
+    void run(std::vector<Boid> &boids) {
       flock(boids);
       update();
       // wrapAroundBorders();

@@ -39,6 +39,8 @@
 #include "modules/mod_manager.hpp"
 #include "display.hpp"
 #include "canvas/Arduino_Canvas_Mono.h"
+#include "NetworkEvents.h"
+#include "WiFiType.h"
 
 
 struct TextMessage {
