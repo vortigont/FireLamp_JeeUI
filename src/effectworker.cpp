@@ -545,11 +545,12 @@ void EffectWorker::_spawn(effect_t eid, bool rnd_ctrls){
     worker = std::make_unique<Effect3DNoise>(canvas);
     break;
 
-
-/*
-  case EFF_ENUM::EFF_FLOCK :
+    case effect_t::flock :
     worker = std::make_unique<EffectFlock>(canvas);
     break;
+
+
+/*
   case EFF_ENUM::EFF_SPIRO :
     worker = std::make_unique<EffectSpiro>(canvas);
     break;

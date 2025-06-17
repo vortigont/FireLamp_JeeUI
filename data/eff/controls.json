@@ -116,5 +116,15 @@
       {"label":"blur", "min":0, "max":1},
       {"label":"colorCycle", "min":0, "max":1}
     ]
+  },
+  "flock":{
+    "ctrls":[
+      {"label":"speed", "smin":1},
+      {"label":"scale", "smin":5, "smax":40},
+      {"label":"pallete", "min":0, "max":22},
+      {"label":"predator", "min":0, "max":1},
+      {"label":"fade", "smin":30, "smax":100},
+      {"label":"force", "smin":0, "smax":200}
+    ]
   }
 }

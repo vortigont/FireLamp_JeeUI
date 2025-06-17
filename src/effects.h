@@ -395,28 +395,33 @@ public:
     void load() override;
     bool run() override;
 };
+#endif  // DISABLED_CODE
 
 // ============= ЭФФЕКТ СТАЯ ===============
 // Адаптация от (c) SottNick
+#define AVAILABLE_BOID_COUNT    10
 class EffectFlock : public EffectCalc {
 private:
-  std::vector<Boid> boids;
-  Boid predator;
-  PVector wind;
+  std::vector<Boid> _boids;
+  Boid _predator;
+  PVector _wind;
   
-  bool predatorPresent;
-  float hueoffset;
+  bool _predatorPresent;    //, _varyspeed;
+  uint8_t _hueoffset, _fade;
+  int32_t _f;
 
-  bool flockRoutine();
-  void setControl(size_t idx, int32_t value) override;
-  //void setspd(const byte _spd) override;
-public:
+  bool _flockRoutine();
+  void _setSpeed(int32_t s);
+  void _setForce(int32_t s);
+  
+  public:
     EffectFlock(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer),
-        boids( std::vector<Boid>(AVAILABLE_BOID_COUNT) ) {}
+        _boids( std::vector<Boid>(AVAILABLE_BOID_COUNT) ) {}
+
+    void setControl(size_t idx, int32_t value) override;
     void load() override;
     bool run() override;
 };
-#endif  // DISABLED_CODE
 
 // ***** RAINBOW COMET / РАДУЖНАЯ КОМЕТА *****
 // ***** Парящий огонь, Кровавые Небеса, Радужный Змей и т.п.

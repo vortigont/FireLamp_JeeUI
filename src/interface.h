@@ -1,5 +1,6 @@
 #pragma once
 #include "ui.h"
+#include "esp_event.h"
 
 #define RESCHEDULE_DELAY    50         // async callback delay
 // размер документа для конфигурации дисплеев

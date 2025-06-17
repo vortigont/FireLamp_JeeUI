@@ -2235,82 +2235,127 @@
       }
     },
     "gpiosetup":{
-      "section": "set_gpio",
-      "label": "GPIO Configuration",
+      "section": "gpio",
+      "label": "GPIO / I2C",
       "main": true,
       "block": [
         {
           "html": "comment",
-          "label": "<ul><li>Check <a href=\"https://github.com/vortigont/FireLamp_JeeUI/wiki/\" target=\"_blank\">WiKi page</a> for GPIO reference</li><li>Set '-1' to disable GPIO</li><li>MCU will <b>reboot</b> on any gpio change! Wait 5-10 sec after each save</li>"
+          "label": "<ul><li>Подробнее о GPIO на <a href=\"https://github.com/vortigont/FireLamp_JeeUI/wiki/\" target=\"_blank\">странице WiKi</a></li><li>Значение '-1' отключает GPIO</li><li>MCU <b>перезагрузится</b> при изменении настроек! Подождите 5-10 секунд после применения параметров</li>"
         },
         {
           "html":"spacer"
         },
         {
-          "section": "fet",
-          "line": true,
-          "block": [
+          "section": "gpiocfg",
+          "extended_ids": true,
+          "block":[
             {
-              "id": "fet_gpio",
-              "html": "input",
-              "type": "number",
-              "label": "Matrix MOSFET gpio",
-              "value": -1,
-              "min": -1,
-              "step": 1
+              "section": "fet",
+              "label":"МОП-транзистор панели",
+              "line": true,
+              "hidden": true,
+              "extended_ids": true,
+              "block": [
+                {
+                  "id": "gpio",
+                  "html": "input",
+                  "type": "number",
+                  "label": "gpio МОП-транзистора",
+                  "value": -1,
+                  "min": -1,
+                  "step": 1
+                },
+                {
+                  "id": "logic",
+                  "html": "input",
+                  "type": "number",
+                  "label": "Логический уровень транзистора",
+                  "value": 0,
+                  "min": 0,
+                  "max": 1,
+                  "step": 1
+                }
+              ]
+            },
+            { "html":"spacer" },
+            {
+              "section": "i2c0",
+              "label":"Шина I2C - 0",
+              "hidden":true,
+              "line": true,
+              "extended_ids": true,
+              "block": [
+                {
+                  "id": "enable",
+                  "html": "input",
+                  "type": "checkbox",
+                  "label": "Активна"
+                },
+                {
+                  "id": "sda",
+                  "html": "input",
+                  "type": "number",
+                  "label": "gpio SDA",
+                  "value": -1,
+                  "min": -1,
+                  "step": 1
+                },
+                {
+                  "id": "scl",
+                  "html": "input",
+                  "type": "number",
+                  "label": "gpio SCL",
+                  "value": -1,
+                  "min": -1
+                }
+              ]
             },
             {
-              "id": "fet_ll",
-              "html": "input",
-              "type": "number",
-              "label": "MOSFET logic level",
-              "value": 0,
-              "min": 0,
-              "max": 1,
-              "step": 1
-            }
+              "section": "i2c1",
+              "label":"Шина I2C - 1",
+              "hidden":true,
+              "line": true,
+              "extended_ids": true,
+              "block": [
+                {
+                  "id": "enable",
+                  "html": "input",
+                  "type": "checkbox",
+                  "label": "Активна"
+                },
+                {
+                  "id": "sda",
+                  "html": "input",
+                  "type": "number",
+                  "label": "gpio SDA",
+                  "value": -1,
+                  "min": -1,
+                  "step": 1
+                },
+                {
+                  "id": "scl",
+                  "html": "input",
+                  "type": "number",
+                  "label": "gpio SCL",
+                  "value": -1,
+                  "min": -1
+                }
+              ]
+            }    
           ]
         },
+        { "html":"spacer" },
         {
-          "html":"spacer"
-        },
-        {
-          "section": "aux",
-          "line": true,
-          "block": [
-            {
-              "id": "aux_gpio",
-              "html": "input",
-              "value": -1,
-              "type": "number",
-              "label": "AUX gpio",
-              "min": -1,
-              "step": 1
-            },
-            {
-              "id": "aux_ll",
-              "html": "input",
-              "type": "number",
-              "label": "AUX logic level",
-              "value": 0,
-              "min": 0,
-              "max": 1,
-              "step": 1
-            }
-          ]
-        },
-        {
-          "html":"spacer"
-        },
-        {
-          "id": "set_gpio",
           "html": "button",
-          "type": 1,
+          "type": "submit",
+          "form": "gpiocfg",
+          "extended_ids": true,
           "label":"✅ Применить"
         },
         {
-          "id": "ui_page_settings",
           "html":"button",
+          "action": "ui_page_settings",
           "color": "green",
           "type":"generic",
           "label":"🔙 Выход"
@@ -4003,6 +4048,54 @@
           "type":"checkbox",
           "onChange": true
         }
+      ]
+    },
+    "flock":{
+      "section":"eff_ctrls",
+        "replace":true,
+        "block":[
+          {
+            "section":"uidata",
+            "block":[
+              {
+                "action":"pick",
+                "key":"lampui.effCommon.speed"
+              },
+              {
+                "action":"pick",
+                "key":"lampui.effCommon.scale"
+              },
+              {
+                "action":"pick",
+                "key":"lampui.effCommon.palette12"
+              }
+            ]
+          },
+          {
+            "html": "input",
+            "id": "eff_control_3",
+            "type": "checkbox",
+            "label": "Хищник",
+            "onChange": true
+          },
+          {
+            "html": "input",
+            "id": "eff_control_4",
+            "type": "range",
+            "label": "Хвосты",
+            "min": 1,
+            "max": 10,
+            "onChange": true
+          },
+          {
+            "html": "input",
+            "id": "eff_control_5",
+            "type": "range",
+            "label": "сила притяжения",
+            "min": 1,
+            "max": 10,
+            "onChange": true
+          }
       ]
     }
   },
