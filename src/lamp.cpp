@@ -646,7 +646,7 @@ void LEDFader::fadelight(int targetbrightness, uint32_t duration){
   // calculate required steps
   int32_t _steps = ( abs(_tgtbrt - _brt) > (FADE_MININCREMENT * duration / FADE_MINSTEPTIME) ) ? duration / FADE_MINSTEPTIME : abs(_tgtbrt - _brt)/FADE_MININCREMENT;
   if (_steps < 3) {   // no need to fade for such small difference
-    LOGD(T_Fade, printf, "fast: %hhu->%hhu, steps<:%u\n", _brt, _tgtbrt, _steps);
+    LOGD(T_Fade, printf, "fast: %hu->%hu, steps<:%u\n", _brt, _tgtbrt, _steps);
     lmp->_brightness(_tgtbrt, true);
     abort();
     int b = targetbrightness;
@@ -672,7 +672,7 @@ void LEDFader::fadelight(int targetbrightness, uint32_t duration){
       // onDisable
       [this, targetbrightness](){
           lmp->_brightness(_tgtbrt, true);  // set exact target brightness value
-          LOGD(T_Fade, printf, "to %hhu complete\n", _tgtbrt);
+          LOGD(T_Fade, printf, "to %hu complete\n", _tgtbrt);
           int b = targetbrightness;
           EVT_POST_DATA(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::fadeEnd), &b, sizeof(b));
           // use new task for callback, 'cause effect switching will immidiatetly respawn new fader from callback, so I need to release a Task instance
@@ -683,7 +683,7 @@ void LEDFader::fadelight(int targetbrightness, uint32_t duration){
     );
   }
 
-  LOGD(T_Fade, printf, "lamp/display:%hhu/%hhu->%d/%hhu, steps:%hu, inc:%hd, interval:%u\n", lmp->getBrightness(), lmp->_get_brightness(true), targetbrightness, _tgtbrt, _steps, _brtincrement, interval);
+  LOGD(T_Fade, printf, "lamp/display:%hu/%hu->%d/%hu, steps:%hu, inc:%hd, interval:%u\n", lmp->getBrightness(), lmp->_get_brightness(true), targetbrightness, _tgtbrt, _steps, _brtincrement, interval);
   // send fader event
   EVT_POST(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::fadeStart));
 }
