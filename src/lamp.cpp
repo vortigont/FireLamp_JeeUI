@@ -65,6 +65,13 @@ Lamp::~Lamp(){
 }
 
 void Lamp::lamp_init(){
+  // register embui handlers
+  // demo on/off
+  embui.action.add(T_demoOn, [this](Interface *interf, JsonObjectConst data, const char* action){ _embui_demoOn(interf, data, action); } );
+  embui.action.add(T_demoRndCtrls, [this](Interface *interf, JsonObjectConst data, const char* action){ _embui_demoRndCtrls(interf, data, action); } );
+  embui.action.add(T_demoRndOrder, [this](Interface *interf, JsonObjectConst data, const char* action){ _embui_demoRndOrder(interf, data, action); } );  
+  effwrkr.embui_register();
+
   // subscribe to CMD events
   _events_subsribe();
 
@@ -80,7 +87,7 @@ void Lamp::lamp_init(){
     // restore demo time
     handle->get_item(T_DemoTime, demoTime);
   } else {
-    LOGE(T_lamp, printf, "Err opening NVS handle: %s\n", esp_err_to_name(err));
+    LOGW(T_lamp, printf, "Err opening NVS handle: %s\n", esp_err_to_name(err));
   }
 
   _brightness(0, true);          // начинаем с полностью потушенного дисплея 0-й яркости
@@ -124,7 +131,7 @@ void Lamp::lamp_init(){
   if (opts.flag.fadeEffects)
     _swState.fadeState = 1;   // fade-in
 
-  // if other options need to be restored, then just quit
+  // if no other options need to be restored, then just quit
   if (!opts.flag.restoreState){
     vopts.flag.initialized = true;
     return;
@@ -138,13 +145,6 @@ void Lamp::lamp_init(){
   if (opts.flag.pwrState){
     power(true);
   }
-
-  // register embui handlers
-  // demo on/off
-  embui.action.add(T_demoOn, [this](Interface *interf, JsonObjectConst data, const char* action){ _embui_demoOn(interf, data, action); } );
-  embui.action.add(T_demoRndCtrls, [this](Interface *interf, JsonObjectConst data, const char* action){ _embui_demoRndCtrls(interf, data, action); } );
-  embui.action.add(T_demoRndOrder, [this](Interface *interf, JsonObjectConst data, const char* action){ _embui_demoRndOrder(interf, data, action); } );  
-  effwrkr.embui_register();
 
   vopts.flag.initialized = true;
 }
@@ -646,7 +646,7 @@ void LEDFader::fadelight(int targetbrightness, uint32_t duration){
   // calculate required steps
   int32_t _steps = ( abs(_tgtbrt - _brt) > (FADE_MININCREMENT * duration / FADE_MINSTEPTIME) ) ? duration / FADE_MINSTEPTIME : abs(_tgtbrt - _brt)/FADE_MININCREMENT;
   if (_steps < 3) {   // no need to fade for such small difference
-    LOGD(T_Fade, printf, "fast: %hhu->%hhu, steps<:%u\n", _brt, _tgtbrt, _steps);
+    LOGD(T_Fade, printf, "fast: %hu->%hu, steps<:%u\n", _brt, _tgtbrt, _steps);
     lmp->_brightness(_tgtbrt, true);
     abort();
     int b = targetbrightness;
@@ -672,7 +672,7 @@ void LEDFader::fadelight(int targetbrightness, uint32_t duration){
       // onDisable
       [this, targetbrightness](){
           lmp->_brightness(_tgtbrt, true);  // set exact target brightness value
-          LOGD(T_Fade, printf, "to %hhu complete\n", _tgtbrt);
+          LOGD(T_Fade, printf, "to %hu complete\n", _tgtbrt);
           int b = targetbrightness;
           EVT_POST_DATA(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::fadeEnd), &b, sizeof(b));
           // use new task for callback, 'cause effect switching will immidiatetly respawn new fader from callback, so I need to release a Task instance
@@ -683,7 +683,7 @@ void LEDFader::fadelight(int targetbrightness, uint32_t duration){
     );
   }
 
-  LOGD(T_Fade, printf, "lamp/display:%hhu/%hhu->%d/%hhu, steps:%hu, inc:%hd, interval:%u\n", lmp->getBrightness(), lmp->_get_brightness(true), targetbrightness, _tgtbrt, _steps, _brtincrement, interval);
+  LOGD(T_Fade, printf, "lamp/display:%hu/%hu->%d/%hu, steps:%hu, inc:%hd, interval:%u\n", lmp->getBrightness(), lmp->_get_brightness(true), targetbrightness, _tgtbrt, _steps, _brtincrement, interval);
   // send fader event
   EVT_POST(LAMP_CHANGE_EVENTS, e2int(evt::lamp_t::fadeStart));
 }
