@@ -65,6 +65,13 @@ Lamp::~Lamp(){
 }
 
 void Lamp::lamp_init(){
+  // register embui handlers
+  // demo on/off
+  embui.action.add(T_demoOn, [this](Interface *interf, JsonObjectConst data, const char* action){ _embui_demoOn(interf, data, action); } );
+  embui.action.add(T_demoRndCtrls, [this](Interface *interf, JsonObjectConst data, const char* action){ _embui_demoRndCtrls(interf, data, action); } );
+  embui.action.add(T_demoRndOrder, [this](Interface *interf, JsonObjectConst data, const char* action){ _embui_demoRndOrder(interf, data, action); } );  
+  effwrkr.embui_register();
+
   // subscribe to CMD events
   _events_subsribe();
 
@@ -80,7 +87,7 @@ void Lamp::lamp_init(){
     // restore demo time
     handle->get_item(T_DemoTime, demoTime);
   } else {
-    LOGE(T_lamp, printf, "Err opening NVS handle: %s\n", esp_err_to_name(err));
+    LOGW(T_lamp, printf, "Err opening NVS handle: %s\n", esp_err_to_name(err));
   }
 
   _brightness(0, true);          // начинаем с полностью потушенного дисплея 0-й яркости
@@ -124,7 +131,7 @@ void Lamp::lamp_init(){
   if (opts.flag.fadeEffects)
     _swState.fadeState = 1;   // fade-in
 
-  // if other options need to be restored, then just quit
+  // if no other options need to be restored, then just quit
   if (!opts.flag.restoreState){
     vopts.flag.initialized = true;
     return;
@@ -138,13 +145,6 @@ void Lamp::lamp_init(){
   if (opts.flag.pwrState){
     power(true);
   }
-
-  // register embui handlers
-  // demo on/off
-  embui.action.add(T_demoOn, [this](Interface *interf, JsonObjectConst data, const char* action){ _embui_demoOn(interf, data, action); } );
-  embui.action.add(T_demoRndCtrls, [this](Interface *interf, JsonObjectConst data, const char* action){ _embui_demoRndCtrls(interf, data, action); } );
-  embui.action.add(T_demoRndOrder, [this](Interface *interf, JsonObjectConst data, const char* action){ _embui_demoRndOrder(interf, data, action); } );  
-  effwrkr.embui_register();
 
   vopts.flag.initialized = true;
 }
