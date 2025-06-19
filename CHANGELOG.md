@@ -1,5 +1,11 @@
 # Change Log
 
+## 4.1.3
+ - fix demo switch
+ - resurrect effect Flock
+ - resurrect effect noise3d
+ - update EmbUI with some MQTT fixes
+
 ## 4.1.2
  - Fix: potential bootloop on wrong intitialization order
  - remove font awesome from cloudflare
