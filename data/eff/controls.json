@@ -126,5 +126,15 @@
       {"label":"fade", "smin":30, "smax":100},
       {"label":"force", "smin":0, "smax":200}
     ]
+  },
+  "attractor":{
+    "ctrls":[
+      {"label":"speed", "smin":2, "smax":100},
+      {"label":"scale", "smin":5, "smax":40},
+      {"label":"pallete", "min":0, "max":22},
+      {"label":"mass", "smin":100, "smax":1000},
+      {"label":"energy", "smin":15, "smax":1000},
+      {"label":"fade", "smin":10, "smax":150}
+    ]
   }
 }
