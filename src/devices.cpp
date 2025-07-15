@@ -102,7 +102,7 @@ void tm1637_configure(JsonVariantConst cfg){
 // ========== Button
 
 // set button lock
-void getset_btn_lock(Interface *interf, const JsonObjectConst data, const char* action){
+void getset_btn_lock(Interface *interf, const JsonVariantConst data, const char* action){
   if (!button_handler) return;
   if (!data.isNull()){
     // set lock state from provided data if there is no interf object
@@ -216,7 +216,7 @@ void button_configure_events(JsonVariantConst cfg){
     button_handler->load(cfg);     // load config
 }
 
-void getset_button_gpio(Interface *interf, const JsonObjectConst data, const char* action){
+void getset_button_gpio(Interface *interf, const JsonVariantConst data, const char* action){
   {
     JsonDocument doc;
     if (embuifs::deserializeFile(doc, T_benc_cfg)) doc.clear();
@@ -232,8 +232,9 @@ void getset_button_gpio(Interface *interf, const JsonObjectConst data, const cha
 
     JsonVariant dst = doc[T_btn_cfg].isNull() ? doc[T_btn_cfg].to<JsonObject>() : doc[T_btn_cfg];
 
+    JsonObjectConst jo(data);
     // copy keys to a destination object
-    for (JsonPairConst kvp : data)
+    for (JsonPairConst kvp : jo)
         dst[kvp.key()] = kvp.value();
 
     embuifs::serialize2file(doc, T_benc_cfg);
@@ -246,7 +247,7 @@ void getset_button_gpio(Interface *interf, const JsonObjectConst data, const cha
   if (interf) ui_page_setup_devices(interf, {});
 }
 
-void getset_encoder_gpio(Interface *interf, const JsonObjectConst data, const char* action){
+void getset_encoder_gpio(Interface *interf, const JsonVariantConst data, const char* action){
   {
     JsonDocument doc;
     if (embuifs::deserializeFile(doc, T_benc_cfg)) doc.clear();
@@ -262,8 +263,9 @@ void getset_encoder_gpio(Interface *interf, const JsonObjectConst data, const ch
 
     JsonVariant dst = doc[T_encoder].isNull() ? doc[T_encoder].to<JsonObject>() : doc[T_encoder];
 
+    JsonObjectConst jo(data);
     // copy keys to a destination object
-    for (JsonPairConst kvp : data)
+    for (JsonPairConst kvp : jo)
         dst[kvp.key()] = kvp.value();
 
     embuifs::serialize2file(doc, T_benc_cfg);
@@ -325,7 +327,7 @@ void dfplayer_setup_opt(JsonVariantConst cfg){
   mp3player->setLoopEffects(cfg[T_eff_tracks_loop]);
 }
 
-void getset_dfplayer_device(Interface *interf, const JsonObjectConst data, const char* action){
+void getset_dfplayer_device(Interface *interf, const JsonVariantConst data, const char* action){
     {
         JsonDocument doc;
         if (embuifs::deserializeFile(doc, T_dfplayer_cfg)) doc.clear();
@@ -341,8 +343,9 @@ void getset_dfplayer_device(Interface *interf, const JsonObjectConst data, const
 
         JsonVariant dst = doc[T_device].isNull() ? doc[T_device].to<JsonObject>() : doc[T_device];
 
+        JsonObjectConst jo(data);
         // copy keys to a destination object
-        for (JsonPairConst kvp : data)
+        for (JsonPairConst kvp : jo)
             dst[kvp.key()] = kvp.value();
 
         embuifs::serialize2file(doc, T_dfplayer_cfg);
@@ -358,7 +361,7 @@ void getset_dfplayer_device(Interface *interf, const JsonObjectConst data, const
     if (interf) ui_page_setup_devices(interf, {});
 }
 
-void getset_dfplayer_opt(Interface *interf, const JsonObjectConst data, const char* action){
+void getset_dfplayer_opt(Interface *interf, const JsonVariantConst data, const char* action){
     {
         JsonDocument doc;
         if (embuifs::deserializeFile(doc, T_dfplayer_cfg)) doc.clear();
@@ -374,8 +377,9 @@ void getset_dfplayer_opt(Interface *interf, const JsonObjectConst data, const ch
 
         JsonVariant dst = doc[T_opt].isNull() ? doc[T_opt].to<JsonObject>() : doc[T_opt];
 
+        JsonObjectConst jo(data);
         // copy keys to a destination object
-        for (JsonPairConst kvp : data)
+        for (JsonPairConst kvp : jo)
             dst[kvp.key()] = kvp.value();
 
         embuifs::serialize2file(doc, T_dfplayer_cfg);

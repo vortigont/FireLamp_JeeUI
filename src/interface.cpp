@@ -110,24 +110,23 @@ enum class lstfile_t {
 // *** forward declarations ***
 
 // CallBack - Create main index page
-void ui_page_main(Interface *interf, JsonObjectConst data, const char* action);
+void ui_page_main(Interface *interf, JsonVariantConst data, const char* action);
 // CallBack - append Lamps's settings elements to system's "Settings" page
-void block_user_settings(Interface *interf, JsonObjectConst data, const char* action);
+void block_user_settings(Interface *interf, JsonVariantConst data, const char* action);
 
-void ui_page_effects(Interface *interf, JsonObjectConst data, const char* action);
-void ui_page_setup_devices(Interface *interf, JsonObjectConst data, const char* action);
-void ui_section_effects_list_configuration(Interface *interf, JsonObjectConst data, const char* action);
+void ui_page_effects(Interface *interf, JsonVariantConst data, const char* action);
+void ui_page_setup_devices(Interface *interf, JsonVariantConst data, const char* action);
+void ui_section_effects_list_configuration(Interface *interf, JsonVariantConst data, const char* action);
 // build side-menu
-void ui_section_menu(Interface *interf, JsonObjectConst data, const char* action);
-//void show_effects_config(Interface *interf, JsonObjectConst data, const char* action);
+void ui_section_menu(Interface *interf, JsonVariantConst data, const char* action);
 // construct a page with Display setup
-void page_display_setup(Interface *interf, JsonObjectConst data, const char* action);
+void page_display_setup(Interface *interf, JsonVariantConst data, const char* action);
 // construct a page with TM1637 setup
-void ui_page_tm1637_setup(Interface *interf, JsonObjectConst data, const char* action);
+void ui_page_tm1637_setup(Interface *interf, JsonVariantConst data, const char* action);
 // send/set element values to the page with gpio setup
-void getset_gpios(Interface *interf, JsonObjectConst data, const char* action);
-void page_settings_other(Interface *interf, JsonObjectConst data, const char* action);
-void section_sys_settings_frame(Interface *interf, JsonObjectConst data, const char* action);
+void getset_gpios(Interface *interf, JsonVariantConst data, const char* action);
+void page_settings_other(Interface *interf, JsonVariantConst data, const char* action);
+void section_sys_settings_frame(Interface *interf, JsonVariantConst data, const char* action);
 
 
 /**
@@ -145,10 +144,10 @@ void block_display_setup(Interface *interf, engine_t e);
 
 /**
  * @brief index page for WebUI,
- * it loads in each new WebSOcket connection
+ * it loads on each new WebSocket client connection
  * 
  */
-void ui_page_main(Interface *interf, JsonObjectConst data, const char* action){
+void ui_page_main(Interface *interf, JsonVariantConst data, const char* action){
     if (!interf) return;
 
     interf->json_frame_interface(); //TINTF_080);
@@ -159,10 +158,10 @@ void ui_page_main(Interface *interf, JsonObjectConst data, const char* action){
     ui_section_menu(interf, data, action);
     interf->json_frame_flush();     // close frame
 
-    // generate effect's list
-    interf->json_frame_jscall("make_effect_list");
 
     if(WiFi.getMode() & WIFI_MODE_STA){
+        // generate effect's list
+        interf->json_frame_jscall("make_effect_list");
         ui_page_effects(interf, data, action);
     } else {
         // открываем страницу с настройками WiFi если контроллер не подключен к внешней AP
@@ -177,7 +176,7 @@ void ui_page_main(Interface *interf, JsonObjectConst data, const char* action){
  * @param data 
  * @param action 
  */
-void uidata_page_selector(Interface *interf, JsonObjectConst data, const char* action, page idx){
+void uidata_page_selector(Interface *interf, JsonVariantConst data, const char* action, page idx){
     interf->json_frame_interface();
     interf->json_section_uidata();
 
@@ -201,11 +200,11 @@ void uidata_page_selector(Interface *interf, JsonObjectConst data, const char* a
  * using common selector simplifes and reduces a number of registered actions required 
  * 
  */
-void ui_page_selector(Interface *interf, JsonObjectConst data, const char* action){
-    if (!interf || !data || data[A_ui_page].isNull()) return;  // quit if no section specified
+void ui_page_selector(Interface *interf, JsonVariantConst data, const char* action){
+    if (!interf) return;
 
     // get a page index
-    page idx = static_cast<page>(data[A_ui_page].as<int>());
+    page idx = static_cast<page>(data.as<int>());
 
     switch (idx){
         //case page::eff_config :   // страница "Управление списком эффектов"
@@ -231,7 +230,7 @@ void ui_page_selector(Interface *interf, JsonObjectConst data, const char* actio
         uidata_page_selector(interf, data, action, idx);
 }
 
-void ui_section_menu(Interface *interf, JsonObjectConst data, const char* action){
+void ui_section_menu(Interface *interf, JsonVariantConst data, const char* action){
     if (!interf) return;
     // создаем меню
     interf->json_section_menu();
@@ -249,7 +248,7 @@ void ui_section_menu(Interface *interf, JsonObjectConst data, const char* action
  * UI блок с настройками параметров эффекта
  * выводится на странице "Управление списком эффектов"
  */
-void ui_section_effects_list_configuration(Interface *interf, JsonObjectConst data, const char* action){
+void ui_section_effects_list_configuration(Interface *interf, JsonVariantConst data, const char* action){
     if (!interf) return;
 
     interf->json_section_begin(TCONST_set_effect);
@@ -280,7 +279,7 @@ void ui_section_effects_list_configuration(Interface *interf, JsonObjectConst da
  * страница "Управление списком эффектов"
  * здесь выводится ПОЛНЫЙ список эффектов в выпадающем списке
  */
-void show_effects_config(Interface *interf, JsonObjectConst data, const char* action){
+void show_effects_config(Interface *interf, JsonVariantConst data, const char* action){
     if (!interf) return;
 
     interf->json_frame_interface();
@@ -319,7 +318,7 @@ void show_effects_config(Interface *interf, JsonObjectConst data, const char* ac
  * @brief page with buttons leading to configuration of various external devices
  * 
  */
-void ui_page_setup_devices(Interface *interf, JsonObjectConst data, const char* action){
+void ui_page_setup_devices(Interface *interf, JsonVariantConst data, const char* action){
     interf->json_frame_interface();
     interf->json_section_main(A_ui_page_setupdevs, "Конфигурация периферийных устройств");
 
@@ -342,7 +341,7 @@ void ui_page_setup_devices(Interface *interf, JsonObjectConst data, const char* 
  * @brief build a page with tm1637 configuration
  * it contains a set of controls and options
  */
-void ui_page_tm1637_setup(Interface *interf, JsonObjectConst data, const char* action){
+void ui_page_tm1637_setup(Interface *interf, JsonVariantConst data, const char* action){
     interf->json_frame_interface();
     interf->json_section_uidata();
         interf->uidata_pick( "lampui.settings.tm1637" );
@@ -353,7 +352,7 @@ void ui_page_tm1637_setup(Interface *interf, JsonObjectConst data, const char* a
 }
 
 // this will trigger widgets list page opening
-void ui_page_modules(Interface *interf, JsonObjectConst data, const char* action){
+void ui_page_modules(Interface *interf, JsonVariantConst data, const char* action){
   uidata_page_selector(interf, data, action, page::modules);
 }
 
@@ -361,7 +360,7 @@ void ui_page_modules(Interface *interf, JsonObjectConst data, const char* action
  * @brief build a page with Button / Encoder configuration
  * it contains a set of controls and options
  */
-void page_button_setup(Interface *interf, JsonObjectConst data, const char* action){
+void page_button_setup(Interface *interf, JsonVariantConst data, const char* action){
     interf->json_frame_interface();
     interf->json_section_uidata();
         interf->uidata_pick( "lampui.settings.button" );
@@ -447,11 +446,11 @@ void page_button_setup(Interface *interf, JsonObjectConst data, const char* acti
     interf->json_frame_flush();
 }
 
-void page_button_evtedit(Interface *interf, JsonObjectConst data, const char* action){
+void page_button_evtedit(Interface *interf, JsonVariantConst data, const char* action){
     JsonDocument doc;
     if (embuifs::deserializeFile(doc, T_benc_cfg)) return;
     JsonArray bevents( doc[T_btn_events] );
-    int idx = data[A_button_evt_edit];
+    int idx = data.as<int>();
     JsonObject obj = bevents[idx];
 
     interf->json_frame_interface();
@@ -468,15 +467,16 @@ void page_button_evtedit(Interface *interf, JsonObjectConst data, const char* ac
     interf->json_frame_flush();
 }
 
-void page_button_evt_save(Interface *interf, JsonObjectConst data, const char* action){
+void page_button_evt_save(Interface *interf, JsonVariantConst data, const char* action){
     JsonDocument doc;
     if (embuifs::deserializeFile(doc, T_benc_cfg)) doc.clear();
     JsonArray bevents( doc[T_btn_events] );
-    int idx = data[T_idx];
+    int idx = data.as<int>();
     JsonObject obj = idx < bevents.size() ? bevents[idx] : bevents.add<JsonObject>();
 
+    JsonObjectConst jo(data);
     // copy keys from post'ed object
-    for (JsonPairConst kvp : data)
+    for (JsonPairConst kvp : jo)
         obj[kvp.key()] = kvp.value();
 
     embuifs::serialize2file(doc, T_benc_cfg);
@@ -487,7 +487,7 @@ void page_button_evt_save(Interface *interf, JsonObjectConst data, const char* a
 }
 
 // DFPlayer related pages
-void page_dfplayer_setup(Interface *interf, JsonObjectConst data, const char* action){
+void page_dfplayer_setup(Interface *interf, JsonVariantConst data, const char* action){
     interf->json_frame_interface();
     interf->json_section_uidata();
         interf->uidata_pick( "lampui.settings.dfplayer" );
@@ -498,40 +498,12 @@ void page_dfplayer_setup(Interface *interf, JsonObjectConst data, const char* ac
     getset_dfplayer_opt(interf, {}, NULL);
 }
 
-#ifdef DISABLED_CODE
-/**
- * @brief переключение эффекта в выпадающем списке на странице "управление списком эффектов"
- * т.к. страница остается таже, нужно только обновить значения нескольких полей значениями для нового эффекта
- */
-void set_effects_config_list(Interface *interf, JsonObjectConst data, const char* action){
-    if (!interf || !data) return;
-
-    // получаем номер выбраного эффекта 
-    uint16_t num = data[TCONST_effListConf].as<uint16_t>();
-/*
-    if(confEff){ // если переключаемся, то сохраняем предыдущие признаки в эффект до переключения
-        LOG(printf_P, PSTR("eff_sel: %d eff_fav : %d, new eff:%d\n"), data[TCONST_eff_sel].as<bool>(),data[TCONST_eff_fav].as<bool>(), num);
-    }
-*/
-    //confEff = myLamp.effwrkr.getEffect(static_cast<effect_t>(num));
-
-    // обновляем поля
-    interf->json_frame_value();
-
-    //interf->value(TCONST_eff_sel, !confEff->flags.hidden, false);          // доступен для выбора в выпадающем списке на главной странице
-    //interf->value(TCONST_eff_fav, !confEff->flags.disabledInDemo, false);             // доступен в демо-режиме
-
-    interf->json_frame_flush();
-}
-#endif // DISABLED_CODE
-
-
 /**
  * Формирование и вывод секции с дополнительными переключателями на основной странице
  * вкл/выкл, демо, и пр. что скрывается за кнопкой "Ещё..."
  * формируется не основная страница а секция, заменяющая собой одноименную секцию на основной странице
  */
-void ui_block_mainpage_switches(Interface *interf, JsonObjectConst data, const char* action){
+void ui_block_mainpage_switches(Interface *interf, JsonVariantConst data, const char* action){
     interf->json_frame_interface(P_content);    // replace sections on existing main page
     // load uidata objects for the lamp
     interf->json_section_uidata();
@@ -556,7 +528,7 @@ void ui_block_mainpage_switches(Interface *interf, JsonObjectConst data, const c
     Страница "Эффекты" (заглавная страница)
     здесь выводится список эффектов который не содержит "скрытые" элементы
 */
-void ui_page_effects(Interface *interf, JsonObjectConst data, const char* action){
+void ui_page_effects(Interface *interf, JsonVariantConst data, const char* action){
     interf->json_frame_interface();
 
     interf->json_section_uidata();
@@ -574,13 +546,12 @@ void ui_page_effects(Interface *interf, JsonObjectConst data, const char* action
     myLamp.effwrkr.mkEmbUIpage(interf);
 }
 
-void set_auxflag(Interface *interf, JsonObjectConst data, const char* action){
-    if (!data) return;
+void set_auxflag(Interface *interf, JsonVariantConst data, const char* action){
     int pin = embui.getConfig()[TCONST_aux_gpio];
     if ( pin == -1) return;
     bool state = ( digitalRead(pin) == embui.getConfig()[TCONST_aux_ll] );
 
-    if ((data[TCONST_AUX]) != state) {
+    if (data != state) {
         digitalWrite(pin, !state);
     }
 }
@@ -589,7 +560,7 @@ void set_auxflag(Interface *interf, JsonObjectConst data, const char* action){
  * @brief WebUI страница "Настройки" - "другие"
  * 
  */
-void page_settings_other(Interface *interf, JsonObjectConst data, const char* action){
+void page_settings_other(Interface *interf, JsonVariantConst data, const char* action){
     interf->json_frame_interface();
     interf->json_section_uidata();
         interf->uidata_pick( "lampui.settings.otheropts" );
@@ -599,30 +570,22 @@ void page_settings_other(Interface *interf, JsonObjectConst data, const char* ac
     getset_settings_other(interf, {}, NULL);
 }
 
-/*
-void set_overlay_drawing(Interface *interf, JsonObjectConst data, const char* action){
-    if (!data) return;
-    myLamp.enableDrawing(data[TCONST_drawbuff]);
-}
-*/
-void set_mp3mute(Interface *interf, JsonObjectConst data, const char* action){
-    if (!data) return;
-
-    bool v = data[T_mp3mute];
+void set_mp3mute(Interface *interf, JsonVariantConst data, const char* action){
+    bool v = data;
     EVT_POST(LAMP_SET_EVENTS, e2int(v ? evt::lamp_t::mp3mute : evt::lamp_t::mp3unmute ));
 }
 
-void set_mp3volume(Interface *interf, JsonObjectConst data, const char* action){
-    int32_t volume = data[T_mp3vol];
+void set_mp3volume(Interface *interf, JsonVariantConst data, const char* action){
+    int32_t volume = data;
     EVT_POST_DATA(LAMP_SET_EVENTS, e2int(evt::lamp_t::mp3vol), &volume, sizeof(volume));
 }
 
 /*
     сохраняет настройки GPIO и перегружает контроллер
  */
-void getset_gpios(Interface *interf, JsonObjectConst data, const char* action){
+void getset_gpios(Interface *interf, JsonVariantConst data, const char* action){
 
-    if (!data || !data.size()){
+    if (data.isNull()){
         JsonDocument doc;
         if (embuifs::deserializeFile(doc, TCONST_fcfg_gpio)) doc.clear();     // reset if cfg is broken or missing
 
@@ -643,7 +606,7 @@ void getset_gpios(Interface *interf, JsonObjectConst data, const char* action){
  * @brief additional elements on system settings page
  * 
  */
-void block_user_settings(Interface *interf, JsonObjectConst data, const char* action){
+void block_user_settings(Interface *interf, JsonVariantConst data, const char* action){
     interf->json_section_begin("cfg_buttons");
     // periferal devices
     interf->button_value(button_t::generic, A_ui_page, e2int(page::setup_devices), "Внешние устройства");
@@ -683,7 +646,7 @@ void wled_handle(AsyncWebServerRequest *request){
     request->send(200, PGmimexml, result);
 }
 
-void show_progress(Interface *interf, JsonObjectConst data, const char* action){
+void show_progress(Interface *interf, JsonVariantConst data, const char* action){
     if (!interf) return;
     interf->json_frame_interface();
     interf->json_section_hidden(T_DO_OTAUPD, String(TINTF_056) + " : " + data[TINTF_05A].as<String>()+ "%");
@@ -695,12 +658,12 @@ void show_progress(Interface *interf, JsonObjectConst data, const char* action){
  * @brief build a page with LED Display setup
  * 
  */
-void page_display_setup(Interface *interf, JsonObjectConst data, const char* action){
+void page_display_setup(Interface *interf, JsonVariantConst data, const char* action){
     interf->json_frame_interface();
     interf->json_section_main(P_EMPTY, TINTF_display_setup);
 
     // determine which value we should set drop-down list to
-    int select_val = data && data[T_display_type].is<int>() ? data[T_display_type] : e2int(display.get_engine_type());
+    int select_val = data.is<int>() ? data : e2int(display.get_engine_type());
 
     interf->select(T_display_type, select_val, TINTF_display_type, true);
         interf->option(0, "ws2812b LED stripe");
@@ -710,8 +673,8 @@ void page_display_setup(Interface *interf, JsonObjectConst data, const char* act
     interf->spacer();
 
     // if parameter for the specific page has been given
-    if (data && data[T_display_type].is<int>()){
-        if (data[T_display_type] == e2int(engine_t::hub75))
+    if (data.is<int>()){
+        if (data == e2int(engine_t::hub75))
             block_display_setup(interf, engine_t::hub75);
         else
             block_display_setup(interf, engine_t::ws2812);

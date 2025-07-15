@@ -192,7 +192,7 @@ public:
      * @param data 
      * @param action 
      */
-    void mkEmbUIpage(Interface *interf, const JsonObjectConst data, const char* action) override;
+    void mkEmbUIpage(Interface *interf, const JsonVariantConst data, const char* action) override;
 
 };
 

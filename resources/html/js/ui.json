@@ -1057,8 +1057,7 @@
           "id": "set_other",
           "html": "button",
           "type": 1,
-          "label": "🖫 Сохранить",
-          "fa": "fas fa-circle-check"
+          "label": "🖫 Сохранить"
         },
         {
           "html": "spacer"

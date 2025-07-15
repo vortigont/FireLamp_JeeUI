@@ -397,7 +397,7 @@ void EffConfiguration::embui_control_vals(Interface *interf) const {
   interf->json_frame_flush();
 }
 
-void EffConfiguration::embui_preset_rename(Interface *interf, JsonObjectConst data, const char* action){
+void EffConfiguration::embui_preset_rename(Interface *interf, JsonVariantConst data, const char* action){
   JsonVariantConst lbl = data[P_label];
   if (!lbl.is<const char*>()) return;   // some bad data
 
@@ -450,12 +450,12 @@ EffectWorker::~EffectWorker(){
 
 void EffectWorker::embui_register(){
   // сформировать и опубликовать блок контролов текущего эффекта
-  embui.action.add(A_effect_ctrls, [&](Interface *interf, JsonObjectConst data, const char* action){ _effCfg.embui_control_vals(interf); });
+  embui.action.add(A_effect_ctrls, [&](Interface *interf, JsonVariantConst data, const char* action){ _effCfg.embui_control_vals(interf); });
   // preset switcher
-  embui.action.add(A_eff_preset, [&](Interface *interf, JsonObjectConst data, const char* action){ switchEffectPreset(data[A_eff_preset]); _effCfg.embui_control_vals(interf); });
-  embui.action.add(A_eff_preset_lbl, [&](Interface *interf, JsonObjectConst data, const char* action){ _effCfg.embui_preset_rename(interf, data, action); });
-  embui.action.add(A_eff_preset_new, [&](Interface *interf, JsonObjectConst data, const char* action){ _effCfg.embui_preset_clone(interf); });
-  embui.action.add(A_eff_preset_remove, [&](Interface *interf, JsonObjectConst data, const char* action){ _effCfg.embui_preset_delete(interf); });
+  embui.action.add(A_eff_preset, [&](Interface *interf, JsonVariantConst data, const char* action){ switchEffectPreset(data[A_eff_preset]); _effCfg.embui_control_vals(interf); });
+  embui.action.add(A_eff_preset_lbl, [&](Interface *interf, JsonVariantConst data, const char* action){ _effCfg.embui_preset_rename(interf, data, action); });
+  embui.action.add(A_eff_preset_new, [&](Interface *interf, JsonVariantConst data, const char* action){ _effCfg.embui_preset_clone(interf); });
+  embui.action.add(A_eff_preset_remove, [&](Interface *interf, JsonVariantConst data, const char* action){ _effCfg.embui_preset_delete(interf); });
 }
 
 

@@ -224,17 +224,17 @@ ModTextScroller::ModTextScroller() : GenericModule(T_txtscroll, false){
   // add EmbUI's handlers
 
   // set generic options
-  embui.action.add(A_set_mod_txtscroll_generic, [this](Interface *interf, JsonObjectConst data, const char* action){ set_generic_options(interf, data, action); } );
+  embui.action.add(A_set_mod_txtscroll_generic, [this](Interface *interf, JsonVariantConst data, const char* action){ set_generic_options(interf, data, action); } );
   // remove specified scroller instance
-  embui.action.add(A_set_mod_txtscroll_scroll_rm, [this](Interface *interf, JsonObjectConst data, const char* action){ rm_instance(interf, data, action); } );
+  embui.action.add(A_set_mod_txtscroll_scroll_rm, [this](Interface *interf, JsonVariantConst data, const char* action){ rm_instance(interf, data, action); } );
   // set/add scroller instance options
-  embui.action.add(A_set_mod_txtscroll_streamcfg, [this](Interface *interf, JsonObjectConst data, const char* action){ set_instance(interf, data, action); } );
+  embui.action.add(A_set_mod_txtscroll_streamcfg, [this](Interface *interf, JsonVariantConst data, const char* action){ set_instance(interf, data, action); } );
 
-  embui.action.add(A_set_mod_txtscroll_send, [this](Interface *interf, JsonObjectConst data, const char* action){ embui_send_msg(interf, data, action); } );
+  embui.action.add(A_set_mod_txtscroll_send, [this](Interface *interf, JsonVariantConst data, const char* action){ embui_send_msg(interf, data, action); } );
 
-  embui.action.add(A_set_mod_txtscroll_profile_apply, [this](Interface *interf, JsonObjectConst data, const char* action){ embui_profile_apply(interf, data, action); } );
+  embui.action.add(A_set_mod_txtscroll_profile_apply, [this](Interface *interf, JsonVariantConst data, const char* action){ embui_profile_apply(interf, data, action); } );
 
-  embui.action.add(A_set_mod_txtscroll_profile_save, [this](Interface *interf, JsonObjectConst data, const char* action){ embui_profile_save(interf, data, action); } );
+  embui.action.add(A_set_mod_txtscroll_profile_save, [this](Interface *interf, JsonVariantConst data, const char* action){ embui_profile_save(interf, data, action); } );
 
   //esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, TextScrollerWgdt::_event_hndlr, this, &_hdlr_lmp_change_evt);
   //esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_STATE_EVENTS, ESP_EVENT_ANY_ID, TextScrollerWgdt::_event_hndlr, this, &_hdlr_lmp_state_evt);
@@ -361,7 +361,7 @@ void ModTextScroller::updateMSG(const TextMessage& msg, uint8_t scroller_id, boo
   }
 }
 
-void ModTextScroller::mkEmbUIpage(Interface *interf, JsonObjectConst data, const char* action){
+void ModTextScroller::mkEmbUIpage(Interface *interf, JsonVariantConst data, const char* action){
   String key(T_ui_pages_module_prefix);
   key += label;
   // load Module's structure from a EmbUI's UI data
@@ -374,7 +374,7 @@ void ModTextScroller::mkEmbUIpage(Interface *interf, JsonObjectConst data, const
   interf->json_frame_flush();
 }
 
-void ModTextScroller::set_generic_options(Interface *interf, JsonObjectConst data, const char* action){
+void ModTextScroller::set_generic_options(Interface *interf, JsonVariantConst data, const char* action){
 
   // apply setting to running instance
   load_cfg(data);
@@ -395,7 +395,7 @@ void ModTextScroller::set_generic_options(Interface *interf, JsonObjectConst dat
   embuifs::serialize2file(doc, mkFileName().c_str());
 }
 
-void ModTextScroller::rm_instance(Interface *interf, JsonObjectConst data, const char* action){
+void ModTextScroller::rm_instance(Interface *interf, JsonVariantConst data, const char* action){
   int id = data[action].as<int>();
   if (id < 1)
     return;
@@ -422,7 +422,7 @@ void ModTextScroller::rm_instance(Interface *interf, JsonObjectConst data, const
   mkEmbUIpage(interf, {}, NULL);
 }
 
-void ModTextScroller::set_instance(Interface *interf, JsonObjectConst data, const char* action){
+void ModTextScroller::set_instance(Interface *interf, JsonVariantConst data, const char* action){
   if (data[T_stream_id].isNull()) return;
 
   uint8_t stream_id = data[T_stream_id];
@@ -470,7 +470,7 @@ void ModTextScroller::_kill_scroller(uint8_t stream_id){
   std::erase_if(_scrollers, [stream_id](const TextScroll &s){ return s.getID() == stream_id; } );
 }
 
-void ModTextScroller::embui_send_msg(Interface *interf, JsonObjectConst data, const char* action){
+void ModTextScroller::embui_send_msg(Interface *interf, JsonVariantConst data, const char* action){
   JsonVariantConst v = data[P_text];
   if (v.is<const char*>() && !v.isNull()){
     TextMessage m(v.as<const char*>(), data[T_cnt] | 1, data[T_interval], data[P_id]);
@@ -482,7 +482,7 @@ void ModTextScroller::embui_send_msg(Interface *interf, JsonObjectConst data, co
   }
 }
 
-void ModTextScroller::embui_profile_apply(Interface *interf, JsonObjectConst data, const char* action){
+void ModTextScroller::embui_profile_apply(Interface *interf, JsonVariantConst data, const char* action){
   for (auto &s : _scrollers){
     if (s.getID() == data[T_stream_id].as<uint8_t>()){
       s.load_cfg(data);
@@ -491,7 +491,7 @@ void ModTextScroller::embui_profile_apply(Interface *interf, JsonObjectConst dat
   }
 }
 
-void ModTextScroller::embui_profile_save(Interface *interf, JsonObjectConst data, const char* action){
+void ModTextScroller::embui_profile_save(Interface *interf, JsonVariantConst data, const char* action){
   uint8_t stream_id = data[T_stream_id];
   if (!stream_id) return;   // stream id must be valid
 

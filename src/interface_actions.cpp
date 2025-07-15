@@ -50,7 +50,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
  * @brief Set device display brightness
  * 
  */
-void getset_brightness(Interface *interf, JsonObjectConst data, const char* action){
+void getset_brightness(Interface *interf, JsonVariantConst data, const char* action){
     if (!data.isNull()){
         unsigned b = data[A_dev_brightness];
         LOGV(T_WebUI, printf, "getset_brightness(%u)\n", b);
@@ -72,7 +72,7 @@ void getset_brightness(Interface *interf, JsonObjectConst data, const char* acti
  * @brief Set luma curve brightness adjustment value
  * 
  */
-void set_lcurve(Interface *interf, JsonObjectConst data, const char* action){
+void set_lcurve(Interface *interf, JsonVariantConst data, const char* action){
     if (!data.isNull()){
         auto c = static_cast<luma::curve>(data[A_dev_lcurve].as<int>());
         myLamp.setLumaCurve(c);
@@ -84,7 +84,7 @@ void set_lcurve(Interface *interf, JsonObjectConst data, const char* action){
 /**
  * Обработка вкл/выкл лампы
  */
-void set_pwrswitch(Interface *interf, JsonObjectConst data, const char* action){
+void set_pwrswitch(Interface *interf, JsonVariantConst data, const char* action){
     myLamp.power(data[action]);
 }
 
@@ -93,7 +93,7 @@ void set_pwrswitch(Interface *interf, JsonObjectConst data, const char* action){
  * could be triggered via WebUI's selector list or via ra::eff_switch
  * if switched successfully, than this function calls contorls publishing via MQTT
  */
-void effect_switch(Interface *interf, JsonObjectConst data, const char* action){
+void effect_switch(Interface *interf, JsonVariantConst data, const char* action){
     if (data.isNull()) return;
 
     /*
@@ -126,7 +126,7 @@ void effect_switch(Interface *interf, JsonObjectConst data, const char* action){
  * @param data 
  * @param action 
  */
-void set_effect_control(Interface *interf, JsonObjectConst data, const char* action){
+void set_effect_control(Interface *interf, JsonVariantConst data, const char* action){
 
     std::string_view a(action);
     a.remove_prefix(std::string_view(A_effect_control).length()); // chop off "eff_control_"
@@ -139,13 +139,13 @@ void set_effect_control(Interface *interf, JsonObjectConst data, const char* act
 /*
     сохраняет настройки LED ленты
 */
-void set_ledstrip(Interface *interf, JsonObjectConst data, const char* action){
+void set_ledstrip(Interface *interf, JsonVariantConst data, const char* action){
     {
         JsonDocument doc;
         if (embuifs::deserializeFile(doc, TCONST_fcfg_display)) doc.clear();
 
         // if this is a request with no data, then just provide existing configuration and quit
-        if (!data || !data.size()){
+        if (data.isNull()){
             if (interf){
                 interf->json_frame_value(doc[T_ws2812]);
                 interf->json_frame_flush();
@@ -155,7 +155,8 @@ void set_ledstrip(Interface *interf, JsonObjectConst data, const char* action){
 
         JsonVariant dst = doc[T_ws2812].is<JsonObject>() ? doc[T_ws2812] : doc[T_ws2812].to<JsonObject>();
 
-        for (JsonPairConst kvp : data)
+        JsonObjectConst jo(data);
+        for (JsonPairConst kvp : jo)
             dst[kvp.key()] = kvp.value();
 
         doc[T_display_type] = data[T_display_type];   // move led type key to the root of the object
@@ -211,13 +212,13 @@ void set_ledstrip(Interface *interf, JsonObjectConst data, const char* action){
 }
 
 
-void set_hub75(Interface *interf, JsonObjectConst data, const char* action){
+void set_hub75(Interface *interf, JsonVariantConst data, const char* action){
     {
         JsonDocument doc;
         if (embuifs::deserializeFile(doc, TCONST_fcfg_display)) doc.clear();
 
         // if this is a request with no data, then just provide existing configuration and quit
-        if (!data || !data.size()){
+        if (data.isNull()){
             if (interf){
                 interf->json_frame_value(doc[T_hub75]);
                 interf->json_frame_flush();
@@ -227,8 +228,9 @@ void set_hub75(Interface *interf, JsonObjectConst data, const char* action){
 
         JsonVariant dst = doc[T_hub75].isNull() ? doc[T_hub75].to<JsonObject>() : doc[T_hub75];
 
+        JsonObjectConst jo(data);
         // copy keys to a destination object
-        for (JsonPairConst kvp : data)
+        for (JsonPairConst kvp : jo)
             dst[kvp.key()] = kvp.value();
 
         //doc[T_display_type] = e2int(engine_t::hub75);   // set engine to hub75
@@ -244,13 +246,13 @@ void set_hub75(Interface *interf, JsonObjectConst data, const char* action){
     run_action(ra::reboot);         // reboot in 5 sec
 }
 
-void getset_tm1637(Interface *interf, JsonObjectConst data, const char* action){
+void getset_tm1637(Interface *interf, JsonVariantConst data, const char* action){
     {
         JsonDocument doc;
         if (embuifs::deserializeFile(doc, TCONST_fcfg_display)) doc.clear();
 
         // if this is a request with no data, then just provide existing configuration and quit
-        if (!data || !data.size()){
+        if (data.isNull()){
             if (interf && doc[T_tm1637].is<JsonObject>()){
                 interf->json_frame_value(doc[T_tm1637]);
                 interf->json_frame_flush();
@@ -260,8 +262,9 @@ void getset_tm1637(Interface *interf, JsonObjectConst data, const char* action){
 
         JsonVariant dst = doc[T_tm1637].isNull() ? doc[T_tm1637].to<JsonObject>() : doc[T_tm1637];
 
+        JsonObjectConst jo(data);
         // copy keys to a destination object
-        for (JsonPairConst kvp : data)
+        for (JsonPairConst kvp : jo)
             dst[kvp.key()] = kvp.value();
 
         embuifs::serialize2file(doc, TCONST_fcfg_display);
@@ -274,7 +277,7 @@ void getset_tm1637(Interface *interf, JsonObjectConst data, const char* action){
     if (interf) ui_page_setup_devices(interf, {}, NULL);
 }
 
-void getset_settings_other(Interface *interf, JsonObjectConst data, const char* action){
+void getset_settings_other(Interface *interf, JsonVariantConst data, const char* action){
 
     // if this is a request with no data, then just provide existing configuration and quit
     if (data.isNull()){
