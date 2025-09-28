@@ -415,7 +415,7 @@ private:
   void _setForce(int32_t s);
   
   public:
-    EffectFlock(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer),
+    EffectFlock(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer, true),
         _boids( std::vector<Boid>(AVAILABLE_BOID_COUNT) ) {}
 
     void setControl(size_t idx, int32_t value) override;
