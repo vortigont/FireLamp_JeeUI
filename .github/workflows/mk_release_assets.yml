@@ -21,7 +21,7 @@ jobs:
     if: github.repository == 'vortigont/FireLamp_JeeUI'
     continue-on-error: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ inputs.refToBuild }}
       - name: PIP Cache
@@ -50,7 +50,7 @@ jobs:
             ${{ runner.os }}-pio-
 #           Linux-pio-cache-pio-pkgs, Linux-pio-, Linux-
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.x'
       - name: Install Platformio
