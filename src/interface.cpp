@@ -38,13 +38,13 @@ Copyright © 2020 Dmytro Korniienko (kDn)
 //#include "config.h"
 #include <type_traits>
 #include "templates.hpp"
+#include "main.h"
 #include "interface.h"
 #include "lamp.h"
 #include "devices.h"
 #include "display.hpp"
 #include "effects.h"
 #include "basicui.h"
-#include "actions.hpp"
 #include "evtloop.h"
 #include "components.hpp"
 #include "log.h"
@@ -527,7 +527,10 @@ void getset_gpios(Interface *interf, JsonVariantConst data, const char* action){
     // save posted config to file
     embuifs::serialize2file(data, TCONST_fcfg_gpio);
 
-    run_action(ra::reboot);         // reboot in 5 sec
+    // reboot in 5 sec
+    Task *t = new Task(5 * TASK_SECOND, TASK_ONCE, nullptr, &ts, false, nullptr, [](){ ESP.restart(); });
+    t->enableDelayed();
+
     basicui::page_system_settings(interf, {}, NULL);
 }
 
@@ -548,31 +551,6 @@ void block_user_settings(Interface *interf, JsonVariantConst data, const char* a
     // show gpio setup page button
     interf->button_value(button_t::generic, A_ui_page, e2int(page::setup_gpio), TINTF_gpiocfg);
     interf->json_frame_flush();
-}
-
-// обработчик, для поддержки приложения WLED APP
-void wled_handle(AsyncWebServerRequest *request){
-    if(request->hasParam("T")){
-        int pwr = request->getParam("T")->value().toInt();
-        if (pwr == 2)
-            EVT_POST(LAMP_SET_EVENTS, e2int(evt::lamp_t::pwrtoggle));   // '2' is for toggle
-        else
-            EVT_POST(LAMP_SET_EVENTS, pwr ? e2int(evt::lamp_t::pwron) : e2int(evt::lamp_t::pwroff));
-    }
-    uint8_t bright = myLamp.getPwr() ? myLamp.getBrightness() : 0;
-
-    if (request->hasParam("A")){
-        bright = request->getParam("A")->value().toInt();
-        run_action(ra::brt_nofade, bright);
-    }
-
-    String result = "<?xml version=\"1.0\" ?><vs><ac>";
-    result.concat(myLamp.getPwr()?bright:0);
-    result.concat("</ac><ds>");
-    result.concat(embui.hostname());
-    result.concat("</ds></vs>");
-
-    request->send(200, PGmimexml, result);
 }
 
 void show_progress(Interface *interf, JsonVariantConst data, const char* action){

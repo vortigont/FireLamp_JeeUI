@@ -41,7 +41,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "display.hpp"
 #include "devices.h"
 #include "basicui.h"
-#include "actions.hpp"
 #include "traits.hpp"               // embui traits
 #include "evtloop.h"
 #include "log.h"
@@ -85,7 +84,7 @@ void set_lcurve(Interface *interf, JsonVariantConst data, const char* action){
  * Обработка вкл/выкл лампы
  */
 void set_pwrswitch(Interface *interf, JsonVariantConst data, const char* action){
-    myLamp.power(data[action]);
+    myLamp.power(data);
 }
 
 /**
@@ -94,8 +93,6 @@ void set_pwrswitch(Interface *interf, JsonVariantConst data, const char* action)
  * if switched successfully, than this function calls contorls publishing via MQTT
  */
 void effect_switch(Interface *interf, JsonVariantConst data, const char* action){
-    if (data.isNull()) return;
-
     /*
      if fader is in progress now, than we just skip switching,
      on one hand it prevents cyclic fast effect switching
@@ -106,14 +103,18 @@ void effect_switch(Interface *interf, JsonVariantConst data, const char* action)
     std::string_view action_view(action);
 
     // Switch to next effect
-    if (action_view.compare(A_effect_switch_next) == 0)
-        return run_action(ra::eff_next);
+    if (action_view.compare(A_effect_switch_next) == 0){
+        EVT_POST(LAMP_SET_EVENTS, e2int(evt::lamp_t::effSwitchNext));
+        return;
+    }
 
     // Switch to prev effect
-    if (action_view.compare(A_effect_switch_prev) == 0)
-        return run_action(ra::eff_prev);
+    if (action_view.compare(A_effect_switch_prev) == 0){
+        EVT_POST(LAMP_SET_EVENTS, e2int(evt::lamp_t::effSwitchPrev));
+        return;
+    }
 
-    size_t num = data[A_effect_switch_idx];
+    size_t num = data;
 
     LOGD(T_WebUI, printf, "switch to:%u, LampPWR:%u\n", num, myLamp.getPwr());
     myLamp.switcheffect(effswitch_t::num, static_cast<effect_t>(num) );
@@ -131,9 +132,10 @@ void set_effect_control(Interface *interf, JsonVariantConst data, const char* ac
     std::string_view a(action);
     a.remove_prefix(std::string_view(A_effect_control).length()); // chop off "eff_control_"
     int idx{std::atoi(a.data())};
-    LOGI(T_WebUI, printf, "set_effect_control:%s, value:%d\n", action ? action : T_empty, data[action].as<int>());
+    int val = data.as<int>();
+    LOGI(T_WebUI, printf, "%s, value:%d\n", action, val);
 
-    myLamp.effwrkr.setControlValue(idx, data[action]);
+    myLamp.effwrkr.setControlValue(idx, data);
 }
 
 /*
@@ -169,7 +171,10 @@ void set_ledstrip(Interface *interf, JsonVariantConst data, const char* action){
 
     // if we are in hub75 mode, than need a reboot to load ws2812 engine
     if (display.get_engine_type() != engine_t::ws2812){
-        run_action(ra::reboot);         // reboot in 5 sec
+        // reboot in 5 sec
+        Task *t = new Task(5 * TASK_SECOND, TASK_ONCE, nullptr, &ts, false, nullptr, [](){ ESP.restart(); });
+        t->enableDelayed();
+
         if (interf) basicui::page_system_settings(interf, {}, NULL);
         return;
     }
@@ -206,7 +211,9 @@ void set_ledstrip(Interface *interf, JsonVariantConst data, const char* action){
         display.start();
     } else {
         // otherwise new pin value could be set after reboot
-        run_action(ra::reboot);         // reboot in 5 sec
+        // reboot in 5 sec
+        Task *t = new Task(5 * TASK_SECOND, TASK_ONCE, nullptr, &ts, false, nullptr, [](){ ESP.restart(); });
+        t->enableDelayed();
     }
 
 }
@@ -241,9 +248,9 @@ void set_hub75(Interface *interf, JsonVariantConst data, const char* action){
         embuifs::serialize2file(doc, TCONST_fcfg_display);
     }
 
-    //if (display.get_engine_type() != engine_t::hub75){}
     if (interf) basicui::page_system_settings(interf, {}, NULL);
-    run_action(ra::reboot);         // reboot in 5 sec
+    Task *t = new Task(5 * TASK_SECOND, TASK_ONCE, nullptr, &ts, false, nullptr, [](){ ESP.restart(); });
+    t->enableDelayed();
 }
 
 void getset_tm1637(Interface *interf, JsonVariantConst data, const char* action){

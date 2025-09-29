@@ -39,7 +39,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "char_const.h"
 #include "embui_constants.h"        // EmbUI string literals
 #include "templates.hpp"
-#include "actions.hpp"
 #include "evtloop.h"
 #include "display.hpp"
 #include "templates.hpp"
@@ -696,7 +695,7 @@ void EffectWorker::_spawn(effect_t eid, bool rnd_ctrls){
   _start_runner();  // start calculator task IF we are marked as active
 
   // set newly loaded luma curve to the lamp
-  run_action(ra::brt_lcurve, e2int(_effItem.curve));
+  setLumaCurve(_effItem.curve);
 
   // send event about eefect switch completition    
   uint32_t n = e2int(eid);

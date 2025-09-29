@@ -81,7 +81,7 @@ function omnicron_tasks_load(arg){
 async function make_effect_list(arg){
   const [effidxReq, i18ndataReq] = await Promise.all([
     fetch('/effects_idx.json', {method: 'GET'}),
-    fetch('/i18n.json', {method: 'GET'})
+    fetch('/js/i18n.json', {method: 'GET'})
   ])
 
   if (!effidxReq.ok || !i18ndataReq.ok) return;
@@ -320,7 +320,7 @@ customFuncs["txtscroller_save_profile_form"] = txtscroller_save_profile_form
 
 // load Informer's App UIData
 window.addEventListener("load", async function(ev){
-	let response = await fetch("/ui.json", {method: 'GET'});
+	let response = await fetch("/js/ui.json", {method: 'GET'});
 	if (response.ok){
 		response = await response.json();
 		uiblocks['lampui'] = response;

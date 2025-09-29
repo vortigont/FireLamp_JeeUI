@@ -8,7 +8,8 @@ enum class embedded_data_t {
   index,
   ui,
   i18n,
-  script,
+  firelamp,
+  lodash,
   embuijs,
   embuijson,
   embuii18n,
@@ -34,20 +35,23 @@ static void mk_response(embedded_data_t obj, AsyncWebServerRequest* req){
       case embedded_data_t::i18n :
         response = req->beginResponse(200, asyncsrv::T_application_json, ui_i18n_json_gz_start, ui_i18n_json_gz_end - ui_i18n_json_gz_start );
         break;
-      case embedded_data_t::script :
-        response = req->beginResponse(200, C_TYPE_JS_UTF8, script_js_gz_start, script_js_gz_end - script_js_gz_start );
+      case embedded_data_t::firelamp :
+        response = req->beginResponse(200, C_TYPE_JS_UTF8, firelamp_js_gz_start, firelamp_js_gz_end - firelamp_js_gz_start );
+        break;
+      case embedded_data_t::lodash :
+        response = req->beginResponse(200, C_TYPE_JS_UTF8, lodash_js_gz_start, lodash_js_gz_end - lodash_js_gz_start );
         break;
       case embedded_data_t::embuijs :
         response = req->beginResponse(200, C_TYPE_JS_UTF8, embui_js_gz_start, embui_js_gz_end - embui_js_gz_start );
         break;
       case embedded_data_t::embuijson :
-        response = req->beginResponse(200, asyncsrv::T_application_json, embui_json_gz_start, embui_json_gz_end - embui_json_gz_start );
+        response = req->beginResponse(200, asyncsrv::T_application_json, ui_embui_json_gz_start, ui_embui_json_gz_end - ui_embui_json_gz_start );
         break;
       case embedded_data_t::embuii18n :
-        response = req->beginResponse(200, asyncsrv::T_application_json, embui_i18n_json_gz_start, embui_i18n_json_gz_end - embui_i18n_json_gz_start );
+        response = req->beginResponse(200, asyncsrv::T_application_json, ui_embui_i18n_json_gz_start, ui_embui_i18n_json_gz_end - ui_embui_i18n_json_gz_start );
         break;
       case embedded_data_t::embuilang :
-        response = req->beginResponse(200, asyncsrv::T_application_json, embui_lang_json_gz_start, embui_lang_json_gz_end - embui_lang_json_gz_start );
+        response = req->beginResponse(200, asyncsrv::T_application_json, ui_embui_lang_json_gz_start, ui_embui_lang_json_gz_end - ui_embui_lang_json_gz_start );
         break;
       case embedded_data_t::tz :
         response = req->beginResponse(200, asyncsrv::T_application_json, tz_json_gz_start, tz_json_gz_end - tz_json_gz_start );
@@ -66,11 +70,12 @@ static void mk_response(embedded_data_t obj, AsyncWebServerRequest* req){
 void set_static_http_handlers(){
   embui.server.rewrite("/", INDEX_FILE);
   embui.server.on("/index.html", HTTP_GET, [](AsyncWebServerRequest *request){ mk_response(embedded_data_t::index, request); } );
-  embui.server.on("/script.js", HTTP_GET, [](AsyncWebServerRequest *request){ mk_response(embedded_data_t::script, request); } );
-  embui.server.on("/ui.json", HTTP_GET, [](AsyncWebServerRequest *request){ mk_response(embedded_data_t::ui, request); } );
-  embui.server.on("/i18n.json", HTTP_GET, [](AsyncWebServerRequest *request){ mk_response(embedded_data_t::i18n, request); } );
+  embui.server.on("/js/firelamp.js", HTTP_GET, [](AsyncWebServerRequest *request){ mk_response(embedded_data_t::firelamp, request); } );
+  embui.server.on("/js/ui.json", HTTP_GET, [](AsyncWebServerRequest *request){ mk_response(embedded_data_t::ui, request); } );
+  embui.server.on("/js/i18n.json", HTTP_GET, [](AsyncWebServerRequest *request){ mk_response(embedded_data_t::i18n, request); } );
   // embui
-  embui.server.on("/embui.js", HTTP_GET, [](AsyncWebServerRequest *request){ mk_response(embedded_data_t::embuijs, request); } );
+  embui.server.on("/js/lodash.js", HTTP_GET, [](AsyncWebServerRequest *request){ mk_response(embedded_data_t::lodash, request); } );
+  embui.server.on("/js/embui.js", HTTP_GET, [](AsyncWebServerRequest *request){ mk_response(embedded_data_t::embuijs, request); } );
   embui.server.on("/js/ui_embui.json", HTTP_GET, [](AsyncWebServerRequest *request){ mk_response(embedded_data_t::embuijson, request); } );
   embui.server.on("/js/ui_embui.i18n.json", HTTP_GET, [](AsyncWebServerRequest *request){ mk_response(embedded_data_t::embuii18n, request); } );
   embui.server.on("/js/ui_embui.lang.json", HTTP_GET, [](AsyncWebServerRequest *request){ mk_response(embedded_data_t::embuilang, request); } );
