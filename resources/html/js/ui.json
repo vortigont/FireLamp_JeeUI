@@ -1458,7 +1458,8 @@
                     "id": "color1",
                     "html":"input",
                     "value": 54000,
-                    "type": "number",
+                    "type": "color",
+                    "data_color":"rgb565",
                     "label": "Цвет текста (565)",
                     "min": 0
                   },
@@ -1466,7 +1467,8 @@
                     "id": "color2",
                     "html":"input",
                     "value": 4430,
-                    "type": "number",
+                    "type": "color",
+                    "data_color":"rgb565",
                     "label": "Цвет фона (565)",
                     "min": 0
                   }
@@ -1563,8 +1565,9 @@
                     "id": "color3",
                     "html":"input",
                     "value": 54000,
-                    "type": "number",
-                    "label": "Цвет 565",
+                    "type": "color",
+                    "data_color":"rgb565",
+                    "label": "Цвет",
                     "min": 1
                   },
                   {
@@ -3157,8 +3160,9 @@
                       {
                         "id": "color1",
                         "html":"input",
-                        "type": "number",
-                        "label": "Цвет текста (565)",
+                        "type": "color",
+                        "data_color":"rgb565",
+                        "label": "Цвет текста",
                         "min": 0
                       },
                       {
