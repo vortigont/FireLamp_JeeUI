@@ -186,7 +186,7 @@ void OmniCron::mkEmbUIpage(Interface *interf, JsonVariantConst data, const char*
 }
 
 void OmniCron::_task_get(Interface *interf, JsonVariantConst data, const char* action){
-  int idx = data[action];
+  int idx = data;
   LOGD(T_crontab, printf, "Get crontab task:%d\n", idx);
 
   // first, build a page with task's setup
@@ -288,7 +288,7 @@ void OmniCron::_task_set(Interface *interf, JsonVariantConst data, const char* a
 }
 
 void OmniCron::_task_remove(Interface *interf, JsonVariantConst data, const char* action){
-  auto i = _tasks.begin() + data[action].as<int>();
+  auto i = _tasks.begin() + data.as<int>();
 
   if (i == _tasks.end())
     return;
