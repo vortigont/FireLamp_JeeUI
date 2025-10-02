@@ -547,7 +547,7 @@ void ModuleManager::_make_embui_page(Interface *interf, JsonVariantConst data, c
 
 // start/stop module EmbUI command
 void ModuleManager::_set_module_state(Interface *interf, JsonVariantConst data, const char* action){
-  bool state = data[action];
+  bool state = data;
   // set_mod_state_*
   std::string_view lbl(action);
   lbl.remove_prefix(std::string_view(A_set_mod_state).length()-1);    // chop off prefix before '*'
@@ -567,7 +567,7 @@ void ModuleManager::_switch_module_preset(Interface *interf, JsonVariantConst da
   std::string_view lbl(action);
   lbl.remove_prefix(std::string_view(A_set_mod_preset).length()-1); // chop off prefix before '*'
 
-  switchPreset(lbl.data(), data[action]);
+  switchPreset(lbl.data(), data);
 
   // send to webUI refreshed module's config
   JsonDocument doc;

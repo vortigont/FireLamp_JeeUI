@@ -396,7 +396,7 @@ void ModTextScroller::set_generic_options(Interface *interf, JsonVariantConst da
 }
 
 void ModTextScroller::rm_instance(Interface *interf, JsonVariantConst data, const char* action){
-  int id = data[action].as<int>();
+  int id = data;
   if (id < 1)
     return;
 
