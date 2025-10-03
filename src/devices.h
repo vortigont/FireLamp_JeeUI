@@ -65,15 +65,15 @@ void button_configure_gpio(JsonVariantConst cfg);
 
 void button_configure_events(JsonVariantConst cfg);
 
-void getset_button_gpio(Interface *interf, const JsonObjectConst data, const char* action  = NULL);
+void getset_button_gpio(Interface *interf, const JsonVariantConst data, const char* action  = NULL);
 
 // get/set button lock
-void getset_btn_lock(Interface *interf, const JsonObjectConst data, const char* action  = NULL);
+void getset_btn_lock(Interface *interf, const JsonVariantConst data, const char* action  = NULL);
 
 // ========== Encoder
 
 // get/set encoder's configuration to/from WebUI
-void getset_encoder_gpio(Interface *interf, const JsonObjectConst data, const char* action  = NULL);
+void getset_encoder_gpio(Interface *interf, const JsonVariantConst data, const char* action  = NULL);
 
 // *** DFPlayer
 
@@ -95,6 +95,6 @@ void dfplayer_setup_device(JsonVariantConst cfg);
  */
 void dfplayer_setup_opt(JsonVariantConst cfg);
 
-void getset_dfplayer_device(Interface *interf, const JsonObjectConst data, const char* action  = NULL);
+void getset_dfplayer_device(Interface *interf, const JsonVariantConst data, const char* action  = NULL);
 
-void getset_dfplayer_opt(Interface *interf, const JsonObjectConst data, const char* action  = NULL);
+void getset_dfplayer_opt(Interface *interf, const JsonVariantConst data, const char* action  = NULL);

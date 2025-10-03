@@ -178,7 +178,7 @@ public:
      * @param data 
      * @param action 
      */
-    virtual void mkEmbUIpage(Interface *interf, JsonObjectConst data, const char* action);
+    virtual void mkEmbUIpage(Interface *interf, JsonVariantConst data, const char* action);
 
     /**
      * @brief generate content frame for presets drop-down list
@@ -279,7 +279,7 @@ public:
      * @brief Construct an EmbUI page with module's state/configuration
      * this override will additionally load profile's selector list
      */
-    virtual void mkEmbUIpage(Interface *interf, JsonObjectConst data, const char* action) override;
+    virtual void mkEmbUIpage(Interface *interf, JsonVariantConst data, const char* action) override;
 
     /**
      * @copydoc GenericModule::mkEmbUI_preset(Interface *interf)
@@ -422,20 +422,20 @@ private:
      * @param data 
      * @param action 
      */
-    void _make_embui_page(Interface *interf, JsonObjectConst data, const char* action);
+    void _make_embui_page(Interface *interf, JsonVariantConst data, const char* action);
 
     // EmbUI's handler to spawn/shutdown modules
-    void _set_module_state(Interface *interf, JsonObjectConst data, const char* action);
+    void _set_module_state(Interface *interf, JsonVariantConst data, const char* action);
 
-    void _set_module_cfg(Interface *interf, JsonObjectConst data, const char* action);
+    void _set_module_cfg(Interface *interf, JsonVariantConst data, const char* action);
 
-    void _switch_module_preset(Interface *interf, JsonObjectConst data, const char* action);
+    void _switch_module_preset(Interface *interf, JsonVariantConst data, const char* action);
 
     // rename current preset for the module
-    void _set_module_preset_lbl(Interface *interf, JsonObjectConst data, const char* action);
+    void _set_module_preset_lbl(Interface *interf, JsonVariantConst data, const char* action);
 
     // save current config into another preset slot
-    void _set_module_preset_clone(Interface *interf, JsonObjectConst data, const char* action);
+    void _set_module_preset_clone(Interface *interf, JsonVariantConst data, const char* action);
 
 };
 

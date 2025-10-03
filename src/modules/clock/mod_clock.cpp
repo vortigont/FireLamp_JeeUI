@@ -351,7 +351,7 @@ AlarmClock::AlarmClock() : GenericModule(T_alrmclock) {
   ts.addTask(*this);
 
   // add EmbUI's handler to set Alarm's config
-  embui.action.add(A_set_mod_alrm, [this](Interface *interf, JsonObjectConst data, const char* action){ setAlarmItem(data); } );
+  embui.action.add(A_set_mod_alrm, [this](Interface *interf, JsonVariantConst data, const char* action){ setAlarmItem(data); } );
 }
 
 AlarmClock::~AlarmClock(){
@@ -600,7 +600,7 @@ void AlarmClock::_lmpChEventHandler(esp_event_base_t base, int32_t id, void* dat
   _fade_await = false;
 }
 
-void AlarmClock::mkEmbUIpage(Interface *interf, JsonObjectConst data, const char* action){
+void AlarmClock::mkEmbUIpage(Interface *interf, JsonVariantConst data, const char* action){
   String key(T_ui_pages_module_prefix);
   key += label;
   // load Module's structure from a EmbUI's UI data

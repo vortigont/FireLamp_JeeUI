@@ -51,11 +51,11 @@ static constexpr const char* T_mod_omnicron_task = "lampui.pages.module.omnicron
 
 OmniCron::OmniCron() : GenericModule(T_omnicron, false){
   // add EmbUI's handler to get Cron's task config
-  embui.action.add(A_get_mod_omnicron_task, [this](Interface *interf, JsonObjectConst data, const char* action){ _task_get(interf, data, action); } );
+  embui.action.add(A_get_mod_omnicron_task, [this](Interface *interf, JsonVariantConst data, const char* action){ _task_get(interf, data, action); } );
 
-  embui.action.add(A_set_mod_omnicron_task, [this](Interface *interf, JsonObjectConst data, const char* action){ _task_set(interf, data, action); } );
+  embui.action.add(A_set_mod_omnicron_task, [this](Interface *interf, JsonVariantConst data, const char* action){ _task_set(interf, data, action); } );
 
-  embui.action.add(A_set_mod_omnicron_task_rm, [this](Interface *interf, JsonObjectConst data, const char* action){ _task_remove(interf, data, action); } );
+  embui.action.add(A_set_mod_omnicron_task_rm, [this](Interface *interf, JsonVariantConst data, const char* action){ _task_remove(interf, data, action); } );
 
 }
 
@@ -160,7 +160,7 @@ void OmniCron::generate_cfg(JsonVariant cfg) const {
   }
 }
 
-void OmniCron::mkEmbUIpage(Interface *interf, JsonObjectConst data, const char* action){
+void OmniCron::mkEmbUIpage(Interface *interf, JsonVariantConst data, const char* action){
   String key(T_ui_pages_module_prefix);
   key += label;
   // load Module's structure from a EmbUI's UI data
@@ -185,8 +185,8 @@ void OmniCron::mkEmbUIpage(Interface *interf, JsonObjectConst data, const char* 
   interf->json_frame_flush();
 }
 
-void OmniCron::_task_get(Interface *interf, JsonObjectConst data, const char* action){
-  int idx = data[action];
+void OmniCron::_task_get(Interface *interf, JsonVariantConst data, const char* action){
+  int idx = data;
   LOGD(T_crontab, printf, "Get crontab task:%d\n", idx);
 
   // first, build a page with task's setup
@@ -227,7 +227,7 @@ void OmniCron::_task_get(Interface *interf, JsonObjectConst data, const char* ac
   interf->json_frame_flush();
 }
 
-void OmniCron::_task_set(Interface *interf, JsonObjectConst data, const char* action){
+void OmniCron::_task_set(Interface *interf, JsonVariantConst data, const char* action){
   int idx = data[T_idx];
 
   if (idx >= static_cast<int>(_tasks.size())){
@@ -287,8 +287,8 @@ void OmniCron::_task_set(Interface *interf, JsonObjectConst data, const char* ac
   save();
 }
 
-void OmniCron::_task_remove(Interface *interf, JsonObjectConst data, const char* action){
-  auto i = _tasks.begin() + data[action].as<int>();
+void OmniCron::_task_remove(Interface *interf, JsonVariantConst data, const char* action){
+  auto i = _tasks.begin() + data.as<int>();
 
   if (i == _tasks.end())
     return;

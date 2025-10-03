@@ -39,7 +39,6 @@ Copyright © 2020 Dmytro Korniienko (kDn)
 #include "display.hpp"
 #include "effectmath.h"
 #include "interface.h"
-#include "actions.hpp"
 #include "ledfb.hpp"
 #include "evtloop.h"
 #include "nvs_handle.hpp"
@@ -67,9 +66,9 @@ Lamp::~Lamp(){
 void Lamp::lamp_init(){
   // register embui handlers
   // demo on/off
-  embui.action.add(T_demoOn, [this](Interface *interf, JsonObjectConst data, const char* action){ _embui_demoOn(interf, data, action); } );
-  embui.action.add(T_demoRndCtrls, [this](Interface *interf, JsonObjectConst data, const char* action){ _embui_demoRndCtrls(interf, data, action); } );
-  embui.action.add(T_demoRndOrder, [this](Interface *interf, JsonObjectConst data, const char* action){ _embui_demoRndOrder(interf, data, action); } );  
+  embui.action.add(T_demoOn, [this](Interface *interf, JsonVariantConst data, const char* action){ _embui_demoOn(interf, data, action); } );
+  embui.action.add(T_demoRndCtrls, [this](Interface *interf, JsonVariantConst data, const char* action){ _embui_demoRndCtrls(interf, data, action); } );
+  embui.action.add(T_demoRndOrder, [this](Interface *interf, JsonVariantConst data, const char* action){ _embui_demoRndOrder(interf, data, action); } );  
   effwrkr.embui_register();
 
   // subscribe to CMD events
@@ -602,24 +601,24 @@ void Lamp::_event_picker_state(esp_event_base_t base, int32_t id, void* data){
 
 }
 
-void Lamp::_embui_demoOn(Interface *interf, JsonObjectConst data, const char* action){
-  if (data){
-    setDemoMode(data[T_demoOn]);
+void Lamp::_embui_demoOn(Interface *interf, JsonVariantConst data, const char* action){
+  if (data.is<bool>()){
+    setDemoMode(data);
     return;
   }
   // todo: sent demoOn value
 }
 
-void Lamp::_embui_demoRndOrder(Interface *interf, JsonObjectConst data, const char* action){
-  if (data){
-    setDemoRndSwitch(data[T_demoRndOrder]);
+void Lamp::_embui_demoRndOrder(Interface *interf, JsonVariantConst data, const char* action){
+  if (data.is<bool>()){
+    setDemoRndSwitch(data);
     return;
   }
   // todo: send demo val
 }
 
-void Lamp::_embui_demoRndCtrls(Interface *interf, JsonObjectConst data, const char* action){
-  if (data){
+void Lamp::_embui_demoRndCtrls(Interface *interf, JsonVariantConst data, const char* action){
+  if (data.is<bool>()){
     setDemoRndEffControls(data[T_demoRndCtrls]);
     return;
   }

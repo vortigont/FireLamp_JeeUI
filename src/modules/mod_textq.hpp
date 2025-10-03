@@ -186,7 +186,7 @@ public:
 	 * @param data 
 	 * @param action 
 	 */
-	void mkEmbUIpage(Interface *interf, JsonObjectConst data, const char* action) override;
+	void mkEmbUIpage(Interface *interf, JsonVariantConst data, const char* action) override;
 
   /**
    * @brief apply basic configuration for module
@@ -195,22 +195,22 @@ public:
    * @param data 
    * @param action 
    */
-	void set_generic_options(Interface *interf, JsonObjectConst data, const char* action);
+	void set_generic_options(Interface *interf, JsonVariantConst data, const char* action);
 
   // EmbUI API - remove configured scroller instance by it's stream_id
-	void rm_instance(Interface *interf, JsonObjectConst data, const char* action);
+	void rm_instance(Interface *interf, JsonVariantConst data, const char* action);
 
   // EmbUI API - set configuration for the runner instance by it's stream_id
-	void set_instance(Interface *interf, JsonObjectConst data, const char* action);
+	void set_instance(Interface *interf, JsonVariantConst data, const char* action);
 
   // EmbUI API - send message to the queue
-	void embui_send_msg(Interface *interf, JsonObjectConst data, const char* action);
+	void embui_send_msg(Interface *interf, JsonVariantConst data, const char* action);
 
   // EmbUI API - apply string appearance profile
-	void embui_profile_apply(Interface *interf, JsonObjectConst data, const char* action);
+	void embui_profile_apply(Interface *interf, JsonVariantConst data, const char* action);
 
   // EmbUI API - save string appearance profile
-	void embui_profile_save(Interface *interf, JsonObjectConst data, const char* action);
+	void embui_profile_save(Interface *interf, JsonVariantConst data, const char* action);
 
 private:
 

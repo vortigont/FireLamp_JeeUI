@@ -398,6 +398,7 @@ static constexpr const char* A_dev_brightness = "dev_brightness";               
 static constexpr const char* A_dev_lcurve = "dev_lcurve";                       // Luma curve
 static constexpr const char* A_dev_pwrswitch = "dev_pwrswitch";                 // Lamp on/off switch
 static constexpr const char* A_dev_btnlock = "dev_btnlock";                     // Button lock
+static constexpr const char* A_ui_page = "ui_page";                             // Web page switcher
 static constexpr const char* A_ui_page_effects = "ui_page_effects";             // Contstruct UI page - main Effects Control
 static constexpr const char* A_ui_page_drawing = "ui_page_drawing";             // Contstruct UI page - drawing panel
 static constexpr const char* A_ui_block_switches = "ui_block_switches";         // Contstruct UI block - show extended switches at effects page
