@@ -602,23 +602,23 @@ void Lamp::_event_picker_state(esp_event_base_t base, int32_t id, void* data){
 }
 
 void Lamp::_embui_demoOn(Interface *interf, JsonVariantConst data, const char* action){
-  if (data){
-    setDemoMode(data[T_demoOn]);
+  if (data.is<bool>()){
+    setDemoMode(data);
     return;
   }
   // todo: sent demoOn value
 }
 
 void Lamp::_embui_demoRndOrder(Interface *interf, JsonVariantConst data, const char* action){
-  if (data){
-    setDemoRndSwitch(data[T_demoRndOrder]);
+  if (data.is<bool>()){
+    setDemoRndSwitch(data);
     return;
   }
   // todo: send demo val
 }
 
 void Lamp::_embui_demoRndCtrls(Interface *interf, JsonVariantConst data, const char* action){
-  if (data){
+  if (data.is<bool>()){
     setDemoRndEffControls(data[T_demoRndCtrls]);
     return;
   }
