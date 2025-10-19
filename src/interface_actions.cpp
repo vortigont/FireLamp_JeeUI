@@ -50,15 +50,16 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
  * 
  */
 void getset_brightness(Interface *interf, JsonVariantConst data, const char* action){
-    if (!data.isNull()){
-        unsigned b = data[A_dev_brightness];
-        LOGV(T_WebUI, printf, "getset_brightness(%u)\n", b);
+    if (data.is<int>()){
+        int b = data;
+        LOGV(T_WebUI, printf, "getset_brightness(%d)\n", b);
         int evt = e2int( data[TCONST_nofade] == true ? evt::lamp_t::brightness_nofade : evt::lamp_t::brightness);
-        EVT_POST_DATA(LAMP_SET_EVENTS, evt, &b, sizeof(unsigned));
+        EVT_POST_DATA(LAMP_SET_EVENTS, evt, &b, sizeof(b));
+        return;
     }
 
     // publish only on empty data (i.e. GET req or from evt queue)
-    if(interf && !data){
+    if(interf){
         interf->json_frame_value();
         interf->value(A_dev_brightness, myLamp.getBrightness());
         interf->value(V_dev_brtscale, myLamp.getBrightnessScale());
