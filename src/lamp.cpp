@@ -66,9 +66,9 @@ Lamp::~Lamp(){
 void Lamp::lamp_init(){
   // register embui handlers
   // demo on/off
-  embui.action.add(T_demoOn, [this](Interface *interf, JsonVariantConst data, const char* action){ _embui_demoOn(interf, data, action); } );
-  embui.action.add(T_demoRndCtrls, [this](Interface *interf, JsonVariantConst data, const char* action){ _embui_demoRndCtrls(interf, data, action); } );
-  embui.action.add(T_demoRndOrder, [this](Interface *interf, JsonVariantConst data, const char* action){ _embui_demoRndOrder(interf, data, action); } );  
+  embui.action.add(T_demoOn, [this](Interface *interf, JsonVariantConst data, const char* action){ setDemoMode(data); } );
+  embui.action.add(T_demoRndCtrls, [this](Interface *interf, JsonVariantConst data, const char* action){ setDemoRndEffControls(data); } );
+  embui.action.add(T_demoRndOrder, [this](Interface *interf, JsonVariantConst data, const char* action){ setDemoRndSwitch(data); } );  
   effwrkr.embui_register();
 
   // subscribe to CMD events
@@ -601,29 +601,6 @@ void Lamp::_event_picker_state(esp_event_base_t base, int32_t id, void* data){
 
 }
 
-void Lamp::_embui_demoOn(Interface *interf, JsonVariantConst data, const char* action){
-  if (data.is<bool>()){
-    setDemoMode(data);
-    return;
-  }
-  // todo: sent demoOn value
-}
-
-void Lamp::_embui_demoRndOrder(Interface *interf, JsonVariantConst data, const char* action){
-  if (data.is<bool>()){
-    setDemoRndSwitch(data);
-    return;
-  }
-  // todo: send demo val
-}
-
-void Lamp::_embui_demoRndCtrls(Interface *interf, JsonVariantConst data, const char* action){
-  if (data.is<bool>()){
-    setDemoRndEffControls(data[T_demoRndCtrls]);
-    return;
-  }
-  // todo: send demo val
-}
 
 
 // *********************************

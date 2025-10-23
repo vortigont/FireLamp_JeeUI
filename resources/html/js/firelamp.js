@@ -81,7 +81,7 @@ function omnicron_tasks_load(arg){
 async function make_effect_list(arg){
   const [effidxReq, i18ndataReq] = await Promise.all([
     fetch('/effects_idx.json', {method: 'GET'}),
-    fetch('/js/i18n.json', {method: 'GET'})
+    fetch('/js/ui.i18n.json', {method: 'GET'})
   ])
 
   if (!effidxReq.ok || !i18ndataReq.ok) return;
@@ -113,7 +113,7 @@ async function make_effect_list(arg){
       efflist
     ]
   }
-  // update ubject on the page
+  // update object on the page
   var rdr = this.rdr = render();
   rdr.content(obj)
   // request controls refresh from MCU

@@ -7,7 +7,7 @@
 enum class embedded_data_t {
   index,
   ui,
-  i18n,
+  ui_i18n,
   firelamp,
   lodash,
   embuijs,
@@ -32,7 +32,7 @@ static void mk_response(embedded_data_t obj, AsyncWebServerRequest* req){
       case embedded_data_t::ui :
         response = req->beginResponse(200, asyncsrv::T_application_json, ui_json_gz_start, ui_json_gz_end - ui_json_gz_start );
         break;
-      case embedded_data_t::i18n :
+      case embedded_data_t::ui_i18n :
         response = req->beginResponse(200, asyncsrv::T_application_json, ui_i18n_json_gz_start, ui_i18n_json_gz_end - ui_i18n_json_gz_start );
         break;
       case embedded_data_t::firelamp :
@@ -72,7 +72,7 @@ void set_static_http_handlers(){
   embui.server.on("/index.html", HTTP_GET, [](AsyncWebServerRequest *request){ mk_response(embedded_data_t::index, request); } );
   embui.server.on("/js/firelamp.js", HTTP_GET, [](AsyncWebServerRequest *request){ mk_response(embedded_data_t::firelamp, request); } );
   embui.server.on("/js/ui.json", HTTP_GET, [](AsyncWebServerRequest *request){ mk_response(embedded_data_t::ui, request); } );
-  embui.server.on("/js/i18n.json", HTTP_GET, [](AsyncWebServerRequest *request){ mk_response(embedded_data_t::i18n, request); } );
+  embui.server.on("/js/ui.i18n.json", HTTP_GET, [](AsyncWebServerRequest *request){ mk_response(embedded_data_t::ui_i18n, request); } );
   // embui
   embui.server.on("/js/lodash.js", HTTP_GET, [](AsyncWebServerRequest *request){ mk_response(embedded_data_t::lodash, request); } );
   embui.server.on("/js/embui.js", HTTP_GET, [](AsyncWebServerRequest *request){ mk_response(embedded_data_t::embuijs, request); } );

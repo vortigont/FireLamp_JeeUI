@@ -433,7 +433,7 @@ void page_dfplayer_setup(Interface *interf, JsonVariantConst data, const char* a
  * формируется не основная страница а секция, заменяющая собой одноименную секцию на основной странице
  */
 void ui_block_mainpage_switches(Interface *interf, JsonVariantConst data, const char* action){
-    interf->json_frame_interface(P_content);    // replace sections on existing main page
+    interf->json_frame_interface();    // replace sections on existing main page
     // load uidata objects for the lamp
     interf->json_section_uidata();
         interf->uidata_pick( "lampui.sections.main_switches");
