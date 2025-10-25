@@ -41,7 +41,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "display.hpp"
 #include "devices.h"
 #include "basicui.h"
-#include "actions.hpp"
 #include "traits.hpp"               // embui traits
 #include "evtloop.h"
 #include "log.h"
@@ -50,16 +49,17 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
  * @brief Set device display brightness
  * 
  */
-void getset_brightness(Interface *interf, JsonObjectConst data, const char* action){
-    if (!data.isNull()){
-        unsigned b = data[A_dev_brightness];
-        LOGV(T_WebUI, printf, "getset_brightness(%u)\n", b);
+void getset_brightness(Interface *interf, JsonVariantConst data, const char* action){
+    if (data.is<int>()){
+        int b = data;
+        LOGV(T_WebUI, printf, "getset_brightness(%d)\n", b);
         int evt = e2int( data[TCONST_nofade] == true ? evt::lamp_t::brightness_nofade : evt::lamp_t::brightness);
-        EVT_POST_DATA(LAMP_SET_EVENTS, evt, &b, sizeof(unsigned));
+        EVT_POST_DATA(LAMP_SET_EVENTS, evt, &b, sizeof(b));
+        return;
     }
 
     // publish only on empty data (i.e. GET req or from evt queue)
-    if(interf && !data){
+    if(interf){
         interf->json_frame_value();
         interf->value(A_dev_brightness, myLamp.getBrightness());
         interf->value(V_dev_brtscale, myLamp.getBrightnessScale());
@@ -72,7 +72,7 @@ void getset_brightness(Interface *interf, JsonObjectConst data, const char* acti
  * @brief Set luma curve brightness adjustment value
  * 
  */
-void set_lcurve(Interface *interf, JsonObjectConst data, const char* action){
+void set_lcurve(Interface *interf, JsonVariantConst data, const char* action){
     if (!data.isNull()){
         auto c = static_cast<luma::curve>(data[A_dev_lcurve].as<int>());
         myLamp.setLumaCurve(c);
@@ -84,8 +84,8 @@ void set_lcurve(Interface *interf, JsonObjectConst data, const char* action){
 /**
  * Обработка вкл/выкл лампы
  */
-void set_pwrswitch(Interface *interf, JsonObjectConst data, const char* action){
-    myLamp.power(data[action]);
+void set_pwrswitch(Interface *interf, JsonVariantConst data, const char* action){
+    myLamp.power(data);
 }
 
 /**
@@ -93,9 +93,7 @@ void set_pwrswitch(Interface *interf, JsonObjectConst data, const char* action){
  * could be triggered via WebUI's selector list or via ra::eff_switch
  * if switched successfully, than this function calls contorls publishing via MQTT
  */
-void effect_switch(Interface *interf, JsonObjectConst data, const char* action){
-    if (data.isNull()) return;
-
+void effect_switch(Interface *interf, JsonVariantConst data, const char* action){
     /*
      if fader is in progress now, than we just skip switching,
      on one hand it prevents cyclic fast effect switching
@@ -106,14 +104,18 @@ void effect_switch(Interface *interf, JsonObjectConst data, const char* action){
     std::string_view action_view(action);
 
     // Switch to next effect
-    if (action_view.compare(A_effect_switch_next) == 0)
-        return run_action(ra::eff_next);
+    if (action_view.compare(A_effect_switch_next) == 0){
+        EVT_POST(LAMP_SET_EVENTS, e2int(evt::lamp_t::effSwitchNext));
+        return;
+    }
 
     // Switch to prev effect
-    if (action_view.compare(A_effect_switch_prev) == 0)
-        return run_action(ra::eff_prev);
+    if (action_view.compare(A_effect_switch_prev) == 0){
+        EVT_POST(LAMP_SET_EVENTS, e2int(evt::lamp_t::effSwitchPrev));
+        return;
+    }
 
-    size_t num = data[A_effect_switch_idx];
+    size_t num = data;
 
     LOGD(T_WebUI, printf, "switch to:%u, LampPWR:%u\n", num, myLamp.getPwr());
     myLamp.switcheffect(effswitch_t::num, static_cast<effect_t>(num) );
@@ -126,26 +128,27 @@ void effect_switch(Interface *interf, JsonObjectConst data, const char* action){
  * @param data 
  * @param action 
  */
-void set_effect_control(Interface *interf, JsonObjectConst data, const char* action){
+void set_effect_control(Interface *interf, JsonVariantConst data, const char* action){
 
     std::string_view a(action);
     a.remove_prefix(std::string_view(A_effect_control).length()); // chop off "eff_control_"
     int idx{std::atoi(a.data())};
-    LOGI(T_WebUI, printf, "set_effect_control:%s, value:%d\n", action ? action : T_empty, data[action].as<int>());
+    int val = data.as<int>();
+    LOGI(T_WebUI, printf, "%s, value:%d\n", action, val);
 
-    myLamp.effwrkr.setControlValue(idx, data[action]);
+    myLamp.effwrkr.setControlValue(idx, data);
 }
 
 /*
     сохраняет настройки LED ленты
 */
-void set_ledstrip(Interface *interf, JsonObjectConst data, const char* action){
+void set_ledstrip(Interface *interf, JsonVariantConst data, const char* action){
     {
         JsonDocument doc;
         if (embuifs::deserializeFile(doc, TCONST_fcfg_display)) doc.clear();
 
         // if this is a request with no data, then just provide existing configuration and quit
-        if (!data || !data.size()){
+        if (data.isNull()){
             if (interf){
                 interf->json_frame_value(doc[T_ws2812]);
                 interf->json_frame_flush();
@@ -155,7 +158,8 @@ void set_ledstrip(Interface *interf, JsonObjectConst data, const char* action){
 
         JsonVariant dst = doc[T_ws2812].is<JsonObject>() ? doc[T_ws2812] : doc[T_ws2812].to<JsonObject>();
 
-        for (JsonPairConst kvp : data)
+        JsonObjectConst jo(data);
+        for (JsonPairConst kvp : jo)
             dst[kvp.key()] = kvp.value();
 
         doc[T_display_type] = data[T_display_type];   // move led type key to the root of the object
@@ -168,7 +172,10 @@ void set_ledstrip(Interface *interf, JsonObjectConst data, const char* action){
 
     // if we are in hub75 mode, than need a reboot to load ws2812 engine
     if (display.get_engine_type() != engine_t::ws2812){
-        run_action(ra::reboot);         // reboot in 5 sec
+        // reboot in 5 sec
+        Task *t = new Task(5 * TASK_SECOND, TASK_ONCE, nullptr, &ts, false, nullptr, [](){ ESP.restart(); });
+        t->enableDelayed();
+
         if (interf) basicui::page_system_settings(interf, {}, NULL);
         return;
     }
@@ -205,19 +212,21 @@ void set_ledstrip(Interface *interf, JsonObjectConst data, const char* action){
         display.start();
     } else {
         // otherwise new pin value could be set after reboot
-        run_action(ra::reboot);         // reboot in 5 sec
+        // reboot in 5 sec
+        Task *t = new Task(5 * TASK_SECOND, TASK_ONCE, nullptr, &ts, false, nullptr, [](){ ESP.restart(); });
+        t->enableDelayed();
     }
 
 }
 
 
-void set_hub75(Interface *interf, JsonObjectConst data, const char* action){
+void set_hub75(Interface *interf, JsonVariantConst data, const char* action){
     {
         JsonDocument doc;
         if (embuifs::deserializeFile(doc, TCONST_fcfg_display)) doc.clear();
 
         // if this is a request with no data, then just provide existing configuration and quit
-        if (!data || !data.size()){
+        if (data.isNull()){
             if (interf){
                 interf->json_frame_value(doc[T_hub75]);
                 interf->json_frame_flush();
@@ -227,8 +236,9 @@ void set_hub75(Interface *interf, JsonObjectConst data, const char* action){
 
         JsonVariant dst = doc[T_hub75].isNull() ? doc[T_hub75].to<JsonObject>() : doc[T_hub75];
 
+        JsonObjectConst jo(data);
         // copy keys to a destination object
-        for (JsonPairConst kvp : data)
+        for (JsonPairConst kvp : jo)
             dst[kvp.key()] = kvp.value();
 
         //doc[T_display_type] = e2int(engine_t::hub75);   // set engine to hub75
@@ -239,18 +249,18 @@ void set_hub75(Interface *interf, JsonObjectConst data, const char* action){
         embuifs::serialize2file(doc, TCONST_fcfg_display);
     }
 
-    //if (display.get_engine_type() != engine_t::hub75){}
     if (interf) basicui::page_system_settings(interf, {}, NULL);
-    run_action(ra::reboot);         // reboot in 5 sec
+    Task *t = new Task(5 * TASK_SECOND, TASK_ONCE, nullptr, &ts, false, nullptr, [](){ ESP.restart(); });
+    t->enableDelayed();
 }
 
-void getset_tm1637(Interface *interf, JsonObjectConst data, const char* action){
+void getset_tm1637(Interface *interf, JsonVariantConst data, const char* action){
     {
         JsonDocument doc;
         if (embuifs::deserializeFile(doc, TCONST_fcfg_display)) doc.clear();
 
         // if this is a request with no data, then just provide existing configuration and quit
-        if (!data || !data.size()){
+        if (data.isNull()){
             if (interf && doc[T_tm1637].is<JsonObject>()){
                 interf->json_frame_value(doc[T_tm1637]);
                 interf->json_frame_flush();
@@ -260,8 +270,9 @@ void getset_tm1637(Interface *interf, JsonObjectConst data, const char* action){
 
         JsonVariant dst = doc[T_tm1637].isNull() ? doc[T_tm1637].to<JsonObject>() : doc[T_tm1637];
 
+        JsonObjectConst jo(data);
         // copy keys to a destination object
-        for (JsonPairConst kvp : data)
+        for (JsonPairConst kvp : jo)
             dst[kvp.key()] = kvp.value();
 
         embuifs::serialize2file(doc, TCONST_fcfg_display);
@@ -274,7 +285,7 @@ void getset_tm1637(Interface *interf, JsonObjectConst data, const char* action){
     if (interf) ui_page_setup_devices(interf, {}, NULL);
 }
 
-void getset_settings_other(Interface *interf, JsonObjectConst data, const char* action){
+void getset_settings_other(Interface *interf, JsonVariantConst data, const char* action){
 
     // if this is a request with no data, then just provide existing configuration and quit
     if (data.isNull()){

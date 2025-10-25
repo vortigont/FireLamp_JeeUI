@@ -40,7 +40,6 @@ Copyright © 2020 Dmytro Korniienko (kDn)
 #include "lamp.h"
 #include "interface.h"
 #include "display.hpp"
-#include "actions.hpp"
 #include "evtloop.h"
 #include "devices.h"
 #include "components.hpp"

@@ -19,8 +19,8 @@ except:
 
 outdir='embed'
 in_gz_files = ["resources/html/index.html", "resources/html/js/ui.json", "resources/html/js/ui.i18n.json"]
-combine_js_files = ["resources/html/js/lamp.js", "resources/html/js/drawing.js"]
-static_gz_files = [outdir + "/embui.js.gz", outdir + "/embui.json.gz", outdir + "/embui.i18n.json.gz", outdir + "/embui.lang.json.gz", outdir + "/tz.json.gz" ]
+combine_js_files = ["resources/html/js/firelamp.js", "resources/html/js/drawing.js"]
+static_gz_files = [outdir + "/embui.js.gz", outdir + "/lodash.js.gz", outdir + "/ui_embui.json.gz", outdir + "/ui_embui.i18n.json.gz", outdir + "/ui_embui.lang.json.gz", outdir + "/tz.json.gz" ]
 
 def set_compressor():
     cmd = "where" if platform.system() == "Windows" else "which"
@@ -75,7 +75,7 @@ def embed_resources():
 
         # combine js scripts
         jsall = ''.join([open(f, 'r', encoding='utf-8').read() for f in combine_js_files])
-        fpath = outdir + '/script.js.gz'
+        fpath = outdir + '/firelamp.js.gz'
         compress_data(jsall, fpath)
         print_hdr_data(fpath, f_hdr)
 

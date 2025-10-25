@@ -450,15 +450,6 @@ private:
      */
     void _event_picker_get(esp_event_base_t base, int32_t id, void* data);
 
-    // demo on/off
-    void _embui_demoOn(Interface *interf, JsonObjectConst data, const char* action);
-
-    // demo random order
-    void _embui_demoRndCtrls(Interface *interf, JsonObjectConst data, const char* action);
-
-    // demo random controls
-    void _embui_demoRndOrder(Interface *interf, JsonObjectConst data, const char* action);
-
 };
 
 /**

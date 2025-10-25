@@ -258,7 +258,7 @@ public:
      * @brief action handler that renames current preset
      * 
      */
-    void embui_preset_rename(Interface *interf, JsonObjectConst data, const char* action);
+    void embui_preset_rename(Interface *interf, JsonVariantConst data, const char* action);
 
     /**
      * @brief action handler that clones current preset into new one
