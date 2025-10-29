@@ -81,14 +81,14 @@ jobs:
           find .pio/build/ -name "factory.*.bin" -exec mv -t ~/artifacts/ {} +
           find .pio/build/ -name "firmware.*.bin" -exec mv -t ~/artifacts/ {} +
       - name: Upload Factory Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         id: artifact-factory-upload-step
         with:
           name: factory_images
           path: ~/artifacts/factory.*.bin
           compression-level: 9 # maximum compression
       - name: Upload OTA Firmware Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         id: artifact-ota-upload-step
         with:
           name: firmware_images
