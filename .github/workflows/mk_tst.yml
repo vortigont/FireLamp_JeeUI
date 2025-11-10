@@ -38,7 +38,7 @@ jobs:
           ls -l
       - name: "Find release ID"
         id: last_release
-        uses: Saras-IT/get-repo-release@v1
+        uses: Saras-IT/get-repo-release@v2
         with:
           token: ${{ secrets.FIRELAMP_READER }}
           #filter: '${{ inputs.refToBuild }}'
@@ -53,7 +53,7 @@ jobs:
           echo "release: ${{ steps.last_release.outputs.release }}"
       - name: "Find release ID"
         id: last_release2
-        uses: Saras-IT/get-repo-release@v1
+        uses: Saras-IT/get-repo-release@v2
         with:
           token: ${{ secrets.FIRELAMP_READER }}
           filter: "v3.6.2"
@@ -68,7 +68,7 @@ jobs:
           echo "release: ${{ steps.last_release2.outputs.release }}"
       - name: "Find release ID"
         id: last_release3
-        uses: Saras-IT/get-repo-release@v1
+        uses: Saras-IT/get-repo-release@v2
         with:
           token: ${{ secrets.FIRELAMP_READER }}
           filter: "v3.6.*"
