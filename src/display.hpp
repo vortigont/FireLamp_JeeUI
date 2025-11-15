@@ -83,7 +83,6 @@ struct TextBitMapCfg {
 };
 
 // My LED engine controller
-//template<EOrder RGB_ORDER = RGB>
 class LEDDisplay {
 
     engine_t _etype;        // type of backend to use
@@ -101,9 +100,6 @@ class LEDDisplay {
     // GFX object
     std::shared_ptr< LedFB_GFX > _gfx;
 
-    // overlay buffer
-    //std::weak_ptr< LedFB<uint16_t> > _ovr;
-
     // Addresable led strip topology transformation object
     LedTiles tiles;
 
@@ -116,8 +112,9 @@ class LEDDisplay {
      * 
      */
     std::list< overlay_cb_t > _stack;
-
-
+    std::mutex _stack_mtx;
+    // double buff mutex
+    std::mutex _dbuff_mtx;
 
 
     bool _start_rmt(const JsonDocument& doc);
@@ -177,7 +174,12 @@ public:
     //void overlay_render();
 
     // Wipe all layers and buffers
-    void clear(){ if (_dengine) _dengine->clear(); };
+    void clear(){
+        if (_dengine){
+            std::lock_guard<std::mutex> lock(_dbuff_mtx);
+            _dengine->clear();
+        }
+    };
 
     // backend brightness control
     uint8_t brightness(uint8_t brt);

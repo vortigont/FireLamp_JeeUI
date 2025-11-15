@@ -296,34 +296,40 @@ int LEDDisplay::getColorOrder() const {
 void LEDDisplay::show(){
   if (!_dengine) return;
   if (_use_db){
+    std::lock_guard<std::mutex> lock(_dbuff_mtx);
     // save buffer content
     _dengine->copyFront2Back();
   }
 
   // for all overlay structs in stack call a callback function that will render it over canvas
-  for (auto &s : _stack)
-    s.callback( _gfx.get() );
-
-
+  {
+    std::lock_guard<std::mutex> lock(_stack_mtx);
+    for (auto &s : _stack)
+      s.callback( _gfx.get() );
+  }
 
   _dengine->show();
 
   if (_use_db){
+    std::lock_guard<std::mutex> lock(_dbuff_mtx);
     // restore buffer content
     _dengine->flipBuffer();
   }
 };
 
 void LEDDisplay::canvasProtect(bool v){
-  if (_dengine)
+  if (_dengine){
+    std::lock_guard<std::mutex> lock(_dbuff_mtx);
     _dengine->doubleBuffer(v);
-  _use_db = v;
+    _use_db = v;
+  }
 }
 
 void LEDDisplay::attachOverlay( overlay_cb_t f){
   //LOGV(T_Display, printf, "new ovr:%u\n", &f);
   auto cb = std::find_if(_stack.begin(), _stack.end(), [&f](const overlay_cb_t& fn){ return f.id == fn.id; } );
   if (cb == _stack.end()){
+    std::lock_guard<std::mutex> lock(_stack_mtx);
     LOGD(T_Display, printf, "add overlay: %u\n", f.id);
     _stack.push_back(f);
   } else {
@@ -333,6 +339,7 @@ void LEDDisplay::attachOverlay( overlay_cb_t f){
 
 void LEDDisplay::detachOverlay( uint32_t id){
   //LOGV(T_Display, printf, "try remove ovr:%u\n", *(long *)(char *)&f);
+  std::lock_guard<std::mutex> lock(_stack_mtx);
   auto cb = std::find_if(_stack.cbegin(), _stack.cend(), [id](const overlay_cb_t& fn){ return id == fn.id; } );
   if ( cb != _stack.cend() ){
     LOGD(T_Display, printf, "remove overlay: %u\n", id);

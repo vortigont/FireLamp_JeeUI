@@ -322,13 +322,7 @@ void EffConfiguration::_savecfg(JsonVariant doc){
   for (const auto& i: _controls){
     a[i.getName()] = i.getVal();
   }
-/*
-  for (const auto& i: _controls){
-    JsonObject kv = a.add<JsonObject>();
-    kv[P_id] = i.getName();
-    kv[P_value] = i.getVal();
-  }
-*/
+
   String fname(effects_cfg_fldr);
   fname += EffectsListItem_t::getLbl(_eid);
   fname += T__json;
@@ -688,7 +682,7 @@ void EffectWorker::_spawn(effect_t eid, bool rnd_ctrls){
   // apply effect's controls
   rnd_ctrls ? applyRandomControls() : applyControls();
 
-  display.canvasProtect (worker->getCanvasProtect());         // set 'persistent' frambuffer flag if effect's manifest demands it
+  display.canvasProtect(worker->getCanvasProtect());         // set 'persistent' frambuffer flag if effect's manifest demands it
 
   // release mutex after effect init has complete
   lock.unlock();
@@ -994,6 +988,8 @@ void EffectWorker::_runnerHndlr(){
       continue;
 
     if (worker->run()){
+      // release mutex
+      lock.unlock();
       // effect has rendered a data in buffer, need to call the engine draw it
       display.show();
 
@@ -1007,11 +1003,11 @@ void EffectWorker::_runnerHndlr(){
         t = millis();
       }
 #endif
+    } else {
+      // effectcalc returned no data
+      // release mutex
+      lock.unlock();
     }
-    // effectcalc returned no data
-
-    // release mutex
-    lock.unlock();
   }
   // Task must self-terminate (if ever)
   vTaskDelete(NULL);

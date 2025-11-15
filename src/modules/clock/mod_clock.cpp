@@ -38,6 +38,7 @@
 #include "mod_clock.hpp"
 #include "fonts.h"
 #include "EmbUI.h"
+#include "log.h"
 
 static constexpr const char* A_set_mod_alrm           = "set_mod_alrm";                   // set alarm module item's configuration
 
@@ -73,6 +74,7 @@ void ClockModule::load_cfg(JsonVariantConst cfg){
 
   // try to detach any existing overlay
   display.detachOverlay(clk.cb.id);
+  _textmask_clk.reset();
 
   // clk
   clk.x = cfg[T_x1pos];
@@ -80,7 +82,7 @@ void ClockModule::load_cfg(JsonVariantConst cfg){
   clk.w = cfg[T_clkw] | 16;
   clk.h = cfg[T_clkh] | 8;
   clk.mixer = static_cast<ovrmixer_t>( cfg[T_mixer].as<unsigned>() );
-  LOGV(T_Display, printf, "ovr mix:%u\n", e2int(clk.mixer));
+  //LOGV(T_clock, printf, "ovr mix:%u\n", e2int(clk.mixer));
   clk.baseline_shift_x = cfg[T_x1offset];
   clk.baseline_shift_y = cfg[T_y1offset];
   clk.font_index = cfg[T_font1];
@@ -112,8 +114,6 @@ void ClockModule::load_cfg(JsonVariantConst cfg){
   _textmask_clk->setTextWrap(false);
   _textmask_clk->fillScreen(0);
 
-  //texture_ovr_cb_t clkovr { [&](LedFB_GFX *gfx){ gfx->fadeBitmap(clk.x, clk.y, _textmask_clk->getFramebuffer(), 48, 16, clk.color, 64); } }; 
-
   switch (clk.mixer){
     case ovrmixer_t::alphablend :
       clk.cb.callback = [&](LedFB_GFX *gfx){
@@ -122,9 +122,8 @@ void ClockModule::load_cfg(JsonVariantConst cfg){
         gfx->drawBitmap_alphablend( clk.x, clk.y, _textmask_clk->getFramebuffer(), clk.w, clk.h,
                                     LedFB_GFX::colorCRGB(clk.color_txt), clk.alpha_tx,
                                     LedFB_GFX::colorCRGB(clk.color_bg), clk.alpha_bg);
-        lock.unlock();
       };
-      LOGV(T_Display, println, "Use alpha blend mixer");
+      LOGV(T_clock, println, "Use alpha blend mixer");
       break;
 
     case ovrmixer_t::color_scale :
@@ -133,9 +132,8 @@ void ClockModule::load_cfg(JsonVariantConst cfg){
         if (!lock.try_lock()) return;
         gfx->drawBitmap_scale_colors( clk.x, clk.y, _textmask_clk->getFramebuffer(), clk.w, clk.h,
                                       LedFB_GFX::colorCRGB(clk.color_txt), LedFB_GFX::colorCRGB(clk.color_bg));
-        lock.unlock();
       };
-      LOGV(T_Display, println, "Use color scale mixer");
+      LOGV(T_clock, println, "Use color scale mixer");
       break;
 
     default :
@@ -144,17 +142,10 @@ void ClockModule::load_cfg(JsonVariantConst cfg){
         if (!lock.try_lock()) return;
         gfx->drawBitmap_bgfade( clk.x, clk.y, _textmask_clk->getFramebuffer(), clk.w, clk.h,
                                       LedFB_GFX::colorCRGB(clk.color_txt), clk.alpha_tx);
-        lock.unlock();
       };
-      LOGV(T_Display, println, "Use bg dim mixer");
+      LOGV(T_clock, println, "Use bg dim mixer");
   }
 
-  //clk.cb.callback = [&](LedFB_GFX *gfx){ gfx->blendBitmap(clk.x, clk.y, _textmask_clk->getFramebuffer(), clk.w, clk.h, clk.color_txt, clk.alpha_tx, clk.color_bg, clk.alpha_bg); };
-  //clk.cb.callback = [&](LedFB_GFX *gfx){ gfx->drawBitmap_scale_colors(clk.x, clk.y, _textmask_clk->getFramebuffer(), clk.w, clk.h, LedFB_GFX::colorCRGB(clk.color_txt), LedFB_GFX::colorCRGB(clk.color_bg)); };
-  //CRGB cf = LedFB_GFX::colorCRGB(clk.color_txt);
-  //CRGB cb = LedFB_GFX::colorCRGB(clk.color_bg);
-  //LOGV(T_Display, printf, "Clk colors: %u/%u front:%u,%u,%u, back:%u,%u,%u\n", clk.color_txt, clk.color_bg, cf.r, cf.g, cf.b, cb.r, cb.g, cb.b);
-  //LOGV(T_Display, printf, "clk overlay: %u\n", (size_t)&clk);
   display.attachOverlay( clk.cb );
 
   // date
@@ -174,6 +165,7 @@ void ClockModule::load_cfg(JsonVariantConst cfg){
 
   // detach existing date overlay
   display.detachOverlay(date.cb.id);
+  _textmask_date.reset();
 
   if (date_show){
     _textmask_date = std::make_unique<Arduino_Canvas_Mono>(date.w, date.h, nullptr);
@@ -184,15 +176,9 @@ void ClockModule::load_cfg(JsonVariantConst cfg){
       std::unique_lock<std::mutex> lock(mtx, std::defer_lock);
       if (!lock.try_lock()) return;
       gfx->drawBitmap_bgfade(date.x, date.y, _textmask_date->getFramebuffer(), date.w, date.h, date.color, date.alpha_bg);
-      lock.unlock();
     };
-    LOGV(T_Display, printf, "date overlay: %u\n", (size_t)&date);
+    LOGV(T_clock, printf, "date overlay: %u\n", (size_t)&date);
     display.attachOverlay( date.cb );
-  } else {
-    // check if need to release existing date bitmap
-    if (_textmask_date){
-      _textmask_date.reset();
-    }
   }
 
   redraw = true;
@@ -236,12 +222,6 @@ void ClockModule::generate_cfg(JsonVariant cfg) const {
 }
 
 void ClockModule::moduleRunner(){
-  // make sure that we have screen to write to
-//  if (!getOverlay()){
-//    LOGW(T_Module, println, "No overlay available");
-//    return;
-//  }
-
   std::time_t now;
   std::time(&now);
   std::tm *tm = std::localtime(&now);
