@@ -2022,10 +2022,14 @@
           },
           {
             "id": "active",
-            "html":"input",
-            "label":"Активна",
-            "type":"checkbox",
-            "class":"pure-u-1-5 pure-u-lg-1-12"
+            "html":"select",
+            "label":"Активность",
+            "section":"options",
+            "block":[
+              { "value":0, "label":"Отключена" },
+              { "value":1, "label":"Активна всегда" },
+              { "value":2, "label":"Отслеживать вкл./выкл. панели" }
+            ]
           },
           {
             "id": "descr",

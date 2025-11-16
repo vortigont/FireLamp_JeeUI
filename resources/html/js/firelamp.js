@@ -61,7 +61,7 @@ function omnicron_tasks_load(arg){
   // rename keys for each array's elements in 'event' obj
   tasks_data.event.forEach((obj, idx, array) => {
     ui_obj.section = "omni_task" + idx
-    ui_obj.block[0]["value"] = obj.active
+    ui_obj.block[0]["value"] = obj.active ? true : false
     ui_obj.block[1]["value"] = obj.descr
     ui_obj.block[2]["value"] = idx        // edit btn
     ui_obj.block[3]["value"] = idx        // del btn

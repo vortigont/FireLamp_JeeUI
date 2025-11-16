@@ -50,14 +50,31 @@ static constexpr const char* T_mod_omnicron_bottom = "lampui.sections.mod_omnicr
 static constexpr const char* T_mod_omnicron_task = "lampui.pages.module.omnicron_task";
 
 OmniCron::OmniCron() : GenericModule(T_omnicron, false){
+  ESP_ERROR_CHECK(
+    esp_event_handler_instance_register_with(
+      evt::get_hndlr(),
+      LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID,
+      [](void* self, esp_event_base_t base, int32_t id, void* data){ static_cast<OmniCron*>(self)->_lmpChEventHandler(base, id, data); },
+      this, &_hdlr_lmp_change_evt)
+  );
+
   // add EmbUI's handler to get Cron's task config
   embui.action.add(A_get_mod_omnicron_task, [this](Interface *interf, JsonVariantConst data, const char* action){ _task_get(interf, data, action); } );
-
   embui.action.add(A_set_mod_omnicron_task, [this](Interface *interf, JsonVariantConst data, const char* action){ _task_set(interf, data, action); } );
-
   embui.action.add(A_set_mod_omnicron_task_rm, [this](Interface *interf, JsonVariantConst data, const char* action){ _task_remove(interf, data, action); } );
-
 }
+
+OmniCron::~OmniCron(){
+  if (_hdlr_lmp_change_evt){
+    esp_event_handler_instance_unregister_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, _hdlr_lmp_change_evt);
+    _hdlr_lmp_change_evt = nullptr;
+  }
+
+  embui.action.remove(A_get_mod_omnicron_task);
+  embui.action.remove(A_set_mod_omnicron_task);
+  embui.action.remove(A_set_mod_omnicron_task_rm);
+}
+
 
 void OmniCron::start(){
   _cronos.start();
@@ -79,7 +96,7 @@ void OmniCron::load_cfg(JsonVariantConst cfg){
   for (JsonVariantConst e : tabs){
     omni_task_t t(
       {
-        e[T_active].as<bool>(),
+        static_cast<omni_task_t::active_t>(e[T_active].as<uint32_t>()),
         0,
         e[T_descr].as<const char*>(),
         e[T_crontab].as<const char*>(),
@@ -87,7 +104,7 @@ void OmniCron::load_cfg(JsonVariantConst cfg){
       }
     );
 
-    if (t.active){
+    if (t.active != omni_task_t::active_t::disabled){
       t.tid = _cronos.addCallback(e[T_crontab], [this](cronos_tid id, void* arg){ _cron_callback(id, arg); });
 
       // parse commands and add it to actions container for the specified tid
@@ -101,6 +118,14 @@ void OmniCron::load_cfg(JsonVariantConst cfg){
 
 void OmniCron::_cron_callback(cronos_tid id, void* arg){
   LOGD(T_crontab, printf, "exec task:%u\n", id);
+
+  for (auto& i : _tasks){
+    // check if the task could only run when device's state in 'on'
+    if ((i.tid == id) && (i.active == omni_task_t::active_t::pwron) && !_device_pwr){
+      LOGV(T_crontab, printf, "won't exec task:%u when off\n", id);
+      return;
+    }
+  }
   for (auto& i : _actions){
     if (i.id != id)
       continue;
@@ -153,7 +178,7 @@ void OmniCron::generate_cfg(JsonVariant cfg) const {
   LOGV(T_crontab, printf, "serializing %u tasks\n", _tasks.size());
   for (const auto& i : _tasks){
     JsonObject item = arr.add<JsonObject>();
-    item[T_active] = i.active;
+    item[T_active] = static_cast<unsigned>(i.active);
     item[T_descr] = i.descr;
     item[T_crontab] = i.crontab;
     item[T_cmd] = i.cmd;
@@ -203,7 +228,7 @@ void OmniCron::_task_get(Interface *interf, JsonVariantConst data, const char* a
 
   interf->json_frame_value();
 
-  interf->value(T_active, t.active);
+  interf->value(T_active, static_cast<unsigned>(t.active));
   interf->value(T_descr, t.descr);
   interf->value(T_crontab, t.crontab);
   interf->value(T_idx, idx);
@@ -238,8 +263,13 @@ void OmniCron::_task_set(Interface *interf, JsonVariantConst data, const char* a
 
   if (idx == -1){
     // this is a NEW rule
-    omni_task_t t({data[T_active].as<bool>(), 0, data[T_descr].as<const char*>(), data[T_crontab].as<const char*>(), data[T_cmd].as<const char*>()});
-    if (t.active){
+    omni_task_t t({
+      static_cast<omni_task_t::active_t> (data[T_active].as<unsigned>()),
+      0,
+      data[T_descr].as<const char*>(),
+      data[T_crontab].as<const char*>(),data[T_cmd].as<const char*>()
+    });
+    if (t.active != omni_task_t::active_t::disabled){
       // load task and it's actions to cronos
       t.tid = _cronos.addCallback(data[T_crontab], [this](cronos_tid id, void* arg){ _cron_callback(id, arg); });
       _parse_actions(t.tid, t.cmd.data());
@@ -257,21 +287,25 @@ void OmniCron::_task_set(Interface *interf, JsonVariantConst data, const char* a
     t.cmd = data[T_cmd].as<const char*>();
 
     // if tasks's state has changed
-    bool new_state = data[T_active].as<bool>();
+    auto new_state = static_cast<omni_task_t::active_t> (data[T_active].as<unsigned>());
 
-    if (new_state){
-      if (t.active){
-        // task has been active already, need to update the expression only
-        _cronos.setExpr(t.tid, t.crontab.c_str());
-      } else {
-        // need to create a new task
-        t.tid = _cronos.addCallback(data[T_crontab], [this](cronos_tid id, void* arg){ _cron_callback(id, arg); });
+    switch (new_state){
+      case omni_task_t::active_t::enabled :
+      case omni_task_t::active_t::pwron : {
+        if (t.active == omni_task_t::active_t::disabled){
+          // need to create a new task in cronos
+          t.tid = _cronos.addCallback(data[T_crontab], [this](cronos_tid id, void* arg){ _cron_callback(id, arg); });
+        } else {
+          // task has been active already, need to update the expression only
+          _cronos.setExpr(t.tid, t.crontab.c_str());
+        }
       }
-      _parse_actions(t.tid, t.cmd.data());
-    } else {
-      // new task's state if inactive, simply remove task from cronos if any
-      _cronos.removeTask(t.tid);
-      t.tid = 0;
+        break;
+
+      default:
+        // remove task from cronos if any
+        _cronos.removeTask(t.tid);
+        t.tid = 0;
     }
 
     // update new task's state
@@ -299,4 +333,17 @@ void OmniCron::_task_remove(Interface *interf, JsonVariantConst data, const char
 
   // load OmniCron's tasks list page
   mkEmbUIpage(interf, {}, NULL);
+}
+
+void OmniCron::_lmpChEventHandler(esp_event_base_t base, int32_t id, void* data){
+  switch (static_cast<evt::lamp_t>(id)){
+    // Power control
+    case evt::lamp_t::pwron :
+      _device_pwr = true;
+      break;
+    case evt::lamp_t::pwroff :
+      _device_pwr = false;
+      break;
+    default:;
+  }
 }

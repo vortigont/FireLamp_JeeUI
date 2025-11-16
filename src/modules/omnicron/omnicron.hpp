@@ -42,10 +42,15 @@
 
 class OmniCron : public GenericModule {
 
-//using omni_task_t = std::tuple<cronos_tid, int32_t, int32_t>;
-
 	struct omni_task_t {
-		bool active;
+		// task active state
+		enum class active_t {
+			disabled,		// task is not active
+			enabled,		// task is active
+			pwron			// task is axtive when device is on
+		};
+
+		active_t active;
 		cronos_tid tid;
 		std::string descr;
 		std::string crontab;
@@ -69,6 +74,7 @@ class OmniCron : public GenericModule {
 
 public:
 	OmniCron();
+	~OmniCron();
 
   void start() override;
   void stop() override;
@@ -80,6 +86,14 @@ public:
 	void generate_cfg(JsonVariant cfg) const override final;
 
 private:
+
+	// track device's power state
+	bool _device_pwr{false};
+
+	esp_event_handler_instance_t _hdlr_lmp_change_evt = nullptr;
+
+	// change events handler
+    void _lmpChEventHandler(esp_event_base_t base, int32_t id, void* data);
 
 	void _cron_callback(cronos_tid id, void* arg);
 
