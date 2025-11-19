@@ -1,5 +1,17 @@
 # Change Log
 
+## 4.1.4
+fix ESP32-HUB75-MatrixPanel-DMA lib at v3.0.11
+EffectFlock: draw via overlay
+use color selectors instead of numeric inputs in WebUI
+Adopt to EmbUI 4.3.0 API
+OmniCron - отслеживание статуса панели
+fix: random crashes when clearing screen buffer
+fix UI bugs
+   - поправлено отображение блоков выключателей
+   - поправлены переключатели в демо
+
+
 ## 4.1.3
  - fix demo switch
  - resurrect effect Flock
