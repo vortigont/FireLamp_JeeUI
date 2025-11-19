@@ -282,6 +282,9 @@ void Lamp::switcheffect(effswitch_t action, effect_t effnb){
     }
   }
 
+  // if switch effect was executed while device is in "off" state, then send notify state event
+  if (!vopts.flag.pwrState)
+    EVT_POST(LAMP_STATE_EVENTS, vopts.flag.pwrState ? e2int(evt::lamp_t::pwron) : e2int(evt::lamp_t::pwroff));
 }
 
 /*
@@ -331,7 +334,7 @@ void Lamp::_switcheffect(effswitch_t action, bool fade, effect_t effnb) {
   // затухание не требуется, переключаемся непосредственно на нужный эффект
   if(opts.flag.wipeOnEffChange || effwrkr.getCurrentEffectNumber() == effect_t::empty){ // для пустышки или для случая когда включена опция - чистим матрицу
     if (display.getCanvas())
-      display.getCanvas()->clear();
+      display.clear();
   }
 
   // if current worker's effect is same as the target one, then I do not need to do actual switch
