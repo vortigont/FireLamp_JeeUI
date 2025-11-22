@@ -91,7 +91,7 @@ void OmniCron::load_cfg(JsonVariantConst cfg){
   _tasks.clear();
   _cronos.clear();
 
-  LOGD(T_crontab, printf, "Loading %u crontab rules\n", tabs.size());
+  LOGI(T_crontab, printf, "Loading %u crontab rules\n", tabs.size());
 
   for (JsonVariantConst e : tabs){
     omni_task_t t(
@@ -106,13 +106,12 @@ void OmniCron::load_cfg(JsonVariantConst cfg){
 
     if (t.active != omni_task_t::active_t::disabled){
       t.tid = _cronos.addCallback(e[T_crontab], [this](cronos_tid id, void* arg){ _cron_callback(id, arg); });
+      LOGV(T_crontab, printf, "add task:%u, tab:%s\n", t.tid, t.descr.data());
 
       // parse commands and add it to actions container for the specified tid
       _parse_actions(t.tid, e[T_cmd].as<const char*>());
+      _tasks.emplace_back(std::move(t));
     }
-
-    LOGV(T_crontab, printf, "add task:%u, tab:%s\n", t.tid, t.descr.data());
-    _tasks.emplace_back(std::move(t));
   }
 }
 
@@ -122,17 +121,17 @@ void OmniCron::_cron_callback(cronos_tid id, void* arg){
   for (auto& i : _tasks){
     // check if the task could only run when device's state in 'on'
     if ((i.tid == id) && (i.active == omni_task_t::active_t::pwron) && !_device_pwr){
-      LOGV(T_crontab, printf, "won't exec task:%u when off\n", id);
+      LOGV(T_crontab, printf, "won't exec task:%u when device is off\n", id);
       return;
     }
   }
   for (auto& i : _actions){
-    if (i.id != id)
-      continue;
-
-    LOGV(T_crontab, printf, "cmd:%d, arg:%d\n", i.cmd, i.param);
-    // send command via event bus
-    EVT_POST_DATA(LAMP_SET_EVENTS, i.cmd, &i.param, sizeof(i.param));
+    LOGV(T_crontab, printf, "chk cmd id:%d, vs:%d\n", i.id, id);
+    if (i.id == id){
+      LOGV(T_crontab, printf, "cmd:%d, arg:%d\n", i.cmd, i.param);
+      // send command via event bus
+      EVT_POST_DATA(LAMP_SET_EVENTS, i.cmd, &i.param, sizeof(i.param));
+    }
   }
 }
 
