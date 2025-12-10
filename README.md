@@ -30,7 +30,7 @@ __[CHANGELOG](/CHANGELOG.md)__ | [![PlatformIO CI](https://github.com/vortigont/
   - [ESP8266 vs ESP32](#esp8266-vs-esp32)
 
 ### WiKi проекта
-Актуальную документацию по проекту можно найти в [WiKi](https://github.com/vortigont/EmbUI/wiki)
+Актуальную документацию по проекту можно найти в [WiKi](https://github.com/vortigont/FireLamp_JeeUI/wiki)
 
 ### Прошивка / сборка проекта
 Подробно опции прошивки сборки описаны в [WiKi](https://github.com/vortigont/FireLamp_JeeUI/wiki/%D0%A1%D0%B1%D0%BE%D1%80%D0%BA%D0%B0-%D0%B8-%D0%BF%D1%80%D0%BE%D1%88%D0%B8%D0%B2%D0%BA%D0%B0-%D0%BF%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D0%B0)
