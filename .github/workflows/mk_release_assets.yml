@@ -26,7 +26,7 @@ jobs:
           ref: ${{ inputs.refToBuild }}
       - name: PIP Cache
         id: cache-pip
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         env:
           cache-name: cache-pip-pkgs
         with:
@@ -38,7 +38,7 @@ jobs:
             ${{ runner.os }}-
       - name: Platformio Cache
         id: pio-pp
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         env:
           cache-name: cache-pio-pkgs
         with:
