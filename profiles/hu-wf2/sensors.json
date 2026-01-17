@@ -1,8 +1,4 @@
 {
-  "i2c":{
-    "sda":41,
-    "scl":42
-  },
   "sensors":[
     {
       "type":"Bosch_BMx",
