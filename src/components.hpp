@@ -44,4 +44,31 @@
 
 // Manager that creates dynamicaly loaded components
 #include "modules/mod_manager.hpp"
+
+
+class GPIO_Controller {
+public:
+  ~GPIO_Controller(){ _events_unsubsribe(); }
+
+  void start();
+
+  // load and set gpio configuration
+  void setup_gpios();
+
+private:
+  esp_event_handler_instance_t _change_events_hndlr = nullptr;
+
+  // matrix power switch FET
+  int32_t _fet{GPIO_NUM_NC};
+  // active logic levels
+  bool _fet_ll;
+
+  void _events_subsribe();
+  void _events_unsubsribe();
+  void _event_picker_change(int32_t id, void* data);
+};
+
+
+// object instances
 extern ModuleManager zookeeper;
+extern GPIO_Controller gpio_ctl;

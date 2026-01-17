@@ -214,6 +214,8 @@ static constexpr const char* T_crontab = "crontab";
 
 // I2c Bus
 static constexpr const char* T_i2c = "i2c";
+static constexpr const char* T_i2c0 = "i2c0";
+static constexpr const char* T_i2c1 = "i2c1";
 static constexpr const char* T_sda = "sda";
 static constexpr const char* T_scl = "scl";
 
@@ -241,6 +243,7 @@ static constexpr const char* T_device = "device";
 static constexpr const char* T_edit = "edit";
 static constexpr const char* T_Enable = "Enable";
 static constexpr const char* T_enabled = "enabled";
+static constexpr const char* T_fet = "fet";                             // MOSFET gpio
 static constexpr const char* T_idx = "idx";
 static constexpr const char* T__json = ".json";
 static constexpr const char* T_interval = "interval";
@@ -293,9 +296,6 @@ static constexpr const char* T_val = "val";
 
 static constexpr const char* TCONST_act = "act";
 static constexpr const char* TCONST_afS = "afS";
-static constexpr const char* TCONST_AUX = "AUX";
-static constexpr const char* TCONST_aux_gpio = "aux_gpio";             // AUX gpio
-static constexpr const char* TCONST_aux_ll = "aux_ll";                 // AUX logic level
 static constexpr const char* TCONST_bactList = "bactList";
 static constexpr const char* TCONST_blabel = "blabel";
 static constexpr const char* TCONST_bparam = "bparam";
@@ -343,8 +343,6 @@ static constexpr const char* TCONST_MIRR_H = "MIRR_H";
 static constexpr const char* TCONST_MIRR_V = "MIRR_V";
 static constexpr const char* TCONST_Mode = "Mode";
 static constexpr const char* TCONST_mode = "mode";
-static constexpr const char* TCONST_mosfet_gpio = "fet_gpio";             // MOSFET gpio
-static constexpr const char* TCONST_mosfet_ll = "fet_ll";                // MOSFET logic level
 static constexpr const char* TCONST_msg = "msg";
 static constexpr const char* TCONST_nofade = "nofade";
 static constexpr const char* TCONST_Normal = "Normal";
@@ -429,7 +427,7 @@ static constexpr const char* A_encoder_gpio = "*et_encoder_gpio";               
 static constexpr const char* A_dfplayer_dev = "*et_dfplayer_device";            // get/set DFPlayer device configuration
 static constexpr const char* A_dfplayer_opt = "*et_dfplayer_opt";               // get/set DFPlayer functions
 
-static constexpr const char* A_set_gpio = "*et_gpio";                           // get/set gpios action
+static constexpr const char* A_gpiocfg = "gpiocfg";                     // get/set gpios action
 static constexpr const char* A_getset_other = "*et_other";                      // get/set settings "other" page handler
 
 

@@ -53,26 +53,13 @@ SensorManager::~SensorManager(){
 }
 
 void SensorManager::load_cfg(JsonVariantConst cfg){
-  // read i2c gpio's
-  _i2c_scl = cfg[T_i2c][T_scl] | -1;
-  _i2c_sda = cfg[T_i2c][T_sda] | -1;
-
-  if (_i2c_sda == -1 || _i2c_scl == -1){
-    LOGE(T_sensors, printf, "i2c bus pins are not configured, sda:%d, scl:%d\n", _i2c_scl, _i2c_scl);
-    return;
-  }
-  // destory all sensors
+  // we assume that i2c was initialized earlier via gpio_ctl
+  // destroy all sensors
   _sensors.clear();
-  // init i2c bus
-  Wire.setPins(_i2c_sda, _i2c_scl);
-  if (!Wire.begin()){
-    LOGE(T_sensors, println, "i2c init err");
-    return;
-  }
-
-  JsonArrayConst arr = cfg[T_sensors];
 
   LOGD(T_sensors, println, "creating sensors pool");
+  JsonArrayConst arr = cfg[T_sensors];
+
   for(JsonVariantConst v : arr){
     if (!v[T_enabled])
       continue;

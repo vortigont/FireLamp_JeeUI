@@ -91,28 +91,6 @@ void Lamp::lamp_init(){
 
   _brightness(0, true);          // начинаем с полностью потушенного дисплея 0-й яркости
 
-  // GPIO's
-  JsonDocument doc;
-  if (!embuifs::deserializeFile(doc, TCONST_fcfg_gpio)){
-
-    // restore fet gpio
-    _pins.fet = doc[TCONST_mosfet_gpio] | static_cast<int>(GPIO_NUM_NC);
-    _pins.fet_ll = doc[TCONST_mosfet_ll];
-    // gpio that controls FET (for disabling matrix)
-    if (_pins.fet > static_cast<int>(GPIO_NUM_NC)){
-      pinMode(_pins.fet, OUTPUT);
-      digitalWrite(_pins.fet, !_pins.fet_ll);
-    }
-
-    _pins.aux = doc[TCONST_aux_gpio] | static_cast<int>(GPIO_NUM_NC);
-    _pins.aux_ll = doc[TCONST_aux_ll];
-    // gpio that controls AUX/Alarm pin
-    if (_pins.aux > static_cast<int>(GPIO_NUM_NC)){
-      pinMode(_pins.aux, OUTPUT);
-      digitalWrite(_pins.aux, !_pins.aux_ll);
-    }
-  }
-
   // load effect's index
   effwrkr.loadIndex();
 
@@ -586,14 +564,6 @@ void Lamp::_event_picker_get(esp_event_base_t base, int32_t id, void* data){
 
 void Lamp::_event_picker_state(esp_event_base_t base, int32_t id, void* data){
   switch (static_cast<evt::lamp_t>(id)){
-    case evt::lamp_t::pwron :
-      // enable MOSFET
-      if (_pins.fet > static_cast<int>(GPIO_NUM_NC)) digitalWrite(_pins.fet,  _pins.fet_ll);
-      break;
-    case evt::lamp_t::pwroff :
-      // disable MOSFET
-      if (_pins.fet > static_cast<int>(GPIO_NUM_NC)) digitalWrite(_pins.fet,  !_pins.fet_ll);
-      break;
     case evt::lamp_t::fadeEnd :
       // check if effect switching is pending
       _fadeEventHandler();

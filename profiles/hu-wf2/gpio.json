@@ -1,1 +1,7 @@
-{"fet_gpio":40,"fet_ll":0,"aux_gpio":-1,"aux_ll":0,"mic":-1}
+{
+  "fet":{"gpio":40,"logicL":0},
+  "i2c0":{
+    "sda":41,
+    "scl":42
+  }
+}

@@ -475,16 +475,6 @@ void ui_page_effects(Interface *interf, JsonVariantConst data, const char* actio
     myLamp.effwrkr.mkEmbUIpage(interf);
 }
 
-void set_auxflag(Interface *interf, JsonVariantConst data, const char* action){
-    int pin = embui.getConfig()[TCONST_aux_gpio];
-    if ( pin == -1) return;
-    bool state = ( digitalRead(pin) == embui.getConfig()[TCONST_aux_ll] );
-
-    if (data != state) {
-        digitalWrite(pin, !state);
-    }
-}
-
 /**
  * @brief WebUI страница "Настройки" - "другие"
  * 
@@ -513,17 +503,17 @@ void set_mp3volume(Interface *interf, JsonVariantConst data, const char* action)
     сохраняет настройки GPIO и перегружает контроллер
  */
 void getset_gpios(Interface *interf, JsonVariantConst data, const char* action){
-
     if (data.isNull()){
         JsonDocument doc;
         if (embuifs::deserializeFile(doc, TCONST_fcfg_gpio)) doc.clear();     // reset if cfg is broken or missing
 
         // it's a request, send current configuration
-        interf->json_frame_value(doc);
+        interf->json_frame_value_extid(doc, "gpiocfg");
         interf->json_frame_flush();
         return;
     }
 
+    LOGD(T_sensors, print, "Saving gpio config");
     // save posted config to file
     embuifs::serialize2file(data, TCONST_fcfg_gpio);
 
@@ -542,8 +532,6 @@ void block_user_settings(Interface *interf, JsonVariantConst data, const char* a
     interf->json_section_begin("cfg_buttons");
     // periferal devices
     interf->button_value(button_t::generic, A_ui_page, e2int(page::setup_devices), "Внешние устройства");
-    // mike
-    interf->button_value(button_t::generic, A_ui_page, e2int(page::mike), TINTF_020);
 
     // other
     interf->button_value(button_t::generic, A_ui_page, e2int(page::setup_other), TINTF_082);
@@ -711,12 +699,9 @@ void embui_actions_register(){
     embui.action.add(T_mp3vol, set_mp3volume);
     embui.action.add(T_mp3mute, set_mp3mute);
 
-    embui.action.add(A_set_gpio, getset_gpios);                             // Get/Set gpios
+    embui.action.add(A_gpiocfg, getset_gpios);                              // Get/Set gpios config
     embui.action.add(A_getset_other, getset_settings_other);                   // get/set settings "other" page handler
 
-
-    // to be refactored
-    embui.action.add(TCONST_AUX, set_auxflag);
 
     // disable old overlay buffer
     //embui.action.add(TCONST_draw_dat, set_drawing);

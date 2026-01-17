@@ -339,7 +339,7 @@
           "label":"🖫 Сохранить"
         },
         {
-          "id":"ui_page_settings",
+          "id":"sys_page_settings",
           "html":"button",
           "color": "green",
           "type":"generic",
@@ -558,7 +558,7 @@
           "label": "🖫 Сохранить"
         },
         {
-          "id": "ui_page_settings",
+          "id": "sys_page_settings",
           "html": "button",
           "type": 0,
           "label": "🔙 Выход"
@@ -646,7 +646,7 @@
           "label": "🖫 Сохранить"
         },
         {
-          "id": "ui_page_settings",
+          "id": "sys_page_settings",
           "html": "button",
           "type": 0,
           "label": "🔙 Выход"
@@ -852,7 +852,7 @@
           ]
         },
         {
-          "id": "ui_page_settings",
+          "id": "sys_page_settings",
           "html": "button",
           "type": 0,
           "label": "🔙 Выход"
@@ -944,7 +944,7 @@
               "label": "🖫 Сохранить"
             },
             {
-              "id": "ui_page_settings",
+              "id": "sys_page_settings",
               "html": "button",
               "type": 0,
               "label": "🔙 Выход"
@@ -982,7 +982,7 @@
               "label": "🖫 Сохранить"
             },
             {
-              "id": "ui_page_settings",
+              "id": "sys_page_settings",
               "html": "button",
               "type": 0,
               "label": "🔙 Выход"
@@ -1063,7 +1063,7 @@
           "html": "spacer"
         },
         {
-          "id": "ui_page_settings",
+          "id": "sys_page_settings",
           "html": "button",
           "color": "green",
           "type":"generic",
@@ -2273,7 +2273,7 @@
                   "step": 1
                 },
                 {
-                  "id": "logic",
+                  "id": "logicL",
                   "html": "input",
                   "type": "number",
                   "label": "Логический уровень транзистора",
@@ -2361,7 +2361,7 @@
         },
         {
           "html":"button",
-          "action": "ui_page_settings",
+          "action": "sys_page_settings",
           "color": "green",
           "type":"generic",
           "label":"🔙 Выход"
