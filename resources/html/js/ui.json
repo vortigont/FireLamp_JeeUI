@@ -1381,7 +1381,6 @@
                   {
                     "id":"font1",
                     "html":"select",
-                    "value":5,
                     "label":"Шрифт часов",
                     "section":"options",
                     "block":[
@@ -1410,7 +1409,6 @@
                   {
                     "id":"font2",
                     "html":"select",
-                    "value":5,
                     "label":"Шрифт секунд",
                     "section":"options",
                     "block":[
@@ -1531,7 +1529,6 @@
               {
                 "id":"font3",
                 "html":"select",
-                "value":5,
                 "label":"Шрифт",
                 "section":"options",
                 "block":[
