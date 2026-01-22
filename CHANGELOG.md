@@ -1,5 +1,12 @@
 # Change Log
 
+## 4.1.5
+ - i2c gpios config moved from sensors.json to web section with fet
+ - update huidu config
+ - update embui lib
+ - move FET control out of Lamp class
+ - fix omnicron operation
+
 ## 4.1.4
 fix ESP32-HUB75-MatrixPanel-DMA lib at v3.0.11
 EffectFlock: draw via overlay
