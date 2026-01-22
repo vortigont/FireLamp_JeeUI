@@ -115,20 +115,8 @@ private:
         effect_t pendingEffectNum{0};
     };
 
-    // used auxilary GPIOs 
-    struct GPIO_pins {
-        // matrix power switch FET
-        int32_t fet{GPIO_NUM_NC};
-        // some uknown AUX pin
-        int32_t aux{GPIO_NUM_NC};
-        // active logic levels
-        bool fet_ll;
-        bool aux_ll;
-    };
-
     // effect switching state
     EffSwitch_state_t _swState;
-    GPIO_pins _pins;
 
     std::shared_ptr<LedFB<uint16_t> > _overlay;     // буфер для оверлея
 
