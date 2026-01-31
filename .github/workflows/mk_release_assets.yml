@@ -80,7 +80,7 @@ jobs:
           ls -l ~/artifacts/
       - name: "Find release ID"
         id: last_release
-        uses: Saras-IT/get-repo-release@v2.1
+        uses: Saras-IT/get-repo-release@v1
         with:
           token: ${{ secrets.FIRELAMP_READER }}
           filter: '${{ inputs.refToBuild }}'
