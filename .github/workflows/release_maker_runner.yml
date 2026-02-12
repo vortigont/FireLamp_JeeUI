@@ -68,7 +68,7 @@ jobs:
         id: prepare_bins
         shell: bash
         run: |
-          mkdir ~/artifacts
+          mkdir -p ~/artifacts
           find .pio/build/ -type f -name 'f*.bin'
           for i in $(find .pio/build/ -type f -name 'firmware*.bin'); do mv $i ~/artifacts/$(basename -s .bin $i)_${{ inputs.refToBuild }}.bin; done
           for i in $(find .pio/build/ -type f -name 'factory*.bin');  do mv $i ~/artifacts/$(basename -s .bin $i)_${{ inputs.refToBuild }}.bin; done
