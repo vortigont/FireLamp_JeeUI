@@ -77,7 +77,7 @@ jobs:
           factory_pkg_filename="factory_${{ inputs.refToBuild }}.zip"
           #factory_pkg_filename="factory_${{ github.ref_name }}.zip"
           find ~/artifacts/ -name "factory*.bin" -print | zip -9 ~/artifacts/$factory_pkg_filename -@
-          ls -l ~/artifacts/
+          cd ~/artifacts/; pwd; ls -l
       - name: "Find release ID"
         id: last_release
         uses: Saras-IT/get-repo-release@v1.9
