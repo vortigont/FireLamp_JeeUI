@@ -20,6 +20,8 @@ jobs:
     runs-on: [self-hosted]
     if: github.repository == 'vortigont/FireLamp_JeeUI'
     continue-on-error: false
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v6
         with:
