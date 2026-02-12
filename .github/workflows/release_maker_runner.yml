@@ -98,7 +98,7 @@ jobs:
           verbose: true
           #tags: true
           release_id: ${{ steps.last_release.outputs.id }}"
-          file: "/tmp/runner/artifacts/*.zip"
+          file: "/home/runner/artifacts/*.zip"
       - name: Cleanup GH artifacts
         shell: bash
         run: |
