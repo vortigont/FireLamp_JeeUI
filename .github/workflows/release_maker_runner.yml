@@ -20,8 +20,6 @@ jobs:
     runs-on: [self-hosted]
     if: github.repository == 'vortigont/FireLamp_JeeUI'
     continue-on-error: false
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v6
         with:
@@ -52,6 +50,17 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pio-
 #           Linux-pio-cache-pio-pkgs, Linux-pio-, Linux-
+      - name: Platformio build Cache
+        id: pio-bld
+        uses: actions/cache@v5
+        env:
+          cache-name: cache-pio-build
+        with:
+          path: |
+            .pio
+          key: buildlamp-${{env.cache-name}}
+          restore-keys: |
+            buildlamp-${{env.cache-name}}
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
@@ -69,12 +78,17 @@ jobs:
         run: |
           platformio run -e esp32_4M
           #platformio run -e ${{ matrix.variant }}
-          for i in $(find .pio/build/ -type f -name 'firmware*.bin'); do mv $i ~/artifacts/$(basename -s .bin $i)_${{ inputs.refToBuild }}.bin; done
-          for i in $(find .pio/build/ -type f -name 'factory*.bin');  do mv $i ~/artifacts/$(basename -s .bin $i)_${{ inputs.refToBuild }}.bin; done
-      #- name: Run PlatformIO build
-      #  run: |
-      #    platformio run -e esp32_4M -e esp32_16M -e esp32S3_4M -e esp32S3_16M -e hdwf2_rel
-      #   platformio run -e ${{ matrix.variant }}
+          mv .pio/libdeps/esp32_4M .pio/libdeps/esp32_16M
+          #mv .pio/build/esp32_4M .pio/build/esp32_16M
+          platformio run -e esp32_16M
+          mv .pio/libdeps/esp32_16M .pio/libdeps/esp32S3_4M
+          platformio run -e esp32S3_4M
+          mv .pio/libdeps/esp32S3_4M .pio/libdeps/esp32S3_16M
+          #mv .pio/build/esp32S3_4M .pio/build/esp32S3_16M
+          platformio run -e esp32S3_16M
+          mv .pio/libdeps/esp32S3_16M .pio/libdeps/hdwf2_rel
+          #mv .pio/build/esp32S3_16M .pio/build/hdwf2_rel
+          platformio run -e hdwf2_rel
       - name: Collect firmware images
         id: prepare_bins
         shell: bash
@@ -85,7 +99,6 @@ jobs:
           fw_pkg_filename="firmware_${{ inputs.refToBuild }}.zip"
           find ~/artifacts/ -name "firmware*.bin" -print | zip -9 ~/artifacts/$fw_pkg_filename -@
           factory_pkg_filename="factory_${{ inputs.refToBuild }}.zip"
-          #factory_pkg_filename="factory_${{ github.ref_name }}.zip"
           find ~/artifacts/ -name "factory*.bin" -print | zip -9 ~/artifacts/$factory_pkg_filename -@
           cd ~/artifacts/; pwd; ls -l
       - name: "Find release ID"
