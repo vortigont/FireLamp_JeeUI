@@ -17,7 +17,7 @@ on:
 
 jobs:
   PublishRelease:
-    runs-on: [self-hosted, ubuntu-latest]
+    runs-on: [self-hosted]
     if: github.repository == 'vortigont/FireLamp_JeeUI'
     continue-on-error: false
     steps:
