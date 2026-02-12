@@ -104,7 +104,7 @@ jobs:
         run: |
           rm -f ~/artifacts/*.zip
       - name: Deploy BINs to GH-Pages
-        uses: JamesIves/github-pages-deploy-action@v4
+        uses: JamesIves/github-pages-deploy-action@v4.8
         with:
           # This is the branch where the docs are deployed to
           commit-message: bin release workflow
