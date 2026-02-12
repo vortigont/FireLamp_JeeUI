@@ -1,7 +1,7 @@
 # workdir
 # /home/runner/work/FireLamp_JeeUI/FireLamp_JeeUI
 
-name: GitHub release creator pipeline
+name: GitHub release creator(SH)
 
 on:
   workflow_dispatch:      # Manual start
