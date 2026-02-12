@@ -24,6 +24,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           ref: ${{ inputs.refToBuild }}
+          persist-credentials: false
       - name: PIP Cache
         id: cache-pip
         uses: actions/cache@v5
@@ -49,6 +50,17 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pio-
 #           Linux-pio-cache-pio-pkgs, Linux-pio-, Linux-
+      - name: Platformio build Cache
+        id: pio-bld
+        uses: actions/cache@v5
+        env:
+          cache-name: cache-pio-build
+        with:
+          path: |
+            .pio
+          key: buildlamp-${{env.cache-name}}
+          restore-keys: |
+            buildlamp-${{env.cache-name}}
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
@@ -58,26 +70,37 @@ jobs:
           python -m pip install --upgrade pip
           pip install --upgrade platformio
           pip install --upgrade zopfli
-          platformio run -t buildfs
+          platformio run -e esp32_4M -t buildfs
           #platformio pkg update
-      - name: Run PlatformIO build
+          mkdir -p ~/artifacts; cd ~/artifacts; pwd
+      - name: Build PlatformIO - esp32-4M
+        shell: bash
         run: |
-          platformio run -e esp32_4M -e esp32_16M -e esp32S3_4M -e esp32S3_16M -e hdwf2_rel
-#         platformio run -e ${{ matrix.variant }}
+          platformio run -e esp32_4M
+          #platformio run -e ${{ matrix.variant }}
+          mv .pio/libdeps/esp32_4M .pio/libdeps/esp32_16M
+          #mv .pio/build/esp32_4M .pio/build/esp32_16M
+          platformio run -e esp32_16M
+          mv .pio/libdeps/esp32_16M .pio/libdeps/esp32S3_4M
+          platformio run -e esp32S3_4M
+          mv .pio/libdeps/esp32S3_4M .pio/libdeps/esp32S3_16M
+          #mv .pio/build/esp32S3_4M .pio/build/esp32S3_16M
+          platformio run -e esp32S3_16M
+          mv .pio/libdeps/esp32S3_16M .pio/libdeps/hdwf2_rel
+          #mv .pio/build/esp32S3_16M .pio/build/hdwf2_rel
+          platformio run -e hdwf2_rel
       - name: Collect firmware images
         id: prepare_bins
         shell: bash
         run: |
-          mkdir ~/artifacts
           find .pio/build/ -type f -name 'f*.bin'
           for i in $(find .pio/build/ -type f -name 'firmware*.bin'); do mv $i ~/artifacts/$(basename -s .bin $i)_${{ inputs.refToBuild }}.bin; done
           for i in $(find .pio/build/ -type f -name 'factory*.bin');  do mv $i ~/artifacts/$(basename -s .bin $i)_${{ inputs.refToBuild }}.bin; done
           fw_pkg_filename="firmware_${{ inputs.refToBuild }}.zip"
           find ~/artifacts/ -name "firmware*.bin" -print | zip -9 ~/artifacts/$fw_pkg_filename -@
           factory_pkg_filename="factory_${{ inputs.refToBuild }}.zip"
-          #factory_pkg_filename="factory_${{ github.ref_name }}.zip"
           find ~/artifacts/ -name "factory*.bin" -print | zip -9 ~/artifacts/$factory_pkg_filename -@
-          ls -l ~/artifacts/
+          cd ~/artifacts/; pwd; ls -l
       - name: "Find release ID"
         id: last_release
         uses: Saras-IT/get-repo-release@v1.9
@@ -92,12 +115,12 @@ jobs:
           #tags: true
           release_id: ${{ steps.last_release.outputs.id }}"
           file: "/home/runner/artifacts/*.zip"
-      - name: Prepare GH artefacts
+      - name: Cleanup GH artifacts
         shell: bash
         run: |
           rm -f ~/artifacts/*.zip
       - name: Deploy BINs to GH-Pages
-        uses: JamesIves/github-pages-deploy-action@v4
+        uses: JamesIves/github-pages-deploy-action@v4.8.0
         with:
           # This is the branch where the docs are deployed to
           commit-message: bin release workflow
