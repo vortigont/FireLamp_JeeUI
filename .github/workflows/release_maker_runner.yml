@@ -60,42 +60,12 @@ jobs:
           pip install --upgrade zopfli
           platformio run -e esp32_4M -t buildfs
           #platformio pkg update
-          mkdir -p ~/artifacts
+          mkdir -p ~/artifacts; cd ~/artifacts; pwd
       - name: Build PlatformIO - esp32-4M
         shell: bash
         run: |
           platformio run -e esp32_4M
           #platformio run -e ${{ matrix.variant }}
-          for i in $(find .pio/build/ -type f -name 'firmware*.bin'); do mv $i ~/artifacts/$(basename -s .bin $i)_${{ inputs.refToBuild }}.bin; done
-          for i in $(find .pio/build/ -type f -name 'factory*.bin');  do mv $i ~/artifacts/$(basename -s .bin $i)_${{ inputs.refToBuild }}.bin; done
-      - name: Build PlatformIO - esp32-16M
-        shell: bash
-        run: |
-          mv .pio/libdeps/esp32_4M .pio/libdeps/esp32_16M
-          mv .pio/build/esp32_4M .pio/build/esp32_16M
-          platformio run -e esp32_16M
-          for i in $(find .pio/build/ -type f -name 'firmware*.bin'); do mv $i ~/artifacts/$(basename -s .bin $i)_${{ inputs.refToBuild }}.bin; done
-          for i in $(find .pio/build/ -type f -name 'factory*.bin');  do mv $i ~/artifacts/$(basename -s .bin $i)_${{ inputs.refToBuild }}.bin; done
-      - name: Build PlatformIO - esp32S3-4M
-        shell: bash
-        run: |
-          platformio run -e esp32S3_4M
-          for i in $(find .pio/build/ -type f -name 'firmware*.bin'); do mv $i ~/artifacts/$(basename -s .bin $i)_${{ inputs.refToBuild }}.bin; done
-          for i in $(find .pio/build/ -type f -name 'factory*.bin');  do mv $i ~/artifacts/$(basename -s .bin $i)_${{ inputs.refToBuild }}.bin; done
-      - name: Build PlatformIO - esp32S3-16M
-        shell: bash
-        run: |
-          mv .pio/libdeps/esp32S3_4M .pio/libdeps/esp32S3_16M
-          mv .pio/build/esp32S3_4M .pio/build/esp32S3_16M
-          platformio run -e esp32S3_16M
-          for i in $(find .pio/build/ -type f -name 'firmware*.bin'); do mv $i ~/artifacts/$(basename -s .bin $i)_${{ inputs.refToBuild }}.bin; done
-          for i in $(find .pio/build/ -type f -name 'factory*.bin');  do mv $i ~/artifacts/$(basename -s .bin $i)_${{ inputs.refToBuild }}.bin; done
-      - name: Build PlatformIO - HD-WF
-        shell: bash
-        run: |
-          mv .pio/libdeps/esp32S3_16M .pio/libdeps/hdwf2_rel
-          mv .pio/build/esp32S3_16M .pio/build/hdwf2_rel
-          platformio run -e hdwf2_rel
           for i in $(find .pio/build/ -type f -name 'firmware*.bin'); do mv $i ~/artifacts/$(basename -s .bin $i)_${{ inputs.refToBuild }}.bin; done
           for i in $(find .pio/build/ -type f -name 'factory*.bin');  do mv $i ~/artifacts/$(basename -s .bin $i)_${{ inputs.refToBuild }}.bin; done
       #- name: Run PlatformIO build
