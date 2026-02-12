@@ -97,10 +97,10 @@ jobs:
           for i in $(find .pio/build/ -type f -name 'firmware*.bin'); do mv $i ~/artifacts/$(basename -s .bin $i)_${{ inputs.refToBuild }}.bin; done
           for i in $(find .pio/build/ -type f -name 'factory*.bin');  do mv $i ~/artifacts/$(basename -s .bin $i)_${{ inputs.refToBuild }}.bin; done
           mv .pio/build/hdwf2_rel .pio/build/esp32S3_4M
-#      - name: Run PlatformIO build
-#        run: |
-#          platformio run -e esp32_4M -e esp32_16M -e esp32S3_4M -e esp32S3_16M -e hdwf2_rel
-#         platformio run -e ${{ matrix.variant }}
+      #- name: Run PlatformIO build
+      #  run: |
+      #    platformio run -e esp32_4M -e esp32_16M -e esp32S3_4M -e esp32S3_16M -e hdwf2_rel
+      #   platformio run -e ${{ matrix.variant }}
       - name: Collect firmware images
         id: prepare_bins
         shell: bash
