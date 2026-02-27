@@ -295,8 +295,9 @@ void page_button_setup(Interface *interf, JsonVariantConst data, const char* act
         interf->uidata_pick( "lampui.settings.button" );
     interf->json_frame_flush();
 
-    // call setter with no data, it will publish existing config values if any
+    // call setter with no data, it will publish current gpio configuration values, if any
     getset_button_gpio(interf, {}, NULL);
+    // call setter with no data, it will publish current encoder gpio configuration values, if any
     getset_encoder_gpio(interf, {}, NULL);
 
     JsonDocument doc;
@@ -304,12 +305,13 @@ void page_button_setup(Interface *interf, JsonVariantConst data, const char* act
     JsonArray bevents( doc[T_btn_events] );
 
     interf->json_frame_interface();
-    interf->json_section_begin("button_events_list");
+    // replace placeholder section in template with a list of button events config
+    interf->json_section_begin("button_events_list", P_EMPTY, false, false, false, true);
 
     int cnt = 0;
     for (JsonVariant value : bevents) {
         JsonObject obj = value.as<JsonObject>();
-        interf->json_section_begin(String("sec") + cnt, (const char*)0, false, false, true );
+        interf->json_section_begin(String("sec") + cnt, P_EMPTY, false, false, true );
         interf->checkbox(P_EMPTY, obj[T_enabled], "Active");
         interf->checkbox(P_EMPTY, obj[T_pwr], "Pwr On/Off");
 
@@ -400,7 +402,7 @@ void page_button_evt_save(Interface *interf, JsonVariantConst data, const char* 
     JsonDocument doc;
     if (embuifs::deserializeFile(doc, T_benc_cfg)) doc.clear();
     JsonArray bevents( doc[T_btn_events] );
-    int idx = data.as<int>();
+    uint idx = data[P_idx];
     JsonObject obj = idx < bevents.size() ? bevents[idx] : bevents.add<JsonObject>();
 
     JsonObjectConst jo(data);
@@ -412,7 +414,8 @@ void page_button_evt_save(Interface *interf, JsonVariantConst data, const char* 
 
     button_configure_events(doc[T_btn_events]);
 
-    if (interf) page_button_setup(interf, {}, NULL);
+    if (interf)
+        page_button_setup(interf, {}, NULL);
 }
 
 // DFPlayer related pages

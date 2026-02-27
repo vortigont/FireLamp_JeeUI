@@ -2538,7 +2538,7 @@
         {
           "id":"lamppwr",
           "html":"input",
-          "label":"Device On/Off",
+          "label":"Trigger only when device is On",
           "type":"checkbox"
         },
         {
