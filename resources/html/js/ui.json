@@ -2536,7 +2536,7 @@
           "type":"checkbox"
         },
         {
-          "id":"lamppwr",
+          "id":"onpwr",
           "html":"input",
           "label":"Trigger only when device is On",
           "type":"checkbox"

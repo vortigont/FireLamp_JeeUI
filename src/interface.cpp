@@ -313,7 +313,7 @@ void page_button_setup(Interface *interf, JsonVariantConst data, const char* act
         JsonObject obj = value.as<JsonObject>();
         interf->json_section_begin(String("sec") + cnt, P_EMPTY, false, false, true );
         interf->checkbox(P_EMPTY, obj[T_enabled], "Active");
-        interf->checkbox(P_EMPTY, obj[T_pwr], "Pwr On/Off");
+        interf->checkbox(P_EMPTY, obj[T_onpwr], "in PwrOn mode only");
 
         String s;
         switch (obj[T_btn_event].as<int>()){
