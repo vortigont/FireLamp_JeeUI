@@ -226,7 +226,7 @@ void ButtonEventHandler::load(JsonVariantConst cfg){
 
   for(JsonVariantConst v : array) {
     //LOG(printf, "Add cfg Event:%u\n", v[T_btn_event].as<int>() );
-    _event_map.emplace_back(ButtonAction(static_cast<ESPButton::event_t>(v[T_btn_event].as<int>()), static_cast<evt::lamp_t>(v[T_lamp_event].as<int>()), v[T_clicks], v[T_arg], v[T_enabled], v[T_pwr] ));
+    _event_map.emplace_back(ButtonAction(static_cast<ESPButton::event_t>(v[T_btn_event].as<int>()), static_cast<evt::lamp_t>(v[T_lamp_event].as<int>()), v[T_clicks], v[T_arg], v[T_enabled], v[T_onpwr] ));
   }
 
 }
