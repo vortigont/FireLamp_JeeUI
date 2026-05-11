@@ -149,15 +149,16 @@ bool LEDDisplay::_start_hub75(const JsonDocument& doc){
 
     HUB75_I2S_CFG mxconfig(
                         o[T_width], o[T_height],
-                        1,      // chain length
-                        _pins,   // pin mapping
+                        1,                                                              // chain length
+                        _pins,                                                          // pin mapping
                         static_cast<HUB75_I2S_CFG::shift_driver>( o[T_shift_drv] ),     // driver chip
-                        false,              // double buff (we do not need it)
+			                  HUB75_I2S_CFG::line_driver::TYPE138,                            // default
+                        false,                                                          // double buff (we do not need it)
                         static_cast<HUB75_I2S_CFG::clk_speed>( o[T_clk_rate] | DEFAULT_I2S_CLOCK_RATE ),
-                        o[T_lat_blank],
+                        o[T_lat_blank] | 2,
                         o[T_clk_phase],
-                        o[T_min_refresh],
-                        o[T_color_depth]
+                        o[T_min_refresh] | 60,
+                        o[T_color_depth] | 6
     );
 
     // check if panel size not a zero
