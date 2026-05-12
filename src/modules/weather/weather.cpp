@@ -63,18 +63,25 @@ ModWeatherSource::~ModWeatherSource(){
 }
 
 void ModWeatherSource::_getOpenWeather(){
+  //LOGD(T_weather, println, "check OpenWeather");
   // no API key, city - no weather updates
-  if (!_weathercfg.apikey.length() || !_weathercfg.city_id) { disable(); return; }
+  if (!_weathercfg.apikey.length() || !_weathercfg.city_id) {
+    LOGW(T_weather, println, "no OpenWeather API key set, disabling updates");
+    disable();
+    return;
+  }
   
   // no WiFi connection - skip update
   if (!WiFi.isConnected()){
-    return;
     LOGW(T_txtscroll, println, "no WiFi, skip update");
+    return;
   }
 
   auto scroller = zookeeper.getModulePtr(T_txtscroll);
-  if (!scroller)
+  if (!scroller){
+    LOGW(T_weather, println, "no scroller object found");
     return;
+  }
 
   // http://api.openweathermap.org/data/2.5/weather?id=1850147&units=metric&lang=ru&APPID=your_API_KEY>
   String url;
