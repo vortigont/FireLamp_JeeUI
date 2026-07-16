@@ -36,7 +36,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 */
 #include "main.h"
 #include "filehelpers.hpp"
-#include <SPIFFSEditor.h>
+//#include <SPIFFSEditor.h>
 
 #ifdef DS18B20
 #include "DS18B20.h"
@@ -144,13 +144,13 @@ void setup() {
 
     // configure and init attached devices
     gpio_setup();
-
+/*
 #ifdef ESP8266
   embui.server.addHandler(new SPIFFSEditor(F("esp8266"),F("esp8266"), LittleFS));
 #else
   embui.server.addHandler(new SPIFFSEditor(LittleFS, F("esp32"), F("esp32")));
 #endif
-
+*/
   sync_parameters();
 
   embui.setPubInterval(10);   // change periodic WebUI publish interval from EMBUI_PUB_PERIOD to 10 secs
