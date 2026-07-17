@@ -38,6 +38,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #ifndef __EXTRATASKS_H
 #define __EXTRATASKS_H
 
+#define INLINE
 #include "effectmath.h"
 
 // TaskScheduler
