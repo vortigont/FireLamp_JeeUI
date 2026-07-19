@@ -58,16 +58,32 @@ OmniCron::OmniCron() : GenericModule(T_omnicron, false){
       this, &_hdlr_lmp_change_evt)
   );
 
+
+  // catch state events to track device power state   
+  esp_event_handler_instance_register_with(
+    evt::get_hndlr(),
+    LAMP_STATE_EVENTS, ESP_EVENT_ANY_ID,
+    [](void* self, esp_event_base_t base, int32_t id, void* data){ static_cast<OmniCron*>(self)->_lmpChEventHandler(base, id, data); },
+    this, &_hdlr_lmp_state_evt);
+
+
   // add EmbUI's handler to get Cron's task config
   embui.action.add(A_get_mod_omnicron_task, [this](Interface *interf, JsonVariantConst data, const char* action){ _task_get(interf, data, action); } );
   embui.action.add(A_set_mod_omnicron_task, [this](Interface *interf, JsonVariantConst data, const char* action){ _task_set(interf, data, action); } );
   embui.action.add(A_set_mod_omnicron_task_rm, [this](Interface *interf, JsonVariantConst data, const char* action){ _task_remove(interf, data, action); } );
+
+  // send an event to dicover current device's power state - our tasks depend on it
+  EVT_POST(LAMP_GET_EVENTS, e2int(evt::lamp_t::pwr));
 }
 
 OmniCron::~OmniCron(){
   if (_hdlr_lmp_change_evt){
     esp_event_handler_instance_unregister_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, _hdlr_lmp_change_evt);
     _hdlr_lmp_change_evt = nullptr;
+  }
+  if (_hdlr_lmp_state_evt){
+    esp_event_handler_instance_unregister_with(evt::get_hndlr(), LAMP_STATE_EVENTS, ESP_EVENT_ANY_ID, _hdlr_lmp_state_evt);
+    _hdlr_lmp_state_evt = nullptr;
   }
 
   embui.action.remove(A_get_mod_omnicron_task);
@@ -95,18 +111,16 @@ void OmniCron::load_cfg(JsonVariantConst cfg){
 
   for (JsonVariantConst e : tabs){
     omni_task_t t(
-      {
-        static_cast<omni_task_t::active_t>(e[T_active].as<uint32_t>()),
-        0,
-        e[T_descr].as<const char*>(),
-        e[T_crontab].as<const char*>(),
-        e[T_cmd].as<const char*>()
-      }
+        static_cast<omni_task_t::active_t>(e[T_active].as<uint32_t>()),   // active_t
+        0,                                                                // tid
+        e[T_descr].as<const char*>(),                                     // descr
+        e[T_crontab].as<const char*>(),                                   // rule
+        e[T_cmd].as<const char*>()                                        // exec commands
     );
 
     if (t.active != omni_task_t::active_t::disabled){
-      t.tid = _cronos.addCallback(e[T_crontab], [this](cronos_tid id, void* arg){ _cron_callback(id, arg); });
       LOGV(T_crontab, printf, "add task:%u, tab:%s\n", t.tid, t.descr.data());
+      t.tid = _cronos.addCallback(e[T_crontab], [this](cronos_tid id, void* arg){ _cron_callback(id, arg); });
 
       // parse commands and add it to actions container for the specified tid
       _parse_actions(t.tid, e[T_cmd].as<const char*>());
