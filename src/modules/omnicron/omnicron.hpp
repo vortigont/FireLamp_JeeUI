@@ -91,6 +91,7 @@ private:
 	bool _device_pwr{false};
 
 	esp_event_handler_instance_t _hdlr_lmp_change_evt = nullptr;
+	esp_event_handler_instance_t _hdlr_lmp_state_evt = nullptr;
 
 	// change events handler
     void _lmpChEventHandler(esp_event_base_t base, int32_t id, void* data);

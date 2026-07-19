@@ -546,8 +546,9 @@ void Lamp::_event_picker_cmd(esp_event_base_t base, int32_t id, void* data){
 }
 
 void Lamp::_event_picker_get(esp_event_base_t base, int32_t id, void* data){
-  switch (static_cast<evt::lamp_t>(id)){
   // Get State Commands
+  switch (static_cast<evt::lamp_t>(id)){
+    // request for device power state
     case evt::lamp_t::pwr :
       EVT_POST(LAMP_STATE_EVENTS, vopts.flag.pwrState ? e2int(evt::lamp_t::pwron) : e2int(evt::lamp_t::pwroff));
       break;
