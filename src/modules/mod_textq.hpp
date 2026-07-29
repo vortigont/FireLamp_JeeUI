@@ -63,46 +63,28 @@ struct TextMessage {
     explicit TextMessage(std::string&& m, int32_t cnt = 1, int32_t interval = 0, uint32_t id = 0) : msg(m), cnt(cnt), interval(interval), id(id) {}
 };
 
-class TextScroll {
+
+/**
+ * @brief A generic class that maintains a TextMessage queue and renders text messages
+ * via overlay mask
+ * @note this object on instantiation attaches to globaly accessible "LEDDisplay display" object instance and detaches on destruction
+ * 
+ */
+class TextQRenderer {
   // instance id
   uint8_t _id;
-
   bool _active{false};
-  bool _load_next{true};
-
-  TextBitMapCfg _bitmapcfg;
-  std::unique_ptr<Arduino_Canvas_Mono> _textmask;
-
-  std::shared_ptr<TextMessage> _current_msg;
-  std::list< std::shared_ptr<TextMessage> > _msg_pool;
-
-  int _cur_offset{0};
-  // px per second
-  int _scrollrate;
-  uint32_t _last_redraw;
-  uint16_t _txt_pixlen;
-
-  overlay_cb_t _renderer;
-
-  std::mutex mtx;
-
-
-  // hook to check/update text scroller
-  void _scroll_line(LedFB_GFX *gfx);
-
-  // load next message from queue
-  bool _load_next_msg();
 
 public:
-  TextScroll();
+  TextQRenderer();
   //TextScroll(TextScroll&& rval) = default;
-  ~TextScroll(){ stop(); }
+  virtual ~TextQRenderer(){ stop(); }
 
   // load font face, size, etc...
-  void load_cfg(JsonVariantConst cfg);
+  virtual void load_cfg(JsonVariantConst cfg);
 
   // load messages array
-  void load_msg(JsonArrayConst msg);
+  virtual void load_msg(JsonArrayConst msg);
 
   void start();
   void stop();
@@ -130,11 +112,59 @@ public:
    */
   void updateMSG(const TextMessage& msg, bool enqueue = true);
 
+protected:
+  // 2D overlay texture
+  std::unique_ptr<Arduino_Canvas_Mono> textmask;
+  // 2D overlay texture callback object
+  overlay_cb_t render_cb;
+  TextBitMapCfg bitmapcfg;
+
+  std::mutex mtx;
+
+  std::list< std::shared_ptr<TextMessage> > msg_pool;
+  std::shared_ptr<TextMessage> current_msg;
+
+  bool load_next{true};
+  uint32_t last_redraw;
+  uint16_t txt_pixlen;
+
+  // hook to renderer function that draws text to display
+  virtual void render(LedFB_GFX *gfx) = 0;
+
+  // load next message from queue
+  virtual bool load_next_msg();
 };
 
-class ModTextScroller : public GenericModule {
+/**
+ * @brief Class renders a scrolling text from a message pool to bitmap overlay
+ */
+class TextQScroller : public TextQRenderer {
 
-  std::list<TextScroll> _scrollers;
+public:
+  TextQScroller() = default;
+
+  void load_cfg(JsonVariantConst cfg) override;
+
+private:
+  int _cur_offset{0};
+  // px per second
+  int _scrollrate;
+
+  void render(LedFB_GFX *gfx) override;
+  bool load_next_msg() override;
+};
+
+
+/**
+ * @brief Pluggable module - holds a container for various text queue renderers
+ * manages renderers and it's configs
+ * @note the object IDs for TextQRenderer instances are:
+ * 0 - for TextQScroller (default)
+ * 1 - for TextQStatic
+ */
+class ModTextDisplay : public GenericModule {
+
+  std::list< std::unique_ptr<TextQRenderer> > _renders;
 
   bool _wifi_events_msg;
   uint8_t _wifi_events_stream{0};
@@ -147,13 +177,13 @@ class ModTextScroller : public GenericModule {
   // pack class configuration into JsonObject
   void generate_cfg(JsonVariant cfg) const override {};
 
-  // load class configuration into JsonObject
+  // load class configuration from a JsonObject
   void load_cfg(JsonVariantConst cfg) override;
 
 
 public:
-  ModTextScroller();
-  ~ModTextScroller();
+  ModTextDisplay();
+  ~ModTextDisplay();
 
   void start() override {};
   void stop() override {};
@@ -215,9 +245,9 @@ public:
 private:
 
   // spawn a scroller based on json config
-  void _spawn_scroller(JsonObjectConst scroller, JsonObjectConst text_profile);
+  void _spawn_instance(JsonObjectConst config, JsonObjectConst text_profile);
 
   // removes active scroller from a pool by it's stream id
-  void _kill_scroller(uint8_t stream_id);
+  void _kill_instance(uint8_t stream_id);
 
 };

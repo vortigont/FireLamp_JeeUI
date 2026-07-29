@@ -94,7 +94,7 @@ void ModWeatherSource::_getOpenWeather(){
   LOGD(T_weather, printf, "update t: %lu\n", getInterval()/1000);
 
   //  TextMessage m1("Обновление погоды");
-  //  static_cast<ModTextScroller*>(scroller)->updateMSG(std::move(m1), _scroller_id);
+  //  static_cast<ModTextDisplay*>(scroller)->updateMSG(std::move(m1), _scroller_id);
 
   HTTPClient http;
   http.begin(url.c_str());
@@ -107,7 +107,7 @@ void ModWeatherSource::_getOpenWeather(){
 
     // report error
     TextMessage msg(std::move(m));
-    static_cast<ModTextScroller*>(scroller)->updateMSG(std::move(msg), _scroller_id);
+    static_cast<ModTextDisplay*>(scroller)->updateMSG(std::move(msg), _scroller_id);
 
     // some HTTP error
     if (_weathercfg.retry){
@@ -179,7 +179,7 @@ void ModWeatherSource::_getOpenWeather(){
 
   // update message
   TextMessage m2(std::move(pogoda), _repeat_cnt, _repeat_interval, _msg_id);
-  static_cast<ModTextScroller*>(scroller)->updateMSG(std::move(m2), _scroller_id);
+  static_cast<ModTextDisplay*>(scroller)->updateMSG(std::move(m2), _scroller_id);
 
   // reset update timer
   _weathercfg.retry = false;
@@ -299,7 +299,7 @@ void ModNarodMonSource::getData(){
     return;
 
   //TextMessage m1("Обновление NarodMon");
-  //static_cast<ModTextScroller*>(scroller)->updateMSG(std::move(m1), _scroller_id);
+  //static_cast<ModTextDisplay*>(scroller)->updateMSG(std::move(m1), _scroller_id);
 
   JsonDocument doc;
   JsonObject o = doc.to<JsonObject>();
@@ -326,7 +326,7 @@ void ModNarodMonSource::getData(){
 
     // report error
     TextMessage msg(std::move(buffer));
-    static_cast<ModTextScroller*>(scroller)->updateMSG(std::move(msg), _scroller_id);
+    static_cast<ModTextDisplay*>(scroller)->updateMSG(std::move(msg), _scroller_id);
 
     // some HTTP error
     if (_retry){
@@ -358,7 +358,7 @@ void ModNarodMonSource::getData(){
 
   // update message
   TextMessage m2(std::move(buffer), _repeat_cnt, _repeat_interval, _msg_id);
-  static_cast<ModTextScroller*>(scroller)->updateMSG(std::move(m2), _scroller_id);
+  static_cast<ModTextDisplay*>(scroller)->updateMSG(std::move(m2), _scroller_id);
 
   // reset update timer
   _retry = false;
