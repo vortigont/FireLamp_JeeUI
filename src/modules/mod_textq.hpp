@@ -43,24 +43,42 @@
 #include "WiFiType.h"
 
 
-struct TextMessage {
-    std::string msg;
-    /**
-     * @brief display counter
-     * 0 - do not display
-     * -1 - display forever
-     */
-    int32_t cnt;
-    // interval in seconds between showing message again
-    int32_t interval;
-    // unique message id, if 0 - then not a unique message
-    uint32_t id;
+// default time a single static text message is displayed (seconds)
+#define TEXTQSTATIC_DEF_DISPLAY_TIME_SEC  5
 
-    // last displayed time
-    uint32_t last_displayed{0};
-    TextMessage() = default;
-    explicit TextMessage(const char* m, int32_t cnt = 1, int32_t interval = 0, uint32_t id = 0) : msg(m), cnt(cnt), interval(interval), id(id) {}
-    explicit TextMessage(std::string&& m, int32_t cnt = 1, int32_t interval = 0, uint32_t id = 0) : msg(m), cnt(cnt), interval(interval), id(id) {}
+struct TextMessage {
+  std::string msg;
+  /**
+   * @brief display counter
+   * now many times the mesasge should be displayed repetitively
+   * 0 - do not display (discard message)
+   * -1 - display forever
+   */
+  int32_t cnt;
+
+  /**
+   * @brief minimum interval between repetitive message display (in seconds)
+   * 0 - repeat as soon as possible
+   * 
+   */
+  int32_t interval;
+
+  /**
+   * @brief max duration time to display one message (in seconds)
+   * could be treaded in differnet way depending on implementation class
+   * 0 - default value, depending on renderer implementation
+   * 
+   */
+  int32_t duration;
+
+  // unique message id, if 0 - then not a unique message
+  uint32_t id;
+
+  // last displayed time (counted in millis())
+  uint32_t last_displayed{0};
+  TextMessage() = default;
+  explicit TextMessage(const char* m, int32_t cnt = 1, int32_t interval = 0, int32_t duration = 0, uint32_t id = 0) : msg(m), cnt(cnt), interval(interval), duration(duration), id(id) {}
+  explicit TextMessage(std::string&& m, int32_t cnt = 1, int32_t interval = 0, int32_t duration = 0, uint32_t id = 0) : msg(m), cnt(cnt), interval(interval), duration(duration), id(id) {}
 };
 
 
@@ -125,14 +143,17 @@ protected:
   std::shared_ptr<TextMessage> current_msg;
 
   bool load_next{true};
-  uint32_t last_redraw;
-  uint16_t txt_pixlen;
 
   // hook to renderer function that draws text to display
   virtual void render(LedFB_GFX *gfx) = 0;
 
   // load next message from queue
   virtual bool load_next_msg();
+
+  // checks if message display counter has not expired yet and msg must be requeued again
+  // otherwise discard message
+  // this method sets `load_next` flag
+  void requeue_counter();
 };
 
 /**
@@ -146,12 +167,46 @@ public:
   void load_cfg(JsonVariantConst cfg) override;
 
 private:
+  // full length of a text in pixels if drawn on canvas
+  uint16_t _txt_pixlen;
   int _cur_offset{0};
   // px per second
   int _scrollrate;
+  // last time text was redrawn to canvas
+  uint32_t _last_redraw;
 
   void render(LedFB_GFX *gfx) override;
   bool load_next_msg() override;
+};
+
+/**
+ * @brief Class renders a scrolling text from a message pool to bitmap overlay
+ * how it treats TextMessage options:
+ * cnt - as-is - how many times to repeat displaying text
+ * interval - as-is - min time between same message redisplayed
+ * duration - 0 treated as default min display time of TEXTQSTATIC_DEF_DISPLAY_TIME_SEC seconds
+ * 
+ * alignment options:
+ * halign - horizontal alignment of text on canvas, <0 - from left border, 0 - center, >0 - offset from right border
+ * valign - vertical alignment of text on canvas, <0 - offset from top, 0 - center, >0 - offset from bottom
+ */
+class TextQStatic : public TextQRenderer {
+
+public:
+  TextQStatic() = default;
+
+  void load_cfg(JsonVariantConst cfg) override;
+
+private:
+  // text alignment in on a canvas
+  int32_t _h_align, _v_align;
+  // text string width,height if printed on canvas
+  uint16_t _w, _h;
+
+  void render(LedFB_GFX *gfx) override;
+  bool load_next_msg() override;
+
+  void _draw_text_on_canvas();
 };
 
 

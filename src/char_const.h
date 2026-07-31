@@ -174,6 +174,9 @@ static constexpr const char* T_x1pos = "x1pos";
 static constexpr const char* T_y1pos = "y1pos";
 static constexpr const char* T_x2pos = "x2pos";
 static constexpr const char* T_y2pos = "y2pos";
+static constexpr const char* T_halign = "halign";                   // text h-alignment
+static constexpr const char* T_valign = "valign";                   // text v-alignment
+
 // module Clock
 static constexpr const char* T_clkw = "clkw";
 static constexpr const char* T_clkh = "clkh";

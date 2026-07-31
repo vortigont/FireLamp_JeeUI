@@ -115,10 +115,6 @@ bool TextQRenderer::load_next_msg(){
       // remove message from queue
       msg_pool.erase(i);
       load_next = false;
-      // find text string width
-      int16_t px, py; uint16_t ph;
-      textmask->getTextBounds(current_msg->msg.c_str(), 0, bitmapcfg.h, &px, &py, &txt_pixlen, &ph);
-      last_redraw = millis();
       LOGD(T_txtscroll, printf, "load string: %s\n", current_msg->msg.c_str());
       load_next = false;
       return true;
@@ -131,7 +127,7 @@ bool TextQRenderer::load_next_msg(){
 
 void TextQRenderer::load_msg(JsonArrayConst msg){
   for (auto m : msg){
-    msg_pool.emplace_back( std::make_shared<TextMessage>(m[T_msg].as<const char*>(), m[T_cnt].as<int32_t>(), m[T_interval].as<int32_t>()) );
+    msg_pool.emplace_back( std::make_shared<TextMessage>(m[T_msg].as<const char*>(), m[T_cnt].as<int32_t>(), m[T_interval].as<int32_t>() | 0, m[T_duration].as<uint32_t>() | 0) );
   }
 }
 
@@ -166,6 +162,20 @@ void TextQRenderer::updateMSG(const TextMessage& msg, bool enqueue){
     enqueueMSG(msg);
 }
 
+void TextQRenderer::requeue_counter(){
+  // decrement counter
+  if (current_msg->cnt > 0)
+    --current_msg->cnt;
+
+  if (current_msg->cnt){
+    // need to redisplay the message again later, enqueue it
+    current_msg->last_displayed = millis();
+    LOGV(T_txtscroll, printf, "requeue: %s\n", current_msg->msg.c_str());
+    msg_pool.push_back(current_msg);
+  }
+  load_next = true;
+}
+
 
 // Text scroller
 void TextQScroller::render(LedFB_GFX *gfx){
@@ -177,29 +187,26 @@ void TextQScroller::render(LedFB_GFX *gfx){
   if (!lock.try_lock())
     return;
 
-  int32_t px_to_shift = (millis() - last_redraw) * _scrollrate / 1000;
+  int32_t px_to_shift = (millis() - _last_redraw) * _scrollrate / 1000;
   _cur_offset -= px_to_shift;
   // дошла ли строка до конца?
-  if (_cur_offset <  -1*txt_pixlen){
-    // decrement counter
-    if (current_msg->cnt > 0)
-      --current_msg->cnt;
-
-    if (current_msg->cnt){
-      // need to redisplay the message again later, enqueue it
-      current_msg->last_displayed = millis();
-      LOGV(T_txtscroll, printf, "requeue: %s\n", current_msg->msg.c_str());
-      msg_pool.push_back(current_msg);
+  if (_cur_offset <  -1*_txt_pixlen){
+    // check how long text was scrolled from begining to end and if it satisfies required min duration (if any)
+    if (current_msg->duration > 0 && (millis() - current_msg->last_displayed < current_msg->duration * 1000) ){
+      // need to scroll text for a little longer as it was defined in message property
+      // reset string position to the right side of the canvas
+      _cur_offset = bitmapcfg.w;
+      return;
     }
 
-    load_next = true;
+    // requeue or discard message
+    requeue_counter();
     return;
-    //_cur_offset = bitmapcfg.w;
   }
 
   // добавляем ко времени последнего обновления столько интервалов заданной частоты на сколько пикселей мы продвинулись.
   // нужно оставить "хвосты" избыточного времени копиться до момента пока не набежит еще один високосный пиксель для сдвига
-  last_redraw += px_to_shift * 1000 / _scrollrate;
+  _last_redraw += px_to_shift * 1000 / _scrollrate;
   
   // рисуем строку только если был сдвиг
   if (px_to_shift){
@@ -217,6 +224,12 @@ bool TextQScroller::load_next_msg(){
   if (r){
     // reset string position to the right side of the canvas
     _cur_offset = bitmapcfg.w;
+    // set time when we started rendering new string, we will reuse it later to find how long we've been scrolling it
+    current_msg->last_displayed = _last_redraw = millis();
+
+    // find text string width
+    int16_t px, py; uint16_t ph;
+    textmask->getTextBounds(current_msg->msg.c_str(), 0, bitmapcfg.h, &px, &py, &_txt_pixlen, &ph);
   }
   return r;
 }
@@ -227,7 +240,84 @@ void TextQScroller::load_cfg(JsonVariantConst cfg){
 }
 
 
+// Static text renderer
 
+bool TextQStatic::load_next_msg(){
+  auto r = TextQRenderer::load_next_msg();
+  if (r){
+    // set time when we started rendering new string, we will reuse it later to find how long we've been scrolling it
+    current_msg->last_displayed = millis();
+
+    // find text bounds
+    int16_t px, py;
+    textmask->getTextBounds(current_msg->msg.c_str(), 0, bitmapcfg.h, &px, &py, &_w, &_h);
+
+    // since this a static text then we can draw it on canvas once on load, then only render final bitmap in render() method
+    _draw_text_on_canvas();
+  }
+  return r;
+}
+
+void TextQStatic::render(LedFB_GFX *gfx){
+  // check if new message must be loaded and we have anything to display
+  if (load_next && !load_next_msg()) return;
+
+  // check how long the text is being displayed already
+  auto duration = millis() - current_msg->last_displayed;
+  if (duration >= 1000 * (current_msg->duration > 0 ? current_msg->duration : TEXTQSTATIC_DEF_DISPLAY_TIME_SEC) ){
+    // message display timer has expired
+    // requeue or discard message
+    requeue_counter();
+    return;
+  }
+
+  // if canvas can't be locked, skip this run
+  std::unique_lock<std::mutex> lock(mtx, std::defer_lock);
+  if (!lock.try_lock())
+    return;
+
+  // draw to text overlay
+  gfx->drawBitmap_bgfade(bitmapcfg.x, bitmapcfg.y, textmask->getFramebuffer(), bitmapcfg.w, bitmapcfg.h, bitmapcfg.color, bitmapcfg.alpha_bg );
+}
+
+void TextQStatic::_draw_text_on_canvas(){
+  // find cursor position to start printin based on alignment settings
+  int16_t x, y;
+
+  // horizontal alignment
+  if (_h_align == 0){         // middle
+    x = bitmapcfg.w / 2  - _w / 2;
+  } else if (_h_align < 0){   // justify left
+    x = abs(_h_align);
+  } else {                    // justify right
+    x = bitmapcfg.w - _w - _h_align;
+  }
+
+  // vertical alignment
+  if (_v_align == 0){         // middle
+    y = bitmapcfg.h / 2 + _h /  2;
+  } else if (_h_align < 0){   // justify top
+    y = abs(_h_align) + _h;
+  } else {                    // justify bottom
+    y = bitmapcfg.h + _h_align;
+  }
+
+  textmask->setCursor(x, y);
+
+  std::lock_guard<std::mutex> lock(mtx);
+  textmask->fillScreen(BLACK);
+  textmask->print(current_msg->msg.c_str());
+}
+
+void TextQStatic::load_cfg(JsonVariantConst cfg){
+  _h_align = cfg[T_halign] | 0;
+  _v_align = cfg[T_valign] | 0;
+  TextQRenderer::load_cfg(cfg);
+}
+
+
+
+// Text Display Module
 ModTextDisplay::ModTextDisplay() : GenericModule(T_txtscroll, false){
   // add EmbUI's handlers
 
@@ -263,14 +353,17 @@ ModTextDisplay::~ModTextDisplay(){
 }
 
 void ModTextDisplay::_spawn_instance(JsonObjectConst config, JsonObjectConst text_profile){
-  LOGI(T_txtscroll, printf, "creating text render:%s\n", config[T_descr].as<const char*>());
+  // a bit ugly for log
+  const char* const descr = config[T_descr].is<const char*>() ? config[T_descr].as<const char*>() : "n/a";
+  LOGI(T_txtscroll, printf, "Spawn TextQRenderer:%s\n", descr);
 
   std::unique_ptr<TextQRenderer> t;
 
   // create new object
   switch (config[T_type].as<unsigned>()){
-    //case 1:
-    //  break;
+    case 1:
+      t = std::make_unique<TextQStatic>();
+      break;
     default:
       t = std::make_unique<TextQScroller>();
   }
@@ -307,7 +400,7 @@ void ModTextDisplay::load_cfg(JsonVariantConst cfg){
   if (queues.isNull())
     return;
 
-  LOGI(T_txtscroll, printf, "loading text scrollers: %u", queues.size());
+  LOGI(T_txtscroll, printf, "loading text scrollers: %u\n", queues.size());
   for (JsonVariantConst o : queues){
     if (o[T_active] == false)
       continue;
@@ -322,7 +415,7 @@ void ModTextDisplay::load_cfg(JsonVariantConst cfg){
   if (_wifi_events_msg && !eid){
     // Set WiFi event handlers
     eid = WiFi.onEvent( [this](WiFiEvent_t event, WiFiEventInfo_t info){ _onWiFiEvent(event, info); } );
-    LOGV(T_txtscroll, println, "monitor WiFi events");
+    LOGD(T_txtscroll, println, "monitor WiFi events");
   } else if (!_wifi_events_msg && eid){
     WiFi.removeEvent(eid);
   }
@@ -498,8 +591,8 @@ void ModTextDisplay::_kill_instance(uint8_t stream_id){
 void ModTextDisplay::embui_send_msg(Interface *interf, JsonVariantConst data, const char* action){
   JsonVariantConst v = data[P_text];
   if (v.is<const char*>() && !v.isNull()){
-    TextMessage m(v.as<const char*>(), data[T_cnt] | 1, data[T_interval], data[P_id]);
-    //LOGI(T_txtscroll, printf, "Add msg:%s\n", m.msg.c_str());
+    TextMessage m(v.as<const char*>(), data[T_cnt] | 1, data[T_interval], data[T_duration] | 1, data[P_id] | 0);
+    LOGD(T_txtscroll, printf, "New msg:%s\n", m.msg.c_str());
     if (data[T_update])
       updateMSG(std::move(m), data[T_stream_id]);
     else
