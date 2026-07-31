@@ -3790,6 +3790,17 @@
               "key":"lampui.effCommon.fade"
             }
           ]
+        },
+        {
+          "html": "select",
+          "id": "eff_control_4",
+          "label": "Стиль",
+          "onChange": true,
+          "section":"options",
+          "block":[
+            { "value":0, "label":"Нексус" },
+            { "value":1, "label":"Матрица" }
+          ]
         }
       ]
     },

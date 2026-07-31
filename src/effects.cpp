@@ -371,10 +371,6 @@ void EffectMatrix::setControl(size_t idx, int32_t value)
   return String();
 }
 
-bool EffectMatrix::run(){
-  return matrixRoutine();
-}
-
 void EffectMatrix::load(){
   randomSeed(micros());
   for (auto &i : lighters){
@@ -387,7 +383,7 @@ void EffectMatrix::load(){
   }
 }
 
-bool EffectMatrix::matrixRoutine(){
+bool EffectMatrix::run(){
   
   fb->dim(map(speed, 1, 255, 252, 240));
   
@@ -3298,7 +3294,13 @@ void EffectSnake::Snake::reset()
 //------------ Эффект "Nexus"
 void EffectNexus::reconfig() {
   for (auto &nx : nxdots) {
-    resetDot(nx);
+    switch (_style){
+      case 1 :
+        matrix(nx);
+        break;
+      default:
+        resetDot(nx);
+    }
   }
 }
 
@@ -3320,6 +3322,11 @@ void EffectNexus::setControl(size_t idx, int32_t value) {
     // fade speed
     case 3: {
       speed = value;
+      break;
+    }
+    // effect style
+    case 4: {
+      _style = value;
       break;
     }
 
@@ -3344,23 +3351,16 @@ bool EffectNexus::run() {
 
     // Обеспечиваем бесшовность по X,Y. И переносим каплю в начало трека
 
-    if (nx.position.y < 0 || nx.position.y > fb->maxHeightIndex() || nx.position.x < 0 || nx.position.x > fb->maxWidthIndex())
-      resetDot(nx);
-/*
-    if (nx.position.y < 0) {
-      nx.position.y = fb->maxHeightIndex();    
-      //resetDot(nx);
-    } else if (nx.position.y > (fb->maxHeightIndex())) {
-      nx.position.y = 0;
-      //resetDot(nx);
-    } else if (nx.position.x < 0) {
-      nx.position.x = fb->maxWidthIndex();
-      //resetDot(nx);
-    } else if (nx.position.x > fb->maxWidthIndex()) {
-      nx.position.x = 0;
-      //resetDot(nx);
+    if (nx.position.y < 0 || nx.position.y > fb->maxHeightIndex() || nx.position.x < 0 || nx.position.x > fb->maxWidthIndex()){
+      switch (_style){
+        case 1 :
+          matrix(nx);
+          break;
+        default:
+          resetDot(nx);
+      }
     }
-*/
+
     EffectMath::drawPixelXYF_Y(nx.position.x, nx.position.y, nx.color, fb, 0);
   }
   return true;
@@ -3387,7 +3387,15 @@ void EffectNexus::resetDot(RoamingDot<float> &nx) {
       break;
   }
 
-  nx.color = ColorFromPalette(*curPalette, random8(0, 9) * 31, 255); // цвет капли
+  nx.color = ColorFromPalette(*curPalette, random8(), 255); // цвет капли
+}
+
+void EffectNexus::matrix(RoamingDot<float> &nx) {
+  // Разбрасываем частицы по ширине и по высоте поля
+  nx.position.set(random(0, fb->w()), random(0, fb->h()));
+  // move only down
+  nx.velocity.set(0, random(5, 20) / 100.0);
+  nx.color = CRGB::Green;
 }
 
 
