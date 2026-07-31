@@ -340,7 +340,9 @@ bool EffectColors::colorsRoutine()
   }
   return true;
 }
+#endif  //  OBSOLETE_CODE
 
+#if !defined (OBSOLETE_CODE)
 // ------------- Эффект "New Матрица" ---------------
 // !--
 void EffectMatrix::setControl(size_t idx, int32_t value)
@@ -385,8 +387,7 @@ void EffectMatrix::load(){
   }
 }
 
-bool EffectMatrix::matrixRoutine()
-{
+bool EffectMatrix::matrixRoutine(){
   
   fb->dim(map(speed, 1, 255, 252, 240));
   
@@ -427,85 +428,6 @@ bool EffectMatrix::matrixRoutine()
     }
   }
 
-  return true;
-}
-
-// ------------- звездопад/метель -------------
-bool EffectStarFall::run(){
-  return snowStormStarfallRoutine();
-}
-
-void EffectStarFall::load(){
-  randomSeed(millis());
-  for (auto &i : lighters){
-    i.posX = random(-fb->w(), fb->w());
-    i.posY = random(fb->maxHeightIndex(), fb->h() + 4);
-    i.spdX = EffectMath::randomf(-1, 1);  // X
-    i.spdY = EffectMath::randomf(1, 2);   // Y
-    i.color = random(0U, 255U);
-    i.light = 255;
-  }
-}
-
-// !++
-void EffectStarFall::setControl(size_t idx, int32_t value) {
-  if(_val->getId()==1) _speed = EffectMath::fmap(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 0.25, .5)*getBaseSpeedFactor();
-  else if(_val->getId()==3){
-    _scale = EffectCalc::setDynCtrl(_val).toInt();
-    lighters.assign( map(_scale, 1, 10, LIGHTERS_MAX/8, LIGHTERS_MAX), Lighter() );
-    lighters.shrink_to_fit();
-    load();
-  }
-  else if(_val->getId()==4) effId = EffectCalc::setDynCtrl(_val).toInt();
-  else if(_val->getId()==5) isNew = EffectCalc::setDynCtrl(_val).toInt();
-  else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
-  return String();
-}
-
-bool EffectStarFall::snowStormStarfallRoutine(){
-  fb->dim(255 - (effId == 2 ? 70 : 60) * _speed);
-  CHSV color;
-  for (auto &i : lighters){
-    //color = CHSV((effId > 1 ? lightersColor[i] : 255), (effId > 1 ? light[i] : 0), (effId > 1 ? 255 : light[i]));
-    switch (effId)
-    {
-    case 1:
-      color = CHSV(127, 0, i.light);
-      break;
-    case 2:
-      if (i.light > 10) { byte tmp = i.light - 10 * _speed; color = CHSV(i.color, 255 - i.light, tmp); i.light=tmp; }
-      else color = rgb2hsv_approximate( CRGB::Black);
-      break;
-    default:
-      color = CHSV(i.color, 255, i.light);
-    }
-
-    if (isNew) {
-      i.posX -= _speed * (effId == 1 ? lighters[0].spdX : i.spdX);
-      i.posY -= 1 * _speed;
-    } else {
-      i.posX += i.spdX * (_speed / 2);
-      i.posY -= i.spdY * (_speed / 2);
-    }
-
-    EffectMath::drawPixelXYF(i.posX, i.posY, color, fb, 0);
-
-    if(i.posY < -1) {
-      if (isNew) {
-        i.posX = random(-fb->w(), fb->w());
-        i.posY = effId > 1 ? random(fb->h() / 2, fb->h() + 4) : random(fb->maxHeightIndex(), fb->h() + 4);
-        i.spdX = EffectMath::randomf(-1, 1);  // X
-        i.spdY = EffectMath::randomf(1, 2);   // Y
-      } else {
-        i.posX = (float)random(-(fb->w() * 10 - 2), (fb->w() * 10 - 2)) / 10.0f;
-        i.posY = random(fb->h(), fb->h() + 4);
-        i.spdX = (float)random(15, 25) / 10.0f;   // X
-        i.spdY = i.spdX; // Y
-      }
-      i.color = random(0U, 255U);
-      i.light = random(127U, 255U);
-    }
-  }
   return true;
 }
 
@@ -581,6 +503,88 @@ bool EffectLighters::run(){
       EffectMath::drawPixelXYF(i.posX, i.posY, CHSV(i.color, 255U-(++c*2), i.light), fb, 0);
     else
       fb->at(static_cast<int>(i.posX), static_cast<int>(i.posY)) = CHSV(i.color, 255U-(++c*2), i.light);
+  }
+  return true;
+}
+#endif  //  OBSOLETE_CODE
+
+
+#if !defined (OBSOLETE_CODE)
+// ------------- звездопад/метель -------------
+bool EffectStarFall::run(){
+  return snowStormStarfallRoutine();
+}
+
+void EffectStarFall::load(){
+  randomSeed(millis());
+  for (auto &i : lighters){
+    i.posX = random(-fb->w(), fb->w());
+    i.posY = random(fb->maxHeightIndex(), fb->h() + 4);
+    i.spdX = EffectMath::randomf(-1, 1);  // X
+    i.spdY = EffectMath::randomf(1, 2);   // Y
+    i.color = random(0U, 255U);
+    i.light = 255;
+  }
+}
+
+// !++
+void EffectStarFall::setControl(size_t idx, int32_t value) {
+  if(_val->getId()==1) _speed = EffectMath::fmap(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 0.25, .5)*getBaseSpeedFactor();
+  else if(_val->getId()==3){
+    _scale = EffectCalc::setDynCtrl(_val).toInt();
+    lighters.assign( map(_scale, 1, 10, LIGHTERS_MAX/8, LIGHTERS_MAX), Lighter() );
+    lighters.shrink_to_fit();
+    load();
+  }
+  else if(_val->getId()==4) effId = EffectCalc::setDynCtrl(_val).toInt();
+  else if(_val->getId()==5) isNew = EffectCalc::setDynCtrl(_val).toInt();
+  else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
+  return String();
+}
+
+bool EffectStarFall::snowStormStarfallRoutine(){
+  fb->dim(255 - (effId == 2 ? 70 : 60) * _speed);
+  CHSV color;
+  for (auto &i : lighters){
+    //color = CHSV((effId > 1 ? lightersColor[i] : 255), (effId > 1 ? light[i] : 0), (effId > 1 ? 255 : light[i]));
+    switch (effId)
+    {
+    case 1:
+      color = CHSV(127, 0, i.light);
+      break;
+    case 2:
+      if (i.light > 10) { byte tmp = i.light - 10 * _speed; color = CHSV(i.color, 255 - i.light, tmp); i.light=tmp; }
+      else color = rgb2hsv_approximate( CRGB::Black);
+      break;
+    default:
+      color = CHSV(i.color, 255, i.light);
+    }
+
+    if (isNew) {
+      i.posX -= _speed * (effId == 1 ? lighters[0].spdX : i.spdX);
+      i.posY -= 1 * _speed;
+    } else {
+      i.posX += i.spdX * (_speed / 2);
+      i.posY -= i.spdY * (_speed / 2);
+    }
+
+    EffectMath::drawPixelXYF(i.posX, i.posY, color, fb, 0);
+
+    if(i.posY < -1) {
+      if (isNew) {
+        i.posX = random(-fb->w(), fb->w());
+        i.posY = effId > 1 ? random(fb->h() / 2, fb->h() + 4) : random(fb->maxHeightIndex(), fb->h() + 4);
+        i.spdX = EffectMath::randomf(-1, 1);  // X
+        i.spdY = EffectMath::randomf(1, 2);   // Y
+      } else {
+        i.posX = (float)random(-(fb->w() * 10 - 2), (fb->w() * 10 - 2)) / 10.0f;
+        i.posY = random(fb->h(), fb->h() + 4);
+        i.spdX = (float)random(15, 25) / 10.0f;   // X
+        i.spdY = i.spdX; // Y
+      }
+      i.color = random(0U, 255U);
+      i.light = random(127U, 255U);
+    }
   }
   return true;
 }
@@ -3292,30 +3296,24 @@ void EffectSnake::Snake::reset()
 
 
 //------------ Эффект "Nexus"
-// (с) kostyamat 4.12.2020
 void EffectNexus::reconfig() {
   for (auto &nx : nxdots) {
-    nx.direct = random(0, 4);                     // задаем направление
-    nx.posX = random(0, fb->w());                   // Разбрасываем частицы по ширине
-    nx.posY = random(0, fb->h());                  // и по высоте
-    nx.color = ColorFromPalette(*curPalette, random8(0, 9) * 31, 255); // цвет капли
-    nx.accel = (float)random(5, 20) / 100;        // делаем частицам немного разное ускорение 
+    resetDot(nx);
   }
 }
 
-// !++
 void EffectNexus::setControl(size_t idx, int32_t value) {
   switch (idx){
     // move speed
     case 0:
-      speedFactor = EffectMath::fmap(value, 1, 10, 0.05, 1.33);
+      speedFactor = EffectMath::fmap(value, 1, 10, 0.3, 3);
       //LOGV(T_Effect, printf, "Nexus speed=%d, speedfactor=%2.2f\n", value, speedFactor);
       break;
-    // scale
+    // scale - число частиц
     case 1: {
       scale = map(value, 1, 10, NEXUS_MIN, NEXUS_MAX);
       LOGV(T_Effect, printf, "Nexus scale=%d\n", scale);
-      nxdots.assign(scale, Nexus());
+      nxdots.assign(scale, RoamingDot<float>());
       reconfig();
       break;
     }
@@ -3341,81 +3339,55 @@ bool EffectNexus::run() {
   fb->fade(map(speed, 1, 10, 1, 50));
 
   for (auto &nx : nxdots){
-    switch (nx.direct){
-      case 0:   // вверх
-        nx.posY += (speedFactor + nx.accel);
-        break;
-      case 1:   //  вниз 
-        nx.posY -= (speedFactor + nx.accel);
-        break;
-      case 2:   // вправо
-        nx.posX += (speedFactor + nx.accel);
-        break;
-      case 3:   // влево
-        nx.posX -= (speedFactor + nx.accel);
-        break;
-      default:
-        break;
-    }
+    // move dot
+    nx.position += nx.velocity * speedFactor;
 
-    // Обеспечиваем бесшовность по Y. И переносим каплю в начало трека
-    if (nx.posY < 0) {
-      nx.posY = (float)fb->maxHeightIndex();    
-      resetDot(nx);
-    }
+    // Обеспечиваем бесшовность по X,Y. И переносим каплю в начало трека
 
-    if (nx.posY > (fb->maxHeightIndex())) {
-      nx.posY = 0;
+    if (nx.position.y < 0 || nx.position.y > fb->maxHeightIndex() || nx.position.x < 0 || nx.position.x > fb->maxWidthIndex())
       resetDot(nx);
+/*
+    if (nx.position.y < 0) {
+      nx.position.y = fb->maxHeightIndex();    
+      //resetDot(nx);
+    } else if (nx.position.y > (fb->maxHeightIndex())) {
+      nx.position.y = 0;
+      //resetDot(nx);
+    } else if (nx.position.x < 0) {
+      nx.position.x = fb->maxWidthIndex();
+      //resetDot(nx);
+    } else if (nx.position.x > fb->maxWidthIndex()) {
+      nx.position.x = 0;
+      //resetDot(nx);
     }
-
-    // Обеспечиваем бесшовность по X.
-    if (nx.posX < 0) {
-      nx.posX = fb->maxWidthIndex();
-      resetDot(nx);
-    }
-    if (nx.posX > fb->maxWidthIndex()) {
-      nx.posX = 0;
-      resetDot(nx);
-    }
-
-    switch (nx.direct){
-      case 0:   // вверх
-      case 1:   //  вниз 
-        EffectMath::drawPixelXYF_Y(nx.posX, nx.posY, nx.color, fb, 0);
-        break;
-      default:
-      //case 2:   // вправо
-      //case 3:   // влево
-        EffectMath::drawPixelXYF_X(nx.posX, nx.posY, nx.color, fb, 0);
-    }
+*/
+    EffectMath::drawPixelXYF_Y(nx.position.x, nx.position.y, nx.color, fb, 0);
   }
   return true;
 }
 
-void EffectNexus::resetDot(Nexus &nx) {
-  randomSeed(micros());
-  nx.direct = random8(0, 4);                     // задаем направление
-  nx.color = ColorFromPalette(*curPalette, random(0, 9) * 31, 255);              // цвет 
-  nx.accel = (float)random(5, 10) / 70;     // делаем частицам немного разное ускорение 
-  switch (nx.direct){
-    case 0:   // вверх
-      nx.posX = random8(0, fb->w()); // Разбрасываем капли по ширине
-      nx.posY = 0;  // и по высоте
+void EffectNexus::resetDot(RoamingDot<float> &nx) {
+  // Разбрасываем частицы по ширине и по высоте поля
+  nx.position.set(random(0, fb->w()), random(0, fb->h()));
+  // выбираем одно из 4х направлений движения
+  auto dir = random(0, 4);
+  auto vel = random(5, 20) / 100.0;
+  switch (dir){
+    case 0 :  // вправо по х
+      nx.velocity.set(vel, 0);
       break;
-    case 1:   //  вниз 
-      nx.posX = random8(0, fb->w()); // Разбрасываем капли по ширине
-      nx.posY = fb->maxHeightIndex();  // и по высоте
+    case 1 :  // влево по х
+      nx.velocity.set(-vel, 0);
       break;
-    case 2:   // вправо
-      nx.posX = 0; // Разбрасываем капли по ширине
-      nx.posY = random8(0, fb->h());  // и по высоте
+    case 2 :  // вверх по у (0.0 на поле в левом верхнем углу)
+      nx.velocity.set(0, -vel);
       break;
-    //case 3:   // влево
-    default:
-      nx.posX = fb->maxWidthIndex(); // Разбрасываем капли по ширине
-      nx.posY = random8(0, fb->h());  // и по высоте
-  } 
+    default :  // вниз по у
+      nx.velocity.set(0, vel);
+      break;
+  }
+
+  nx.color = ColorFromPalette(*curPalette, random8(0, 9) * 31, 255); // цвет капли
 }
 
 
