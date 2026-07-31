@@ -301,30 +301,6 @@ public:
 #endif  // DISABLED_CODE
 
 #ifdef DISABLED_CODE
-// ------------- Эффект "Матрица" ---------------
-#define EFFECT_MATRIX_MIN_DOTS      10
-class EffectMatrix : public EffectCalc {
-
-    uint8_t _scale = 1;
-    uint8_t hue, _hue;
-    float count{0};
-    float _speed{1};
-
-    std::vector<RoamingDot<float>> nxdots{std::vector<RoamingDot<float>>(EFFECT_MATRIX_MIN_DOTS, RoamingDot<float>())};
-
-    void reconfig();
-    void resetDot(RoamingDot<float> &nx);
-    void setControl(size_t idx, int32_t value) override;
-
-public:
-    EffectMatrix(LedFB<CRGB> *framebuffer) : EffectCalc(framebuffer){}
-    bool run() override;
-    void load() override;
-
-};
-#endif  // DISABLED_CODE
-
-#ifdef DISABLED_CODE
 // ------------- звездопад/метель -------------
 class EffectStarFall : public EffectLighters {
 private:
