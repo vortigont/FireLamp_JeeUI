@@ -127,7 +127,11 @@ void Lamp::lamp_init(){
 }
 
 void Lamp::power(bool pwr){
-  if (pwr == vopts.flag.pwrState) return;  // пропускаем холостые вызовы
+  if (pwr == vopts.flag.pwrState){
+    // пропускаем холостые вызовы, сообщаем текущий статус "включения" через шину
+    EVT_POST(LAMP_STATE_EVENTS, vopts.flag.pwrState ? e2int(evt::lamp_t::pwron) : e2int(evt::lamp_t::pwroff));
+    return;
+  }
   LOGI(T_lamp, printf, "Powering %s\n", pwr ? "On": "Off");
 
   if (pwr){

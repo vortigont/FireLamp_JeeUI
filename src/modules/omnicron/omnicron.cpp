@@ -72,7 +72,7 @@ OmniCron::OmniCron() : GenericModule(T_omnicron, false){
   embui.action.add(A_set_mod_omnicron_task, [this](Interface *interf, JsonVariantConst data, const char* action){ _task_set(interf, data, action); } );
   embui.action.add(A_set_mod_omnicron_task_rm, [this](Interface *interf, JsonVariantConst data, const char* action){ _task_remove(interf, data, action); } );
 
-  // send an event to dicover current device's power state - our tasks depend on it
+  // send an event to discover current device's power state - our tasks depend on it
   EVT_POST(LAMP_GET_EVENTS, e2int(evt::lamp_t::pwr));
 }
 
@@ -130,13 +130,32 @@ void OmniCron::load_cfg(JsonVariantConst cfg){
 }
 
 void OmniCron::_cron_callback(cronos_tid id, void* arg){
+  // this callback is called in cronos's xTimer thread
   LOGD(T_crontab, printf, "exec task:%u\n", id);
 
   for (auto& i : _tasks){
     // check if the task could only run when device's state in 'on'
-    if ((i.tid == id) && (i.active == omni_task_t::active_t::pwron) && !_device_pwr){
-      LOGV(T_crontab, printf, "won't exec task:%u when device is off\n", id);
-      return;
+    if ((i.tid == id) && (i.active == omni_task_t::active_t::pwron) ){
+      /*
+        we are in a tricky situation - need to find out exact device's power state here and now
+        but the power event could have been missed or not sent for some reasons
+        so we need to spinlock this thread while we are waiting for reply from the lamp's class
+        in fact it should be instant since event's thread priority is higher but we need to be on a safe side 
+      */
+      size_t cnt{10}; // how many timer cycles we could wait
+
+      // set the flag
+      _await_pwr_event = true;
+      // send an event to discover current device's power state - our tasks depend on it
+      EVT_POST(LAMP_GET_EVENTS, e2int(evt::lamp_t::pwr));
+      while (_await_pwr_event && --cnt){
+        vTaskDelay(1);
+      }
+
+      if (!_device_pwr){
+        LOGD(T_crontab, printf, "won't exec task:%u when device is off\n", id);
+        return;
+      }
     }
   }
   for (auto& i : _actions){
@@ -353,9 +372,11 @@ void OmniCron::_lmpChEventHandler(esp_event_base_t base, int32_t id, void* data)
     // Power control
     case evt::lamp_t::pwron :
       _device_pwr = true;
+      _await_pwr_event = false;
       break;
     case evt::lamp_t::pwroff :
       _device_pwr = false;
+      _await_pwr_event = false;
       break;
     default:;
   }

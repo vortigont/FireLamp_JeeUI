@@ -88,7 +88,7 @@ public:
 private:
 
 	// track device's power state
-	bool _device_pwr{false};
+	bool _device_pwr{false}, _await_pwr_event{false}; // this flag is set when were awaiting device power state event via message bus
 
 	esp_event_handler_instance_t _hdlr_lmp_change_evt = nullptr;
 	esp_event_handler_instance_t _hdlr_lmp_state_evt = nullptr;
