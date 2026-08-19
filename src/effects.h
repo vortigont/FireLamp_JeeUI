@@ -278,9 +278,8 @@ public:
 };
 
 #ifdef DISABLED_CODE
-// ------------- класс Светлячки -------------
-// нужен для некоторых эффектов
-#define LIGHTERS_MAX    10
+// ------------- Эффект Светлячки / Матрица и пр. -------------
+#define EFFECT_LIGHTERS_MAX    500
 class EffectLighters : public EffectCalc {
 protected:
 struct Lighter {
@@ -299,25 +298,9 @@ public:
     void load() override;
     bool run() override;
 };
+#endif  // DISABLED_CODE
 
-// ------------- Эффект "New Матрица" ---------------
-class EffectMatrix : public EffectLighters {
-private:
-    bool matrixRoutine();
-    uint8_t _scale = 1;
-    byte gluk = 1;
-    uint8_t hue, _hue;
-    bool randColor = false;
-    bool white = false;
-    float count{0};
-    float _speed{1};
-    void setControl(size_t idx, int32_t value) override;
-public:
-    EffectMatrix(LedFB<CRGB> *framebuffer) : EffectLighters(framebuffer){}
-    void load() override;
-    bool run() override;
-};
-
+#ifdef DISABLED_CODE
 // ------------- звездопад/метель -------------
 class EffectStarFall : public EffectLighters {
 private:
@@ -336,11 +319,10 @@ public:
 };
 #endif  // DISABLED_CODE
 
-// ----------- Эффекты "Лава, Зебра, etc"
+// ----------- Эффекты 3D noise "Лава, Зебра, etc"
 // Эффекты на базе "3D Noise"
 #define NOISE_SCALE_AMP        58                // амплификатор шкалы (влияет на машстаб "пятен" эффекта, большие пятна выглядят красивее чем куча мелких)
 #define NOISE_SCALE_ADD        8                 // корректор шкалы
-
 class Effect3DNoise : public EffectCalc {
 private:
     void fillNoiseLED();
@@ -764,21 +746,13 @@ public:
 #define NEXUS_MIN   5
 #define NEXUS_MAX   100
 class EffectNexus: public EffectCalc {
-  struct Nexus{
-    float posX{0};
-    float posY{0};
-    int8_t direct{0};           // направление точки 
-    CRGB color{CRGB::Black};    // цвет точки
-    float accel{0};             // персональное ускорение каждой точки
-  };
 
-    bool white = false;
-    byte type = 1;
-    bool randColor = false;
-    std::vector<Nexus> nxdots{std::vector<Nexus>(NEXUS_MIN, Nexus())};
+    uint32_t _style;  // 0 nexus, 1 - matrix
+    std::vector<RoamingDot<float>> nxdots{std::vector<RoamingDot<float>>(NEXUS_MIN, RoamingDot<float>())};
 
     void reconfig();
-    void resetDot(Nexus &nx);
+    void resetDot(RoamingDot<float> &nx);
+    void matrix(RoamingDot<float> &nx);
     void setControl(size_t idx, int32_t value) override;
 
   public:
