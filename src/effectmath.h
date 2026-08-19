@@ -37,7 +37,8 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 */
 
 #pragma once
-
+#include <cmath>
+#include <type_traits>
 #include "ledfb.hpp"
 
 // Общий набор мат. функций и примитивов для обсчета эффектов
@@ -222,151 +223,349 @@ namespace EffectMath {
 };  //  namespace EffectMath
 
 
+
+/**
+ * @brief Geometric vector
+ * 
+ * @tparam T 
+ */
 template <class T>
-struct Vector2 {
+struct Vector2
+{
+    using value_type = T;
+    using real_type = typename std::conditional<
+        std::is_floating_point<T>::value,
+        T,
+        double>::type;
+
     T x, y;
 
-    Vector2() :x(0), y(0) {}
-    Vector2(T x, T y) : x(x), y(y) {}
-    Vector2(const Vector2& v) : x(v.x), y(v.y) {}
-
-    Vector2& operator=(const Vector2& v) {
-        x = v.x;
-        y = v.y;
-        return *this;
+    /** @brief Constructs the zero vector. */
+    constexpr Vector2()
+        : x(0), y(0)
+    {
     }
 
-    bool isEmpty() {
-        return x == 0 && y == 0;
+    /**
+     * @brief Constructs a vector from its coordinates.
+     * @param x X coordinate.
+     * @param y Y coordinate.
+     */
+    constexpr Vector2(T x, T y)
+        : x(x), y(y)
+    {
     }
 
-    bool operator==(Vector2& v) {
+    /** @brief Copy constructor. */
+    constexpr Vector2(const Vector2&) = default;
+
+    /** @brief Copy assignment. */
+    Vector2& operator=(const Vector2&) = default;
+
+    /**
+     * @brief Checks whether both components are zero.
+     * @return true if x and y are both zero.
+     */
+    bool isEmpty() const
+    {
+        return x == T(0) && y == T(0);
+    }
+
+    /**
+     * @brief Equality comparison.
+     */
+    bool operator==(const Vector2& v) const
+    {
         return x == v.x && y == v.y;
     }
 
-    bool operator!=(Vector2& v) {
-        return !(x == y);
+    /**
+     * @brief Inequality comparison.
+     */
+    bool operator!=(const Vector2& v) const
+    {
+        return !(*this == v);
     }
 
-    Vector2 operator+(Vector2& v) {
+    /**
+     * @brief Returns the sum of two vectors.
+     */
+    Vector2 operator+(const Vector2& v) const
+    {
         return Vector2(x + v.x, y + v.y);
     }
-    Vector2 operator-(Vector2& v) {
+
+    /**
+     * @brief Returns the difference of two vectors.
+     */
+    Vector2 operator-(const Vector2& v) const
+    {
         return Vector2(x - v.x, y - v.y);
     }
 
-    Vector2& operator+=(Vector2& v) {
+    /**
+     * @brief Adds another vector.
+     */
+    Vector2& operator+=(const Vector2& v)
+    {
         x += v.x;
         y += v.y;
         return *this;
     }
-    Vector2& operator-=(Vector2& v) {
+
+    /**
+     * @brief Subtracts another vector.
+     */
+    Vector2& operator-=(const Vector2& v)
+    {
         x -= v.x;
         y -= v.y;
         return *this;
     }
 
-    template  <typename S>
-    Vector2 operator+(S s) {
+    /**
+     * @brief Adds a scalar to each component.
+     */
+    template <
+        typename S,
+        typename std::enable_if<std::is_arithmetic<S>::value, int>::type = 0>
+    Vector2 operator+(S s) const
+    {
         return Vector2(x + s, y + s);
     }
-    template  <typename S>
-    Vector2 operator-(S s) {
+
+    /**
+     * @brief Subtracts a scalar from each component.
+     */
+    template <
+        typename S,
+        typename std::enable_if<std::is_arithmetic<S>::value, int>::type = 0>
+    Vector2 operator-(S s) const
+    {
         return Vector2(x - s, y - s);
     }
-    template  <typename S>
-    Vector2 operator*(S s) {
+
+    /**
+     * @brief Multiplies both components by a scalar.
+     */
+    template <
+        typename S,
+        typename std::enable_if<std::is_arithmetic<S>::value, int>::type = 0>
+    Vector2 operator*(S s) const
+    {
         return Vector2(x * s, y * s);
     }
-    template  <typename S>
-    Vector2 operator/(S s) {
+
+    /**
+     * @brief Divides both components by a scalar.
+     */
+    template <
+        typename S,
+        typename std::enable_if<std::is_arithmetic<S>::value, int>::type = 0>
+    Vector2 operator/(S s) const
+    {
         return Vector2(x / s, y / s);
     }
 
-    template  <typename S>
-    Vector2& operator+=(S s) {
+    /**
+     * @brief Adds a scalar.
+     */
+    template <
+        typename S,
+        typename std::enable_if<std::is_arithmetic<S>::value, int>::type = 0>
+    Vector2& operator+=(S s)
+    {
         x += s;
         y += s;
         return *this;
     }
-    template  <typename S>
-    Vector2& operator-=(S s) {
+
+    /**
+     * @brief Subtracts a scalar.
+     */
+    template <
+        typename S,
+        typename std::enable_if<std::is_arithmetic<S>::value, int>::type = 0>
+    Vector2& operator-=(S s)
+    {
         x -= s;
         y -= s;
         return *this;
     }
-    template  <typename S>
-    Vector2& operator*=(S s) {
+
+    /**
+     * @brief Multiplies both components by a scalar.
+     */
+    template <
+        typename S,
+        typename std::enable_if<std::is_arithmetic<S>::value, int>::type = 0>
+    Vector2& operator*=(S s)
+    {
         x *= s;
         y *= s;
         return *this;
     }
-    template  <typename S>
-    Vector2& operator/=(S s) {
+
+    /**
+     * @brief Divides both components by a scalar.
+     */
+    template <
+        typename S,
+        typename std::enable_if<std::is_arithmetic<S>::value, int>::type = 0>
+    Vector2& operator/=(S s)
+    {
         x /= s;
         y /= s;
         return *this;
     }
 
-    void set(T x, T y) {
-        this->x = x;
-        this->y = y;
+    /**
+     * @brief Sets vector coordinates.
+     */
+    void set(T nx, T ny)
+    {
+        x = nx;
+        y = ny;
     }
 
-    template  <typename S>
-    void rotate(S deg) {
-        double theta = deg / 180.0 * M_PI;
-        double c = cos(theta);
-        double s = sin(theta);
-        double tx = x * c - y * s;
-        double ty = x * s + y * c;
-        x = tx;
-        y = ty;
+    /**
+     * @brief Rotates the vector counter-clockwise.
+     * @param deg Rotation angle in degrees.
+     */
+    template <
+        typename S,
+        typename std::enable_if<std::is_arithmetic<S>::value, int>::type = 0>
+    void rotate(S deg)
+    {
+        const real_type pi =
+            static_cast<real_type>(3.14159265358979323846264338327950288L);
+
+        const real_type theta =
+            static_cast<real_type>(deg) * pi / real_type(180);
+
+        const real_type c = std::cos(theta);
+        const real_type s = std::sin(theta);
+
+        const real_type tx =
+            static_cast<real_type>(x) * c -
+            static_cast<real_type>(y) * s;
+
+        const real_type ty =
+            static_cast<real_type>(x) * s +
+            static_cast<real_type>(y) * c;
+
+        x = static_cast<T>(tx);
+        y = static_cast<T>(ty);
     }
 
-    Vector2& normalize() {
-        if (length() == 0) return *this;
-        *this *= (1.0 / length());
+    /**
+     * @brief Normalizes the vector to unit length.
+     * Zero vectors remain unchanged.
+     */
+    Vector2& normalize()
+    {
+        const real_type len = length();
+
+        if (len != real_type(0))
+            *this /= len;
+
         return *this;
     }
 
-    float dist(Vector2 v) const {
-        Vector2 d(v.x - x, v.y - y);
-        return d.length();
-    }
-    float length() const {
-        return sqrt(x * x + y * y);
+    /**
+     * @brief Computes the Euclidean distance to another vector.
+     */
+    real_type dist(const Vector2& v) const
+    {
+        return (*this - v).length();
     }
 
-    float mag() const {
+    /**
+     * @brief Returns the vector magnitude.
+     */
+    real_type length() const
+    {
+        const real_type rx = static_cast<real_type>(x);
+        const real_type ry = static_cast<real_type>(y);
+
+        return std::sqrt(rx * rx + ry * ry);
+    }
+
+    /**
+     * @brief Alias for length().
+     */
+    real_type mag() const
+    {
         return length();
     }
 
-    float magSq() {
-        return (x * x + y * y);
+    /**
+     * @brief Returns the squared vector magnitude.
+     */
+    constexpr real_type magSq() const
+    {
+        return static_cast<real_type>(x) * static_cast<real_type>(x) +
+               static_cast<real_type>(y) * static_cast<real_type>(y);
     }
 
-    template  <typename S>
-    void truncate(S length) {
-        double angle = atan2f(y, x);
-        x = length * cos(angle);
-        y = length * sin(angle);
+    /**
+     * @brief Changes the vector magnitude while preserving direction.
+     */
+    template <
+        typename S,
+        typename std::enable_if<std::is_arithmetic<S>::value, int>::type = 0>
+    void truncate(S newLength)
+    {
+        const real_type len = length();
+
+        if (len != real_type(0))
+            *this *= static_cast<real_type>(newLength) / len;
     }
 
-    Vector2 ortho() const {
+    /**
+     * @brief Returns the clockwise perpendicular vector.
+     */
+    constexpr Vector2 ortho() const
+    {
         return Vector2(y, -x);
     }
 
-    static float dot(Vector2 v1, Vector2 v2) {
-        return v1.x * v2.x + v1.y * v2.y;
-    }
-    static float cross(Vector2 v1, Vector2 v2) {
-        return (v1.x * v2.y) - (v1.y * v2.x);
+    /**
+     * @brief Computes the dot product.
+     * Meaning:
+     * result >0 → vectors point generally in the same direction
+     * result 0 → perpendicular
+     * result <0 → opposite directions
+     */
+    static constexpr real_type dot(const Vector2& a, const Vector2& b)
+    {
+        return static_cast<real_type>(a.x) * static_cast<real_type>(b.x) +
+               static_cast<real_type>(a.y) * static_cast<real_type>(b.y);
     }
 
-    template  <typename S>
-    void limit(S max) {
-        if (magSq() > max*max) {
+    /**
+     * @brief Computes the signed 2D cross product.
+     * tells the rotation direction:
+     * a = (1,0), b = (0,1) cross = 1, b is counter-clockwise from a
+     */
+    static constexpr real_type cross(const Vector2& a, const Vector2& b)
+    {
+        return static_cast<real_type>(a.x) * static_cast<real_type>(b.y) -
+               static_cast<real_type>(a.y) * static_cast<real_type>(b.x);
+    }
+
+    /**
+     * @brief Limits the vector magnitude to the specified maximum.
+     */
+    template <
+        typename S,
+        typename std::enable_if<std::is_arithmetic<S>::value, int>::type = 0>
+    void limit(S maxLength)
+    {
+        const real_type max = static_cast<real_type>(maxLength);
+
+        if (magSq() > max * max)
+        {
             normalize();
             *this *= max;
         }
@@ -374,6 +573,20 @@ struct Vector2 {
 };
 
 typedef Vector2<float> PVector;
+
+/**
+ * @brief точка с координатой и вектором скорости
+ * 
+ * @tparam T 
+ */
+template <class T>
+struct RoamingDot{
+    Vector2<T> position;
+    Vector2<T> velocity;
+    CRGB color;
+};
+
+
 
 // Flocking
 // Daniel Shiffman <http://www.shiffman.net>
