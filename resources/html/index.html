@@ -108,7 +108,7 @@
 		{{#if html != "select" && block}}{{>tmpl_section _this}}{{/if}}
 
 		{{#if html == "button"}}
-		<button id="{{id}}" {{#if2 color}}style="background-color: {{color}}"{{/if2}} class="pure-u-1 pure-button pure-button-primary mr"
+		<button id="{{id}}" {{#if2 color}}style="background-color: {{color}}"{{/if2}} {{#hidden}}hidden{{/hidden}} class="pure-u-1 pure-button pure-button-primary mr"
 			{{#if2 type == "generic"}}{{onevent "click", "on_change", {{#action}}action{{/action}}{{^action}}id{{/action}}, value}}{{/if2}}
 			{{#if2 type == "submit"}}{{onevent "click", "on_submit", {{#form}}form{{/form}}{{^form}}id{{/form}}, value, extended_ids}}{{/if2}}
 			{{#if2 type == "js"}}{{onevent "click", "on_js", function, id, value}}{{/if2}}
