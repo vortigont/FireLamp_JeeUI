@@ -2,40 +2,67 @@
   "wifi": true,
   "scrollers":[
     {
-      "active":true, "stream_id":1, "descr":"Бегунок", "profile":3,
+      "active":true,
+      "stream_id":1,
+      "descr":"Бегунок 128x64 низ",
+      "profile":3,
       "messages":[
         {"cnt":1, "msg":"Добро пожаловать!"},
         {"cnt":1, "msg":"Присоединяйтесь к группе в Телеграмм: @lampdevs"}
       ]
     },
     {
-      "active":true,"stream_id":2,"descr":"Бегунок 64x32 низ","profile":1,
+      "active":false,
+      "stream_id":2,
+      "descr":"Бегунок 64x32 низ",
+      "profile":1,
       "messages":[
         {"cnt":1, "msg":"Добро пожаловать!"},
         {"cnt":1, "msg":"Присоединяйтесь к группе в Телеграмм: @lampdevs"}
       ]
+    },
+    {
+      "active":true,
+      "stream_id":3,
+      "type": 1,
+      "descr":"статик центр 128x64",
+      "profile":4,
+      "messages":[
+        {"cnt":4, "duration": 1, "interval":1, "msg":"Boot..."}
+      ]
+    },
+    {
+      "active":false,
+      "stream_id":4,
+      "type": 1,
+      "descr":"статик центр 64x32",
+      "profile":5,
+      "messages":[
+        {"cnt":4, "duration": 1, "interval":1, "msg":"Boot..."}
+      ]
+    },
+    {
+      "active":true,
+      "stream_id":5,
+      "type": 1,
+      "descr":"статик левый верх",
+      "profile":6
     }
   ],
   "profiles":[
     {"label":"16x16 Unifont Cyrillic (64)",
-        "cfg":{"width":64,"height":14,"x1pos":0,"y1pos":18,"font1":2,"offset":2,"color1":65535,"alpha_b":255,"rate":20,"refresh":1}},
+      "cfg":{"width":64,"height":14,"x1pos":0,"y1pos":18,"font1":2,"offset":2,"color1":65535,"alpha_b":255,"rate":20}},
     {"label":"5х8 Cyrillic (64)",
-        "cfg":{"width":64,"height":12,"x1pos":0,"y1pos":20,"font1":0,"offset":2,"color1":64832,"alpha_b":255,"rate":20,"refresh":1}},
+      "cfg":{"width":64,"height":12,"x1pos":0,"y1pos":20,"font1":0,"offset":2,"color1":64832,"alpha_b":255,"rate":20}},
     {"label":"8x13 Cyrillic (64)",
-        "cfg":{"width":64,"height":12,"x1pos":0,"y1pos":20,"font1":1,"offset":2,"color1":64832,"alpha_b":255,"rate":20,"refresh":1}},
+      "cfg":{"width":64,"height":12,"x1pos":0,"y1pos":20,"font1":1,"offset":2,"color1":64832,"alpha_b":255,"rate":20}},
     {"label":"8x13 Cyrillic (128)",
-        "cfg":{"width":128,"height":12,"x1pos":0,"y1pos":52,"font1":1,"offset":2,"color1":2031,"alpha_b":255,"rate":20,"refresh":1}},
-    {"label":"8x13 Cyrillic (128)",
-        "cfg":{"width":128,"height":12,"x1pos":0,"y1pos":52,"font1":1,"offset":2,"color1":2031,"alpha_b":255,"rate":20,"refresh":1}},
-    {"label":"8x13 Cyrillic (128)",
-        "cfg":{"width":128,"height":12,"x1pos":0,"y1pos":52,"font1":1,"offset":2,"color1":2031,"alpha_b":255,"rate":20,"refresh":1}},
-    {"label":"8x13 Cyrillic (128)",
-        "cfg":{"width":128,"height":12,"x1pos":0,"y1pos":52,"font1":1,"offset":2,"color1":2031,"alpha_b":255,"rate":20,"refresh":1}},
-    {"label":"8x13 Cyrillic (128)",
-        "cfg":{"width":128,"height":12,"x1pos":0,"y1pos":52,"font1":1,"offset":2,"color1":2031,"alpha_b":255,"rate":20,"refresh":1}},
-    {"label":"8x13 Cyrillic (128)",
-        "cfg":{"width":128,"height":12,"x1pos":0,"y1pos":52,"font1":1,"offset":2,"color1":2031,"alpha_b":255,"rate":20,"refresh":1}},
-    {"label":"16x16 Cyrillic (128)",
-        "cfg":{"width":128,"height":16,"x1pos":0,"y1pos":32,"font1":2,"offset":3,"color1":64544,"alpha_b":200,"rate":20,"refresh":1}}
+      "cfg":{"width":128,"height":12,"x1pos":0,"y1pos":52,"font1":1,"offset":2,"color1":2031,"alpha_b":255,"rate":20}},
+    {"label":"8x13 Cyrillic (128) static center",
+      "cfg":{"width":64,"height":20,"x1pos":32,"y1pos":25,"font1":1,"offset":2,"color1":2031,"alpha_b":50, "halign":0,"valign":0}},
+    {"label":"8x13 Cyrillic (64) static center",
+      "cfg":{"width":32,"height":20,"x1pos":32,"y1pos":25,"font1":1,"offset":2,"color1":2031,"alpha_b":50, "halign":0,"valign":0}},
+    {"label":"8x13 Cyrillic (64) static top-left",
+      "cfg":{"width":32,"height":14,"x1pos":0,"y1pos":0,"font1":1,"offset":2,"color1":2031,"alpha_b":50, "halign":0,"valign":0}}
   ]
 }

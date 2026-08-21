@@ -43,66 +43,66 @@
 #include "WiFiType.h"
 
 
-struct TextMessage {
-    std::string msg;
-    /**
-     * @brief display counter
-     * 0 - do not display
-     * -1 - display forever
-     */
-    int32_t cnt;
-    // interval in seconds between showing message again
-    int32_t interval;
-    // unique message id, if 0 - then not a unique message
-    uint32_t id;
+// default time a single static text message is displayed (seconds)
+#define TEXTQSTATIC_DEF_DISPLAY_TIME_SEC  5
 
-    // last displayed time
-    uint32_t last_displayed{0};
-    TextMessage() = default;
-    explicit TextMessage(const char* m, int32_t cnt = 1, int32_t interval = 0, uint32_t id = 0) : msg(m), cnt(cnt), interval(interval), id(id) {}
-    explicit TextMessage(std::string&& m, int32_t cnt = 1, int32_t interval = 0, uint32_t id = 0) : msg(m), cnt(cnt), interval(interval), id(id) {}
+struct TextMessage {
+  std::string msg;
+  /**
+   * @brief display counter
+   * now many times the mesasge should be displayed repetitively
+   * 0 - do not display (discard message)
+   * -1 - display forever
+   */
+  int32_t cnt;
+
+  /**
+   * @brief minimum interval between repetitive message display (in seconds)
+   * 0 - repeat as soon as possible
+   * 
+   */
+  int32_t interval;
+
+  /**
+   * @brief max duration time to display one message (in seconds)
+   * could be treaded in differnet way depending on implementation class
+   * 0 - default value, depending on renderer implementation
+   * 
+   */
+  int32_t duration;
+
+  // unique message id, if 0 - then not a unique message
+  uint32_t id;
+
+  // last displayed time (counted in millis())
+  uint32_t last_displayed{0};
+  TextMessage() = default;
+  explicit TextMessage(const char* m, int32_t cnt = 1, int32_t interval = 0, int32_t duration = 0, uint32_t id = 0) : msg(m), cnt(cnt), interval(interval), duration(duration), id(id) {}
+  explicit TextMessage(std::string&& m, int32_t cnt = 1, int32_t interval = 0, int32_t duration = 0, uint32_t id = 0) : msg(m), cnt(cnt), interval(interval), duration(duration), id(id) {}
 };
 
-class TextScroll {
+
+/**
+ * @brief A generic class that maintains a TextMessage queue and renders text messages
+ * via overlay mask
+ * @note this object on instantiation attaches to globaly accessible "LEDDisplay display" object instance and detaches on destruction
+ * 
+ */
+class TextQRenderer {
   // instance id
   uint8_t _id;
-
   bool _active{false};
-  bool _load_next{true};
-
-  TextBitMapCfg _bitmapcfg;
-  std::unique_ptr<Arduino_Canvas_Mono> _textmask;
-
-  std::shared_ptr<TextMessage> _current_msg;
-  std::list< std::shared_ptr<TextMessage> > _msg_pool;
-
-  int _cur_offset{0};
-  // px per second
-  int _scrollrate;
-  uint32_t _last_redraw;
-  uint16_t _txt_pixlen;
-
-  overlay_cb_t _renderer;
-
-  std::mutex mtx;
-
-
-  // hook to check/update text scroller
-  void _scroll_line(LedFB_GFX *gfx);
-
-  // load next message from queue
-  bool _load_next_msg();
 
 public:
-  TextScroll();
+  TextQRenderer();
   //TextScroll(TextScroll&& rval) = default;
-  ~TextScroll(){ stop(); }
+  virtual ~TextQRenderer(){ stop(); }
 
   // load font face, size, etc...
-  void load_cfg(JsonVariantConst cfg);
+  virtual void load_cfg(JsonVariantConst cfg);
 
   // load messages array
-  void load_msg(JsonArrayConst msg);
+  virtual void load_msg(JsonArrayConst msg);
 
   void start();
   void stop();
@@ -130,11 +130,96 @@ public:
    */
   void updateMSG(const TextMessage& msg, bool enqueue = true);
 
+protected:
+  // 2D overlay texture
+  std::unique_ptr<Arduino_Canvas_Mono> textmask;
+  // 2D overlay texture callback object
+  overlay_cb_t render_cb;
+  TextBitMapCfg bitmapcfg;
+
+  std::mutex mtx;
+
+  std::list< std::shared_ptr<TextMessage> > msg_pool;
+  std::shared_ptr<TextMessage> current_msg;
+
+  bool load_next{true};
+
+  // hook to renderer function that draws text to display
+  virtual void render(LedFB_GFX *gfx) = 0;
+
+  // load next message from queue
+  virtual bool load_next_msg();
+
+  // checks if message display counter has not expired yet and msg must be requeued again
+  // otherwise discard message
+  // this method sets `load_next` flag
+  void requeue_counter();
 };
 
-class ModTextScroller : public GenericModule {
+/**
+ * @brief Class renders a scrolling text from a message pool to bitmap overlay
+ */
+class TextQScroller : public TextQRenderer {
 
-  std::list<TextScroll> _scrollers;
+public:
+  TextQScroller() = default;
+
+  void load_cfg(JsonVariantConst cfg) override;
+
+private:
+  // full length of a text in pixels if drawn on canvas
+  uint16_t _txt_pixlen;
+  int _cur_offset{0};
+  // px per second
+  int _scrollrate;
+  // last time text was redrawn to canvas
+  uint32_t _last_redraw;
+
+  void render(LedFB_GFX *gfx) override;
+  bool load_next_msg() override;
+};
+
+/**
+ * @brief Class renders a scrolling text from a message pool to bitmap overlay
+ * how it treats TextMessage options:
+ * cnt - as-is - how many times to repeat displaying text
+ * interval - as-is - min time between same message redisplayed
+ * duration - 0 treated as default min display time of TEXTQSTATIC_DEF_DISPLAY_TIME_SEC seconds
+ * 
+ * alignment options:
+ * halign - horizontal alignment of text on canvas, <0 - from left border, 0 - center, >0 - offset from right border
+ * valign - vertical alignment of text on canvas, <0 - offset from top, 0 - center, >0 - offset from bottom
+ */
+class TextQStatic : public TextQRenderer {
+
+public:
+  TextQStatic() = default;
+
+  void load_cfg(JsonVariantConst cfg) override;
+
+private:
+  // text alignment in on a canvas
+  int32_t _h_align, _v_align;
+  // text string width,height if printed on canvas
+  uint16_t _w, _h;
+
+  void render(LedFB_GFX *gfx) override;
+  bool load_next_msg() override;
+
+  void _draw_text_on_canvas();
+};
+
+
+/**
+ * @brief Pluggable module - holds a container for various text queue renderers
+ * manages renderers and it's configs
+ * @note the object IDs for TextQRenderer instances are:
+ * 0 - for TextQScroller (default)
+ * 1 - for TextQStatic
+ */
+class ModTextDisplay : public GenericModule {
+
+  std::list< std::unique_ptr<TextQRenderer> > _renders;
 
   bool _wifi_events_msg;
   uint8_t _wifi_events_stream{0};
@@ -147,13 +232,13 @@ class ModTextScroller : public GenericModule {
   // pack class configuration into JsonObject
   void generate_cfg(JsonVariant cfg) const override {};
 
-  // load class configuration into JsonObject
+  // load class configuration from a JsonObject
   void load_cfg(JsonVariantConst cfg) override;
 
 
 public:
-  ModTextScroller();
-  ~ModTextScroller();
+  ModTextDisplay();
+  ~ModTextDisplay();
 
   void start() override {};
   void stop() override {};
@@ -215,9 +300,9 @@ public:
 private:
 
   // spawn a scroller based on json config
-  void _spawn_scroller(JsonObjectConst scroller, JsonObjectConst text_profile);
+  void _spawn_instance(JsonObjectConst config, JsonObjectConst text_profile);
 
   // removes active scroller from a pool by it's stream id
-  void _kill_scroller(uint8_t stream_id);
+  void _kill_instance(uint8_t stream_id);
 
 };

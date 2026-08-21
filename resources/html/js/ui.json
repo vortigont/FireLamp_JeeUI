@@ -1855,7 +1855,7 @@
       },
       "txtscroll":{
         "section":"mod_txtscroll_container",
-        "label":"🔤 Бегущая строка",
+        "label":"🔤 Наложение текста",
         "main":true,
         "block":[
           {
@@ -1924,7 +1924,6 @@
                         "min":0,
                         "step":1
                       }
-
                     ]
                   },
                   {
@@ -1933,16 +1932,25 @@
                     "type":"number",
                     "label":"кол-во повторов",
                     "value": 1,
-                    "min":1,
+                    "min":-1,
                     "step":1
                   },
                   {
                     "id":"interval",
                     "html":"input",
                     "type":"number",
-                    "label":"интервал вывода, с",
+                    "label":"интервал повтора, с",
                     "value": 0,
                     "min":0,
+                    "step":1
+                  },
+                  {
+                    "id":"duration",
+                    "html":"input",
+                    "type":"number",
+                    "label":"длительность отображения, с",
+                    "value":5,
+                    "min":1,
                     "step":1
                   },
                   {
@@ -1968,13 +1976,13 @@
               {
                 "id":"get_mod_txtscroll_scroll",
                 "html":"button",
-                "label":"Новый бегущий блок",
+                "label":"Новый текстовый блок",
                 "type":"js",
                 "function":"txtscroller_mk_page_edit_stream",
                 "value": -1
               },
               {
-                "id":"ui_page_modules",
+                "id":"ui_page_module_txtscroll",
                 "html":"button",
                 "color":"green",
                 "type":"generic",
@@ -2208,8 +2216,7 @@
             "label":"🔙 Выход"
           }
         ]
-      }
-      ,
+      },
       "sensors":{
         "section":"set_modcfg_sensors",
         "label":"🌡 Локальные датчики",
@@ -2995,6 +3002,12 @@
                 "type":"checkbox"
               },
               {
+                "id":"descr",
+                "html":"input",
+                "label":"Название",
+                "type":"text"
+              },
+              {
                 "id":"stream_id",
                 "html":"input",
                 "type":"number",
@@ -3003,10 +3016,14 @@
                 "step":1
               },
               {
-                "id":"descr",
-                "html":"input",
-                "label":"Название",
-                "type":"text"
+                "id":"type",
+                "html":"select",
+                "section":"options",
+                "label":"Тип блока",
+                "block":[
+                  { "value":0, "label":"Бегущая строка" },
+                  { "value":1, "label":"Статический текст" }
+                ]
               },
               {
                 "id":"profile",
@@ -3042,7 +3059,7 @@
       },
       "profile_editor":{
         "section":"mod_txtscroll_body",
-        "label": "Настройка профилей слоя строк",
+        "label": "Настройка профилей текстовых слоев",
         "replace": true,
         "block":[
           {
@@ -3055,7 +3072,7 @@
                   {
                     "id":"profile",
                     "html":"select",
-                    "label":"Профиль оформления",
+                    "label":"Выбор профиля",
                     "onJS":true,
                     "function":"txtscroller_load_profile_form",
                     "section":"options",
@@ -3064,58 +3081,35 @@
                   {
                     "id":"profile_lbl",
                     "html":"input",
-                    "label":"Переименовать профиль",
+                    "label":"Переименовать текущий профиль",
                     "type":"text"
                   }
                 ]
               },
+              { "html":"spacer" },
               {
                 "section":"set_mod_txtscroll_profile_apply",
-                "label":"Слой строки",
+                "label":"Оформление текста",
                 "block":[
                   {
-                    "section":"txtscroll_fonts",
-                    "line":true,
-                    "block":[
-                      {
-                        "section":"uidata",
-                        "block":[
-                          {
-                            "action":"pick",
-                            "key":"lampui.elements.fonts_txt",
-                            "newid":"font1"
-                          }
-                        ]
-                      },
-                      {
-                        "id":"offset",
-                        "html":"input",
-                        "type":"number",
-                        "label":"Смещение базовой линии",
-                        "min":0,
-                        "max":16,
-                        "step":1
-                      }
-                    ]
-                  },
-                  {
                     "section":"blk_size",
+                    "label":"Размер блока",
                     "line":true,
                     "block":[
                       {
                         "id":"width",
                         "html":"input",
                         "type":"number",
-                        "label":"Ширина блока",
+                        "label":"ширина, px",
                         "min":4,
                         "max":256,
-                        "step":4
+                        "step":1
                       },
                       {
                         "id":"height",
                         "html":"input",
                         "type":"number",
-                        "label":"Высота блока",
+                        "label":"высота, px",
                         "min":4,
                         "max":128,
                         "step":1
@@ -3124,13 +3118,14 @@
                   },
                   {
                     "section":"blk_pos",
+                    "label":"Координаты левого верхнего угла блока",
                     "line":true,
                     "block":[
                       {
                         "id":"x1pos",
                         "html":"input",
                         "type":"number",
-                        "label":"Привязка по X",
+                        "label":"Координата X",
                         "min":0,
                         "max":256,
                         "step":1
@@ -3139,7 +3134,7 @@
                         "id":"y1pos",
                         "html":"input",
                         "type":"number",
-                        "label":"Привязка по Y",
+                        "label":"Координата Y",
                         "min":4,
                         "max":256,
                         "step":1
@@ -3147,17 +3142,36 @@
                     ]  
                   },
                   {
+                    "section":"uidata",
+                    "block":[
+                      {
+                        "action":"pick",
+                        "key":"lampui.elements.fonts_txt",
+                        "newid":"font1"
+                      }
+                    ]
+                  },
+                  {
+                    "id":"offset",
+                    "html":"input",
+                    "type":"number",
+                    "label":"Смещение базовой линии шрифта",
+                    "min":0,
+                    "max":16,
+                    "step":1
+                  },
+                  {
+                    "id": "color1",
+                    "html":"input",
+                    "type": "color",
+                    "data_color":"rgb565",
+                    "label": "Цвет текста",
+                    "min": 0
+                  },
+                  {
                     "section":"txtscroll_color",
                     "line":true,
                     "block":[
-                      {
-                        "id": "color1",
-                        "html":"input",
-                        "type": "color",
-                        "data_color":"rgb565",
-                        "label": "Цвет текста",
-                        "min": 0
-                      },
                       {
                         "id": "alpha_b",
                         "html":"input",
@@ -3170,16 +3184,14 @@
                     ]
                   },
                   {
-                    "id": "rate",
-                    "html":"input",
-                    "type": "number",
-                    "label": "Скорость прокрутки, пикс/с",
-                    "min": 2,
-                    "max": 200
-                  },
-                  {
                     "id":"stream_id",
                     "html":"hidden"
+                  },
+                  { "html":"spacer" },
+                  {
+                    "section":"additional_opts",
+                    "descr":"this to be replaced with section specific to selected TextQ type",
+                    "block":[]
                   }
                 ]
               },
@@ -3198,13 +3210,45 @@
                 "label":"🖫 Сохранить"
               },
               {
-                "id":"ui_page_modules",
+                "id":"ui_page_module_txtscroll",
                 "html":"button",
                 "color": "green",
                 "type":"generic",
                 "label":"🔙 Выход"
               }
             ]
+          }
+        ]
+      },
+      "profile_editor_scroller":{
+        "descr":"this block is for scroller specific profile settings",
+        "block":[
+          {
+            "id": "rate",
+            "html":"input",
+            "type": "number",
+            "label": "Скорость прокрутки, пикс/с",
+            "min": 2,
+            "max": 200
+          }
+        ]
+      },
+      "profile_editor_statictxt":{
+        "descr":"this block is for StaticTextQ specific profile settings",
+        "block":[
+          {
+            "id": "halign",
+            "html":"input",
+            "type": "number",
+            "label": "Вертикальное выравнивание: 0 - центр, <0 - отступ сверху, >1 - отсутп снизу",
+            "step": 1
+          },
+          {
+            "id": "valign",
+            "html":"input",
+            "type": "number",
+            "label": "Горизонтальное выравнивание: 0 - центр, <0 - отступ от левой границы, >1 - отступ от правой границы",
+            "step": 1
           }
         ]
       }
@@ -3310,8 +3354,8 @@
     "fonts_all":{
       "id":"font_all",
       "html":"select",
-      "label":"Выбор шрифта",
       "section":"options",
+      "label":"Выбор шрифта",
       "block":[
         { "value":0, "label":"5x8 Сyrillic" },
         { "value":1, "label":"8x13 Сyrillic" },
@@ -3338,8 +3382,8 @@
     "fonts_txt":{
       "id":"font_txt",
       "html":"select",
-      "label":"Выбор шрифта",
       "section":"options",
+      "label":"Выбор шрифта",
       "block":[
         { "value":0, "label":"5x8 Сyrillic" },
         { "value":1, "label":"8x13 Сyrillic" },
