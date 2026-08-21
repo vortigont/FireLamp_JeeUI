@@ -35,6 +35,16 @@ from colorama import Fore, Back, Style
 sys.path.append(join(platform.get_package_dir("tool-esptoolpy")))
 import esptool
 
+#print("=== Environment variables ===")
+#for key, value in sorted(os.environ.items()):
+#    print(f"{key}={value}")
+
+#print("=== PlatformIO build environment ===")
+#print(env.Dump())
+
+#for key in sorted(env):
+#    print(f"{key}={env[key]}")
+
 chip = env.get("BOARD_MCU")
 sections = env.subst(env.get("FLASH_EXTRA_IMAGES"))
 
@@ -78,8 +88,9 @@ def esp32_build_filesystem(fs_size):
         print("No files added -> will NOT create littlefs.bin and NOT overwrite fs partition!")
         return False
     # this does not work on GitHub, results in 'mklittlefs: No such file or directory'
-    tool =  env.subst(env["MKFSTOOL"])
-    #tool = "~/.platformio/packages/tool-mklittlefs/mklittlefs"
+    #tool =  env.subst(env["MKFSTOOL"])
+    tool =  env.subst(env["PROJECT_PACKAGES_DIR"]) + "/tool-mklittlefs/mklittlefs"
+    print("Running command: %s -c %s -s %s %s" % (tool,filesystem_dir,fs_size,join(env.subst("$BUILD_DIR"),"littlefs.bin")))
     cmd = (tool,"-c",filesystem_dir,"-s",fs_size,join(env.subst("$BUILD_DIR"),"littlefs.bin"))
     returncode = subprocess.call(cmd, shell=False)
     # print(returncode)
