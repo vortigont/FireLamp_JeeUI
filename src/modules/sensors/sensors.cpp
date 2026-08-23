@@ -240,7 +240,7 @@ void Sensor_Bosch::poll(){
   if (stype == sensor_t::bosch_bme)
     buffer += std::format(", влажность: {:.1f}%", humidity);
 
-  TextMessage m(std::move(buffer), 1, 0, message_id);
+  TextMessage m(std::move(buffer), 1 /* cnt */, 0 /* interval */, 0 /* duration*/, message_id);
   static_cast<ModTextDisplay*>(scroller)->updateMSG(std::move(m), scroller_id);
 }
 
@@ -282,7 +282,7 @@ void Sensor_SGP::poll(){
   std::string buffer = descr;
   buffer += std::format(" CO2: {}ppm, tvoc: {}", _sensor.CO2, _sensor.TVOC);
 
-  TextMessage m(std::move(buffer), 1, 0, message_id);
+  TextMessage m(std::move(buffer), 1 /* cnt */, 0 /* interval */, 0 /* duration*/, message_id);
   static_cast<ModTextDisplay*>(scroller)->updateMSG(std::move(m), scroller_id);
 }
 
@@ -342,6 +342,7 @@ void Sensor_SiSHT::poll(){
   std::string buffer = descr;
   buffer += std::format(" температура: {:.1f}°С, влажность: {:.1f}%", temp, humidity);
 
-  TextMessage m(std::move(buffer), 1, 0, message_id);
+  TextMessage m(std::move(buffer), 1 /* cnt */, 0 /* interval */, 0 /* duration*/, message_id);
+  
   static_cast<ModTextDisplay*>(scroller)->updateMSG(std::move(m), scroller_id);
 }
