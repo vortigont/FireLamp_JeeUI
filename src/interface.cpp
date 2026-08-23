@@ -605,56 +605,6 @@ void block_display_setup(Interface *interf, engine_t e){
     interf->json_frame_value(doc[key]);
     interf->json_frame_flush();
 
-/*
-    // this code is obsolete, left for reference only
-
-    // open a section
-    interf->json_section_begin(A_display_ws2812, TINTF_ledstrip);
-
-    interf->hidden(T_display_type, e2int(engine_t::ws2812));        // set hidden value for led type to ws2812
-
-    interf->comment("Параметры матрицы (смена gpio требует перезагрузки)");
-
-    interf->json_section_line(); // расположить в одной линии
-        // gpio для подключения LED матрицы
-        interf->number_constrained(T_mx_gpio, display.getGPIO(), "LED Matrix gpio", 1, -1, NUM_OUPUT_PINS);
-        interf->number_constrained(T_CLmt, static_cast<int>(display.getCurrentLimit()), TINTF_095, 100, 1000, 16000);    // FastLED current limit
-    interf->json_section_end();
-    interf->json_section_line(); // расположить в одной линии
-        interf->number_constrained(T_width,  (int)display.getLayout().tile_w(), "ширина", 1, 1, 256);
-        interf->number_constrained(T_height, (int)display.getLayout().tile_h(), "высота", 1, 1, 256);
-    interf->json_section_end();
-
-    interf->json_section_line(); // расположить в одной линии
-        interf->checkbox(T_snake, display.getLayout().snake(), I_zmeika, false);
-        interf->checkbox(T_vflip, display.getLayout().vmirror(), I_vflip, false);
-    interf->json_section_end();
-    interf->json_section_line(); // расположить в одной линии
-        interf->checkbox(T_vertical, display.getLayout().vertical(), I_vert, false);
-        interf->checkbox(T_hflip, display.getLayout().hmirror(), I_hflip, false);
-    interf->json_section_end();
-
-    interf->spacer();
-
-    interf->comment("Параметры каскада матриц");
-    interf->json_section_line(); // расположить в одной линии
-        interf->number_constrained(T_wcnt,   (int)display.getLayout().tile_wcnt(), "плиток по X", 1, 1, 32);
-        interf->number_constrained(T_hcnt,   (int)display.getLayout().tile_hcnt(), "плиток по Y", 1, 1, 32);
-    interf->json_section_end();
-    interf->json_section_line(); // расположить в одной линии
-        interf->checkbox(T_tsnake, display.getLayout().tileLayout.snake(), I_zmeika);
-        interf->checkbox(T_tvflip, display.getLayout().tileLayout.vmirror(), I_vflip);
-    interf->json_section_end();
-    interf->json_section_line(); // расположить в одной линии
-        interf->checkbox(T_tvertical, display.getLayout().tileLayout.vertical(), I_vert);
-        interf->checkbox(T_thflip, display.getLayout().tileLayout.hmirror(), I_hflip);
-    interf->json_section_end();
-
-    interf->button(button_t::submit, A_display_ws2812, TINTF_Save);  // Save
-    interf->button(button_t::generic, A_ui_page_settings, TINTF_exit);           // Exit
-
-    interf->json_frame_flush();     // close "K_set_ledstrip" section and flush frame
-*/
 }
 
 /**

@@ -53,6 +53,7 @@ An object file for LED output devices, backends and buffers
 
 bool LEDDisplay::start(){
     if (_dengine) return true;   // Overlay engine already running
+    LOGI("Display", println, "Starting display");
 
     JsonDocument doc;
     // if config can't be loaded, then just quit, 'cause we need at least an engine type to run
