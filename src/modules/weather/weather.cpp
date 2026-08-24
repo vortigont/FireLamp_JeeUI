@@ -178,7 +178,7 @@ void ModWeatherSource::_getOpenWeather(){
   LOGI(T_weather, println, pogoda.c_str());
 
   // update message
-  TextMessage m2(std::move(pogoda), _repeat_cnt, _repeat_interval, _msg_id);
+  TextMessage m2(std::move(pogoda), _repeat_cnt, _repeat_interval, 0, _msg_id);
   static_cast<ModTextDisplay*>(scroller)->updateMSG(std::move(m2), _scroller_id);
 
   // reset update timer
@@ -357,7 +357,7 @@ void ModNarodMonSource::getData(){
   LOGI(T_narodmon, println, buffer.c_str());
 
   // update message
-  TextMessage m2(std::move(buffer), _repeat_cnt, _repeat_interval, _msg_id);
+  TextMessage m2(std::move(buffer), _repeat_cnt, _repeat_interval, 0, _msg_id);
   static_cast<ModTextDisplay*>(scroller)->updateMSG(std::move(m2), _scroller_id);
 
   // reset update timer

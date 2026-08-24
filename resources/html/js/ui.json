@@ -3135,7 +3135,7 @@
                         "html":"input",
                         "type":"number",
                         "label":"Координата Y",
-                        "min":4,
+                        "min":0,
                         "max":256,
                         "step":1
                       }
@@ -3157,7 +3157,7 @@
                     "type":"number",
                     "label":"Смещение базовой линии шрифта",
                     "min":0,
-                    "max":16,
+                    "max":5,
                     "step":1
                   },
                   {
@@ -3237,14 +3237,14 @@
         "descr":"this block is for StaticTextQ specific profile settings",
         "block":[
           {
-            "id": "halign",
+            "id": "valign",
             "html":"input",
             "type": "number",
             "label": "Вертикальное выравнивание: 0 - центр, <0 - отступ сверху, >1 - отсутп снизу",
             "step": 1
           },
           {
-            "id": "valign",
+            "id": "halign",
             "html":"input",
             "type": "number",
             "label": "Горизонтальное выравнивание: 0 - центр, <0 - отступ от левой границы, >1 - отступ от правой границы",

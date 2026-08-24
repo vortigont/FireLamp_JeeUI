@@ -127,7 +127,7 @@ bool TextQRenderer::load_next_msg(){
 
 void TextQRenderer::load_msg(JsonArrayConst msg){
   for (auto m : msg){
-    msg_pool.emplace_back( std::make_shared<TextMessage>(m[T_msg].as<const char*>(), m[T_cnt].as<int32_t>(), m[T_interval].as<int32_t>() | 0, m[T_duration].as<uint32_t>() | 0) );
+    msg_pool.emplace_back( std::make_shared<TextMessage>(m[T_msg].as<const char*>(), m[T_cnt].as<int32_t>(), m[T_interval].as<int32_t>() | 0, m[T_duration].as<uint32_t>(), m[P_id]) );
   }
 }
 
@@ -591,7 +591,7 @@ void ModTextDisplay::_kill_instance(uint8_t stream_id){
 void ModTextDisplay::embui_send_msg(Interface *interf, JsonVariantConst data, const char* action){
   JsonVariantConst v = data[P_text];
   if (v.is<const char*>() && !v.isNull()){
-    TextMessage m(v.as<const char*>(), data[T_cnt] | 1, data[T_interval], data[T_duration] | 1, data[P_id] | 0);
+    TextMessage m(v.as<const char*>(), data[T_cnt] | 1, data[T_interval], data[T_duration], data[P_id] | 0);
     LOGD(T_txtscroll, printf, "New msg:%s\n", m.msg.c_str());
     if (data[T_update])
       updateMSG(std::move(m), data[T_stream_id]);
