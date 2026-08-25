@@ -20,7 +20,7 @@ except:
 outdir='embed/'
 jsdir = 'resources/html/js/'
 cssdir = 'resources/html/css/'
-in_gz_files = ["resources/html/index.html", jsdir + "ui.json", jsdir + "ui.i18n.json", jsdir + "informer.js",
+in_gz_files = ["resources/html/index.html", jsdir + "ui.json", jsdir + "ui.i18n.json", jsdir + "infrmr.js",
     cssdir + "style.css", cssdir + "style_dark.css", cssdir + "style_light.css",
 ]
 #combine_js_files = [jsdir + "firelamp.js", jsdir + "drawing.js"]
@@ -94,7 +94,7 @@ def embed_resources():
 
         # combine js scripts
         #jsall = ''.join([open(f, 'r', encoding='utf-8').read() for f in combine_js_files])
-        #fpath = outdir + 'informer.js.gz'
+        #fpath = outdir + 'infrmr.js.gz'
         #compress_data(jsall, fpath)
         #print_hdr_data(fpath, f_hdr)
 

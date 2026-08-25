@@ -56,7 +56,7 @@ static void mk_response(embedded_data_t obj, AsyncWebServerRequest* req){
         response->addHeader(asyncsrv::T_Content_Encoding, asyncsrv::T_gzip);
         break;
       case embedded_data_t::informer :
-        response = req->beginResponse(200, asyncsrv::T_application_javascript, embed_informer_js_gz_start, embed_informer_js_gz_end - embed_informer_js_gz_start );
+        response = req->beginResponse(200, asyncsrv::T_application_javascript, embed_infrmr_js_gz_start, embed_infrmr_js_gz_end - embed_infrmr_js_gz_start );
         response->addHeader(asyncsrv::T_Content_Encoding, asyncsrv::T_gzip);
         break;
       // libs
@@ -149,7 +149,7 @@ void set_static_http_handlers(){
   embui.server.on("/js/ui_embui.lang.json", HTTP_GET, [](AsyncWebServerRequest *request){ mk_response(embedded_data_t::ui_embuilang, request); } );
   embui.server.on("/js/tz.json", HTTP_GET, [](AsyncWebServerRequest *request){ mk_response(embedded_data_t::tz, request); } );
   // informer js
-  embui.server.on("/js/informer.js", HTTP_GET, [](AsyncWebServerRequest *request){ mk_response(embedded_data_t::informer, request); } );
+  embui.server.on("/js/infrmr.js", HTTP_GET, [](AsyncWebServerRequest *request){ mk_response(embedded_data_t::informer, request); } );
   embui.server.on("/js/ui.json", HTTP_GET, [](AsyncWebServerRequest *request){ mk_response(embedded_data_t::ui, request); } );
   embui.server.on("/js/ui.i18n.json", HTTP_GET, [](AsyncWebServerRequest *request){ mk_response(embedded_data_t::ui_i18n, request); } );
   // css
