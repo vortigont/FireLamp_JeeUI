@@ -28,7 +28,7 @@
       "descr":"статик центр 128x64",
       "profile":4,
       "messages":[
-        {"cnt":4, "duration": 1, "interval":1, "msg":"Boot..."}
+        {"cnt":3, "duration": 1, "interval":2, "msg":"Boot..."}
       ]
     },
     {
@@ -38,7 +38,7 @@
       "descr":"статик центр 64x32",
       "profile":5,
       "messages":[
-        {"cnt":4, "duration": 1, "interval":1, "msg":"Boot..."}
+        {"cnt":3, "duration": 1, "interval":2, "msg":"Boot..."}
       ]
     },
     {

@@ -115,7 +115,7 @@ bool TextQRenderer::load_next_msg(){
       // remove message from queue
       msg_pool.erase(i);
       load_next = false;
-      LOGD(T_txtscroll, printf, "load string: %s\n", current_msg->msg.c_str());
+      LOGD(T_txtscroll, printf, "id:%u display msg: %s\n", _id, current_msg->msg.c_str());
       load_next = false;
       return true;
     }
@@ -131,35 +131,32 @@ void TextQRenderer::load_msg(JsonArrayConst msg){
   }
 }
 
-void TextQRenderer::enqueueMSG(const TextMessage& msg, bool prepend){
-  if (_active && msg_pool.size() <= DEF_MAX_MGS_Q_LEN)
-    if (prepend)
-      msg_pool.emplace_front(std::make_shared<TextMessage>(msg));
-    else
-      msg_pool.emplace_back(std::make_shared<TextMessage>(msg));
-}
-
 void TextQRenderer::enqueueMSG(TextMessage&& msg, bool prepend){
+  if (!_active || msg_pool.size() > DEF_MAX_MGS_Q_LEN){
+    LOGW(T_txtscroll, printf, "id:%u Q disabled o overfloes\n", _id);
+    return;
+  }
+
   LOGV(T_txtscroll, printf, "enqueueMSG:%s\n", msg.msg.c_str());
-  if (_active && msg_pool.size() <= DEF_MAX_MGS_Q_LEN)
-    if (prepend)
-      msg_pool.emplace_front(std::make_shared<TextMessage>(std::move(msg)));
-    else
-      msg_pool.emplace_back(std::make_shared<TextMessage>(std::move(msg)));
+  if (prepend)
+    msg_pool.emplace_front(std::make_shared<TextMessage>(std::move(msg)));
+  else
+    msg_pool.emplace_back(std::make_shared<TextMessage>(std::move(msg)));
 }
 
-void TextQRenderer::updateMSG(const TextMessage& msg, bool enqueue){
+void TextQRenderer::updateMSG(TextMessage&& msg, bool enqueue){
   if (!_active) return;
 
-  for (auto m : msg_pool){
+  for (auto &m : msg_pool){
     if (m->id == msg.id){
-      (*m) = msg;
+      auto p = std::make_shared< TextMessage > (std::move(msg));
+      m.swap(p);
       return;
     }
   }
   // no messages found
   if (enqueue)
-    enqueueMSG(msg);
+    enqueueMSG(std::move(msg));
 }
 
 void TextQRenderer::requeue_counter(){

@@ -119,16 +119,17 @@ public:
    * @param msg 
    * @param id 
    */
-  void enqueueMSG(const TextMessage& msg, bool prepend = false);
+  void enqueueMSG(const TextMessage& msg, bool prepend = false){ enqueueMSG(TextMessage {msg}, prepend); };
   void enqueueMSG(TextMessage&& msg, bool prepend = false);
 
   /**
    * @brief find and update message in the queue with matching message ids
    * 
    * @param msg message
-   * @param enqueue - if true and unique message is not found in the queue, then appen message to the back if the queue
+   * @param enqueue - if true and unique message is not found in the queue, then append message to the back if the queue
    */
-  void updateMSG(const TextMessage& msg, bool enqueue = true);
+  void updateMSG(const TextMessage& msg, bool enqueue = true){ updateMSG(TextMessage {msg}, enqueue); }
+  void updateMSG(TextMessage&& msg, bool enqueue = true);
 
 protected:
   // 2D overlay texture

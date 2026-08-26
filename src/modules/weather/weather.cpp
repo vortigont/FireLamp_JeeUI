@@ -73,13 +73,13 @@ void ModWeatherSource::_getOpenWeather(){
   
   // no WiFi connection - skip update
   if (!WiFi.isConnected()){
-    LOGW(T_weather, println, "no WiFi, skip update");
+    LOGW(T_weather, println, "no WiFi conn");
     return;
   }
 
   auto scroller = zookeeper.getModulePtr(T_txtscroll);
   if (!scroller){
-    LOGW(T_weather, println, "no scroller object found");
+    LOGW(T_weather, println, "no TextQ instance");
     return;
   }
 
@@ -101,12 +101,12 @@ void ModWeatherSource::_getOpenWeather(){
   LOGV(T_weather, printf, "fetch: %s\n", url.c_str());
   int code = http.GET();
   if (code != HTTP_CODE_OK) {
-    std::string m("Ошибка обновления погоды, HTTP:");
+    std::string m("Weather HTTP code:");
     m += std::to_string(code);
     LOGE(T_txtscroll, println, m.c_str());
 
     // report error
-    TextMessage msg(std::move(m));
+    TextMessage msg(std::move(m), 1, 0, 0, _msg_id);
     static_cast<ModTextDisplay*>(scroller)->updateMSG(std::move(msg), _scroller_id);
 
     // some HTTP error
@@ -296,14 +296,14 @@ void ModNarodMonSource::getData(){
   
   // no WiFi connection - skip update
   if (!WiFi.isConnected()){
-    LOGW(T_narodmon, println, "no WiFi connection");
+    LOGW(T_narodmon, println, "no WiFi conn");
     return;
   }
 
   auto scroller = zookeeper.getModulePtr(T_txtscroll);
   // no text destination available
   if (!scroller){
-    LOGW(T_narodmon, println, "no TextQ instance found");
+    LOGW(T_narodmon, println, "no TextQ instance");
     return;
   }
 
@@ -322,7 +322,7 @@ void ModNarodMonSource::getData(){
   std::string buffer;
   serializeJson(doc, buffer);
 
-  LOGD(T_weather, printf, "update t: %lu\n", getInterval()/1000);
+  LOGD(T_narodmon, printf, "update t:%lu\n", getInterval()/1000);
 
   HTTPClient http;
   http.begin("http://narodmon.ru/api");
@@ -331,12 +331,12 @@ void ModNarodMonSource::getData(){
 
   int code = http.POST((uint8_t*)buffer.c_str(), buffer.length());
   if (code != HTTP_CODE_OK) {
-    buffer = "Ошибка обновления погоды, HTTP:";
+    buffer = "NarodMon HTTP code:";
     buffer += std::to_string(code);
     LOGE(T_narodmon, println, buffer.c_str());
 
     // report error
-    TextMessage msg(std::move(buffer));
+    TextMessage msg(std::move(buffer), 1, 0, 0, _msg_id);
     static_cast<ModTextDisplay*>(scroller)->updateMSG(std::move(msg), _scroller_id);
 
     // some HTTP error
@@ -350,7 +350,7 @@ void ModNarodMonSource::getData(){
   }
 
   if ( deserializeJson(doc, *http.getStreamPtr()) != DeserializationError::Ok ) { 
-    LOGI(T_narodmon, println, "Ошибка разбора JSON ответа");
+    LOGW(T_narodmon, println, "JSON parse err");
     LOGD(T_narodmon, println, http.getString().c_str());
     return;
   }
@@ -373,7 +373,7 @@ void ModNarodMonSource::getData(){
 
   // update message
   TextMessage m2(std::move(buffer), _repeat_cnt, _repeat_interval, 0, _msg_id);
-  static_cast<ModTextDisplay*>(scroller)->updateMSG(std::move(m2), _scroller_id);
+  static_cast<ModTextDisplay*>(scroller)->updateMSG(std::move(m2), _scroller_id, true);
 
   // reset update timer
   _retry = false;
