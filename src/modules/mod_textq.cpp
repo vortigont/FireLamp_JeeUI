@@ -133,11 +133,11 @@ void TextQRenderer::load_msg(JsonArrayConst msg){
 
 void TextQRenderer::enqueueMSG(TextMessage&& msg, bool prepend){
   if (!_active || msg_pool.size() > DEF_MAX_MGS_Q_LEN){
-    LOGW(T_txtscroll, printf, "id:%u Q disabled o overfloes\n", _id);
+    LOGW(T_txtscroll, printf, "id:%u Q disabled or overflowed\n", _id);
     return;
   }
 
-  LOGV(T_txtscroll, printf, "enqueueMSG:%s\n", msg.msg.c_str());
+  LOGD(T_txtscroll, printf, "enqueueMSG qid:%u, id:%u, %s\n", _id, msg.id, msg.msg.c_str());
   if (prepend)
     msg_pool.emplace_front(std::make_shared<TextMessage>(std::move(msg)));
   else
@@ -149,6 +149,7 @@ void TextQRenderer::updateMSG(TextMessage&& msg, bool enqueue){
 
   for (auto &m : msg_pool){
     if (m->id == msg.id){
+      LOGD(T_txtscroll, printf, "updateMSG qid:%u, id:%u, %s\n", _id, m->id, msg.msg.c_str());
       auto p = std::make_shared< TextMessage > (std::move(msg));
       m.swap(p);
       return;
