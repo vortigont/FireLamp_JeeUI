@@ -49,10 +49,9 @@
 static constexpr const char* T_sunrise = "sunrise";
 
 
-ModWeatherSource::ModWeatherSource() : GenericModuleProfiles(T_weather){
+ModWeatherSource::ModWeatherSource() : GenericModuleProfiles(T_weather), _msg_id(random()){
   //esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, TextScrollerWgdt::_event_hndlr, this, &_hdlr_lmp_change_evt);
   //esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_STATE_EVENTS, ESP_EVENT_ANY_ID, TextScrollerWgdt::_event_hndlr, this, &_hdlr_lmp_state_evt);
-  _msg_id = std::rand();
 
   set( 5000, TASK_FOREVER, [this](){ _getOpenWeather(); } );
   ts.addTask(*this);
@@ -121,8 +120,8 @@ void ModWeatherSource::_getOpenWeather(){
 
   JsonDocument doc;
   if ( deserializeJson(doc, *http.getStreamPtr()) != DeserializationError::Ok ){
-    LOGI(T_narodmon, println, "Ошибка разбора JSON ответа");
-    LOGD(T_narodmon, println, http.getString().c_str());
+    LOGI(T_weather, println, "Ошибка разбора JSON ответа");
+    LOGD(T_weather, println, http.getString().c_str());
    return;
   }
   http.end();
