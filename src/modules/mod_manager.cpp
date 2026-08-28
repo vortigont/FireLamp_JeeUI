@@ -461,7 +461,7 @@ void ModuleManager::_spawn(const char* label){
   } else if(std::string_view(label).compare(T_alrmclock) == 0){
     w = std::make_unique<AlarmClock>();
   } else if(std::string_view(label).compare(T_txtscroll) == 0){
-    w = std::make_unique<ModTextScroller>();
+    w = std::make_unique<ModTextDisplay>();
   } else if(std::string_view(label).compare(T_omnicron) == 0){
     w = std::make_unique<OmniCron>();
   } else if(std::string_view(label).compare(T_weather) == 0){

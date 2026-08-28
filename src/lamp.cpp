@@ -64,6 +64,7 @@ Lamp::~Lamp(){
 }
 
 void Lamp::lamp_init(){
+  LOGI(T_lamp, println, "Starting lamp instance");
   // register embui handlers
   // demo on/off
   embui.action.add(T_demoOn, [this](Interface *interf, JsonVariantConst data, const char* action){ setDemoMode(data); } );

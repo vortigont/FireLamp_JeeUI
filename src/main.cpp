@@ -71,17 +71,14 @@ void setup() {
     Serial.setDebugOutput(true);
 #endif
     // let USB-serial connect
-    #if EMBUI_DEBUG_LEVEL > 3 || LAMP_DEBUG_LEVEL > 3
-        delay(4000);
-    #endif
+    //#if EMBUI_DEBUG_LEVEL > 3 || LAMP_DEBUG_LEVEL > 3
+    delay(2000);
+    //#endif
 #else
     Serial.begin(115200);
 #endif
 
     LOGI(T_Main, printf, "Setup: free heap: %luk, PSRAM:%luk\n\n", ESP.getFreeHeap()/1024, ESP.getFreePsram()/1024);
-
-    // cap ADC resolution to 10 bit
-    analogReadResolution(10);
 
     // Start event loop task
     evt::start();
@@ -116,6 +113,7 @@ void setup() {
     // GPIO controller
     gpio_ctl.start();
     // spawn Modules instances from saved configurations, this must be done AFTER display initialisation
+    LOGI(T_Main, println, "Starting modules");
     zookeeper.start();
     zookeeper.setHandlers();
 

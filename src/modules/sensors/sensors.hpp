@@ -50,7 +50,7 @@ protected:
 
   // textq receiver
   uint8_t scroller_id;
-  uint32_t message_id;
+  const uint32_t message_id;
 
 public:
   // sensor unique id
