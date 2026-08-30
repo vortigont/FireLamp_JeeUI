@@ -144,7 +144,7 @@ void TextScroll::_scroll_line(LedFB_GFX *gfx){
   
   // рисуем строку только если был сдвиг
   if (px_to_shift){
-    _textmask->fillScreen(BLACK);
+    _textmask->fillScreen(0);
     _textmask->setCursor(_cur_offset, _bitmapcfg.h - _bitmapcfg.baseline_shift_y);
     _textmask->print(_current_msg->msg.data());
   }
