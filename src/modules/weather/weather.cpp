@@ -49,10 +49,9 @@
 static constexpr const char* T_sunrise = "sunrise";
 
 
-ModWeatherSource::ModWeatherSource() : GenericModuleProfiles(T_weather){
+ModWeatherSource::ModWeatherSource() : GenericModuleProfiles(T_weather), _msg_id(random()){
   //esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, TextScrollerWgdt::_event_hndlr, this, &_hdlr_lmp_change_evt);
   //esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_STATE_EVENTS, ESP_EVENT_ANY_ID, TextScrollerWgdt::_event_hndlr, this, &_hdlr_lmp_state_evt);
-  _msg_id = std::rand();
 
   set( 5000, TASK_FOREVER, [this](){ _getOpenWeather(); } );
   ts.addTask(*this);
@@ -73,13 +72,13 @@ void ModWeatherSource::_getOpenWeather(){
   
   // no WiFi connection - skip update
   if (!WiFi.isConnected()){
-    LOGW(T_txtscroll, println, "no WiFi, skip update");
+    LOGW(T_weather, println, "no WiFi conn");
     return;
   }
 
   auto scroller = zookeeper.getModulePtr(T_txtscroll);
   if (!scroller){
-    LOGW(T_weather, println, "no scroller object found");
+    LOGW(T_weather, println, "no TextQ instance");
     return;
   }
 
@@ -94,20 +93,20 @@ void ModWeatherSource::_getOpenWeather(){
   LOGD(T_weather, printf, "update t: %lu\n", getInterval()/1000);
 
   //  TextMessage m1("Обновление погоды");
-  //  static_cast<ModTextScroller*>(scroller)->updateMSG(std::move(m1), _scroller_id);
+  //  static_cast<ModTextDisplay*>(scroller)->updateMSG(std::move(m1), _scroller_id);
 
   HTTPClient http;
   http.begin(url.c_str());
   LOGV(T_weather, printf, "fetch: %s\n", url.c_str());
   int code = http.GET();
   if (code != HTTP_CODE_OK) {
-    std::string m("Ошибка обновления погоды, HTTP:");
+    std::string m("Weather HTTP code:");
     m += std::to_string(code);
     LOGE(T_txtscroll, println, m.c_str());
 
     // report error
-    TextMessage msg(std::move(m));
-    static_cast<ModTextScroller*>(scroller)->updateMSG(std::move(msg), _scroller_id);
+    TextMessage msg(std::move(m), 1, 0, 0, _msg_id);
+    static_cast<ModTextDisplay*>(scroller)->updateMSG(std::move(msg), _scroller_id);
 
     // some HTTP error
     if (_weathercfg.retry){
@@ -120,7 +119,11 @@ void ModWeatherSource::_getOpenWeather(){
   }
 
   JsonDocument doc;
-  if ( deserializeJson(doc, *http.getStreamPtr()) != DeserializationError::Ok ) return;
+  if ( deserializeJson(doc, *http.getStreamPtr()) != DeserializationError::Ok ){
+    LOGI(T_weather, println, "Ошибка разбора JSON ответа");
+    LOGD(T_weather, println, http.getString().c_str());
+   return;
+  }
   http.end();
 
   std::string pogoda;
@@ -178,8 +181,8 @@ void ModWeatherSource::_getOpenWeather(){
   LOGI(T_weather, println, pogoda.c_str());
 
   // update message
-  TextMessage m2(std::move(pogoda), _repeat_cnt, _repeat_interval, _msg_id);
-  static_cast<ModTextScroller*>(scroller)->updateMSG(std::move(m2), _scroller_id);
+  TextMessage m2(std::move(pogoda), _repeat_cnt, _repeat_interval, 0, _msg_id);
+  static_cast<ModTextDisplay*>(scroller)->updateMSG(std::move(m2), _scroller_id);
 
   // reset update timer
   _weathercfg.retry = false;
@@ -284,22 +287,27 @@ void ModNarodMonSource::generate_cfg(JsonVariant cfg) const {
 
 void ModNarodMonSource::getData(){
   // no API key - no weather updates
-  if (!_sourceCfg.apikey.length()) { disable(); return; }
+  if (!_sourceCfg.apikey.length()) {
+    LOGW(T_narodmon, println, "API key not set, disabling updates");
+    disable();
+    return;
+  }
   
   // no WiFi connection - skip update
   if (!WiFi.isConnected()){
+    LOGW(T_narodmon, println, "no WiFi conn");
     return;
-    LOGW(T_txtscroll, println, "no WiFi, skip update");
   }
 
   auto scroller = zookeeper.getModulePtr(T_txtscroll);
-
   // no text destination available
-  if (!scroller)
+  if (!scroller){
+    LOGW(T_narodmon, println, "no TextQ instance");
     return;
+  }
 
   //TextMessage m1("Обновление NarodMon");
-  //static_cast<ModTextScroller*>(scroller)->updateMSG(std::move(m1), _scroller_id);
+  //static_cast<ModTextDisplay*>(scroller)->updateMSG(std::move(m1), _scroller_id);
 
   JsonDocument doc;
   JsonObject o = doc.to<JsonObject>();
@@ -313,6 +321,8 @@ void ModNarodMonSource::getData(){
   std::string buffer;
   serializeJson(doc, buffer);
 
+  LOGD(T_narodmon, printf, "update t:%lu\n", getInterval()/1000);
+
   HTTPClient http;
   http.begin("http://narodmon.ru/api");
   http.addHeader(asyncsrv::T_Content_Type, asyncsrv::T_application_json);
@@ -320,13 +330,13 @@ void ModNarodMonSource::getData(){
 
   int code = http.POST((uint8_t*)buffer.c_str(), buffer.length());
   if (code != HTTP_CODE_OK) {
-    buffer = "Ошибка обновления погоды, HTTP:";
+    buffer = "NarodMon HTTP code:";
     buffer += std::to_string(code);
-    LOGE(T_txtscroll, println, buffer.c_str());
+    LOGE(T_narodmon, println, buffer.c_str());
 
     // report error
-    TextMessage msg(std::move(buffer));
-    static_cast<ModTextScroller*>(scroller)->updateMSG(std::move(msg), _scroller_id);
+    TextMessage msg(std::move(buffer), 1, 0, 0, _msg_id);
+    static_cast<ModTextDisplay*>(scroller)->updateMSG(std::move(msg), _scroller_id);
 
     // some HTTP error
     if (_retry){
@@ -338,7 +348,11 @@ void ModNarodMonSource::getData(){
     return;
   }
 
-  if ( deserializeJson(doc, *http.getStreamPtr()) != DeserializationError::Ok ) return;
+  if ( deserializeJson(doc, *http.getStreamPtr()) != DeserializationError::Ok ) { 
+    LOGW(T_narodmon, println, "JSON parse err");
+    LOGD(T_narodmon, println, http.getString().c_str());
+    return;
+  }
   http.end();
 
   buffer.clear();
@@ -357,8 +371,8 @@ void ModNarodMonSource::getData(){
   LOGI(T_narodmon, println, buffer.c_str());
 
   // update message
-  TextMessage m2(std::move(buffer), _repeat_cnt, _repeat_interval, _msg_id);
-  static_cast<ModTextScroller*>(scroller)->updateMSG(std::move(m2), _scroller_id);
+  TextMessage m2(std::move(buffer), _repeat_cnt, _repeat_interval, 0, _msg_id);
+  static_cast<ModTextDisplay*>(scroller)->updateMSG(std::move(m2), _scroller_id, true);
 
   // reset update timer
   _retry = false;

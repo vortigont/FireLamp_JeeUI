@@ -346,7 +346,7 @@ bool EffectColors::colorsRoutine()
 // ------------- светлячки --------------
 //#define LIGHTERS_AM           (100U)
 void EffectLighters::load(){
-  randomSeed(micros());
+  
   for (auto &i : lighters){
     i.posX = static_cast<float>(random(0, fb->w()));
     i.posY = static_cast<float>(random(0, fb->h()));
@@ -428,7 +428,7 @@ bool EffectStarFall::run(){
 }
 
 void EffectStarFall::load(){
-  randomSeed(millis());
+  
   for (auto &i : lighters){
     i.posX = random(-fb->w(), fb->w());
     i.posY = random(fb->maxHeightIndex(), fb->h() + 4);
@@ -843,7 +843,7 @@ void EffectBBalls::load(){
   balls.assign(scale, Ball());
 
   //ColorFromPalette(*curPalette, color * 9);
-  randomSeed(millis());
+  
   int i = 0;
   for (auto &bball : balls){
     bball.color = random(0, 255);
@@ -1707,7 +1707,6 @@ void EffectTwinkles::load(){
 
 void EffectTwinkles::setup()
 {
-  //randomSeed(millis());
   for (auto i = ledsbuff.begin(); i != ledsbuff.end(); ++i ){
     if (random(0,255) < tnum) {                                // чем ниже tnum, тем чаще будут заполняться элементы лампы
       i->r = random8();                           // оттенок пикселя
@@ -3253,7 +3252,7 @@ void EffectNexus::setControl(size_t idx, int32_t value) {
 
 void EffectNexus::load() {
   palettesload();
-  randomSeed(millis());
+  
   reconfig();
 }
 
@@ -3965,7 +3964,7 @@ void EffectCircles::drawCircle(LedFB<CRGB> *fb, Circle &circle) {
 bool EffectCircles::run() {
   _video = 255;
 
-  randomSeed(millis());
+  
   fb->clear();
   for (auto &i : circles){
     i.bpm += speedFactor;
@@ -3989,7 +3988,7 @@ void EffectBalls::load() {
 }
 
 void EffectBalls::reset(){
-  randomSeed(millis());
+  
   for (auto &i : balls){
     i.radius = EffectMath::randomf(0.5, radiusMax);
     i.spdy = EffectMath::randomf(0.5, 1.1) * speedFactor;
@@ -4394,7 +4393,7 @@ void EffectMagma::setControl(size_t idx, int32_t value){
 }
 
 void EffectMagma::regen() {
-  randomSeed(millis());
+  
   for (size_t j = 0; j != shiftHue.size(); ++j){
     shiftHue[j] = map(j, 0, fb->h()+fb->h()/4, 255, 0); // init colorfade table
   }
@@ -4564,7 +4563,6 @@ bool EffectStarShips::run() {
   if (_dir) 
     dir = _dir - 1;
   else dir = count%8;
-  if (dir == 0) randomSeed(millis());
   EffectMath::blur2d(fb, 16);
   return true;
 }

@@ -55,16 +55,14 @@ protected:
  */
 class ModWeatherSource : public GenericModuleProfiles, public Task {
 
-struct WeatherCfg {
-  String apikey;
-  uint32_t city_id, refresh; // ms
-  bool retry{false};
-};
-
-  WeatherCfg _weathercfg;
+  struct WeatherCfg {
+    String apikey;
+    uint32_t city_id, refresh; // ms
+    bool retry{false};
+  };
 
   // msg unique id
-  uint32_t _msg_id;
+  const uint32_t _msg_id;
   // scroller destination
   uint8_t _scroller_id;
   // how many times to repeat message (-1 - forever)
@@ -74,6 +72,8 @@ struct WeatherCfg {
 
   // formatting
   bool _show_sunrise;
+
+  WeatherCfg _weathercfg;
 
   // update weather
   void _getOpenWeather();

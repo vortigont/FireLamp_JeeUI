@@ -203,74 +203,74 @@ async function txtscroller_mk_page_main(arg){
   rdr.section(scrolls)
 }
 
-// handle on button "edit text scroll stream", creates a form with stream's config options
+// handle button "edit text scroll stream", creates a form with stream's config options
 function txtscroller_mk_page_edit_stream(event, id, arg){
   let ui_obj = structuredClone(_.get(uiblocks, "lampui.sections.mod_txtscroll.edit_stream_form"));
-  let form = ui_obj.block[0]
-  // if arg == -1, then it's a new object creation
-  if (arg != -1){
-    let scrollers = _.get(uiblocks, "lampui.dynamic.mod_txtscroll.scrollers")
-    let stream_idx = _.findIndex(scrollers, {"stream_id":arg})
-    let scroller = scrollers[stream_idx]
-    //console.log("scroller:", scroller, "sid:", stream_id);
-    for (let key in scroller){
-      if (typeof scroller[key] == 'object')
-        continue
+  let form = ui_obj.block[0]  // it's "section":"set_mod_txtscroll_streamcfg"
 
-      let i = _.findIndex(form.block, {"id":key})
-      if (i != -1)
-        form.block[i]["value"] = scroller[key]
-    }
-    //console.log("scroller:", scroller);
-    //console.log("form:", form);
-    // set value for profiles drop-down selector
-    let i = _.findIndex(ui_obj.block[0].block, {"id":"profile"})
-    //console.log("res:", ui_obj, " i:", i);
-    ui_obj.block[0].block[i]["value"] = scroller.profile
-    // set value for profiles edit button
-    i = _.findIndex(ui_obj.block[0].block, {"id":"edit_profile_btn"})
-    ui_obj.block[0].block[i]["value"] = arg
-  }
-
-  // drop down profile selector options
-  let profile_idx = _.findIndex(form.block, {"id":"profile"})
+  // fill in drop-down list for profile selector with a list of available text profiles that were loaded from MCU's FS
+  const profile_idx = _.findIndex(form.block, {"id":"profile"})
   _.get(uiblocks, "lampui.dynamic.mod_txtscroll.profiles").forEach((obj, idx, array) => {
     form.block[profile_idx].block.push( { "value":idx, "label":obj["label"] })
   });
 
+  let values = {"block":[]}
+
+  // if arg == -1, then it's a new object creation
+  if (arg != -1){
+    const scrollers = _.get(uiblocks, "lampui.dynamic.mod_txtscroll.scrollers")
+    let scroller = scrollers[_.findIndex(scrollers, {"stream_id":arg})] // find an index of current scroller
+    // set value for profiles drop-down selector
+    form.block[profile_idx]["value"] = scroller.profile
+    // set value for profiles edit button
+    form.block[ _.findIndex(form.block, {"id":"edit_profile_btn"}) ]["value"] = arg
+    // prepare values obj for form fields
+    values.block.push(scroller)
+  } else {
+    // it's a "create new text block" action, so we need to hide "edit_profile" button
+    let e = findBlockElement(ui_obj.block, "id", "edit_profile_btn")
+    if (e) e["hidden"] = true
+  }
+
   var rdr = this.rdr = render();
   rdr.section(ui_obj)
+
+  if (arg != -1){
+    // push values to form fields
+    rdr.value(values)
+  }
 }
 
-// handle "edit profile button" in stream's config options
+// handle "edit profile button" in text stream's config options
 async function txtscroller_edit_profile(event, id, arg){
   let ui_obj = structuredClone(_.get(uiblocks, "lampui.sections.mod_txtscroll.profile_editor"));
 
-  let scrollers = _.get(uiblocks, "lampui.dynamic.mod_txtscroll.scrollers")
-  //let profiles = _.get(uiblocks, "lampui.dynamic.mod_txtscroll.profiles")
-  let scroller_idx = _.findIndex(scrollers, {"stream_id":arg})
-  let scroller = scrollers[scroller_idx]
+  const scrollers = _.get(uiblocks, "lampui.dynamic.mod_txtscroll.scrollers")
+  const scroller = scrollers[ _.findIndex(scrollers, {"stream_id":arg}) ]
 
-  // drop down profile selector options
+  // fill drop down profile selector option items - iterate over available text profiles and make
+  // a {value: label} pairs for drop down selector pairing names with index in "profiles" array
   let profile_dropd = ui_obj.block[0].block[0].block[0]
   _.get(uiblocks, "lampui.dynamic.mod_txtscroll.profiles").forEach((obj, idx, array) => {
     profile_dropd.block.push( { "value":idx, "label":obj["label"] })
   });
   profile_dropd["value"] = scroller.profile
-  // copy profile label
-  //ui_obj.block[0].block[0].block[1]["value"] = profiles[scroller.profile].label
-/*
-  let profile_cfg = profiles[scroller.profile].cfg
-  for (let [key, value] of Object.entries(profile_cfg)){
-    let e = findBlockElement(ui_obj.block, "id", key)
-    if (e)
-      e["value"] = value
-  }
-*/
-  // set hidden field
+
+  // set hidden field identifying which profile we are editing
   let e = findBlockElement(ui_obj.block, "id", "stream_id")
   if (e)
     e["value"] = arg
+
+  let addblk = findBlockElement(ui_obj.block, "section", "additional_opts")
+  if (addblk){
+    if (scroller.type == 1){
+      // it's a "statictextq" type
+      addblk.block = structuredClone(_.get(uiblocks, "lampui.sections.mod_txtscroll.profile_editor_statictxt.block"))
+    } else {
+      // it's a "scroller" type
+      addblk.block = structuredClone(_.get(uiblocks, "lampui.sections.mod_txtscroll.profile_editor_scroller.block"))
+    }
+  }
 
   const ui_processed = await process_uidata(ui_obj.block)
   //console.log("dump:", ui_obj)
@@ -282,8 +282,8 @@ async function txtscroller_edit_profile(event, id, arg){
 
 // load values for scroller profile options form
 function txtscroller_load_profile_form(e, id, arg){
-  let idx = id ? value = document.getElementById(id).value : arg;
-  let profiles = _.get(uiblocks, "lampui.dynamic.mod_txtscroll.profiles")
+  const idx = id ? value = document.getElementById(id).value : arg;
+  const profiles = _.get(uiblocks, "lampui.dynamic.mod_txtscroll.profiles")
   let data = {"block":[]}
   data.block.push(profiles[idx].cfg)
   data.block.push({"profile_lbl": profiles[idx].label})
