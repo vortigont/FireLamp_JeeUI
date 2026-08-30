@@ -63,6 +63,7 @@ bool Arduino_Canvas_Indexed::begin(int32_t speed)
 
 void Arduino_Canvas_Indexed::writePixelPreclipped(int16_t x, int16_t y, uint16_t color)
 {
+  if (!_framebuffer) return;
   uint8_t idx;
   if (_isDirectUseColorIndex)
   {
@@ -130,6 +131,7 @@ void Arduino_Canvas_Indexed::writeFastVLine(int16_t x, int16_t y,
 void Arduino_Canvas_Indexed::writeFastVLineCore(int16_t x, int16_t y,
                                                 int16_t h, uint8_t idx)
 {
+  if (!_framebuffer) return;
   if (_ordered_in_range(x, 0, MAX_X) && h)
   { // X on screen, nonzero height
     if (h < 0)
@@ -196,6 +198,7 @@ void Arduino_Canvas_Indexed::writeFastHLine(int16_t x, int16_t y,
 void Arduino_Canvas_Indexed::writeFastHLineCore(int16_t x, int16_t y,
                                                 int16_t w, uint8_t idx)
 {
+  if (!_framebuffer) return;
   if (_ordered_in_range(y, 0, MAX_Y) && w)
   { // Y on screen, nonzero width
     if (w < 0)
@@ -232,6 +235,7 @@ void Arduino_Canvas_Indexed::writeFastHLineCore(int16_t x, int16_t y,
 void Arduino_Canvas_Indexed::writeFillRectPreclipped(int16_t x, int16_t y,
                                                      int16_t w, int16_t h, uint16_t color)
 {
+  if (!_framebuffer) return;
   uint8_t idx;
   if (_isDirectUseColorIndex)
   {
@@ -285,6 +289,7 @@ void Arduino_Canvas_Indexed::drawIndexedBitmap(
     int16_t x, int16_t y,
     uint8_t *bitmap, uint16_t *color_index, int16_t w, int16_t h, int16_t x_skip)
 {
+  if (!_framebuffer) return;
   if (_rotation > 0)
   {
     if (!_isDirectUseColorIndex)
@@ -385,6 +390,7 @@ void Arduino_Canvas_Indexed::drawIndexedBitmap(
     int16_t x, int16_t y,
     uint8_t *bitmap, uint16_t *color_index, uint8_t chroma_key, int16_t w, int16_t h, int16_t x_skip)
 {
+  if (!_framebuffer) return;
   if (_rotation > 0)
   {
     if (!_isDirectUseColorIndex)
@@ -484,9 +490,12 @@ void Arduino_Canvas_Indexed::drawIndexedBitmap(
   }
 }
 
-void Arduino_Canvas_Indexed::flush()
+void Arduino_Canvas_Indexed::flush(bool force_flush)
 {
-  _output->drawIndexedBitmap(_output_x, _output_y, _framebuffer, _color_index, WIDTH, HEIGHT);
+  if (_output && _framebuffer)
+  {
+    _output->drawIndexedBitmap(_output_x, _output_y, _framebuffer, _color_index, WIDTH, HEIGHT);
+  }
 }
 
 uint8_t *Arduino_Canvas_Indexed::getFramebuffer()
@@ -533,6 +542,7 @@ GFX_INLINE uint16_t Arduino_Canvas_Indexed::get_index_color(uint8_t idx)
 
 void Arduino_Canvas_Indexed::raise_mask_level()
 {
+  if (!_framebuffer) return;
   if ((_current_mask_level + 1) < MAXMASKLEVEL)
   {
     int32_t buffer_size = _width * _height;

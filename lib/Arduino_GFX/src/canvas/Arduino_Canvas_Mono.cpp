@@ -68,6 +68,7 @@ bool Arduino_Canvas_Mono::begin(int32_t speed)
 
 void Arduino_Canvas_Mono::writePixelPreclipped(int16_t x, int16_t y, uint16_t color)
 {
+  if (!_framebuffer) return;
   // change the pixel in the original orientation of the bitmap buffer
   if (_verticalByte)
   {
@@ -100,10 +101,12 @@ void Arduino_Canvas_Mono::writePixelPreclipped(int16_t x, int16_t y, uint16_t co
   }
 }
 
-void Arduino_Canvas_Mono::flush()
+void Arduino_Canvas_Mono::flush(bool force_flush)
 {
-  if (_output)
+  if (_output && _framebuffer)
+  {
     _output->drawBitmap(_output_x, _output_y, _framebuffer, _canvas_width, _canvas_height, RGB565_WHITE, RGB565_BLACK);
+  }
 }
 
 uint8_t *Arduino_Canvas_Mono::getFramebuffer()

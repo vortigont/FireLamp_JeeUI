@@ -51,7 +51,7 @@ bool Arduino_Canvas::begin(int32_t speed)
 
 void Arduino_Canvas::writePixelPreclipped(int16_t x, int16_t y, uint16_t color)
 {
-
+  if (!_framebuffer) return;
   uint16_t *fb = _framebuffer;
   switch (_rotation)
   {
@@ -100,6 +100,7 @@ void Arduino_Canvas::writeFastVLineCore(int16_t x, int16_t y,
                                         int16_t h, uint16_t color)
 {
   // log_i("writeFastVLineCore(x: %d, y: %d, h: %d)", x, y, h);
+  if (!_framebuffer) return;
   if (_ordered_in_range(x, 0, MAX_X) && h)
   { // X on screen, nonzero height
     if (h < 0)
@@ -158,6 +159,7 @@ void Arduino_Canvas::writeFastHLineCore(int16_t x, int16_t y,
                                         int16_t w, uint16_t color)
 {
   // log_i("writeFastHLineCore(x: %d, y: %d, w: %d)", x, y, w);
+  if (!_framebuffer) return;
   if (_ordered_in_range(y, 0, MAX_Y) && w)
   { // Y on screen, nonzero width
     if (w < 0)
@@ -195,6 +197,7 @@ void Arduino_Canvas::writeFillRectPreclipped(int16_t x, int16_t y,
                                              int16_t w, int16_t h, uint16_t color)
 {
   // log_i("writeFillRectPreclipped(x: %d, y: %d, w: %d, h: %d)", x, y, w, h);
+  if (!_framebuffer) return;
   if (_rotation > 0)
   {
     int16_t t = x;
@@ -238,6 +241,7 @@ void Arduino_Canvas::drawIndexedBitmap(
     int16_t x, int16_t y,
     uint8_t *bitmap, uint16_t *color_index, int16_t w, int16_t h, int16_t x_skip)
 {
+  if (!_framebuffer) return;
   if (_rotation > 0)
   {
     Arduino_GFX::drawIndexedBitmap(x, y, bitmap, color_index, w, h, x_skip);
@@ -311,6 +315,7 @@ void Arduino_Canvas::drawIndexedBitmap(
     int16_t x, int16_t y,
     uint8_t *bitmap, uint16_t *color_index, uint8_t chroma_key, int16_t w, int16_t h, int16_t x_skip)
 {
+  if (!_framebuffer) return;
   if (_rotation > 0)
   {
     Arduino_GFX::drawIndexedBitmap(x, y, bitmap, color_index, chroma_key, w, h, x_skip);
@@ -409,6 +414,7 @@ void Arduino_Canvas::drawIndexedBitmap(
 void Arduino_Canvas::draw16bitRGBBitmap(int16_t x, int16_t y,
                                         uint16_t *bitmap, int16_t w, int16_t h)
 {
+  if (!_framebuffer) return;
   switch (_rotation)
   {
   case 1:
@@ -429,6 +435,7 @@ void Arduino_Canvas::draw16bitRGBBitmapWithTranColor(
     int16_t x, int16_t y,
     uint16_t *bitmap, uint16_t transparent_color, int16_t w, int16_t h)
 {
+  if (!_framebuffer) return;
   if (_rotation > 0)
   {
     Arduino_GFX::draw16bitRGBBitmapWithTranColor(x, y, bitmap, transparent_color, w, h);
@@ -516,6 +523,7 @@ void Arduino_Canvas::draw16bitRGBBitmapWithTranColor(
 void Arduino_Canvas::draw16bitBeRGBBitmap(int16_t x, int16_t y,
                                           uint16_t *bitmap, int16_t w, int16_t h)
 {
+  if (!_framebuffer) return;
   if (_rotation > 0)
   {
     Arduino_GFX::draw16bitBeRGBBitmap(x, y, bitmap, w, h);
@@ -574,16 +582,17 @@ void Arduino_Canvas::draw16bitBeRGBBitmap(int16_t x, int16_t y,
   }
 }
 
-void Arduino_Canvas::flush()
+void Arduino_Canvas::flush(bool force_flush)
 {
-  if (_output)
+  if (_output && _framebuffer)
   {
     _output->draw16bitRGBBitmap(_output_x, _output_y, _framebuffer, WIDTH, HEIGHT);
   }
 }
 
-void Arduino_Canvas::flushQuad(void)
+void Arduino_Canvas::flushQuad(bool force_flush)
 {
+  if (!_framebuffer) return;
   int16_t y = _output_y;
   uint16_t *row1 = _framebuffer;
   uint16_t *row2 = _framebuffer + WIDTH;
@@ -610,6 +619,47 @@ void Arduino_Canvas::flushQuad(void)
       row1 += WIDTH;
       row2 += WIDTH;
     }
+  }
+}
+
+void Arduino_Canvas::shade(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t shade_mask)
+{
+  if (!_framebuffer) return;
+  if (_rotation > 0)
+  {
+    int16_t t = x;
+    switch (_rotation)
+    {
+    case 1:
+      x = WIDTH - y - h;
+      y = t;
+      t = w;
+      w = h;
+      h = t;
+      break;
+    case 2:
+      x = WIDTH - x - w;
+      y = HEIGHT - y - h;
+      break;
+    case 3:
+      x = y;
+      y = HEIGHT - t - w;
+      t = w;
+      w = h;
+      h = t;
+      break;
+    }
+  }
+  uint16_t *row = _framebuffer;
+  row += y * WIDTH;
+  row += x;
+  for (int j = 0; j < h; j++)
+  {
+    for (int i = 0; i < w; i++)
+    {
+      row[i] &= shade_mask;
+    }
+    row += WIDTH;
   }
 }
 
