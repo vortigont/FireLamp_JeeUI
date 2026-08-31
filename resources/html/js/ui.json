@@ -3358,8 +3358,8 @@
       "label":"Выбор шрифта",
       "block":[
         { "value":0, "label":"5x8 Сyrillic" },
-        { "value":1, "label":"8x13 Сyrillic" },
-        { "value":2, "label":"16x16 Unifont Cyrillic" },
+        { "value":1, "label":"11x17 guildenstern (cyr)" },
+        { "value":2, "label":"9x16 pxplusibmvga9 (cyr)" },
         { "value":3, "label":"14x14 Fewture (dgt)" },
         { "value":4, "label":"7x14 Bold (dgt)" },
         { "value":5, "label":"3x7 Tiny Simon (lat)" },
@@ -3376,7 +3376,8 @@
         { "value":16, "label":"moosenooks (lat)" },
         { "value":17, "label":"osr29 (dgt)" },
         { "value":18, "label":"osb21_tn (dgt)" },
-        { "value":19, "label":"osb29 (dgt)" }
+        { "value":19, "label":"osb29 (dgt)" },
+        { "value":20, "label":"8x8 pxplustandynewtv (cyr)" }
       ]
     },
     "fonts_txt":{
@@ -3386,11 +3387,14 @@
       "label":"Выбор шрифта",
       "block":[
         { "value":0, "label":"5x8 Сyrillic" },
-        { "value":1, "label":"8x13 Сyrillic" },
-        { "value":2, "label":"16x16 Unifont Cyrillic" },
+        { "value":1, "label":"11x17 guildenstern (cyr)" },
+        { "value":2, "label":"9x16 pxplusibmvga9 (cyr)" },
         { "value":5, "label":"3x7 Tiny Simon (lat)" },
         { "value":6, "label":"13x13 doomalpha04 (lat)" },
-        { "value":7, "label":"15x16 greenbloodserif2 (lat)" }
+        { "value":7, "label":"15x16 greenbloodserif2 (lat)" },
+        { "value":8, "label":"freedoomr25 (lat)" },
+        { "value":16, "label":"moosenooks (lat)" },
+        { "value":20, "label":"8x8 pxplustandynewtv (cyr)" }
       ]
     }
   },
