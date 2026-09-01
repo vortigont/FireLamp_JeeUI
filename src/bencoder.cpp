@@ -44,7 +44,7 @@
 #include "embui_constants.h"
 #include "log.h"
 
-#define ENCODER_TIMER_PERIOD    100   // encoder poller in ms
+#define ENCODER_TIMER_PERIOD    250   // encoder poller in ms
 
 using evt::lamp_t;
 
@@ -61,9 +61,14 @@ ButtonEventHandler::ButtonEventHandler(bool withEncoder) : _encoderEnabled(withE
 
 void ButtonEventHandler::subscribe(){
   // Register the handler for task iteration event; need to pass instance handle for later unregistration.
-  if (!_lmp_einstance){
-    esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, ButtonEventHandler::event_hndlr, this, &_lmp_einstance);
+  if (!_lmp_ch_events){
+    esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, ButtonEventHandler::event_hndlr, this, &_lmp_ch_events);
   }
+  if (!_lmp_set_events)
+    esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_SET_EVENTS, ESP_EVENT_ANY_ID, ButtonEventHandler::event_hndlr, this, &_lmp_set_events);
+
+  if (!_lmp_state_events)
+    esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_STATE_EVENTS, ESP_EVENT_ANY_ID, ButtonEventHandler::event_hndlr, this, &_lmp_state_events);
 
   if (!_btn_einstance){
     ESP_ERROR_CHECK(esp_event_handler_instance_register_with(evt::get_hndlr(), EBTN_EVENTS, ESP_EVENT_ANY_ID, ButtonEventHandler::event_hndlr, this, &_btn_einstance));
@@ -73,19 +78,17 @@ void ButtonEventHandler::subscribe(){
     esp_event_handler_instance_register_with(evt::get_hndlr(), EBTN_ENC_EVENTS, ESP_EVENT_ANY_ID, ButtonEventHandler::event_hndlr, this, &_enc_events);
   }
 
-  if (!_lmp_set_events)
-    esp_event_handler_instance_register_with(evt::get_hndlr(), LAMP_SET_EVENTS, ESP_EVENT_ANY_ID, ButtonEventHandler::event_hndlr, this, &_lmp_set_events);
 }
 
 void ButtonEventHandler::unsubscribe(){
-  esp_event_handler_instance_unregister_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, _lmp_einstance);
-  _lmp_einstance = nullptr;
+  esp_event_handler_instance_unregister_with(evt::get_hndlr(), LAMP_CHANGE_EVENTS, ESP_EVENT_ANY_ID, _lmp_ch_events);
+  _lmp_ch_events = nullptr;
+  esp_event_handler_instance_unregister_with(evt::get_hndlr(), LAMP_SET_EVENTS, ESP_EVENT_ANY_ID, _lmp_set_events);
+  _lmp_set_events = nullptr;
   esp_event_handler_instance_unregister_with(evt::get_hndlr(), EBTN_EVENTS, ESP_EVENT_ANY_ID, _btn_einstance);
   _btn_einstance = nullptr;
   esp_event_handler_instance_unregister_with(evt::get_hndlr(), EBTN_ENC_EVENTS, ESP_EVENT_ANY_ID, _enc_events);
   _enc_events = nullptr;
-  esp_event_handler_instance_unregister_with(evt::get_hndlr(), LAMP_SET_EVENTS, ESP_EVENT_ANY_ID, _lmp_set_events);
-  _lmp_set_events = nullptr;
 };
 
 void ButtonEventHandler::event_hndlr(void* handler, esp_event_base_t base, int32_t id, void* event_data){
@@ -111,7 +114,7 @@ void ButtonEventHandler::_btnEventHandler(ESPButton::event_t e, const EventMsg* 
     return;
   }
 
-  // if encoder is enabled, need to track truns when button is pressed
+  // if encoder is enabled, need to track turns while button is pressed
   if (e == ESPButton::event_t::press)
     _enc.btn = true;
   else if (e == ESPButton::event_t::release)
@@ -168,8 +171,12 @@ void ButtonEventHandler::_btnEventHandler(ESPButton::event_t e, const EventMsg* 
 
 
   for (auto &it : _event_map ){
-    //LOG(printf, "Lookup event: it_en:%u, it.e:%u, e:%u ilp:%u lp:%u\n", it.enabled, it.e, e, it.lamppwr, _lamp_pwr );
-    if ( it.enabled && (it.e == e) && (it.lamppwr == _lamp_pwr) ){
+    LOGV(T_btn_event, printf, "Lookup event: it_en:%u, it.e:%u, e:%u ilp:%u lp:%u\n", it.enabled, it.e, e, it.lamppwr, _lamp_pwr );
+    if ( !it.enabled || (it.e != e) ) continue;
+
+    // if event is power state dependent, check for lamp power state, skip event if lamp is off and event requires lamp to be on
+    if ( it.lamppwr && !_lamp_pwr ) continue;
+
       // check for multiclicks
       if (e == ESPButton::event_t::multiClick && msg->cntr != it.clicks)
         continue;
@@ -190,7 +197,6 @@ void ButtonEventHandler::_btnEventHandler(ESPButton::event_t e, const EventMsg* 
           EVT_POST(LAMP_SET_EVENTS, e2int(it.evt_lamp));
       }
       return;
-    }
   }
 }
 
@@ -225,7 +231,7 @@ void ButtonEventHandler::load(JsonVariantConst cfg){
   _event_map.clear();
 
   for(JsonVariantConst v : array) {
-    //LOG(printf, "Add cfg Event:%u\n", v[T_btn_event].as<int>() );
+    LOGD(T_btn_event, printf, "btn event:%u, lmp evt:%u\n", v[T_btn_event].as<int>(), v[T_lamp_event].as<int>());
     _event_map.emplace_back(ButtonAction(static_cast<ESPButton::event_t>(v[T_btn_event].as<int>()), static_cast<evt::lamp_t>(v[T_lamp_event].as<int>()), v[T_clicks], v[T_arg], v[T_enabled], v[T_onpwr] ));
   }
 
@@ -254,18 +260,22 @@ void PCNT_Encoder::load(JsonVariantConst cfg){
   ESP32Encoder::useInternalWeakPullResistors = cfg[T_pull] ? puType::up : puType::down;
   int32_t gpio_a = cfg[T_A] | -1;
   int32_t gpio_b = cfg[T_B] | -1;
+  if (gpio_a == -1 || gpio_b == -1){
+    LOGE(T_encoder, println, "encoder pins are wrong defined");
+    return;
+  }
 
   switch (cfg[T_enctype].as<unsigned>()){
     // half-quad
     case 2 :
-      attachHalfQuad(cfg[T_A] | -1, cfg[T_B] | -1);
+      attachHalfQuad(gpio_a, gpio_b);
       break;
     // quad
     case 4 :
-      attachFullQuad(cfg[T_A] | -1, cfg[T_B] | -1);
+      attachFullQuad(gpio_a, gpio_b);
       break;
     default :
-      attachSingleEdge(cfg[T_A] | -1, cfg[T_B] | -1);
+      attachSingleEdge(gpio_a, gpio_b);
   }
 
   // start encoder poller timer

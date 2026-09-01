@@ -74,8 +74,10 @@ class ButtonEventHandler {
     esp_event_handler_instance_t _btn_einstance = nullptr;
     // encoder events
     esp_event_handler_instance_t _enc_events = nullptr;
-    // lamp state events instance
-    esp_event_handler_instance_t _lmp_einstance = nullptr;
+    // lamp change events instance
+    esp_event_handler_instance_t _lmp_ch_events = nullptr;
+    // lamp state notify events instance
+    esp_event_handler_instance_t _lmp_state_events = nullptr;
     // lamp set events instance
     esp_event_handler_instance_t _lmp_set_events = nullptr;
 
