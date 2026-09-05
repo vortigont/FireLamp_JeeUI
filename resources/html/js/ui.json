@@ -1371,59 +1371,29 @@
                 "line":true,
                 "block":[
                   {
-                    "id":"font1",
-                    "html":"select",
-                    "label":"Шрифт часов",
-                    "section":"options",
+                    "section":"uidata",
                     "block":[
-                      { "value":0, "label":"5x8 Сyrillic" },
-                      { "value":1, "label":"8x13 Сyrillic" },
-                      { "value":2, "label":"16x16 Unifont Cyrillic" },
-                      { "value":3, "label":"14x14 Fewture (dgt)" },
-                      { "value":4, "label":"7x14 Bold (dgt)" },
-                      { "value":5, "label":"3x7 Tiny Simon (lat)" },
-                      { "value":6, "label":"13x13 doomalpha04(lat)" },
-                      { "value":7, "label":"15x16 greenbloodserif2(lat)" },
-                      { "value":8, "label":"freedoomr25 (lat)" },
-                      { "value":9, "label":"logisoso20 (dgt)" },
-                      { "value":10, "label":"logisoso42 (dgt)" },
-                      { "value":11, "label":"Mystery Quest 32 (dgt)" },
-                      { "value":12, "label":"Mystery Quest 48 (dgt)" },
-                      { "value":13, "label":"maniac(lat) (dgt)" },
-                      { "value":14, "label":"lucasarts_scumm (dgt)" },
-                      { "value":15, "label":"Bubble (dgt)" },
-                      { "value":16, "label":"moosenooks (lat)" },
-                      { "value":17, "label":"osr29 (dgt)" },
-                      { "value":18, "label":"osb21_tn (dgt)" },
-                      { "value":19, "label":"osb29 (dgt)" }
+                      {
+                        "action":"pick",
+                        "key":"lampui.elements.fonts_all",
+                        "merge":{
+                          "id":"font1",
+                          "label":"Шрифт Минут/Час"
+                        }
+                      }
                     ]
                   },
                   {
-                    "id":"font2",
-                    "html":"select",
-                    "label":"Шрифт секунд",
-                    "section":"options",
+                    "section":"uidata",
                     "block":[
-                      { "value":0, "label":"5x8 Сyrillic" },
-                      { "value":1, "label":"8x13 Сyrillic" },
-                      { "value":2, "label":"16x16 Unifont Cyrillic" },
-                      { "value":3, "label":"14x14 Fewture (dgt)" },
-                      { "value":4, "label":"7x14 Bold (dgt)" },
-                      { "value":5, "label":"3x7 Tiny Simon (lat)" },
-                      { "value":6, "label":"13x13 doomalpha04(lat)" },
-                      { "value":7, "label":"15x16 greenbloodserif2(lat)" },
-                      { "value":8, "label":"freedoomr25 (lat)" },
-                      { "value":9, "label":"logisoso20 (dgt)" },
-                      { "value":10, "label":"logisoso42 (dgt)" },
-                      { "value":11, "label":"Mystery Quest 32 (dgt)" },
-                      { "value":12, "label":"Mystery Quest 48 (dgt)" },
-                      { "value":13, "label":"maniac(lat) (dgt)" },
-                      { "value":14, "label":"lucasarts_scumm (dgt)" },
-                      { "value":15, "label":"Bubble (dgt)" },
-                      { "value":16, "label":"moosenooks (lat)" },
-                      { "value":17, "label":"osr29 (dgt)" },
-                      { "value":18, "label":"osb21_tn (dgt)" },
-                      { "value":19, "label":"osb29 (dgt)" }
+                      {
+                        "action":"pick",
+                        "key":"lampui.elements.fonts_all",
+                        "merge":{
+                          "id":"font2",
+                          "label":"Шрифт Секунд"
+                        }
+                      }
                     ]
                   }
                 ]
@@ -3147,7 +3117,9 @@
                       {
                         "action":"pick",
                         "key":"lampui.elements.fonts_txt",
-                        "newid":"font1"
+                        "merge":{
+                          "id":"font1"
+                        }
                       }
                     ]
                   },
