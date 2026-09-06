@@ -3096,7 +3096,7 @@
                         "html":"input",
                         "type":"number",
                         "label":"Координата X",
-                        "min":0,
+                        "min":-4,
                         "max":256,
                         "step":1
                       },
@@ -3105,7 +3105,7 @@
                         "html":"input",
                         "type":"number",
                         "label":"Координата Y",
-                        "min":0,
+                        "min":-4,
                         "max":256,
                         "step":1
                       }
