@@ -134,25 +134,26 @@ void ModWeatherSource::_getOpenWeather(){
   pogoda += ", ";
 
 // Температура
+  pogoda += "Температура: ";
   int t = int(doc[P_main]["temp"].as<float>() + 0.5);
   if (t > 0)
     pogoda += "+";
   pogoda += std::to_string(t);
 
 // Влажность
-  pogoda += "°C, влажность:";
+  pogoda += "°C, Влажность: ";
   pogoda += std::to_string(doc[P_main]["humidity"].as<int>());
 // Ветер
-  pogoda += "%, ветер ";
+  pogoda += "%, Ветер: ";
   int deg = doc["wind"]["deg"];
-  if( deg >22 && deg <=68 ) pogoda += "сев-вост.";
-  else if( deg >68 && deg <=112 ) pogoda += "вост.";
-  else if( deg >112 && deg <=158 ) pogoda += "юг-вост.";
-  else if( deg >158 && deg <=202 ) pogoda += "юж.";
-  else if( deg >202 && deg <=248 ) pogoda += "юг-зап.";
-  else if( deg >248 && deg <=292 ) pogoda += "зап.";
-  else if( deg >292 && deg <=338 ) pogoda += "сев-зап.";
-  else pogoda += "сев.";
+  if( deg >22 && deg <=68 ) pogoda += "Северо-Восточный ";
+  else if( deg >68 && deg <=112 ) pogoda += "Восточный ";
+  else if( deg >112 && deg <=158 ) pogoda += "Юго-Восточный ";
+  else if( deg >158 && deg <=202 ) pogoda += "Южный ";
+  else if( deg >202 && deg <=248 ) pogoda += "Юго-Западный ";
+  else if( deg >248 && deg <=292 ) pogoda += "Западный ";
+  else if( deg >292 && deg <=338 ) pogoda += "Северо-Западный ";
+  else pogoda += "Северный ";
   int wind = int(doc["wind"][T_speed].as<float>() + 0.5);
   pogoda += std::to_string(wind);
   pogoda += " м/с";
@@ -161,7 +162,7 @@ void ModWeatherSource::_getOpenWeather(){
   if (_show_sunrise){
     // здесь баг - значения рассвета/заката передаются в UTC, если погода запрошена для локации не совпадающей
     // с текущей временной зоной, значения будут неверные. Нужно высчитывать смещение временной зоны переданной вместе с данными 
-    pogoda += ", восход: ";
+    pogoda += ", Восход: ";
     time_t sun = doc["sys"]["sunrise"].as<uint32_t>();
     pogoda += std::to_string(localtime(&sun)->tm_hour);
     pogoda += ":";
@@ -169,7 +170,7 @@ void ModWeatherSource::_getOpenWeather(){
       pogoda += static_cast<char>(0x30);  // '0'
     pogoda += std::to_string(localtime(&sun)->tm_min);
 
-    pogoda += ", закат: ";
+    pogoda += ", Закат: ";
     sun = doc["sys"]["sunset"].as<uint32_t>();
     pogoda += std::to_string(localtime(&sun)->tm_hour);
     pogoda += ":";
