@@ -40,11 +40,11 @@
 #include <chrono>
 #include "log.h"
 
-// https://stackoverflow.com/a/75714048
+// convert a struct tm (expressed in UTC) to time_t type - https://stackoverflow.com/a/75714048
 static std::time_t timegm(std::tm const& t){
   using namespace std::chrono;
   return system_clock::to_time_t(
-      sys_days{year{t.tm_year+1900}/(t.tm_mon+1)/t.tm_mday} +
+      sys_days{year{t.tm_year+1900} / (t.tm_mon+1) / t.tm_mday} +
       hours{t.tm_hour} + minutes{t.tm_min} + seconds{t.tm_sec});
 }
 
@@ -91,13 +91,13 @@ void RTC_Clock::_init_from_utc_rtc(){
   LOGD(T_clock, printf, "Sys clock:%s\n", buff);
   tm rtc_tm;
   _rtc->get_tm(&rtc_tm);
-  // RTC clock is in UTC, as it is not capable to keep timezone rules and DST changes
+  // we keep RTC clock in UTC, as it is not capable to keep timezone rules and DST changes
   std::strftime(std::data(buff), std::size(buff), "%FT%T", &rtc_tm); //std::gmtime(&rtc_clk));
   LOGD(T_clock, printf, "RTC UTC clock:%s\n", buff);
     // if sys time >5 sec behind RTC time - reset system time to RTC's
   if ( difftime(timegm(rtc_tm), t) > 5){
     // convert RTC's UTC to localtime
-    std::time_t rtc_time = timegm(rtc_tm);
+    std::time_t rtc_time{timegm(rtc_tm)};
     timeval tv{rtc_time, 0};
     settimeofday(&tv, NULL);
 
@@ -109,7 +109,7 @@ void RTC_Clock::_init_from_utc_rtc(){
 void RTC_Clock::_set_rtc_to_utc(){
   if (!online) return;
 
-  std::time_t t = std::time({});
+  std::time_t t{std::time({})};
   // update RTC to UTC time
   _rtc->set(std::gmtime(&t));
 
@@ -117,20 +117,21 @@ void RTC_Clock::_set_rtc_to_utc(){
   std::strftime(std::data(buff), std::size(buff), "%FT%T",   std::gmtime(&t));
   LOGI(T_clock, printf, "Update RTC to UTC:%s\n", buff);
 
+  /*
   tm rtc_tm;
   _rtc->get_tm(&rtc_tm);
-
-  //std::strftime(std::data(buff), std::size(buff), "%FT%T",   &rtc_tm );
-  //LOGI(T_clock, printf, "GMTime in RTC is:%s\n", buff);
+  std::strftime(std::data(buff), std::size(buff), "%FT%T",   &rtc_tm );
+  LOGI(T_clock, printf, "GMTime in RTC is:%s\n", buff);
+  */
 }
 
 
 void RTC_DS32::get_tm(tm* time) {
   _rtc.refresh();
-  time->tm_year = _rtc.year();
-  time->tm_mon = _rtc.month();
+  time->tm_year = _rtc.year() + 100;  // RTC returns year in 2 digits, tm_year is years since 1900
+  time->tm_mon = _rtc.month() - 1;    // RTC returns month in 1-12, tm_mon is 0-11
   time->tm_mday = _rtc.day();
-  time->tm_wday = _rtc.dayOfWeek();
+  time->tm_wday = _rtc.dayOfWeek() - 1; // RTC returns day of week in 1-7, tm_wday is 0-6
   time->tm_hour = _rtc.hour();
   time->tm_min = _rtc.minute();
   time->tm_sec = _rtc.second();
@@ -138,5 +139,5 @@ void RTC_DS32::get_tm(tm* time) {
 }
 
 void RTC_DS32::set(tm* time){
-  _rtc.set(time->tm_sec, time->tm_min, time->tm_hour, time->tm_wday, time->tm_mday, time->tm_mon, time->tm_year);
+  _rtc.set(time->tm_sec, time->tm_min, time->tm_hour, time->tm_wday + 1, time->tm_mday, time->tm_mon + 1, time->tm_year % 100);
 }

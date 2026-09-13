@@ -82,6 +82,8 @@ void GPIO_Controller::setup_gpios(){
     Wire.setPins(_i2c_sda, _i2c_scl);
     if (!Wire.begin()){
       LOGE(T_sensors, println, "i2c init err");
+    } else {
+      LOGI(T_sensors, printf, "i2c bus initialized, sda:%d, scl:%d\n", _i2c_scl, _i2c_scl);
     }
   }
 
