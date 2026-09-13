@@ -236,9 +236,9 @@ void Sensor_Bosch::poll(){
     return;
 
   std::string buffer = descr;
-  buffer += std::format(" температура: {:.1f}°С, атм. давление: {:.1f} мм.рт.ст.", temp, pressure);
+  buffer += std::format(" Температура: {:.1f}°С, Атмосферное давление: {:.1f}mmHg", temp, pressure);
   if (stype == sensor_t::bosch_bme)
-    buffer += std::format(", влажность: {:.1f}%", humidity);
+    buffer += std::format(", Влажность: {:.1f}%", humidity);
 
   TextMessage m(std::move(buffer), 1 /* cnt */, 0 /* interval */, 0 /* duration*/, message_id);
   static_cast<ModTextDisplay*>(scroller)->updateMSG(std::move(m), scroller_id);
@@ -280,7 +280,7 @@ void Sensor_SGP::poll(){
     return;
   // todo: need to feed sensor with data from temp/humi sensor if that one is available
   std::string buffer = descr;
-  buffer += std::format(" CO2: {}ppm, tvoc: {}", _sensor.CO2, _sensor.TVOC);
+  buffer += std::format(" eCO2: {}ppm, TVOC: {}ppb", _sensor.CO2, _sensor.TVOC);
 
   TextMessage m(std::move(buffer), 1 /* cnt */, 0 /* interval */, 0 /* duration*/, message_id);
   static_cast<ModTextDisplay*>(scroller)->updateMSG(std::move(m), scroller_id);
@@ -340,7 +340,7 @@ void Sensor_SiSHT::poll(){
     return;
 
   std::string buffer = descr;
-  buffer += std::format(" температура: {:.1f}°С, влажность: {:.1f}%", temp, humidity);
+  buffer += std::format(" Температура: {:.1f}°С, Влажность: {:.1f}%", temp, humidity);
 
   TextMessage m(std::move(buffer), 1 /* cnt */, 0 /* interval */, 0 /* duration*/, message_id);
   
