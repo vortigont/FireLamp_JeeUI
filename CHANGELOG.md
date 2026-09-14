@@ -1,5 +1,22 @@
 # Change Log
 
+## 4.2.0
+ - revised workflows, added self-hosted runner for release builds
+ - fix: button events edit was always saving first entry in a list (#199)
+ - refined logging messages in many places
+ - many fixes in cron module
+ - static text layers
+ - Эффекты нексус/матрица (#206)
+ - Move all static html resources from FS to ROM data
+ - buildfs fixes
+ - fix webui bugs and weather message
+ - narodmon: better error handling
+ - bug in RNG intit
+ - bump Arduino_GFX version with canvas nullptr checks
+ - replaced some fonts as per Dina's req
+ - fixed bugs in RTC module
+ - activate Si70xx / SHT / HTU sensors (#215)
+
 ## 4.1.5
  - i2c gpios config moved from sensors.json to web section with fet
  - update huidu config
