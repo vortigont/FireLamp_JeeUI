@@ -69,7 +69,7 @@ void SensorManager::load_cfg(JsonVariantConst cfg){
     if (v[T_type].is<const char*>())
       lbl = v[T_type].as<const char*>();
     else{
-      LOGV(T_sensors, println, "wrong sensor type!");
+      LOGW(T_sensors, println, "wrong sensor type!");
       continue;
     }
 
@@ -84,6 +84,11 @@ void SensorManager::load_cfg(JsonVariantConst cfg){
     else if (std::string_view(lbl).compare(T_SGP30) == 0){
       LOGI(T_sensors, printf, "Load: %s\n", T_SGP30);
       s = std::make_unique<Sensor_SGP>(v[P_id] | random());
+    }
+     // Si70xx / SHT / HTU
+    else if (std::string_view(lbl).compare(T_Si70xx) == 0){
+      LOGI(T_sensors, printf, "Load: %s\n", T_Si70xx);
+      s = std::make_unique<Sensor_SiSHT>(v[P_id] | random());
     }
     // RTC bm8563
     else if (std::string_view(lbl).compare(T_RTC) == 0){
