@@ -60,6 +60,10 @@ jobs:
           pip install --upgrade zopfli
           platformio run -t buildfs
           #platformio pkg update
+      - name: Force fetch mklittlefs binary via PIO
+        run: |
+          # Force pull the legacy compiled binary asset 
+          pio pkg exec -p tasmota/tool-mklittlefs@^4.0.0 -c "mklittlefs --version"
       - name: Run PlatformIO build
         run: |
           platformio run -e esp32_4M -e esp32_16M -e esp32S3_4M -e esp32S3_16M_rel -e hdwf2_rel
