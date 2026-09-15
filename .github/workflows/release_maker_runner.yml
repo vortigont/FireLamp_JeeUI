@@ -70,7 +70,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install --upgrade platformio
           pip install --upgrade zopfli
-          platformio run -e esp32_4M -t buildfs
+          #platformio run -e esp32_4M -t buildfs
           #platformio pkg update
           mkdir -p ~/artifacts; cd ~/artifacts; pwd
       - name: Force fetch mklittlefs binary via PIO
